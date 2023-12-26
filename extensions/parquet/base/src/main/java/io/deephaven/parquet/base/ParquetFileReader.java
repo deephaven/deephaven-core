@@ -42,7 +42,8 @@ public class ParquetFileReader {
                 filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
         final byte[] footer;
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+        try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
+                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, filePath)) {
             final long fileLen = readChannel.size();
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC

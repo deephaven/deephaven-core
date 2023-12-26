@@ -105,14 +105,16 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public Object materialize(Object nullValue) throws IOException {
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+        try (final SeekableByteChannel readChannel =
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
             ensurePageHeader(readChannel);
             return readDataPage(nullValue, readChannel);
         }
     }
 
     public int readRowCount() throws IOException {
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+        try (final SeekableByteChannel readChannel =
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
             ensurePageHeader(readChannel);
             return readRowCountFromDataPage(readChannel);
         }
@@ -121,7 +123,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder) throws IOException {
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+        try (final SeekableByteChannel readChannel =
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
             ensurePageHeader(readChannel);
             return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel);
         }
@@ -619,7 +622,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         if (numValues >= 0) {
             return numValues;
         }
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+        try (final SeekableByteChannel readChannel =
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
             ensurePageHeader(readChannel);
             // Above will block till it populates numValues
             Assert.geqZero(numValues, "numValues");

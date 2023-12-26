@@ -52,13 +52,21 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
+    public ChannelContext makeContext() {
+        return wrappedProvider.makeContext();
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final Path path)
+            throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
+        final CachedChannel channel = result == null
+                ? new CachedChannel(wrappedProvider.getReadChannel(context, path), ChannelType.Read, pathKey)
                 : result.position(0);
+        channel.setContext(context);
+        return channel;
     }
 
     @Override
@@ -128,7 +136,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     /**
      * {@link SeekableByteChannel Channel} wrapper for pooled usage.
      */
-    private class CachedChannel implements SeekableByteChannel {
+    private class CachedChannel implements SeekableByteChannel, ContextHolder {
 
         private final SeekableByteChannel wrappedChannel;
         private final ChannelType channelType;
@@ -163,7 +171,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
 
         @Override
-        public SeekableByteChannel position(final long newPosition) throws IOException {
+        public CachedChannel position(final long newPosition) throws IOException {
             Require.eqTrue(isOpen, "isOpen");
             wrappedChannel.position(newPosition);
             return this;
@@ -196,11 +204,19 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         public void close() throws IOException {
             Require.eqTrue(isOpen, "isOpen");
             isOpen = false;
+            clearContext();
             returnPoolableChannel(this);
         }
 
         private void dispose() throws IOException {
             wrappedChannel.close();
+        }
+
+        @Override
+        public void setContext(ChannelContext context) {
+            if (wrappedChannel instanceof ContextHolder) {
+                ((ContextHolder) wrappedChannel).setContext(context);
+            }
         }
     }
 

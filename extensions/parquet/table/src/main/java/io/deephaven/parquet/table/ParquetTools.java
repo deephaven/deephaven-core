@@ -14,7 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.parquet.table.util.S3BackedSeekableChannelProvider;
+import io.deephaven.parquet.table.util.S3SeekableChannelProvider;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
@@ -1082,7 +1082,7 @@ public class ParquetTools {
             final String s3uri = S3_MARKER + absolutePath.substring(index + S3_MARKER.length() - 1);
             return new ParquetFileReader(absolutePath,
                     new CachedChannelProvider(
-                            new S3BackedSeekableChannelProvider(readInstructions.getAwsRegionName(), s3uri), 1 << 7));
+                            new S3SeekableChannelProvider(readInstructions.getAwsRegionName(), s3uri), 1 << 7));
         }
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),

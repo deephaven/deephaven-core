@@ -1,12 +1,13 @@
 package io.deephaven.parquet.table.util;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -14,40 +15,85 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.StandardOpenOption;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public final class S3SeekableByteChannel implements SeekableByteChannel {
+public final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
+
+    /**
+     * Context object used to store read-ahead buffers for efficiently reading from S3.
+     */
+    static final class ChannelContext implements SeekableChannelsProvider.ChannelContext {
+
+        /**
+         * Used to store context information for fetching a single fragment from S3
+         */
+        static class FragmentContext {
+            private final int fragmentIndex;
+            private final CompletableFuture<ByteBuffer> future;
+
+            private FragmentContext(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
+                this.fragmentIndex = fragmentIndex;
+                this.future = future;
+            }
+        }
+
+        private final List<FragmentContext> readAheadBuffers;
+
+        ChannelContext(final int readAheadCount, final int maxCacheSize) {
+            if (maxCacheSize < 1 + readAheadCount) {
+                throw new InvalidParameterException("maxCacheSize must be >= 1 + readAheadCount");
+            }
+            readAheadBuffers = new ArrayList<>(maxCacheSize);
+            for (int i = 0; i < maxCacheSize; i++) {
+                readAheadBuffers.add(null);
+            }
+        }
+
+        private int getIndex(final int fragmentIndex) {
+            return fragmentIndex % readAheadBuffers.size();
+        }
+
+        void setFragmentContext(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
+            readAheadBuffers.set(getIndex(fragmentIndex), new FragmentContext(fragmentIndex, future));
+        }
+
+        FragmentContext getFragmentContext(final int fragmentIndex) {
+            return readAheadBuffers.get(getIndex(fragmentIndex));
+        }
+    }
+
     private long position;
     private final S3AsyncClient s3Client;
     private volatile boolean closed;
     private final String s3uri, bucket, key;
     private final int maxFragmentSize;
-    private final int maxNumberFragments;
+//    private final int maxNumberFragments;
     private final int numFragmentsInObject;
     private final long size;
     private final Long timeout;
     private final TimeUnit timeUnit;
-    private final Cache<Integer, CompletableFuture<ByteBuffer>> readAheadBuffersCache;
+    private ChannelContext context;
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    static final int READ_AHEAD_COUNT =
+            Configuration.getInstance().getIntegerWithDefault("s3.read-ahead-count", 1);
+    static final int MAX_CACHE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-cache-size", 50);
     private static final int MAX_FRAGMENT_SIZE =
             Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-fragment-size", 512 * 1024); // 512 KB
-    private static final int MAX_FRAGMENT_NUMBER =
-            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-fragment-number", 2);
 
-
-    S3SeekableByteChannel(String s3uri, String bucket, String key, S3AsyncClient s3Client, long startAt, long size,
-                          Long timeout, TimeUnit timeUnit, final Cache<Integer, CompletableFuture<ByteBuffer>> readAheadBuffersCache) throws IOException {
+    S3SeekableByteChannel(SeekableChannelsProvider.ChannelContext context, String s3uri, String bucket, String key, S3AsyncClient s3Client, long startAt, long size) {
         Objects.requireNonNull(s3Client);
         if (MAX_FRAGMENT_SIZE < 1)
             throw new IllegalArgumentException("maxFragmentSize must be >= 1");
-        if (MAX_FRAGMENT_NUMBER < 1)
-            throw new IllegalArgumentException("maxNumberFragments must be >= 1");
         if (size < 1)
             throw new IllegalArgumentException("size must be >= 1");
 
@@ -59,12 +105,18 @@ public final class S3SeekableByteChannel implements SeekableByteChannel {
 
         this.s3uri = s3uri;
         this.maxFragmentSize = MAX_FRAGMENT_SIZE;
-        this.readAheadBuffersCache = readAheadBuffersCache;
-        this.maxNumberFragments = MAX_FRAGMENT_NUMBER;
-        this.timeout = timeout != null ? timeout : 5L;
-        this.timeUnit = timeUnit != null ? timeUnit : TimeUnit.MINUTES;
+        this.timeout = 5L;
+        this.timeUnit = TimeUnit.MINUTES;
         this.size = size;
         this.numFragmentsInObject = (int) Math.ceil((double) size / maxFragmentSize);
+        this.context = (ChannelContext) context;
+    }
+
+    @Override
+    public void setContext(@Nullable SeekableChannelsProvider.ChannelContext context) {
+        // null context is allowed for clearing the context
+        Assert.assertion(context == null || context instanceof ChannelContext, "context == null || context instanceof ChannelContext");
+        this.context = (ChannelContext) context;
     }
 
     /**
@@ -91,39 +143,23 @@ public final class S3SeekableByteChannel implements SeekableByteChannel {
             return -1;
         }
 
-        //figure out the index of the fragment the bytes would start in
-        final int fragmentIndex = fragmentIndexForByteNumber(channelPosition);
-        final int fragmentOffset = (int) (channelPosition - ((long) fragmentIndex * maxFragmentSize));
+        // Figure out the index of the fragment the bytes would start in
+        final int currFragmentIndex = fragmentIndexForByteNumber(channelPosition);
+        final int fragmentOffset = (int) (channelPosition - ((long) currFragmentIndex * maxFragmentSize));
+        Assert.neqNull(context, "context");
+
+        // Blocking fetch the current fragment if it's not already in the cache
+        final ChannelContext.FragmentContext fragmentContext = context.getFragmentContext(currFragmentIndex);
+        final CompletableFuture<ByteBuffer> fetchCurrFragment;
+        if (fragmentContext != null && fragmentContext.fragmentIndex == currFragmentIndex) {
+            fetchCurrFragment = fragmentContext.future;
+        } else {
+            fetchCurrFragment = computeFragmentFuture(currFragmentIndex);
+            context.setFragmentContext(currFragmentIndex, fetchCurrFragment);
+        }
+        final ByteBuffer currentFragment;
         try {
-            final ByteBuffer fragment = Objects.requireNonNull(readAheadBuffersCache.get(fragmentIndex, this::computeFragmentFuture))
-                    .get(timeout, timeUnit)
-                    .asReadOnlyBuffer();
-
-            //put the bytes from fragment from the offset upto the min of fragment remaining or dst remaining
-            fragment.position(fragmentOffset);
-            final int limit = Math.min(fragment.remaining(), dst.remaining());
-            fragment.limit(fragment.position() + limit);
-            dst.put(fragment);
-
-            if (fragment.position() >= fragment.limit() / 2) {
-
-                // until available cache slots are filled or number of fragments in file
-                final int maxFragmentsToLoad = Math.min(maxNumberFragments - 1, numFragmentsInObject - fragmentIndex - 1);
-
-                for (int i = 0; i < maxFragmentsToLoad; i++) {
-                    final int idxToLoad = i + fragmentIndex + 1;
-
-                    //  add the index if it's not already there
-                    if (readAheadBuffersCache.asMap().containsKey(idxToLoad))
-                        continue;
-
-                    readAheadBuffersCache.put(idxToLoad, computeFragmentFuture(idxToLoad));
-                }
-            }
-
-            position(channelPosition + limit);
-            return limit;
-
+            currentFragment = fetchCurrFragment.get(timeout, timeUnit).asReadOnlyBuffer();
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -135,6 +171,25 @@ public final class S3SeekableByteChannel implements SeekableByteChannel {
         } catch (final TimeoutException e) {
             throw new RuntimeException(e);
         }
+
+        // Put the bytes from fragment from the offset up to the min of fragment remaining or dst remaining
+        currentFragment.position(fragmentOffset);
+        final int limit = Math.min(currentFragment.remaining(), dst.remaining());
+        currentFragment.limit(currentFragment.position() + limit);
+        dst.put(currentFragment);
+
+        // Send requests for read-ahead buffers
+        final int numFragmentsToLoad = Math.min(READ_AHEAD_COUNT, numFragmentsInObject - currFragmentIndex - 1);
+        for (int i = 0; i < numFragmentsToLoad; i++) {
+            final int readAheadFragmentIndex = i + currFragmentIndex + 1;
+            final ChannelContext.FragmentContext readAheadFragmentContext = context.getFragmentContext(readAheadFragmentIndex);
+            if (readAheadFragmentContext == null || readAheadFragmentContext.fragmentIndex != readAheadFragmentIndex) {
+                context.setFragmentContext(readAheadFragmentIndex, computeFragmentFuture(readAheadFragmentIndex));
+            }
+        }
+
+        position(channelPosition + limit);
+        return limit;
     }
 
     /**
@@ -158,7 +213,7 @@ public final class S3SeekableByteChannel implements SeekableByteChannel {
                                 .bucket(bucket)
                                 .key(key)
                                 .range(range),
-                        new AsyncAWSResponseTransformer<>(maxFragmentSize));
+                        new ByteBufferAsyncResponseTransformer<>(maxFragmentSize));
     }
 
     /**
@@ -280,25 +335,25 @@ public final class S3SeekableByteChannel implements SeekableByteChannel {
         }
     }
 
-    /**
-     * The number of fragments currently in the cache.
-     *
-     * @return the size of the cache after any async evictions or reloads have happened.
-     */
-    int numberOfCachedFragments() {
-        readAheadBuffersCache.cleanUp();
-        return (int) readAheadBuffersCache.estimatedSize();
-    }
+//    /**
+//     * The number of fragments currently in the cache.
+//     *
+//     * @return the size of the cache after any async evictions or reloads have happened.
+//     */
+//    int numberOfCachedFragments() {
+//        readAheadBuffersCache.cleanUp();
+//        return (int) readAheadBuffersCache.estimatedSize();
+//    }
 
-    /**
-     * Obtain a snapshot of the statistics of the internal cache, provides information about hits, misses, requests, evictions etc.
-     * that are useful for tuning.
-     *
-     * @return the statistics of the internal cache.
-     */
-    CacheStats cacheStatistics() {
-        return readAheadBuffersCache.stats();
-    }
+//    /**
+//     * Obtain a snapshot of the statistics of the internal cache, provides information about hits, misses, requests, evictions etc.
+//     * that are useful for tuning.
+//     *
+//     * @return the statistics of the internal cache.
+//     */
+//    CacheStats cacheStatistics() {
+//        return readAheadBuffersCache.stats();
+//    }
 
     /**
      * Closes this channel.

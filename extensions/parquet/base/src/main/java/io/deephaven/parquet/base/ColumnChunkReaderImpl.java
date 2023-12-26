@@ -171,7 +171,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             return NULL_DICTIONARY;
         }
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(getFilePath())) {
+        try (final SeekableByteChannel readChannel =
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), getFilePath())) {
             readChannel.position(dictionaryPageOffset);
             return readDictionary(readChannel);
         } catch (IOException e) {
@@ -235,7 +236,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 throw new NoSuchElementException("No next element");
             }
             // NB: The channels provider typically caches channels; this avoids maintaining a handle per column chunk
-            try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(getFilePath())) {
+            try (final SeekableByteChannel readChannel =
+                    channelsProvider.getReadChannel(channelsProvider.makeContext(), getFilePath())) {
                 final long headerOffset = currentOffset;
                 readChannel.position(currentOffset);
                 // deliberately not closing this stream

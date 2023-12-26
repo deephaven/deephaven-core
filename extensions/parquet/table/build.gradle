@@ -31,8 +31,6 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:aws-crt-client'
 
-    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
-
     Classpaths.inheritCommonsText(project, 'implementation')
 
     Classpaths.inheritJacksonPlatform(project)

@@ -1,7 +1,5 @@
 package io.deephaven.parquet.table.util;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
@@ -16,30 +14,27 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public final class S3BackedSeekableChannelProvider implements SeekableChannelsProvider {
+public final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private final S3AsyncClient s3AsyncClient;
     private final URI uri;
     private final String s3uri, bucket, key;
     private final long size;
+    private final Map<Long, ChannelContext> contextMap = new HashMap<>();
 
-    private static final int MAX_CACHE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-cache-size", 10);
     private static final int MAX_AWS_CONCURRENT_REQUESTS =
             Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-concurrency", 20);
 
-    private final Cache<Integer, CompletableFuture<ByteBuffer>> readAheadBuffersCache;
-
-    public S3BackedSeekableChannelProvider(final String awsRegionName, final String uriStr) throws IOException {
+    public S3SeekableChannelProvider(final String awsRegionName, final String uriStr) throws IOException {
         if (awsRegionName == null || awsRegionName.isEmpty()) {
             throw new IllegalArgumentException("awsRegionName cannot be null or empty");
         }
@@ -65,10 +60,6 @@ public final class S3BackedSeekableChannelProvider implements SeekableChannelsPr
                 .httpClient(asyncHttpClient)
                 .build();
 
-        if (MAX_CACHE_SIZE < 1)
-            throw new IllegalArgumentException("maxCacheSize must be >= 1");
-        this.readAheadBuffersCache = Caffeine.newBuilder().maximumSize(MAX_CACHE_SIZE).recordStats().build();
-
         this.s3uri = uriStr;
         this.bucket = uri.getHost();
         this.key = uri.getPath().substring(1);
@@ -93,8 +84,29 @@ public final class S3BackedSeekableChannelProvider implements SeekableChannelsPr
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        return new S3SeekableByteChannel(s3uri, bucket, key, s3AsyncClient, 0, size, null, null, readAheadBuffersCache);
+    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelsProvider.ChannelContext context,
+            @NotNull final Path path) throws IOException {
+        // Ignore the context provided here, will be set properly before reading
+        return new S3SeekableByteChannel(context, s3uri, bucket, key, s3AsyncClient, 0, size);
+    }
+
+    @Override
+    public ChannelContext makeContext() {
+        final Long tid = Long.valueOf(Thread.currentThread().getId());
+        if (contextMap.containsKey(tid)) {
+            return contextMap.get(tid);
+        } else {
+            final ChannelContext context;
+            synchronized (contextMap) {
+                if (contextMap.containsKey(tid)) {
+                    return contextMap.get(tid);
+                }
+                context = new S3SeekableByteChannel.ChannelContext(S3SeekableByteChannel.READ_AHEAD_COUNT,
+                        S3SeekableByteChannel.MAX_CACHE_SIZE);
+                contextMap.put(tid, context);
+            }
+            return context;
+        }
     }
 
     @Override
@@ -105,7 +117,11 @@ public final class S3BackedSeekableChannelProvider implements SeekableChannelsPr
 
     public void close() throws IOException {
         s3AsyncClient.close();
-        readAheadBuffersCache.invalidateAll();
-        readAheadBuffersCache.cleanUp();
+        synchronized (contextMap) {
+            for (final ChannelContext context : contextMap.values()) {
+                context.close();
+            }
+            contextMap.clear();
+        }
     }
 }

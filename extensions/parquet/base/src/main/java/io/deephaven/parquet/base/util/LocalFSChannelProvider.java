@@ -14,7 +14,14 @@ import java.nio.file.StandardOpenOption;
 public class LocalFSChannelProvider implements SeekableChannelsProvider {
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
+    public ChannelContext makeContext() {
+        return ChannelContext.NULL;
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final Path path)
+            throws IOException {
+        // context is unused here because it is NULL
         return FileChannel.open(path, StandardOpenOption.READ);
     }
 

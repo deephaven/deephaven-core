@@ -41,9 +41,17 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
+    public ChannelContext makeContext() {
+        return ChannelContext.NULL;
+    }
+
+    @Override
+    public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final Path path)
+            throws IOException {
+        // context is unused here because it is NULL
         return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, path.toFile());
     }
+
 
     @Override
     public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)

@@ -14,13 +14,13 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <ResponseT> POJO response type.
  */
-public final class AsyncAWSResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
+public final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
 
     private volatile CompletableFuture<ByteBuffer> cf;
     private ResponseT response;
     private final ByteBuffer byteBuffer;
 
-    AsyncAWSResponseTransformer(final int bufferSize) {
+    ByteBufferAsyncResponseTransformer(final int bufferSize) {
         // TODO Can be improved with a buffer pool
         byteBuffer = ByteBuffer.allocate(bufferSize);
     }

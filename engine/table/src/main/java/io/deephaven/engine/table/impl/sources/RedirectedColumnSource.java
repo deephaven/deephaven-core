@@ -488,7 +488,7 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
     }
 
     @Override
-    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new FillContext(this, chunkCapacity, sharedContext, false, ascendingMapping);
     }
 

@@ -31,7 +31,7 @@ public class CachedChannelProviderTest {
         for (int ii = 0; ii < 100; ++ii) {
             final SeekableByteChannel[] sameFile = new SeekableByteChannel[10];
             for (int jj = 0; jj < sameFile.length; ++jj) {
-                sameFile[jj] = cachedChannelProvider.getReadChannel("r" + ii);
+                sameFile[jj] = cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ii);
             }
             for (int jj = 0; jj < 10; ++jj) {
                 sameFile[jj].close();
@@ -48,8 +48,9 @@ public class CachedChannelProviderTest {
         SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
         CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
         for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc = ((i / 100) % 2 == 0 ? cachedChannelProvider.getReadChannel("r" + i)
-                    : cachedChannelProvider.getWriteChannel("w" + i, false));
+            SeekableByteChannel rc =
+                    ((i / 100) % 2 == 0 ? cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + i)
+                            : cachedChannelProvider.getWriteChannel("w" + i, false));
             rc.close();
         }
         Assert.assertEquals(closed.size(), 900);
@@ -91,7 +92,7 @@ public class CachedChannelProviderTest {
         for (int i = 0; i < 20; i++) {
             List<SeekableByteChannel> channels = new ArrayList<>();
             for (int j = 0; j < 50; j++) {
-                channels.add(cachedChannelProvider.getReadChannel("r" + (j + 50 * i)));
+                channels.add(cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + (j + 50 * i)));
             }
             for (int j = 0; j < 50; j++) {
                 channels.get(49 - j).close();
@@ -111,14 +112,15 @@ public class CachedChannelProviderTest {
         final CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 50);
         final SeekableByteChannel[] someResult = new SeekableByteChannel[50];
         for (int ci = 0; ci < someResult.length; ++ci) {
-            someResult[ci] = cachedChannelProvider.getReadChannel("r" + ci);
+            someResult[ci] = cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ci);
         }
         for (int ci = 0; ci < someResult.length; ++ci) {
             someResult[someResult.length - ci - 1].close();
         }
         for (int step = 0; step < 10; ++step) {
             for (int ci = 0; ci < someResult.length; ++ci) {
-                Assert.assertSame(someResult[ci], cachedChannelProvider.getReadChannel("r" + ci));
+                Assert.assertSame(someResult[ci],
+                        cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ci));
             }
             for (int ci = 0; ci < someResult.length; ++ci) {
                 someResult[someResult.length - ci - 1].close();
@@ -160,12 +162,17 @@ public class CachedChannelProviderTest {
         AtomicInteger count = new AtomicInteger(0);
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull String path) {
+        public ChannelContext makeContext() {
+            return ChannelContext.NULL;
+        }
+
+        @Override
+        public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path);
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull Path path) {
+        public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull Path path) {
             return new TestMockChannel(count.getAndIncrement(), path.toString());
         }
 
