@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -103,6 +104,10 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
         if (sourceFilePath.startsWith("s3:") && sourceFilePath.endsWith(PARQUET_FILE_EXTENSION)) {
+            final Object specialInstructions = readInstructions.getSpecialInstructions();
+            Assert.instanceOf(specialInstructions, "specialInstructions", S3ParquetInstructions.class);
+            final S3ParquetInstructions s3Instructions = (S3ParquetInstructions) specialInstructions;
+
             // TODO This is hacky, because here URI is getting converted to a file path and // will change to /
             // We need to keep this as a URI and internally check if its a file or S3 backed URI
             return readSingleFileTable(new File(sourceFilePath), readInstructions, tableDefinition);

@@ -143,6 +143,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract String getAwsRegionName();
 
+    public abstract Object getSpecialInstructions();
+
     public abstract String getCompressionCodecName();
 
     /**
@@ -209,6 +211,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public @Nullable String getAwsRegionName() {
+            return null;
+        }
+
+        @Override
+        public @Nullable String getSpecialInstructions() {
             return null;
         }
 
@@ -309,6 +316,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final int targetPageSize;
         private final boolean isRefreshing;
         private final String awsRegionName;
+        private final Object specialInstructions;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -319,7 +327,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final boolean isLegacyParquet,
                 final int targetPageSize,
                 final boolean isRefreshing,
-                final String awsRegionName) {
+                final String awsRegionName,
+                final Object specialInstructions) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -329,6 +338,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.targetPageSize = targetPageSize;
             this.isRefreshing = isRefreshing;
             this.awsRegionName = awsRegionName;
+            this.specialInstructions = specialInstructions;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -422,6 +432,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return awsRegionName;
         }
 
+        @Override
+        public @Nullable Object getSpecialInstructions() {
+            return specialInstructions;
+        }
+
+
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
             // noinspection unchecked
             return (columnNameToInstructions == null)
@@ -473,6 +489,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
         private String awsRegionName;
+        private Object specialInstructions;
 
         public Builder() {}
 
@@ -649,6 +666,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        public Builder setSpecialInstructions(final Object specialInstructions) {
+            this.specialInstructions = specialInstructions;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -657,7 +679,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
-                    awsRegionName);
+                    awsRegionName, specialInstructions);
         }
     }
 
