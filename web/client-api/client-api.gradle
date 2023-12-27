@@ -8,6 +8,8 @@ plugins {
     id 'io.deephaven.deephaven-in-docker'
 }
 
+evaluationDependsOn(Docker.registryProject('selenium'))
+
 apply from: "$rootDir/gradle/web-client.gradle"
 
 configurations {
@@ -68,8 +70,12 @@ artifacts {
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
     t.systemProperties = [
-            'gwt.args': "-runStyle HtmlUnit -ea -style PRETTY -war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}",
-            'gwt.persistentunitcachedir':layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
+            'gwt.args': ["-runStyle HtmlUnit",
+                         "-ea",
+                         "-style PRETTY",
+                         "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
+            ].join(' '),
+            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
     ]
     t.include '**/ClientUnitTestSuite.class'
     t.useJUnit()
@@ -89,8 +95,9 @@ deephavenDocker {
 def seleniumContainerId = "selenium-${randomSuffix}"
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
+    t.dependsOn(Docker.registryTask(project, 'selenium'))
+    t.targetImageId('deephaven/selenium:local-build')
     t.containerName.set(seleniumContainerId)
-    t.targetImageId('selenium/standalone-firefox:4.16.1-20231219')// TODO create a registry entry for this
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
     t.hostConfig.portBindings.set(['4444:4444', '7900:7900'])//TODO don't expose 7900, and make 4444 dynamic
     t.hostConfig.network.set('host')
@@ -121,7 +128,12 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
     doFirst {
         def webdriverUrl = 'http://localhost:4444/'
-        t.systemProperty('gwt.args', "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox -ea -style PRETTY -setProperty dh.server=http://localhost:${deephavenDocker.port.get()} -war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}")
+        t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
+                                      "-ea",
+                                      "-style PRETTY",
+                                      "-setProperty dh.server=http://localhost:${deephavenDocker.port.get()}",
+                                      "-war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}"
+        ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
     }
     t.finalizedBy(deephavenDocker.endTask)
