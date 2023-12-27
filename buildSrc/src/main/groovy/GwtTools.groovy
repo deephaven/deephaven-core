@@ -37,6 +37,9 @@ class GwtTools {
             GwtCompileTask gwtc ->
                 applyModuleSettings p, gwtc, module,description
         }
+        // This GWT plugin will fail if tests are run after compilation, instead
+        // we suppress running the test at all, and ensure that it doesn't check
+        // if it even can be run until after compile finishes.
         p.tasks.withType(GwtCheckTask).configureEach {t ->
             t.mustRunAfter(p.tasks.withType(GwtCompileTask))
             t.onlyIf { false }
