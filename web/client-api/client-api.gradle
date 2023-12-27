@@ -99,8 +99,11 @@ def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t
     t.targetImageId('deephaven/selenium:local-build')
     t.containerName.set(seleniumContainerId)
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
-    t.hostConfig.portBindings.set(['4444:4444', '7900:7900'])//TODO don't expose 7900, and make 4444 dynamic
+
+    // Use "host" networking, so that gradle's test runner can be accessed by the browser. This means
+    // that port 4444 will always be bound, and if already used, this container won't be able to start.
     t.hostConfig.network.set('host')
+    t.hostConfig.portBindings.set(['4444'])
 }
 def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
     t.dependsOn(createSelenium)
@@ -120,8 +123,6 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
     task.force.set true
     task.removeVolumes.set true
 }
-// before/after:
-// docker run -d -p 4444:4444 -p 7900:7900 --shm-size="2g" --net=host selenium/standalone-firefox:4.16.1-20231219
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
