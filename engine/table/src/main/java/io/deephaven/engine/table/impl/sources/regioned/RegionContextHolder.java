@@ -6,31 +6,38 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
+import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * {@link ChunkSource.FillContext} implementation for use by {@link RegionedPageStore} implementations. This is
+ * basically a re-usable box around an inner {@link Context context} object, filled with whatever the most recently used
+ * region chose to store.
+ */
 public class RegionContextHolder implements ChunkSource.FillContext {
+
     private final int chunkCapacity;
     private final SharedContext sharedContext;
+
     private Context innerContext;
 
     public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
-
         this.chunkCapacity = chunkCapacity;
         this.sharedContext = sharedContext;
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * @implNote This implementation always returns {@code true}, as the {@link RegionedPageStore} fill implementation
+     *           follows an append pattern over multiple regions when necessary, and all known inner context
+     *           implementations trivially support unbounded fill. We thus make this a requirement for future inner
+     *           context implementations, either naturally or via a slicing/looping pattern.
+     */
     @Override
     public boolean supportsUnboundedFill() {
         return true;
-    }
-
-    /**
-     * Set the inner wrapped context object for use by downstream regions.
-     * 
-     * @param contextObject The context object
-     */
-    public void setInnerContext(@Nullable final Context contextObject) {
-        this.innerContext = contextObject;
     }
 
     /**
@@ -54,7 +61,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
     /**
      * Get the inner context value set by {@link #setInnerContext(Context)} and cast it to the templated type.
      * 
-     * @return The inner context value.
+     * @return The inner context value
      * @param <T> The desired result type
      */
     public <T extends Context> T getInnerContext() {
@@ -62,11 +69,54 @@ public class RegionContextHolder implements ChunkSource.FillContext {
         return (T) innerContext;
     }
 
+    /**
+     * Set the inner context object for use by the current region. The previous inner context will be
+     * {@link SafeCloseable#close() closed}.
+     *
+     * @param newInnerContext The new context object
+     */
+    public void setInnerContext(@Nullable final Context newInnerContext) {
+        if (newInnerContext == innerContext) {
+            return;
+        }
+        try (final SafeCloseable ignoredOldInnerContext = innerContext) {
+            innerContext = newInnerContext;
+        }
+    }
+
+    @FunctionalInterface
+    public interface Updater {
+        /**
+         * Provide a new inner context value based on the current state of this holder.
+         *
+         * @param chunkCapacity The holder's {@link #getChunkCapacity() chunk capacity}
+         * @param sharedContext The holder's {@link #getSharedContext() SharedContext}
+         * @param currentInnerContext The holder's {@link #getInnerContext() current inner context}
+         * @return The new inner context to be held by this holder
+         * @param <T> The result type
+         */
+        @Nullable
+        <T extends Context> T updateInnerContext(
+                int chunkCapacity,
+                @Nullable final SharedContext sharedContext,
+                @Nullable final Context currentInnerContext);
+    }
+
+    /**
+     * Update the inner context value using the provided updater.
+     *
+     * @param updater The {@link Updater} to use
+     * @return The result of {@code updater}
+     * @param <T> The desired result type
+     */
+    public <T extends Context> T updateInnerContext(@NotNull final Updater updater) {
+        final T newInnerContext = updater.updateInnerContext(chunkCapacity, sharedContext, innerContext);
+        setInnerContext(newInnerContext);
+        return newInnerContext;
+    }
+
     @Override
     public void close() {
-        if (innerContext != null) {
-            innerContext.close();
-            innerContext = null;
-        }
+        setInnerContext(null);
     }
 }

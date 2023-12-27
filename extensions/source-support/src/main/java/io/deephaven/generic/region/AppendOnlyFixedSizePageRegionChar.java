@@ -1,7 +1,6 @@
 package io.deephaven.generic.region;
 
 import io.deephaven.base.MathUtil;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.PageStore;
@@ -10,6 +9,7 @@ import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionChar;
 import io.deephaven.engine.table.impl.sources.regioned.GenericColumnRegionBase;
 import io.deephaven.generic.page.ChunkHolderPageChar;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
@@ -53,7 +53,9 @@ public class AppendOnlyFixedSizePageRegionChar<ATTR extends Any>
 
     @Override
     @NotNull
-    public final ChunkHolderPageChar<ATTR> getPageContaining(final FillContext fillContext, final long rowKey) {
+    public final ChunkHolderPageChar<ATTR> getPageContaining(
+            @Nullable final FillContext fillContext,
+            final long rowKey) {
         return getPageContaining(rowKey);
     }
 

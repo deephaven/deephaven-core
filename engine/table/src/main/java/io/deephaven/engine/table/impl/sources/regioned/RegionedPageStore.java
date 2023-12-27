@@ -12,6 +12,7 @@ import io.deephaven.engine.page.PageStore;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
         extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
@@ -86,8 +87,8 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     @Override
     @NotNull
     @FinalDefault
-    default REGION_TYPE getPageContaining(final FillContext fillContext, final long row) {
-        return lookupRegion(row);
+    default REGION_TYPE getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        return lookupRegion(rowKey);
     }
 
     @Override

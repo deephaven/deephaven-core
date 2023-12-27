@@ -5,6 +5,8 @@ package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
@@ -19,6 +21,7 @@ import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
@@ -42,7 +45,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         public final Supplier<Chunk<ATTR>> dictionaryChunkSupplier;
         public final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
 
-        private CreatorResult(@NotNull final ColumnChunkPageStore<ATTR> pageStore,
+        private CreatorResult(
+                @NotNull final ColumnChunkPageStore<ATTR> pageStore,
                 final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
                 final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
             this.pageStore = pageStore;
@@ -51,7 +55,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
     }
 
-    private static boolean canUseOffsetIndexBasedPageStore(@NotNull final ColumnChunkReader columnChunkReader,
+    private static boolean canUseOffsetIndexBasedPageStore(
+            @NotNull final ColumnChunkReader columnChunkReader,
             @NotNull final ColumnDefinition<?> columnDefinition) {
         if (columnChunkReader.getOffsetIndex() == null) {
             return false;
@@ -112,7 +117,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 dictionaryKeysColumnChunkPageStore);
     }
 
-    ColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
+    ColumnChunkPageStore(
+            @NotNull final PageCache<ATTR> pageCache,
             @NotNull final ColumnChunkReader columnChunkReader,
             final long mask,
             final ToPage<ATTR, ?> toPage) throws IOException {
@@ -155,14 +161,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     /**
-     * These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.
-     */
-    @NotNull
-    public ChunkPage<ATTR> getPageContaining(final long row) {
-        return getPageContaining(DEFAULT_FILL_INSTANCE, row);
-    }
-
-    /**
      * @see ColumnChunkReader#usesDictionaryOnEveryPage()
      */
     public boolean usesDictionaryOnEveryPage() {
@@ -171,4 +169,16 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
 
     @Override
     public void close() {}
+
+    public boolean isFillContextCompatible(@Nullable final Context currentInnerContext) {
+        return currentInnerContext == DEFAULT_FILL_INSTANCE;
+    }
+
+    public boolean isGetContextCompatible(@Nullable final Context currentInnerContext) {
+        if (!(currentInnerContext instanceof DefaultGetContext)) {
+            return false;
+        }
+        final DefaultGetContext<?> getContext = (DefaultGetContext<?>) currentInnerContext;
+        return isFillContextCompatible(getContext.getFillContext());
+    }
 }
