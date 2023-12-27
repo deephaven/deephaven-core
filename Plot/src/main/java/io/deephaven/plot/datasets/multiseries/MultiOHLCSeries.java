@@ -83,6 +83,26 @@ public class MultiOHLCSeries extends AbstractPartitionedTableHandleMultiSeries<O
                 timeCol, openCol, highCol, lowCol, closeCol);
     }
 
+    public String getTimeCol() {
+        return timeCol;
+    }
+
+    public String getOpenCol() {
+        return openCol;
+    }
+
+    public String getHighCol() {
+        return highCol;
+    }
+
+    public String getLowCol() {
+        return lowCol;
+    }
+
+    public String getCloseCol() {
+        return closeCol;
+    }
+
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////

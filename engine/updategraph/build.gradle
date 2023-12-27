@@ -12,8 +12,6 @@ dependencies {
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation project(':Net')
-    implementation project(':FishUtil')
     implementation depCommonsLang3
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'

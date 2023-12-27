@@ -1,0 +1,47 @@
+---
+url: https://deephaven.io/core/client-api/r/
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+  
+navbar:
+  structure:
+    left:  [reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: Overview
+        href: articles/rdeephaven.html
+      - text: Aggregations with agg_by
+        href: articles/agg_by.html
+      - text: Moving Operations with update_by
+        href: articles/update_by.html
+  
+reference:
+  - title: Core API
+    contents:
+    - Client
+    - TableHandle
+    - AggOp
+    - UpdateByOp
+
+  - title: AggBy Operations
+    contents:
+    - starts_with("agg_")
+  
+  - title: UpdateBy Operations
+    contents:
+    - starts_with("uby_")
+
+  - title: Utility Functions
+    contents:
+    - merge_tables
+    - op_control
+  
+  - title: Other Data Types
+    contents:
+    - OperationControl
+

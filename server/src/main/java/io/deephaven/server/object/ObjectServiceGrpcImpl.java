@@ -8,6 +8,8 @@ import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
@@ -257,55 +259,65 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         if (request.getSourceId().getTicket().getTicket().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
         }
-        final SessionState.ExportObject<Object> object = ticketRouter.resolve(
-                session, request.getSourceId().getTicket(), "sourceId");
-        session.nonExport()
-                .require(object)
-                .onError(responseObserver)
-                .submit(() -> {
-                    final Object o = object.get();
-                    ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
 
-                    AtomicReference<FetchObjectResponse> singleResponse = new AtomicReference<>();
-                    AtomicBoolean isClosed = new AtomicBoolean(false);
-                    StreamObserver<StreamResponse> wrappedResponseObserver = new StreamObserver<>() {
-                        @Override
-                        public void onNext(StreamResponse value) {
-                            singleResponse.set(FetchObjectResponse.newBuilder()
-                                    .setType(type)
-                                    .setData(value.getData().getPayload())
-                                    .addAllTypedExportIds(value.getData().getExportedReferencesList())
-                                    .build());
+        final String description = "ObjectService#fetchObject(object="
+                + ticketRouter.getLogNameFor(request.getSourceId().getTicket(), "sourceId") + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Object> object =
+                    ticketRouter.resolve(session, request.getSourceId().getTicket(), "sourceId");
+
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .require(object)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final Object o = object.get();
+                        ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
+
+                        AtomicReference<FetchObjectResponse> singleResponse = new AtomicReference<>();
+                        AtomicBoolean isClosed = new AtomicBoolean(false);
+                        StreamObserver<StreamResponse> wrappedResponseObserver = new StreamObserver<>() {
+                            @Override
+                            public void onNext(StreamResponse value) {
+                                singleResponse.set(FetchObjectResponse.newBuilder()
+                                        .setType(type)
+                                        .setData(value.getData().getPayload())
+                                        .addAllTypedExportIds(value.getData().getExportedReferencesList())
+                                        .build());
+                            }
+
+                            @Override
+                            public void onError(Throwable t) {
+                                responseObserver.onError(t);
+                            }
+
+                            @Override
+                            public void onCompleted() {
+                                isClosed.set(true);
+                            }
+                        };
+                        PluginMessageSender connection = new PluginMessageSender(wrappedResponseObserver, session);
+                        objectTypeInstance.clientConnection(o, connection);
+
+                        FetchObjectResponse message = singleResponse.get();
+                        if (message == null) {
+                            connection.onClose();
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Plugin didn't send a response before returning from clientConnection()");
                         }
-
-                        @Override
-                        public void onError(Throwable t) {
-                            responseObserver.onError(t);
+                        if (!isClosed.get()) {
+                            connection.onClose();
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Plugin didn't close response, use MessageStream instead for this object");
                         }
+                        GrpcUtil.safelyComplete(responseObserver, message);
 
-                        @Override
-                        public void onCompleted() {
-                            isClosed.set(true);
-                        }
-                    };
-                    PluginMessageSender connection = new PluginMessageSender(wrappedResponseObserver, session);
-                    objectTypeInstance.clientConnection(o, connection);
-
-                    FetchObjectResponse message = singleResponse.get();
-                    if (message == null) {
-                        connection.onClose();
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Plugin didn't send a response before returning from clientConnection()");
-                    }
-                    if (!isClosed.get()) {
-                        connection.onClose();
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Plugin didn't close response, use MessageStream instead for this object");
-                    }
-                    GrpcUtil.safelyComplete(responseObserver, message);
-
-                    return null;
-                });
+                        return null;
+                    });
+        }
     }
 
     @Override

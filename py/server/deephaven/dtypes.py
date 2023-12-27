@@ -102,6 +102,8 @@ float_ = float64
 """Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
 """String type"""
+Character = DType(j_name="java.lang.Character")
+"""Character type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
@@ -185,6 +187,20 @@ _BUILDABLE_ARRAY_DTYPE_MAP = {
     float64: float64_array,
     string: string_array,
     Instant: instant_array,
+}
+
+
+_J_ARRAY_NP_TYPE_MAP = {
+    boolean_array.j_type: np.dtype("?"),
+    byte_array.j_type: np.dtype("b"),
+    char_array.j_type: np.dtype("uint16"),
+    short_array.j_type: np.dtype("h"),
+    int32_array.j_type: np.dtype("i"),
+    long_array.j_type: np.dtype("l"),
+    float32_array.j_type: np.dtype("f"),
+    double_array.j_type: np.dtype("d"),
+    string_array.j_type: np.dtype("U"),
+    instant_array.j_type: np.dtype("datetime64[ns]"),
 }
 
 
@@ -325,8 +341,19 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
     return PyObject
 
 
-_NUMPY_INT_TYPE_CODES = ["i", "l", "h", "b"]
-_NUMPY_FLOATING_TYPE_CODES = ["f", "d"]
+_NUMPY_INT_TYPE_CODES = {"b", "h", "H", "i", "l"}
+_NUMPY_FLOATING_TYPE_CODES = {"f", "d"}
+
+
+def _is_py_null(x: Any) -> bool:
+    """Checks if the value is a Python null value, i.e. None or NaN, or Pandas.NA."""
+    if x is None:
+        return True
+
+    try:
+        return bool(pd.isna(x))
+    except (TypeError, ValueError):
+        return False
 
 
 def _scalar(x: Any, dtype: DType) -> Any:
@@ -336,12 +363,14 @@ def _scalar(x: Any, dtype: DType) -> Any:
 
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
-    if x is None and dtype != bool_ and _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
-        return _PRIMITIVE_DTYPE_NULL_MAP[dtype]
+    if (dt := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) and _is_py_null(x) and dtype not in (bool_, char):
+        return dt
 
     try:
         if hasattr(x, "dtype"):
-            if x.dtype.char in _NUMPY_INT_TYPE_CODES:
+            if x.dtype.char == 'H':  # np.uint16 maps to Java char
+                return Character(int(x))
+            elif x.dtype.char in _NUMPY_INT_TYPE_CODES:
                 return int(x)
             elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
                 return float(x)
@@ -382,20 +411,32 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
         component_type = t.__args__[0]
 
+    if not component_type:
+        component_type = _np_ndarray_component_type(t)
+
+    if component_type:
+        return _np_dtype_char(component_type)
+    else:
+        return None
+
+
+def _np_ndarray_component_type(t: type) -> Optional[type]:
+    """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
+
     # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
     # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
     # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
     # component type
-    if not component_type and sys.version_info.minor == 8:
+    component_type = None
+    if sys.version_info.major == 3 and sys.version_info.minor == 8:
         if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
             component_type = t.__args__[1].__args__[0]
-
     # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
     # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
     # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
     # the 1st argument is the component type
     # when np.ndarray is used, the 1st argument is the component type
-    if not component_type and sys.version_info.minor > 8:
+    if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
         import types
         if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
             nargs = len(t.__args__)
@@ -406,8 +447,4 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
                 a1 = t.__args__[1]
                 if a0 == typing.Any and isinstance(a1, types.GenericAlias):
                     component_type = a1.__args__[0]
-
-    if component_type:
-        return _np_dtype_char(component_type)
-    else:
-        return None
+    return component_type

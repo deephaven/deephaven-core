@@ -40,21 +40,29 @@ import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
+import io.deephaven.plugin.Registration;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.qst.table.TicketTable;
+import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.config.ConfigServiceModule;
+import io.deephaven.server.console.ConsoleModule;
 import io.deephaven.server.console.ScopeTicketResolver;
+import io.deephaven.server.log.LogModule;
+import io.deephaven.server.plugin.PluginsModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.*;
+import io.deephaven.server.table.TableModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -99,7 +107,17 @@ public abstract class FlightMessageRoundTripTest {
     private static final String ANONYMOUS = "Anonymous";
     private static final String DISABLED_FOR_TEST = "Disabled For Test";
 
-    @Module
+    @Module(includes = {
+            ArrowModule.class,
+            ConfigServiceModule.class,
+            ConsoleModule.class,
+            LogModule.class,
+            SessionModule.class,
+            TableModule.class,
+            TestAuthModule.class,
+            ObfuscatingErrorTransformerModule.class,
+            PluginsModule.class,
+    })
     public static class FlightTestModule {
         @IntoSet
         @Provides
@@ -110,7 +128,7 @@ public abstract class FlightMessageRoundTripTest {
         @Singleton
         @Provides
         AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
-            return new NoLanguageDeephavenSession(updateGraph, "non-script-session");
+            return new NoLanguageDeephavenSession(updateGraph, ThreadInitializationFactory.NO_OP, "non-script-session");
         }
 
         @Provides
@@ -186,11 +204,13 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext executionContext();
 
         TestAuthorizationProvider authorizationProvider();
+
+        Registration.Callback registration();
     }
 
     private LogBuffer logBuffer;
     private GrpcServer server;
-
+    protected int localPort;
     private FlightClient flightClient;
 
     protected SessionService sessionService;
@@ -199,7 +219,7 @@ public abstract class FlightMessageRoundTripTest {
     private AbstractScriptSession<?> scriptSession;
     private SafeCloseable executionContext;
     private Location serverLocation;
-    private TestComponent component;
+    protected TestComponent component;
 
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
@@ -221,12 +241,12 @@ public abstract class FlightMessageRoundTripTest {
 
         server = component.server();
         server.start();
-        int actualPort = server.getPort();
+        localPort = server.getPort();
 
         scriptSession = component.scriptSession();
         sessionService = component.sessionService();
 
-        serverLocation = Location.forGrpcInsecure("localhost", actualPort);
+        serverLocation = Location.forGrpcInsecure("localhost", localPort);
         currentSession = sessionService.newSession(new AuthContext.SuperUser());
         flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
@@ -243,7 +263,7 @@ public abstract class FlightMessageRoundTripTest {
                     public void onCallCompleted(CallStatus status) {}
                 }).build();
 
-        clientChannel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
+        clientChannel = ManagedChannelBuilder.forTarget("localhost:" + localPort)
                 .usePlaintext()
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
@@ -821,9 +841,11 @@ public abstract class FlightMessageRoundTripTest {
 
         // export from query scope to our session; this transforms the table
         assertEquals(0, numTransforms.intValue());
-        final Export export = clientSession.session().export(TicketTable.fromQueryScopeField(tableName));
-        // place the transformed table into the scope; wait on the future to ensure the server-side operation completes
-        clientSession.session().publish(resultTableName, export).get();
+        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+            // place the transformed table into the scope; wait on the future to ensure the server-side operation
+            // completes
+            clientSession.session().publish(resultTableName, handle).get();
+        }
         assertEquals(1, numTransforms.intValue());
 
         // check that the table was transformed
@@ -842,28 +864,28 @@ public abstract class FlightMessageRoundTripTest {
         scriptSession.setVariable(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        final Export export = clientSession.session().export(TicketTable.fromQueryScopeField(tableName));
+        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+            // verify that we can sort the table prior to the restriction
+            clientSession.session().publish(resultTableName, handle).get();
+            // verify that we can publish as many times as we please
+            clientSession.session().publish(resultTableName, handle).get();
 
-        // verify that we can sort the table prior to the restriction
-        clientSession.session().publish(resultTableName, export).get();
-        // verify that we can publish as many times as we please
-        clientSession.session().publish(resultTableName, export).get();
+            component.authorizationProvider().getConsoleServiceAuthWiring().delegate =
+                    new ConsoleServiceAuthWiring.AllowAll() {
+                        @Override
+                        public void onMessageReceivedBindTableToVariable(AuthContext authContext,
+                                BindTableToVariableRequest request) {
+                            ServiceAuthWiring.operationNotAllowed(DISABLED_FOR_TEST);
+                        }
+                    };
 
-        component.authorizationProvider().getConsoleServiceAuthWiring().delegate =
-                new ConsoleServiceAuthWiring.AllowAll() {
-                    @Override
-                    public void onMessageReceivedBindTableToVariable(AuthContext authContext,
-                            BindTableToVariableRequest request) {
-                        ServiceAuthWiring.operationNotAllowed(DISABLED_FOR_TEST);
-                    }
-                };
-
-        try {
-            clientSession.session().publish(resultTableName, export).get();
-            fail("expected the publish to fail");
-        } catch (final Exception e) {
-            // expect the authorization error details to propagate
-            assertTrue(e.getMessage().contains(DISABLED_FOR_TEST));
+            try {
+                clientSession.session().publish(resultTableName, handle).get();
+                fail("expected the publish to fail");
+            } catch (final Exception e) {
+                // expect the authorization error details to propagate
+                assertTrue(e.getMessage().contains(DISABLED_FOR_TEST));
+            }
         }
     }
 
@@ -875,26 +897,29 @@ public abstract class FlightMessageRoundTripTest {
         scriptSession.setVariable(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        final Export export = clientSession.session().export(TicketTable.fromQueryScopeField(tableName));
+        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
 
-        // verify that we can sort the table prior to the restriction
-        clientSession.session().execute(export.table().sort("I"));
+            // verify that we can sort the table prior to the restriction
+            // noinspection EmptyTryBlock
+            try (final TableHandle ignored = handle.sort("I")) {
+                // ignore
+            }
 
-        component.authorizationProvider().getTableServiceContextualAuthWiring().delegate =
-                new TableServiceContextualAuthWiring.AllowAll() {
-                    @Override
-                    public void checkPermissionSort(AuthContext authContext, SortTableRequest request,
-                            List<Table> sourceTables) {
-                        ServiceAuthWiring.operationNotAllowed(DISABLED_FOR_TEST);
-                    }
-                };
+            component.authorizationProvider().getTableServiceContextualAuthWiring().delegate =
+                    new TableServiceContextualAuthWiring.AllowAll() {
+                        @Override
+                        public void checkPermissionSort(AuthContext authContext, SortTableRequest request,
+                                List<Table> sourceTables) {
+                            ServiceAuthWiring.operationNotAllowed(DISABLED_FOR_TEST);
+                        }
+                    };
 
-        try {
-            clientSession.session().execute(export.table().sort("J"));
-            fail("expected the sort to fail");
-        } catch (final Exception e) {
-            // expect the authorization error details to propagate
-            assertTrue(e.getMessage().contains(DISABLED_FOR_TEST));
+            try (final TableHandle ignored = handle.sort("J")) {
+                fail("expected the sort to fail");
+            } catch (final Exception e) {
+                // expect the authorization error details to propagate
+                assertTrue(e.getMessage().contains(DISABLED_FOR_TEST));
+            }
         }
     }
 

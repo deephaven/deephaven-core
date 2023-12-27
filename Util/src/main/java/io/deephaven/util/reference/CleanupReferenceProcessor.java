@@ -39,6 +39,11 @@ public class CleanupReferenceProcessor {
     private volatile ReferenceQueue<?> referenceQueue;
 
     /**
+     * The cleaner thread from the most recent initialization, guarded by the lock on {@code this}.
+     */
+    private Thread cleanerThread;
+
+    /**
      * Construct a new {@link CleanupReferenceProcessor}.
      *
      * @param name The name of the processor, used for naming threads
@@ -75,7 +80,7 @@ public class CleanupReferenceProcessor {
             synchronized (this) {
                 if ((localQueue = referenceQueue) == null) {
                     referenceQueue = localQueue = new ReferenceQueue<>();
-                    final Thread cleanerThread = new Thread(new DrainQueue(localQueue),
+                    cleanerThread = new Thread(new DrainQueue(localQueue),
                             "CleanupReferenceProcessor-" + name + "-drainingThread");
                     cleanerThread.setDaemon(true);
                     cleanerThread.start();
@@ -88,11 +93,15 @@ public class CleanupReferenceProcessor {
 
     /**
      * Reset this instance so that the next call to {@link #getReferenceQueue()} will re-initialize it and provide a new
-     * queue. Results in eventual termination of the daemon thread that may have been draining the existing queue.
+     * queue. Results in the prompt termination of the daemon thread that may have been draining the existing queue.
      */
     @TestUseOnly
     public final synchronized void resetForUnitTests() {
         referenceQueue = null;
+        if (cleanerThread != null) {
+            cleanerThread.interrupt();
+            cleanerThread = null;
+        }
     }
 
     /**

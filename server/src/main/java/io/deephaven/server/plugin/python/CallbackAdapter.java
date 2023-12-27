@@ -4,6 +4,7 @@
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.plugin.Registration.Callback;
+import io.deephaven.plugin.js.JsPlugin;
 import org.jpy.PyObject;
 
 class CallbackAdapter {
@@ -17,5 +18,10 @@ class CallbackAdapter {
     @SuppressWarnings("unused")
     public void registerObjectType(String name, PyObject objectTypeAdapter) {
         callback.register(new ObjectTypeAdapter(name, objectTypeAdapter));
+    }
+
+    @SuppressWarnings("unused")
+    public void registerJsPlugin(JsPlugin jsPlugin) {
+        callback.register(jsPlugin);
     }
 }

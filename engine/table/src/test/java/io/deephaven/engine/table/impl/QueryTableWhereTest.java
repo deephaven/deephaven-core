@@ -48,6 +48,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -417,6 +418,21 @@ public abstract class QueryTableWhereTest {
                 asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
         assertEquals(1, resultInverse.size());
         assertEquals(asList("E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+
+        // Real modification to set table, followed by spurious modification to set table
+        IntStream.range(0, 2).forEach(ri -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(setTable, i(7), col("X", "C"));
+                setTable.notifyListeners(i(), i(), i(7));
+            });
+            showWithRowSet(result);
+            assertEquals(4, result.size());
+            assertEquals(asList("A", "B", "C", "A"),
+                    asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+            assertEquals(2, resultInverse.size());
+            assertEquals(asList("D", "E"),
+                    asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        });
     }
 
     @Test
@@ -816,7 +832,7 @@ public abstract class QueryTableWhereTest {
 
         // we want to make sure we can push something through the thread pool and are not hogging it
         final CountDownLatch latch = new CountDownLatch(1);
-        OperationInitializationThreadPool.executorService().submit(latch::countDown);
+        ExecutionContext.getContext().getOperationInitializer().submit(latch::countDown);
         waitForLatch(latch);
 
         assertEquals(0, fastCounter.invokes.get());

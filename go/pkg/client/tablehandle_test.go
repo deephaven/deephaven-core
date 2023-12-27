@@ -3,14 +3,13 @@ package client_test
 import (
 	"context"
 	"errors"
-	"sort"
-	"testing"
-	"time"
-
 	"github.com/apache/arrow/go/v8/arrow"
 	"github.com/apache/arrow/go/v8/arrow/array"
 	"github.com/deephaven/deephaven-core/go/internal/test_tools"
 	"github.com/deephaven/deephaven-core/go/pkg/client"
+	"slices"
+	"sort"
+	"testing"
 )
 
 type unaryTableOp func(context.Context, *client.TableHandle) (*client.TableHandle, error)
@@ -378,52 +377,47 @@ func TestAsOfJoin(t *testing.T) {
 	}
 	defer c.Close()
 
-	startTime := time.Now().Add(time.Duration(-2) * time.Second)
+	tempty, err := c.EmptyTable(ctx, 5)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer tempty.Release(ctx)
 
-	tmp1, err := c.TimeTable(ctx, 100000, startTime)
-	test_tools.CheckError(t, "TimeTable", err)
-	defer tmp1.Release(ctx)
-
-	tt1, err := tmp1.Update(ctx, "Col1 = i")
+	tleft, err := tempty.Update(ctx, "Time = i * 3", "LValue = 100 + i")
 	test_tools.CheckError(t, "Update", err)
-	defer tt1.Release(ctx)
+	defer tleft.Release(ctx)
 
-	tmp2, err := c.TimeTable(ctx, 200000, startTime)
-	test_tools.CheckError(t, "TimeTable", err)
-	defer tmp2.Release(ctx)
-
-	tt2, err := tmp2.Update(ctx, "Col1 = i")
+	tright, err := tempty.Update(ctx, "Time = i * 5", "RValue = 200 + i")
 	test_tools.CheckError(t, "Update", err)
-	defer tt2.Release(ctx)
+	defer tright.Release(ctx)
 
-	normalTbl, err := tt1.AsOfJoin(ctx, tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
+	taojLeq, err := tleft.AsOfJoin(ctx, tright, []string{"Time"}, nil, client.MatchRuleLessThanEqual)
 	test_tools.CheckError(t, "AsOfJoin", err)
-	defer normalTbl.Release(ctx)
+	defer taojLeq.Release(ctx)
 
-	reverseTbl, err := tt1.AsOfJoin(ctx, tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
+	taojGeq, err := tleft.AsOfJoin(ctx, tright, []string{"Time"}, nil, client.MatchRuleGreaterThanEqual)
 	test_tools.CheckError(t, "AsOfJoin", err)
-	defer reverseTbl.Release(ctx)
+	defer taojGeq.Release(ctx)
 
-	ttRec, err := tt1.Snapshot(ctx)
+	leqRec, err := taojLeq.Snapshot(ctx)
 	test_tools.CheckError(t, "Snapshot", err)
-	defer ttRec.Release()
+	defer leqRec.Release()
 
-	normalRec, err := normalTbl.Snapshot(ctx)
+	geqRec, err := taojGeq.Snapshot(ctx)
 	test_tools.CheckError(t, "Snapshot", err)
-	defer normalRec.Release()
+	defer geqRec.Release()
 
-	reverseRec, err := reverseTbl.Snapshot(ctx)
-	test_tools.CheckError(t, "Snapshot", err)
-	defer reverseRec.Release()
+	// Column 2 is the RValue column
+	actualLeqData := leqRec.Column(2).(*array.Int32).Int32Values()
+	actualGeqData := geqRec.Column(2).(*array.Int32).Int32Values()
 
-	if normalRec.NumRows() == 0 || normalRec.NumRows() > ttRec.NumRows() {
-		t.Error("record had wrong size")
-		return
+	expectedLeqData := []int32{200, 200, 201, 201, 202}
+	expectedGeqData := []int32{200, 201, 202, 202, 203}
+
+	if !slices.Equal(expectedLeqData, actualLeqData) {
+		t.Errorf("leq values different expected %v != actual %v", expectedLeqData, actualLeqData)
 	}
 
-	if reverseRec.NumRows() == 0 || reverseRec.NumRows() > ttRec.NumRows() {
-		t.Error("record had wrong size")
-		return
+	if !slices.Equal(expectedGeqData, actualGeqData) {
+		t.Errorf("geq values different: expected %v != actual %v", expectedGeqData, actualGeqData)
 	}
 }
 

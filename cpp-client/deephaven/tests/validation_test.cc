@@ -4,13 +4,14 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
+#include "deephaven/third_party/fmt/ranges.h"
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
 using deephaven::dhcore::utility::SimpleOstringstream;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 namespace {
@@ -64,19 +65,19 @@ void TestWheresHelper(std::string_view what, const TableHandle &table,
     const std::vector<std::string> &good_wheres) {
   for (const auto &bw : bad_wheres) {
     try {
-      Streamf(std::cerr, "Trying %o %o\n", what, bw);
+      fmt::print(std::cerr, "Trying {} {}\n", what, bw);
       (void)table.Where(bw);
     } catch (const std::exception &e) {
-      Streamf(std::cerr, "%o: %o: Failed *as expected* with: %o\n", what, bw, e.what());
+      fmt::print(std::cerr, "{}: {}: Failed *as expected* with: {}\n", what, bw, e.what());
       continue;
     }
 
-    throw std::runtime_error(Stringf("%o: %o: Expected to fail, but succeeded", what, bw));
+    throw std::runtime_error(fmt::format("{}: {}: Expected to fail, but succeeded", what, bw));
   }
 
   for (const auto &gw : good_wheres) {
     (void)table.Where(gw);
-    Streamf(std::cerr, "%o: %o: Succeeded as expected\n", what, gw);
+    fmt::print(std::cerr, "{}: {}: Succeeded as expected\n", what, gw);
   }
 }
 
@@ -106,17 +107,16 @@ void TestSelectsHelper(std::string_view what, const TableHandle &table,
     try {
       (void)table.Select(bs);
     } catch (const std::exception &e) {
-      Streamf(std::cerr, "%o: %o: Failed as expected with: %o\n", what, selection.str(), e.what());
+      fmt::print(std::cerr, "{}: {}: Failed as expected with: {}\n", what, selection.str(), e.what());
       continue;
     }
-    throw std::runtime_error(Stringf("%o: %o: Expected to fail, but succeeded",
+    throw std::runtime_error(fmt::format("{}: {}: Expected to fail, but succeeded",
         what, selection.str()));
   }
 
   for (const auto &gs : good_selects) {
     (void)table.Select(gs);
-    Streamf(std::cerr, "%o: %o: Succeeded as expected\n", what,
-        separatedList(gs.begin(), gs.end()));
+    fmt::print(std::cerr, "{}: {}: Succeeded as expected\n", what, gs);
   }
 }
 }  // namespace

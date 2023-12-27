@@ -2,12 +2,8 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom fishUtil, fishData
-    testImplementation.extendsFrom fishDataTest
-}
-
 dependencies {
+    implementation project(':Base')
     implementation project(':Util')
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

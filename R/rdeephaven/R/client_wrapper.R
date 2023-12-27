@@ -13,7 +13,7 @@
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create a data frame and push it to the server, retrieve a reference to it as a TableHandle
 #' df <- data.frame(
@@ -66,25 +66,26 @@ Client <- R6Class("Client",
       args <- list(...)
       if (length(args) == 1) {
         first_arg <- args[[1]]
-        first_arg_class = first_class(first_arg)
+        first_arg_class <- first_class(first_arg)
         if (first_arg_class != "character" && first_arg_class != "list") {
           if (first_arg_class != "externalptr") {
             stop(paste0(
               "Client initialize first argument must be ",
-              "either a string or an Rcpp::XPtr object."))
+              "either a string or an Rcpp::XPtr object."
+            ))
           }
           return(self$initialize_for_xptr(first_arg))
         }
       }
       return(do.call(self$initialize_for_target, args))
     },
-    
+
     #' @description
     #' Initializes a Client object using a pointer to an existing client connection.
     #' @param xptr External pointer to an existing client connection.
     initialize_for_xptr = function(xptr) {
       verify_type("xptr", xptr, TRUE, "externalptr", "an XPtr")
-      self$.internal_rcpp_object = new(INTERNAL_Client, xptr)
+      self$.internal_rcpp_object <- new(INTERNAL_Client, xptr)
     },
 
     #' @description
@@ -112,18 +113,17 @@ Client <- R6Class("Client",
     #' grpc channel creation. Defaults to an empty list, which implies not using any channel options.
     #' @param extra_headers List of name-value pairs for additional headers and values
     #' to add to server requests. Defaults to an empty list, which implies not using any extra headers.
-    initialize_for_target = function(
-                          target,
-                          auth_type = "anonymous",
-                          username = "",
-                          password = "",
-                          auth_token = "",
-                          session_type = "python",
-                          use_tls = FALSE,
-                          tls_root_certs = "",
-                          int_options = list(),
-                          string_options = list(),
-                          extra_headers = list()) {
+    initialize_for_target = function(target,
+                                     auth_type = "anonymous",
+                                     username = "",
+                                     password = "",
+                                     auth_token = "",
+                                     session_type = "python",
+                                     use_tls = FALSE,
+                                     tls_root_certs = "",
+                                     int_options = list(),
+                                     string_options = list(),
+                                     extra_headers = list()) {
       options <- new(INTERNAL_ClientOptions)
 
       verify_string("target", target, TRUE)

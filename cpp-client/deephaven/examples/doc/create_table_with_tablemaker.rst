@@ -37,7 +37,7 @@ Consider the following program from ``cpp-examples/make_table``:
     std::vector<double> prices{101.1, 102.2, 103.3, 104.4};
     tm.addColumn("Symbol", symbols);
     tm.addColumn("Price", prices);
-    auto table = tm.makeTable(manager, "myTable");
+    auto table = tm.MakeTable(manager, "myTable");
 
     std::cout << "table is:\n" << table.stream(true) << std::endl;
   }

@@ -197,12 +197,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     }
                 }
             }
-            final Map<String, ColumnTypeInfo> columnTypes = ParquetSchemaReader.parseMetadata(
+            final Optional<TableInfo> tableInfo = ParquetSchemaReader.parseMetadata(
                     new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData)
-                            .getFileMetaData().getKeyValueMetaData())
-                    .map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+                            .getFileMetaData().getKeyValueMetaData());
+            final Map<String, ColumnTypeInfo> columnTypes =
+                    tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+            final String version = tableInfo.map(TableInfo::version).orElse(null);
 
-            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0);
+            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0, version);
             final ColumnChunkReader groupingKeyReader =
                     rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY));
             final ColumnChunkReader beginPosReader =
@@ -225,17 +227,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             localPageCache.castAttr(), groupingKeyReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(GROUPING_KEY), ParquetInstructions.EMPTY,
-                                    GROUPING_KEY, groupingKeyReader, columnDefinition)).pageStore,
+                                    GROUPING_KEY, groupingKeyReader, columnDefinition),
+                            columnDefinition).pageStore,
                     ColumnChunkPageStore.<UnorderedRowKeys>create(
                             localPageCache.castAttr(), beginPosReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(BEGIN_POS), ParquetInstructions.EMPTY, BEGIN_POS,
-                                    beginPosReader, FIRST_KEY_COL_DEF)).pageStore,
+                                    beginPosReader, FIRST_KEY_COL_DEF),
+                            columnDefinition).pageStore,
                     ColumnChunkPageStore.<UnorderedRowKeys>create(
                             localPageCache.castAttr(), endPosReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
-                                    endPosReader, LAST_KEY_COL_DEF)).pageStore)
+                                    endPosReader, LAST_KEY_COL_DEF),
+                            columnDefinition).pageStore)
                     .get();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -431,7 +436,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                     tl().getRegionParameters().regionMask,
                                     makeToPage(tl().getColumnTypes().get(parquetColumnName),
                                             tl().getReadInstructions(), parquetColumnName, columnChunkReader,
-                                            columnDefinition));
+                                            columnDefinition),
+                                    columnDefinition);
                     pageStores[psi] = creatorResult.pageStore;
                     dictionaryChunkSuppliers[psi] = creatorResult.dictionaryChunkSupplier;
                     dictionaryKeysPageStores[psi] = creatorResult.dictionaryKeysPageStore;
@@ -469,7 +475,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 if (metaData != null) {
                     return metaData;
                 }
-                final int numRows = (int) keyColumn.size();
+                final int numRows = (int) keyColumn.numRows();
 
                 try (
                         final ChunkBoxer.BoxerKernel boxerKernel =
@@ -706,8 +712,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         private final ColumnChunkReader columnChunkReader;
         private final Class<?> componentType;
 
-        LogicalTypeVisitor(@NotNull String name, @NotNull ColumnChunkReader columnChunkReader,
-                Class<?> componentType) {
+        LogicalTypeVisitor(@NotNull final String name, @NotNull final ColumnChunkReader columnChunkReader,
+                final Class<?> componentType) {
             this.name = name;
             this.columnChunkReader = columnChunkReader;
             this.componentType = componentType;
@@ -715,26 +721,22 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
-                LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
+                final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
             return Optional
                     .of(ToStringPage.create(componentType, columnChunkReader.getDictionarySupplier()));
         }
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
-                LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-            // TODO(deephaven-core#976): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
-            // to UTC
+                final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
-                return Optional
-                        .of(ToInstantPage.create(componentType, timestampLogicalType.getUnit()));
+                return Optional.of(ToInstantPage.create(componentType, timestampLogicalType.getUnit()));
             }
-            return Optional.empty();
+            return Optional.of(ToLocalDateTimePage.create(componentType, timestampLogicalType.getUnit()));
         }
 
         @Override
-        public Optional<ToPage<ATTR, ?>> visit(
-                LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
+        public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
 
             if (intLogicalType.isSigned()) {
                 switch (intLogicalType.getBitWidth()) {
@@ -761,18 +763,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         }
 
         @Override
-        public Optional<ToPage<ATTR, ?>> visit(
-                LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-            return Optional.of(ToIntPage.create(componentType));
+        public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
+            return Optional.of(ToDatePageFromInt.create(componentType));
         }
 
         @Override
-        public Optional<ToPage<ATTR, ?>> visit(
-                LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-            if (timeLogicalType.getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
-                return Optional.of(ToIntPage.create(componentType));
-            }
-            return Optional.of(ToLongPage.create(componentType));
+        public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
+            return Optional
+                    .of(ToTimePage.create(componentType, timeLogicalType.getUnit(), timeLogicalType.isAdjustedToUTC()));
         }
 
         @Override

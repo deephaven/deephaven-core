@@ -59,32 +59,32 @@ setup <- function() {
 
 test_that("merge_tables behaves as expected", {
   data <- setup()
-  
+
   new_df1 <- rbind(data$df5)
   new_th1a <- data$th5$merge()
   new_th1b <- merge_tables(data$th5)
   expect_equal(as.data.frame(new_th1a), new_df1)
   expect_equal(as.data.frame(new_th1b), new_df1)
-  
+
   new_df2 <- rbind(data$df5, data$df6)
   new_th2a <- data$th5$merge(data$th6)
   new_th2b <- merge_tables(data$th5, data$th6)
   expect_equal(as.data.frame(new_th2a), new_df2)
   expect_equal(as.data.frame(new_th2b), new_df2)
-  
+
   new_df3 <- rbind(data$df5, data$df6, data$df6, data$df5)
   new_th3a <- data$th5$merge(data$th6, data$th6, data$th5)
   new_th3b <- merge_tables(data$th5, data$th6, data$th6, data$th5)
   expect_equal(as.data.frame(new_th3a), new_df3)
   expect_equal(as.data.frame(new_th3b), new_df3)
-  
+
   new_th4a <- data$th5$merge(c(data$th6))
   new_th4b <- merge_tables(data$th5, c(data$th6))
   new_th4c <- merge_tables(c(data$th5, data$th6))
   expect_equal(as.data.frame(new_th4a), new_df2)
   expect_equal(as.data.frame(new_th4b), new_df2)
   expect_equal(as.data.frame(new_th4c), new_df2)
-  
+
   new_th5a <- data$th5$merge(c(data$th6, NULL, data$th6, data$th5))
   new_th5b <- merge_tables(data$th5, c(data$th6, NULL, data$th6, data$th5))
   new_th5c <- merge_tables(c(data$th5, data$th6, NULL, data$th6, data$th5))
@@ -97,7 +97,7 @@ test_that("merge_tables behaves as expected", {
   expect_equal(as.data.frame(new_th5d), new_df3)
   expect_equal(as.data.frame(new_th5e), new_df3)
   expect_equal(as.data.frame(new_th5f), new_df3)
-  
+
   data$client$close()
 })
 
@@ -773,9 +773,9 @@ test_that("join behaves as expected", {
 
   new_th1 <- data$th5$
     join(data$th6,
-      on = character(),
-      joins = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2")
-    )
+    on = character(),
+    joins = c("X_y = X", "Y_y = Y", "Number1_y = Number1", "Number2_y = Number2")
+  )
   new_tb1 <- data$df5 %>%
     cross_join(data$df6) %>%
     rename(
@@ -795,9 +795,9 @@ test_that("natural_join behaves as expected", {
     avg_by("X")
   new_th1 <- data$th5$
     natural_join(new_th2,
-      on = "X",
-      joins = c("Number3 = Number1", "Number4 = Number2")
-    )
+    on = "X",
+    joins = c("Number3 = Number1", "Number4 = Number2")
+  )
 
   new_tb2 <- data$df6 %>%
     select(-Y) %>%
@@ -822,9 +822,9 @@ test_that("exact_join behaves as expected", {
     avg_by("X")
   new_th1 <- data$th5$
     exact_join(new_th2,
-      on = "X",
-      joins = c("Number3 = Number1", "Number4 = Number2")
-    )
+    on = "X",
+    joins = c("Number3 = Number1", "Number4 = Number2")
+  )
 
   new_tb2 <- data$df6 %>%
     select(-Y) %>%

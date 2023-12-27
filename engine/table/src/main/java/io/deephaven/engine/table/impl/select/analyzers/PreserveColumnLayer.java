@@ -75,6 +75,20 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
                 .append("}");
     }
 
+    @Override
+    public boolean flattenedResult() {
+        // preserve layer is only flattened if the inner is flattened
+        // the "flattenedResult" means that we are flattening the table as part of select. For a pre-existing column, we
+        // could not preserve a layer while flattening, but if we are preserving a newly generated column; it is valid
+        // for the result to have been flattened as part of select.
+        return inner.flattenedResult();
+    }
+
+    @Override
+    public boolean alreadyFlattenedSources() {
+        // a preserve layer is only already flattened if the inner is already flattened
+        return inner.alreadyFlattenedSources();
+    }
 
     @Override
     public boolean allowCrossColumnParallelization() {

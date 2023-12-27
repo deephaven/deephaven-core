@@ -17,17 +17,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.FloatBuffer;
 
-final class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
+final class FloatTransfer extends FillingPrimitiveTransfer<WritableFloatChunk<Values>, FloatBuffer> {
     static FloatTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSize) {
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Float.BYTES));
-        final float[] backingArray = new float[maxValuesPerPage];
+                              final int targetPageSizeInBytes) {
+        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Float.BYTES));
+        final float[] backingArray = new float[targetElementsPerPage];
         return new FloatTransfer(
                 columnSource,
                 tableRowSet,
                 WritableFloatChunk.writableChunkWrap(backingArray),
                 FloatBuffer.wrap(backingArray),
-                maxValuesPerPage);
+                targetElementsPerPage);
     }
 
     private FloatTransfer(
@@ -35,7 +35,7 @@ final class FloatTransfer extends PrimitiveTransfer<WritableFloatChunk<Values>, 
             @NotNull final RowSequence tableRowSet,
             @NotNull final WritableFloatChunk<Values> chunk,
             @NotNull final FloatBuffer buffer,
-            final int maxValuesPerPage) {
-        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
+            final int targetElementsPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, targetElementsPerPage);
     }
 }

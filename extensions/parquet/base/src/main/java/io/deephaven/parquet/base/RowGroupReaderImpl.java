@@ -12,6 +12,7 @@ import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -34,13 +35,15 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private final Map<String, ColumnChunk> chunkMap = new HashMap<>();
 
     private final Path rootPath;
+    private final String version;
 
     RowGroupReaderImpl(
             @NotNull final RowGroup rowGroup,
             @NotNull final SeekableChannelsProvider channelsProvider,
             @NotNull final Path rootPath,
             @NotNull final MessageType type,
-            @NotNull final MessageType schema) {
+            @NotNull final MessageType schema,
+            @Nullable final String version) {
         this.channelsProvider = channelsProvider;
         this.rowGroup = rowGroup;
         this.rootPath = rootPath;
@@ -59,6 +62,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
             }
             schemaMap.put(key, nonRequiredFields);
         }
+        this.version = version;
     }
 
     @Override
@@ -80,8 +84,8 @@ public class RowGroupReaderImpl implements RowGroupReader {
                 throw new UncheckedIOException(e);
             }
         }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath,
-                type, offsetIndex, fieldTypes);
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath, type, offsetIndex, fieldTypes,
+                numRows(), version);
     }
 
     @Override
