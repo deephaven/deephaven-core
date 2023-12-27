@@ -12,6 +12,7 @@ apply from: "$rootDir/gradle/web-client.gradle"
 
 configurations {
     js
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -121,4 +122,7 @@ tasks.named('check').configure {
     dependsOn(gwtUnitTest, gwtIntegrationTest)
 }
 
-apply from: "$rootDir/gradle/web-gwt-test.gradle"
+test {
+    // Configure jvm-only tests to not run any GWT-only tests
+    exclude '**/*TestGwt.class', '**/*TestSuite.class'
+}

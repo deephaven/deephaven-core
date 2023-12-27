@@ -62,7 +62,7 @@ public class ConcurrentTableTestGwt extends AbstractAsyncGwtTestCase {
                     // noinspection unchecked
                     return Promise.all(new IThenable[] {
                             assertUpdateReceived(filteredCopy, 10, 3001),
-                            assertUpdateReceived(table, 10, 1501)
+                            assertUpdateReceived(table, 10, 2501)
                     });
                 }).then(this::finish).catch_(this::report);
     }
