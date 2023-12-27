@@ -21,6 +21,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     "   \"MyBoolean=i==0?null:true\",\n" +
                     "   \"MyDate=i==0?null:epochNanosToInstant(i)\"\n" +
                     "])");
+
     public void testNullTable() {
         connect(tables)
                 .then(table("nulltable"))
@@ -58,14 +59,16 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
 
                         ViewportRow valueRow = rows.getAt(1);
                         assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
-                        assertEquals((long)1, valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
-                        assertEquals((double)1, valueRow.get(table.findColumn("MyDouble")).asDouble());
-                        assertEquals((short)1, valueRow.get(table.findColumn("MyShort")).asShort());
-                        assertEquals((float)1., valueRow.get(table.findColumn("MyFloat")).asFloat());
-                        assertEquals((char)1, valueRow.get(table.findColumn("MyChar")).asChar());
-                        assertEquals((byte)1, valueRow.get(table.findColumn("MyByte")).asByte());
+                        assertEquals((long) 1,
+                                valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
+                        assertEquals((double) 1, valueRow.get(table.findColumn("MyDouble")).asDouble());
+                        assertEquals((short) 1, valueRow.get(table.findColumn("MyShort")).asShort());
+                        assertEquals((float) 1., valueRow.get(table.findColumn("MyFloat")).asFloat());
+                        assertEquals((char) 1, valueRow.get(table.findColumn("MyChar")).asChar());
+                        assertEquals((byte) 1, valueRow.get(table.findColumn("MyByte")).asByte());
                         assertEquals(true, valueRow.get(table.findColumn("MyBoolean")).asBoolean());
-                        assertEquals((long)1, valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
+                        assertEquals((long) 1,
+                                valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
                     }, 1000);
                 })
                 .then(this::finish).catch_(this::report);

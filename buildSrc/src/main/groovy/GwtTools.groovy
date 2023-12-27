@@ -1,6 +1,7 @@
 import de.esoco.gwt.gradle.GwtLibPlugin
 import de.esoco.gwt.gradle.GwtPlugin
 import de.esoco.gwt.gradle.extension.GwtExtension
+import de.esoco.gwt.gradle.task.GwtCheckTask
 import de.esoco.gwt.gradle.task.GwtCompileTask
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
@@ -36,6 +37,9 @@ class GwtTools {
             GwtCompileTask gwtc ->
                 applyModuleSettings p, gwtc, module,description
         }
+        p.tasks.withType(GwtCheckTask).configureEach {t ->
+            t.onlyIf { false }
+        }
 
         return ext
     }
@@ -70,8 +74,6 @@ class GwtTools {
         gwtDev && gwtc.doFirst {
             gwtc.logger.quiet('Running in gwt dev mode; saving source to {}/dh/src', extras)
         }
-
-        p.tasks.findByName('gwtCheck')?.enabled = false
     }
 
     static void applyDefaults(Project p, GwtExtension gwt, boolean compile = false) {
@@ -110,24 +112,6 @@ class GwtTools {
                 maxHeapSize = "1024m"
                 minHeapSize = "512m"
             }
-
-            gwt.dev.with {
-                /** The ip address of the code server. */
-                bindAddress = "127.0.0.1"
-                /** The port where the code server will run. */
-                port = 9876
-                /** Specifies Java source level ("1.6", "1.7").
-                 sourceLevel = "1.8"
-                 /** The level of logging detail (ERROR, WARN, INFO, TRACE, DEBUG, SPAM, ALL) */
-                logLevel = "INFO"
-                /** Emit extra information allow chrome dev tools to display Java identifiers in many placesinstead of JavaScript functions. (NONE, ONLY_METHOD_NAME, ABBREVIATED, FULL) */
-                methodNameDisplayMode = "NONE"
-                /** Where to write output files */
-                war = warPath
-//                    extraArgs = ["-firstArgument", "-secondArgument"]
-            }
-
-
         }
     }
 

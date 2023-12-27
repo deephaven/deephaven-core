@@ -39,7 +39,8 @@ public class RunStyleRemoteWebDriver extends RunStyle {
         }
     }
 
-    public class ConfigurationException extends Exception {}
+    public class ConfigurationException extends Exception {
+    }
 
     private List<RemoteWebDriver> browsers = new ArrayList<>();
     private Thread keepalive;
@@ -49,8 +50,8 @@ public class RunStyleRemoteWebDriver extends RunStyle {
     }
 
     /**
-     * Validates the arguments for the specific subclass, and creates a configuration that describes
-     * how to run the tests.
+     * Validates the arguments for the specific subclass, and creates a configuration that describes how to run the
+     * tests.
      *
      * @param args the command line argument string passed from JUnitShell
      * @return the configuration to use when running these tests
@@ -173,8 +174,8 @@ public class RunStyleRemoteWebDriver extends RunStyle {
     }
 
     /**
-     * Work-around until GWT's JUnitShell handles IPv6 addresses correctly.
-     * https://groups.google.com/d/msg/google-web-toolkit/jLGhwUrKVRY/eQaDO6EUqdYJ
+     * <a href="https://groups.google.com/d/msg/google-web-toolkit/jLGhwUrKVRY/eQaDO6EUqdYJ">Workaround</a> until GWT's
+     * JUnitShell handles IPv6 addresses correctly.
      */
     public String getLocalHostName() {
         String host = System.getProperty("webdriver.test.host");

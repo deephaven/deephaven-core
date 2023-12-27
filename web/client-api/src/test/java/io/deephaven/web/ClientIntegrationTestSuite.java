@@ -22,7 +22,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(TableManipulationTestGwt.class);
         suite.addTestSuite(ConcurrentTableTestGwt.class);
         suite.addTestSuite(NullValueTestGwt.class);
-//        suite.addTestSuite(TotalsTableTestGwt.class);
+        // suite.addTestSuite(TotalsTableTestGwt.class);
 
         return suite;
     }
