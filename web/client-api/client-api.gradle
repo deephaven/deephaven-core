@@ -117,8 +117,8 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.scanForTestClasses = false
 }
 
-project.tasks.getByName('quick').dependsOn(gwtUnitTest, gwtIntegrationTest)
-
-tasks.getByName('check').dependsOn(gwtUnitTest, gwtIntegrationTest)
+tasks.named('check').configure {
+    dependsOn(gwtUnitTest, gwtIntegrationTest)
+}
 
 apply from: "$rootDir/gradle/web-gwt-test.gradle"
