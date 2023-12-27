@@ -38,6 +38,7 @@ class GwtTools {
                 applyModuleSettings p, gwtc, module,description
         }
         p.tasks.withType(GwtCheckTask).configureEach {t ->
+            t.mustRunAfter(p.tasks.withType(GwtCompileTask))
             t.onlyIf { false }
         }
 
