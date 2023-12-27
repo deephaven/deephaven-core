@@ -21,7 +21,6 @@ import java.time.temporal.ChronoField;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -2904,8 +2903,9 @@ public class DateTimeUtils {
      * start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
      *         of the window
      */
@@ -2926,8 +2926,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @return {@code null} if either input is {@code null};
-     *        otherwise, an {@link Instant} representing the end of the window
+     * @param intervalNanos size of the window in nanoseconds
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     *         window
      */
     @ScriptApi
     @Nullable
@@ -2945,8 +2946,9 @@ public class DateTimeUtils {
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @return {@code null} if either input is {@code null};
-     *        otherwise, a {@link ZonedDateTime} representing the end of the window
+     * @param intervalNanos size of the window in nanoseconds
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
+     *         the window
      */
     @ScriptApi
     @Nullable
@@ -2964,8 +2966,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
      */
@@ -2986,7 +2989,8 @@ public class DateTimeUtils {
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds.
      *        For example, a value of MINUTE would offset all windows by one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
