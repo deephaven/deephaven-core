@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Map;
 
 /**
@@ -24,7 +25,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = FileTableLocationKey.class.getSimpleName();
 
-    protected final File file;
+    protected final URI parquetFileURI;
     private final int order;
 
     private int cachedHashCode;
@@ -32,7 +33,8 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     /**
      * Construct a new FileTableLocationKey for the supplied {@code file} and {@code partitions}.
      *
-     * @param file The file (or directory) that backs the keyed location. Will be adjusted to an absolute path.
+     * @param parquetFileURI The URI for file (or directory) that backs the keyed location. Will be adjusted to an
+     *        absolute path.
      * @param order Explicit ordering value for this location key. {@link Comparable#compareTo(Object)} will sort
      *        FileTableLocationKeys with a lower {@code order} before other keys. Comparing this ordering value takes
      *        precedence over other fields.
@@ -41,21 +43,21 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
      *        be made, so the calling code is free to mutate the map after this call completes, but the partition keys
      *        and values themselves <em>must</em> be effectively immutable.
      */
-    public FileTableLocationKey(@NotNull final File file, final int order,
+    public FileTableLocationKey(@NotNull final URI parquetFileURI, final int order,
             @Nullable final Map<String, Comparable<?>> partitions) {
         super(partitions);
-        this.file = file.getAbsoluteFile();
+        this.parquetFileURI = parquetFileURI;
         this.order = order;
     }
 
-    public final File getFile() {
-        return file;
+    public final URI getURI() {
+        return parquetFileURI;
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append(getImplementationName())
-                .append(":[file=").append(file.getPath())
+                .append(":[file=").append(parquetFileURI.toString())
                 .append(",partitions=").append(PartitionsFormatter.INSTANCE, partitions)
                 .append(']');
     }
@@ -84,7 +86,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
             if (partitionComparisonResult != 0) {
                 return partitionComparisonResult;
             }
-            return file.compareTo(otherTyped.file);
+            return parquetFileURI.compareTo(otherTyped.parquetFileURI);
         }
         throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
     }
@@ -92,7 +94,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     @Override
     public int hashCode() {
         if (cachedHashCode == 0) {
-            final int computedHashCode = 31 * partitions.hashCode() + file.hashCode();
+            final int computedHashCode = 31 * partitions.hashCode() + parquetFileURI.hashCode();
             // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
             if (computedHashCode == 0) {
                 final int fallbackHashCode = FileTableLocationKey.class.hashCode();
@@ -113,7 +115,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
             return false;
         }
         final FileTableLocationKey otherTyped = (FileTableLocationKey) other;
-        return file.equals(otherTyped.file) && partitions.equals(otherTyped.partitions);
+        return parquetFileURI.equals(otherTyped.parquetFileURI) && partitions.equals(otherTyped.partitions);
     }
 
     @Override

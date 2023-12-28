@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
@@ -50,6 +51,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongFunction;
@@ -58,6 +60,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
+import static io.deephaven.parquet.base.ParquetFileReader.S3_PARQUET_FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
@@ -163,7 +166,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         if (!hasGroupingTable) {
             return null;
         }
-        final File parquetFile = tl().getParquetFile();
+        final URI parquetFileURI = tl().getParquetFile();
+        if (parquetFileURI.getScheme() != null && parquetFileURI.getScheme().equals(S3_PARQUET_FILE_URI_SCHEME)) {
+            throw new UncheckedDeephavenException("Parquet files in S3 are not expected to have indexing files");
+        }
+        final File parquetFile = new File(parquetFileURI);
         try {
             ParquetFileReader parquetFileReader;
             final String indexFilePath;

@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.format.*;
@@ -12,12 +13,13 @@ import org.apache.parquet.schema.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -27,20 +29,44 @@ public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
     private static final String MAGIC_STR = "PAR1";
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
+    public static final String S3_PARQUET_FILE_URI_SCHEME = "s3";
+    private static final String S3_PARQUET_FILE_URI_PREFIX = "s3://";
 
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
     private final Path rootPath;
     private final MessageType type;
 
+    // TODO Where should I keep it?
+    public static URI convertToURI(final String filePath) {
+        // We need to encode spaces in the path string that are not allowed in a URI
+        if (filePath.startsWith(S3_PARQUET_FILE_URI_PREFIX)) {
+            try {
+                return new URI(filePath.replace(" ", "%20"));
+            } catch (final URISyntaxException e) {
+                throw new UncheckedDeephavenException("Failed to convert file path " + filePath + " to URI", e);
+            }
+        } else {
+            return Path.of(filePath).toUri();
+        }
+    }
+
     public ParquetFileReader(final String filePath, final SeekableChannelsProvider channelsProvider)
             throws IOException {
-        this.channelsProvider = channelsProvider;
-        // Root path should be this file if a single file, else the parent directory for a metadata
-        // file
-        rootPath =
-                filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
+        this(convertToURI(filePath), channelsProvider);
+    }
 
+    public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
+            throws IOException {
+        this.channelsProvider = channelsProvider;
+        final Path filePath;
+        if (parquetFileURI.getScheme() != null && parquetFileURI.getScheme().equals(S3_PARQUET_FILE_URI_SCHEME)) {
+            filePath = Path.of(parquetFileURI.toString());
+        } else {
+            filePath = Path.of(parquetFileURI);
+        }
+        // Root path should be this file if a single file, else the parent directory for a metadata file
+        rootPath = parquetFileURI.getRawPath().endsWith(".parquet") ? filePath : filePath.getParent();
         final byte[] footer;
         try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
                 final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, filePath)) {
@@ -48,7 +74,7 @@ public class ParquetFileReader {
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC
                 throw new InvalidParquetFileException(
-                        filePath + " is not a Parquet file (too small length: " + fileLen + ")");
+                        parquetFileURI + " is not a Parquet file (too small length: " + fileLen + ")");
             }
 
             final long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
@@ -59,7 +85,7 @@ public class ParquetFileReader {
             Helpers.readBytes(readChannel, magic);
             if (!Arrays.equals(MAGIC, magic)) {
                 throw new InvalidParquetFileException(
-                        filePath + " is not a Parquet file. expected magic number at tail "
+                        parquetFileURI + " is not a Parquet file. expected magic number at tail "
                                 + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
             }
             final long footerIndex = footerLengthIndex - footerLength;

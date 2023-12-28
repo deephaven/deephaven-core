@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -51,11 +52,32 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
         this.readInstructions = readInstructions;
     }
 
-    private static File validateParquetFile(@NotNull final File file) {
-        if (!file.getName().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
+    /**
+     * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     *
+     * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering index, taking precedence over other fields
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
+     * @param readInstructions the instructions for customizations while reading
+     */
+    public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final ParquetInstructions readInstructions) {
+        super(validateParquetFile(parquetFileUri), order, partitions);
+        this.readInstructions = readInstructions;
+    }
+
+    private static URI validateParquetFile(@NotNull final File file) {
+        return validateParquetFile(file.toURI());
+    }
+
+    private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
+        if (!parquetFileUri.getRawPath().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
             throw new IllegalArgumentException("Parquet file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
         }
-        return file;
+        return parquetFileUri;
     }
 
     @Override
@@ -77,7 +99,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
      * </ol>
      *
      * Callers wishing to handle these cases more explicit may call
-     * {@link ParquetTools#getParquetFileReaderChecked(File, ParquetInstructions)}.
+     * {@link ParquetTools#getParquetFileReaderChecked(URI, ParquetInstructions)}.
      *
      * @return true if the file reader exists or was successfully created
      */
@@ -86,7 +108,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
             return true;
         }
         try {
-            fileReader = ParquetTools.getParquetFileReaderChecked(file, readInstructions);
+            fileReader = ParquetTools.getParquetFileReaderChecked(parquetFileURI, readInstructions);
         } catch (IOException e) {
             return false;
         }
@@ -103,7 +125,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
         if (fileReader != null) {
             return fileReader;
         }
-        return fileReader = ParquetTools.getParquetFileReader(file, readInstructions);
+        return fileReader = ParquetTools.getParquetFileReader(parquetFileURI, readInstructions);
     }
 
     /**
@@ -132,7 +154,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
         try {
             return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
         } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getFile(), e);
+            throw new TableDataException("Failed to convert Parquet file metadata: " + getURI(), e);
         }
     }
 
@@ -167,7 +189,8 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
             final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null || new File(filePath).getAbsoluteFile().equals(file);
+            return filePath == null
+                    || new File(filePath).getAbsoluteFile().equals(new File(parquetFileURI).getAbsoluteFile());
         }).toArray();
     }
 

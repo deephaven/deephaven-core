@@ -394,7 +394,7 @@ public final class ParquetTableReadWriteTest {
         } catch (RuntimeException e) {
             TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
         }
-        File randomDest = new File(rootFile, "random.parquet");
+        final File randomDest = new File(rootFile, "random.parquet");
         writeTable(fromDisk, randomDest, ParquetTools.LZ4_RAW);
 
         // Read the LZ4 compressed file again, to make sure we use a new adapter
@@ -591,7 +591,7 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofTime("last_modified"),
                 ColumnDefinition.ofDouble("input_value"));
 
-        final Table fromAws1 = ParquetTools.readTable(
+        final Table fromAws1 = ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
                 readInstructions, tableDefinition).select();
         final Table fromDisk1 = ParquetTools.readSingleFileTable(
@@ -623,7 +623,7 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofTime("last_modified"),
                 ColumnDefinition.ofDouble("input_value"));
 
-        final Table fromAws1 = ParquetTools.readTable(
+        final Table fromAws1 = ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
                 readInstructions, tableDefinition).head(5).select();
         final Table fromDisk1 = ParquetTools.readSingleFileTable(
@@ -633,7 +633,7 @@ public final class ParquetTableReadWriteTest {
                 tableDefinition).head(5).select();
         assertTableEquals(fromAws1, fromDisk1);
 
-        final Table fromAws2 = ParquetTools.readTable(
+        final Table fromAws2 = ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
                 readInstructions, tableDefinition).head(5).select();
         final Table fromDisk2 = ParquetTools.readSingleFileTable(
@@ -665,8 +665,6 @@ public final class ParquetTableReadWriteTest {
                 ParquetTools.readSingleFileTable(
                         new File(
                                 "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
-                        // new File(
-                        // "/Users/shivammalhotra/Documents/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet"),
                         ParquetTools.SNAPPY,
                         tableDefinition).head(5).select();
     }
@@ -678,7 +676,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
 
         long totalTime = 0;
-        long NUM_RUNS = 10;
+        long NUM_RUNS = 1;
         for (int i = 0; i < NUM_RUNS; i++) {
             final long start = System.nanoTime();
             ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
@@ -711,7 +709,7 @@ public final class ParquetTableReadWriteTest {
         totalTime = 0;
         for (int i = 0; i < NUM_RUNS; i++) {
             final long start = System.nanoTime();
-            ParquetTools.readTable(
+            ParquetTools.readSingleFileTable(
                     "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
                     readInstructions, tableDefinition).head(5).select();
             final long end = System.nanoTime();
@@ -746,6 +744,11 @@ public final class ParquetTableReadWriteTest {
                 ParquetTools.readTable("s3://dh-s3-parquet-test1/singleColFile.parquet", readInstructions).select();
         final Table dhTable2 = TableTools.emptyTable(5).update("A=(int)i");
         assertTableEquals(fromAws2, dhTable2);
+
+        final Table fromAws3 =
+                ParquetTools.readTable("s3://dh-s3-parquet-test1/single col file with spaces in name.parquet",
+                        readInstructions).select();
+        assertTableEquals(fromAws3, dhTable2);
     }
 
     @Test
@@ -1073,6 +1076,50 @@ public final class ParquetTableReadWriteTest {
         // All files should be deleted even though first table would be written successfully
         assertTrue(parentDir.list().length == 0);
     }
+
+    @Test
+    public void writingParquetFilesWithSpacesInName() {
+        final String parentDirName = "tempDir";
+        final String tableNameWithSpaces = "table name with spaces.parquet";
+        final Table table = TableTools.emptyTable(5)
+                .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        writingParquetFilesWithSpacesInNameHelper(table, parentDirName, tableNameWithSpaces);
+
+        // Same test but for tables with grouping data
+        Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition groupingTableDefinition =
+                TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table tableWithGroupingData = newTable(groupingTableDefinition, TableTools.col("vvv", data));
+        writingParquetFilesWithSpacesInNameHelper(tableWithGroupingData, parentDirName, tableNameWithSpaces);
+    }
+
+    private void writingParquetFilesWithSpacesInNameHelper(final Table table, final String parentDirName,
+            final String parquetFileName) {
+        final File parentDir = new File(rootFile, parentDirName);
+        parentDir.mkdir();
+        final File dest = new File(parentDir, parquetFileName);
+
+        ParquetTools.writeTable(table, dest);
+        Table fromDisk = readSingleFileTable(dest, ParquetInstructions.EMPTY);
+        assertTableEquals(table, fromDisk);
+        FileUtils.deleteRecursively(parentDir);
+
+        final String destAbsolutePathStr = dest.getAbsolutePath();
+        ParquetTools.writeTable(table, destAbsolutePathStr);
+        fromDisk = readSingleFileTable(destAbsolutePathStr, ParquetInstructions.EMPTY);
+        assertTableEquals(table, fromDisk);
+        FileUtils.deleteRecursively(parentDir);
+
+        final String destRelativePathStr = parentDirName + "/" + parquetFileName;
+        ParquetTools.writeTable(table, destRelativePathStr);
+        fromDisk = readSingleFileTable(destRelativePathStr, ParquetInstructions.EMPTY);
+        assertTableEquals(table, fromDisk);
+        FileUtils.deleteRecursively(parentDir);
+    }
+
 
     /**
      * These are tests for writing to a table with grouping columns to a parquet file and making sure there are no
