@@ -1,0 +1,6 @@
+<module>
+    <inherits name="org.gwtproject.nio.GwtNioSupport" />
+
+    <source path="" />
+    <super-source path="super" />
+</module>

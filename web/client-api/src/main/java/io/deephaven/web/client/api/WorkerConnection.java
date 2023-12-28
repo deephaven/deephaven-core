@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
@@ -12,30 +13,19 @@ import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.MetadataVersion;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
@@ -104,6 +94,16 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.apache.arrow.flatbuf.Buffer;
+import org.apache.arrow.flatbuf.Field;
+import org.apache.arrow.flatbuf.FieldNode;
+import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.MetadataVersion;
+import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flatbuf.Schema;
+import org.gwtproject.nio.TypedArrayHelper;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -1074,12 +1074,12 @@ public class WorkerConnection {
             dataRef[0] = null;
 
             // make a schema that we can embed in the first DoPut message
-            Builder schema = new Builder(1024);
+            FlatBufferBuilder schema = new FlatBufferBuilder(1024);
 
             // while we're examining columns, build the copiers for data
             List<JsDataHandler> columns = new ArrayList<>();
 
-            double[] fields = new double[columnNames.length];
+            int[] fields = new int[columnNames.length];
             for (int i = 0; i < columnNames.length; i++) {
                 String columnName = columnNames[i];
                 String columnType = types[i];
@@ -1087,9 +1087,9 @@ public class WorkerConnection {
                 JsDataHandler writer = JsDataHandler.getHandler(columnType);
                 columns.add(writer);
 
-                double nameOffset = schema.createString(columnName);
-                double typeOffset = writer.writeType(schema);
-                double metadataOffset = Field.createCustomMetadataVector(schema, new double[] {
+                int nameOffset = schema.createString(columnName);
+                int typeOffset = writer.writeType(schema);
+                int metadataOffset = Field.createCustomMetadataVector(schema, new int[] {
                         KeyValue.createKeyValue(schema, schema.createString("deephaven:type"),
                                 schema.createString(writer.deephavenType()))
                 });
@@ -1104,7 +1104,7 @@ public class WorkerConnection {
 
                 fields[i] = Field.endField(schema);
             }
-            double fieldsOffset = Schema.createFieldsVector(schema, fields);
+            int fieldsOffset = Schema.createFieldsVector(schema, fields);
 
             Schema.startSchema(schema);
             Schema.addFields(schema, fieldsOffset);
@@ -1146,7 +1146,7 @@ public class WorkerConnection {
             FlightData bodyMessage = new FlightData();
             bodyMessage.setAppMetadata(WebBarrageUtils.emptyMessage());
 
-            Builder bodyData = new Builder(1024);
+            FlatBufferBuilder bodyData = new FlatBufferBuilder(1024);
 
             // iterate each column, building buffers and fieldnodes, as well as building the actual payload
             List<Uint8Array> buffers = new ArrayList<>();
@@ -1170,25 +1170,25 @@ public class WorkerConnection {
             for (int i = buffers.size() - 1; i >= 0; i--) {
                 Uint8Array buffer = buffers.get(i);
                 cumulativeOffset -= buffer.byteLength;
-                Buffer.createBuffer(bodyData, Long.create(cumulativeOffset, 0), Long.create(buffer.byteLength, 0));
+                Buffer.createBuffer(bodyData, cumulativeOffset, buffer.byteLength);
             }
             assert cumulativeOffset == 0;
-            double buffersOffset = bodyData.endVector();
+            int buffersOffset = bodyData.endVector();
 
             RecordBatch.startNodesVector(bodyData, nodes.size());
             for (int i = nodes.size() - 1; i >= 0; i--) {
                 JsDataHandler.Node node = nodes.get(i);
-                FieldNode.createFieldNode(bodyData, Long.create(node.length(), 0), Long.create(node.nullCount(), 0));
+                FieldNode.createFieldNode(bodyData, node.length(), node.nullCount());
             }
-            double nodesOffset = bodyData.endVector();
+            int nodesOffset = bodyData.endVector();
 
             RecordBatch.startRecordBatch(bodyData);
 
             RecordBatch.addBuffers(bodyData, buffersOffset);
             RecordBatch.addNodes(bodyData, nodesOffset);
-            RecordBatch.addLength(bodyData, Long.create(data[0].length, 0));
+            RecordBatch.addLength(bodyData, data[0].length);
 
-            double recordBatchOffset = RecordBatch.endRecordBatch(bodyData);
+            int recordBatchOffset = RecordBatch.endRecordBatch(bodyData);
             bodyMessage.setDataHeader(createMessage(bodyData, MessageHeader.RecordBatch, recordBatchOffset, length, 0));
             bodyMessage.setDataBody(padAndConcat(buffers, length));
 
@@ -1209,11 +1209,11 @@ public class WorkerConnection {
         return all;
     }
 
-    private static Uint8Array createMessage(Builder payload, int messageHeaderType, double messageHeaderOffset,
-            int bodyLength, double customMetadataOffset) {
+    private static Uint8Array createMessage(FlatBufferBuilder payload, byte messageHeaderType, int messageHeaderOffset,
+            int bodyLength, int customMetadataOffset) {
         payload.finish(Message.createMessage(payload, MetadataVersion.V5, messageHeaderType, messageHeaderOffset,
-                Long.create(bodyLength, 0), customMetadataOffset));
-        return payload.asUint8Array();
+                bodyLength, customMetadataOffset));
+        return new Uint8Array(TypedArrayHelper.unwrap(payload.dataBuffer()));
     }
 
     public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {
@@ -1424,21 +1424,22 @@ public class WorkerConnection {
 
                 state.setSubscribed(true);
 
-                Builder subscriptionReq = new Builder(1024);
+                FlatBufferBuilder subscriptionReq = new FlatBufferBuilder(1024);
 
-                double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(subscriptionReq,
-                        makeUint8ArrayFromBitset(includedColumns));
-                double viewportOffset = 0;
+                int columnsOffset = BarrageSubscriptionRequest.createColumnsVector(subscriptionReq,
+                        includedColumns.toByteArray());
+                int viewportOffset = 0;
                 if (isViewport) {
                     viewportOffset = BarrageSubscriptionRequest.createViewportVector(subscriptionReq, serializeRanges(
                             vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
                 }
                 // TODO #188 support minUpdateIntervalMs
-                double serializationOptionsOffset = BarrageSubscriptionOptions
+                int serializationOptionsOffset = BarrageSubscriptionOptions
                         .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000,
-                                0, 0);
-                double tableTicketOffset =
-                        BarrageSubscriptionRequest.createTicketVector(subscriptionReq, state.getHandle().getTicket());
+                                0, 0, false);
+                int tableTicketOffset =
+                        BarrageSubscriptionRequest.createTicketVector(subscriptionReq,
+                                TypedArrayHelper.wrap(state.getHandle().getTicket()));
                 BarrageSubscriptionRequest.startBarrageSubscriptionRequest(subscriptionReq);
                 BarrageSubscriptionRequest.addColumns(subscriptionReq, columnsOffset);
                 BarrageSubscriptionRequest.addSubscriptionOptions(subscriptionReq, serializationOptionsOffset);
@@ -1462,26 +1463,23 @@ public class WorkerConnection {
                     public void apply(FlightData data) {
                         ByteBuffer body = typedArrayToLittleEndianByteBuffer(data.getDataBody_asU8());
                         Message headerMessage = Message
-                                .getRootAsMessage(new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                        data.getDataHeader_asU8()));
+                                .getRootAsMessage(TypedArrayHelper.wrap(data.getDataHeader_asU8()));
                         if (body.limit() == 0 && headerMessage.headerType() != MessageHeader.RecordBatch) {
                             // a subscription stream presently ignores schemas and other message types
                             // TODO hang on to the schema to better handle the now-Utf8 columns
                             return;
                         }
-                        RecordBatch header = headerMessage.header(new RecordBatch());
+                        RecordBatch header = (RecordBatch) headerMessage.header(new RecordBatch());
                         BarrageMessageWrapper barrageMessageWrapper =
                                 BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                        new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                                data.getAppMetadata_asU8()));
+                                        TypedArrayHelper.wrap(data.getAppMetadata_asU8()));
                         if (barrageMessageWrapper.msgType() == BarrageMessageType.None) {
                             // continue previous message, just read RecordBatch
                             appendAndMaybeFlush(header, body);
                         } else {
                             assert barrageMessageWrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata;
                             BarrageUpdateMetadata barrageUpdate = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                                    new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                            new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+                                    barrageMessageWrapper.msgPayloadAsByteBuffer());
                             startAndMaybeFlush(barrageUpdate.isSnapshot(), header, body, barrageUpdate, isViewport,
                                     columnTypes);
                         }

@@ -3,26 +3,26 @@
 //
 package io.deephaven.web.client.api.barrage;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import elemental2.core.*;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
+import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.*;
 import jsinterop.base.Js;
+import org.apache.arrow.flatbuf.Buffer;
+import org.apache.arrow.flatbuf.Field;
+import org.apache.arrow.flatbuf.FieldNode;
+import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flatbuf.Schema;
 import org.gwtproject.nio.TypedArrayHelper;
 
 import java.math.BigDecimal;
@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.DoubleFunction;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 /**
@@ -45,22 +46,21 @@ import java.util.stream.IntStream;
 public class WebBarrageUtils {
     private static final int MAGIC = 0x6E687064;
 
-    public static Uint8Array wrapMessage(Builder innerBuilder, int messageType) {
-        Builder outerBuilder = new Builder(1024);
-        // This deprecation is incorrect, tsickle didn't understand that only one overload is deprecated
-        // noinspection deprecation
-        double messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.asUint8Array());
-        double offset =
+    public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
+        // TODO this doesnt look right, probably we can append the message rather than copying?
+        FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
+        int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
+        int offset =
                 BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset);
         outerBuilder.finish(offset);
-        return outerBuilder.asUint8Array();
+        return new Uint8Array(TypedArrayHelper.unwrap(outerBuilder.dataBuffer().slice()));
     }
 
     public static Uint8Array emptyMessage() {
-        Builder builder = new Builder(1024);
-        double offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
+        FlatBufferBuilder builder = new FlatBufferBuilder(1024);
+        int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
         builder.finish(offset);
-        return builder.asUint8Array();
+        return new Uint8Array(TypedArrayHelper.unwrap(builder.dataBuffer()));
     }
 
     public static InitialTableDefinition readTableDefinition(Schema schema) {
@@ -83,7 +83,7 @@ public class WebBarrageUtils {
             Field f = schema.fields(i);
             Map<String, String> fieldMetadata =
                     keyValuePairs("deephaven:", f.customMetadataLength(), f::customMetadata);
-            cols[i].setName(f.name().asString());
+            cols[i].setName(f.name());
             cols[i].setColumnIndex(i);
             cols[i].setType(fieldMetadata.get("type"));
             cols[i].setIsSortable("true".equals(fieldMetadata.get("isSortable")));
@@ -129,24 +129,23 @@ public class WebBarrageUtils {
         // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
         // - message size (4-byte int)
         // - a Message wrapping the schema
-        io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer bb =
-                new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(flightSchemaMessage);
-        bb.setPosition(bb.position() + 8);
+        ByteBuffer bb = TypedArrayHelper.wrap(flightSchemaMessage);
+        bb.position(bb.position() + 8);
         Message headerMessage = Message.getRootAsMessage(bb);
 
         assert headerMessage.headerType() == MessageHeader.Schema;
-        return headerMessage.header(new Schema());
+        return (Schema) headerMessage.header(new Schema());
     }
 
     public static Map<String, String> keyValuePairs(String filterPrefix, double count,
-            DoubleFunction<KeyValue> accessor) {
+            IntFunction<KeyValue> accessor) {
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < count; i++) {
             KeyValue pair = accessor.apply(i);
-            String key = pair.key().asString();
+            String key = pair.key();
             if (key.startsWith(filterPrefix)) {
                 key = key.substring(filterPrefix.length());
-                String oldValue = map.put(key, pair.value().asString());
+                String oldValue = map.put(key, pair.value());
                 assert oldValue == null : key + " had " + oldValue + ", replaced with " + pair.value();
             }
         }
@@ -198,10 +197,10 @@ public class WebBarrageUtils {
         return array;
     }
 
-    public static Uint8Array serializeRanges(Set<RangeSet> rangeSets) {
+    public static ByteBuffer serializeRanges(Set<RangeSet> rangeSets) {
         final RangeSet s;
         if (rangeSets.size() == 0) {
-            return new Uint8Array(0);
+            return ByteBuffer.allocate(0);
         } else if (rangeSets.size() == 1) {
             s = rangeSets.iterator().next();
         } else {
@@ -212,20 +211,17 @@ public class WebBarrageUtils {
         }
 
         ByteBuffer payload = CompressedRangeSetReader.writeRange(s);
-        ArrayBufferView buffer = TypedArrayHelper.unwrap(payload);
-        return new Uint8Array(buffer);
+        return payload;
     }
 
     public static ByteBuffer typedArrayToLittleEndianByteBuffer(Uint8Array data) {
-        ArrayBuffer slicedBuffer = data.<Uint8Array>slice().buffer;
-        ByteBuffer bb = TypedArrayHelper.wrap(slicedBuffer);
+        ByteBuffer bb = TypedArrayHelper.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         return bb;
     }
 
     public static ByteBuffer typedArrayToLittleEndianByteBuffer(Int8Array data) {
-        ArrayBuffer slicedBuffer = data.<Int8Array>slice().buffer;
-        ByteBuffer bb = TypedArrayHelper.wrap(slicedBuffer);
+        ByteBuffer bb = TypedArrayHelper.wrap(data);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         return bb;
     }
@@ -236,15 +232,15 @@ public class WebBarrageUtils {
 
         final RangeSet includedAdditions;
         if (barrageUpdate == null) {
-            includedAdditions = added = RangeSet.ofRange(0, (long) (header.length().toFloat64() - 1));
+            includedAdditions = added = RangeSet.ofRange(0, (long) (header.length() - 1));
         } else {
             added = new CompressedRangeSetReader()
-                    .read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsArray()));
+                    .read(barrageUpdate.addedRowsAsByteBuffer());
 
-            Int8Array addedRowsIncluded = barrageUpdate.addedRowsIncludedArray();
+            ByteBuffer addedRowsIncluded = barrageUpdate.addedRowsIncludedAsByteBuffer();
             if (isViewport && addedRowsIncluded != null) {
                 includedAdditions = new CompressedRangeSetReader()
-                        .read(typedArrayToLittleEndianByteBuffer(addedRowsIncluded));
+                        .read(addedRowsIncluded);
             } else {
                 // if this isn't a viewport, then a second index isn't sent, because all rows are included
                 includedAdditions = added;
@@ -282,19 +278,19 @@ public class WebBarrageUtils {
             this.columnTypes = columnTypes;
 
             deltaUpdates.setAdded(new CompressedRangeSetReader()
-                    .read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsArray())));
+                    .read(barrageUpdate.addedRowsAsByteBuffer()));
             deltaUpdates.setRemoved(new CompressedRangeSetReader()
-                    .read(typedArrayToLittleEndianByteBuffer(barrageUpdate.removedRowsArray())));
+                    .read(barrageUpdate.removedRowsAsByteBuffer()));
 
             deltaUpdates.setShiftedRanges(
-                    new ShiftedRangeReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.shiftDataArray())));
+                    new ShiftedRangeReader().read(barrageUpdate.shiftDataAsByteBuffer()));
 
             RangeSet includedAdditions;
 
-            Int8Array addedRowsIncluded = barrageUpdate.addedRowsIncludedArray();
+            ByteBuffer addedRowsIncluded = barrageUpdate.addedRowsIncludedAsByteBuffer();
             if (isViewport && addedRowsIncluded != null) {
                 includedAdditions = new CompressedRangeSetReader()
-                        .read(typedArrayToLittleEndianByteBuffer(addedRowsIncluded));
+                        .read(addedRowsIncluded);
             } else {
                 // if this isn't a viewport, then a second index isn't sent, because all rows are included
                 includedAdditions = deltaUpdates.getAdded();
@@ -307,7 +303,7 @@ public class WebBarrageUtils {
             for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
                 BarrageModColumnMetadata columnMetadata = barrageUpdate.modColumnNodes(columnIndex);
                 RangeSet modifiedRows = new CompressedRangeSetReader()
-                        .read(typedArrayToLittleEndianByteBuffer(columnMetadata.modifiedRowsArray()));
+                        .read(columnMetadata.modifiedRowsAsByteBuffer());
                 numModRowsRemaining = Math.max(numModRowsRemaining, modifiedRows.size());
             }
         }
@@ -334,13 +330,13 @@ public class WebBarrageUtils {
             DeltaUpdates.ColumnAdditions[] addedColumnData = new DeltaUpdates.ColumnAdditions[columnTypes.length];
             for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
                 assert nodes.hasNext() && buffers.hasNext();
-                ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) nodes.peek().length().toFloat64(),
+                ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) nodes.peek().length(),
                         columnTypes[columnIndex]);
 
                 addedColumnData[columnIndex] = new DeltaUpdates.ColumnAdditions(columnIndex, columnData);
             }
             deltaUpdates.setSerializedAdditions(addedColumnData);
-            numAddRowsRemaining -= (long) recordBatch.length().toFloat64();
+            numAddRowsRemaining -= (long) recordBatch.length();
         }
 
         private void handleModBatch(RecordBatch recordBatch, ByteBuffer body) {
@@ -356,15 +352,15 @@ public class WebBarrageUtils {
 
                 BarrageModColumnMetadata columnMetadata = barrageUpdate.modColumnNodes(columnIndex);
                 RangeSet modifiedRows = new CompressedRangeSetReader()
-                        .read(typedArrayToLittleEndianByteBuffer(columnMetadata.modifiedRowsArray()));
+                        .read(columnMetadata.modifiedRowsAsByteBuffer());
 
-                ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) nodes.peek().length().toFloat64(),
+                ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) nodes.peek().length(),
                         columnTypes[columnIndex]);
                 modifiedColumnData[columnIndex] =
                         new DeltaUpdates.ColumnModifications(columnIndex, modifiedRows, columnData);
             }
             deltaUpdates.setSerializedModifications(modifiedColumnData);
-            numModRowsRemaining -= (long) recordBatch.length().toFloat64();
+            numModRowsRemaining -= (long) recordBatch.length();
         }
 
         public DeltaUpdates build() {
@@ -377,29 +373,29 @@ public class WebBarrageUtils {
         // explicit cast to be clear that we're rounding down
         BitSet valid = readValidityBufferAsBitset(data, size, buffers.next());
         FieldNode thisNode = nodes.next();
-        boolean hasNulls = thisNode.nullCount().toFloat64() != 0;
-        size = Math.min(size, (int) thisNode.length().toFloat64());
+        boolean hasNulls = thisNode.nullCount() != 0;
+        size = Math.min(size, (int) thisNode.length());
 
         Buffer positions = buffers.next();
         switch (columnType) {
             // for simple well-supported typedarray types, wrap and return
             case "int":
-                assert positions.length().toFloat64() >= size * 4;
+                assert positions.length() >= size * 4;
                 Int32Array intArray = new Int32Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset().toFloat64(), size);
+                        (int) positions.offset(), size);
                 return new IntArrayColumnData(Js.uncheckedCast(intArray));
             case "short":
-                assert positions.length().toFloat64() >= size * 2;
+                assert positions.length() >= size * 2;
                 Int16Array shortArray = new Int16Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset().toFloat64(), size);
+                        (int) positions.offset(), size);
                 return new ShortArrayColumnData(Js.uncheckedCast(shortArray));
             case "boolean":
             case "java.lang.Boolean":
                 // noinspection IntegerDivisionInFloatingPointContext
-                assert positions.length().toFloat64() >= ((size + 63) / 64);
+                assert positions.length() >= ((size + 63) / 64);
                 // booleans are stored as a bitset, but internally we represent booleans as bytes
-                data.position((int) positions.offset().toFloat64());
-                BitSet wireValues = readBitSetWithLength(data, (int) (positions.length().toFloat64()));
+                data.position((int) positions.offset());
+                BitSet wireValues = readBitSetWithLength(data, (int) (positions.length()));
                 Boolean[] boolArray = new Boolean[size];
                 for (int i = 0; i < size; ++i) {
                     if (!hasNulls || valid.get(i)) {
@@ -408,41 +404,41 @@ public class WebBarrageUtils {
                 }
                 return new BooleanArrayColumnData(boolArray);
             case "byte":
-                assert positions.length().toFloat64() >= size;
+                assert positions.length() >= size;
                 Int8Array byteArray =
-                        new Int8Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
+                        new Int8Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset(), size);
                 return new ByteArrayColumnData(Js.uncheckedCast(byteArray));
             case "double":
-                assert positions.length().toFloat64() >= size * 8;
+                assert positions.length() >= size * 8;
                 Float64Array doubleArray = new Float64Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset().toFloat64(), size);
+                        (int) positions.offset(), size);
                 return new DoubleArrayColumnData(Js.uncheckedCast(doubleArray));
             case "float":
-                assert positions.length().toFloat64() >= size * 4;
+                assert positions.length() >= size * 4;
                 Float32Array floatArray = new Float32Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset().toFloat64(), size);
+                        (int) positions.offset(), size);
                 return new FloatArrayColumnData(Js.uncheckedCast(floatArray));
             case "char":
-                assert positions.length().toFloat64() >= size * 2;
+                assert positions.length() >= size * 2;
                 Uint16Array charArray = new Uint16Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset().toFloat64(), size);
+                        (int) positions.offset(), size);
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
             case "java.time.Instant":
             case "java.time.ZonedDateTime":
-                assert positions.length().toFloat64() >= size * 8;
+                assert positions.length() >= size * 8;
                 long[] longArray = new long[size];
 
-                data.position((int) positions.offset().toFloat64());
+                data.position((int) positions.offset());
                 for (int i = 0; i < size; i++) {
                     longArray[i] = data.getLong();
                 }
                 return new LongArrayColumnData(longArray);
             // all other types are read out in some custom way
             case "java.time.LocalTime":// LocalDateArrayColumnData
-                assert positions.length().toFloat64() >= size * 6;
-                data.position((int) positions.offset().toFloat64());
+                assert positions.length() >= size * 6;
+                data.position((int) positions.offset());
                 LocalDate[] localDateArray = new LocalDate[size];
                 for (int i = 0; i < size; i++) {
                     int year = data.getInt();
@@ -452,10 +448,10 @@ public class WebBarrageUtils {
                 }
                 return new LocalDateArrayColumnData(localDateArray);
             case "java.time.LocalDate":// LocalTimeArrayColumnData
-                assert positions.length().toFloat64() == size * 7;
+                assert positions.length() == size * 7;
                 LocalTime[] localTimeArray = new LocalTime[size];
 
-                data.position((int) positions.offset().toFloat64());
+                data.position((int) positions.offset());
                 for (int i = 0; i < size; i++) {
                     int nano = data.getInt();
                     byte hour = data.get();
@@ -471,8 +467,8 @@ public class WebBarrageUtils {
 
                 if (columnType.endsWith("[]")) {
                     FieldNode arrayNode = nodes.next();
-                    int innerSize = (int) arrayNode.length().toFloat64();
-                    boolean innerHasNulls = arrayNode.nullCount().toFloat64() != 0;
+                    int innerSize = (int) arrayNode.length();
+                    boolean innerHasNulls = arrayNode.nullCount() != 0;
 
                     // array type, also read the inner valid buffer and inner offset buffer
                     BitSet innerValid = readValidityBufferAsBitset(data, innerSize, buffers.next());
@@ -501,7 +497,7 @@ public class WebBarrageUtils {
                                     }
                                     // might be cheaper to do views on the underlying bb (which will be copied anyway
                                     // into the String)
-                                    data.position((int) (payload.offset().toFloat64()) + innerOffsets.get(inner));
+                                    data.position((int) (payload.offset()) + innerOffsets.get(inner));
                                     int stringSize = innerOffsets.get(inner + 1) - innerOffsets.get(inner);
                                     byte[] stringBytes = new byte[stringSize];
                                     data.get(stringBytes);
@@ -529,7 +525,7 @@ public class WebBarrageUtils {
                                 }
                                 int ioff = offsets.get(i);
                                 int len = offsets.get(i + 1) - ioff;
-                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                data.position((int) (payload.offset()) + ioff);
                                 if (buf.length < len) {
                                     buf = new byte[len];
                                 }
@@ -548,7 +544,7 @@ public class WebBarrageUtils {
                                 }
                                 int ioff = offsets.get(i);
                                 int len = offsets.get(i + 1) - ioff;
-                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                data.position((int) (payload.offset()) + ioff);
                                 int scale = data.getInt();
                                 len -= 4;
                                 if (buf == null || buf.length != len) {
@@ -570,7 +566,7 @@ public class WebBarrageUtils {
                                 if (buf == null || buf.length != len) {
                                     buf = new byte[len];
                                 }
-                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                data.position((int) (payload.offset()) + ioff);
                                 bigIntArray[i] = readBigInt(data, buf);
                             }
                             return new BigIntegerArrayColumnData(bigIntArray);
@@ -595,13 +591,13 @@ public class WebBarrageUtils {
     }
 
     private static BitSet readValidityBufferAsBitset(ByteBuffer data, int size, Buffer buffer) {
-        if (size == 0 || buffer.length().toFloat64() == 0) {
+        if (size == 0 || buffer.length() == 0) {
             // these buffers are optional (and empty) if the column is empty, or if it has primitives and we've allowed
             // DH nulls
             return new BitSet(0);
         }
-        data.position((int) buffer.offset().toFloat64());
-        BitSet valid = readBitSetWithLength(data, (int) (buffer.length().toFloat64()));
+        data.position((int) buffer.offset());
+        BitSet valid = readBitSetWithLength(data, (int) (buffer.length()));
         return valid;
     }
 
@@ -617,7 +613,7 @@ public class WebBarrageUtils {
             IntBuffer emptyOffsets = IntBuffer.allocate(1);
             return emptyOffsets;
         }
-        data.position((int) buffer.offset().toFloat64());
+        data.position((int) buffer.offset());
         IntBuffer offsets = data.slice().asIntBuffer();
         offsets.limit(size + 1);
         return offsets;

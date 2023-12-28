@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.tree;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
@@ -14,19 +15,13 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
@@ -62,6 +57,11 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flatbuf.Schema;
+import org.gwtproject.nio.TypedArrayHelper;
 
 import java.util.*;
 import java.util.function.Function;
@@ -668,19 +668,17 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                     new FlightData());
 
                     FlightData subscriptionRequestWrapper = new FlightData();
-                    Builder doGetRequest = new Builder(1024);
-                    double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
-                            makeUint8ArrayFromBitset(columnsBitset));
-                    double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest,
-                            serializeRanges(
-                                    Collections.singleton(
-                                            range)));
-                    double serializationOptionsOffset = BarrageSubscriptionOptions
+                    FlatBufferBuilder doGetRequest = new FlatBufferBuilder(1024);
+                    int columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
+                            columnsBitset.toByteArray());
+                    int viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest,
+                            serializeRanges(Collections.singleton(range)));
+                    int serializationOptionsOffset = BarrageSubscriptionOptions
                             .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
-                                    updateInterval, 0, 0);
-                    double tableTicketOffset =
+                                    updateInterval, 0, 0, false);
+                    int tableTicketOffset =
                             BarrageSubscriptionRequest.createTicketVector(doGetRequest,
-                                    viewTicket.ticket().getTicket_asU8());
+                                    TypedArrayHelper.wrap(viewTicket.ticket().getTicket_asU8()));
                     BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
                     BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
                     BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
@@ -704,24 +702,23 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                         this.stream = null;
                     });
                     doExchange.onData(flightData -> {
-                        Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
+                        Message message =
+                                Message.getRootAsMessage(TypedArrayHelper.wrap(flightData.getDataHeader_asU8()));
                         if (message.headerType() == MessageHeader.Schema) {
                             // ignore for now, we'll handle this later
                             return;
                         }
                         assert message.headerType() == MessageHeader.RecordBatch;
-                        RecordBatch header = message.header(new RecordBatch());
+                        RecordBatch header = (RecordBatch) message.header(new RecordBatch());
                         Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
                         BarrageUpdateMetadata update = null;
                         if (appMetadataBytes.length != 0) {
                             BarrageMessageWrapper barrageMessageWrapper =
-                                    BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                            new ByteBuffer(
-                                                    appMetadataBytes));
+                                    BarrageMessageWrapper
+                                            .getRootAsBarrageMessageWrapper(TypedArrayHelper.wrap(appMetadataBytes));
 
                             update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                                    new ByteBuffer(
-                                            new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+                                    barrageMessageWrapper.msgPayloadAsByteBuffer());
                         }
                         TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
                                 WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()),

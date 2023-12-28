@@ -28,11 +28,11 @@ var browserHeaders = require("browser-headers");
 
 var grpcWeb = require("@improbable-eng/grpc-web");//usually .grpc
 var jspb = require("google-protobuf");
-var flatbuffers = require("flatbuffers").flatbuffers;
-var barrage = require("@deephaven/barrage");
+// var flatbuffers = require("flatbuffers").flatbuffers;
+// var barrage = require("@deephaven/barrage");
 
-var message = require('./arrow/flight/flatbuf/Message_generated');
-var schema = require('./arrow/flight/flatbuf/Schema_generated');
+// var message = require('./arrow/flight/flatbuf/Message_generated');
+// var schema = require('./arrow/flight/flatbuf/Schema_generated');
 
 var io = { deephaven: {
     proto: {
@@ -58,17 +58,17 @@ var io = { deephaven: {
             hierarchicaltable_pb: proto.io.deephaven.proto.backplane.grpc,
             hierarchicaltable_pb_service: hierarchicalTableService
         },
-        barrage: {
-            "flatbuf": {
-                "Barrage_generated": barrage,
-            }
-        }
+        // barrage: {
+        //     "flatbuf": {
+        //         "Barrage_generated": barrage,
+        //     }
+        // }
 }};
 var arrow = { flight: {
-    flatbuf: {
-        Message_generated: message,
-        Schema_generated: schema,
-    },
+    // flatbuf: {
+    //     Message_generated: message,
+    //     Schema_generated: schema,
+    // },
     protocol: {
             Flight_pb: proto.arrow.flight.protocol,
             Flight_pb_service: flightService,
@@ -80,7 +80,7 @@ var dhinternal = {
     browserHeaders,
     jspb,
     grpcWeb,//TODO need to expand this to the specific things we need
-    flatbuffers,
+    // flatbuffers,
     io,
     arrow
 };
