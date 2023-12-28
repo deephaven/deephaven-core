@@ -58,12 +58,6 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
         if (source.isRefreshing()) {
             result = new QueryTable(source.getRowSet(), resultSources);
 
-            // this is a refreshing source, we will need a listener
-            sourceListener = newUpdateByListener();
-            source.addUpdateListener(sourceListener);
-            // result will depend on listener
-            result.addParentReference(sourceListener);
-
             // create input and output modified column sets
             forAllOperators(op -> {
                 op.createInputModifiedColumnSet(source);
@@ -80,6 +74,12 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);
+
+            // this is a refreshing source, we will need a listener
+            sourceListener = newUpdateByListener();
+            source.addUpdateListener(sourceListener);
+            // result will depend on listener
+            result.addParentReference(sourceListener);
         } else {
             zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
                     timestampColumnName, control, (oe, se) -> {
