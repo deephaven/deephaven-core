@@ -3,6 +3,9 @@ package io.deephaven.parquet.table;
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;
 
+/**
+ * This class provides instructions intended for reading and writing parquet files to AWS S3 instances.
+ */
 @Value.Immutable
 @BuildableStyle
 public abstract class S3ParquetInstructions {
@@ -17,23 +20,39 @@ public abstract class S3ParquetInstructions {
         return ImmutableS3ParquetInstructions.builder();
     }
 
+    /**
+     * The AWS region name to use when reading or writing to S3.
+     */
     public abstract String awsRegionName();
 
+    /**
+     * The maximum number of concurrent requests to make to S3.
+     */
     @Value.Default
     public int maxConcurrentRequests() {
         return DEFAULT_MAX_CONCURRENT_REQUESTS;
     }
 
+    /**
+     * The number of fragments to send asynchronous read requests for while reading the current fragment.
+     */
     @Value.Default
     public int readAheadCount() {
         return DEFAULT_READ_AHEAD_COUNT;
     }
 
+    /**
+     * The maximum size of each fragment to read from S3. The fetched fragment can be smaller than this in case fewer
+     * bytes remaining in the file.
+     */
     @Value.Default
     public int fragmentSize() {
         return DEFAULT_FRAGMENT_SIZE;
     }
 
+    /**
+     * The maximum number of fragments to cache in memory.
+     */
     @Value.Default
     public int maxCacheSize() {
         return DEFAULT_MAX_CACHE_SIZE;

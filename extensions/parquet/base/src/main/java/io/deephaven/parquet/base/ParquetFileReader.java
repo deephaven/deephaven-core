@@ -67,9 +67,10 @@ public class ParquetFileReader {
         }
         // Root path should be this file if a single file, else the parent directory for a metadata file
         rootPath = parquetFileURI.getRawPath().endsWith(".parquet") ? filePath : filePath.getParent();
+        // TODO Close this context after Ryan's patch
+        final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
         final byte[] footer;
-        try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
-                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, filePath)) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, filePath)) {
             final long fileLen = readChannel.size();
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC

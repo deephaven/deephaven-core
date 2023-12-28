@@ -1,27 +1,38 @@
 package io.deephaven.parquet.table.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.channels.WritableByteChannel;
-import java.nio.file.StandardOpenOption;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+
+/**
+ * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability
+ * to read ahead and cache fragments of the object.
+ */
 public final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
+
+    private static final long CLOSED_SENTINEL = -1;
+
+    /**
+     * Maximum time to wait while fetching fragments from S3.
+     */
+    static final Long CONNECTION_TIMEOUT_MINUTES = 1L;
+    static final TimeUnit CONNECTION_TIMEOUT_UNIT = TimeUnit.MINUTES;
 
     /**
      * Context object used to store read-ahead buffers for efficiently reading from S3.
@@ -29,10 +40,17 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     static final class ChannelContext implements SeekableChannelsProvider.ChannelContext {
 
         /**
-         * Used to store context information for fetching a single fragment from S3
+         * Used to store information related to a single fragment
          */
         static class FragmentContext {
+            /**
+             * The index of the fragment in the object
+             */
             private final int fragmentIndex;
+
+            /**
+             * The future that will be completed with the fragment's bytes
+             */
             private final CompletableFuture<ByteBuffer> future;
 
             private FragmentContext(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
@@ -64,75 +82,78 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         FragmentContext getFragmentContext(final int fragmentIndex) {
             return readAheadBuffers.get(getIndex(fragmentIndex));
         }
+
+        @Override
+        public void close() {
+            readAheadBuffers.clear();
+        }
     }
 
-    private long position;
-    private final S3AsyncClient s3Client;
-    private volatile boolean closed;
-    private final String bucket, key;
-    private final int fragmentSize;
-    private final int readAheadCount;
-    private final int numFragmentsInObject;
-    private final long size;
-    private final Long timeout;
-    private final TimeUnit timeUnit;
     private ChannelContext context;
 
-    S3SeekableByteChannel(SeekableChannelsProvider.ChannelContext context, String bucket, String key, S3AsyncClient s3Client, long size, int fragmentSize, int readAheadCount) {
+    private volatile long position;
+
+    private final S3AsyncClient s3Client;
+    private final String bucket, key;
+    private final int numFragmentsInObject;
+    private final int fragmentSize;
+    private final int readAheadCount;
+
+    /**
+     * The size of the object in bytes
+     */
+    private final long size;
+
+    /**
+     * The maximum time and units to wait while fetching an object
+     **/
+    private final Long timeout;
+    private final TimeUnit timeUnit;
+
+
+    S3SeekableByteChannel(@NotNull final SeekableChannelsProvider.ChannelContext context, @NotNull final String bucket,
+                          @NotNull final String key, @NotNull final S3AsyncClient s3Client, final long size,
+                          final int fragmentSize, final int readAheadCount) {
         this.position = 0;
         this.bucket = bucket;
         this.key = key;
-        this.closed = false;
         this.s3Client = s3Client;
 
         this.fragmentSize = fragmentSize;
         this.readAheadCount = readAheadCount;
-        this.timeout = 5L;
-        this.timeUnit = TimeUnit.MINUTES;
+        this.timeout = CONNECTION_TIMEOUT_MINUTES;
+        this.timeUnit = CONNECTION_TIMEOUT_UNIT;
         this.size = size;
         this.numFragmentsInObject = (int) Math.ceil((double) size / fragmentSize);
         this.context = (ChannelContext) context;
     }
 
     @Override
-    public void setContext(@Nullable SeekableChannelsProvider.ChannelContext context) {
-        // null context is allowed for clearing the context
+    public void setContext(@Nullable final SeekableChannelsProvider.ChannelContext context) {
+        // null context equivalent to clearing the context
         if (context != null && !(context instanceof ChannelContext)) {
             throw new IllegalArgumentException("context must be null or an instance of ChannelContext");
         }
         this.context = (ChannelContext) context;
     }
 
-    /**
-     * Reads a sequence of bytes from this channel into the given buffer.
-     *
-     * <p> Bytes are read starting at this channel's current position, and
-     * then the position is updated with the number of bytes actually read.
-     * Otherwise, this method behaves exactly as specified in the {@link
-     * ReadableByteChannel} interface.
-     *
-     * @param dst the destination buffer
-     * @return the number of bytes read or -1 if no more bytes can be read.
-     */
     @Override
-    public int read(final ByteBuffer dst) throws IOException {
-        validateOpen();
-
-        Objects.requireNonNull(dst);
-
-        final long channelPosition = this.position();
-
-        // if the position of the delegator is at the end (>= size) return -1. we're finished reading.
-        if (channelPosition >= size) {
+    public int read(@NotNull final ByteBuffer destination) throws ClosedChannelException {
+        Assert.neqNull(context, "context");
+        if (!destination.hasRemaining()) {
+            return 0;
+        }
+        final long localPosition = position;
+        checkClosed(localPosition);
+        if (localPosition >= size) {
+            // We are finished reading
             return -1;
         }
 
-        // Figure out the index of the fragment the bytes would start in
-        final int currFragmentIndex = fragmentIndexForByteNumber(channelPosition);
-        final int fragmentOffset = (int) (channelPosition - ((long) currFragmentIndex * fragmentSize));
-        Assert.neqNull(context, "context");
+        final int currFragmentIndex = fragmentIndexForByteNumber(localPosition);
+        final int fragmentOffset = (int) (localPosition - (currFragmentIndex * fragmentSize));
 
-        // Blocking fetch the current fragment if it's not already in the cache
+        // Send async read request the current fragment, if it's not already in the cache
         final ChannelContext.FragmentContext fragmentContext = context.getFragmentContext(currFragmentIndex);
         final CompletableFuture<ByteBuffer> fetchCurrFragment;
         if (fragmentContext != null && fragmentContext.fragmentIndex == currFragmentIndex) {
@@ -141,25 +162,8 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
             fetchCurrFragment = computeFragmentFuture(currFragmentIndex);
             context.setFragmentContext(currFragmentIndex, fetchCurrFragment);
         }
-        final ByteBuffer currentFragment;
-        try {
-            currentFragment = fetchCurrFragment.get(timeout, timeUnit).asReadOnlyBuffer();
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        } catch (final ExecutionException e) {
-            throw new IOException(e);
-        } catch (final TimeoutException e) {
-            throw new RuntimeException(e);
-        }
 
-        // Put the bytes from fragment from the offset up to the min of fragment remaining or dst remaining
-        currentFragment.position(fragmentOffset);
-        final int limit = Math.min(currentFragment.remaining(), dst.remaining());
-        currentFragment.limit(currentFragment.position() + limit);
-        dst.put(currentFragment);
-
-        // Send requests for read-ahead buffers
+        // Send async requests for read-ahead buffers and store them in the cache
         final int numFragmentsToLoad = Math.min(readAheadCount, numFragmentsInObject - currFragmentIndex - 1);
         for (int i = 0; i < numFragmentsToLoad; i++) {
             final int readAheadFragmentIndex = i + currFragmentIndex + 1;
@@ -169,16 +173,26 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
             }
         }
 
-        position(channelPosition + limit);
+        // Wait till the current fragment is fetched
+        final ByteBuffer currentFragment;
+        try {
+            currentFragment = fetchCurrFragment.get(timeout, timeUnit).asReadOnlyBuffer();
+        } catch (final InterruptedException | ExecutionException | TimeoutException | RuntimeException e) {
+            throw new UncheckedDeephavenException("Failed to fetch fragment " + currFragmentIndex + " at byte offset "
+                    + fragmentOffset + " for file " + key + " in S3 bucket " + bucket, e);
+        }
+
+        // Copy the bytes from fragment from the offset up to the min of remaining fragment and destination bytes.
+        // Therefore, the number of bytes read by this method can be less than the number of bytes remaining in the
+        // destination buffer.
+        currentFragment.position(fragmentOffset);
+        final int limit = Math.min(currentFragment.remaining(), destination.remaining());
+        currentFragment.limit(currentFragment.position() + limit);
+        destination.put(currentFragment);
+        position = localPosition + limit;
         return limit;
     }
 
-    /**
-     * Compute which fragment a byte should be in
-     *
-     * @param byteNumber the number of the byte in the object accessed by this channel
-     * @return the index of the fragment in which {@code byteNumber} will be found.
-     */
     private int fragmentIndexForByteNumber(final long byteNumber) {
         return Math.toIntExact(Math.floorDiv(byteNumber, (long) fragmentSize));
     }
@@ -187,13 +201,8 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         final long readFrom = (long) fragmentIndex * fragmentSize;
         final long readTo = Math.min(readFrom + fragmentSize, size) - 1;
         final String range = "bytes=" + readFrom + "-" + readTo;
-
-        return s3Client.getObject(
-                        builder -> builder
-                                .bucket(bucket)
-                                .key(key)
-                                .range(range),
-                        new ByteBufferAsyncResponseTransformer<>(fragmentSize));
+        return s3Client.getObject(builder -> builder.bucket(bucket).key(key).range(range),
+                new ByteBufferAsyncResponseTransformer<>(fragmentSize));
     }
 
     @Override
@@ -203,32 +212,25 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
 
     @Override
     public long position() throws ClosedChannelException {
-        validateOpen();
-
-        synchronized (this) {
-            return position;
-        }
+        final long localPosition = position;
+        checkClosed(localPosition);
+        return localPosition;
     }
 
     @Override
     public SeekableByteChannel position(final long newPosition) throws ClosedChannelException {
-        if (newPosition < 0)
-            throw new IllegalArgumentException("newPosition cannot be < 0");
-
-        if (!isOpen()) {
-            throw new ClosedChannelException();
+        if (newPosition < 0) {
+            throw new IllegalArgumentException("newPosition cannot be < 0, provided newPosition=" + newPosition);
         }
-
-        synchronized (this) {
-            position = newPosition;
-            return this;
-        }
+        checkClosed(position);
+        position = newPosition;
+        return this;
     }
 
     @Override
     public long size() throws ClosedChannelException {
-        validateOpen();
-        return this.size;
+        checkClosed(position);
+        return size;
     }
 
     @Override
@@ -238,20 +240,16 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
 
     @Override
     public boolean isOpen() {
-        synchronized (this) {
-            return !this.closed;
-        }
+        return position != CLOSED_SENTINEL;
     }
 
     @Override
     public void close() throws IOException {
-        synchronized (this) {
-            closed = true;
-        }
+        position = CLOSED_SENTINEL;
     }
 
-    private void validateOpen() throws ClosedChannelException {
-        if (this.closed) {
+    private static void checkClosed(final long position) throws ClosedChannelException {
+        if (position == CLOSED_SENTINEL) {
             throw new ClosedChannelException();
         }
     }

@@ -116,7 +116,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     @TestUseOnly
     public final TableLocationProvider tableLocationProvider() {
         return locationProvider;
-        // Ignore
     }
 
     /**

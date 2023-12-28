@@ -11,13 +11,14 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * An {@link AsyncResponseTransformer} that transforms a response into a {@link ByteBuffer}.
+ * This class is inspired from {@link software.amazon.awssdk.core.internal.async.ByteArrayAsyncResponseTransformer}
+ * but avoids a number of extra copies done by the former.
  *
  * @param <ResponseT> POJO response type.
  */
 public final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
 
     private volatile CompletableFuture<ByteBuffer> cf;
-    private ResponseT response;
     private final ByteBuffer byteBuffer;
 
     ByteBufferAsyncResponseTransformer(final int bufferSize) {
@@ -33,14 +34,7 @@ public final class ByteBufferAsyncResponseTransformer<ResponseT> implements Asyn
 
     @Override
     public void onResponse(ResponseT response) {
-        this.response = response;
-    }
-
-    /**
-     * @return the unmarshalled response object from the service.
-     */
-    public ResponseT response() {
-        return response;
+        // No need to store the response object as we are only interested in the byte buffer
     }
 
     @Override
@@ -55,9 +49,7 @@ public final class ByteBufferAsyncResponseTransformer<ResponseT> implements Asyn
 
     final static class ByteBuferSubscriber implements Subscriber<ByteBuffer> {
         private final CompletableFuture<ByteBuffer> resultFuture;
-
         private Subscription subscription;
-
         private final ByteBuffer byteBuffer;
 
         ByteBuferSubscriber(CompletableFuture<ByteBuffer> resultFuture, ByteBuffer byteBuffer) {

@@ -14,6 +14,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
     private Context innerContext;
 
     public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
+
         this.chunkCapacity = chunkCapacity;
         this.sharedContext = sharedContext;
     }
