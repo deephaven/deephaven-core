@@ -205,7 +205,9 @@ func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startT
 
 	result := ts.client.ticketFact.newTicket()
 
-	req := tablepb2.TimeTableRequest{ResultId: &result, PeriodNanos: period.Nanoseconds(), StartTimeNanos: startTime.UnixNano()}
+	req := tablepb2.TimeTableRequest{ResultId: &result,
+		Period:    &tablepb2.TimeTableRequest_PeriodNanos{PeriodNanos: period.Nanoseconds()},
+		StartTime: &tablepb2.TimeTableRequest_StartTimeNanos{StartTimeNanos: startTime.UnixNano()}}
 	resp, err := ts.stub.TimeTable(ctx, &req)
 	if err != nil {
 		return nil, err
