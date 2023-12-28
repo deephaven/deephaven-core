@@ -454,7 +454,9 @@ func (op timeTableOp) childQueries() []QueryNode {
 
 func (op timeTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
 	assert(len(children) == 0, "wrong number of children for TimeTable")
-	req := &tablepb2.TimeTableRequest{ResultId: resultId, PeriodNanos: op.period.Nanoseconds(), StartTimeNanos: op.startTime.UnixNano()}
+	req := &tablepb2.TimeTableRequest{ResultId: resultId,
+		Period:    &tablepb2.TimeTableRequest_PeriodNanos{PeriodNanos: op.period.Nanoseconds()},
+		StartTime: &tablepb2.TimeTableRequest_StartTimeNanos{StartTimeNanos: op.startTime.UnixNano()}}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_TimeTable{TimeTable: req}}
 }
 
