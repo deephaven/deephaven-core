@@ -377,6 +377,15 @@ include ':clock-impl'
 
 include ':sql'
 
+include ':functions'
+project(':functions').projectDir = file('java/functions')
+
+include ':processor'
+project(':processor').projectDir = file('java/processor')
+
+include ':processor-functions'
+project(':processor-functions').projectDir = file('java/processor-functions')
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")

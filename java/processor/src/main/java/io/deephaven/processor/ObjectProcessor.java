@@ -129,7 +129,7 @@ public interface ObjectProcessor<T> {
      * </tr>
      * <tr>
      * <td>{@link InstantType}</td>
-     * <td>{@link ChunkType#Long} ({@link io.deephaven.time.DateTimeUtils#epochNanos(Instant)})</td>
+     * <td>{@link ChunkType#Long} (io.deephaven.time.DateTimeUtils#epochNanos(Instant))</td>
      * </tr>
      * <tr>
      * <td>All other {@link GenericType}</td>

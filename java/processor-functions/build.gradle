@@ -1,0 +1,16 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+
+dependencies {
+    api project(':processor')
+    api project(':functions')
+
+    implementation project(':engine-time')
+
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    Classpaths.inheritAssertJ(project)
+}

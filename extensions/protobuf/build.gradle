@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     api project(':qst')
+    api project(':functions')
     api 'com.google.protobuf:protobuf-java:3.24.1'
     implementation project(':engine-query-constants')
 

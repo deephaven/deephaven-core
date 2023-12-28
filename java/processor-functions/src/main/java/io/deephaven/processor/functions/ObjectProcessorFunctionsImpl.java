@@ -24,7 +24,6 @@ import io.deephaven.functions.ToObjectFunction;
 import io.deephaven.functions.ToPrimitiveFunction;
 import io.deephaven.functions.ToShortFunction;
 import io.deephaven.functions.TypedFunction;
-import io.deephaven.kafka.ingest.ChunkUtils;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BoxedBooleanType;

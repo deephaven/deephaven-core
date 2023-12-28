@@ -8,6 +8,8 @@ description 'Kafka: Integrating Engine tables with Kafka'
 dependencies {
     api project(':engine-table')
 
+    api project(':processor')
+
     api 'org.apache.avro:avro:1.11.2'
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
