@@ -6,7 +6,7 @@ package io.deephaven.processor;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.Type;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

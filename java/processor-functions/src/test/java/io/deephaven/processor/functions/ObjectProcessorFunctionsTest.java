@@ -23,7 +23,7 @@ import io.deephaven.functions.ToShortFunction;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.BooleanUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

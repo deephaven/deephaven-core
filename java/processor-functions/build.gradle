@@ -10,7 +10,12 @@ dependencies {
 
     implementation project(':engine-time')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+test {
+    useJUnitPlatform()
 }
