@@ -67,7 +67,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
@@ -678,7 +677,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                     updateInterval, 0, 0, false);
                     int tableTicketOffset =
                             BarrageSubscriptionRequest.createTicketVector(doGetRequest,
-                                    TypedArrayHelper.wrap(viewTicket.ticket().getTicket_asU8()));
+                                    Js.<byte[]>uncheckedCast(viewTicket.ticket().getTicket_asU8()));
                     BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
                     BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
                     BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
@@ -721,10 +720,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                     barrageMessageWrapper.msgPayloadAsByteBuffer());
                         }
                         TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
-                                WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()),
-                                update,
-                                true,
-                                columnTypes);
+                                WebBarrageUtils
+                                        .typedArrayToAlignedLittleEndianByteBuffer(flightData.getDataBody_asU8()),
+                                update, true, columnTypes);
 
                         final RangeSet includedRows = snapshot.getIncludedRows();
                         double offset = firstRow;

@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.DoubleFunction;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
@@ -53,14 +52,20 @@ public class WebBarrageUtils {
         int offset =
                 BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset);
         outerBuilder.finish(offset);
-        return new Uint8Array(TypedArrayHelper.unwrap(outerBuilder.dataBuffer().slice()));
+        ByteBuffer byteBuffer = outerBuilder.dataBuffer();
+        return bbToUint8ArrayView(byteBuffer);
+    }
+
+    public static Uint8Array bbToUint8ArrayView(ByteBuffer byteBuffer) {
+        ArrayBufferView view = TypedArrayHelper.unwrap(byteBuffer);
+        return new Uint8Array(view.buffer, byteBuffer.position() + view.byteOffset, byteBuffer.remaining());
     }
 
     public static Uint8Array emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
         builder.finish(offset);
-        return new Uint8Array(TypedArrayHelper.unwrap(builder.dataBuffer()));
+        return bbToUint8ArrayView(builder.dataBuffer());
     }
 
     public static InitialTableDefinition readTableDefinition(Schema schema) {
@@ -199,7 +204,7 @@ public class WebBarrageUtils {
 
     public static ByteBuffer serializeRanges(Set<RangeSet> rangeSets) {
         final RangeSet s;
-        if (rangeSets.size() == 0) {
+        if (rangeSets.isEmpty()) {
             return ByteBuffer.allocate(0);
         } else if (rangeSets.size() == 1) {
             s = rangeSets.iterator().next();
@@ -210,18 +215,12 @@ public class WebBarrageUtils {
             }
         }
 
-        ByteBuffer payload = CompressedRangeSetReader.writeRange(s);
-        return payload;
+        return CompressedRangeSetReader.writeRange(s);
     }
 
-    public static ByteBuffer typedArrayToLittleEndianByteBuffer(Uint8Array data) {
-        ByteBuffer bb = TypedArrayHelper.wrap(data);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-        return bb;
-    }
-
-    public static ByteBuffer typedArrayToLittleEndianByteBuffer(Int8Array data) {
-        ByteBuffer bb = TypedArrayHelper.wrap(data);
+    public static ByteBuffer typedArrayToAlignedLittleEndianByteBuffer(TypedArray data) {
+        // Slice before wrapping to align contents
+        ByteBuffer bb = TypedArrayHelper.wrap(data.slice());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         return bb;
     }
@@ -379,19 +378,20 @@ public class WebBarrageUtils {
         Buffer positions = buffers.next();
         switch (columnType) {
             // for simple well-supported typedarray types, wrap and return
-            case "int":
-                assert positions.length() >= size * 4;
-                Int32Array intArray = new Int32Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset(), size);
+            case "int": {
+                assert positions.length() >= size * 4L;
+                ArrayBufferView view = TypedArrayHelper.unwrap(data);
+                Int32Array intArray = new Int32Array(view.buffer, (int) (view.byteOffset + positions.offset()), size);
                 return new IntArrayColumnData(Js.uncheckedCast(intArray));
-            case "short":
-                assert positions.length() >= size * 2;
-                Int16Array shortArray = new Int16Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset(), size);
+            }
+            case "short": {
+                assert positions.length() >= size * 2L;
+                ArrayBufferView view = TypedArrayHelper.unwrap(data);
+                Int16Array shortArray = new Int16Array(view.buffer, (int) (view.byteOffset + positions.offset()), size);
                 return new ShortArrayColumnData(Js.uncheckedCast(shortArray));
+            }
             case "boolean":
-            case "java.lang.Boolean":
-                // noinspection IntegerDivisionInFloatingPointContext
+            case "java.lang.Boolean": {
                 assert positions.length() >= ((size + 63) / 64);
                 // booleans are stored as a bitset, but internally we represent booleans as bytes
                 data.position((int) positions.offset());
@@ -403,31 +403,40 @@ public class WebBarrageUtils {
                     }
                 }
                 return new BooleanArrayColumnData(boolArray);
-            case "byte":
+            }
+            case "byte": {
                 assert positions.length() >= size;
+                ArrayBufferView view = TypedArrayHelper.unwrap(data);
                 Int8Array byteArray =
-                        new Int8Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset(), size);
+                        new Int8Array(view.buffer, (int) (view.byteOffset + positions.offset()), size);
                 return new ByteArrayColumnData(Js.uncheckedCast(byteArray));
-            case "double":
-                assert positions.length() >= size * 8;
-                Float64Array doubleArray = new Float64Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset(), size);
+            }
+            case "double": {
+                assert positions.length() >= size * 8L;
+                ArrayBufferView view = TypedArrayHelper.unwrap(data);
+                Float64Array doubleArray = new Float64Array(view.buffer,
+                        (int) (view.byteOffset + positions.offset()), size);
                 return new DoubleArrayColumnData(Js.uncheckedCast(doubleArray));
-            case "float":
-                assert positions.length() >= size * 4;
-                Float32Array floatArray = new Float32Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset(), size);
+            }
+            case "float": {
+                assert positions.length() >= size * 4L;
+                ArrayBufferView view = TypedArrayHelper.unwrap(data);
+                Float32Array floatArray = new Float32Array(view.buffer,
+                        (int) (view.byteOffset + positions.offset()), size);
                 return new FloatArrayColumnData(Js.uncheckedCast(floatArray));
-            case "char":
-                assert positions.length() >= size * 2;
-                Uint16Array charArray = new Uint16Array(TypedArrayHelper.unwrap(data).buffer,
-                        (int) positions.offset(), size);
+            }
+            case "char": {
+                assert positions.length() >= size * 2L;
+                ArrayBufferView view = TypedArrayHelper.unwrap(data);
+                Uint16Array charArray = new Uint16Array(view.buffer,
+                        (int) (view.byteOffset + positions.offset()), size);
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
+            }
             // longs are a special case despite being java primitives
             case "long":
             case "java.time.Instant":
-            case "java.time.ZonedDateTime":
-                assert positions.length() >= size * 8;
+            case "java.time.ZonedDateTime": {
+                assert positions.length() >= size * 8L;
                 long[] longArray = new long[size];
 
                 data.position((int) positions.offset());
@@ -435,9 +444,11 @@ public class WebBarrageUtils {
                     longArray[i] = data.getLong();
                 }
                 return new LongArrayColumnData(longArray);
+            }
             // all other types are read out in some custom way
             case "java.time.LocalTime":// LocalDateArrayColumnData
-                assert positions.length() >= size * 6;
+            {
+                assert positions.length() >= size * 6L;
                 data.position((int) positions.offset());
                 LocalDate[] localDateArray = new LocalDate[size];
                 for (int i = 0; i < size; i++) {
@@ -447,8 +458,10 @@ public class WebBarrageUtils {
                     localDateArray[i] = new LocalDate(year, month, day);
                 }
                 return new LocalDateArrayColumnData(localDateArray);
+            }
             case "java.time.LocalDate":// LocalTimeArrayColumnData
-                assert positions.length() == size * 7;
+            {
+                assert positions.length() == size * 7L;
                 LocalTime[] localTimeArray = new LocalTime[size];
 
                 data.position((int) positions.offset());
@@ -461,6 +474,7 @@ public class WebBarrageUtils {
                     localTimeArray[i] = new LocalTime(hour, minute, second, nano);
                 }
                 return new LocalTimeArrayColumnData(localTimeArray);
+            }
             default:
                 // remaining types have an offset buffer to read first
                 IntBuffer offsets = readOffsets(data, size, positions);
@@ -618,5 +632,4 @@ public class WebBarrageUtils {
         offsets.limit(size + 1);
         return offsets;
     }
-
 }

@@ -124,9 +124,8 @@ import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.DeltaUpdatesBuilder;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.createSnapshot;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.deltaUpdates;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.typedArrayToLittleEndianByteBuffer;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.typedArrayToAlignedLittleEndianByteBuffer;
 import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
@@ -1213,7 +1212,7 @@ public class WorkerConnection {
             int bodyLength, int customMetadataOffset) {
         payload.finish(Message.createMessage(payload, MetadataVersion.V5, messageHeaderType, messageHeaderOffset,
                 bodyLength, customMetadataOffset));
-        return new Uint8Array(TypedArrayHelper.unwrap(payload.dataBuffer()));
+        return WebBarrageUtils.bbToUint8ArrayView(payload.dataBuffer());
     }
 
     public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {
@@ -1437,9 +1436,8 @@ public class WorkerConnection {
                 int serializationOptionsOffset = BarrageSubscriptionOptions
                         .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000,
                                 0, 0, false);
-                int tableTicketOffset =
-                        BarrageSubscriptionRequest.createTicketVector(subscriptionReq,
-                                TypedArrayHelper.wrap(state.getHandle().getTicket()));
+                int tableTicketOffset = BarrageSubscriptionRequest.createTicketVector(subscriptionReq,
+                        Js.<byte[]>uncheckedCast(state.getHandle().getTicket()));
                 BarrageSubscriptionRequest.startBarrageSubscriptionRequest(subscriptionReq);
                 BarrageSubscriptionRequest.addColumns(subscriptionReq, columnsOffset);
                 BarrageSubscriptionRequest.addSubscriptionOptions(subscriptionReq, serializationOptionsOffset);
@@ -1461,7 +1459,7 @@ public class WorkerConnection {
                 stream.onData(new JsConsumer<FlightData>() {
                     @Override
                     public void apply(FlightData data) {
-                        ByteBuffer body = typedArrayToLittleEndianByteBuffer(data.getDataBody_asU8());
+                        ByteBuffer body = typedArrayToAlignedLittleEndianByteBuffer(data.getDataBody_asU8());
                         Message headerMessage = Message
                                 .getRootAsMessage(TypedArrayHelper.wrap(data.getDataHeader_asU8()));
                         if (body.limit() == 0 && headerMessage.headerType() != MessageHeader.RecordBatch) {

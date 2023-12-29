@@ -49,7 +49,6 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.Iterator;
 
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
@@ -364,27 +363,9 @@ public class TableViewportSubscription extends HasEventHandling {
                                 barrageMessageWrapper.msgPayloadAsByteBuffer());
                     }
                     TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
-                            WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
-                            true,
-                            columnTypes);
-
-                    // TODO deephaven-core(#188) this check no longer makes sense
-                    Iterator<Range> rangeIterator = rows.getRange().rangeIterator();
-                    long expectedCount = 0;
-                    while (rangeIterator.hasNext()) {
-                        Range range = rangeIterator.next();
-                        if (range.getFirst() >= snapshot.getTableSize()) {
-                            break;
-                        }
-                        long end = Math.min(range.getLast(), snapshot.getTableSize());
-                        expectedCount += end - range.getFirst() + 1;
-                    }
-                    if (expectedCount != snapshot.getIncludedRows().size()) {
-                        callback.onFailure("Server did not send expected number of rows, expected " + expectedCount
-                                + ", actual " + snapshot.getIncludedRows().size());
-                    } else {
-                        callback.onSuccess(snapshot);
-                    }
+                            WebBarrageUtils.typedArrayToAlignedLittleEndianByteBuffer(flightData.getDataBody_asU8()),
+                            update, true, columnTypes);
+                    callback.onSuccess(snapshot);
                 });
                 stream.onStatus(status -> {
                     if (!status.isOk()) {

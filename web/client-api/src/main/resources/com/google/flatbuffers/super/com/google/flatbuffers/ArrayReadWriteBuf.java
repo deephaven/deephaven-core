@@ -1,6 +1,6 @@
 package com.google.flatbuffers;
 
-import java.nio.Numbers;
+import org.gwtproject.nio.Numbers;
 import java.util.Arrays;
 
 /**
@@ -198,7 +198,7 @@ public class ArrayReadWriteBuf implements ReadWriteBuf {
     public void setFloat(int index, float value) {
         requestCapacity(index + 4);
 
-        int iValue = java.nio.Numbers.floatToIntBits(value);
+        int iValue = Numbers.floatToIntBits(value);
         buffer[index++] = (byte) ((iValue) & 0xff);
         buffer[index++] = (byte) ((iValue >>  8) & 0xff);
         buffer[index++] = (byte) ((iValue >> 16) & 0xff);
@@ -209,7 +209,7 @@ public class ArrayReadWriteBuf implements ReadWriteBuf {
     public void setDouble(int index, double value) {
         requestCapacity(index + 8);
 
-        long lValue = java.nio.Numbers.doubleToRawLongBits(value);
+        long lValue = Numbers.doubleToRawLongBits(value);
         int i = (int) lValue;
         buffer[index++] = (byte) ((i) & 0xff);
         buffer[index++] = (byte) ((i >>  8) & 0xff);
