@@ -20,9 +20,9 @@ import org.jetbrains.annotations.NotNull;
  * Non overlapping pages can be collected together in a {@link PageStore}, which provides the {@link ChunkSource}
  * interface to the collection of all of its Pages.
  * <p>
- * There are two distinct use cases/types of pages. The first use case are {@code Page}s which always have a length()
+ * There are two distinct use cases/types of pages. The first use case are Pages which always have a length()
  * &gt; 0. These store length() values, which can be assessed via the {@link ChunkSource} methods. Valid
- * {@link RowSequence} passed to those methods will have their offset in the range [firstRowOffset(), firstRowOffset() +
+ * {@link RowSequence row sequences} passed to those methods will have their offset in the range [firstRowOffset(), firstRowOffset() +
  * length()). Passing OrderKeys with offsets outside of this range will have undefined results.
  * <p>
  * The second use case will always have length() == 0 and firstRowOffset() == 0. These represent "Null" regions which
@@ -42,20 +42,20 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     long firstRowOffset();
 
     /**
-     * @param row Any row contained on this page.
-     * @return the first row of this page, located in the same way as row.
+     * @param rowKey Any row key contained on this page
+     * @return The first row key of this page, located in the same way as {@code rowKey}
      */
     @FinalDefault
-    default long firstRow(final long row) {
-        return (row & ~mask()) | firstRowOffset();
+    default long firstRow(final long rowKey) {
+        return (rowKey & ~mask()) | firstRowOffset();
     }
 
     /**
-     * @return the offset for the given row in this page, in [0, {@code maxRow(row)}].
+     * @return The offset for the given row key in this page, in [0, {@code maxRow(rowKey)}].
      */
     @FinalDefault
-    default long getRowOffset(long row) {
-        return (row & mask()) - firstRowOffset();
+    default long getRowOffset(final long rowKey) {
+        return (rowKey & mask()) - firstRowOffset();
     }
 
     /**

@@ -48,19 +48,19 @@ public class ChunkHolderPageFloat<ATTR extends Any>
     }
 
     @Override
-    public final long maxRow(final long row) {
-        return (row & ~mask()) | (firstRowOffset() + storage.length - 1);
+    public final long maxRow(final long rowKey) {
+        return (rowKey & ~mask()) | (firstRowOffset() + storage.length - 1);
     }
 
     /**
-     * @return The offset into the chunk for this row
+     * @return The offset into the chunk for this row key
      * @apiNote This function is for convenience over {@link #getRowOffset(long)}, so the caller doesn't have to cast to
      *          an int.
-     * @implNote This page is known to be backed by chunk, so {@code currentView.size()} is an int, and so is the
+     * @implNote This page is known to be backed by a chunk, so {@code currentView.size()} is an int, and so is the
      *           offset.
      */
-    private int getChunkOffset(final long row) {
-        return (int) getRowOffset(row);
+    private int getChunkOffset(final long rowKey) {
+        return (int) getRowOffset(rowKey);
     }
 
     @Override
