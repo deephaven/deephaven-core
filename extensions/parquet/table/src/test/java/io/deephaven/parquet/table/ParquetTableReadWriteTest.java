@@ -571,8 +571,15 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readLongParquetFileFromS3Test() {
+        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+                .awsRegionName("us-east-2")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(50)
+                .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setAwsRegionName("us-east-2")
+                .setSpecialInstructions(s3ParquetInstructions)
                 .build();
 
         final TableDefinition tableDefinition = TableDefinition.of(
@@ -604,8 +611,15 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readRefParquetFileFromS3Test() {
+        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+                .awsRegionName("us-east-2")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(50)
+                .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setAwsRegionName("us-east-2")
+                .setSpecialInstructions(s3ParquetInstructions)
                 .build();
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("hash"),
@@ -671,8 +685,15 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void profileReadingFromS3() {
-        ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setAwsRegionName("us-east-1")
+        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+                .awsRegionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(50)
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3ParquetInstructions)
                 .build();
 
         long totalTime = 0;
@@ -686,9 +707,15 @@ public final class ParquetTableReadWriteTest {
         }
         System.out.println("Average execution time AWS is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
 
-
-        readInstructions = new ParquetInstructions.Builder()
-                .setAwsRegionName("us-east-2")
+        final S3ParquetInstructions s3ParquetInstructions2 = S3ParquetInstructions.builder()
+                .awsRegionName("us-east-2")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(50)
+                .build();
+        final ParquetInstructions readInstructions2 = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3ParquetInstructions2)
                 .build();
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("hash"),
@@ -711,7 +738,7 @@ public final class ParquetTableReadWriteTest {
             final long start = System.nanoTime();
             ParquetTools.readSingleFileTable(
                     "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                    readInstructions, tableDefinition).head(5).select();
+                    readInstructions2, tableDefinition).head(5).select();
             final long end = System.nanoTime();
             totalTime += end - start;
             System.out.println((i + 1) + ". Execution time AWS is " + (end - start) / 1000_000_000.0 + " sec");
@@ -732,8 +759,15 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readParquetFileFromS3Test() {
+        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+                .awsRegionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(50)
+                .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setAwsRegionName("us-east-1")
+                .setSpecialInstructions(s3ParquetInstructions)
                 .build();
         final Table fromAws1 =
                 ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();

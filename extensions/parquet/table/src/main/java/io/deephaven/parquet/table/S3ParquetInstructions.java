@@ -7,14 +7,14 @@ import org.immutables.value.Value;
 @BuildableStyle
 public abstract class S3ParquetInstructions {
 
-    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 20;
+    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
-    private final static int DEFAULT_MAX_FRAGMENT_SIZE = 512 << 20; // 5 MB
-    private final static int MIN_MAX_FRAGMENT_SIZE = 8 << 10; // 8 KB
+    private final static int DEFAULT_FRAGMENT_SIZE = 512 << 20; // 5 MB
+    private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KB
     private final static int DEFAULT_MAX_CACHE_SIZE = 50;
 
     public static Builder builder() {
-        return S3ParquetInstructions.builder();
+        return ImmutableS3ParquetInstructions.builder();
     }
 
     public abstract String awsRegionName();
@@ -30,8 +30,8 @@ public abstract class S3ParquetInstructions {
     }
 
     @Value.Default
-    public int maxFragmentSize() {
-        return DEFAULT_MAX_FRAGMENT_SIZE;
+    public int fragmentSize() {
+        return DEFAULT_FRAGMENT_SIZE;
     }
 
     @Value.Default
@@ -55,8 +55,8 @@ public abstract class S3ParquetInstructions {
 
     @Value.Check
     final void boundsCheckMaxFragmentSize() {
-        if (maxFragmentSize() < MIN_MAX_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("maxFragmentSize(=" + maxFragmentSize() + ") must be >= 8*1024 or 8 KB");
+        if (fragmentSize() < MIN_FRAGMENT_SIZE) {
+            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= 8*1024 or 8 KB");
         }
     }
 
@@ -74,7 +74,7 @@ public abstract class S3ParquetInstructions {
 
         Builder readAheadCount(int readAheadCount);
 
-        Builder maxFragmentSize(int maxFragmentSize);
+        Builder fragmentSize(int fragmentSize);
 
         Builder maxCacheSize(int maxCacheSize);
 

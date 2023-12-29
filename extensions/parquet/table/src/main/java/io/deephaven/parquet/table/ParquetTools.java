@@ -1142,9 +1142,7 @@ public class ParquetTools {
         if (parquetFileURI.getScheme() != null && parquetFileURI.getScheme().equals(S3_PARQUET_FILE_URI_SCHEME)) {
             return new ParquetFileReader(parquetFileURI,
                     new CachedChannelProvider(
-                            new S3SeekableChannelProvider(readInstructions.getAwsRegionName(),
-                                    parquetFileURI.toString()),
-                            1 << 7));
+                            new S3SeekableChannelProvider(parquetFileURI, readInstructions), 1 << 7));
         }
         return new ParquetFileReader(
                 parquetFileURI,

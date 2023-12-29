@@ -1,8 +1,8 @@
 package io.deephaven.parquet.table.util;
 
-import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.S3ParquetInstructions;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -13,7 +13,6 @@ import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -26,33 +25,25 @@ import java.util.concurrent.TimeoutException;
 public final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private final S3AsyncClient s3AsyncClient;
-    private final URI uri;
-    private final String s3uri, bucket, key;
+    private final String bucket, key;
     private final long size;
+    private final int maxConcurrentRequests;
+    private final int fragmentSize;
+    private final int maxCacheSize;
+    private final int readAheadCount;
     private final Map<Long, ChannelContext> contextMap = new HashMap<>();
 
-    private static final int MAX_AWS_CONCURRENT_REQUESTS =
-            Configuration.getInstance().getIntegerWithDefault("s3.spi.read.max-concurrency", 20);
 
-    public S3SeekableChannelProvider(final String awsRegionName, final String uriStr) throws IOException {
-        if (awsRegionName == null || awsRegionName.isEmpty()) {
-            throw new IllegalArgumentException("awsRegionName cannot be null or empty");
+    public S3SeekableChannelProvider(final URI parquetFileURI, final ParquetInstructions readInstructions)
+            throws IOException {
+        if (!(readInstructions.getSpecialInstructions() instanceof S3ParquetInstructions)) {
+            throw new IllegalArgumentException("Must provide S3ParquetInstructions to read files from S3");
         }
-        if (uriStr == null || uriStr.isEmpty()) {
-            throw new IllegalArgumentException("uri cannot be null or empty");
-        }
-        if (MAX_AWS_CONCURRENT_REQUESTS < 1) {
-            throw new IllegalArgumentException("maxConcurrency must be >= 1");
-        }
-
-        try {
-            uri = new URI(uriStr);
-        } catch (final URISyntaxException e) {
-            throw new UncheckedDeephavenException("Failed to parse URI " + uriStr, e);
-        }
-
+        final S3ParquetInstructions s3Instructions = (S3ParquetInstructions) readInstructions.getSpecialInstructions();
+        final String awsRegionName = s3Instructions.awsRegionName();
+        maxConcurrentRequests = s3Instructions.maxConcurrentRequests();
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
-                .maxConcurrency(MAX_AWS_CONCURRENT_REQUESTS)
+                .maxConcurrency(maxConcurrentRequests)
                 .connectionTimeout(Duration.ofSeconds(5))
                 .build();
         s3AsyncClient = S3AsyncClient.builder()
@@ -60,9 +51,12 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
                 .httpClient(asyncHttpClient)
                 .build();
 
-        this.s3uri = uriStr;
-        this.bucket = uri.getHost();
-        this.key = uri.getPath().substring(1);
+        fragmentSize = s3Instructions.fragmentSize();
+        maxCacheSize = s3Instructions.maxCacheSize();
+        readAheadCount = s3Instructions.readAheadCount();
+
+        this.bucket = parquetFileURI.getHost();
+        this.key = parquetFileURI.getPath().substring(1);
         // Send HEAD request to S3 to get the size of the file
         {
             final long timeOut = 1L;
@@ -70,9 +64,8 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
 
             final HeadObjectResponse headObjectResponse;
             try {
-                headObjectResponse = s3AsyncClient.headObject(builder -> builder
-                        .bucket(bucket)
-                        .key(key)).get(timeOut, unit);
+                headObjectResponse = s3AsyncClient.headObject(
+                        builder -> builder.bucket(bucket).key(key)).get(timeOut, unit);
             } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
@@ -85,9 +78,9 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelsProvider.ChannelContext context,
-            @NotNull final Path path) throws IOException {
+            @NotNull final Path path) {
         // Ignore the context provided here, will be set properly before reading
-        return new S3SeekableByteChannel(context, s3uri, bucket, key, s3AsyncClient, 0, size);
+        return new S3SeekableByteChannel(context, bucket, key, s3AsyncClient, size, fragmentSize, readAheadCount);
     }
 
     @Override
@@ -101,8 +94,7 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
                 if (contextMap.containsKey(tid)) {
                     return contextMap.get(tid);
                 }
-                context = new S3SeekableByteChannel.ChannelContext(S3SeekableByteChannel.READ_AHEAD_COUNT,
-                        S3SeekableByteChannel.MAX_CACHE_SIZE);
+                context = new S3SeekableByteChannel.ChannelContext(readAheadCount, maxCacheSize);
                 contextMap.put(tid, context);
             }
             return context;

@@ -19,7 +19,45 @@ _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
+_JS3ParquetInstructions = jpy.get_type("io.deephaven.parquet.table.S3ParquetInstructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
+
+def _build_s3_parquet_instructions(
+        aws_region_name: str,  # TODO This is a required parameter, so is this okay?
+        max_concurrent_requests: int = None,
+        read_ahead_count: int = None,
+        fragment_size: int = None,
+        max_cache_size: int = None,
+):
+    if not any(
+            [
+                aws_region_name,
+                max_concurrent_requests,
+                read_ahead_count,
+                fragment_size,
+                max_cache_size,
+            ]
+    ):
+        return None
+
+    builder = _JS3ParquetInstructions.builder()
+
+    if aws_region_name:
+        builder.awsRegionName(aws_region_name)
+
+    if max_concurrent_requests is not None:
+        builder.maxConcurrentRequests(max_concurrent_requests)
+
+    if read_ahead_count is not None:
+        builder.readAheadCount(read_ahead_count)
+
+    if fragment_size is not None:
+        builder.fragmentSize(fragment_size)
+
+    if max_cache_size is not None:
+        builder.maxCacheSize(max_cache_size)
+
+    return builder.build()
 
 
 @dataclass
@@ -33,29 +71,37 @@ class ColumnInstruction:
 
 
 def _build_parquet_instructions(
-    col_instructions: List[ColumnInstruction] = None,
-    compression_codec_name: str = None,
-    max_dictionary_keys: int = None,
-    max_dictionary_size: int = None,
-    is_legacy_parquet: bool = False,
-    target_page_size: int = None,
-    is_refreshing: bool = False,
-    for_read: bool = True,
-    force_build: bool = False,
-    aws_region_name: str = None,
+        col_instructions: List[ColumnInstruction] = None,
+        compression_codec_name: str = None,
+        max_dictionary_keys: int = None,
+        max_dictionary_size: int = None,
+        is_legacy_parquet: bool = False,
+        target_page_size: int = None,
+        is_refreshing: bool = False,
+        for_read: bool = True,
+        force_build: bool = False,
+        aws_region_name: str = None,
+        max_concurrent_requests: int = None,
+        read_ahead_count: int = None,
+        fragment_size: int = None,
+        max_cache_size: int = None,
 ):
     if not any(
-        [
-            force_build,
-            col_instructions,
-            compression_codec_name,
-            max_dictionary_keys is not None,
-            max_dictionary_size is not None,
-            is_legacy_parquet,
-            target_page_size is not None,
-            is_refreshing,
-            aws_region_name,
-        ]
+            [
+                force_build,
+                col_instructions,
+                compression_codec_name,
+                max_dictionary_keys is not None,
+                max_dictionary_size is not None,
+                is_legacy_parquet,
+                target_page_size is not None,
+                is_refreshing,
+                aws_region_name is not None,
+                max_concurrent_requests is not None,
+                read_ahead_count is not None,
+                fragment_size is not None,
+                max_cache_size is not None,
+            ]
     ):
         return None
 
@@ -91,8 +137,15 @@ def _build_parquet_instructions(
     if is_refreshing:
         builder.setIsRefreshing(is_refreshing)
 
-    if aws_region_name:
-        builder.setAwsRegionName(aws_region_name)
+    if aws_region_name is not None:
+        s3_parquet_instructions = _build_s3_parquet_instructions(
+            aws_region_name=aws_region_name,
+            max_concurrent_requests=max_concurrent_requests,
+            read_ahead_count=read_ahead_count,
+            fragment_size=fragment_size,
+            max_cache_size=max_cache_size,
+        )
+        builder.setSpecialInstructions(s3_parquet_instructions)
 
     return builder.build()
 
@@ -113,6 +166,7 @@ def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], 
     else:
         raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
 
+
 class ParquetFileLayout(Enum):
     """ The parquet file layout. """
 
@@ -130,13 +184,17 @@ class ParquetFileLayout(Enum):
 
 
 def read(
-    path: str,
-    col_instructions: Optional[List[ColumnInstruction]] = None,
-    is_legacy_parquet: bool = False,
-    is_refreshing: bool = False,
-    file_layout: Optional[ParquetFileLayout] = None,
-    table_definition: Union[Dict[str, DType], List[Column], None] = None,
-    aws_region_name: str = None,
+        path: str,
+        col_instructions: Optional[List[ColumnInstruction]] = None,
+        is_legacy_parquet: bool = False,
+        is_refreshing: bool = False,
+        file_layout: Optional[ParquetFileLayout] = None,
+        table_definition: Union[Dict[str, DType], List[Column], None] = None,
+        aws_region_name: str = None,
+        max_concurrent_requests: int = None,
+        read_ahead_count: int = None,
+        fragment_size: int = None,
+        max_cache_size: int = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -154,6 +212,7 @@ def read(
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
         aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, by default None
+        TODO Add docstrings for the more parameters
     Returns:
         a table
 
@@ -169,13 +228,17 @@ def read(
             for_read=True,
             force_build=True,
             aws_region_name=aws_region_name,
+            max_concurrent_requests=max_concurrent_requests,
+            read_ahead_count=read_ahead_count,
+            fragment_size=fragment_size,
+            max_cache_size=max_cache_size,
         )
         j_table_definition = _j_table_definition(table_definition)
         if j_table_definition is not None:
             if not file_layout:
                 raise DHError("Must provide file_layout when table_definition is set")
             if file_layout == ParquetFileLayout.SINGLE_FILE:
-                j_table = _JParquetTools.readSingleFileTable(_JFile(path), read_instructions, j_table_definition)
+                j_table = _JParquetTools.readSingleFileTable(path, read_instructions, j_table_definition)
             elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
                 j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions, j_table_definition)
             elif file_layout == ParquetFileLayout.KV_PARTITIONED:
@@ -188,7 +251,7 @@ def read(
             if not file_layout:
                 j_table = _JParquetTools.readTable(path, read_instructions)
             elif file_layout == ParquetFileLayout.SINGLE_FILE:
-                j_table = _JParquetTools.readSingleFileTable(_JFile(path), read_instructions)
+                j_table = _JParquetTools.readSingleFileTable(path, read_instructions)
             elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
                 j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions)
             elif file_layout == ParquetFileLayout.KV_PARTITIONED:
