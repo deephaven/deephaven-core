@@ -1812,7 +1812,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * True if this table may receive updates from the server, including size changed events, updated events after
      * initial snapshot.
-     * 
+     *
      * @return boolean
      */
     @JsProperty(name = "isRefreshing")

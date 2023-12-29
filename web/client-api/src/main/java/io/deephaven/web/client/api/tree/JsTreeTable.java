@@ -347,6 +347,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     // This group of fields represent the underlying state of the original HierarchicalTable
     private final JsWidget widget;
+    private final boolean isRefreshing;
     private final InitialTableDefinition tableDefinition;
     private final Column[] visibleColumns;
     private final Map<String, Column> columnsByName = new HashMap<>();
@@ -407,6 +408,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
         Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
+        this.isRefreshing = !treeDescriptor.getIsStatic();
         this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
         Column[] columns = new Column[0];
         Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
@@ -974,12 +976,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     /**
      * True if this table may receive updates from the server, including size changed events, updated events after
      * initial snapshot.
-     * 
+     *
      * @return boolean
      */
     @JsProperty(name = "isRefreshing")
     public boolean isRefreshing() {
-        return false;// state().isStatic();
+        return isRefreshing;
     }
 
     /**

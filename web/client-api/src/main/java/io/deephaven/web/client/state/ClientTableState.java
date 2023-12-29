@@ -140,7 +140,6 @@ public final class ClientTableState extends TableConfig {
     private Column rowFormatColumn;
     private boolean isStatic;
 
-
     /**
      * We maintain back-links to our source state.
      *
