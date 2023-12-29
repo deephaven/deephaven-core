@@ -3,13 +3,13 @@
  */
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.hash.PrimeFinder;
 import io.deephaven.util.SafeCloseable;
 
 /**
@@ -21,7 +21,6 @@ public class HashedRunFinder {
 
     public static class HashedRunContext implements SafeCloseable {
         final int tableSize;
-        final int tableMask;
 
         // the hash table is [outputPosition, position, overflow]
         // the overflow is only [position, overflow]
@@ -31,14 +30,12 @@ public class HashedRunFinder {
         public HashedRunContext(int size) {
             if (size == 0) {
                 tableSize = 0;
-                tableMask = 0;
                 table = null;
                 overflow = null;
                 return;
             }
-            // load factor of half, rounded up
-            tableSize = 1 << MathUtil.ceilLog2(size * 2);
-            tableMask = tableSize - 1;
+            // load factor of 75%, rounded up to nearest prime for double hashing
+            tableSize = PrimeFinder.nextPrime((int) (size / 0.75));
             table = WritableIntChunk.makeWritableChunk(tableSize * 3);
             overflow = WritableIntChunk.makeWritableChunk((size - 1) * 2);
             table.fillWithValue(0, table.size(), UNUSED_HASH_TABLE_VALUE);
@@ -72,8 +69,8 @@ public class HashedRunFinder {
 
         for (int chunkPosition = 0; chunkPosition < size; ++chunkPosition) {
             final int outputPosition = outputPositions.get(chunkPosition);
-            int hashSlot = outputPosition & context.tableMask;
-
+            int hashSlot = outputPosition % context.tableSize;
+            int probe = 0;
             do {
                 final int baseSlot = hashSlot * 3;
                 if (context.table.get(baseSlot) == UNUSED_HASH_TABLE_VALUE) {
@@ -92,8 +89,14 @@ public class HashedRunFinder {
                     overflowPointer += 2;
                     break;
                 } else {
-                    // linear probe
-                    hashSlot = (hashSlot + 1) & context.tableMask;
+                    if (probe == 0) {
+                        // double hashing
+                        probe = 1 + (outputPosition % (context.tableSize - 2));
+                    }
+                    hashSlot -= probe;
+                    if (hashSlot < 0) {
+                        hashSlot += context.tableSize;
+                    }
                 }
             } while (true);
         }
