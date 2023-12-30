@@ -2990,8 +2990,8 @@ public class DateTimeUtils {
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
-     * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
      */
