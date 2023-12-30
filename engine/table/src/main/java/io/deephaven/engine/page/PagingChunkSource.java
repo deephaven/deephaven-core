@@ -7,7 +7,11 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * In order to be able to cache and reuse {@link ChunkSource ChunkSources} across multiple tables (or other references),
@@ -20,8 +24,20 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * Also, a new method {@link #fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} is added, which
  * supports filling a chunk incrementally across a series of pages.
+ * <p>
+ * In order to support arbitrary nesting and re-use of {@link PagingChunkSource} implementations, it is required that
+ * all implementations use or extend {@link io.deephaven.engine.table.impl.DefaultGetContext DefaultGetContext} and
+ * {@link PagingContextHolder} as their {@link #makeGetContext(int, SharedContext) GetContext} and
+ * {@link #makeFillContext(int, SharedContext) FillContext}, respectively. Nested implementations may thus store their
+ * own state via the {@link PagingContextHolder#getInnerContext() inner context}, using sub-classes of
+ * {@link PagingContextHolder} to support chaining of nested state.
  */
-public interface PagingChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
+public interface PagingChunkSource<ATTR extends Any> extends DefaultChunkSource<ATTR> {
+
+    @Override
+    default FillContext makeFillContext(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
+        return new PagingContextHolder(chunkCapacity, sharedContext);
+    }
 
     /**
      * This mask is applied to {@link RowSequence RowSequences} which are passed into {@link #getChunk},

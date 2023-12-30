@@ -43,6 +43,8 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         pageRowOffsets = new long[INIT_ARRAY_SIZE + 1];
         pageRowOffsets[0] = 0;
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
+        // We probably need a super-interface of Iterator to allow ourselves to set or clear the inner fill context
+        // to be used by next.
         columnPageReaderIterator = columnChunkReader.getPageIterator();
 
         // noinspection unchecked

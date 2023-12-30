@@ -4,9 +4,10 @@
 package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.impl.DefaultGetContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
@@ -170,15 +171,25 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     @Override
     public void close() {}
 
-    public boolean isFillContextCompatible(@Nullable final Context currentInnerContext) {
+    FillContext innerFillContext(@NotNull final FillContext context) {
+        // Call this method from the appropriate place in the implementation of getPageContaining
+        return ((PagingContextHolder) context)
+                .updateInnerContext(this::fillContextUpdater);
+    }
+
+    private boolean isFillContextCompatible(@Nullable final Context currentInnerContext) {
+        // Replace this with a test to see if the fill context comes from this.ColumnChunkReader
         return currentInnerContext == DEFAULT_FILL_INSTANCE;
     }
 
-    public boolean isGetContextCompatible(@Nullable final Context currentInnerContext) {
-        if (!(currentInnerContext instanceof DefaultGetContext)) {
-            return false;
-        }
-        final DefaultGetContext<?> getContext = (DefaultGetContext<?>) currentInnerContext;
-        return isFillContextCompatible(getContext.getFillContext());
+    private <T extends FillContext> T fillContextUpdater(
+            int chunkCapacity,
+            @Nullable final SharedContext sharedContext,
+            @Nullable final Context currentInnerContext) {
+        // noinspection unchecked
+        return (T) (isFillContextCompatible(currentInnerContext)
+                ? currentInnerContext
+                // Replace this with getting a context from this.ColumnChunkReader
+                : makeFillContext(chunkCapacity, sharedContext));
     }
 }

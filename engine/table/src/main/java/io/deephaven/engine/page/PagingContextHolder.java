@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table.impl.sources.regioned;
+package io.deephaven.engine.page;
 
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
@@ -11,18 +11,18 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link ChunkSource.FillContext} implementation for use by {@link RegionedPageStore} implementations. This is
+ * {@link ChunkSource.FillContext} implementation for use by {@link PagingChunkSource} implementations. This is
  * basically a re-usable box around an inner {@link Context context} object, filled with whatever the most recently used
- * region chose to store.
+ * {@link Page} chose to store.
  */
-public class RegionContextHolder implements ChunkSource.FillContext {
+public class PagingContextHolder implements ChunkSource.FillContext {
 
     private final int chunkCapacity;
     private final SharedContext sharedContext;
 
     private Context innerContext;
 
-    public RegionContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
+    public PagingContextHolder(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
         this.chunkCapacity = chunkCapacity;
         this.sharedContext = sharedContext;
     }
@@ -30,8 +30,8 @@ public class RegionContextHolder implements ChunkSource.FillContext {
     /**
      * {@inheritDoc}
      * 
-     * @implNote This implementation always returns {@code true}, as the {@link RegionedPageStore} fill implementation
-     *           follows an append pattern over multiple regions when necessary, and all known inner context
+     * @implNote This implementation always returns {@code true}, as the {@link PageStore} fill implementation follows
+     *           an append pattern over multiple {@link Page pages} when necessary, and all known inner context
      *           implementations trivially support unbounded fill. We thus make this a requirement for future inner
      *           context implementations, either naturally or via a slicing/looping pattern.
      */

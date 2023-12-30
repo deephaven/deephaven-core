@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.page.PageStore;
 import io.deephaven.engine.rowset.RowSequence;
@@ -89,11 +88,6 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     @FinalDefault
     default REGION_TYPE getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
         return lookupRegion(rowKey);
-    }
-
-    @Override
-    default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new RegionContextHolder(chunkCapacity, sharedContext);
     }
 
     /**

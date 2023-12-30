@@ -4,9 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Base {@link ColumnRegion} implementation.
@@ -34,22 +32,5 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
         if (invalidated) {
             throw new InvalidatedRegionException("Column region has been invalidated due to data removal");
         }
-    }
-
-    @Override
-    public final FillContext makeFillContext(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
-        throw new UnsupportedOperationException(
-                "ColumnRegions do not support makeFillContext. Implementations should accept "
-                        + "io.deephaven.engine.table.impl.sources.regioned.RegionContextHolder and get/set/update "
-                        + "their own context as needed.");
-    }
-
-    @Override
-    public final GetContext makeGetContext(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
-        throw new UnsupportedOperationException(
-                "ColumnRegions do not support makeGetContext. Implementations should accept "
-                        + "io.deephaven.engine.table.impl.DefaultGetContext with a "
-                        + "io.deephaven.engine.table.impl.sources.regioned.RegionContextHolder as FillContext, and "
-                        + "get/set/update their own context as needed.");
     }
 }

@@ -15,8 +15,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * PageStores are a collection of non-overlapping pages, which provides a single {@link ChunkSource} interface across
- * all the pages.
+ * PageStores are a collection of non-overlapping {@link Page Pages}, providing a single {@link PagingChunkSource}
+ * across all the pages. PageStores are responsible for mapping row keys to pages. PageStores may themselves be Pages
+ * nested within other PageStores.
  */
 public interface PageStore<ATTR extends Any, INNER_ATTR extends ATTR, PAGE extends Page<INNER_ATTR>>
         extends PagingChunkSource<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {

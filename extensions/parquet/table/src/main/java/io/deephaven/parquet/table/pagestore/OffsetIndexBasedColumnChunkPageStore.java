@@ -115,6 +115,8 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
                 if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
+                    // getPage() should accept the outer fill context, and get an inner fill context from
+                    // this.ColumnChunkReader to pass into getPageReader.
                     final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
                     try {
                         page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum), reader));
@@ -148,6 +150,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                 pageNum = (numPages - 1);
             }
         }
+        // Turn
         return getPage(pageNum);
     }
 }
