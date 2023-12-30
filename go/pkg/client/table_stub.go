@@ -217,7 +217,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period any, startTime any) (
 	} else if val, ok := period.(string); ok {
 		req.Period = &tablepb2.TimeTableRequest_PeriodString{PeriodString: val}
 	} else {
-		return nil, fmt.Errorf("expected period of signed integer  type, time.Duration or string, found %T", period)
+		return nil, fmt.Errorf("expected period of type signed integer, time.Duration or string, found %T", period)
 	}
 
 	timeVal := reflect.ValueOf(startTime)
