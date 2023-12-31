@@ -228,7 +228,7 @@ func (ts *tableStub) TimeTable(ctx context.Context, period any, startTime any) (
 	} else if val, ok := startTime.(string); ok {
 		req.StartTime = &tablepb2.TimeTableRequest_StartTimeString{StartTimeString: val}
 	} else {
-		return nil, fmt.Errorf("expected startTime of signed integer type, time.Time or string, found %T", startTime)
+		return nil, fmt.Errorf("expected startTime of type signed integer, time.Time or string, found %T", startTime)
 	}
 
 	resp, err := ts.stub.TimeTable(ctx, &req)
