@@ -68,7 +68,7 @@ public interface PagingChunkSource<ATTR extends Any> extends DefaultChunkSource<
      * {@link ChunkPage}.
      *
      * @param rowKey Any row key contained by this {@link PagingChunkSource}
-     * @return The maximum last row key of the page, located in the same way as {@code rowKey]
+     * @return The maximum last row key of the page, located in the same way as {@code rowKey}
      */
     default long maxRow(final long rowKey) {
         return rowKey | mask();
@@ -94,7 +94,7 @@ public interface PagingChunkSource<ATTR extends Any> extends DefaultChunkSource<
      * @param context A context containing all mutable/state related data used in filling {@code destination}
      * @param destination The {@link WritableChunk} to append the results to
      * @param rowSequenceIterator An iterator over the remaining row keys specifying the values to retrieve, which
-     *        contains at least the keys to extract from this {@code {PagingChunkSource}
+     *        contains at least the keys to extract from this {@code PagingChunkSource}
      */
     void fillChunkAppend(
             @NotNull FillContext context,
