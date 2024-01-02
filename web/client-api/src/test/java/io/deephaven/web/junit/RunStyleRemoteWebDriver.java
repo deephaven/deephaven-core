@@ -15,35 +15,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * RunStyle implementation to delegate to Selenium RemoteWebDriver implementations. Simplified version
- * of implementation found in <a href="https://github.com/gwtproject/gwt-core">gwt-core</a>.
+ * RunStyle implementation to delegate to Selenium RemoteWebDriver implementations. Simplified version of implementation
+ * found in <a href="https://github.com/gwtproject/gwt-core">gwt-core</a>.
  */
 public class RunStyleRemoteWebDriver extends RunStyle {
-
-    public static class RemoteWebDriverConfiguration {
-        private String remoteWebDriverUrl;
-        private List<Map<String, ?>> browserCapabilities;
-
-        public String getRemoteWebDriverUrl() {
-            return remoteWebDriverUrl;
-        }
-
-        public void setRemoteWebDriverUrl(String remoteWebDriverUrl) {
-            this.remoteWebDriverUrl = remoteWebDriverUrl;
-        }
-
-        public List<Map<String, ?>> getBrowserCapabilities() {
-            return browserCapabilities;
-        }
-
-        public void setBrowserCapabilities(List<Map<String, ?>> browserCapabilities) {
-            this.browserCapabilities = browserCapabilities;
-        }
-    }
-
     private final List<RemoteWebDriver> browsers = new ArrayList<>();
     private final Thread keepalive;
 
@@ -67,72 +44,36 @@ public class RunStyleRemoteWebDriver extends RunStyle {
         keepalive.setDaemon(true);
     }
 
-    /**
-     * Validates the arguments for the specific subclass, and creates a configuration that describes how to run the
-     * tests.
-     *
-     * @param args the command line argument string passed from JUnitShell
-     * @return the configuration to use when running these tests
-     */
-    protected Optional<RemoteWebDriverConfiguration> readConfiguration(String args) {
-        RemoteWebDriverConfiguration config = new RemoteWebDriverConfiguration();
-        if (args == null || args.isEmpty()) {
-            getLogger().log(TreeLogger.ERROR,
-                    "RemoteWebDriver runstyle requires a parameter of the form protocol://hostname:port?browser1[,browser2]");
-            return Optional.empty();
-        }
-
-        String[] parts = args.split("\\?");
-        String url = parts[0];
-        URL remoteAddress;
-        try {
-            remoteAddress = new URL(url);
-            if (remoteAddress.getPath().isEmpty()
-                    || (remoteAddress.getPath().equals("/") && !url.endsWith("/"))) {
-                getLogger().log(TreeLogger.INFO, "No path specified in webdriver remote url, using default of /wd/hub");
-                config.setRemoteWebDriverUrl(url + "/wd/hub");
-            } else {
-                config.setRemoteWebDriverUrl(url);
-            }
-        } catch (MalformedURLException e) {
-            getLogger().log(TreeLogger.ERROR, e.getMessage(), e);
-            return Optional.empty();
-        }
-
-        // build each driver based on parts[1].split(",")
-        String[] browserNames = parts[1].split(",");
-        config.setBrowserCapabilities(new ArrayList<>());
-        for (String browserName : browserNames) {
-            DesiredCapabilities capabilities = new DesiredCapabilities();
-            capabilities.setBrowserName(browserName);
-            config.getBrowserCapabilities().add(capabilities.asMap());
-        }
-
-        return Optional.of(config);
-    }
-
 
     @Override
     public final int initialize(String args) {
-        final Optional<RemoteWebDriverConfiguration> config = readConfiguration(args);
-        if (config.isEmpty()) {
-            // log should already have details about what went wrong, we will just return the failure value
+        URL remoteWebDriverUrl;
+        if (args == null || args.isEmpty()) {
+            getLogger().log(TreeLogger.ERROR,
+                    "RemoteWebDriver runstyle requires a parameter of the form protocol://hostname:port?browser1[,browser2]");
             return -1;
         }
-
-        final URL remoteAddress;
+        String[] parts = args.split("\\?");
+        String url = parts[0];
         try {
-            remoteAddress = new URL(config.get().getRemoteWebDriverUrl());
-        } catch (MalformedURLException e) {
-            getLogger().log(TreeLogger.ERROR, e.getMessage(), e);
+            remoteWebDriverUrl = new URL(url);
+            if (remoteWebDriverUrl.getPath().isEmpty()
+                    || (remoteWebDriverUrl.getPath().equals("/") && !url.endsWith("/"))) {
+                getLogger().log(TreeLogger.INFO, "No path specified in webdriver remote url, using default of /wd/hub");
+                remoteWebDriverUrl = new URL(url + "/wd/hub");
+            }
+        } catch (MalformedURLException e1) {
+            getLogger().log(TreeLogger.ERROR, e1.getMessage(), e1);
             return -1;
         }
 
-        for (Map<String, ?> capabilityMap : config.get().getBrowserCapabilities()) {
-            DesiredCapabilities capabilities = new DesiredCapabilities(capabilityMap);
+        String[] browserNames = parts[1].split(",");
+        for (String browserName : browserNames) {
+            DesiredCapabilities capabilities = new DesiredCapabilities();
+            capabilities.setBrowserName(browserName);
 
             try {
-                RemoteWebDriver wd = new RemoteWebDriver(remoteAddress, capabilities);
+                RemoteWebDriver wd = new RemoteWebDriver(remoteWebDriverUrl, capabilities);
                 browsers.add(wd);
             } catch (Exception exception) {
                 getLogger().log(TreeLogger.ERROR, "Failed to find desired browser", exception);
