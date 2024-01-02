@@ -1817,7 +1817,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsProperty(name = "isRefreshing")
     public boolean isRefreshing() {
-        return state().isStatic();
+        return !state().isStatic();
     }
 
     /**
