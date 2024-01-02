@@ -15,7 +15,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+/**
+ * RunStyle implementation to delegate to Selenium RemoteWebDriver implementations. Simplified version
+ * of implementation found in <a href="https://github.com/gwtproject/gwt-core">gwt-core</a>.
+ */
 public class RunStyleRemoteWebDriver extends RunStyle {
 
     public static class RemoteWebDriverConfiguration {
@@ -39,14 +44,27 @@ public class RunStyleRemoteWebDriver extends RunStyle {
         }
     }
 
-    public class ConfigurationException extends Exception {
-    }
-
-    private List<RemoteWebDriver> browsers = new ArrayList<>();
-    private Thread keepalive;
+    private final List<RemoteWebDriver> browsers = new ArrayList<>();
+    private final Thread keepalive;
 
     public RunStyleRemoteWebDriver(JUnitShell shell) {
         super(shell);
+
+        keepalive = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+                for (RemoteWebDriver browser : browsers) {
+                    // As in RunStyleSelenium, simple way to poll the browser and ensure it is still alive, even if
+                    // not actively being used at the moment.
+                    browser.getTitle();
+                }
+            }
+        });
+        keepalive.setDaemon(true);
     }
 
     /**
@@ -56,21 +74,20 @@ public class RunStyleRemoteWebDriver extends RunStyle {
      * @param args the command line argument string passed from JUnitShell
      * @return the configuration to use when running these tests
      */
-    protected RemoteWebDriverConfiguration readConfiguration(String args)
-            throws ConfigurationException {
+    protected Optional<RemoteWebDriverConfiguration> readConfiguration(String args) {
         RemoteWebDriverConfiguration config = new RemoteWebDriverConfiguration();
-        if (args == null || args.length() == 0) {
+        if (args == null || args.isEmpty()) {
             getLogger().log(TreeLogger.ERROR,
                     "RemoteWebDriver runstyle requires a parameter of the form protocol://hostname:port?browser1[,browser2]");
-            throw new ConfigurationException();
+            return Optional.empty();
         }
 
         String[] parts = args.split("\\?");
         String url = parts[0];
-        URL remoteAddress = null;
+        URL remoteAddress;
         try {
             remoteAddress = new URL(url);
-            if (remoteAddress.getPath().equals("")
+            if (remoteAddress.getPath().isEmpty()
                     || (remoteAddress.getPath().equals("/") && !url.endsWith("/"))) {
                 getLogger().log(TreeLogger.INFO, "No path specified in webdriver remote url, using default of /wd/hub");
                 config.setRemoteWebDriverUrl(url + "/wd/hub");
@@ -79,7 +96,7 @@ public class RunStyleRemoteWebDriver extends RunStyle {
             }
         } catch (MalformedURLException e) {
             getLogger().log(TreeLogger.ERROR, e.getMessage(), e);
-            throw new ConfigurationException();
+            return Optional.empty();
         }
 
         // build each driver based on parts[1].split(",")
@@ -91,29 +108,27 @@ public class RunStyleRemoteWebDriver extends RunStyle {
             config.getBrowserCapabilities().add(capabilities.asMap());
         }
 
-        return config;
+        return Optional.of(config);
     }
 
 
     @Override
     public final int initialize(String args) {
-        final RemoteWebDriverConfiguration config;
-        try {
-            config = readConfiguration(args);
-        } catch (ConfigurationException failed) {
+        final Optional<RemoteWebDriverConfiguration> config = readConfiguration(args);
+        if (config.isEmpty()) {
             // log should already have details about what went wrong, we will just return the failure value
             return -1;
         }
 
         final URL remoteAddress;
         try {
-            remoteAddress = new URL(config.getRemoteWebDriverUrl());
+            remoteAddress = new URL(config.get().getRemoteWebDriverUrl());
         } catch (MalformedURLException e) {
             getLogger().log(TreeLogger.ERROR, e.getMessage(), e);
             return -1;
         }
 
-        for (Map<String, ?> capabilityMap : config.getBrowserCapabilities()) {
+        for (Map<String, ?> capabilityMap : config.get().getBrowserCapabilities()) {
             DesiredCapabilities capabilities = new DesiredCapabilities(capabilityMap);
 
             try {
@@ -125,43 +140,25 @@ public class RunStyleRemoteWebDriver extends RunStyle {
             }
         }
 
-        Runtime.getRuntime()
-                .addShutdownHook(
-                        new Thread(
-                                () -> {
-                                    if (keepalive != null) {
-                                        keepalive.interrupt();
-                                    }
-                                    for (RemoteWebDriver browser : browsers) {
-                                        try {
-                                            browser.close();
-                                        } catch (Exception ignored) {
-                                            // ignore, we're shutting down, continue shutting down others
-                                        }
-                                    }
-                                }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            keepalive.interrupt();
+            for (RemoteWebDriver browser : browsers) {
+                try {
+                    browser.close();
+                } catch (Exception ignored) {
+                    // ignore, we're shutting down, continue shutting down others
+                }
+            }
+        }));
         return browsers.size();
     }
 
     @Override
     public void launchModule(String moduleName) throws UnableToCompleteException {
-        // since WebDriver.get is blocking, start a keepalive thread first
-        keepalive =
-                new Thread(
-                        () -> {
-                            while (true) {
-                                try {
-                                    Thread.sleep(1000);
-                                } catch (InterruptedException e) {
-                                    break;
-                                }
-                                for (RemoteWebDriver browser : browsers) {
-                                    browser.getTitle(); // as in RunStyleSelenium, simple way to poll the browser
-                                }
-                            }
-                        });
-        keepalive.setDaemon(true);
+        // Since WebDriver.get is blocking, start the keepalive thread first
         keepalive.start();
+
+        // Starts each browser to run the tests at the url specified by JUnit+GWT.
         for (RemoteWebDriver browser : browsers) {
             browser.get(shell.getModuleUrl(moduleName));
         }
