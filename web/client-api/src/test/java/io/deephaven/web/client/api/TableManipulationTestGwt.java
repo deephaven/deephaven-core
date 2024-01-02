@@ -36,7 +36,7 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                     return waitForEvent(table, JsTable.EVENT_SIZECHANGED, e -> {
                         assertEquals(4., table.getSize(), 0);
                         assertEquals(8., table.getTotalSize(), 0);
-                    }, 1000);
+                    }, 2014);
                 })
                 .then(table -> {
                     // then set the viewport, confirm we get those items back
@@ -153,7 +153,7 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                     });
                     // no viewport, since we're going to make another change
                     return waitForEvent(table, JsTable.EVENT_FILTERCHANGED, e -> {
-                    }, 1000);
+                    }, 2015);
                 })
                 .then(table -> {
                     table.applySort(new Sort[] {

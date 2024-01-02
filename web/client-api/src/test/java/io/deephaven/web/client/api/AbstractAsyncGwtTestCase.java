@@ -6,14 +6,12 @@ import elemental2.core.JsArray;
 import elemental2.core.JsError;
 import elemental2.core.JsString;
 import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.ide.IdeSession;
-import io.deephaven.web.shared.data.Viewport;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
@@ -21,7 +19,6 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
-import org.apache.tapestry.INamespace;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,7 +66,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     /**
      * Set this to a value higher than 1 to get more time to run debugger without timeouts failing.
      */
-    protected static final int TIMEOUT_SCALE = 2;
+    protected static final int TIMEOUT_SCALE = Integer.parseInt(System.getProperty("test.timeout.scale", "1"));
     public static final double DELTA = 0.0001;
 
     public JsString toJsString(String k) {
@@ -210,7 +207,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     /**
-     * Helper method to add a listener to the promise of a table, and ensure that an update is recieved with the
+     * Helper method to add a listener to the promise of a table, and ensure that an update is received with the
      * expected number of items, within the specified timeout.
      *
      * Prereq: have already requested a viewport on that table
@@ -220,7 +217,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     /**
-     * Helper method to add a listener to a table, and ensure that an update is recieved with the expected number of
+     * Helper method to add a listener to a table, and ensure that an update is received with the expected number of
      * items, within the specified timeout.
      *
      * Prereq: have already requested a viewport on that table. Remember to request that within the same event loop, so

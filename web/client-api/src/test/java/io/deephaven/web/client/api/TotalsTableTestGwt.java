@@ -72,7 +72,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         totals.setViewport(0, 100, null, null);
 
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED,
-                                                checkTotals(totals, 5, 6., 0, "a1"), 1500);
+                                                checkTotals(totals, 5, 6., 0, "a1"), 2508);
                                     }),
                             table.getGrandTotalsTable(null)
                                     .then(totals -> {
@@ -81,7 +81,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         totals.setViewport(0, 100, null, null);
 
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED,
-                                                checkTotals(totals, 5, 6.0, 0., "a2"), 1500);
+                                                checkTotals(totals, 5, 6.0, 0., "a2"), 2509);
                                     })
                     });
                 })
@@ -113,7 +113,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                     // confirm the normal totals match the filtered data
                                     return waitForEvent(totals, JsTable.EVENT_UPDATED,
-                                            checkTotals(totals, 3, 6.666666, 0.0, "a1"), 1501);
+                                            checkTotals(totals, 3, 6.666666, 0.0, "a1"), 2501);
                                 }),
                         table.getGrandTotalsTable(null)
                                 .then(totals -> {
@@ -124,7 +124,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                     // confirm the grand totals are unchanged
                                     return waitForEvent(totals, JsTable.EVENT_UPDATED,
-                                            checkTotals(totals, 5, 6., 0., "a2"), 1502);
+                                            checkTotals(totals, 5, 6., 0., "a2"), 2502);
                                 })))
                 .then(table -> {
                     // Now, change the filter on the original table, and expect the totals tables to automatically
@@ -138,9 +138,9 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return promiseAllThen(table,
                             waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2002).onInvoke(table),
                             totalPromises[0] = waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], 2, 5, 1, "b1"), 1503),
+                                    checkTotals(totalTables[0], 2, 5, 1, "b1"), 2503),
                             totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], 5, 6, 0, "b2"), 1504));
+                                    checkTotals(totalTables[1], 5, 6, 0, "b2"), 2504));
                 })
                 .then(table -> {
                     // forcibly disconnect the worker and test that the total table come back up, and respond to
@@ -164,9 +164,9 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return promiseAllThen(table,
                             waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2003).onInvoke(table),
                             waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], 3, 6.666666, 0.0, "d1"), 1507),
+                                    checkTotals(totalTables[0], 3, 6.666666, 0.0, "d1"), 2507),
                             waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], 5, 6., 0., "d2"), 1508));
+                                    checkTotals(totalTables[1], 5, 6., 0., "d2"), 2508));
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -240,7 +240,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         // confirm the normal totals match the filtered data
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, "a1",
                                                 TotalsResults.of(2, 2, 8, 0.0),
-                                                TotalsResults.of(2, 2, 5, 1.0)), 1501);
+                                                TotalsResults.of(2, 2, 5, 1.0)), 2501);
                                     }),
                             table.getGrandTotalsTable(config)
                                     .then(totals -> {
@@ -252,7 +252,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         // confirm the grand totals include the missing row...
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, "a2",
                                                 TotalsResults.of(3, 3, 6.66666, 0.0),
-                                                TotalsResults.of(2, 2, 5, 1.0)), 1502);
+                                                TotalsResults.of(2, 2, 5, 1.0)), 2502);
                                     }));
                 })
                 .then(table -> {
@@ -271,9 +271,9 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     return promiseAllThen(table,
                             totalPromises[0] = waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], "b1", TotalsResults.of(2, 2, 5, 1)), 1503),
+                                    checkTotals(totalTables[0], "b1", TotalsResults.of(2, 2, 5, 1)), 2503),
                             totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], "b2", TotalsResults.of(2, 2, 5, 1)), 1504));
+                                    checkTotals(totalTables[1], "b2", TotalsResults.of(2, 2, 5, 1)), 2504));
                 })
                 .then(table -> {
                     // forcibly disconnect the worker and test that the total table come back up, and respond to

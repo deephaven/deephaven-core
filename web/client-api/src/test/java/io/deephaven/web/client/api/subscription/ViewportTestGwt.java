@@ -302,7 +302,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             // when IDS-2113 is fixed, restore this stronger assertion
                             // assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
                             waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
-                            }, 1000),
+                            }, 2011),
                             assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 1000)
                     }).then(ignore -> Promise.resolve(table));
                 })
@@ -326,7 +326,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     // when IDS-2113 is fixed, restore this stronger assertion
                     // return assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000);
                     return waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
-                    }, 1000);
+                    }, 2012);
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -342,7 +342,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             // when IDS-2113 is fixed, restore this stronger assertion
                             // assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
                             waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
-                            }, 1000)
+                            }, 2013)
                     }).then(ignore -> Promise.resolve(table));
                 })
                 .then(this::finish).catch_(this::report);
@@ -446,7 +446,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             assertNotNull(viewport.getRows().getAt(0).get(c));
                         }
                         return true;
-                    }, 1502);
+                    }, 2502);
                 })
                 .then(table -> {
                     // again wait for the table to go back to zero items, make sure it makes sense
@@ -457,7 +457,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         }
                         assertEquals(expectedColumns.length, emptyViewport.getColumns().length);
                         return true;
-                    }, 1503);
+                    }, 2503);
                 })
                 .then(table -> {
                     // one more tick later, we'll see the item back again
@@ -472,7 +472,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             assertNotNull(viewport.getRows().getAt(0).get(c));
                         }
                         return true;
-                    }, 1504);
+                    }, 2504);
                 });
     }
 

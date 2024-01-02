@@ -93,6 +93,12 @@ deephavenDocker {
 }
 
 def seleniumContainerId = "selenium-${randomSuffix}"
+def seleniumPort
+if (!hasProperty('selenium.port')) {
+    seleniumPort = '4444'
+} else {
+    seleniumPort = project.getProperty('selenium.port')
+}
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
     t.dependsOn(Docker.registryTask(project, 'selenium'))
@@ -101,9 +107,9 @@ def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
 
     // Use "host" networking, so that gradle's test runner can be accessed by the browser. This means
-    // that port 4444 will always be bound, and if already used, this container won't be able to start.
+    // that the selected will always be bound, and if already used, this container won't be able to start.
     t.hostConfig.network.set('host')
-    t.hostConfig.portBindings.set(['4444'])
+    t.hostConfig.portBindings.set([seleniumPort])
 }
 def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
     t.dependsOn(createSelenium)
