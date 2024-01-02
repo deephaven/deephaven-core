@@ -70,9 +70,9 @@ artifacts {
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
     t.systemProperties = [
-            'gwt.args': ["-runStyle HtmlUnit",
-                         "-ea",
-                         "-style PRETTY",
+            'gwt.args': ['-runStyle HtmlUnit',
+                         '-ea',
+                         '-style PRETTY',
                          "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
             ].join(' '),
             'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
@@ -104,8 +104,14 @@ def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t
     t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
     t.targetImageId('deephaven/selenium:local-build')
     t.containerName.set(seleniumContainerId)
+    // Advised by the selenium documentation
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
 
+    // Add our own healthcheck to confirm the container starts fully
+    t.healthCheck.cmd.set(['curl http://localhost:4444/wd/hub/status || exit 1'])
+
+    // This provides a hostname that can be referenced from inside the docker container to access the host
+    // OS, and connect to the test server.
     t.hostConfig.extraHosts.add('host.docker.internal:host-gateway')
     t.hostConfig.portBindings.set(["4444:$seleniumPort"])
     t.hostConfig.network.set(deephavenDocker.networkName.get())
@@ -133,10 +139,10 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
     doFirst {
-        def webdriverUrl = "http://localhost:4444/"
+        def webdriverUrl = 'http://localhost:4444/'
         t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
-                                      "-ea",
-                                      "-style PRETTY",
+                                      '-ea',
+                                      '-style PRETTY',
                                       "-setProperty dh.server=http://${deephavenDocker.containerName.get()}:10000",
                                       "-war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}"
         ].join(' '))
