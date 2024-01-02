@@ -101,15 +101,14 @@ if (!hasProperty('selenium.port')) {
 }
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
-    t.dependsOn(Docker.registryTask(project, 'selenium'))
+    t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
     t.targetImageId('deephaven/selenium:local-build')
     t.containerName.set(seleniumContainerId)
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
 
-    // Use "host" networking, so that gradle's test runner can be accessed by the browser. This means
-    // that the selected will always be bound, and if already used, this container won't be able to start.
-    t.hostConfig.network.set('host')
-    t.hostConfig.portBindings.set([seleniumPort])
+    t.hostConfig.extraHosts.add('host.docker.internal:host-gateway')
+    t.hostConfig.portBindings.set(["4444:$seleniumPort"])
+    t.hostConfig.network.set(deephavenDocker.networkName.get())
 }
 def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
     t.dependsOn(createSelenium)
@@ -134,11 +133,11 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
     doFirst {
-        def webdriverUrl = 'http://localhost:4444/'
+        def webdriverUrl = "http://localhost:4444/"
         t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
                                       "-ea",
                                       "-style PRETTY",
-                                      "-setProperty dh.server=http://localhost:${deephavenDocker.port.get()}",
+                                      "-setProperty dh.server=http://${deephavenDocker.containerName.get()}:10000",
                                       "-war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}"
         ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
@@ -146,6 +145,7 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+            'webdriver.test.host':'host.docker.internal',
     ]
     t.include '**/ClientIntegrationTestSuite.class'
     t.useJUnit()

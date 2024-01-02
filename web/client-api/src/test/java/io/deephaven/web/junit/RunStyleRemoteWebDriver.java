@@ -60,10 +60,8 @@ public class RunStyleRemoteWebDriver extends RunStyle {
             throws ConfigurationException {
         RemoteWebDriverConfiguration config = new RemoteWebDriverConfiguration();
         if (args == null || args.length() == 0) {
-            getLogger()
-                    .log(
-                            TreeLogger.ERROR,
-                            "RemoteWebDriver runstyle requires a parameter of the form protocol://hostname:port?browser1[,browser2]");
+            getLogger().log(TreeLogger.ERROR,
+                    "RemoteWebDriver runstyle requires a parameter of the form protocol://hostname:port?browser1[,browser2]");
             throw new ConfigurationException();
         }
 
@@ -74,10 +72,7 @@ public class RunStyleRemoteWebDriver extends RunStyle {
             remoteAddress = new URL(url);
             if (remoteAddress.getPath().equals("")
                     || (remoteAddress.getPath().equals("/") && !url.endsWith("/"))) {
-                getLogger()
-                        .log(
-                                TreeLogger.INFO,
-                                "No path specified in webdriver remote url, using default of /wd/hub");
+                getLogger().log(TreeLogger.INFO, "No path specified in webdriver remote url, using default of /wd/hub");
                 config.setRemoteWebDriverUrl(url + "/wd/hub");
             } else {
                 config.setRemoteWebDriverUrl(url);
@@ -106,8 +101,7 @@ public class RunStyleRemoteWebDriver extends RunStyle {
         try {
             config = readConfiguration(args);
         } catch (ConfigurationException failed) {
-            // log should already have details about what went wrong, we will just return the failure
-            // value
+            // log should already have details about what went wrong, we will just return the failure value
             return -1;
         }
 
