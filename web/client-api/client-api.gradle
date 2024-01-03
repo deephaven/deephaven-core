@@ -1,6 +1,14 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import io.deephaven.tools.docker.WaitForHealthyContainer
+
 plugins {
     id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
 }
+
+evaluationDependsOn(Docker.registryProject('selenium'))
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
@@ -8,6 +16,7 @@ configurations {
     js
     dts
     typescriptDoclet
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -20,6 +29,8 @@ dependencies {
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
+
+    testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
 }
 Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
@@ -57,6 +68,101 @@ artifacts {
     }
 }
 
-project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)
+def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.systemProperties = [
+            'gwt.args': ['-runStyle HtmlUnit',
+                         '-ea',
+                         '-style PRETTY',
+                         "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
+            ].join(' '),
+            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
+    ]
+    t.include '**/ClientUnitTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
 
-apply from: "$rootDir/gradle/web-gwt-test.gradle"
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-js-${randomSuffix}"
+    networkName.set "js-test-network-${randomSuffix}"
+}
+
+def seleniumContainerId = "selenium-${randomSuffix}"
+def seleniumPort
+if (!hasProperty('selenium.port')) {
+    seleniumPort = '4444'
+} else {
+    seleniumPort = project.getProperty('selenium.port')
+}
+
+def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
+    t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
+    t.targetImageId('deephaven/selenium:local-build')
+    t.containerName.set(seleniumContainerId)
+    // Advised by the selenium documentation
+    t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
+
+    // Add our own healthcheck to confirm the container starts fully
+    t.healthCheck.cmd.set(['curl http://localhost:4444/wd/hub/status || exit 1'])
+
+    // This provides a hostname that can be referenced from inside the docker container to access the host
+    // OS, and connect to the test server.
+    t.hostConfig.extraHosts.add('host.docker.internal:host-gateway')
+    t.hostConfig.portBindings.set(["4444:$seleniumPort"])
+    t.hostConfig.network.set(deephavenDocker.networkName.get())
+}
+def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
+    t.dependsOn(createSelenium)
+    t.containerId.set(seleniumContainerId)
+}
+def seleniumHealthy = project.tasks.register('seleniumHealthy', WaitForHealthyContainer) { task ->
+    task.dependsOn startSelenium
+
+    task.awaitStatusTimeout.set 120
+    task.checkInterval.set 100
+
+    task.containerId.set(seleniumContainerId)
+}
+def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer) { task ->
+    task.dependsOn startSelenium
+    task.targetContainerId seleniumContainerId
+    task.force.set true
+    task.removeVolumes.set true
+}
+
+def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
+    t.finalizedBy(deephavenDocker.endTask, stopSelenium)
+    doFirst {
+        def webdriverUrl = 'http://localhost:4444/'
+        t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
+                                      '-ea',
+                                      '-style PRETTY',
+                                      "-setProperty dh.server=http://${deephavenDocker.containerName.get()}:10000",
+                                      "-war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}"
+        ].join(' '))
+        t.classpath += tasks.getByName('gwtCompile').src
+    }
+    t.finalizedBy(deephavenDocker.endTask)
+    t.systemProperties = [
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+            'webdriver.test.host':'host.docker.internal',
+    ]
+    t.include '**/ClientIntegrationTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
+tasks.named('check').configure {
+    dependsOn(gwtUnitTest, gwtIntegrationTest)
+}
+
+test {
+    // Configure jvm-only tests to not run any GWT-only tests
+    exclude '**/*TestGwt.class', '**/*TestSuite.class'
+}

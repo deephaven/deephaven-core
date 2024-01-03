@@ -45,6 +45,7 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
@@ -71,6 +72,8 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
+import javaemul.internal.annotations.DoNotAutobox;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -594,6 +597,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @TsUnion
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     public interface CustomColumnArgUnionType {
+        @JsOverlay
+        static CustomColumnArgUnionType of(@DoNotAutobox Object value) {
+            return Js.cast(value);
+        }
+
         @JsOverlay
         default boolean isString() {
             return (Object) this instanceof String;
@@ -1762,8 +1770,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 viewportRows.size());
     }
 
-
-    protected void processSnapshot() {
+    @JsIgnore
+    public void processSnapshot() {
         try {
             if (debounce == null) {
                 JsLog.debug("Skipping snapshot b/c debounce is null");
