@@ -102,12 +102,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         }, source::isRefreshing, DynamicNode::isRefreshing);
 
         if (source.isRefreshing()) {
-            // this is a refreshing source, we will need a listener
-            sourceListener = newUpdateByListener();
-            source.addUpdateListener(sourceListener);
-            // result will depend on listener
-            result.addParentReference(sourceListener);
-
             // create input and output modified column sets
             forAllOperators(op -> {
                 op.createInputModifiedColumnSet(source);
@@ -121,6 +115,12 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             transformFailureListener = new TransformFailureListener(transformedTable);
             transformedTable.addUpdateListener(transformFailureListener);
             result.addParentReference(transformFailureListener);
+
+            // this is a refreshing source, we will need a listener
+            sourceListener = newUpdateByListener();
+            source.addUpdateListener(sourceListener);
+            // result will depend on listener
+            result.addParentReference(sourceListener);
         } else {
             sourceListener = null;
             mcsTransformer = null;
