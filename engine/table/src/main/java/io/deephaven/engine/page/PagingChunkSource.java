@@ -9,7 +9,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

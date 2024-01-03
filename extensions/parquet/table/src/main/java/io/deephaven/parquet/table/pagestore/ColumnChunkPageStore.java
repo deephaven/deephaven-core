@@ -172,13 +172,15 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public void close() {}
 
     FillContext innerFillContext(@NotNull final FillContext context) {
-        // Call this method from the appropriate place in the implementation of getPageContaining
+        // TODO(deephaven-core#4836): Call this method from the appropriate place in the implementation of
+        // getPageContaining to populate the context object
         return ((PagingContextHolder) context)
                 .updateInnerContext(this::fillContextUpdater);
     }
 
     private boolean isFillContextCompatible(@Nullable final Context currentInnerContext) {
-        // Replace this with a test to see if the fill context comes from this.ColumnChunkReader
+        // TODO(deephaven-core#4836): Replace this with a test to see if the fill context comes from
+        // this.ColumnChunkReader
         return currentInnerContext == DEFAULT_FILL_INSTANCE;
     }
 
@@ -189,7 +191,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         // noinspection unchecked
         return (T) (isFillContextCompatible(currentInnerContext)
                 ? currentInnerContext
-                // Replace this with getting a context from this.ColumnChunkReader
+                // TODO(deephaven-core#4836): Replace this with getting a context from this.ColumnChunkReader
                 : makeFillContext(chunkCapacity, sharedContext));
     }
 }
