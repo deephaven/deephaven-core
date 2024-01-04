@@ -45,7 +45,7 @@ public abstract class GrpcTableOperationTestBase<Request extends Message>
     }
 
     public TableReference ref(Table table) {
-        final ExportObject<Table> export = authenticatedSessionState().newServerSideExport(table);
+        final ExportObject<Table> export = authenticatedSessionState().newServerSideExport(table, "test");
         exports.add(export);
         return ref(export);
     }

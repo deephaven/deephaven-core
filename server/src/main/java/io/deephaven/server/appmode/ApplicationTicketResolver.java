@@ -84,7 +84,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
         }
         Object value = authorization.transform(field.value());
         // noinspection unchecked
-        return SessionState.wrapAsExport((T) value);
+        return SessionState.wrapAsExport((T) value, "ApplicationTicketResolver#resolve");
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             }
         }
 
-        return SessionState.wrapAsExport(info);
+        return SessionState.wrapAsExport(info, "ApplicationTicketResolver#flightInfoFor");
     }
 
     @Override

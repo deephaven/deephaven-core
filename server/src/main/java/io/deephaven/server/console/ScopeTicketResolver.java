@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ScriptSession;
@@ -75,7 +76,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                             "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
                 });
 
-        return SessionState.wrapAsExport(flightInfo);
+        return SessionState.wrapAsExport(flightInfo, "ScopeTicketResolver#flightInfoFor");
     }
 
     @Override
@@ -119,9 +120,20 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (export == null) {
             return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'"));
+        } else if (export instanceof SessionState.ExportObject) {
+            // noinspection unchecked
+            final SessionState.ExportObject<T> asExportObject = (SessionState.ExportObject<T>) export;
+            // ensure the result is live until the caller uses it
+            try {
+                asExportObject.manageWithCurrentScope();
+                return asExportObject;
+            } catch (LivenessStateException ignored) {
+                return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'"));
+            }
         }
 
-        return SessionState.wrapAsExport(export);
+        return SessionState.wrapAsExport(export, "ScopeTicketResolver#resolve");
     }
 
     @Override
@@ -149,15 +161,20 @@ public class ScopeTicketResolver extends TicketResolverBase {
             @Nullable final Runnable onPublish) {
         // We publish to the query scope after the client finishes publishing their result. We accomplish this by
         // directly depending on the result of this export builder.
-        final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
+        final SessionState.ExportBuilder<T> resultBuilder = session.nonExport().setStateToPublishing();
         final SessionState.ExportObject<T> resultExport = resultBuilder.getExport();
         final SessionState.ExportBuilder<T> publishTask = session.nonExport();
 
+        // if we receive requests to read from this variable before the client has finished publishing, we will
+        // give the user the result export object to wait on as a dependency.
+        final ScriptSession gss = scriptSessionProvider.get();
+        gss.setVariable(varName, resultExport);
+
         publishTask
+                .description("ScopeTicketResolver#publish(" + varName + ")")
                 .requiresSerialQueue()
                 .require(resultExport)
                 .submit(() -> {
-                    final ScriptSession gss = scriptSessionProvider.get();
                     T value = resultExport.get();
                     if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
                         gss.manage((LivenessReferent) value);

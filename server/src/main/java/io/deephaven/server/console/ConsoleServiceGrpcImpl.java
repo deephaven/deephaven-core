@@ -131,6 +131,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
 
         session.newExport(request.getResultId(), "resultId")
+                .description("ConsoleService#startConsole")
                 .onError(responseObserver)
                 .submit(() -> {
                     final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
@@ -177,6 +178,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     ticketRouter.resolve(session, consoleId, "consoleId");
 
             session.nonExport()
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .require(exportedConsole)
@@ -266,6 +268,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             final SessionState.ExportObject<ScriptSession> exportedConsole;
 
             ExportBuilder<?> exportBuilder = session.nonExport()
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .onError(responseObserver);

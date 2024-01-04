@@ -88,6 +88,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
             public void run() {
                 session.nonExport()
+                        .description("ObjectServiceGrpcImpl#SendMessageObserver#EnqueuedStreamOperation")
                         .onErrorHandler(SendMessageObserver.this::onError)
                         .require(requirements)
                         .submit(() -> {
@@ -270,6 +271,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     ticketRouter.resolve(session, request.getSourceId().getTicket(), "sourceId");
 
             session.nonExport()
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(object)
                     .onError(responseObserver)
@@ -369,7 +371,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                 for (Object reference : references) {
                     final String type = typeLookup.type(reference).orElse(null);
-                    final ExportObject<?> exportObject = sessionState.newServerSideExport(reference);
+                    final ExportObject<?> exportObject =
+                            sessionState.newServerSideExport(reference, "pluginMessage#ondata");
                     exports.add(exportObject);
                     TypedTicket typedTicket = ticketForExport(exportObject, type);
                     payload.addExportedReferences(typedTicket);
