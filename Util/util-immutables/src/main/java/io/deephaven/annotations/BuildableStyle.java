@@ -19,7 +19,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Value.Style(visibility = ImplementationVisibility.PACKAGE,
         defaults = @Value.Immutable(copy = false),
-        strictBuilder = true,
         weakInterning = true,
         jdkOnly = true,
         includeHashCode = "getClass().hashCode()")
