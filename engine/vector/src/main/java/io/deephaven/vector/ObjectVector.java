@@ -25,8 +25,9 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
     long serialVersionUID = 2691131699080413017L;
 
     static <T> GenericVectorType<ObjectVector<T>, T> type(GenericType<T> genericType) {
-        // noinspection unchecked
-        return GenericVectorType.of((Class<ObjectVector<T>>) (Class<?>) ObjectVector.class, genericType);
+        //noinspection unchecked,rawtypes
+        final Class<ObjectVector<T>> objectVectorClass = (Class) ObjectVector.class;
+        return GenericVectorType.of(objectVectorClass, genericType);
     }
 
     /**

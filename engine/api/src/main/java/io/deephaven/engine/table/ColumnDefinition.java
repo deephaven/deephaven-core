@@ -8,22 +8,14 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.PrimitiveVectorType;
-import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import io.deephaven.vector.ByteVector;
@@ -109,17 +101,27 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {
-        return type.walk(new Adapter(name));
+        return ensureConsistent(type, type.walk(new Adapter(name)));
     }
 
     public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
-        final PrimitiveType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return type.walk(adapter);
+        return ensureConsistent(type, new ColumnDefinition<>(name, type.clazz()));
     }
 
     public static ColumnDefinition<?> of(String name, GenericType<?> type) {
         final GenericType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return type.walk(adapter);
+        return ensureConsistent(type, type.walk(adapter));
+    }
+
+    private static <T> ColumnDefinition<T> ensureConsistent(Type<?> expected, ColumnDefinition<T> cd) {
+        final Type<T> actual = cd.getType();
+        if (!expected.equals(actual)) {
+            throw new IllegalStateException(String.format(
+                    "ColumnDefinition.getType() inconsistency. expected=%s, actual=%s, name=%s, dataType=%s, componentType=%s",
+                    expected, actual, cd.getName(), cd.getDataType().getName(),
+                    cd.getComponentType() == null ? null : cd.getComponentType().getName()));
+        }
+        return cd;
     }
 
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
@@ -148,6 +150,44 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
             @NotNull final ColumnType columnType) {
         return new ColumnDefinition<>(
                 name, dataType, checkAndMaybeInferComponentType(dataType, componentType), columnType);
+    }
+
+    public static <T> Type<T> type(
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
+        if (componentType == null) {
+            return Type.find(dataType);
+        }
+        if (dataType.isArray()) {
+            return NativeArrayType.of(dataType, Type.find(componentType));
+        }
+        if (Vector.class.isAssignableFrom(dataType)) {
+            return vectorTypeAsType(dataType, componentType);
+        }
+        return null;
+    }
+
+    private static <T> Type<T> vectorTypeAsType(
+            @NotNull final Class<T> dataType,
+            @NotNull final Class<?> componentType) {
+        // noinspection unchecked
+        return (Type<T>) vectorType(dataType, componentType);
+    }
+
+    private static <VT extends Vector<VT>> ArrayType<VT, ?> vectorType(
+            @NotNull final Class<?> dataType,
+            @NotNull final Class<?> componentType) {
+        // noinspection unchecked
+        final Class<VT> vectorType = (Class<VT>) dataType;
+        return vectorType(vectorType, Type.find(componentType));
+    }
+
+    private static <VT extends Vector<VT>, ComponentType> ArrayType<VT, ComponentType> vectorType(
+            Class<VT> vectorClass,
+            Type<ComponentType> type) {
+        return type instanceof PrimitiveType
+                ? PrimitiveVectorType.of(vectorClass, (PrimitiveType<ComponentType>) type)
+                : GenericVectorType.of(vectorClass, (GenericType<ComponentType>) type);
     }
 
     /**
@@ -243,8 +283,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return header.componentType().walk(new Adapter(header.name()));
     }
 
-    private static class Adapter implements Type.Visitor<ColumnDefinition<?>>,
-            PrimitiveType.Visitor<ColumnDefinition<?>>, GenericType.Visitor<ColumnDefinition<?>> {
+    private static class Adapter
+            implements Type.Visitor<ColumnDefinition<?>>, GenericType.Visitor<ColumnDefinition<?>> {
 
         private final String name;
 
@@ -254,7 +294,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(PrimitiveType<?> primitiveType) {
-            return primitiveType.walk((PrimitiveType.Visitor<ColumnDefinition<?>>) this);
+            return new ColumnDefinition<>(name, primitiveType.clazz());
         }
 
         @Override
@@ -263,49 +303,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
 
         @Override
-        public ColumnDefinition<?> visit(BooleanType booleanType) {
-            return ofBoolean(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(ByteType byteType) {
-            return ofByte(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(CharType charType) {
-            return ofChar(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(ShortType shortType) {
-            return ofShort(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(IntType intType) {
-            return ofInt(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(LongType longType) {
-            return ofLong(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(FloatType floatType) {
-            return ofFloat(name);
-        }
-
-        @Override
-        public ColumnDefinition<?> visit(DoubleType doubleType) {
-            return ofDouble(name);
-        }
-
-        @Override
         public ColumnDefinition<?> visit(BoxedType<?> boxedType) {
-            // treat the same as primitive type
-            return visit(boxedType.primitiveType());
+            return new ColumnDefinition<>(name, boxedType.clazz());
         }
 
         @Override
@@ -387,6 +386,10 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     @NotNull
     public ColumnType getColumnType() {
         return columnType;
+    }
+
+    public Type<TYPE> getType() {
+        return type(dataType, componentType);
     }
 
     public ColumnDefinition<TYPE> withPartitioning() {
