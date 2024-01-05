@@ -9,7 +9,14 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.app.GcApplication;
 import io.deephaven.appmode.ApplicationState;
 
-@Module
+/**
+ * Provides {@link GcApplication} as a {@link io.deephaven.appmode.ApplicationState.Factory}.
+ *
+ * @see ApplicationInjectorImpl.Module
+ */
+@Module(includes = {
+        ApplicationInjectorImpl.Module.class
+})
 public interface ApplicationsModule {
 
     @Provides
