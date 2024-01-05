@@ -13,7 +13,7 @@ from deephaven.dtypes import DType, BusinessCalendar
 from deephaven import DHError, dtypes, new_table
 from deephaven.column import Column, InputColumn
 from deephaven.dtypes import DType
-from deephaven.jcompat import _j_array_to_numpy_array
+from deephaven.jcompat import _j_array_to_np_array
 from deephaven.table import Table
 from deephaven.jcompat import j_list_to_list
 
@@ -30,7 +30,7 @@ def _to_column_name(name: str) -> str:
 def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     """ Produces a numpy array from the given Java array and the Table column definition."""
     try:
-        return _j_array_to_numpy_array(col_def.data_type, j_array, conv_null=False, type_promotion=False)
+        return _j_array_to_np_array(col_def.data_type, j_array, conv_null=False, type_promotion=False)
     except DHError:
         raise
     except Exception as e:

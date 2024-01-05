@@ -13,7 +13,7 @@ import pandas as pd
 
 from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object
-from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, _J_ARRAY_NP_TYPE_MAP
+from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, _J_ARRAY_NP_TYPE_MAP, _BUILDABLE_ARRAY_DTYPE_MAP
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -208,7 +208,7 @@ def to_sequence(v: Union[T, Sequence[T]] = None, wrapped: bool = False) -> Seque
         return tuple((unwrap(o) for o in v))
 
 
-def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False) -> \
+def _j_array_to_np_array(dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False) -> \
         np.ndarray:
     """ Produces a numpy array from the DType and given Java array.
 
@@ -295,7 +295,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
         return s.astype(pd.BooleanDtype(), copy=False)
 
-    np_array = _j_array_to_numpy_array(dtype, j_array, conv_null=False)
+    np_array = _j_array_to_np_array(dtype, j_array, conv_null=False)
     if conv_null and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None:
         pd_ex_dtype = _DH_PANDAS_NULLABLE_TYPE_MAP.get(dtype)
         s = pd.Series(data=np_array, dtype=pd_ex_dtype(), copy=False)
@@ -304,3 +304,41 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         s = pd.Series(data=np_array, copy=False)
 
     return s
+
+def _np_array_to_j_array(np_array: np.ndarray) -> Union[jpy.JType | np.ndarray]:
+    """Convert a multidimensional numpy array to a Java array of the same shape and type.
+
+    Args:
+        np_array (np.ndarray): The numpy array to convert
+
+    Returns:
+        jpy.JType | np.ndarray: The Java array or the original numpy array if it could not be converted
+
+    Raises:
+        DHError
+    """
+    if np_array is None:
+        return None
+
+    dtype = dtypes.from_np_dtype(np_array.dtype)
+    array_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dtype, None)
+    if array_dtype:
+        j_type_char = array_dtype.j_name[-1]
+    else:
+        return np_array
+
+    try:
+        return _md_ndarray_to_jarray(j_type_char, np_array, dtype)
+    except Exception as e:
+        raise DHError(f"failed to convert numpy array to Java array") from e
+
+def _md_ndarray_to_jarray(j_type_char: str, np_array: np.ndarray, dtype: dtypes.DType) -> jpy.JType:
+    ndim = np_array.ndim
+    if ndim == 1:
+        return dtypes.array(dtype, np_array)
+    else:
+        sub_arrs = []
+        for i in range(np_array.shape[0]):
+            sub_arrs.append(_md_ndarray_to_jarray(j_type_char, np_array[i], dtype))
+        return jpy.array("[" * (ndim - 1) + j_type_char, sub_arrs)
+

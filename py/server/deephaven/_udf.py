@@ -14,11 +14,13 @@ import numba
 import numpy
 import numpy as np
 
+import jpy
+
 from deephaven import DHError, dtypes
 from deephaven.dtypes import _np_ndarray_component_type, _np_dtype_char, _NUMPY_INT_TYPE_CODES, \
     _NUMPY_FLOATING_TYPE_CODES, _component_np_dtype_char, _J_ARRAY_NP_TYPE_MAP, _PRIMITIVE_DTYPE_NULL_MAP, _scalar, \
     _BUILDABLE_ARRAY_DTYPE_MAP
-from deephaven.jcompat import _j_array_to_numpy_array
+from deephaven.jcompat import _j_array_to_np_array, _np_array_to_j_array
 from deephaven.time import to_np_datetime64
 
 # For unittest vectorization
@@ -262,7 +264,7 @@ def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
         # if it matches one of the encoded types, convert it
         if encoded_type in param.encoded_types:
             dtype = dtypes.from_np_dtype(np_dtype)
-            return _j_array_to_numpy_array(dtype, arg, conv_null=True, type_promotion=False)
+            return _j_array_to_np_array(dtype, arg, conv_null=True, type_promotion=False)
         # if the annotation is missing, or it is a generic object type, return the arg
         elif "O" in param.encoded_types:
             return arg
@@ -335,7 +337,6 @@ def _convert_args(p_sig: _ParsedSignature, args: Tuple[Any, ...]) -> List[Any]:
     converted_args.extend(args[len(converted_args):])
     return converted_args
 
-
 def _py_udf(fn: Callable):
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
     Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
@@ -366,8 +367,13 @@ def _py_udf(fn: Callable):
         # kwargs are not converted because they are not used in the UDFs
         ret = fn(*converted_args, **kwargs)
         if return_array:
+            # TODO handle explicitly defined ndim/shape (numba@guvectorize or DH's own version of such an annotation)
+            #  multidimensional arrays
             return dtypes.array(ret_dtype, ret)
         elif ret_dtype == dtypes.PyObject:
+            # this handles the use case where the return type is not annotated, but the function returns a numpy array
+            if isinstance(ret, np.ndarray):
+                return _np_array_to_j_array(ret)
             return ret
         else:
             return _scalar(ret, ret_dtype)

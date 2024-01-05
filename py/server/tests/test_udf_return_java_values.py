@@ -11,6 +11,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+import jpy
+
 from deephaven import empty_table, dtypes, DHError
 from tests.testbase import BaseTestCase
 
@@ -222,26 +224,31 @@ foo = Foo()
     def test_ndarray_weird_cases(self):
         def f() -> np.ndarray[typing.Any]:
             return np.array([1, 2], dtype=np.int64)
+
         t = empty_table(10).update(["X1 = f()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f1() -> npt.NDArray[typing.Any]:
             return np.array([1, 2], dtype=np.int64)
+
         t = empty_table(10).update(["X1 = f1()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f2() -> np.ndarray[typing.Any, np.int64]:
             return np.array([1, 2], dtype=np.int64)
+
         t = empty_table(10).update(["X1 = f2()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f3() -> Union[None, None]:
             return np.array([1, 2], dtype=np.int64)
+
         t = empty_table(10).update(["X1 = f3()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
         def f4() -> None:
             return np.array([1, 2], dtype=np.int64)
+
         t = empty_table(10).update(["X1 = f4()"])
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
 
@@ -290,9 +297,30 @@ def fn(col) -> Optional[{np_dtype}]:
         @numba.vectorize([numba.float64(numba.float64)], nopython=True)
         def nbsin(x):
             return np.sin(x)
+
         t3 = empty_table(10).update(["X3 = nbsin(i)"])
         self.assertEqual(t3.columns[0].data_type, dtypes.double)
 
+    def test_md_np_array(self):
+        np_1d_array = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.int64)
+        np_2d_array = np_1d_array.reshape((4, 2))
+        np_3d_array = np_1d_array.reshape((2, 2, 2))
+
+        def f(ndim):
+            if ndim == 1:
+                return np_1d_array
+            elif ndim == 2:
+                return np_2d_array
+            elif ndim == 3:
+                return np_3d_array
+            else:
+                raise ValueError("ndim must be 1, 2, or 3")
+
+        for ndim in [1, 2, 3]:
+            with self.subTest(ndim):
+                cast_str = f"(long{'[]' * ndim})"
+                t = empty_table(10).update([f"X1 = {cast_str}f(ndim)"])
+                self.assertEqual(t.columns[0].data_type, dtypes.from_jtype(jpy.get_type("[" * ndim + "J").jclass))
 
 if __name__ == '__main__':
     unittest.main()
