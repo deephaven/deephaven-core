@@ -52,6 +52,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
+import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -854,6 +855,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @TsUnion
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface RowReferenceUnion {
+        @JsOverlay
+        static RowReferenceUnion of(@DoNotAutobox Object o) {
+            return Js.cast(o);
+        }
+
         @JsOverlay
         default boolean isTreeRow() {
             return this instanceof TreeRow;
