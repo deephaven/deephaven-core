@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -57,13 +58,13 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final Path path)
+    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
-        final String pathKey = path.toAbsolutePath().toString();
+        final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
-        final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
+        final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
         final CachedChannel channel = result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(context, path), ChannelType.Read, pathKey)
+                ? new CachedChannel(wrappedProvider.getReadChannel(context, uri), ChannelType.Read, uriString)
                 : result.position(0);
         channel.setContext(context);
         return channel;

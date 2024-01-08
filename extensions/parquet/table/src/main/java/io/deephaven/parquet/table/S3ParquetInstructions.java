@@ -3,6 +3,8 @@ package io.deephaven.parquet.table;
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;
 
+import java.time.Duration;
+
 /**
  * This class provides instructions intended for reading and writing parquet files to AWS S3 instances.
  */
@@ -14,7 +16,9 @@ public abstract class S3ParquetInstructions {
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
     private final static int DEFAULT_FRAGMENT_SIZE = 512 << 20; // 5 MB
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KB
-    private final static int DEFAULT_MAX_CACHE_SIZE = 50;
+    private final static int DEFAULT_MAX_CACHE_SIZE = 32;
+    private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
+    private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
 
     public static Builder builder() {
         return ImmutableS3ParquetInstructions.builder();
@@ -26,7 +30,7 @@ public abstract class S3ParquetInstructions {
     public abstract String awsRegionName();
 
     /**
-     * The maximum number of concurrent requests to make to S3.
+     * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
      */
     @Value.Default
     public int maxConcurrentRequests() {
@@ -34,7 +38,8 @@ public abstract class S3ParquetInstructions {
     }
 
     /**
-     * The number of fragments to send asynchronous read requests for while reading the current fragment.
+     * The number of fragments to send asynchronous read requests for while reading the current fragment, defaults to
+     * {@value #DEFAULT_READ_AHEAD_COUNT}.
      */
     @Value.Default
     public int readAheadCount() {
@@ -43,7 +48,7 @@ public abstract class S3ParquetInstructions {
 
     /**
      * The maximum size of each fragment to read from S3. The fetched fragment can be smaller than this in case fewer
-     * bytes remaining in the file.
+     * bytes remaining in the file, defaults to {@value #DEFAULT_FRAGMENT_SIZE} bytes.
      */
     @Value.Default
     public int fragmentSize() {
@@ -51,12 +56,30 @@ public abstract class S3ParquetInstructions {
     }
 
     /**
-     * The maximum number of fragments to cache in memory.
+     * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}.
      */
     @Value.Default
     public int maxCacheSize() {
         return DEFAULT_MAX_CACHE_SIZE;
     }
+
+    /**
+     * The amount of time to wait when initially establishing a connection before giving up and timing out, defaults to
+     * 2 seconds.
+     */
+    @Value.Default
+    public Duration connectionTimeout() {
+        return DEFAULT_CONNECTION_TIMEOUT;
+    }
+
+    /**
+     * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds
+     */
+    @Value.Default
+    public Duration readTimeout() {
+        return DEFAULT_READ_TIMEOUT;
+    }
+
 
     @Value.Check
     final void boundsCheckMaxConcurrentRequests() {
@@ -82,7 +105,8 @@ public abstract class S3ParquetInstructions {
     @Value.Check
     final void boundsCheckMaxCacheSize() {
         if (maxCacheSize() < readAheadCount() + 1) {
-            throw new IllegalArgumentException("maxCacheSize(=" + maxCacheSize() + ") must be >= 1 + readAheadCount");
+            throw new IllegalArgumentException("maxCacheSize(=" + maxCacheSize() + ") must be >= 1 + " +
+                    "readAheadCount(=" + readAheadCount() + ")");
         }
     }
 
@@ -96,6 +120,10 @@ public abstract class S3ParquetInstructions {
         Builder fragmentSize(int fragmentSize);
 
         Builder maxCacheSize(int maxCacheSize);
+
+        Builder connectionTimeout(Duration connectionTimeout);
+
+        Builder readTimeout(Duration connectionTimeout);
 
         S3ParquetInstructions build();
     }

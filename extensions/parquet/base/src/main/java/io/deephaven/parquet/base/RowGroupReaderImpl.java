@@ -17,9 +17,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,19 +34,22 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private final Map<String, List<Type>> schemaMap = new HashMap<>();
     private final Map<String, ColumnChunk> chunkMap = new HashMap<>();
 
-    private final Path rootPath;
+    /**
+     * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
+     */
+    private final URI rootURI;
     private final String version;
 
     RowGroupReaderImpl(
             @NotNull final RowGroup rowGroup,
             @NotNull final SeekableChannelsProvider channelsProvider,
-            @NotNull final Path rootPath,
+            @NotNull final URI rootURI,
             @NotNull final MessageType type,
             @NotNull final MessageType schema,
             @Nullable final String version) {
         this.channelsProvider = channelsProvider;
         this.rowGroup = rowGroup;
-        this.rootPath = rootPath;
+        this.rootURI = rootURI;
         this.type = type;
         for (ColumnChunk column : rowGroup.columns) {
             List<String> path_in_schema = column.getMeta_data().path_in_schema;
@@ -77,7 +80,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
         OffsetIndex offsetIndex = null;
         if (columnChunk.isSetOffset_index_offset()) {
             try (final SeekableByteChannel readChannel =
-                    channelsProvider.getReadChannel(channelsProvider.makeContext(), rootPath)) {
+                    channelsProvider.getReadChannel(channelsProvider.makeContext(), rootURI)) {
                 readChannel.position(columnChunk.getOffset_index_offset());
                 offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
                         new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));
@@ -85,7 +88,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
                 throw new UncheckedIOException(e);
             }
         }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath, type, offsetIndex, fieldTypes,
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootURI, type, offsetIndex, fieldTypes,
                 numRows(), version);
     }
 

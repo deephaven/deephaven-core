@@ -27,6 +27,7 @@ import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -52,7 +53,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private final Supplier<Dictionary> dictionarySupplier;
     private final PageMaterializer.Factory pageMaterializerFactory;
     private final ColumnDescriptor path;
-    private final Path filePath;
+    private final URI uri;
     private final List<Type> fieldTypes;
 
     /**
@@ -73,7 +74,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
      *        page isn't dictionary encoded
      * @param materializerFactory The factory for creating {@link PageMaterializer}.
      * @param path The path of the column.
-     * @param filePath The path of the file.
+     * @param uri The uri of the parquet file.
      * @param fieldTypes The types of the fields in the column.
      * @param offset The offset for page header if supplied {@code pageHeader} is {@code null}. Else, the offset of data
      *        following the header in the page.
@@ -86,7 +87,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             Supplier<Dictionary> dictionarySupplier,
             PageMaterializer.Factory materializerFactory,
             ColumnDescriptor path,
-            Path filePath,
+            URI uri,
             List<Type> fieldTypes,
             long offset,
             PageHeader pageHeader,
@@ -96,7 +97,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         this.dictionarySupplier = dictionarySupplier;
         this.pageMaterializerFactory = materializerFactory;
         this.path = path;
-        this.filePath = filePath;
+        this.uri = uri;
         this.fieldTypes = fieldTypes;
         this.offset = offset;
         this.pageHeader = pageHeader;
@@ -106,7 +107,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     @Override
     public Object materialize(Object nullValue) throws IOException {
         try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
             ensurePageHeader(readChannel);
             return readDataPage(nullValue, readChannel);
         }
@@ -114,7 +115,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     public int readRowCount() throws IOException {
         try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
             ensurePageHeader(readChannel);
             return readRowCountFromDataPage(readChannel);
         }
@@ -124,7 +125,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder) throws IOException {
         try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
             ensurePageHeader(readChannel);
             return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel);
         }
@@ -623,7 +624,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             return numValues;
         }
         try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), filePath)) {
+                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
             ensurePageHeader(readChannel);
             // Above will block till it populates numValues
             Assert.geqZero(numValues, "numValues");

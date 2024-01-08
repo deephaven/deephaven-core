@@ -3,11 +3,12 @@
  */
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.base.ParquetFileReader;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
@@ -26,7 +27,7 @@ import java.util.stream.IntStream;
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.
  */
-public class ParquetTableLocationKey extends FileTableLocationKey {
+public class ParquetTableLocationKey extends URITableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = ParquetTableLocationKey.class.getSimpleName();
 
@@ -108,7 +109,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
             return true;
         }
         try {
-            fileReader = ParquetTools.getParquetFileReaderChecked(parquetFileURI, readInstructions);
+            fileReader = ParquetTools.getParquetFileReaderChecked(uri, readInstructions);
         } catch (IOException e) {
             return false;
         }
@@ -125,7 +126,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
         if (fileReader != null) {
             return fileReader;
         }
-        return fileReader = ParquetTools.getParquetFileReader(parquetFileURI, readInstructions);
+        return fileReader = ParquetTools.getParquetFileReader(uri, readInstructions);
     }
 
     /**
@@ -189,8 +190,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
             final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null
-                    || new File(filePath).getAbsoluteFile().equals(new File(parquetFileURI).getAbsoluteFile());
+            return filePath == null || new File(filePath).getAbsoluteFile().toURI().equals(uri);
         }).toArray();
     }
 

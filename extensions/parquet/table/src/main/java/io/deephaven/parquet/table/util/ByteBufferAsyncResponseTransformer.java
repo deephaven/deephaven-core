@@ -9,21 +9,13 @@ import software.amazon.awssdk.core.async.SdkPublisher;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * An {@link AsyncResponseTransformer} that transforms a response into a {@link ByteBuffer}.
- * This class is inspired from {@link software.amazon.awssdk.core.internal.async.ByteArrayAsyncResponseTransformer}
- * but avoids a number of extra copies done by the former.
- *
- * @param <ResponseT> POJO response type.
- */
 public final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
 
+    private final int bufferSize;
     private volatile CompletableFuture<ByteBuffer> cf;
-    private final ByteBuffer byteBuffer;
 
     ByteBufferAsyncResponseTransformer(final int bufferSize) {
-        // TODO Can be improved with a buffer pool
-        byteBuffer = ByteBuffer.allocate(bufferSize);
+        this.bufferSize = bufferSize;
     }
 
     @Override
@@ -33,26 +25,27 @@ public final class ByteBufferAsyncResponseTransformer<ResponseT> implements Asyn
     }
 
     @Override
-    public void onResponse(ResponseT response) {
+    public void onResponse(final ResponseT response) {
         // No need to store the response object as we are only interested in the byte buffer
     }
 
     @Override
-    public void onStream(SdkPublisher<ByteBuffer> publisher) {
-        publisher.subscribe(new ByteBuferSubscriber(cf, byteBuffer));
+    public void onStream(final SdkPublisher<ByteBuffer> publisher) {
+        // TODO Can be improved with a buffer pool
+        publisher.subscribe(new ByteBufferSubscriber(cf, ByteBuffer.allocate(bufferSize)));
     }
 
     @Override
-    public void exceptionOccurred(Throwable throwable) {
+    public void exceptionOccurred(final Throwable throwable) {
         cf.completeExceptionally(throwable);
     }
 
-    final static class ByteBuferSubscriber implements Subscriber<ByteBuffer> {
+    final static class ByteBufferSubscriber implements Subscriber<ByteBuffer> {
         private final CompletableFuture<ByteBuffer> resultFuture;
         private Subscription subscription;
         private final ByteBuffer byteBuffer;
 
-        ByteBuferSubscriber(CompletableFuture<ByteBuffer> resultFuture, ByteBuffer byteBuffer) {
+        ByteBufferSubscriber(CompletableFuture<ByteBuffer> resultFuture, ByteBuffer byteBuffer) {
             this.resultFuture = resultFuture;
             this.byteBuffer = byteBuffer;
         }
@@ -83,7 +76,7 @@ public final class ByteBufferAsyncResponseTransformer<ResponseT> implements Asyn
 
         @Override
         public void onComplete() {
-            resultFuture.complete(byteBuffer);
+            resultFuture.complete(byteBuffer.asReadOnlyBuffer());
         }
     }
 }

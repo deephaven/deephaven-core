@@ -5,7 +5,7 @@ package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
+import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -32,10 +32,10 @@ import java.util.function.Predicate;
  * tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/...
  * </pre>
  *
- * , producing {@link FileTableLocationKey}'s with two partitions, for keys {@value INTERNAL_PARTITION_KEY} and the
+ * , producing {@link URITableLocationKey}'s with two partitions, for keys {@value INTERNAL_PARTITION_KEY} and the
  * specified {@code columnPartitionKey}.
  */
-public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocationKey>
+public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocationKey>
         implements TableLocationKeyFinder<TLK> {
 
     @VisibleForTesting

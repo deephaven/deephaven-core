@@ -54,7 +54,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
-import static io.deephaven.parquet.base.ParquetFileReader.S3_PARQUET_FILE_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetFileReader.S3_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetFileReader.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -618,7 +618,7 @@ public class ParquetTools {
     private static Table readTableInternal(
             @NotNull final URI source,
             @NotNull final ParquetInstructions instructions) {
-        if (source.getScheme() != null && source.getScheme().equals(S3_PARQUET_FILE_URI_SCHEME)) {
+        if (S3_URI_SCHEME.equals(source.getScheme())) {
             return readSingleFileTable(source, instructions);
         }
         final Path sourcePath = Path.of(source.getRawPath());
@@ -1139,10 +1139,15 @@ public class ParquetTools {
     public static ParquetFileReader getParquetFileReaderChecked(
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
-        if (parquetFileURI.getScheme() != null && parquetFileURI.getScheme().equals(S3_PARQUET_FILE_URI_SCHEME)) {
+        if (S3_URI_SCHEME.equals(parquetFileURI.getScheme())) {
+            if (!(readInstructions.getSpecialInstructions() instanceof S3ParquetInstructions)) {
+                throw new IllegalArgumentException("Must provide S3ParquetInstructions to read files from S3");
+            }
+            final S3ParquetInstructions s3Instructions =
+                    (S3ParquetInstructions) readInstructions.getSpecialInstructions();
             return new ParquetFileReader(parquetFileURI,
                     new CachedChannelProvider(
-                            new S3SeekableChannelProvider(parquetFileURI, readInstructions), 1 << 7));
+                            new S3SeekableChannelProvider(s3Instructions), 1 << 7));
         }
         return new ParquetFileReader(
                 parquetFileURI,

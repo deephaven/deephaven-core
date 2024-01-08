@@ -21,29 +21,19 @@ _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.Compre
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JS3ParquetInstructions = jpy.get_type("io.deephaven.parquet.table.S3ParquetInstructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
+_JDuration = jpy.get_type("java.time.Duration")
 
 def _build_s3_parquet_instructions(
-        aws_region_name: str,  # TODO This is a required parameter, so is this okay?
+        aws_region_name: str,
         max_concurrent_requests: int = None,
         read_ahead_count: int = None,
         fragment_size: int = None,
         max_cache_size: int = None,
+        connection_timeout: _JDuration = None,
+        read_timeout: _JDuration = None,
 ):
-    if not any(
-            [
-                aws_region_name,
-                max_concurrent_requests,
-                read_ahead_count,
-                fragment_size,
-                max_cache_size,
-            ]
-    ):
-        return None
-
     builder = _JS3ParquetInstructions.builder()
-
-    if aws_region_name:
-        builder.awsRegionName(aws_region_name)
+    builder.awsRegionName(aws_region_name)
 
     if max_concurrent_requests is not None:
         builder.maxConcurrentRequests(max_concurrent_requests)
@@ -56,6 +46,12 @@ def _build_s3_parquet_instructions(
 
     if max_cache_size is not None:
         builder.maxCacheSize(max_cache_size)
+
+    if connection_timeout is not None:
+        builder.connectionTimeout(connection_timeout)
+
+    if read_timeout is not None:
+        builder.readTimeout(read_timeout)
 
     return builder.build()
 
@@ -85,6 +81,8 @@ def _build_parquet_instructions(
         read_ahead_count: int = None,
         fragment_size: int = None,
         max_cache_size: int = None,
+        connection_timeout: _JDuration = None,
+        read_timeout: _JDuration = None,
 ):
     if not any(
             [
@@ -101,6 +99,8 @@ def _build_parquet_instructions(
                 read_ahead_count is not None,
                 fragment_size is not None,
                 max_cache_size is not None,
+                connection_timeout is not None,
+                read_timeout is not None,
             ]
     ):
         return None
@@ -144,6 +144,8 @@ def _build_parquet_instructions(
             read_ahead_count=read_ahead_count,
             fragment_size=fragment_size,
             max_cache_size=max_cache_size,
+            connection_timeout=connection_timeout,
+            read_timeout=read_timeout,
         )
         builder.setSpecialInstructions(s3_parquet_instructions)
 
@@ -195,6 +197,8 @@ def read(
         read_ahead_count: int = None,
         fragment_size: int = None,
         max_cache_size: int = None,
+        connection_timeout: _JDuration = None,
+        read_timeout: _JDuration = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -212,7 +216,19 @@ def read(
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
         aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, by default None
-        TODO Add docstrings for the more parameters
+        max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3,
+            by default 50.
+        read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
+            fragment, defaults to 1.
+        fragment_size (int): the maximum size of each fragment to read from S3. The fetched fragment can be smaller than
+            this in case fewer bytes remaining in the file, defaults to 5 MB.
+        max_cache_size (int): the maximum number of fragments to cache in memory, defaults to 32.
+        connection_timeout (Duration): the amount of time to wait when initially establishing a connection before giving
+            up and timing out, defaults to 2 seconds.
+        read_timeout (Duration): the amount of time to wait when reading a fragment before giving up and timing out,
+            defaults to 2 seconds
+        # TODO Make sure all the defaults are correct
+
     Returns:
         a table
 
@@ -232,6 +248,8 @@ def read(
             read_ahead_count=read_ahead_count,
             fragment_size=fragment_size,
             max_cache_size=max_cache_size,
+            connection_timeout=connection_timeout,
+            read_timeout=read_timeout,
         )
         j_table_definition = _j_table_definition(table_definition)
         if j_table_definition is not None:

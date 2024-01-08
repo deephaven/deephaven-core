@@ -6,6 +6,7 @@ package io.deephaven.parquet.base.util;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -19,10 +20,10 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final Path path)
+    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
-        return FileChannel.open(path, StandardOpenOption.READ);
+        return FileChannel.open(Path.of(uri), StandardOpenOption.READ);
     }
 
     @Override

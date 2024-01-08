@@ -3,11 +3,14 @@
  */
 package io.deephaven.parquet.base.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,12 +38,16 @@ public interface SeekableChannelsProvider {
         }
     }
 
-    default SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final String path)
+    default SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final String uriStr)
             throws IOException {
-        return getReadChannel(context, Paths.get(path));
+        try {
+            return getReadChannel(context, new URI(uriStr));
+        } catch (final URISyntaxException e) {
+            throw new UncheckedDeephavenException("Cannot convert path string to URI: " + uriStr, e);
+        }
     }
 
-    SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull Path path) throws IOException;
+    SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull URI uri) throws IOException;
 
     default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
         return getWriteChannel(Paths.get(path), append);

@@ -64,6 +64,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -576,7 +577,9 @@ public final class ParquetTableReadWriteTest {
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)
-                .maxCacheSize(50)
+                .maxCacheSize(32)
+                .connectionTimeout(Duration.ofSeconds(1))
+                .readTimeout(Duration.ofSeconds(60))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3ParquetInstructions)
@@ -616,7 +619,9 @@ public final class ParquetTableReadWriteTest {
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)
-                .maxCacheSize(50)
+                .maxCacheSize(32)
+                .connectionTimeout(Duration.ofSeconds(1))
+                .readTimeout(Duration.ofSeconds(60))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3ParquetInstructions)
@@ -690,7 +695,8 @@ public final class ParquetTableReadWriteTest {
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)
-                .maxCacheSize(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofMinutes(5))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3ParquetInstructions)
@@ -712,7 +718,8 @@ public final class ParquetTableReadWriteTest {
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)
-                .maxCacheSize(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofMinutes(5))
                 .build();
         final ParquetInstructions readInstructions2 = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3ParquetInstructions2)
@@ -764,7 +771,8 @@ public final class ParquetTableReadWriteTest {
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)
-                .maxCacheSize(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3ParquetInstructions)
@@ -779,10 +787,17 @@ public final class ParquetTableReadWriteTest {
         final Table dhTable2 = TableTools.emptyTable(5).update("A=(int)i");
         assertTableEquals(fromAws2, dhTable2);
 
-        final Table fromAws3 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/single col file with spaces in name.parquet",
-                        readInstructions).select();
+        final Table fromAws3 = ParquetTools
+                .readTable("s3://dh-s3-parquet-test1/single%20col%20file%20with%20spaces%20in%20name.parquet",
+                        readInstructions)
+                .select();
         assertTableEquals(fromAws3, dhTable2);
+
+        final Table fromAws4 =
+                ParquetTools.readTable("s3://dh-s3-parquet-test1/singleColFile.parquet", readInstructions)
+                        .select().sumBy();
+        final Table dhTable4 = TableTools.emptyTable(5).update("A=(int)i").sumBy();
+        assertTableEquals(fromAws4, dhTable4);
     }
 
     @Test
@@ -862,7 +877,7 @@ public final class ParquetTableReadWriteTest {
      * Test if the current code can read the parquet data written by the old code. There is logic in
      * {@link ColumnChunkPageStore#create} that decides page store based on the version of the parquet file. The old
      * data is generated using following logic:
-     * 
+     *
      * <pre>
      *  // Enforce a smaller page size to write multiple pages
      *  final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
@@ -1147,7 +1162,7 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
-        final String destRelativePathStr = parentDirName + "/" + parquetFileName;
+        final String destRelativePathStr = rootFile.getName() + "/" + parentDirName + "/" + parquetFileName;
         ParquetTools.writeTable(table, destRelativePathStr);
         fromDisk = readSingleFileTable(destRelativePathStr, ParquetInstructions.EMPTY);
         assertTableEquals(table, fromDisk);

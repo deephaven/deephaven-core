@@ -12,6 +12,7 @@ import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,35 +20,40 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Top level accessor for a parquet file
+ * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,
+ * ex."s3://bucket/key".
  */
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
     private static final String MAGIC_STR = "PAR1";
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
-    public static final String S3_PARQUET_FILE_URI_SCHEME = "s3";
-    private static final String S3_PARQUET_FILE_URI_PREFIX = "s3://";
+    public static final String S3_URI_SCHEME = "s3";
+    private static final String S3_URI_PREFIX = "s3://";
 
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
-    private final Path rootPath;
+
+    /**
+     * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
+     */
+    private final URI rootURI;
     private final MessageType type;
 
     // TODO Where should I keep it?
     public static URI convertToURI(final String filePath) {
-        // We need to encode spaces in the path string that are not allowed in a URI
-        if (filePath.startsWith(S3_PARQUET_FILE_URI_PREFIX)) {
+        if (filePath.startsWith(S3_URI_PREFIX)) {
             try {
-                return new URI(filePath.replace(" ", "%20"));
+                return new URI(filePath);
             } catch (final URISyntaxException e) {
-                throw new UncheckedDeephavenException("Failed to convert file path " + filePath + " to URI", e);
+                throw new UncheckedDeephavenException("Failed to convert file path " + filePath + " to URI, we expect "
+                        + "CLI-style URIs, e.g., \"s3://bucket/key\" as input", e);
             }
         } else {
-            return Path.of(filePath).toUri();
+            // Resolve to get an absolute file path and convert to URI
+            return new File(filePath).getAbsoluteFile().toURI();
         }
     }
 
@@ -59,18 +65,21 @@ public class ParquetFileReader {
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this.channelsProvider = channelsProvider;
-        final Path filePath;
-        if (parquetFileURI.getScheme() != null && parquetFileURI.getScheme().equals(S3_PARQUET_FILE_URI_SCHEME)) {
-            filePath = Path.of(parquetFileURI.toString());
+        if (!parquetFileURI.getRawPath().endsWith(".parquet")) {
+            // Construct a new URI for the parent directory
+            try {
+                rootURI = new URI(parquetFileURI.getScheme(), parquetFileURI.getHost(),
+                        new File(parquetFileURI.getPath()).getParent(), parquetFileURI.getRawFragment());
+            } catch (final URISyntaxException e) {
+                throw new UncheckedDeephavenException("Cannot construct URI for parent directory of " + parquetFileURI,
+                        e);
+            }
         } else {
-            filePath = Path.of(parquetFileURI);
+            rootURI = parquetFileURI;
         }
-        // Root path should be this file if a single file, else the parent directory for a metadata file
-        rootPath = parquetFileURI.getRawPath().endsWith(".parquet") ? filePath : filePath.getParent();
-        // TODO Close this context after Ryan's patch
         final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
         final byte[] footer;
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, filePath)) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, parquetFileURI)) {
             final long fileLen = readChannel.size();
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC
@@ -210,7 +219,7 @@ public class ParquetFileReader {
         return new RowGroupReaderImpl(
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
-                rootPath,
+                rootURI,
                 type,
                 getSchema(),
                 version);

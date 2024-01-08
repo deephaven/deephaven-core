@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -172,8 +173,8 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull Path path) {
-            return new TestMockChannel(count.getAndIncrement(), path.toString());
+        public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull URI uri) {
+            return new TestMockChannel(count.getAndIncrement(), uri.toString());
         }
 
         @Override

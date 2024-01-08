@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -46,10 +47,10 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final Path path)
+    public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
-        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, path.toFile());
+        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
     }
 
 
