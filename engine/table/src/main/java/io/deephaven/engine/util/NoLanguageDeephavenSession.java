@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
@@ -71,9 +73,9 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected Set<String> getVariableNames() {
+    protected Set<String> getVariableNames(Predicate<String> allowName) {
         synchronized (variables) {
-            return Set.copyOf(variables.keySet());
+            return variables.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
         }
     }
 

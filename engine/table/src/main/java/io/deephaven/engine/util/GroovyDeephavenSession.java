@@ -71,6 +71,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -740,9 +741,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected Set<String> getVariableNames() {
+    protected Set<String> getVariableNames(Predicate<String> allowName) {
         synchronized (bindingBackingMap) {
-            return Set.copyOf(bindingBackingMap.keySet());
+            return bindingBackingMap.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
         }
     }
 
