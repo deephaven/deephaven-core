@@ -12,6 +12,7 @@ import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -143,8 +144,9 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
+        LivenessScope localScope = new LivenessScope();
         try (final S initialSnapshot = takeSnapshot();
-                final SafeCloseable ignored = LivenessScopeStack.open(queryScope, false)) {
+                final SafeCloseable ignored = LivenessScopeStack.open(localScope, false)) {
 
             try {
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
@@ -154,6 +156,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                         .apply(() -> evaluate(script, scriptName));
             } catch (final RuntimeException err) {
                 evaluateErr = err;
+            } finally {
+                localScope.transferTo(queryScope);
             }
 
             // Observe changes during this evaluation (potentially capturing external changes from other threads)
@@ -274,7 +278,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
      * @param name the variable name
      * @return True iff the scope has the given variable name
      */
-    protected abstract boolean hasVariableName(String name);
+    protected abstract boolean hasVariable(String name);
 
     /**
      * Inserts a value into the script's scope.
@@ -305,7 +309,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public boolean hasParamName(String name) {
-            return NameValidator.isValidQueryParameterName(name) && hasVariableName(name);
+            return NameValidator.isValidQueryParameterName(name) && hasVariable(name);
         }
 
         @Override

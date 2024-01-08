@@ -78,7 +78,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected boolean hasVariableName(String name) {
+    protected boolean hasVariable(String name) {
         return variables.containsKey(name);
     }
 

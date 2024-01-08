@@ -747,7 +747,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected boolean hasVariableName(String name) {
+    protected boolean hasVariable(String name) {
         return bindingBackingMap.containsKey(name);
     }
 

@@ -273,7 +273,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected boolean hasVariableName(String name) {
+    protected boolean hasVariable(String name) {
         return scope.containsKey(name);
     }
 
