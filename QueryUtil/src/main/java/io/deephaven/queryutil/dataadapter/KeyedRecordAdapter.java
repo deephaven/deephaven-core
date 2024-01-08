@@ -21,7 +21,7 @@ import io.deephaven.queryutil.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.queryutil.dataadapter.rec.updaters.*;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.function.ThrowingBiConsumer;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +48,7 @@ public class KeyedRecordAdapter<K, T> {
      * Consumer that obtains lock before calling code
      */
     @NotNull
-    protected final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION;
+    protected final ThrowingBiConsumer<QueryDataRetrievalOperation, String, RuntimeException> DO_LOCKED_FUNCTION;
 
     /**
      * The ToMapListener that tracks the DH index for each key. Table data is never retrieved through the ToMapListener.
@@ -150,7 +150,10 @@ public class KeyedRecordAdapter<K, T> {
         final NotificationStepSource notificationSource =
                 sourceTable instanceof BaseTable ? (BaseTable) sourceTable : null;
         // final NotificationStepSource notificationSource = toMapListener;
-        DO_LOCKED_FUNCTION = GetDataLockType.getDoLockedConsumer(GetDataLockType.SNAPSHOT, notificationSource);
+        DO_LOCKED_FUNCTION = GetDataLockType.getDoLockedConsumer(
+                sourceTable.getUpdateGraph(),
+                GetDataLockType.SNAPSHOT,
+                notificationSource);
 
 
         // Create a record adapter that excludes the key columns, if they are present, (since all available keys will

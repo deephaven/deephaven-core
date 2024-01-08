@@ -1,10 +1,11 @@
 package io.deephaven.queryutil.dataadapter;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil;
@@ -456,6 +457,9 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testGenericKeyedRecordAdapterUpdating() throws InterruptedException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false);
+
         final QueryTable source = TstUtils.testRefreshingTable(
                 i(2, 4, 6, 8).copy().toTracking(),
                 TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
@@ -478,7 +482,7 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
                                 "DoubleCol"),
                         "KeyCol1", "KeyCol2");
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(4).copy().toTracking(),
                     TableTools.col("KeyCol1", "KeyB"),
                     TableTools.col("KeyCol2", 0),
@@ -540,7 +544,7 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
         final CountDownLatch l2 = new CountDownLatch(1);
         final CountDownLatch l3 = new CountDownLatch(1);
         new Thread(() -> {
-            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+            updateGraph.startCycleForUnitTests();
             TstUtils.removeRows(source, i(6));
             source.notifyListeners(i(), i(6), i());
             TableTools.show(source);
@@ -550,7 +554,7 @@ public class KeyedRecordAdapterTest extends RefreshingTableTestCase {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            updateGraph.completeCycleForUnitTests();
             l3.countDown();
         }).start();
 

@@ -1,10 +1,11 @@
 package io.deephaven.queryutil.dataadapter;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.queryutil.dataadapter.rec.json.JsonRecordAdapterUtil;
 import io.deephaven.util.QueryConstants;
@@ -33,6 +34,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
     }
 
     public void runJsonRecordListenerTest(boolean async) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final QueryTable source = TstUtils.testRefreshingTable(
                 i(2, 4, 6, 8).toTracking(),
                 TableTools.col("KeyCol1", "KeyA", "KeyB", "KeyA", "KeyB"),
@@ -57,7 +60,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
         final boolean processInitialData = true;
 
-        tableToRecordListener = UpdateGraphProcessor.DEFAULT.sharedLock()
+        tableToRecordListener = updateGraph.sharedLock()
                 .computeLocked(() -> new TableToRecordListener<>(
                         "desc",
                         source,
@@ -166,7 +169,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertTrue(removed.isEmpty());
 
         // modify a row
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(4).toTracking(),
                     TableTools.col("KeyCol1", "KeyB"),
                     TableTools.col("KeyCol2", 0),
@@ -218,7 +221,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertTrue(removed.isEmpty());
 
         // remove a row
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(6));
             TableTools.show(source);
             source.notifyListeners(i(), i(6), i());
@@ -244,7 +247,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertTrue(removed.isEmpty());
 
         // add a row (same one that was removed, but new index)
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(7).toTracking(),
                     TableTools.col("KeyCol1", "KeyA"),
                     TableTools.col("KeyCol2", 1),

@@ -145,7 +145,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
 
     @NotNull
     public RowSetForKeysResult getRowSetForKeys(List<K> dataKeys) {
-        final LogicalClock.State state = LogicalClock.DEFAULT.currentState();
+        final LogicalClock.State state = getUpdateGraph().clock().currentState();
         TObjectLongHashMap<Object> map;
 
         final boolean useBaselineMap;

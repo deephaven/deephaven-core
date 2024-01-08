@@ -5,10 +5,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
-import io.deephaven.engine.table.impl.UpdatableTable;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.queryutil.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 import io.deephaven.queryutil.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
@@ -139,8 +137,8 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
         }
 
         if (processInitialData) {
-            if (!UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                    && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            if (!getUpdateGraph().sharedLock().isHeldByCurrentThread()
+                    && !getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
                 throw new IllegalStateException("Cannot process initial if UpdateGraphProcessor is not locked! " +
                         "Create the TableToRecordListener in a different context or use " +
                         "UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked() to instantiate under the lock.");
