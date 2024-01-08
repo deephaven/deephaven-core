@@ -3,8 +3,9 @@
  */
 package io.deephaven.engine.context;
 
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -24,7 +25,7 @@ import java.util.*;
 /**
  * Variable scope used to resolve parameter values during query execution.
  */
-public abstract class QueryScope extends LivenessScope implements LogOutputAppendable {
+public abstract class QueryScope extends ReferenceCountedLivenessNode implements LogOutputAppendable {
 
     /**
      * Adds a parameter to the default instance {@link QueryScope}, or updates the value of an existing parameter.
@@ -111,6 +112,14 @@ public abstract class QueryScope extends LivenessScope implements LogOutputAppen
         }
 
         return value;
+    }
+
+    protected QueryScope() {
+        super(false);
+
+        // if (!Liveness.REFERENCE_TRACKING_DISABLED) {
+        incrementReferenceCount();
+        // }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -229,7 +238,11 @@ public abstract class QueryScope extends LivenessScope implements LogOutputAppen
         private final KeyedObjectHashMap<String, ValueRetriever> valueRetrievers =
                 new KeyedObjectHashMap<>(new ValueRetrieverNameKey());
 
-        public StandaloneImpl() {}
+        @Override
+        protected void destroy() {
+            super.destroy();
+            valueRetrievers.clear();
+        }
 
         @Override
         public Set<String> getParamNames() {

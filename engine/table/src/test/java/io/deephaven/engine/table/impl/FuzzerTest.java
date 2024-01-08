@@ -117,7 +117,7 @@ public class FuzzerTest {
             clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
         }
 
-        final TimeTable timeTable = session.getQueryScope().readParamValue("tt", null);
+        final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
 
         final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
 

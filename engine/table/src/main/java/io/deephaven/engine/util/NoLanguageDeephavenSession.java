@@ -38,11 +38,13 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
 
     @Override
     protected <T> T getVariable(String name) {
-        if (!variables.containsKey(name)) {
-            throw new QueryScope.MissingVariableException("Missing variable " + name);
+        synchronized (variables) {
+            if (!variables.containsKey(name)) {
+                throw new QueryScope.MissingVariableException("Missing variable " + name);
+            }
+            // noinspection unchecked
+            return (T) variables.get(name);
         }
-        // noinspection unchecked
-        return (T) variables.get(name);
     }
 
     @Override
@@ -70,7 +72,9 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
 
     @Override
     protected Set<String> getVariableNames() {
-        return Set.copyOf(variables.keySet());
+        synchronized (variables) {
+            return Set.copyOf(variables.keySet());
+        }
     }
 
     @Override

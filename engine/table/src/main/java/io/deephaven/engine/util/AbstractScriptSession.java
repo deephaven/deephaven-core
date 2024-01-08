@@ -30,11 +30,10 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
@@ -264,9 +263,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * Retrieves all variable names present in the session's scope.
      *
+     * @param allowName a predicate to decide if a name should be in the returned immutable set
      * @return an immutable set of variable names
      */
-    protected abstract Set<String> getVariableNames();
+    protected abstract Set<String> getVariableNames(Predicate<String> allowName);
 
     /**
      * Check if the scope has the given variable name.
@@ -300,14 +300,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public Set<String> getParamNames() {
-            final Set<String> result = new LinkedHashSet<>();
-            Set<String> variables = AbstractScriptSession.this.getVariableNames();
-            for (final String name : variables) {
-                if (NameValidator.isValidQueryParameterName(name)) {
-                    result.add(name);
-                }
-            }
-            return Collections.unmodifiableSet(result);
+            return AbstractScriptSession.this.getVariableNames(NameValidator::isValidQueryParameterName);
         }
 
         @Override

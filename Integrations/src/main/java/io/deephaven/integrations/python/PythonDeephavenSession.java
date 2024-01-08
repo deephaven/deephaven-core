@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyInputMode;
+import org.jpy.PyLib;
 import org.jpy.PyLib.CallableKind;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -266,8 +268,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected Set<String> getVariableNames() {
-        return scope.getKeys().collect(Collectors.toUnmodifiableSet());
+    protected Set<String> getVariableNames(Predicate<String> allowName) {
+        return PyLib.ensureGil(() -> scope.getKeys().filter(allowName).collect(Collectors.toUnmodifiableSet()));
     }
 
     @Override
@@ -277,24 +279,30 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected synchronized Object setVariable(String name, @Nullable Object newValue) {
-        final PyDictWrapper globals = scope.mainGlobals();
+        Object old = PyLib.ensureGil(() -> {
+            final PyDictWrapper globals = scope.mainGlobals();
 
-        Object old;
-        if (newValue == null) {
-            try {
-                old = globals.unwrap().callMethod("pop", name);
-            } catch (KeyError key) {
-                old = null;
+            if (newValue == null) {
+                try {
+                    return globals.unwrap().callMethod("pop", name);
+                } catch (KeyError key) {
+                    return null;
+                }
+            } else {
+                Object wrapped;
+                if (newValue instanceof PyObject) {
+                    wrapped = newValue;
+                } else {
+                    wrapped = PythonObjectWrapper.wrap(newValue);
+                }
+                // This isn't thread safe, we're relying on the GIL being kind to us (as we have historically done).
+                // There
+                // is no built-in for "replace a variable and return the old one".
+                Object prev = globals.get(name);
+                globals.setItem(name, wrapped);
+                return prev;
             }
-        } else {
-            if (!(newValue instanceof PyObject)) {
-                newValue = PythonObjectWrapper.wrap(newValue);
-            }
-            // This isn't thread safe, we're relying on the GIL being kind to us (as we have historically done). There
-            // is no built-in for "replace a variable and return the old one".
-            old = globals.get(name);
-            globals.setItem(name, newValue);
-        }
+        });
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
         // other threads)
