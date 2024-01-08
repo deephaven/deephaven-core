@@ -5,7 +5,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.queryutil.dataadapter.ChunkToArrayUtil;
 import io.deephaven.queryutil.dataadapter.ContextHolder;
-import io.deephaven.time.DateTime;
+
+import java.time.Instant;
 
 
 /**
@@ -28,9 +29,9 @@ class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGeneratedTableD
             throw new IllegalArgumentException("Column 2: Expected type java.lang.String, instead found type " +
                     colSources[2].getType().getCanonicalName());
         }
-        if (!io.deephaven.time.DateTime.class.isAssignableFrom(colSources[3].getType())) {
+        if (!java.time.Instant.class.isAssignableFrom(colSources[3].getType())) {
             throw new IllegalArgumentException(
-                    "Column 3: Expected type io.deephaven.time.DateTime, instead found type " +
+                    "Column 3: Expected type java.time.Instant, instead found type " +
                             colSources[3].getType().getCanonicalName());
         }
     }
@@ -43,7 +44,7 @@ class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGeneratedTableD
         recordDataArrs[0] = new byte[len];
         recordDataArrs[1] = new long[len];
         recordDataArrs[2] = new String[len];
-        recordDataArrs[3] = new io.deephaven.time.DateTime[len];
+        recordDataArrs[3] = new java.time.Instant[len];
 
         return recordDataArrs;
     }
@@ -91,7 +92,7 @@ class ExampleGeneratedMultiRowDataArrayRetriever extends AbstractGeneratedTableD
                 rowSequence,
                 rowSequenceSize,
                 contextHolder.getGetContext(3),
-                (DateTime[]) dataArrs[3],
+                (Instant[]) dataArrs[3],
                 arrIdx,
                 usePrev);
     }

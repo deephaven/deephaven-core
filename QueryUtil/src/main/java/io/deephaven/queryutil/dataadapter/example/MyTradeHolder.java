@@ -5,9 +5,9 @@ import io.deephaven.queryutil.dataadapter.KeyedRecordAdapter;
 import io.deephaven.queryutil.dataadapter.TableToRecordListener;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
-import io.deephaven.time.DateTime;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -23,11 +23,11 @@ public class MyTradeHolder {
                     .addStringColumnAdapter("Sym", MyTradeHolder::setSym)
                     .addDoubleColumnAdapter("Price", MyTradeHolder::setPrice)
                     .addIntColumnAdapter("Size", MyTradeHolder::setSize)
-                    .addObjColumnAdapter("Timestamp", DateTime.class, MyTradeHolder::setTimestamp)
+                    .addObjColumnAdapter("Timestamp", Instant.class, MyTradeHolder::setTimestamp)
                     .build();
 
     private String sym;
-    private DateTime timestamp;
+    private Instant timestamp;
     private double price;
     private int size;
 
@@ -59,11 +59,11 @@ public class MyTradeHolder {
         this.sym = sym;
     }
 
-    public DateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(DateTime timestamp) {
+    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
 

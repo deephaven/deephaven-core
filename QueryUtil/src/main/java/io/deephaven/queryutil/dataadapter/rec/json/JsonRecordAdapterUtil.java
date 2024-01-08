@@ -8,7 +8,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptorBuilder;
 import io.deephaven.queryutil.dataadapter.rec.updaters.*;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
@@ -24,7 +23,6 @@ import java.util.*;
  */
 public class JsonRecordAdapterUtil {
     static final Set<Class<?>> CONVERTIBLE_TO_STRING_CLASSES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            DateTime.class,
             Instant.class,
             LocalDate.class,
             LocalTime.class,
