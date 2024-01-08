@@ -26,8 +26,8 @@ public interface ChunkPage<ATTR extends Any> extends Page.WithDefaults<ATTR>, Ch
 
     @Override
     @FinalDefault
-    default long maxRow(final long row) {
-        return lastRow(row);
+    default long maxRow(final long rowKey) {
+        return lastRow(rowKey);
     }
 
     /**

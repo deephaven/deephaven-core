@@ -50,7 +50,7 @@ import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
@@ -1482,10 +1482,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
-                            && ExecutionContext.getContext().getInitializer().canParallelize()
+                            && ExecutionContext.getContext().getOperationInitializer().canParallelize()
                             && analyzer.allowCrossColumnParallelization()) {
-                        jobScheduler = new OperationInitializationPoolJobScheduler(
-                                ExecutionContext.getContext().getInitializer());
+                        jobScheduler = new OperationInitializerJobScheduler();
                     } else {
                         jobScheduler = ImmediateJobScheduler.INSTANCE;
                     }

@@ -73,7 +73,7 @@ class InputColumn(Column):
                 else:
                     self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
         except Exception as e:
-            raise DHError(e, "failed to create an InputColumn.") from e
+            raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:

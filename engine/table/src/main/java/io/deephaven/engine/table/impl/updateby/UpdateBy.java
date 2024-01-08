@@ -46,7 +46,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -300,9 +299,8 @@ public abstract class UpdateBy {
                     dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (ExecutionContext.getContext().getInitializer().canParallelize()) {
-                    jobScheduler =
-                            new OperationInitializationPoolJobScheduler(ExecutionContext.getContext().getInitializer());
+                if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
+                    jobScheduler = new OperationInitializerJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }

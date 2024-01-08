@@ -33,7 +33,7 @@ public class ExecutionContext {
         ExecutionContext existing = getContext();
         return new Builder()
                 .setUpdateGraph(existing.getUpdateGraph())
-                .setOperationInitializer(existing.getInitializer());
+                .setOperationInitializer(existing.getOperationInitializer());
     }
 
     public static ExecutionContext makeExecutionContext(boolean isSystemic) {
@@ -245,7 +245,7 @@ public class ExecutionContext {
         return updateGraph;
     }
 
-    public OperationInitializer getInitializer() {
+    public OperationInitializer getOperationInitializer() {
         return operationInitializer;
     }
 
