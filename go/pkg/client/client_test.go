@@ -98,9 +98,35 @@ func TestTimeTable(t *testing.T) {
 	}
 	defer c.Close()
 
-	tbl, err := c.TimeTable(ctx, 10000000, time.Now())
+	// test a variety of period types
+	testTimeTableHelper(t, ctx, c, int(10000000), time.Now())
+	testTimeTableHelper(t, ctx, c, int32(10000000), time.Now())
+	testTimeTableHelper(t, ctx, c, int64(10000000), time.Now())
+	testTimeTableHelper(t, ctx, c, time.Duration(10000000), time.Now())
+	testTimeTableHelper(t, ctx, c, "PT0.01S", time.Now())
+
+	// test a variety of startTime types
+	testTimeTableHelper(t, ctx, c, "PT1H", int(1703874484000000000))
+	testTimeTableHelper(t, ctx, c, "PT1H", int32(123456)) // a date far in the past but should work
+	testTimeTableHelper(t, ctx, c, "PT1H", int64(1703874484000000000))
+	testTimeTableHelper(t, ctx, c, "PT1H", time.Now())
+	testTimeTableHelper(t, ctx, c, "PT1M", "2023-03-01T12:34:56-05:00")
+
+	_, err = c.TimeTable(ctx, "unparseable", "2023-03-01T12:34:56-05:00")
+	if err == nil {
+		t.Errorf("Expected failure, got success")
+	}
+	_, err = c.TimeTable(ctx, "PT1M", "unparseable")
+	if err == nil {
+		t.Errorf("Expected failure, got success")
+	}
+}
+
+func testTimeTableHelper(t *testing.T, ctx context.Context, c *client.Client, period any, startTime any) {
+	tbl, err := c.TimeTable(ctx, period, startTime)
 	if err != nil {
-		t.Errorf("EmptyTable err %s", err.Error())
+		t.Errorf("EmptyTable err %v", err)
+		return
 	}
 
 	if tbl.IsStatic() {
@@ -110,7 +136,7 @@ func TestTimeTable(t *testing.T) {
 
 	err = tbl.Release(ctx)
 	if err != nil {
-		t.Errorf("Release err %s", err.Error())
+		t.Errorf("Release err %v", err)
 	}
 }
 

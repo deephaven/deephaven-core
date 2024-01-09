@@ -12,12 +12,13 @@ import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphAwareCompletableFuture;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -25,6 +26,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
@@ -42,10 +44,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * This class is an intermediary helper class that uses a {@code DoExchange} to populate a {@link BarrageTable} using
@@ -64,10 +64,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private final CheckForCompletion checkForCompletion;
     private final BarrageTable resultTable;
 
+    private LivenessScope constructionScope;
     private volatile FutureAdapter future;
     private boolean subscribed;
     private boolean isSnapshot;
-
 
     private volatile int connected = 1;
     private static final AtomicIntegerFieldUpdater<BarrageSubscriptionImpl> CONNECTED_UPDATER =
@@ -75,20 +75,25 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     /**
      * Represents a BarrageSubscription.
+     * <p>
+     * See {@link BarrageSubscription#make}.
      *
      * @param session the Deephaven session that this export belongs to
      * @param executorService an executor service used to flush stats
      * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
+     * @param constructionScope the scope used for constructing this
      */
-    public BarrageSubscriptionImpl(
+    BarrageSubscriptionImpl(
             final BarrageSession session, final ScheduledExecutorService executorService,
-            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options,
+            final LivenessScope constructionScope) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
         this.tableHandle = tableHandle;
         this.options = options;
+        this.constructionScope = constructionScope;
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
@@ -451,35 +456,162 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     private interface FutureAdapter extends Future<Table> {
+        boolean completeExceptionally(Throwable ex);
+
         boolean complete(Table value);
 
-        boolean completeExceptionally(Throwable ex);
-    }
+        /**
+         * Called when the hand-off from the future is complete to release the construction scope.
+         */
+        void maybeRelease();
 
-    private class CompletableFutureAdapter extends CompletableFuture<Table> implements FutureAdapter {
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSubscriptionImpl.this.cancel("cancelled by user");
-                return true;
+        @FunctionalInterface
+        interface Supplier {
+            Table get() throws InterruptedException, ExecutionException, TimeoutException;
+        }
+
+        @FinalDefault
+        default Table doGet(final Supplier supplier) throws InterruptedException, ExecutionException, TimeoutException {
+            boolean throwingTimeout = false;
+            try {
+                final Table result = supplier.get();
+
+                if (result instanceof LivenessArtifact && DynamicNode.notDynamicOrIsRefreshing(result)) {
+                    ((LivenessArtifact) result).manageWithCurrentScope();
+                }
+
+                return result;
+            } catch (final TimeoutException toe) {
+                throwingTimeout = true;
+                throw toe;
+            } finally {
+                if (!throwingTimeout) {
+                    maybeRelease();
+                }
             }
-            return false;
         }
     }
 
+    private static final AtomicIntegerFieldUpdater<CompletableFutureAdapter> CF_WAS_RELEASED =
+            AtomicIntegerFieldUpdater.newUpdater(CompletableFutureAdapter.class, "wasReleased");
+
+    /**
+     * The Completable Future is used when this thread is not blocking the update graph progression.
+     * <p>
+     * We will keep the result table alive until the user calls {@link Future#get get()} on the future. Note that this
+     * only protects the getters on {@link Future} not the entire {@link CompletionStage} interface.
+     * <p>
+     * Subsequent calls to {@link Future#get get()} will only succeed if the result is still alive and will increase the
+     * reference count of the result table.
+     */
+    private class CompletableFutureAdapter extends CompletableFuture<Table> implements FutureAdapter {
+
+        volatile int wasReleased;
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            try {
+                if (super.cancel(mayInterruptIfRunning)) {
+                    BarrageSubscriptionImpl.this.cancel("cancelled by user");
+                    return true;
+                }
+            } finally {
+                maybeRelease();
+            }
+            return false;
+        }
+
+        @Override
+        public boolean completeExceptionally(Throwable ex) {
+            maybeRelease();
+            return super.completeExceptionally(ex);
+        }
+
+        @Override
+        public Table get(final long timeout, @NotNull final TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return doGet(() -> super.get(timeout, unit));
+        }
+
+        @Override
+        public Table get() throws InterruptedException, ExecutionException {
+            try {
+                return doGet(super::get);
+            } catch (TimeoutException toe) {
+                throw new IllegalStateException("Unexpected TimeoutException", toe);
+            }
+        }
+
+        @Override
+        public void maybeRelease() {
+            if (CF_WAS_RELEASED.compareAndSet(this, 0, 1)) {
+                constructionScope.release();
+                constructionScope = null;
+            }
+        }
+    }
+
+    private static final AtomicIntegerFieldUpdater<UpdateGraphAwareFutureAdapter> UG_WAS_RELEASED =
+            AtomicIntegerFieldUpdater.newUpdater(UpdateGraphAwareFutureAdapter.class, "wasReleased");
+
+    /**
+     * The Update Graph Aware Future is used when waiting directly on this thread would otherwise be blocking update
+     * graph progression.
+     * <p>
+     * We will keep the result table alive until the user calls {@link Future#get get()} on the future.
+     * <p>
+     * Subsequent calls to {@link Future#get get()} will only succeed if the result is still alive and will increase the
+     * reference count of the result table.
+     */
     private class UpdateGraphAwareFutureAdapter extends UpdateGraphAwareCompletableFuture<Table>
             implements FutureAdapter {
+
+        volatile int wasReleased;
+
         public UpdateGraphAwareFutureAdapter(@NotNull final UpdateGraph updateGraph) {
             super(updateGraph);
         }
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            if (super.cancel(mayInterruptIfRunning)) {
-                BarrageSubscriptionImpl.this.cancel("cancelled by user");
-                return true;
+            try {
+                if (super.cancel(mayInterruptIfRunning)) {
+                    BarrageSubscriptionImpl.this.cancel("cancelled by user");
+                    return true;
+                }
+            } finally {
+                maybeRelease();
             }
             return false;
+        }
+
+        @Override
+        public boolean completeExceptionally(Throwable ex) {
+            maybeRelease();
+            return super.completeExceptionally(ex);
+        }
+
+        @Override
+        public Table get(final long timeout, @NotNull final TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return doGet(() -> super.get(timeout, unit));
+        }
+
+        @Override
+        public Table get() throws InterruptedException, ExecutionException {
+            try {
+                return doGet(super::get);
+            } catch (TimeoutException toe) {
+                throw new IllegalStateException("Unexpected TimeoutException", toe);
+            }
+        }
+
+        @Override
+        public void maybeRelease() {
+            if (UG_WAS_RELEASED.compareAndSet(this, 0, 1)) {
+                constructionScope.release();
+                constructionScope = null;
+            }
         }
     }
 }

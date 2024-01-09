@@ -163,4 +163,9 @@ public class CapturingUpdateGraph implements UpdateGraph {
             final boolean satisfied) throws T {
         delegate.runWithinUnitTestCycle(runnable, satisfied);
     }
+
+    @Override
+    public void stop() {
+        delegate.stop();
+    }
 }

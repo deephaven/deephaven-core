@@ -7,7 +7,6 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
@@ -143,9 +142,6 @@ public class DeephavenApiServer {
         log.info().append("Initializing Execution Context for Main Thread...").endl();
         // noinspection resource
         executionContextProvider.get().open();
-
-        log.info().append("Starting Operation Initialization Thread Pool...").endl();
-        OperationInitializationThreadPool.start();
 
         log.info().append("Starting Update Graph...").endl();
         getUpdateGraph().<PeriodicUpdateGraph>cast().start();

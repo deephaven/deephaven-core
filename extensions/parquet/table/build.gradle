@@ -78,6 +78,7 @@ spotless {
                 '**/*Float*.java',
                 '**/*Double*.java',
                 '**/*Object*.java',
+                '**/*Transfer*.java',
         )
     }
 }

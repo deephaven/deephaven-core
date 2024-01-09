@@ -16,8 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.LongBuffer;
 import java.time.LocalDateTime;
 
-final class LocalDateTimeArrayTransfer
-        extends PrimitiveArrayAndVectorTransfer<LocalDateTime[], LocalDateTime[], LongBuffer> {
+final class LocalDateTimeArrayTransfer extends PrimitiveArrayAndVectorTransfer<LocalDateTime[], LocalDateTime[], LongBuffer> {
     // We encode LocalDateTime as primitive longs
     LocalDateTimeArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
             final int targetPageSizeInBytes) {

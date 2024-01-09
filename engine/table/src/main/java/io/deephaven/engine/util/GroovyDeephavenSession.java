@@ -41,6 +41,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.github.classgraph.ClassGraph;
@@ -145,18 +146,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
+            final ThreadInitializationFactory threadInitializationFactory,
             final ObjectTypeLookup objectTypeLookup,
             final RunScripts runScripts) throws IOException {
-        this(updateGraph, objectTypeLookup, null, runScripts);
+        this(updateGraph, threadInitializationFactory, objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
+            final ThreadInitializationFactory threadInitializationFactory,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts)
             throws IOException {
-        super(updateGraph, objectTypeLookup, changeListener);
+        super(updateGraph, threadInitializationFactory, objectTypeLookup, changeListener);
 
         addDefaultImports(consoleImports);
         if (INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY) {

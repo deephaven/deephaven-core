@@ -8,10 +8,11 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
-import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
-import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
+import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable;
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.qst.TableCreator;
+import io.deephaven.qst.table.BlinkInputTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
@@ -24,8 +25,10 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.Clock;
 import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.stream.TablePublisher;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -78,8 +81,8 @@ public enum TableCreatorImpl implements TableCreator<Table> {
     }
 
     @Override
-    public final UpdatableTable of(InputTable inputTable) {
-        return UpdatableTableAdapter.of(inputTable);
+    public final Table of(InputTable inputTable) {
+        return InputTableAdapter.of(inputTable);
     }
 
 
@@ -153,24 +156,35 @@ public enum TableCreatorImpl implements TableCreator<Table> {
         }
     }
 
-    enum UpdatableTableAdapter implements InputTable.Visitor<UpdatableTable> {
+    enum InputTableAdapter implements InputTable.Visitor<Table> {
         INSTANCE;
 
-        public static UpdatableTable of(InputTable inputTable) {
+        private static final AtomicInteger blinkTableCount = new AtomicInteger();
+
+        public static Table of(InputTable inputTable) {
             return inputTable.walk(INSTANCE);
         }
 
         @Override
         public UpdatableTable visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
             final TableDefinition definition = DefinitionAdapter.of(inMemoryAppendOnly.schema());
-            return AppendOnlyArrayBackedMutableTable.make(definition);
+            return AppendOnlyArrayBackedInputTable.make(definition);
         }
 
         @Override
         public UpdatableTable visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
             final TableDefinition definition = DefinitionAdapter.of(inMemoryKeyBacked.schema());
             final String[] keyColumnNames = inMemoryKeyBacked.keys().toArray(String[]::new);
-            return KeyedArrayBackedMutableTable.make(definition, keyColumnNames);
+            return KeyedArrayBackedInputTable.make(definition, keyColumnNames);
+        }
+
+        @Override
+        public Table visit(BlinkInputTable blinkInputTable) {
+            final TableDefinition definition = DefinitionAdapter.of(blinkInputTable.schema());
+            return TablePublisher
+                    .of(TableCreatorImpl.class.getSimpleName() + ".BLINK-" + blinkTableCount.getAndIncrement(),
+                            definition, null, null)
+                    .inputTable();
         }
     }
 

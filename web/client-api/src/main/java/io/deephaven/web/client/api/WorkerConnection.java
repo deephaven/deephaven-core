@@ -766,21 +766,18 @@ public class WorkerConnection {
             return getFigure(definition);
         } else if (JsVariableType.PANDAS.equalsIgnoreCase(definition.getType())) {
             return getWidget(definition)
-                    .then(widget -> widget.getExportedObjects()[0].fetch());
+                    .then(JsWidget::refetch)
+                    .then(widget -> {
+                        widget.close();
+                        return widget.getExportedObjects()[0].fetch();
+                    });
         } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(definition.getType())) {
             return getPartitionedTable(definition);
         } else if (JsVariableType.HIERARCHICALTABLE.equalsIgnoreCase(definition.getType())) {
             return getHierarchicalTable(definition);
         } else {
-            if (JsVariableType.TABLEMAP.equalsIgnoreCase(definition.getType())) {
-                JsLog.warn(
-                        "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
-            }
-            if (JsVariableType.TREETABLE.equalsIgnoreCase(definition.getType())) {
-                JsLog.warn(
-                        "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
-            }
-            return getWidget(definition);
+            warnLegacyTicketTypes(definition.getType());
+            return getWidget(definition).then(JsWidget::refetch);
         }
     }
 
@@ -807,6 +804,45 @@ public class WorkerConnection {
             return getObject(new JsVariableDefinition(type, null, id, null));
         } else {
             throw new IllegalArgumentException("no name/id field; could not construct getObject");
+        }
+    }
+
+    public Promise<?> getObject(TypedTicket typedTicket) {
+        if (JsVariableType.TABLE.equalsIgnoreCase(typedTicket.getType())) {
+            throw new IllegalArgumentException("wrong way to get a table from a ticket");
+        } else if (JsVariableType.FIGURE.equalsIgnoreCase(typedTicket.getType())) {
+            return new JsFigure(this, c -> {
+                JsWidget widget = new JsWidget(this, typedTicket);
+                widget.refetch().then(ignore -> {
+                    c.apply(null, makeFigureFetchResponse(widget));
+                    return null;
+                });
+            }).refetch();
+        } else if (JsVariableType.PANDAS.equalsIgnoreCase(typedTicket.getType())) {
+            return getWidget(typedTicket)
+                    .then(JsWidget::refetch)
+                    .then(widget -> {
+                        widget.close();
+                        return widget.getExportedObjects()[0].fetch();
+                    });
+        } else if (JsVariableType.PARTITIONEDTABLE.equalsIgnoreCase(typedTicket.getType())) {
+            return new JsPartitionedTable(this, new JsWidget(this, typedTicket)).refetch();
+        } else if (JsVariableType.HIERARCHICALTABLE.equalsIgnoreCase(typedTicket.getType())) {
+            return new JsWidget(this, typedTicket).refetch().then(w -> Promise.resolve(new JsTreeTable(this, w)));
+        } else {
+            warnLegacyTicketTypes(typedTicket.getType());
+            return getWidget(typedTicket).then(JsWidget::refetch);
+        }
+    }
+
+    private static void warnLegacyTicketTypes(String ticketType) {
+        if (JsVariableType.TABLEMAP.equalsIgnoreCase(ticketType)) {
+            JsLog.warn(
+                    "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
+        }
+        if (JsVariableType.TREETABLE.equalsIgnoreCase(ticketType)) {
+            JsLog.warn(
+                    "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
         }
     }
 
@@ -911,12 +947,8 @@ public class WorkerConnection {
                 .then(widget -> new JsPartitionedTable(this, widget).refetch());
     }
 
-    public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getWidget(varDef).then(w -> Promise.resolve(new JsTreeTable(this, w)));
-    }
-
     public Promise<JsTreeTable> getHierarchicalTable(JsVariableDefinition varDef) {
-        return getWidget(varDef).then(w -> Promise.resolve(new JsTreeTable(this, w)));
+        return getWidget(varDef).then(JsWidget::refetch).then(w -> Promise.resolve(new JsTreeTable(this, w)));
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
@@ -926,19 +958,24 @@ public class WorkerConnection {
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this,
                         c -> {
-                            getWidget(varDef).then(widget -> {
-                                FetchObjectResponse legacyResponse = new FetchObjectResponse();
-                                legacyResponse.setData(widget.getDataAsU8());
-                                legacyResponse.setType(widget.getType());
-                                legacyResponse.setTypedExportIdsList(Arrays.stream(widget.getExportedObjects())
-                                        .map(JsWidgetExportedObject::typedTicket).toArray(TypedTicket[]::new));
-                                c.apply(null, legacyResponse);
+                            getWidget(varDef).then(JsWidget::refetch).then(widget -> {
+                                c.apply(null, makeFigureFetchResponse(widget));
+                                widget.close();
                                 return null;
                             }, error -> {
                                 c.apply(error, null);
                                 return null;
                             });
                         }).refetch());
+    }
+
+    private static FetchObjectResponse makeFigureFetchResponse(JsWidget widget) {
+        FetchObjectResponse legacyResponse = new FetchObjectResponse();
+        legacyResponse.setData(widget.getDataAsU8());
+        legacyResponse.setType(widget.getType());
+        legacyResponse.setTypedExportIdsList(Arrays.stream(widget.getExportedObjects())
+                .map(JsWidgetExportedObject::typedTicket).toArray(TypedTicket[]::new));
+        return legacyResponse;
     }
 
     private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
@@ -960,7 +997,7 @@ public class WorkerConnection {
 
     public Promise<JsWidget> getWidget(TypedTicket typedTicket) {
         return whenServerReady("get a widget")
-                .then(response -> new JsWidget(this, typedTicket).refetch());
+                .then(response -> Promise.resolve(new JsWidget(this, typedTicket)));
     }
 
     public void registerSimpleReconnectable(HasLifecycle figure) {

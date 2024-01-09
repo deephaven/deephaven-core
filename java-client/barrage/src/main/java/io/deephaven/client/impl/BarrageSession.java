@@ -38,7 +38,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
 
     @Override
     public BarrageSubscription subscribe(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
-        return new BarrageSubscriptionImpl(this, session.executor(), tableHandle.newRef(), options);
+        return BarrageSubscription.make(this, session.executor(), tableHandle.newRef(), options);
     }
 
     @Override

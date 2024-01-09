@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +27,7 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single char from this region.
      *
-     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
+     * @param context      A {@link PagingContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element row key in the table's address space
      * @return The char value at the specified element row key

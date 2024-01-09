@@ -1210,9 +1210,12 @@ message CreateInputTableRequest {
     message InMemoryKeyBacked {
       repeated string key_columns = 1;
     }
+    message Blink {
+    }
     oneof kind {
       InMemoryAppendOnly in_memory_append_only = 1;
       InMemoryKeyBacked in_memory_key_backed = 2;
+      Blink blink = 3;
     }
   }
 

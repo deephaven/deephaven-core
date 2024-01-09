@@ -104,7 +104,6 @@ public class UnionSourceManager {
 
             executionContext = ExecutionContext.newBuilder()
                     .markSystemic()
-                    .captureUpdateGraph()
                     .build();
         } else {
             listenerRecorders = null;

@@ -40,6 +40,7 @@ import io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation;
 import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
@@ -76,6 +77,7 @@ import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.BlinkInputTable;
 import io.deephaven.qst.table.Clock.Visitor;
 import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.DropColumnsTable;
@@ -534,6 +536,11 @@ class BatchTableRequestBuilder {
                 public InputTableKind visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
                     return InputTableKind.newBuilder().setInMemoryKeyBacked(
                             InMemoryKeyBacked.newBuilder().addAllKeyColumns(inMemoryKeyBacked.keys())).build();
+                }
+
+                @Override
+                public InputTableKind visit(BlinkInputTable blinkInputTable) {
+                    return InputTableKind.newBuilder().setBlink(Blink.getDefaultInstance()).build();
                 }
             }));
             return op(Builder::setCreateInputTable, builder);

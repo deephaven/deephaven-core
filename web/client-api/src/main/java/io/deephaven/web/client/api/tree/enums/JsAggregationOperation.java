@@ -128,7 +128,9 @@ public class JsAggregationOperation {
             case "long":
             case "short":
             case "char":
-            case "byte": {
+            case "byte":
+            case "java.math.BigDecimal":
+            case "java.math.BigInteger": {
                 return true;
             }
         }

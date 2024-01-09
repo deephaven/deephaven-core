@@ -11,6 +11,7 @@ import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,7 +32,8 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     private final Iterator<ColumnPageReader> columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
-    VariablePageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
+    VariablePageSizeColumnChunkPageStore(
+            @NotNull final PageCache<ATTR> pageCache,
             @NotNull final ColumnChunkReader columnChunkReader,
             final long mask,
             @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
@@ -41,6 +43,8 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         pageRowOffsets = new long[INIT_ARRAY_SIZE + 1];
         pageRowOffsets[0] = 0;
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
+        // TODO(deephaven-core#4836): We probably need a super-interface of Iterator to allow ourselves to set or clear
+        // the inner fill context to be used by next.
         columnPageReaderIterator = columnChunkReader.getPageIterator();
 
         // noinspection unchecked
@@ -136,23 +140,23 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         return page.getPage();
     }
 
-    @NotNull
     @Override
-    public ChunkPage<ATTR> getPageContaining(@NotNull final FillContext fillContext, long row) {
-        row &= mask();
-        Require.inRange(row - pageRowOffsets[0], "row", numRows(), "numRows");
+    @NotNull
+    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
+        rowKey &= mask();
+        Require.inRange(rowKey - pageRowOffsets[0], "row", numRows(), "numRows");
 
         int localNumPages = numPages;
-        int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);
+        int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, rowKey);
 
         if (pageNum < 0) {
             pageNum = -2 - pageNum;
         }
 
         if (pageNum >= localNumPages) {
-            int minPageNum = fillToRow(localNumPages, row);
+            int minPageNum = fillToRow(localNumPages, rowKey);
             localNumPages = numPages;
-            pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, row);
+            pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, rowKey);
 
             if (pageNum < 0) {
                 pageNum = -2 - pageNum;

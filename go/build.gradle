@@ -28,20 +28,17 @@ def compare = tasks.register('compareProtobuf', DiffTask) {
         exclude 'internal/proto/**'
     }
 }
-// Note that we've disabled updating the Go protobuf wiring until we have a maintainer to use the generated code correctly.
+// fail a "check" build if these are out of date
+tasks.getByName('quick').dependsOn(compare)
 
-// Normally, we would fail a "check" build if these are out of date, but for now we will rely on integration tests.
-//tasks.getByName('quick').dependsOn(compare)
-
-// Also disable the update task so no one accidentally runs it from the root project
-//tasks.register('updateProtobuf', Sync) {
-//    finalizedBy compare
-//    from configurations.go
-//    into layout.projectDirectory
-//    preserve {
-//        exclude 'internal/proto/**'
-//    }
-//}
+tasks.register('updateProtobuf', Sync) {
+    finalizedBy compare
+    from configurations.go
+    into layout.projectDirectory
+    preserve {
+        exclude 'internal/proto/**'
+    }
+}
 
 
 // start a grpc-api server

@@ -171,7 +171,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (refreshCombiner != null) {
-                result.getUpdateGraph().addSource(refreshCombiner);
+                refreshCombiner.install();
             }
         }
 

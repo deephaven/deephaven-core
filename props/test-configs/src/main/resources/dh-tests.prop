@@ -102,4 +102,3 @@ client.version.list=
 authentication.anonymous.warn=false
 
 deephaven.console.type=none
-thread.initialization=

@@ -17,13 +17,14 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.updategraph.impl.BaseUpdateGraph;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
- * This tool is meant to track periodic update events that take place in an {@link PeriodicUpdateGraph}. This generally
+ * This tool is meant to track periodic update events that take place in an {@link UpdateGraph}. This generally
  * includes:
  * <ol>
  * <li>Update source {@code run()} invocations</li>
@@ -88,8 +89,8 @@ public class UpdatePerformanceTracker {
 
         private InternalState() {
             final UpdateGraph publishingGraph =
-                    PeriodicUpdateGraph.getInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
-            Assert.neqNull(publishingGraph, "The " + PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME + " UpdateGraph "
+                    BaseUpdateGraph.getInstance(BaseUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+            Assert.neqNull(publishingGraph, "The " + BaseUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME + " UpdateGraph "
                     + "must be created before UpdatePerformanceTracker can be initialized.");
             try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(publishingGraph).open()) {
                 tableLogger = EngineTableLoggers.get().updatePerformanceLogLogger();
@@ -285,5 +286,12 @@ public class UpdatePerformanceTracker {
     @NotNull
     public static QueryTable getQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(getInternalState().blink);
+    }
+
+    @TestUseOnly
+    public static void resetForUnitTests() {
+        synchronized (UpdatePerformanceTracker.class) {
+            INSTANCE = null;
+        }
     }
 }
