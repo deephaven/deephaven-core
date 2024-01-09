@@ -220,6 +220,7 @@ public class WebBarrageUtils {
 
     public static ByteBuffer typedArrayToAlignedLittleEndianByteBuffer(TypedArray data) {
         // Slice before wrapping to align contents
+        //TODO potentially only do this if not aligned already
         ByteBuffer bb = TypedArrayHelper.wrap(data.slice());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         return bb;
