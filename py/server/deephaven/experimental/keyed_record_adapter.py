@@ -11,7 +11,7 @@ K = typing.TypeVar('K')
 T = typing.TypeVar('T')
 
 j_object = jpy.get_type('java.lang.Object')
-j_pykeyedrecordadapter = jpy.get_type('io.deephaven.queryutil.dataadapter.PyKeyedRecordAdapter')
+j_pykeyedrecordadapter = jpy.get_type('io.deephaven.dataadapter.PyKeyedRecordAdapter')
 
 
 class KeyedRecordAdapter(typing.Generic[K, T]):
