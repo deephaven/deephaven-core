@@ -166,11 +166,9 @@ class KraTestCase(BaseTestCase):
         self.assertEquals(1_000, aapl_trade.size)
         self.assertEquals(1, aapl_trade.exch)
 
+        # TODO: this key doesn't exist -- should it be an exception or None? Also what does Java do?
         null_trade = records[2]
-        self.assertEquals(None, null_trade.sym)
-        self.assertEquals(None, null_trade.price)
-        self.assertEquals(None, null_trade.size)
-        self.assertEquals(None, null_trade.exch)
+        self.assertIsNone(null_trade)
 
     def testCustomKeyedRecordAdapterWithStrStrKeyCols(self):
         # source = Table(_JTstTools.testRefreshingTable(

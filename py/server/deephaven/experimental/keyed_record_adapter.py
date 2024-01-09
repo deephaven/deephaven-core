@@ -70,14 +70,14 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
             # Key should be a list of lists (i.e. each data_key is a list of key components)
             # Convert each data_key list to a Java array, then wrap each of those arrays into
             # another array, and pass that as the arg.
-            # TODO: Primitive elements of a composite_data_key need to be converted to the correct Java type corresponding to the column.
             data_keys_java_arg = jpy.array('java.lang.Object', len(data_keys))
             for ii, composite_key in enumerate(data_keys):
                 composite_key_array = jpy.array('java.lang.Object', len(composite_key))
                 # Cast each key component to the appropriate type, then wrap them in an array.
                 for jj, key_cmpnt in enumerate(composite_key):
-                    # TODO: cannot just cast these; need to really *convert* them
-                    composite_key_array[jj] = jpy.cast(key_cmpnt, self.key_dtypes[jj].j_type)
+                    # Convert the key components from whatever Python type they happen to be to the appropriate
+                    # Java type (from key_dtypes)
+                    composite_key_array[jj] = jpy.as_jobj(key_cmpnt, self.key_dtypes[jj].j_type)
 
                 data_keys_java_arg[ii] = composite_key_array
 
