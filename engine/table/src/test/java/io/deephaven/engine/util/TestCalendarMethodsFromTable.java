@@ -1,24 +1,30 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.calendar.BusinessCalendar;
-import io.deephaven.time.calendar.Calendars;
-import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.StaticCalendarMethods;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static io.deephaven.engine.util.TableTools.emptyTable;
 import static org.junit.Assert.assertEquals;
@@ -32,321 +38,101 @@ public class TestCalendarMethodsFromTable {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    private final BusinessCalendar calendar = Calendars.calendar();
-    private final Instant time1 = DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY");
-    private final Instant time2 = DateTimeUtils.parseInstant("2002-01-21T01:00:00.000000000 NY");
-    private final String date1 = "2017-08-01";
-    private final String date2 = "2017-08-05";
-
-    // test to make sure these methods work inside the query strings
-    // previous clash with DateTimeUtils
-    @Test
-    public void testCalendarMethodsTable() {
-        if (!ExecutionContext.getContext().getQueryLibrary().getStaticImports().contains(StaticCalendarMethods.class)) {
-            ExecutionContext.getContext().getQueryLibrary().importStatic(StaticCalendarMethods.class);
-        }
-        QueryScope.addParam("time1", time1);
-        QueryScope.addParam("time2", time2);
-        QueryScope.addParam("date1", date1);
-        QueryScope.addParam("date2", date2);
-
-        assertEquals(calendar.name(), getVal(emptyTable(1).update("Name = name()"), "Name"));
-
-        assertEquals(calendar.currentDay(), getVal(emptyTable(1).update("currentDay = currentDay()"), "currentDay"));
-
-        assertEquals(calendar.previousDay(),
-                getVal(emptyTable(1).update("previousDay = previousDay()"), "previousDay"));
-        assertEquals(calendar.previousDay(4),
-                getVal(emptyTable(1).update("previousDay = previousDay(4)"), "previousDay"));
-        assertEquals(calendar.previousDay(time1),
-                getVal(emptyTable(1).update("previousDay = previousDay(time1)"), "previousDay"));
-        assertEquals(calendar.previousDay(time1, 4),
-                getVal(emptyTable(1).update("previousDay = previousDay(time1, 4)"), "previousDay"));
-        assertEquals(calendar.previousDay(date1),
-                getVal(emptyTable(1).update("previousDay = previousDay(date1)"), "previousDay"));
-        assertEquals(calendar.previousDay(date1, 14),
-                getVal(emptyTable(1).update("previousDay = previousDay(date1, 14)"), "previousDay"));
-
-
-        assertEquals(calendar.nextDay(), getVal(emptyTable(1).update("nextDay = nextDay()"), "nextDay"));
-        assertEquals(calendar.nextDay(4), getVal(emptyTable(1).update("nextDay = nextDay(4)"), "nextDay"));
-        assertEquals(calendar.nextDay(time1), getVal(emptyTable(1).update("nextDay = nextDay(time1)"), "nextDay"));
-        assertEquals(calendar.nextDay(time1, 4),
-                getVal(emptyTable(1).update("nextDay = nextDay(time1, 4)"), "nextDay"));
-        assertEquals(calendar.nextDay(date1), getVal(emptyTable(1).update("nextDay = nextDay(date1)"), "nextDay"));
-        assertEquals(calendar.nextDay(date1, 14),
-                getVal(emptyTable(1).update("nextDay = nextDay(date1, 14)"), "nextDay"));
-
-        assertEquals(calendar.daysInRange(time1, time2),
-                (String[]) getVal(emptyTable(1).update("daysInRange = daysInRange(time1, time2)"), "daysInRange"));
-        assertEquals(calendar.daysInRange(date1, date2),
-                (String[]) getVal(emptyTable(1).update("daysInRange = daysInRange(date1, date2)"), "daysInRange"));
-
-
-        assertEquals(calendar.numberOfDays(time1, time2),
-                getVal(emptyTable(1).update("numberOfDays = numberOfDays(time1, time2)"), "numberOfDays"));
-        assertEquals(calendar.numberOfDays(time1, time2, true),
-                getVal(emptyTable(1).update("numberOfDays = numberOfDays(time1, time2, true)"), "numberOfDays"));
-        assertEquals(calendar.numberOfDays(date1, date2),
-                getVal(emptyTable(1).update("numberOfDays = numberOfDays(date1, date2)"), "numberOfDays"));
-        assertEquals(calendar.numberOfDays(date1, date2, true),
-                getVal(emptyTable(1).update("numberOfDays = numberOfDays(date1, date2, true)"), "numberOfDays"));
-
-
-        assertEquals(calendar.dayOfWeek(), getVal(emptyTable(1).update("dayOfWeek = dayOfWeek()"), "dayOfWeek"));
-        assertEquals(calendar.dayOfWeek(time2),
-                getVal(emptyTable(1).update("dayOfWeek = dayOfWeek(time2)"), "dayOfWeek"));
-        assertEquals(calendar.dayOfWeek(date2),
-                getVal(emptyTable(1).update("dayOfWeek = dayOfWeek(date2)"), "dayOfWeek"));
-
-        assertEquals(calendar.timeZone(), getVal(emptyTable(1).update("timeZone = calendarTimeZone()"), "timeZone"));
-
-        assertEquals(calendar.isBusinessDay(),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay()"), "isBusinessDay"));
-        assertEquals(calendar.isBusinessDay(time2),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(time2)"), "isBusinessDay"));
-        assertEquals(calendar.isBusinessDay(date2),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(date2)"), "isBusinessDay"));
+    private final Map<Class<?>, Object[]> data = new HashMap<>();
+    {
+        data.put(String.class, new String[] {"2017-08-01", "2017-08-05"});
+        data.put(LocalDate.class, new LocalDate[] {DateTimeUtils.parseLocalDate("2017-08-01"),
+                DateTimeUtils.parseLocalDate("2017-08-05")});
+        data.put(Instant.class, new Instant[] {DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY"),
+                DateTimeUtils.parseInstant("2002-01-21T01:00:00.000000000 NY")});
+        data.put(ZonedDateTime.class,
+                new ZonedDateTime[] {DateTimeUtils.parseZonedDateTime("2002-01-01T01:00:00.000000000 NY"),
+                        DateTimeUtils.parseZonedDateTime("2002-01-21T01:00:00.000000000 NY")});
+        data.put(boolean.class, new Boolean[] {true, true});
+        data.put(int.class, new Object[] {1, 2});
+        data.put(DayOfWeek.class, new Object[] {DayOfWeek.MONDAY, DayOfWeek.TUESDAY});
     }
 
-    @Test
-    public void testBusinessCalendarMethodsTable() {
-
-        if (!ExecutionContext.getContext().getQueryLibrary().getStaticImports().contains(StaticCalendarMethods.class)) {
-            ExecutionContext.getContext().getQueryLibrary().importStatic(StaticCalendarMethods.class);
-        }
-        final LocalDate localDate = LocalDate.now();
-        QueryScope.addParam("localDate", localDate);
-        QueryScope.addParam("time1", time1);
-        QueryScope.addParam("time2", time2);
-        QueryScope.addParam("date1", date1);
-        QueryScope.addParam("date2", date2);
-
-
-        assertEquals(calendar.isBusinessDay(),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay()"), "isBusinessDay"));
-        assertEquals(calendar.isBusinessDay(time2),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(time2)"), "isBusinessDay"));
-        assertEquals(calendar.isBusinessDay(date2),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(date2)"), "isBusinessDay"));
-        assertEquals(calendar.isBusinessDay(localDate),
-                getVal(emptyTable(1).update("isBusinessDay = isBusinessDay(localDate)"), "isBusinessDay"));
-
-
-        assertEquals(calendar.isBusinessTime(time1),
-                getVal(emptyTable(1).update("isBusinessTime = isBusinessTime(time1)"), "isBusinessTime"));
-        assertEquals(calendar.isBusinessTime(time2),
-                getVal(emptyTable(1).update("isBusinessTime = isBusinessTime(time2)"), "isBusinessTime"));
-
-
-        assertEquals(calendar.previousBusinessDay(),
-                getVal(emptyTable(1).update("previousBusinessDay = previousBusinessDay()"), "previousBusinessDay"));
-        assertEquals(calendar.previousBusinessDay(12),
-                getVal(emptyTable(1).update("previousBusinessDay = previousBusinessDay(12)"), "previousBusinessDay"));
-        assertEquals(calendar.previousBusinessDay(time1), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(time1)"), "previousBusinessDay"));
-        assertEquals(calendar.previousBusinessDay(time1, 6), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(time1, 6)"), "previousBusinessDay"));
-        assertEquals(calendar.previousBusinessDay(date1), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(date1)"), "previousBusinessDay"));
-        assertEquals(calendar.previousBusinessDay(date1, 16), getVal(
-                emptyTable(1).update("previousBusinessDay = previousBusinessDay(date1, 16)"), "previousBusinessDay"));
-
-
-        assertEquals(calendar.previousBusinessSchedule(),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule()"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(12),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(12)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(time1),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(time1)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(time1, 6),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(time1, 6)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(date1),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(date1)"),
-                        "previousBusinessSchedule"));
-        assertEquals(calendar.previousBusinessSchedule(date1, 16),
-                getVal(emptyTable(1).update("previousBusinessSchedule = previousBusinessSchedule(date1, 16)"),
-                        "previousBusinessSchedule"));
-
-
-        assertEquals(calendar.previousNonBusinessDay(), getVal(
-                emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay()"), "previousNonBusinessDay"));
-        assertEquals(calendar.previousNonBusinessDay(12), getVal(
-                emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(12)"), "previousNonBusinessDay"));
-        assertEquals(calendar.previousNonBusinessDay(time1),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(time1)"),
-                        "previousNonBusinessDay"));
-        assertEquals(calendar.previousNonBusinessDay(time1, 6),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(time1, 6)"),
-                        "previousNonBusinessDay"));
-        assertEquals(calendar.previousNonBusinessDay(date1),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(date1)"),
-                        "previousNonBusinessDay"));
-        assertEquals(calendar.previousNonBusinessDay(date1, 16),
-                getVal(emptyTable(1).update("previousNonBusinessDay = previousNonBusinessDay(date1, 16)"),
-                        "previousNonBusinessDay"));
-
-
-        assertEquals(calendar.nextBusinessDay(),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay()"), "nextBusinessDay"));
-        assertEquals(calendar.nextBusinessDay(12),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(12)"), "nextBusinessDay"));
-        assertEquals(calendar.nextBusinessDay(time1),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(time1)"), "nextBusinessDay"));
-        assertEquals(calendar.nextBusinessDay(time1, 6),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(time1, 6)"), "nextBusinessDay"));
-        assertEquals(calendar.nextBusinessDay(date1),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(date1)"), "nextBusinessDay"));
-        assertEquals(calendar.nextBusinessDay(date1, 16),
-                getVal(emptyTable(1).update("nextBusinessDay = nextBusinessDay(date1, 16)"), "nextBusinessDay"));
-
-
-        assertEquals(calendar.nextBusinessSchedule(),
-                getVal(emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule()"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(12), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(12)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(time1), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(time1)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(time1, 6), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(time1, 6)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(date1), getVal(
-                emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(date1)"), "nextBusinessSchedule"));
-        assertEquals(calendar.nextBusinessSchedule(date1, 16),
-                getVal(emptyTable(1).update("nextBusinessSchedule = nextBusinessSchedule(date1, 16)"),
-                        "nextBusinessSchedule"));
-
-
-        assertEquals(calendar.nextNonBusinessDay(),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay()"), "nextNonBusinessDay"));
-        assertEquals(calendar.nextNonBusinessDay(12),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(12)"), "nextNonBusinessDay"));
-        assertEquals(calendar.nextNonBusinessDay(time1),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(time1)"), "nextNonBusinessDay"));
-        assertEquals(calendar.nextNonBusinessDay(time1, 6), getVal(
-                emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(time1, 6)"), "nextNonBusinessDay"));
-        assertEquals(calendar.nextNonBusinessDay(date1),
-                getVal(emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(date1)"), "nextNonBusinessDay"));
-        assertEquals(calendar.nextNonBusinessDay(date1, 16), getVal(
-                emptyTable(1).update("nextNonBusinessDay = nextNonBusinessDay(date1, 16)"), "nextNonBusinessDay"));
-
-
-        assertEquals(calendar.businessDaysInRange(time1, time2),
-                (String[]) getVal(emptyTable(1).update("businessDaysInRange = businessDaysInRange(time1, time2)"),
-                        "businessDaysInRange"));
-        assertEquals(calendar.businessDaysInRange(date1, date2),
-                (String[]) getVal(emptyTable(1).update("businessDaysInRange = businessDaysInRange(date1, date2)"),
-                        "businessDaysInRange"));
-
-
-        assertEquals(calendar.nonBusinessDaysInRange(time1, time2),
-                (String[]) getVal(emptyTable(1).update("nonBusinessDaysInRange = nonBusinessDaysInRange(time1, time2)"),
-                        "nonBusinessDaysInRange"));
-        assertEquals(calendar.nonBusinessDaysInRange(date1, date2),
-                (String[]) getVal(emptyTable(1).update("nonBusinessDaysInRange = nonBusinessDaysInRange(date1, date2)"),
-                        "nonBusinessDaysInRange"));
-
-
-        assertEquals(calendar.standardBusinessDayLengthNanos(),
-                getVal(emptyTable(1).update("standardBusinessDayLengthNanos = standardBusinessDayLengthNanos()"),
-                        "standardBusinessDayLengthNanos"));
-
-
-        assertEquals(calendar.diffBusinessNanos(time1, time2), getVal(
-                emptyTable(1).update("diffBusinessNanos = diffBusinessNanos(time1, time2)"), "diffBusinessNanos"));
-        assertEquals(calendar.diffNonBusinessNanos(time1, time2),
-                getVal(emptyTable(1).update("diffNonBusinessNanos = diffNonBusinessNanos(time1, time2)"),
-                        "diffNonBusinessNanos"));
-        assertEquals(calendar.diffBusinessDay(time1, time2),
-                getVal(emptyTable(1).update("diffBusinessDay = diffBusinessDay(time1, time2)"), "diffBusinessDay"));
-        assertEquals(calendar.diffNonBusinessDay(time1, time2), getVal(
-                emptyTable(1).update("diffNonBusinessDay = diffNonBusinessDay(time1, time2)"), "diffNonBusinessDay"));
-        assertEquals(calendar.diffBusinessYear(time1, time2),
-                getVal(emptyTable(1).update("diffBusinessYear = diffBusinessYear(time1, time2)"), "diffBusinessYear"));
-
-
-
-        assertEquals(calendar.numberOfBusinessDays(time1, time2),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(time1, time2)"),
-                        "numberOfBusinessDays"));
-        assertEquals(calendar.numberOfBusinessDays(time1, time2, true),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(time1, time2, true)"),
-                        "numberOfBusinessDays"));
-        assertEquals(calendar.numberOfBusinessDays(date1, date2),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(date1, date2)"),
-                        "numberOfBusinessDays"));
-        assertEquals(calendar.numberOfBusinessDays(date1, date2, true),
-                getVal(emptyTable(1).update("numberOfBusinessDays = numberOfBusinessDays(date1, date2, true)"),
-                        "numberOfBusinessDays"));
-
-
-        assertEquals(calendar.numberOfNonBusinessDays(time1, time2),
-                getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(time1, time2)"),
-                        "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberOfNonBusinessDays(time1, time2, true),
-                getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(time1, time2, true)"),
-                        "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberOfNonBusinessDays(date1, date2),
-                getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(date1, date2)"),
-                        "numberOfNonBusinessDays"));
-        assertEquals(calendar.numberOfNonBusinessDays(date1, date2, true),
-                getVal(emptyTable(1).update("numberOfNonBusinessDays = numberOfNonBusinessDays(date1, date2, true)"),
-                        "numberOfNonBusinessDays"));
-
-
-        assertEquals(calendar.fractionOfStandardBusinessDay(),
-                getVal(emptyTable(1).update("fractionOfStandardBusinessDay = fractionOfStandardBusinessDay()"),
-                        "fractionOfStandardBusinessDay"));
-        assertEquals(calendar.fractionOfStandardBusinessDay(time1),
-                getVal(emptyTable(1).update("fractionOfStandardBusinessDay = fractionOfStandardBusinessDay(time1)"),
-                        "fractionOfStandardBusinessDay"));
-        assertEquals(calendar.fractionOfStandardBusinessDay(date1),
-                getVal(emptyTable(1).update("fractionOfStandardBusinessDay = fractionOfStandardBusinessDay(date1)"),
-                        "fractionOfStandardBusinessDay"));
-
-
-        assertEquals(calendar.fractionOfBusinessDayRemaining(time1),
-                getVal(emptyTable(1).update("fractionOfBusinessDayRemaining = fractionOfBusinessDayRemaining(time1)"),
-                        "fractionOfBusinessDayRemaining"));
-        assertEquals(calendar.fractionOfBusinessDayComplete(time1),
-                getVal(emptyTable(1).update("fractionOfBusinessDayComplete = fractionOfBusinessDayComplete(time1)"),
-                        "fractionOfBusinessDayComplete"));
-
-
-        assertEquals(calendar.isLastBusinessDayOfMonth(),
-                getVal(emptyTable(1).update("isLastBusinessDayOfMonth = isLastBusinessDayOfMonth()"),
-                        "isLastBusinessDayOfMonth"));
-        assertEquals(calendar.isLastBusinessDayOfMonth(time1),
-                getVal(emptyTable(1).update("isLastBusinessDayOfMonth = isLastBusinessDayOfMonth(time1)"),
-                        "isLastBusinessDayOfMonth"));
-        assertEquals(calendar.isLastBusinessDayOfMonth(date1),
-                getVal(emptyTable(1).update("isLastBusinessDayOfMonth = isLastBusinessDayOfMonth(date1)"),
-                        "isLastBusinessDayOfMonth"));
-
-
-        assertEquals(calendar.isLastBusinessDayOfWeek(),
-                getVal(emptyTable(1).update("isLastBusinessDayOfWeek = isLastBusinessDayOfWeek()"),
-                        "isLastBusinessDayOfWeek"));
-        assertEquals(calendar.isLastBusinessDayOfWeek(time1),
-                getVal(emptyTable(1).update("isLastBusinessDayOfWeek = isLastBusinessDayOfWeek(time1)"),
-                        "isLastBusinessDayOfWeek"));
-        assertEquals(calendar.isLastBusinessDayOfWeek(date1),
-                getVal(emptyTable(1).update("isLastBusinessDayOfWeek = isLastBusinessDayOfWeek(date1)"),
-                        "isLastBusinessDayOfWeek"));
-
-
-        assertEquals(calendar.getBusinessSchedule(time1), getVal(
-                emptyTable(1).update("getBusinessSchedule = getBusinessSchedule(time1)"), "getBusinessSchedule"));
-        assertEquals(calendar.getBusinessSchedule(date1), getVal(
-                emptyTable(1).update("getBusinessSchedule = getBusinessSchedule(date1)"), "getBusinessSchedule"));
-        assertEquals(calendar.getBusinessSchedule(localDate), getVal(
-                emptyTable(1).update("getBusinessSchedule = getBusinessSchedule(localDate)"), "getBusinessSchedule"));
+    private final Map<String, Double> deltas = new HashMap<>();
+    {
+        deltas.put("X = fractionBusinessDayComplete()", 1e-3);
+        deltas.put("X = fractionBusinessDayRemaining()", 1e-3);
     }
 
+    @SuppressWarnings("SameParameterValue")
     private Object getVal(final Table t, final String column) {
+        // noinspection deprecation
         return DataAccessHelpers.getColumn(t, column).get(0);
+    }
+
+    @SuppressWarnings("StringConcatenationInLoop")
+    private void executeTest(final Method m) throws InvocationTargetException, IllegalAccessException {
+        final ArrayList<Object> args = new ArrayList<>();
+        final Map<Class<?>, Integer> paramCounter = new HashMap<>();
+
+        String query = "X = " + m.getName() + "(";
+        boolean isFirst = true;
+
+        for (Class<?> t : m.getParameterTypes()) {
+            final int count = paramCounter.getOrDefault(t, 0) + 1;
+            paramCounter.put(t, count);
+
+            final String name = t.getSimpleName().toLowerCase() + count;
+            final Object[] d = data.get(t);
+
+            if (d == null) {
+                throw new RuntimeException("No data for " + t);
+            }
+
+            final Object val = d[count - 1];
+            QueryScope.addParam(name, val);
+            args.add(val);
+
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                query += ", ";
+            }
+
+            query += name;
+        }
+
+        query += ")";
+
+        System.out.println("Testing " + query);
+
+        final Object target = m.invoke(null, args.toArray());
+        final Double delta = deltas.get(query);
+
+        if (delta != null) {
+            assertEquals(query, (double) target, (double) getVal(emptyTable(1).update(query), "X"), delta);
+        } else if (target instanceof Object[]) {
+            // noinspection deprecation
+            assertEquals(query, (Object[]) target, (Object[]) getVal(emptyTable(1).update(query), "X"));
+        } else {
+            assertEquals(query, target, getVal(emptyTable(1).update(query), "X"));
+        }
+    }
+
+    @Test
+    // test to make sure these methods work inside the query strings
+    public void testAll() {
+        if (!ExecutionContext.getContext().getQueryLibrary().getStaticImports().contains(StaticCalendarMethods.class)) {
+            ExecutionContext.getContext().getQueryLibrary().importStatic(StaticCalendarMethods.class);
+        }
+
+        for (Method m : StaticCalendarMethods.class.getMethods()) {
+            if (m.getDeclaringClass() == Object.class ||
+                    !Modifier.isStatic(m.getModifiers()) ||
+                    !Modifier.isPublic(m.getModifiers())) {
+                continue;
+            }
+
+            try {
+                executeTest(m);
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

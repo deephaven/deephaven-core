@@ -8,15 +8,18 @@ from typing import List
 
 import jpy
 import numpy as np
+from deephaven.dtypes import DType, BusinessCalendar
 
 from deephaven import DHError, dtypes, new_table
 from deephaven.column import Column, InputColumn
 from deephaven.dtypes import DType
 from deephaven.jcompat import _j_array_to_numpy_array
 from deephaven.table import Table
+from deephaven.jcompat import j_list_to_list
 
 _JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
-
+_JDayOfWeek = jpy.get_type("java.time.DayOfWeek")
+_JArrayList = jpy.get_type("java.util.ArrayList")
 
 def _to_column_name(name: str) -> str:
     """ Transforms the given name string into a valid table column name. """
@@ -140,3 +143,44 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
         raise
     except Exception as e:
         raise DHError(e, "failed to create a Deephaven Table from a Pandas DataFrame.") from e
+
+
+def to_np_busdaycalendar(cal: BusinessCalendar, include_partial: bool = True) -> np.busdaycalendar:
+    """ Creates a numpy business day calendar from a Java BusinessCalendar.
+
+    Partial holidays in the business calendar are interepreted as full holidays in the numpy business day calendar.
+
+    Args:
+        cal (BusinessCalendar): the Java BusinessCalendar
+        include_partial (bool): whether to include partial holidays in the numpy business day calendar, default is True
+
+    Returns:
+        a numpy busdaycalendar
+
+    Raise:
+        DHError
+    """
+
+    if not cal:
+        raise DHError(message="cal must not be None")
+    elif not isinstance(cal, jpy.JType) or cal.jclass != BusinessCalendar.j_type:
+        raise DHError(message="cal must be a Java BusinessCalendar")
+
+    try:
+        weekend = cal.weekendDays()
+        weekmask = ""
+        weekmask += "0" if weekend.contains(_JDayOfWeek.MONDAY) else "1"
+        weekmask += "0" if weekend.contains(_JDayOfWeek.TUESDAY) else "1"
+        weekmask += "0" if weekend.contains(_JDayOfWeek.WEDNESDAY) else "1"
+        weekmask += "0" if weekend.contains(_JDayOfWeek.THURSDAY) else "1"
+        weekmask += "0" if weekend.contains(_JDayOfWeek.FRIDAY) else "1"
+        weekmask += "0" if weekend.contains(_JDayOfWeek.SATURDAY) else "1"
+        weekmask += "0" if weekend.contains(_JDayOfWeek.SUNDAY) else "1"
+
+        # Working around jpy not supporting iteration on Sets or ArrayLists
+        holiday_list = j_list_to_list(_JArrayList(cal.holidays().entrySet()))
+        holidays = [np.datetime64(e.getKey().toString(), 'D') for e in holiday_list if e.getValue().businessNanos() == 0 or include_partial]
+
+        return np.busdaycalendar(weekmask=weekmask, holidays=holidays)
+    except Exception as e:
+        raise DHError(e, "failed to create a numpy busdaycalendar from a Java BusinessCalendar.") from e
