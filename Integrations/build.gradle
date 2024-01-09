@@ -1,3 +1,5 @@
+import java.util.function.Supplier
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -42,7 +44,7 @@ sourceSets {
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
 SourceSet test = java.sourceSets.maybeCreate('test')
 
-def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
+def runInDocker = { String name, String sourcePath, def command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
         copyIn {
             from(sourcePath) {
@@ -88,7 +90,15 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
         }
-        entrypoint = command
+
+        List<String> entrypointFinal;
+        if (command instanceof List) {
+            entrypointFinal = command as List<String>
+        } else {
+            entrypointFinal = ((Supplier<List<String>>) command).get()
+        }
+
+        entrypoint = entrypointFinal
 
         copyOut {
             into layout.buildDirectory.dir('test-results')
@@ -109,7 +119,32 @@ Closure composeConfig = { task ->
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
 
+def pyTestSpecific = runInDocker(
+        'test-py-deephaven-specific', '../py/server',
+        { ->
+            def baseCommand = ['python3', '-m', 'xmlrunner', '-v', '-o', '/out/report']
+
+            if(project.hasProperty("pyTestFiles")) {
+//                test-py-deephaven-specific --stacktrace -PpyTestFiles="test_keyed_record_adapter.py"
+//                project.setProperty("pyTestFiles", "test_keyed_record_adapter.py")
+                def testFilesProp = (String) project.property('pyTestFiles')
+                for (final String pyTestFile in testFilesProp.split(/,\s*/)) {
+                    final String testFilePath = "tests/$pyTestFile"
+                    println "Including Python tests in $testFilePath"
+                    baseCommand.add(testFilePath)
+                }
+            }
+
+            return baseCommand
+        },
+        composeConfig)
+
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
+
+pyTestSpecific.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+
 tasks.getByName('check').dependsOn(pyTest)
