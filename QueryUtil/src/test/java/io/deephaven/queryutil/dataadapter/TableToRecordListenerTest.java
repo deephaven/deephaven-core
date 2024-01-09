@@ -1,5 +1,6 @@
 package io.deephaven.queryutil.dataadapter;
 
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -22,6 +23,8 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 
 public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
+    private static final NullNode NULL_JSON_NODE = NullNode.getInstance();
+
     @SuppressWarnings("FieldCanBeLocal") // can't be local; for retention
     private TableToRecordListener<ObjectNode> tableToRecordListener;
 
@@ -33,6 +36,10 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         runJsonRecordListenerTest(true);
     }
 
+    /**
+     * @param async {@code true} for the {@link TableToRecordListener} to create/process records on a separate thread;
+     *        {@code false} to process them on a UGP thread. (See {@link TableToRecordListener#TableToRecordListener}.)
+     */
     public void runJsonRecordListenerTest(boolean async) {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -128,14 +135,14 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
         assertEquals("KeyB", record.get("KeyCol1").textValue());
         assertEquals(0, record.get("KeyCol2").intValue());
-        assertTrue(record.get("StringCol").isNull());
-        assertTrue(record.get("CharCol").isNull());
-        assertTrue(record.get("ByteCol").isNull());
-        assertTrue(record.get("ShortCol").isNull());
-        assertTrue(record.get("IntCol").isNull());
-        assertTrue(record.get("FloatCol").isNull());
-        assertTrue(record.get("LongCol").isNull());
-        assertTrue(record.get("DoubleCol").isNull());
+        assertEquals(NULL_JSON_NODE, record.get("StringCol"));
+        assertEquals(NULL_JSON_NODE, record.get("CharCol"));
+        assertEquals(NULL_JSON_NODE, record.get("ByteCol"));
+        assertEquals(NULL_JSON_NODE, record.get("ShortCol"));
+        assertEquals(NULL_JSON_NODE, record.get("IntCol"));
+        assertEquals(NULL_JSON_NODE, record.get("FloatCol"));
+        assertEquals(NULL_JSON_NODE, record.get("LongCol"));
+        assertEquals(NULL_JSON_NODE, record.get("DoubleCol"));
 
         record = addedUpdated.remove();
         assertNotNull(record);
@@ -208,14 +215,14 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
         assertEquals("KeyB", record.get("KeyCol1").textValue());
         assertEquals(0, record.get("KeyCol2").intValue());
-        assertTrue(record.get("StringCol").isNull());
-        assertTrue(record.get("CharCol").isNull());
-        assertTrue(record.get("ByteCol").isNull());
-        assertTrue(record.get("ShortCol").isNull());
-        assertTrue(record.get("IntCol").isNull());
-        assertTrue(record.get("FloatCol").isNull());
-        assertTrue(record.get("LongCol").isNull());
-        assertTrue(record.get("DoubleCol").isNull());
+        assertEquals(NULL_JSON_NODE, record.get("StringCol"));
+        assertEquals(NULL_JSON_NODE, record.get("CharCol"));
+        assertEquals(NULL_JSON_NODE, record.get("ByteCol"));
+        assertEquals(NULL_JSON_NODE, record.get("ShortCol"));
+        assertEquals(NULL_JSON_NODE, record.get("IntCol"));
+        assertEquals(NULL_JSON_NODE, record.get("FloatCol"));
+        assertEquals(NULL_JSON_NODE, record.get("LongCol"));
+        assertEquals(NULL_JSON_NODE, record.get("DoubleCol"));
 
         assertTrue(addedUpdated.isEmpty());
         assertTrue(removed.isEmpty());
