@@ -204,7 +204,11 @@ def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufun
                 p_sig.params.append(pa)
 
             if output_decl:
-                p_sig.ret_annotation.has_array = True
+                if (',' in output_decl) or (len(output_decl) > 1):
+                    p_sig.ret_annotation.has_array = False
+                    p_sig.ret_annotation.encoded_type = "O"
+                else:
+                    p_sig.ret_annotation.has_array = True
         return p_sig
     else:
         raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")

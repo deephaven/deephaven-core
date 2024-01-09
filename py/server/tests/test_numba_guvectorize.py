@@ -7,6 +7,8 @@ import unittest
 import numpy as np
 from numba import guvectorize, int64, int32
 
+import jpy
+
 from deephaven import empty_table, dtypes
 from tests.testbase import BaseTestCase
 
@@ -89,6 +91,26 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
         t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
+
+    def test_2d_array_output(self):
+        @guvectorize([(int64[:], int64[:, :])], "(m)->(m, m)", nopython=True)
+        def g(x, res):
+            for i in range(x.shape[0]):
+                res[i] = x[i] + 5
+
+        # print("----1d in, 2d out ---")
+        # a = np.arange(6)
+        # print(a)
+        # print(g(a))
+        # print("----2d in, 3d out ---")
+        # b = a.reshape(2, 3)
+        # print(b)
+        # print(g(b))
+
+        t = (empty_table(100).update(["X=i%10", "Y=ii"]).group_by("X")
+             # .update("X = X %3").group_by("X")
+             .update("Z=(long[][])g(Y)"))
+        self.assertEqual(t.columns[2].data_type, dtypes.from_jtype(jpy.get_type("[" * 2 + "J").jclass))
 
 if __name__ == '__main__':
     unittest.main()
