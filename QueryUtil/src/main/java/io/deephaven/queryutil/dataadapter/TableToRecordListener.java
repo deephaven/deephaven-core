@@ -4,17 +4,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
-import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
-import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.queryutil.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 import io.deephaven.queryutil.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.queryutil.dataadapter.rec.desc.RecordAdapterDescriptor;
-import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +22,7 @@ import java.util.function.IntConsumer;
  *
  * @param <T> The data type for the records.
  */
-public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
+public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAdapter {
 
     private final MultiRowRecordAdapter<T> recordAdapter;
 
@@ -43,7 +39,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
 
     /**
      * @param description A description for the listener (see
-     *        {@link InstrumentedTableUpdateListener#InstrumentedTableUpdateListener})
+     *        {@link InstrumentedTableUpdateListenerAdapter#InstrumentedTableUpdateListenerAdapter})
      * @param table The table whose updates will be processed into records
      * @param recordAdapterDescriptor Descriptor for converting table data into records of type {@code T}
      * @param recordConsumer Listener notified of added or updated records
@@ -66,7 +62,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
 
     /**
      * @param description A description for the listener (see
-     *        {@link InstrumentedTableUpdateListener#InstrumentedTableUpdateListener})
+     *        {@link InstrumentedTableUpdateListenerAdapter#InstrumentedTableUpdateListenerAdapter})
      * @param table The table whose updates will be processed into records
      * @param recordAdapterDescriptor Descriptor for converting table data into records of type {@code T}
      * @param recordConsumer Listener notified of added or updated records
@@ -87,7 +83,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
             final boolean processInitialData,
             final boolean async,
             @Nullable final IntConsumer recordsProcessedListener) {
-        super(description, true);
+        super(description, table, false);
         this.recordConsumer = recordConsumer;
         this.removedRecordConsumer = removeRecordConsumer;
         this.recordsProcessedListener = recordsProcessedListener;
@@ -251,16 +247,6 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListener {
                 updateType == UpdateType.ADDED_UPDATED ? recordConsumer : removedRecordConsumer;
         for (T record : records) {
             updateConsumer.accept(record);
-        }
-    }
-
-    @Override
-    protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-        try {
-            AsyncErrorLogger.log(DateTimeUtils.now(), sourceEntry, sourceEntry, originalException);
-            AsyncClientErrorNotifier.reportError(originalException);
-        } catch (IOException e) {
-            throw new RuntimeException("Exception in " + sourceEntry.toString(), originalException);
         }
     }
 
