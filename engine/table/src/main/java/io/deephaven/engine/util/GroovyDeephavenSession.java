@@ -32,6 +32,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableFactory;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.util.TableLoggers;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.internal.log.LoggerFactory;
@@ -41,7 +42,6 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.github.classgraph.ClassGraph;
@@ -146,20 +146,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory,
+            final OperationInitializer operationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             final RunScripts runScripts) throws IOException {
-        this(updateGraph, threadInitializationFactory, objectTypeLookup, null, runScripts);
+        this(updateGraph, operationInitializer, objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory,
+            final OperationInitializer operationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts)
             throws IOException {
-        super(updateGraph, threadInitializationFactory, objectTypeLookup, changeListener);
+        super(updateGraph, operationInitializer, objectTypeLookup, changeListener);
 
         addDefaultImports(consoleImports);
         if (INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY) {

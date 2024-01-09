@@ -76,7 +76,7 @@ public class FuzzerTest {
     private GroovyDeephavenSession getGroovySession(@Nullable Clock clock) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(
                 ExecutionContext.getContext().getUpdateGraph(),
-                ThreadInitializationFactory.NO_OP,
+                ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE,
                 GroovyDeephavenSession.RunScripts.serviceLoader());
         session.getExecutionContext().open();
