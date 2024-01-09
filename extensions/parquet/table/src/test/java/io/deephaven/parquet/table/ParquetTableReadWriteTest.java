@@ -64,6 +64,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -572,7 +573,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readLongParquetFileFromS3Test() {
-        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+        final S3Instructions s3Instructions = S3Instructions.builder()
                 .awsRegionName("us-east-2")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
@@ -582,7 +583,7 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofSeconds(60))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3ParquetInstructions)
+                .setSpecialInstructions(s3Instructions)
                 .build();
 
         final TableDefinition tableDefinition = TableDefinition.of(
@@ -614,7 +615,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readRefParquetFileFromS3Test() {
-        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+        final S3Instructions s3Instructions = S3Instructions.builder()
                 .awsRegionName("us-east-2")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
@@ -624,7 +625,7 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofSeconds(60))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3ParquetInstructions)
+                .setSpecialInstructions(s3Instructions)
                 .build();
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("hash"),
@@ -690,7 +691,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void profileReadingFromS3() {
-        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+        final S3Instructions s3Instructions = S3Instructions.builder()
                 .awsRegionName("us-east-1")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
@@ -699,7 +700,7 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofMinutes(5))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3ParquetInstructions)
+                .setSpecialInstructions(s3Instructions)
                 .build();
 
         long totalTime = 0;
@@ -713,7 +714,7 @@ public final class ParquetTableReadWriteTest {
         }
         System.out.println("Average execution time AWS is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
 
-        final S3ParquetInstructions s3ParquetInstructions2 = S3ParquetInstructions.builder()
+        final S3Instructions s3Instructions2 = S3Instructions.builder()
                 .awsRegionName("us-east-2")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
@@ -722,7 +723,7 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofMinutes(5))
                 .build();
         final ParquetInstructions readInstructions2 = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3ParquetInstructions2)
+                .setSpecialInstructions(s3Instructions2)
                 .build();
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("hash"),
@@ -766,7 +767,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readParquetFileFromS3Test() {
-        final S3ParquetInstructions s3ParquetInstructions = S3ParquetInstructions.builder()
+        final S3Instructions s3Instructions = S3Instructions.builder()
                 .awsRegionName("us-east-1")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
@@ -775,7 +776,7 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofSeconds(60))
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3ParquetInstructions)
+                .setSpecialInstructions(s3Instructions)
                 .build();
         final Table fromAws1 =
                 ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
@@ -1063,6 +1064,27 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
     }
 
+    @Test
+    public void basicWriteAndReadFromFileURITests() {
+        final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "basicWriteTests.parquet";
+        final File destFile = new File(rootFile, filename);
+        final String absolutePath = destFile.getAbsolutePath();
+        final URI fileURI = destFile.toURI();
+        ParquetTools.writeTable(tableToSave, absolutePath);
+        final Table fromDisk = ParquetTools.readTable(fileURI.toString());
+        assertTableEquals(tableToSave, fromDisk);
+        final Table fromDisk2 = ParquetTools.readTable("file://" + absolutePath);
+        assertTableEquals(tableToSave, fromDisk2);
+
+        try {
+            ParquetTools.readTable("https://" + absolutePath);
+            TestCase.fail("Exception expected for invalid scheme");
+        } catch (final RuntimeException e) {
+            assertTrue(e instanceof IllegalArgumentException);
+        }
+    }
+
     /**
      * These are tests for writing multiple parquet tables in a single call.
      */
@@ -1156,14 +1178,16 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
-        final String destAbsolutePathStr = dest.getAbsolutePath();
+        String destAbsolutePathStr = dest.getAbsolutePath();
         ParquetTools.writeTable(table, destAbsolutePathStr);
+        destAbsolutePathStr = destAbsolutePathStr.replace(" ", "%20");
         fromDisk = readSingleFileTable(destAbsolutePathStr, ParquetInstructions.EMPTY);
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
-        final String destRelativePathStr = rootFile.getName() + "/" + parentDirName + "/" + parquetFileName;
+        String destRelativePathStr = rootFile.getName() + "/" + parentDirName + "/" + parquetFileName;
         ParquetTools.writeTable(table, destRelativePathStr);
+        destRelativePathStr = destRelativePathStr.replace(" ", "%20");
         fromDisk = readSingleFileTable(destRelativePathStr, ParquetInstructions.EMPTY);
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);

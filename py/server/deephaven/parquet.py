@@ -19,7 +19,7 @@ _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
-_JS3ParquetInstructions = jpy.get_type("io.deephaven.parquet.table.S3ParquetInstructions")
+_JS3Instructions = jpy.get_type("io.deephaven.parquet.table.S3Instructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JDuration = jpy.get_type("java.time.Duration")
 
@@ -32,7 +32,7 @@ def _build_s3_parquet_instructions(
         connection_timeout: _JDuration = None,
         read_timeout: _JDuration = None,
 ):
-    builder = _JS3ParquetInstructions.builder()
+    builder = _JS3Instructions.builder()
     builder.awsRegionName(aws_region_name)
 
     if max_concurrent_requests is not None:

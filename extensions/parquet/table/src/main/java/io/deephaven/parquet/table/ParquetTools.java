@@ -54,6 +54,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetFileReader.S3_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetFileReader.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
@@ -72,7 +73,8 @@ public class ParquetTools {
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
     /**
-     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
+     * Reads in a table from a single parquet, metadata file, or directory with recognized layout. The source provided
+     * can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -81,24 +83,26 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(String, ParquetInstructions)},
+     * {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
      *
-     * @param sourceFilePath The file or directory to examine
+     * @param source The path or URI of file or directory to examine
      * @return table
      * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
      */
-    public static Table readTable(@NotNull final String sourceFilePath) {
-        return readTableInternal(convertToURI(sourceFilePath), ParquetInstructions.EMPTY);
+    public static Table readTable(@NotNull final String source) {
+        return readTableInternal(convertToURI(source), ParquetInstructions.EMPTY);
     }
 
     /**
-     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
+     * Reads in a table from a single parquet, metadata file, or directory with recognized layout. The source provided
+     * can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -112,7 +116,7 @@ public class ParquetTools {
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
      *
-     * @param sourceFilePath The file or directory to examine
+     * @param source The path or URI of file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
      * @see ParquetSingleFileLayout
@@ -121,9 +125,9 @@ public class ParquetTools {
      * @see ParquetFlatPartitionedLayout
      */
     public static Table readTable(
-            @NotNull final String sourceFilePath,
+            @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableInternal(convertToURI(sourceFilePath), readInstructions);
+        return readTableInternal(convertToURI(source), readInstructions);
     }
 
     /**
@@ -149,7 +153,7 @@ public class ParquetTools {
      * @see ParquetFlatPartitionedLayout
      */
     public static Table readTable(@NotNull final File sourceFile) {
-        return readTableInternal(sourceFile.toURI(), ParquetInstructions.EMPTY);
+        return readTableInternal(sourceFile, ParquetInstructions.EMPTY);
     }
 
     /**
@@ -178,7 +182,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableInternal(sourceFile.toURI(), readInstructions);
+        return readTableInternal(sourceFile, readInstructions);
     }
 
     /**
@@ -606,22 +610,19 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleFileTable(URI, ParquetInstructions)},
+     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
      * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
      * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
      *
-     * @param source The URI for source file or directory
+     * @param source The source file or directory
      * @param instructions Instructions for reading
      * @return A {@link Table}
      */
     private static Table readTableInternal(
-            @NotNull final URI source,
+            @NotNull final File source,
             @NotNull final ParquetInstructions instructions) {
-        if (S3_URI_SCHEME.equals(source.getScheme())) {
-            return readSingleFileTable(source, instructions);
-        }
-        final Path sourcePath = Path.of(source.getRawPath());
+        final Path sourcePath = source.toPath();
         if (!Files.exists(sourcePath)) {
             throw new TableDataException("Source file " + source + " does not exist");
         }
@@ -669,6 +670,27 @@ public class ParquetTools {
             throw new TableDataException("No recognized Parquet table layout found in " + source);
         }
         throw new TableDataException("Source " + source + " is neither a directory nor a regular file");
+    }
+
+    /**
+     * Same as {@link #readTableInternal(File, ParquetInstructions)} but with a URI.
+     *
+     * @param source The source URI
+     * @param instructions Instructions for reading
+     * @return A {@link Table}
+     */
+    private static Table readTableInternal(
+            @NotNull final URI source,
+            @NotNull final ParquetInstructions instructions) {
+        final String scheme = source.getScheme();
+        if (scheme != null && !scheme.isEmpty() && !scheme.equals(FILE_URI_SCHEME)) {
+            if (!scheme.equals(S3_URI_SCHEME)) {
+                throw new IllegalArgumentException(
+                        "We only support reading single parquet file URI hosted on S3, but got " + source);
+            }
+            return readSingleFileTable(source, instructions);
+        }
+        return readTableInternal(new File(source), instructions);
     }
 
     private static boolean ignoreDotFiles(Path path) {
@@ -937,7 +959,7 @@ public class ParquetTools {
      * @param file the parquet file
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(File, int, Map, ParquetInstructions)
+     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
      * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
      */
     public static Table readSingleFileTable(
@@ -947,21 +969,22 @@ public class ParquetTools {
     }
 
     /**
-     * Creates a single table via the parquet {@code filePath} using the provided {@code tableDefinition}.
+     * Creates a single table via the parquet {@code source} using the provided {@code tableDefinition}. The source
+     * provided can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
      * <p>
      * Callers wishing to be more explicit (for example, to skip some columns) may prefer to call
-     * {@link #readSingleFileTable(File, ParquetInstructions, TableDefinition)}.
+     * {@link #readSingleFileTable(String, ParquetInstructions, TableDefinition)}.
      *
-     * @param filePath the parquet file path
+     * @param source the path or URI for the parquet file
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(File, int, Map, ParquetInstructions)
+     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
      * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
      */
     public static Table readSingleFileTable(
-            @NotNull final String filePath,
+            @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(convertToURI(filePath), readInstructions);
+        return readSingleFileTable(convertToURI(source), readInstructions);
     }
 
     private static Table readSingleFileTable(
@@ -981,7 +1004,7 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(File, int, Map, ParquetInstructions)
+     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
      * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
      */
     public static Table readSingleFileTable(
@@ -992,21 +1015,21 @@ public class ParquetTools {
     }
 
     /**
-     * Creates a single table via the parquet {@code filePath} using the provided {@code tableDefinition}. API used by
-     * Python code.
+     * Creates a single table via the parquet {@code source} using the provided {@code tableDefinition}. The source
+     * provided can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
      *
-     * @param filePath the parquet file path
+     * @param source the path or URI for the parquet file
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(File, int, Map, ParquetInstructions)
+     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
      * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
      */
     public static Table readSingleFileTable(
-            @NotNull final String filePath,
+            @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readSingleFileTable(convertToURI(filePath), readInstructions, tableDefinition);
+        return readSingleFileTable(convertToURI(source), readInstructions, tableDefinition);
     }
 
     private static Table readSingleFileTable(
@@ -1140,11 +1163,10 @@ public class ParquetTools {
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
         if (S3_URI_SCHEME.equals(parquetFileURI.getScheme())) {
-            if (!(readInstructions.getSpecialInstructions() instanceof S3ParquetInstructions)) {
-                throw new IllegalArgumentException("Must provide S3ParquetInstructions to read files from S3");
+            if (!(readInstructions.getSpecialInstructions() instanceof S3Instructions)) {
+                throw new IllegalArgumentException("Must provide S3Instructions to read files from S3");
             }
-            final S3ParquetInstructions s3Instructions =
-                    (S3ParquetInstructions) readInstructions.getSpecialInstructions();
+            final S3Instructions s3Instructions = (S3Instructions) readInstructions.getSpecialInstructions();
             return new ParquetFileReader(parquetFileURI,
                     new CachedChannelProvider(
                             new S3SeekableChannelProvider(s3Instructions), 1 << 7));

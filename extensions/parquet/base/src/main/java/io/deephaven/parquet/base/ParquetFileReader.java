@@ -31,7 +31,7 @@ public class ParquetFileReader {
     private static final String MAGIC_STR = "PAR1";
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public static final String S3_URI_SCHEME = "s3";
-    private static final String S3_URI_PREFIX = "s3://";
+    public static final String FILE_URI_SCHEME = "file";
 
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
@@ -42,24 +42,32 @@ public class ParquetFileReader {
     private final URI rootURI;
     private final MessageType type;
 
-    // TODO Where should I keep it?
-    public static URI convertToURI(final String filePath) {
-        if (filePath.startsWith(S3_URI_PREFIX)) {
-            try {
-                return new URI(filePath);
-            } catch (final URISyntaxException e) {
-                throw new UncheckedDeephavenException("Failed to convert file path " + filePath + " to URI, we expect "
-                        + "CLI-style URIs, e.g., \"s3://bucket/key\" as input", e);
-            }
-        } else {
-            // Resolve to get an absolute file path and convert to URI
-            return new File(filePath).getAbsoluteFile().toURI();
+    // TODO Where should I keep this method?
+    /**
+     * Take the parquet file source path or URI and convert it to a URI object.
+     *
+     * @param source The parquet file source path or URI
+     * @return The URI object
+     */
+    public static URI convertToURI(final String source) {
+        final URI ret;
+        try {
+            ret = new URI(source);
+        } catch (final URISyntaxException e) {
+            throw new UncheckedDeephavenException("Failed to convert source string " + source + " to URI, we expect "
+                    + " either local file paths or CLI-style S3 URIs, e.g., \"s3://bucket/key\" as input", e);
         }
+        final String scheme = ret.getScheme();
+        if (scheme != null && !scheme.isEmpty()) {
+            return ret;
+        }
+        // Resolve to get an absolute file path and convert to URI
+        return new File(ret.getPath()).getAbsoluteFile().toURI();
     }
 
-    public ParquetFileReader(final String filePath, final SeekableChannelsProvider channelsProvider)
+    public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
             throws IOException {
-        this(convertToURI(filePath), channelsProvider);
+        this(convertToURI(source), channelsProvider);
     }
 
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)

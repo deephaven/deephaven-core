@@ -1,7 +1,7 @@
 package io.deephaven.parquet.table.util;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.table.S3ParquetInstructions;
+import io.deephaven.parquet.table.S3Instructions;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -28,15 +28,14 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
     private final Duration readTimeout;
     private final Map<Long, ChannelContext> contextMap = new HashMap<>(); // TODO Remove this
 
-    public S3SeekableChannelProvider(final S3ParquetInstructions s3Instructions) {
-        final String awsRegionName = s3Instructions.awsRegionName();
-        final int maxConcurrentRequests = s3Instructions.maxConcurrentRequests();
+    public S3SeekableChannelProvider(final S3Instructions s3Instructions) {
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
-                .maxConcurrency(maxConcurrentRequests)
+                .maxConcurrency(Integer.valueOf(s3Instructions.maxConcurrentRequests()))
                 .connectionTimeout(s3Instructions.connectionTimeout())
                 .build();
+        // TODO Should we cache and reuse the client object?
         this.s3AsyncClient = S3AsyncClient.builder()
-                .region(Region.of(awsRegionName))
+                .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
                 .build();
         this.fragmentSize = s3Instructions.fragmentSize();

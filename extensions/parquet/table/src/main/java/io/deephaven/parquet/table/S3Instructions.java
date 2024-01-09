@@ -6,11 +6,11 @@ import org.immutables.value.Value;
 import java.time.Duration;
 
 /**
- * This class provides instructions intended for reading and writing parquet files to AWS S3 instances.
+ * This class provides instructions intended for reading and writing data to AWS S3 instances.
  */
 @Value.Immutable
 @BuildableStyle
-public abstract class S3ParquetInstructions {
+public abstract class S3Instructions {
 
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
@@ -21,7 +21,7 @@ public abstract class S3ParquetInstructions {
     private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
 
     public static Builder builder() {
-        return ImmutableS3ParquetInstructions.builder();
+        return ImmutableS3Instructions.builder();
     }
 
     /**
@@ -125,6 +125,6 @@ public abstract class S3ParquetInstructions {
 
         Builder readTimeout(Duration connectionTimeout);
 
-        S3ParquetInstructions build();
+        S3Instructions build();
     }
 }

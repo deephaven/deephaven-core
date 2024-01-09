@@ -203,10 +203,9 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         final ByteBuffer currentFragment;
         try {
             currentFragment = currFragmentFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
-        }  catch (final InterruptedException | ExecutionException | TimeoutException e) {
+        }  catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
             final String operation = "fetching fragment " + currFragmentIndex + " for file " + key + " in S3 bucket " + bucket;
-            handleS3Exception(e, operation);
-            throw new UncheckedDeephavenException("Exception caught while " + operation, e);
+            throw handleS3Exception(e, operation);
         }
 
         // Copy the bytes from fragment from the offset up to the min of remaining fragment and destination bytes.
@@ -236,16 +235,19 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
                 new ByteBufferAsyncResponseTransformer<>(fragmentSize));
     }
 
-    private void handleS3Exception(final Exception e, final String operationDescription) {
+    private UncheckedDeephavenException handleS3Exception(final Exception e, final String operationDescription) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
-            throw new CancellationException("Thread interrupted while " + operationDescription, e);
+            return new CancellationException("Thread interrupted while " + operationDescription, e);
         } else if (e instanceof ExecutionException) {
-            throw new UncheckedDeephavenException("Execution exception occurred while " + operationDescription, e);
+            return new UncheckedDeephavenException("Execution exception occurred while " + operationDescription, e);
         } else if (e instanceof TimeoutException) {
-            throw new UncheckedDeephavenException("Operation timeout while " + operationDescription + " after waiting " +
+            return new UncheckedDeephavenException("Operation timeout while " + operationDescription + " after waiting " +
                     "for duration " + readTimeout, e);
+        } else if (e instanceof CancellationException) {
+            return new UncheckedDeephavenException("Cancelled an operation while " + operationDescription, e);
         }
+        throw new UncheckedDeephavenException("Exception caught while " + operationDescription, e);
     }
 
     @Override
@@ -286,12 +288,11 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
             try {
                 headObjectResponse = s3AsyncClient.headObject(builder -> builder.bucket(bucket).key(key))
                         .get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
-            }  catch (final InterruptedException | ExecutionException | TimeoutException e) {
+            }  catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
                 final String operation = "fetching HEAD for file " + key + " in S3 bucket " + bucket;
-                handleS3Exception(e, operation);
-                throw new UncheckedDeephavenException("Exception caught while " + operation, e);
+                throw handleS3Exception(e, operation);
             }
-            context.setSize(headObjectResponse.contentLength());
+            context.setSize(headObjectResponse.contentLength().longValue());
         }
         this.size = context.getSize();
         this.numFragmentsInObject = (int) ((size + fragmentSize - 1) / fragmentSize);  // = ceil(size / fragmentSize)
