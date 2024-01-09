@@ -7,14 +7,16 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.Calendars;
 
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Objects;
 
 public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
 
     private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
 
-    private final AxisTransformBusinessCalendar bt = new AxisTransformBusinessCalendar(Calendars.calendar("JPOSE"));
+    private AxisTransformBusinessCalendar bt;
 
     private final Instant holiday = DateTimeUtils.parseInstant("2017-01-03T10:00:00 JP");
     private final Instant weekend = DateTimeUtils.parseInstant("2017-01-02T10:00:00 JP");
@@ -37,6 +39,24 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
     private final Instant bus32 = DateTimeUtils.parseInstant("2017-01-11T12:45:00 JP");
     private final Instant close3 = DateTimeUtils.parseInstant("2017-01-11T20:00:00 JP");
 
+    @Override
+    public void setUp() throws Exception {
+        final String path = Paths
+                .get(Objects.requireNonNull(TestAxisTransformBusinessCalendar.class.getResource("/JPOSE.calendar"))
+                        .toURI())
+                .toString();
+        final String calName = "PARSER_TEST_CAL";
+
+        Calendars.addCalendarFromFile(path);
+        bt = new AxisTransformBusinessCalendar(Calendars.calendar("JPOSE"));
+        super.setUp();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        Calendars.removeCalendar("JPOSE");
+        super.tearDown();
+    }
 
     public void testIsVisible() {
         assertFalse(bt.isVisible((double) DateTimeUtils.epochNanos(holiday)));
@@ -85,13 +105,13 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
 
     // tests bugs where first day was transformed incorrectly
     public void testFirstTransformedDay() {
-        AxisTransform transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        AxisTransform transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         double d = transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T09:30:01 NY")));
         double d2 = transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T14:30:01 NY")));
         assertFalse(d == d2);
 
         // first day holiday
-        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-03T09:30:01 NY")));
         assertEquals(0.0 + 30 * DateTimeUtils.MINUTE,
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T10:00:00 NY"))));
@@ -99,13 +119,13 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-05T10:00:00 NY"))));
 
         // first time outside business hours
-        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T09:29:00 NY")));
         assertEquals(2.34E13 + 30 * DateTimeUtils.MINUTE,
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T10:00:00 NY"))));
 
         // previous day was holiday
-        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
+        transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-01-29T09:29:00 NY")));
         assertEquals(2 * 2.34E13 + 30 * DateTimeUtils.MINUTE,
                 transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-01-30T10:00:00 NY"))));

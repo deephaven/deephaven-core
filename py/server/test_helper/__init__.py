@@ -35,7 +35,7 @@ def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
             'deephaven.dataDir': '/data',
             'deephaven.cacheDir': '/cache',
 
-            'Calendar.default': 'USNYSE',
+            'Calendar.default': 'USNYSE_EXAMPLE',
             'Calendar.importPath': '/test_calendar_imports.txt',
         }
 

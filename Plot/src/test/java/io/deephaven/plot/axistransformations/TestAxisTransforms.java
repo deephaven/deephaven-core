@@ -73,7 +73,7 @@ public class TestAxisTransforms {
         assertTrue(names.length > 2);
         assertTrue(nameSet.contains("LOG"));
         assertTrue(nameSet.contains("SQRT"));
-        assertTrue(nameSet.contains("USNYSE"));
+        assertTrue(nameSet.contains("USNYSE_EXAMPLE"));
     }
 
     @Test
@@ -83,9 +83,9 @@ public class TestAxisTransforms {
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("sqrt"));
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("SQRT"));
 
-        final BusinessCalendar cal = Calendars.calendar("USNYSE");
+        final BusinessCalendar cal = Calendars.calendar("USNYSE_EXAMPLE");
         final AxisTransformBusinessCalendar at1 =
-                (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE");
+                (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE_EXAMPLE");
         assertEquals(cal, at1.getBusinessCalendar());
     }
 }

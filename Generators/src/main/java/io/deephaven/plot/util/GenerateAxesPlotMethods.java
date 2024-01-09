@@ -4,6 +4,7 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.gen.GenUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,6 +21,7 @@ import java.util.stream.IntStream;
 public class GenerateAxesPlotMethods {
 
     private static final Logger log = Logger.getLogger(GenerateAxesPlotMethods.class.toString());
+    private static final String GRADLE_TASK = ":Generators:generateAxesPlotMethods";
 
     private static final String PLOT_INFO_ID = "new PlotInfo(this, seriesName)";
 
@@ -863,10 +865,7 @@ public class GenerateAxesPlotMethods {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            if (!newcode.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GenerateAxesPlotMethods or \"./gradlew :Generators:generateAxesPlotMethods\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GenerateAxesPlotMethods.class, GRADLE_TASK, oldCode, newcode);
         } else {
 
             PrintWriter out = new PrintWriter(file);

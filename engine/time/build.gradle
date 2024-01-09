@@ -25,3 +25,11 @@ dependencies {
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
+
+spotless {
+    java {
+        targetExclude(
+                'src/main/java/io/deephaven/time/calendar/StaticCalendarMethods.java',
+        )
+    }
+}

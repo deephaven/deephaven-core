@@ -122,6 +122,8 @@ Period = DType(j_name="java.time.Period")
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
 TimeZone = DType(j_name="java.time.ZoneId")
 """Time zone type."""
+BusinessCalendar = DType(j_name='io.deephaven.time.calendar.BusinessCalendar')
+"""Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
