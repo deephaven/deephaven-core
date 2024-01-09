@@ -565,7 +565,7 @@ public class SessionState {
 
         /** used to detect when this object is ready for export (is visible for atomic int field updater) */
         private volatile int dependentCount = -1;
-        /** used to detect a parent that was already released prior to having dependencies set */
+        /** our first parent that was already released prior to having dependencies set if one exists */
         private ExportObject<?> alreadyDeadParent;
 
         @SuppressWarnings("unchecked")
@@ -651,9 +651,23 @@ public class SessionState {
 
             this.parents = parents;
             dependentCount = parents.size();
-            alreadyDeadParent = parents.stream()
-                    .filter(p -> p != null && !tryManage(p))
-                    .findFirst().orElse(null);
+            for (final ExportObject<?> parent : parents) {
+                if (parent != null && !tryManage(parent)) {
+                    alreadyDeadParent = parent;
+                    break;
+                }
+            }
+
+            if (alreadyDeadParent != null) {
+                // no point in holding references to other parents any longer; we've already failed
+                for (final ExportObject<?> parent : parents) {
+                    if (parent == alreadyDeadParent) {
+                        break;
+                    } else if (parent != null) {
+                        unmanage(parent);
+                    }
+                }
+            }
 
             if (log.isDebugEnabled()) {
                 final Exception e = new RuntimeException();
@@ -692,6 +706,7 @@ public class SessionState {
             // we defer this type of failure until setWork for consistency in error handling
             if (alreadyDeadParent != null) {
                 onDependencyFailure(alreadyDeadParent);
+                alreadyDeadParent = null;
             }
 
             if (isExportStateTerminal(state)) {
