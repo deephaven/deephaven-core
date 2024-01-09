@@ -29,13 +29,13 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
-    public static <T extends TableOperations<T, T>> T i32768(TableCreator<T> c) {
-        return c.emptyTable(32768).view("I=i");
+    public static <T extends TableOperations<T, T>> T i132768(TableCreator<T> c) {
+        return c.emptyTable(132768).view("I=i");
     }
 
     @Test
     public void getSchema() throws Exception {
-        final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
+        final TableSpec table = i132768(TableCreatorImpl.INSTANCE);
         try (final TableHandle handle = flightSession.session().execute(table)) {
             final Schema schema = flightSession.schema(handle.export());
             final Schema expected = new Schema(Collections.singletonList(
@@ -46,14 +46,17 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
 
     @Test
     public void getStream() throws Exception {
-        final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
+        final TableSpec table = i132768(TableCreatorImpl.INSTANCE);
         try (final TableHandle handle = flightSession.session().execute(table);
                 final FlightStream stream = flightSession.stream(handle)) {
             int numRows = 0;
+            int flightCount = 0;
             while (stream.next()) {
+                ++flightCount;
                 numRows += stream.getRoot().getRowCount();
             }
-            Assert.assertEquals(32768, numRows);
+            Assert.assertEquals(1, flightCount);
+            Assert.assertEquals(132768, numRows);
         }
     }
 
