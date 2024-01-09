@@ -158,10 +158,10 @@ public final class TimeTable extends QueryTable implements Runnable {
         refresh(true);
     }
 
-    private class SourceRefresher extends InstrumentedUpdateSource {
+    private class SourceRefresher extends InstrumentedTableUpdateSource {
 
         public SourceRefresher() {
-            super(updateGraph, name);
+            super(TimeTable.this, name);
         }
 
         @Override

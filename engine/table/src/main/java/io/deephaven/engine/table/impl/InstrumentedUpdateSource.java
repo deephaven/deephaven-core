@@ -11,10 +11,12 @@ import javax.annotation.Nullable;
 
 public abstract class InstrumentedUpdateSource implements Runnable {
 
+    protected final UpdateGraph updateGraph;
     @Nullable
     protected final PerformanceEntry entry;
 
     public InstrumentedUpdateSource(final UpdateGraph updateGraph, final String description) {
+        this.updateGraph = updateGraph;
         this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, description);
     }
 
@@ -25,6 +27,9 @@ public abstract class InstrumentedUpdateSource implements Runnable {
         }
         try {
             instrumentedRefresh();
+        } catch (final Exception error) {
+            updateGraph.removeSource(this);
+            onRefreshError(error);
         } finally {
             if (entry != null) {
                 entry.onUpdateEnd();
@@ -33,4 +38,6 @@ public abstract class InstrumentedUpdateSource implements Runnable {
     }
 
     protected abstract void instrumentedRefresh();
+
+    protected abstract void onRefreshError(Exception error);
 }
