@@ -117,9 +117,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
     protected QueryScope() {
         super(false);
 
-        // if (!Liveness.REFERENCE_TRACKING_DISABLED) {
-        incrementReferenceCount();
-        // }
+        retainReference();
     }
 
     // -----------------------------------------------------------------------------------------------------------------
