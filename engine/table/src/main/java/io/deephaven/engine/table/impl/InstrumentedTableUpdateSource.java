@@ -39,6 +39,4 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
             table.notifyListenersOnError(error, entry);
         }
     }
-
-    protected abstract void instrumentedRefresh();
 }
