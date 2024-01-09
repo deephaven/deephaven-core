@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table.util;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
@@ -13,8 +16,6 @@ import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from AWS S3 instances.
@@ -26,7 +27,6 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
     private final int maxCacheSize;
     private final int readAheadCount;
     private final Duration readTimeout;
-    private final Map<Long, ChannelContext> contextMap = new HashMap<>(); // TODO Remove this
 
     public S3SeekableChannelProvider(final S3Instructions s3Instructions) {
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
@@ -52,21 +52,7 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
 
     @Override
     public ChannelContext makeContext() {
-        final Long tid = Long.valueOf(Thread.currentThread().getId());
-        if (contextMap.containsKey(tid)) {
-            return contextMap.get(tid);
-        } else {
-            final ChannelContext context;
-            // TODO Remove this part
-            synchronized (contextMap) {
-                if (contextMap.containsKey(tid)) {
-                    return contextMap.get(tid);
-                }
-                context = new S3SeekableByteChannel.S3ChannelContext(maxCacheSize);
-                contextMap.put(tid, context);
-            }
-            return context;
-        }
+        return new S3SeekableByteChannel.S3ChannelContext(maxCacheSize);
     }
 
     @Override
@@ -76,11 +62,5 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
 
     public void close() throws IOException {
         s3AsyncClient.close();
-        synchronized (contextMap) {
-            for (final ChannelContext context : contextMap.values()) {
-                context.close();
-            }
-            contextMap.clear();
-        }
     }
 }

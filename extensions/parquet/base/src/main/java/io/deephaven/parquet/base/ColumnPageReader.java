@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,4 +53,20 @@ public interface ColumnPageReader extends AutoCloseable {
      */
     @NotNull
     Dictionary getDictionary();
+
+    /**
+     * Set the channel context to use while reading the parquet file. This will cache a copy of the object for use
+     * across reads. Therefore, its is recommended to use {@link #clearChannelContext()} when done with the
+     * reader/context.
+     *
+     * @param context The channel context to use.
+     */
+    void setChannelContext(@NotNull final SeekableChannelsProvider.ChannelContext context);
+
+    /**
+     * Clear the cached channel context.
+     */
+    default void clearChannelContext() {
+        setChannelContext(SeekableChannelsProvider.ChannelContext.NULL);
+    }
 }

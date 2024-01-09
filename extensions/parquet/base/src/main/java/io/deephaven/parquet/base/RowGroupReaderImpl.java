@@ -79,8 +79,8 @@ public class RowGroupReaderImpl implements RowGroupReader {
 
         OffsetIndex offsetIndex = null;
         if (columnChunk.isSetOffset_index_offset()) {
-            try (final SeekableByteChannel readChannel =
-                    channelsProvider.getReadChannel(channelsProvider.makeContext(), rootURI)) {
+            try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
+                    final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, rootURI)) {
                 readChannel.position(columnChunk.getOffset_index_offset());
                 offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
                         new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));

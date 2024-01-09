@@ -8,6 +8,7 @@ import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
@@ -171,17 +172,52 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     @Override
     public void close() {}
 
-    FillContext innerFillContext(@NotNull final FillContext context) {
-        // TODO(deephaven-core#4836): Call this method from the appropriate place in the implementation of
-        // getPageContaining to populate the context object
-        return ((PagingContextHolder) context)
-                .updateInnerContext(this::fillContextUpdater);
+    /**
+     * Take an object of {@link PagingContextHolder} and populate the inner context with values from
+     * {@link #columnChunkReader}
+     */
+    final void innerFillContext(@Nullable final FillContext context) {
+        if (context != null) {
+            ((PagingContextHolder) context).updateInnerContext(this::fillContextUpdater);
+        }
     }
 
-    private boolean isFillContextCompatible(@Nullable final Context currentInnerContext) {
-        // TODO(deephaven-core#4836): Replace this with a test to see if the fill context comes from
-        // this.ColumnChunkReader
-        return currentInnerContext == DEFAULT_FILL_INSTANCE;
+    /**
+     * Return true if this class allocated the current inner context and therefore the context can be reused for reading
+     * pages.
+     */
+    private static boolean isFillContextCompatible(@Nullable final Context currentInnerContext) {
+        return currentInnerContext instanceof ChannelContextWrapper;
+    }
+
+    static SeekableChannelsProvider.ChannelContext getChannelContext(@Nullable final FillContext fillContext) {
+        if (fillContext instanceof PagingContextHolder) {
+            final Context innerContext = ((PagingContextHolder) fillContext).getInnerContext();
+            if (innerContext instanceof ChannelContextWrapper) {
+                return ((ChannelContextWrapper) innerContext).getChannelContext();
+            }
+        }
+        return SeekableChannelsProvider.ChannelContext.NULL;
+    }
+
+    /**
+     * Wrapper class which takes a {@link SeekableChannelsProvider.ChannelContext} and implements {@link FillContext}
+     */
+    private static class ChannelContextWrapper implements FillContext {
+        private @NotNull final SeekableChannelsProvider.ChannelContext context;
+
+        ChannelContextWrapper(@NotNull SeekableChannelsProvider.ChannelContext context) {
+            this.context = context;
+        }
+
+        SeekableChannelsProvider.ChannelContext getChannelContext() {
+            return context;
+        }
+
+        @Override
+        public void close() {
+            context.close();
+        }
     }
 
     private <T extends FillContext> T fillContextUpdater(
@@ -191,7 +227,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         // noinspection unchecked
         return (T) (isFillContextCompatible(currentInnerContext)
                 ? currentInnerContext
-                // TODO(deephaven-core#4836): Replace this with getting a context from this.ColumnChunkReader
-                : makeFillContext(chunkCapacity, sharedContext));
+                : new ChannelContextWrapper(columnChunkReader.makeChannelContext()));
     }
 }

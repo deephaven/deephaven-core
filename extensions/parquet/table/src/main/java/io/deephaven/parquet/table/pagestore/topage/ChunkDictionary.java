@@ -6,12 +6,14 @@ package io.deephaven.parquet.table.pagestore.topage;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
 import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -35,7 +37,7 @@ public class ChunkDictionary<T, ATTR extends Any>
     }
 
     private final Lookup<T> lookup;
-    private final Supplier<Dictionary> dictionarySupplier;
+    private final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier;
 
     private final Supplier<ObjectChunk<T, ATTR>> valuesSupplier;
     private final Supplier<TObjectIntMap<T>> reverseMapSupplier;
@@ -48,11 +50,12 @@ public class ChunkDictionary<T, ATTR extends Any>
      */
     ChunkDictionary(
             @NotNull final Lookup<T> lookup,
-            @NotNull final Supplier<Dictionary> dictionarySupplier) {
+            @NotNull final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier) {
         this.lookup = lookup;
         this.dictionarySupplier = dictionarySupplier;
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
-            final Dictionary dictionary = dictionarySupplier.get();
+            // Dictionary is already materialized till this point, therefore we can safely use NULL context
+            final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelsProvider.ChannelContext.NULL);
             final T[] values = ObjectChunk.makeArray(dictionary.getMaxId() + 1);
             for (int ki = 0; ki < values.length; ++ki) {
                 values[ki] = lookup.lookup(dictionary, ki);

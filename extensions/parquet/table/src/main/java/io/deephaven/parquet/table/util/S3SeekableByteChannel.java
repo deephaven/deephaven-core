@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.parquet.table.util;
 
 import io.deephaven.UncheckedDeephavenException;
@@ -114,11 +117,6 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
 
         void setSize(final long size) {
             this.size = size;
-        }
-
-        @Override
-        public void close() {
-            bufferCache.clear();
         }
     }
 

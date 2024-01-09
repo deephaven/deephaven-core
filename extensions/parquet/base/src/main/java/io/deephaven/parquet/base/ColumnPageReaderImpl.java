@@ -34,10 +34,9 @@ import java.nio.IntBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static org.apache.parquet.column.ValuesType.VALUES;
 
@@ -50,7 +49,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
-    private final Supplier<Dictionary> dictionarySupplier;
+    private final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier;
     private final PageMaterializer.Factory pageMaterializerFactory;
     private final ColumnDescriptor path;
     private final URI uri;
@@ -64,6 +63,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private PageHeader pageHeader;
     private int numValues;
     private int rowCount = -1;
+    private SeekableChannelsProvider.ChannelContext context;
 
     /**
      * Returns a {@link ColumnPageReader} object for reading the column page data from the file.
@@ -84,14 +84,15 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
      */
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
             CompressorAdapter compressorAdapter,
-            Supplier<Dictionary> dictionarySupplier,
+            Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier,
             PageMaterializer.Factory materializerFactory,
             ColumnDescriptor path,
             URI uri,
             List<Type> fieldTypes,
             long offset,
             PageHeader pageHeader,
-            int numValues) {
+            int numValues,
+            SeekableChannelsProvider.ChannelContext context) {
         this.channelsProvider = channelsProvider;
         this.compressorAdapter = compressorAdapter;
         this.dictionarySupplier = dictionarySupplier;
@@ -102,20 +103,19 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         this.offset = offset;
         this.pageHeader = pageHeader;
         this.numValues = numValues;
+        this.context = context;
     }
 
     @Override
     public Object materialize(Object nullValue) throws IOException {
-        try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, uri)) {
             ensurePageHeader(readChannel);
             return readDataPage(nullValue, readChannel);
         }
     }
 
     public int readRowCount() throws IOException {
-        try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, uri)) {
             ensurePageHeader(readChannel);
             return readRowCountFromDataPage(readChannel);
         }
@@ -124,8 +124,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder) throws IOException {
-        try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, uri)) {
             ensurePageHeader(readChannel);
             return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel);
         }
@@ -600,7 +599,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
         ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {
-            final Dictionary dictionary = dictionarySupplier.get();
+            final Dictionary dictionary = dictionarySupplier.apply(context);
             if (dictionary == ColumnChunkReader.NULL_DICTIONARY) {
                 throw new ParquetDecodingException("Could not read page in col " + path + " as the dictionary was " +
                         "missing for encoding " + dataEncoding);
@@ -623,8 +622,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         if (numValues >= 0) {
             return numValues;
         }
-        try (final SeekableByteChannel readChannel =
-                channelsProvider.getReadChannel(channelsProvider.makeContext(), uri)) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, uri)) {
             ensurePageHeader(readChannel);
             // Above will block till it populates numValues
             Assert.geqZero(numValues, "numValues");
@@ -635,7 +633,12 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     @NotNull
     @Override
     public Dictionary getDictionary() {
-        return dictionarySupplier.get();
+        return dictionarySupplier.apply(context);
+    }
+
+    @Override
+    public void setChannelContext(@NotNull final SeekableChannelsProvider.ChannelContext context) {
+        this.context = context;
     }
 
     @Override

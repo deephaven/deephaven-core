@@ -85,9 +85,9 @@ public class ParquetFileReader {
         } else {
             rootURI = parquetFileURI;
         }
-        final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
         final byte[] footer;
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, parquetFileURI)) {
+        try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
+                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, parquetFileURI)) {
             final long fileLen = readChannel.size();
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC

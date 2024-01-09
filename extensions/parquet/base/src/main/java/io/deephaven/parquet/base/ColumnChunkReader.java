@@ -3,14 +3,16 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public interface ColumnChunkReader {
     /**
@@ -36,15 +38,33 @@ public interface ColumnChunkReader {
     OffsetIndex getOffsetIndex();
 
     /**
+     * Used to iterate over column page readers for each page with the capability to set channel context to for reading
+     * the pages.
+     */
+    interface ColumnPageReaderIterator extends Iterator<ColumnPageReader> {
+
+        /**
+         * Set the {@code channelContext} to be used only for a single {@code next()} call. If not set,
+         * {@code SeekableChannelsProvider.ChannelContext.NULL} will be used
+         */
+        void setChannelContext(final SeekableChannelsProvider.ChannelContext channelContext);
+
+        default void clearChannelContext() {
+            setChannelContext(SeekableChannelsProvider.ChannelContext.NULL);
+        }
+    }
+
+    /**
      * @return An iterator over individual parquet pages
      */
-    Iterator<ColumnPageReader> getPageIterator() throws IOException;
+    ColumnPageReaderIterator getPageIterator() throws IOException;
 
     interface ColumnPageDirectAccessor {
         /**
          * Directly access a page reader for a given page number.
          */
-        ColumnPageReader getPageReader(final int pageNum);
+        ColumnPageReader getPageReader(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
+                final int pageNum);
     }
 
     /**
@@ -61,7 +81,7 @@ public interface ColumnChunkReader {
      * @return Supplier for a Parquet dictionary for this column chunk
      * @apiNote The result will never return {@code null}. It will instead supply {@link #NULL_DICTIONARY}.
      */
-    Supplier<Dictionary> getDictionarySupplier();
+    Function<SeekableChannelsProvider.ChannelContext, Dictionary> getDictionarySupplier();
 
     Dictionary NULL_DICTIONARY = new NullDictionary();
 
@@ -85,4 +105,9 @@ public interface ColumnChunkReader {
      */
     @Nullable
     String getVersion();
+
+    /**
+     * Create a new channel context for this column chunk reader.
+     */
+    SeekableChannelsProvider.ChannelContext makeChannelContext();
 }

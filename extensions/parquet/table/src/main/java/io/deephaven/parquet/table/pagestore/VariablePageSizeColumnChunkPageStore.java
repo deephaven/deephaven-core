@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
@@ -17,7 +18,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.Iterator;
 
 final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
@@ -29,7 +29,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     private volatile int numPages = 0;
     private volatile long[] pageRowOffsets;
     private volatile ColumnPageReader[] columnPageReaders;
-    private final Iterator<ColumnPageReader> columnPageReaderIterator;
+    private final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
     VariablePageSizeColumnChunkPageStore(
@@ -51,11 +51,12 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
     }
 
-    private void extendOnePage(final int prevNumPages) {
+    private void extendOnePage(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
+            final int prevNumPages) {
         PageCache.IntrusivePage<ATTR> page = null;
 
         synchronized (this) {
-            int localNumPages = numPages;
+            final int localNumPages = numPages;
 
             // Make sure that no one has already extended to this page yet.
             if (localNumPages == prevNumPages) {
@@ -64,18 +65,19 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
                         "Parquet num rows and page iterator don't match, not enough pages.");
 
                 if (columnPageReaders.length == localNumPages) {
-                    int newSize = 2 * localNumPages;
+                    final int newSize = 2 * localNumPages;
 
                     pageRowOffsets = Arrays.copyOf(pageRowOffsets, newSize + 1);
                     columnPageReaders = Arrays.copyOf(columnPageReaders, newSize);
                     pages = Arrays.copyOf(pages, newSize);
                 }
 
+                columnPageReaderIterator.setChannelContext(channelContext);
                 final ColumnPageReader columnPageReader = columnPageReaderIterator.next();
 
                 long numRows;
                 WeakReference<PageCache.IntrusivePage<ATTR>> pageRef = PageCache.getNullPage();
-                long prevRowOffset = pageRowOffsets[localNumPages];
+                final long prevRowOffset = pageRowOffsets[localNumPages];
 
                 try {
                     numRows = columnPageReader.numRows();
@@ -85,10 +87,12 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
                         pageRef = new WeakReference<>(page);
                         numRows = page.getPage().size();
                     }
-                } catch (IOException except) {
+                } catch (final IOException except) {
                     throw new UncheckedIOException(except);
                 }
 
+                // Clear out the context to avoid retaining old copies
+                columnPageReader.clearChannelContext();
                 columnPageReaders[localNumPages] = columnPageReader;
                 pages[localNumPages] = pageRef;
                 pageRowOffsets[localNumPages + 1] = prevRowOffset + numRows;
@@ -101,19 +105,21 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         }
     }
 
-    private int fillToRow(int minPageNum, long row) {
+    private int fillToRow(@NotNull final SeekableChannelsProvider.ChannelContext channelContext, int minPageNum,
+            long row) {
         int localNumPages = numPages;
 
         while (row >= pageRowOffsets[localNumPages]) {
             minPageNum = localNumPages;
-            extendOnePage(localNumPages);
+            extendOnePage(channelContext, localNumPages);
             localNumPages = numPages;
         }
 
         return minPageNum;
     }
 
-    private ChunkPage<ATTR> getPage(final int pageNum) {
+    private ChunkPage<ATTR> getPage(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
+            final int pageNum) {
         PageCache.IntrusivePage<ATTR> page = pages[pageNum].get();
 
         if (page == null) {
@@ -123,8 +129,13 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
                 if (page == null) {
                     try {
+                        // Use the latest context while reading the page
+                        final ColumnPageReader columnPageReader = columnPageReaders[pageNum];
+                        columnPageReader.setChannelContext(channelContext);
                         page = new PageCache.IntrusivePage<>(
                                 toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
+                        // Clear out the context to avoid retaining old copies
+                        columnPageReader.clearChannelContext();
                     } catch (IOException except) {
                         throw new UncheckedIOException(except);
                     }
@@ -144,7 +155,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     @NotNull
     public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
         rowKey &= mask();
-        Require.inRange(rowKey - pageRowOffsets[0], "row", numRows(), "numRows");
+        Require.inRange(rowKey - pageRowOffsets[0], "rowKey", numRows(), "numRows");
 
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, rowKey);
@@ -153,8 +164,12 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
             pageNum = -2 - pageNum;
         }
 
+        // Use the latest channel context while reading page headers
+        innerFillContext(fillContext);
+        final SeekableChannelsProvider.ChannelContext channelContext = getChannelContext(fillContext);
+
         if (pageNum >= localNumPages) {
-            int minPageNum = fillToRow(localNumPages, rowKey);
+            final int minPageNum = fillToRow(channelContext, localNumPages, rowKey);
             localNumPages = numPages;
             pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, rowKey);
 
@@ -163,6 +178,6 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
             }
         }
 
-        return getPage(pageNum);
+        return getPage(channelContext, pageNum);
     }
 }
