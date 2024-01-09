@@ -312,14 +312,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
                 settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
             } catch (Exception err) {
-                if (err instanceof QueryScope.MissingVariableException) {
-                    if (!ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE.getAndSet(true)) {
-                        log.error().append("Autocomplete package not found; disabling autocomplete.").endl();
-                        log.error().append("Add the jvm flag '-D").append(DISABLE_AUTOCOMPLETE_FLAG)
-                                .append("=true' to disable this message.").endl();
-                    }
-                } else {
-                    log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                if (!ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE.getAndSet(true)) {
+                    log.error().append("Autocomplete package not found; disabling autocomplete.").endl();
+                    log.error().append("Do you need to install the autocomplete package?").endl();
+                    log.error().append("    pip install deephaven-core[autocomplete]==<version>").endl();
+                    log.error().append("Add the jvm flag '-D").append(DISABLE_AUTOCOMPLETE_FLAG)
+                            .append("=true' to disable this message.").endl();
                 }
             }
             boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
