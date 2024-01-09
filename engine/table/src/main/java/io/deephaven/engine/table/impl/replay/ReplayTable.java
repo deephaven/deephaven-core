@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.Map;
 
-public final class ReplayTable extends QueryTable implements Runnable {
+public class ReplayTable extends QueryTable implements Runnable {
     /**
      * Creates a new ReplayTable based on a row set, set of column sources, time column, and a replayer
      */
