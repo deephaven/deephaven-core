@@ -3,7 +3,7 @@ import typing
 import jpy
 import numpy
 
-from deephaven import numpy as dhnp, dtypes
+from deephaven import dtypes
 from deephaven.dtypes import DType
 from deephaven.table import Table
 
@@ -148,7 +148,7 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
     def _convert_keys_seq_for_java(self, data_keys: typing.Sequence, key_dtype: DType) -> typing.Sequence:
         if type(data_keys) is numpy.ndarray:
             # Some types (e.g. bool/DateTime) have special handling for numpy:
-            return dhnp._np_to_dh_seq(key_dtype, data_keys)
+            return dtypes.array(key_dtype, data_keys)
         else:
             return data_keys
 
