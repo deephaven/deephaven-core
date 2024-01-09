@@ -653,19 +653,10 @@ public class SessionState {
             dependentCount = parents.size();
             for (final ExportObject<?> parent : parents) {
                 if (parent != null && !tryManage(parent)) {
+                    // we've failed; let's cleanup already managed parents
+                    forceReferenceCountToZero();
                     alreadyDeadParent = parent;
                     break;
-                }
-            }
-
-            if (alreadyDeadParent != null) {
-                // no point in holding references to other parents any longer; we've already failed
-                for (final ExportObject<?> parent : parents) {
-                    if (parent == alreadyDeadParent) {
-                        break;
-                    } else if (parent != null) {
-                        unmanage(parent);
-                    }
                 }
             }
 
