@@ -901,8 +901,8 @@ public class SessionState {
                 return;
             }
 
-            // Is this a cascading failure? Note that we increment the parent reference count in `setDependencies` which
-            // keeps the result live until all children have been exported. This means that the parent is allowed to
+            // Is this a cascading failure? Note that we manage the parents in `setDependencies` which
+            // keeps the parent results live until this child been exported. This means that the parent is allowed to
             // be in a RELEASED state, but is not allowed to be in a failure state.
             if (parent != null && isExportStateFailure(parent.state)) {
                 onDependencyFailure(parent);
