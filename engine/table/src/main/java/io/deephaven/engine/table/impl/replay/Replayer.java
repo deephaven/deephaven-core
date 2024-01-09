@@ -190,8 +190,8 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (dataSource.isRefreshing()) {
             dataSource = dataSource.snapshot();
         }
-        final ReplayTable result =
-                new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
+        final ReplayTable result = new ReplayTable(
+                dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this, updateGraph);
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
             updateGraph.addSource(result);

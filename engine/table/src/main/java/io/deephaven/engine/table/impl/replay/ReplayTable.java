@@ -8,22 +8,23 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.Map;
 
-public class ReplayTable extends QueryTable implements Runnable {
+public final class ReplayTable extends QueryTable implements Runnable {
     /**
      * Creates a new ReplayTable based on a row set, set of column sources, time column, and a replayer
      */
     private final Replayer replayer;
+    private final UpdateSourceRegistrar updateSourceRegistrar;
     private final ColumnSource<Long> nanoTimeSource;
     private final RowSet.Iterator rowSetIterator;
 
     private long nextRowKey = RowSequence.NULL_ROW_KEY;
-    private long currentTimeNanos = QueryConstants.NULL_LONG;
     private long nextTimeNanos = QueryConstants.NULL_LONG;
     private boolean done;
 
@@ -31,9 +32,11 @@ public class ReplayTable extends QueryTable implements Runnable {
             @NotNull final RowSet rowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> columns,
             @NotNull final String timeColumn,
-            @NotNull final Replayer replayer) {
+            @NotNull final Replayer replayer,
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar) {
         super(RowSetFactory.empty().toTracking(), columns);
         this.replayer = Require.neqNull(replayer, "replayer");
+        this.updateSourceRegistrar = updateSourceRegistrar;
         // NB: This will behave incorrectly if our row set or any data in columns can change. Our source table *must*
         // be static. We also seem to be assuming that timeSource has no null values in rowSet. It would be nice to use
         // a column iterator for this, but that would upset unit tests by keeping pooled chunks across cycles.
@@ -60,7 +63,7 @@ public class ReplayTable extends QueryTable implements Runnable {
     private void advanceIterators() {
         if (rowSetIterator.hasNext()) {
             nextRowKey = rowSetIterator.nextLong();
-            currentTimeNanos = nextTimeNanos;
+            final long currentTimeNanos = nextTimeNanos;
             nextTimeNanos = nanoTimeSource.getLong(nextRowKey);
             if (nextTimeNanos == QueryConstants.NULL_LONG || nextTimeNanos < currentTimeNanos) {
                 throw new RuntimeException(
@@ -91,12 +94,19 @@ public class ReplayTable extends QueryTable implements Runnable {
         if (done) {
             return;
         }
-        final RowSet added = advanceToCurrentTime();
-        if (added.isNonempty()) {
-            getRowSet().writableCast().insert(added);
-            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
-        } else {
-            added.close();
+        try {
+            final RowSet added = advanceToCurrentTime();
+            if (added.isNonempty()) {
+                getRowSet().writableCast().insert(added);
+                notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+            } else {
+                added.close();
+            }
+        } catch (final Exception err) {
+            updateSourceRegistrar.removeSource(this);
+
+            // propagate the error to our listeners
+            notifyListenersOnError(err, null);
         }
     }
 }
