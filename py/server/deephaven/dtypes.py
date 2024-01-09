@@ -205,6 +205,19 @@ _J_ARRAY_NP_TYPE_MAP = {
     instant_array.j_type: np.dtype("datetime64[ns]"),
 }
 
+_NP_TYPE_CHAR_JNI_TYPE_SIG_MAP = {
+    "?": "Z",
+    "b": "B",
+    "h": "S",
+    "H": "C",
+    "i": "I",
+    "l": "J",
+    "f": "F",
+    "d": "D",
+    "U": "Ljava/lang/String;",
+    "M": "Ljava/time/Instant;",
+    # "O": "Lorg/jpy/PyObject;",
+}
 
 def null_remap(dtype: DType) -> Callable[[Any], Any]:
     """ Creates a null value remap function for the provided DType.
@@ -304,13 +317,19 @@ def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = N
         raise DHError(e, f"failed to create a Java {dtype.j_name} array.") from e
 
 
-def from_jtype(j_class: Any) -> DType:
+def from_jtype(j_class: jpy.JType) -> DType:
     """ looks up a DType that matches the java type, if not found, creates a DType for it. """
     if not j_class:
         return None
 
-    j_name = j_class.getName()
+    # if it is a primitive type
+    if hasattr(j_class, "getName"):
+        j_name = j_class.getName()
+    else:
+        j_name = j_class.__qualname__
+
     dtype = _j_name_type_map.get(j_name)
+
     if not dtype:
         return DType(j_name=j_name, j_type=j_class, np_type=np.object_)
     else:

@@ -305,10 +305,11 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
 
     return s
 
-def _np_array_to_j_array(np_array: np.ndarray) -> Union[jpy.JType | np.ndarray]:
-    """Convert a multidimensional numpy array to a Java array of the same shape and type.
+def _np_array_to_j_array(dtype: dtypes.DType, np_array: np.ndarray) -> Union[jpy.JType | np.ndarray]:
+    """Convert a multidimensional numpy array to a Java array of the same shape based on the given dtype.
 
     Args:
+        dtype (dtypes.DType): The dtype of the Java array, if None, it will be inferred from the numpy array
         np_array (np.ndarray): The numpy array to convert
 
     Returns:
@@ -320,7 +321,9 @@ def _np_array_to_j_array(np_array: np.ndarray) -> Union[jpy.JType | np.ndarray]:
     if np_array is None:
         return None
 
-    dtype = dtypes.from_np_dtype(np_array.dtype)
+    if not dtype:
+        dtype = dtypes.from_np_dtype(np_array.dtype)
+
     array_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dtype, None)
     if array_dtype:
         j_type_char = array_dtype.j_name[-1]

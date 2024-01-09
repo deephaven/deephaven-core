@@ -19,7 +19,7 @@ import jpy
 from deephaven import DHError, dtypes
 from deephaven.dtypes import _np_ndarray_component_type, _np_dtype_char, _NUMPY_INT_TYPE_CODES, \
     _NUMPY_FLOATING_TYPE_CODES, _component_np_dtype_char, _J_ARRAY_NP_TYPE_MAP, _PRIMITIVE_DTYPE_NULL_MAP, _scalar, \
-    _BUILDABLE_ARRAY_DTYPE_MAP
+    _BUILDABLE_ARRAY_DTYPE_MAP, _NP_TYPE_CHAR_JNI_TYPE_SIG_MAP
 from deephaven.jcompat import _j_array_to_np_array, _np_array_to_j_array
 from deephaven.time import to_np_datetime64
 
@@ -204,11 +204,11 @@ def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufun
                 p_sig.params.append(pa)
 
             if output_decl:
-                if (',' in output_decl) or (len(output_decl) > 1):
-                    p_sig.ret_annotation.has_array = False
-                    p_sig.ret_annotation.encoded_type = "O"
-                else:
-                    p_sig.ret_annotation.has_array = True
+                p_sig.ret_annotation.has_array = True
+                component_type = p_sig.ret_annotation.encoded_type
+                p_sig.ret_annotation.encoded_type = "[" * (output_decl.count(",") + 1) + component_type
+            else:
+                p_sig.ret_annotation.has_array = False
         return p_sig
     else:
         raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")
@@ -373,17 +373,25 @@ def _py_udf(fn: Callable):
         if return_array:
             # TODO handle explicitly defined ndim/shape (numba@guvectorize or DH's own version of such an annotation)
             #  multidimensional arrays
+            if isinstance(ret, np.ndarray):
+                return _np_array_to_j_array(ret_dtype, ret)
             return dtypes.array(ret_dtype, ret)
         elif ret_dtype == dtypes.PyObject:
             # this handles the use case where the return type is not annotated, but the function returns a numpy array
             if isinstance(ret, np.ndarray):
-                return _np_array_to_j_array(ret)
+                return _np_array_to_j_array(None, ret)
             return ret
         else:
             return _scalar(ret, ret_dtype)
 
     wrapper.j_name = ret_dtype.j_name
-    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
+    if return_array:
+        ndim = p_sig.ret_annotation.encoded_type.count("[")
+        ret_np_char = p_sig.ret_annotation.encoded_type[-1]
+        j_sig_char = _NP_TYPE_CHAR_JNI_TYPE_SIG_MAP.get(ret_np_char)
+        real_ret_dtype = dtypes.from_jtype(jpy.get_type("[" * ndim + j_sig_char)) if j_sig_char else dtypes.PyObject
+    else:
+        real_ret_dtype = ret_dtype
 
     if hasattr(ret_dtype.j_type, 'jclass'):
         j_class = real_ret_dtype.j_type.jclass

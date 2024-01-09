@@ -98,17 +98,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             for i in range(x.shape[0]):
                 res[i] = x[i] + 5
 
-        # print("----1d in, 2d out ---")
-        # a = np.arange(6)
-        # print(a)
-        # print(g(a))
-        # print("----2d in, 3d out ---")
-        # b = a.reshape(2, 3)
-        # print(b)
-        # print(g(b))
-
         t = (empty_table(100).update(["X=i%10", "Y=ii"]).group_by("X")
-             # .update("X = X %3").group_by("X")
              .update("Z=(long[][])g(Y)"))
         self.assertEqual(t.columns[2].data_type, dtypes.from_jtype(jpy.get_type("[" * 2 + "J").jclass))
 

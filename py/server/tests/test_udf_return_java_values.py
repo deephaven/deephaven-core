@@ -212,7 +212,7 @@ foo = Foo()
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f()"])
-        self.assertIn("not support multi-dimensional arrays", str(cm.exception))
+        self.assertIn("java.lang.ClassCastException: class [[J cannot be cast to class [J", str(cm.exception))
 
     def test_npt_NDArray_return_type(self):
         def f() -> npt.NDArray[np.int64]:
