@@ -68,13 +68,13 @@ public class ArrowToTableConverter {
         return mi;
     }
 
-    /**
-     * The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the return
-     * of this method. Until jpy-consortium/jpy#126 is resolved, we need to copy the input ByteBuffer to a new
-     * ByteBuffer instance that is safe to use after the return of this method.
-     */
     @ScriptApi
     public synchronized void setSchema(final ByteBuffer ipcMessage) {
+        // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
+        // return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy the data
+        // out of
+        // the input ByteBuffer to use after the return of this method.
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
@@ -85,25 +85,25 @@ public class ArrowToTableConverter {
         parseSchema((Schema) mi.header.header(new Schema()));
     }
 
-    /**
-     * The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the return
-     * of this method. Until jpy-consortium/jpy#126 is resolved, we need to copy the input ByteBuffer to a new
-     * ByteBuffer instance that is safe to use after the return of this method.
-     */
     @ScriptApi
     public synchronized void addRecordBatches(final ByteBuffer... ipcMessages) {
+        // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
+        // return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy the data
+        // out of
+        // the input ByteBuffer to use after the return of this method.
         for (final ByteBuffer ipcMessage : ipcMessages) {
             addRecordBatch(ipcMessage);
         }
     }
 
-    /**
-     * The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the return
-     * of this method. Until jpy-consortium/jpy#126 is resolved, we need to copy the input ByteBuffer to a new
-     * ByteBuffer instance that is safe to use after the return of this method.
-     */
     @ScriptApi
     public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
+        // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
+        // return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy the data
+        // out of
+        // the input ByteBuffer to use after the return of this method.
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
@@ -142,6 +142,9 @@ public class ArrowToTableConverter {
     }
 
     protected void parseSchema(final Schema header) {
+        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
+        // the header to use after the return of this method.
         if (resultTable != null) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
@@ -160,6 +163,9 @@ public class ArrowToTableConverter {
     }
 
     protected BarrageMessage createBarrageMessage(BarrageProtoUtil.MessageInfo mi, int numColumns) {
+        // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be assumed to be valid
+        // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need
+        // to make a copy of it to use after the return of this method.
         final BarrageMessage msg = new BarrageMessage();
         final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
 
