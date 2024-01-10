@@ -71,10 +71,8 @@ public class ArrowToTableConverter {
     @ScriptApi
     public synchronized void setSchema(final ByteBuffer ipcMessage) {
         // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
-        // return
-        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy the data
-        // out of
-        // the input ByteBuffer to use after the return of this method.
+        // return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy
+        // the data out of the input ByteBuffer to use after the return of this method.
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
@@ -88,10 +86,8 @@ public class ArrowToTableConverter {
     @ScriptApi
     public synchronized void addRecordBatches(final ByteBuffer... ipcMessages) {
         // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
-        // return
-        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy the data
-        // out of
-        // the input ByteBuffer to use after the return of this method.
+        // return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy
+        // the data out of the input ByteBuffer to use after the return of this method.
         for (final ByteBuffer ipcMessage : ipcMessages) {
             addRecordBatch(ipcMessage);
         }
@@ -100,10 +96,8 @@ public class ArrowToTableConverter {
     @ScriptApi
     public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
         // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
-        // return
-        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy the data
-        // out of
-        // the input ByteBuffer to use after the return of this method.
+        // return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to copy
+        // the data out of the input ByteBuffer to use after the return of this method.
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
