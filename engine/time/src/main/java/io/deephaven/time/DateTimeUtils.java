@@ -433,8 +433,7 @@ public class DateTimeUtils {
         synchronized void update(final long currentTimeMillis) {
             date = toLocalDate(epochMillisToInstant(currentTimeMillis), timeZone);
             str = formatDate(date);
-            valueExpirationTimeMillis =
-                    epochMillis(atMidnight(epochMillisToZonedDateTime(currentTimeMillis, timeZone)).plusDays(1));
+            valueExpirationTimeMillis = epochMillis(date.plusDays(1).atStartOfDay(timeZone));
         }
     }
 
@@ -449,6 +448,10 @@ public class DateTimeUtils {
 
     private static final KeyedObjectHashMap<ZoneId, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
+
+    private static CachedCurrentDate getCachedCurrentDate(@NotNull final ZoneId timeZone) {
+        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new);
+    }
 
     /**
      * Provides the current date string according to the {@link #currentClock() current clock}. Under most
@@ -468,7 +471,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getStr();
+        return getCachedCurrentDate(timeZone).getStr();
     }
 
     /**
@@ -485,6 +488,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
+        //noinspection ConstantConditions
         return today(DateTimeUtils.timeZone());
     }
 
@@ -506,7 +510,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).getLocalDate();
+        return getCachedCurrentDate(timeZone).getLocalDate();
     }
 
     /**
@@ -523,6 +527,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static LocalDate todayLocalDate() {
+        //noinspection ConstantConditions
         return todayLocalDate(DateTimeUtils.timeZone());
     }
 
