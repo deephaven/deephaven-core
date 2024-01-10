@@ -48,7 +48,7 @@ public class ArrowToTableConverter {
 
     private volatile boolean completed = false;
 
-    private BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) throws IOException {
+    private static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) throws IOException {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
 
         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -68,6 +68,11 @@ public class ArrowToTableConverter {
         return mi;
     }
 
+    /**
+     * The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the return
+     * of this method. Until jpy-consortium/jpy#126 is resolved, we need to copy the input ByteBuffer to a new
+     * ByteBuffer instance that is safe to use after the return of this method.
+     */
     @ScriptApi
     public synchronized void setSchema(final ByteBuffer ipcMessage) {
         if (completed) {
@@ -80,6 +85,11 @@ public class ArrowToTableConverter {
         parseSchema((Schema) mi.header.header(new Schema()));
     }
 
+    /**
+     * The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the return
+     * of this method. Until jpy-consortium/jpy#126 is resolved, we need to copy the input ByteBuffer to a new
+     * ByteBuffer instance that is safe to use after the return of this method.
+     */
     @ScriptApi
     public synchronized void addRecordBatches(final ByteBuffer... ipcMessages) {
         for (final ByteBuffer ipcMessage : ipcMessages) {
@@ -87,6 +97,11 @@ public class ArrowToTableConverter {
         }
     }
 
+    /**
+     * The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the return
+     * of this method. Until jpy-consortium/jpy#126 is resolved, we need to copy the input ByteBuffer to a new
+     * ByteBuffer instance that is safe to use after the return of this method.
+     */
     @ScriptApi
     public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
         if (completed) {
