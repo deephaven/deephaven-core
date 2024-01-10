@@ -1214,14 +1214,15 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] businessDates(final String start, final String end, final boolean startInclusive,
+    public String[] businessDates(final String start, final String end, final boolean startInclusive,
             final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
 
-        return businessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
+        final LocalDate[] dates = businessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
                 endInclusive);
+        return dates == null ? null : Arrays.stream(dates).map(DateTimeUtils::formatDate).toArray(String[]::new);
     }
 
     /**
@@ -1287,7 +1288,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] businessDates(final String start, final String end) {
+    public String[] businessDates(final String start, final String end) {
         return businessDates(start, end, true, true);
     }
 
@@ -1357,14 +1358,15 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] nonBusinessDates(final String start, final String end, final boolean startInclusive,
+    public String[] nonBusinessDates(final String start, final String end, final boolean startInclusive,
             final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
 
-        return nonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
+        final LocalDate[] dates = nonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
                 endInclusive);
+        return dates == null ? null : Arrays.stream(dates).map(DateTimeUtils::formatDate).toArray(String[]::new);
     }
 
     /**
@@ -1430,7 +1432,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the dates are not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] nonBusinessDates(final String start, final String end) {
+    public String[] nonBusinessDates(final String start, final String end) {
         return nonBusinessDates(start, end, true, true);
     }
 
@@ -1748,12 +1750,13 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate plusBusinessDays(final String date, final int days) {
+    public String plusBusinessDays(final String date, final int days) {
         if (date == null || days == NULL_INT) {
             return null;
         }
 
-        return plusBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        final LocalDate d = plusBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        return d == null ? null : d.toString();
     }
 
     /**
@@ -1840,7 +1843,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate minusBusinessDays(final String date, final int days) {
+    public String minusBusinessDays(final String date, final int days) {
         if (date == null || days == NULL_INT) {
             return null;
         }
@@ -1939,12 +1942,13 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate plusNonBusinessDays(final String date, final int days) {
+    public String plusNonBusinessDays(final String date, final int days) {
         if (date == null || days == NULL_INT) {
             return null;
         }
 
-        return this.plusNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        final LocalDate d = this.plusNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        return d == null ? null : d.toString();
     }
 
     /**
@@ -2034,7 +2038,7 @@ public class BusinessCalendar extends Calendar {
      * @throws InvalidDateException if the date is not in the valid range
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate minusNonBusinessDays(final String date, final int days) {
+    public String minusNonBusinessDays(final String date, final int days) {
         if (date == null || days == NULL_INT) {
             return null;
         }
