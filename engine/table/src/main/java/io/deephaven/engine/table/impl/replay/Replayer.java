@@ -62,6 +62,8 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void start() {
         deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - DateTimeUtils.epochNanos(startTime);
+        // Note: ReplayTables are allowed to run in parallel with this Replayer. However, we may wish to use an
+        // UpdateSourceCombiner to ensure that all of these tables are refreshed as a unit.
         updateGraph.addSource(sourceRefresher);
         for (ReplayTableBase currentTable : currentTables) {
             currentTable.start();

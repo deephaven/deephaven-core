@@ -4,20 +4,25 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 public abstract class InstrumentedUpdateSource implements Runnable {
 
-    protected final UpdateGraph updateGraph;
+    protected final UpdateSourceRegistrar updateSourceRegistrar;
     @Nullable
     protected final PerformanceEntry entry;
 
-    public InstrumentedUpdateSource(final UpdateGraph updateGraph, final String description) {
-        this.updateGraph = updateGraph;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, description);
+    public InstrumentedUpdateSource(
+            @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
+            @Nullable final String description) {
+        this.updateSourceRegistrar = Objects.requireNonNull(updateSourceRegistrar);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(
+                updateSourceRegistrar.getUpdateGraph(), description);
     }
 
     @Override
@@ -28,7 +33,7 @@ public abstract class InstrumentedUpdateSource implements Runnable {
         try {
             instrumentedRefresh();
         } catch (final Exception error) {
-            updateGraph.removeSource(this);
+            updateSourceRegistrar.removeSource(this);
             onRefreshError(error);
         } finally {
             if (entry != null) {

@@ -161,7 +161,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     private class SourceRefresher extends InstrumentedTableUpdateSource {
 
         public SourceRefresher() {
-            super(TimeTable.this, name);
+            super(registrar, TimeTable.this, name);
         }
 
         @Override

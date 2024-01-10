@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,9 +17,16 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
 
-    public InstrumentedTableUpdateSource(final BaseTable<?> table, final String description) {
-        super(table.getUpdateGraph(), description);
+    public InstrumentedTableUpdateSource(
+            final UpdateSourceRegistrar updateSourceRegistrar,
+            final BaseTable<?> table,
+            final String description) {
+        super(updateSourceRegistrar, description);
         tableReference = new WeakReference<>(table);
+    }
+
+    public InstrumentedTableUpdateSource(final BaseTable<?> table, final String description) {
+        this(table.getUpdateGraph(), table, description);
     }
 
     @Override
@@ -28,7 +36,7 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
             return;
         }
 
-        if (table.satisfied(updateGraph.clock().currentStep())) {
+        if (table.satisfied(updateSourceRegistrar.getUpdateGraph().clock().currentStep())) {
             // If the result is already satisfied (because it managed to send its notification, or was otherwise
             // satisfied) we should not send our error notification on this cycle.
             if (!table.isFailed()) {
@@ -37,6 +45,7 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
             }
         } else {
             table.notifyListenersOnError(error, entry);
+            table.forceReferenceCountToZero();
         }
     }
 }
