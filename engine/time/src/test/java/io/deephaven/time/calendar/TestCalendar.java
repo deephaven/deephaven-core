@@ -180,7 +180,8 @@ public class TestCalendar extends BaseArrayTestCase {
         final LocalDate end = LocalDate.of(2023, 2, 5);
 
         assertEquals(new LocalDate[] {start, middle, end}, calendar.calendarDates(start, end));
-        assertEquals(new String[] {start.toString(), middle.toString(), end.toString()}, calendar.calendarDates(start.toString(), end.toString()));
+        assertEquals(new String[] {start.toString(), middle.toString(), end.toString()},
+                calendar.calendarDates(start.toString(), end.toString()));
         assertEquals(new LocalDate[] {start, middle, end},
                 calendar.calendarDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
         assertEquals(new LocalDate[] {start, middle, end}, calendar.calendarDates(
@@ -205,7 +206,8 @@ public class TestCalendar extends BaseArrayTestCase {
                         end.atTime(1, 24).atZone(timeZone).toInstant(), false, true));
 
         assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start, end, false, false));
-        assertEquals(new String[] {middle.toString()}, calendar.calendarDates(start.toString(), end.toString(), false, false));
+        assertEquals(new String[] {middle.toString()},
+                calendar.calendarDates(start.toString(), end.toString(), false, false));
         assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone),
                 end.atTime(1, 24).atZone(timeZone), false, false));
         assertEquals(new LocalDate[] {middle}, calendar.calendarDates(start.atTime(1, 24).atZone(timeZone).toInstant(),

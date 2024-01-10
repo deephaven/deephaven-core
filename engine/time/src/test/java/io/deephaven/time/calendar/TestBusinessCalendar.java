@@ -644,14 +644,17 @@ public class TestBusinessCalendar extends TestCalendar {
         };
 
         assertEquals(bus, bCalendar.businessDates(start, end));
-        assertEquals(Arrays.stream(bus).map(DateTimeUtils::formatDate).toArray(String[]::new), bCalendar.businessDates(start.toString(), end.toString()));
+        assertEquals(Arrays.stream(bus).map(DateTimeUtils::formatDate).toArray(String[]::new),
+                bCalendar.businessDates(start.toString(), end.toString()));
         assertEquals(bus,
                 bCalendar.businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
         assertEquals(bus, bCalendar.businessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                 end.atTime(1, 24).atZone(timeZone).toInstant()));
 
         assertEquals(Arrays.copyOfRange(bus, 0, bus.length - 1), bCalendar.businessDates(start, end, true, false));
-        assertEquals(Arrays.stream(Arrays.copyOfRange(bus, 0, bus.length - 1)).map(DateTimeUtils::formatDate).toArray(String[]::new),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(bus, 0, bus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.businessDates(start.toString(), end.toString(), true, false));
         assertEquals(Arrays.copyOfRange(bus, 0, bus.length - 1), bCalendar
                 .businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone), true, false));
@@ -660,7 +663,9 @@ public class TestBusinessCalendar extends TestCalendar {
                         end.atTime(1, 24).atZone(timeZone).toInstant(), true, false));
 
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length), bCalendar.businessDates(start, end, false, true));
-        assertEquals(Arrays.stream(Arrays.copyOfRange(bus, 1, bus.length)).map(DateTimeUtils::formatDate).toArray(String[]::new),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(bus, 1, bus.length)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.businessDates(start.toString(), end.toString(), false, true));
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length), bCalendar
                 .businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone), false, true));
@@ -669,7 +674,9 @@ public class TestBusinessCalendar extends TestCalendar {
                         end.atTime(1, 24).atZone(timeZone).toInstant(), false, true));
 
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length - 1), bCalendar.businessDates(start, end, false, false));
-        assertEquals(Arrays.stream(Arrays.copyOfRange(bus, 1, bus.length - 1)).map(DateTimeUtils::formatDate).toArray(String[]::new),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(bus, 1, bus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.businessDates(start.toString(), end.toString(), false, false));
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length - 1), bCalendar
                 .businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone), false, false));
@@ -779,7 +786,8 @@ public class TestBusinessCalendar extends TestCalendar {
         // };
 
         assertEquals(nonBus, bCalendar.nonBusinessDates(start, end));
-        assertEquals(Arrays.stream(nonBus).map(DateTimeUtils::formatDate).toArray(String[]::new), bCalendar.nonBusinessDates(start.toString(), end.toString()));
+        assertEquals(Arrays.stream(nonBus).map(DateTimeUtils::formatDate).toArray(String[]::new),
+                bCalendar.nonBusinessDates(start.toString(), end.toString()));
         assertEquals(nonBus,
                 bCalendar.nonBusinessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
         assertEquals(nonBus, bCalendar.nonBusinessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
@@ -787,7 +795,9 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length - 1], true, false));
-        assertEquals(Arrays.stream(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1)).map(DateTimeUtils::formatDate).toArray(String[]::new),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length - 1].toString(), true, false));
         assertEquals(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone),
@@ -798,7 +808,9 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length),
                 bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length - 1], false, true));
-        assertEquals(Arrays.stream(Arrays.copyOfRange(nonBus, 1, nonBus.length)).map(DateTimeUtils::formatDate).toArray(String[]::new),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(nonBus, 1, nonBus.length)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length - 1].toString(), false, true));
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone),
@@ -809,7 +821,9 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length - 1], false, false));
-        assertEquals(Arrays.stream(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1)).map(DateTimeUtils::formatDate).toArray(String[]::new),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length - 1].toString(), false, false));
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone),
