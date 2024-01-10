@@ -90,6 +90,7 @@ public class Calendar {
 
     // region Now
 
+    //TODO: should there be a string equivalent?
     /**
      * The current date for the calendar.
      *
@@ -118,6 +119,7 @@ public class Calendar {
         return DateTimeUtils.dayOfWeek(date);
     }
 
+    //TODO: should this return a String?
     /**
      * The current day of the week for the calendar.
      *
@@ -395,6 +397,7 @@ public class Calendar {
         return plusDays(time, -days);
     }
 
+    //TODO: should there be a string equivalent?
     /**
      * Adds a specified number of days to the current date. Adding negative days is equivalent to subtracting days.
      *
@@ -406,6 +409,7 @@ public class Calendar {
         return plusDays(calendarDate(), days);
     }
 
+    //TODO: should there be a string equivalent?
     /**
      * Subtracts a specified number of days from the current date. Subtracting negative days is equivalent to adding
      * days.
