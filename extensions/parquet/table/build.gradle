@@ -27,9 +27,6 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
-    implementation platform('software.amazon.awssdk:bom:2.21.43')
-    implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:aws-crt-client'
 
     Classpaths.inheritCommonsText(project, 'implementation')
 
