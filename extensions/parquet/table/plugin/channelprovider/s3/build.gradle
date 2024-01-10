@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':extensions-parquet-base')
+
+    implementation project(':Base')
+    implementation project(':Util')
+    implementation project(':extensions-parquet-table')
+
+    implementation platform('software.amazon.awssdk:bom:2.21.43')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:aws-crt-client'
+
+    compileOnly depAnnotations
+
+    Classpaths.inheritAutoService(project)
+}

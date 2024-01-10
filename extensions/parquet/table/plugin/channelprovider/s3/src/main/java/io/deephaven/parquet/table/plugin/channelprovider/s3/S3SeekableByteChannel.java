@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.util;
+package io.deephaven.parquet.table.plugin.channelprovider.s3;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
@@ -29,8 +29,8 @@ import java.util.concurrent.TimeoutException;
 
 
 /**
- * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability
- * to read ahead and cache fragments of the object.
+ * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability to
+ * read ahead and cache fragments of the object.
  */
 public final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
 
@@ -138,8 +138,8 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     private long position;
 
     S3SeekableByteChannel(@NotNull final SeekableChannelsProvider.ChannelContext context, @NotNull final URI uri,
-                          @NotNull final S3AsyncClient s3AsyncClient, final int fragmentSize, final int readAheadCount,
-                          final Duration readTimeout) {
+            @NotNull final S3AsyncClient s3AsyncClient, final int fragmentSize, final int readAheadCount,
+            final Duration readTimeout) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         this.bucket = s3Uri.bucket().orElse(null);
         this.key = s3Uri.key().orElse(null);
@@ -157,8 +157,9 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     public void setContext(@Nullable final SeekableChannelsProvider.ChannelContext context) {
         // null context equivalent to clearing the context
         if (context != null && !(context instanceof S3ChannelContext)) {
-            throw new IllegalArgumentException("context must be null or an instance of ChannelContext, provided context " +
-                    " of class " + context.getClass().getName());
+            throw new IllegalArgumentException(
+                    "context must be null or an instance of ChannelContext, provided context" +
+                            " of class " + context.getClass().getName());
         }
         this.context = (S3ChannelContext) context;
     }
@@ -193,7 +194,8 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         final int numFragmentsToLoad = Math.min(readAheadCount, numFragmentsInObject - currFragmentIndex - 1);
         for (int i = 0; i < numFragmentsToLoad; i++) {
             final int readAheadFragmentIndex = i + currFragmentIndex + 1;
-            final CompletableFuture<ByteBuffer> readAheadFragmentFuture = context.getCachedFuture(readAheadFragmentIndex);
+            final CompletableFuture<ByteBuffer> readAheadFragmentFuture =
+                    context.getCachedFuture(readAheadFragmentIndex);
             if (readAheadFragmentFuture == null) {
                 context.setFragmentContext(readAheadFragmentIndex, computeFragmentFuture(readAheadFragmentIndex));
             }
@@ -203,8 +205,10 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         final ByteBuffer currentFragment;
         try {
             currentFragment = currFragmentFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
-        }  catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-            final String operation = "fetching fragment " + currFragmentIndex + " for file " + key + " in S3 bucket " + bucket;
+        } catch (final InterruptedException | ExecutionException | TimeoutException
+                | java.util.concurrent.CancellationException e) {
+            final String operation =
+                    "fetching fragment " + currFragmentIndex + " for file " + key + " in S3 bucket " + bucket;
             throw handleS3Exception(e, operation);
         }
 
@@ -242,8 +246,8 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         } else if (e instanceof ExecutionException) {
             return new UncheckedDeephavenException("Execution exception occurred while " + operationDescription, e);
         } else if (e instanceof TimeoutException) {
-            return new UncheckedDeephavenException("Operation timeout while " + operationDescription + " after waiting " +
-                    "for duration " + readTimeout, e);
+            return new UncheckedDeephavenException("Operation timeout while " + operationDescription + " after waiting "
+                    + "for duration " + readTimeout, e);
         } else if (e instanceof CancellationException) {
             return new UncheckedDeephavenException("Cancelled an operation while " + operationDescription, e);
         }
@@ -275,7 +279,7 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     @Override
     public long size() throws ClosedChannelException {
         checkClosed(position);
-        if (size < 0){
+        if (size < 0) {
             populateSize();
         }
         return size;
@@ -288,14 +292,15 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
             try {
                 headObjectResponse = s3AsyncClient.headObject(builder -> builder.bucket(bucket).key(key))
                         .get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
-            }  catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+            } catch (final InterruptedException | ExecutionException | TimeoutException
+                    | java.util.concurrent.CancellationException e) {
                 final String operation = "fetching HEAD for file " + key + " in S3 bucket " + bucket;
                 throw handleS3Exception(e, operation);
             }
             context.setSize(headObjectResponse.contentLength().longValue());
         }
         this.size = context.getSize();
-        this.numFragmentsInObject = (int) ((size + fragmentSize - 1) / fragmentSize);  // = ceil(size / fragmentSize)
+        this.numFragmentsInObject = (int) ((size + fragmentSize - 1) / fragmentSize); // = ceil(size / fragmentSize)
     }
 
     @Override

@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.util;
+package io.deephaven.parquet.table.plugin.channelprovider.tracked;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.file.FileHandle;

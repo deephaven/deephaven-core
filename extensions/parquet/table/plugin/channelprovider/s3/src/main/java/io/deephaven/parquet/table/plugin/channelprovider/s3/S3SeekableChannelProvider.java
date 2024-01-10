@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.util;
+package io.deephaven.parquet.table.plugin.channelprovider.s3;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.table.S3Instructions;
@@ -11,7 +11,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -28,12 +27,11 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
     private final int readAheadCount;
     private final Duration readTimeout;
 
-    public S3SeekableChannelProvider(final S3Instructions s3Instructions) {
+    S3SeekableChannelProvider(final S3Instructions s3Instructions) {
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
                 .maxConcurrency(s3Instructions.maxConcurrentRequests())
                 .connectionTimeout(s3Instructions.connectionTimeout())
                 .build();
-        // TODO Should we cache and reuse the client object?
         this.s3AsyncClient = S3AsyncClient.builder()
                 .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
@@ -60,7 +58,7 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
         throw new UnsupportedOperationException("Don't support writing to S3 yet");
     }
 
-    public void close() throws IOException {
+    public void close() {
         s3AsyncClient.close();
     }
 }

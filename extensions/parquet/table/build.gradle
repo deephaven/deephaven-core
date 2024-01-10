@@ -17,12 +17,12 @@ sourceSets {
 dependencies {
     api project(':engine-api')
     api project(':engine-stringset')
+    api project(':engine-table')
 
     implementation project(':extensions-parquet-base')
     Classpaths.inheritParquetHadoop(project)
 
     implementation project(':engine-base')
-    implementation project(':engine-table')
     implementation project(':extensions-csv')
     implementation project(':log-factory')
     implementation project(':Configuration')
@@ -50,6 +50,9 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    implementation project(':plugin-trackedseekablechannel')
+    testRuntimeOnly project(':plugin-s3')
 
     brotliTestImplementation project(':extensions-parquet-table')
     brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')

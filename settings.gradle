@@ -274,6 +274,12 @@ project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
 
+include(':plugin-trackedseekablechannel')
+project(':plugin-trackedseekablechannel').projectDir = file('extensions/parquet/table/plugin/channelprovider/tracked')
+
+include(':plugin-s3')
+project(':plugin-s3').projectDir = file('extensions/parquet/table/plugin/channelprovider/s3')
+
 include(':uri')
 project(':uri').projectDir = file('java-client/uri')
 

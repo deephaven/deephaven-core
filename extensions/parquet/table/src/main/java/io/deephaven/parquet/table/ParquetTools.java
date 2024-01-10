@@ -7,7 +7,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -15,10 +14,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.parquet.table.util.S3SeekableChannelProvider;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelsProviderLoader;
+import io.deephaven.parquet.base.util.SeekableChannelsProviderPlugin;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SimpleSourceTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -30,7 +30,6 @@ import io.deephaven.parquet.table.layout.ParquetMetadataFileLayout;
 import io.deephaven.parquet.table.layout.ParquetSingleFileLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
-import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.util.SimpleTypeMap;
@@ -1163,22 +1162,15 @@ public class ParquetTools {
     public static ParquetFileReader getParquetFileReaderChecked(
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
-        if (S3_URI_SCHEME.equals(parquetFileURI.getScheme())) {
-            if (!(readInstructions.getSpecialInstructions() instanceof S3Instructions)) {
-                throw new IllegalArgumentException("Must provide S3Instructions to read files from S3");
-            }
-            final S3Instructions s3Instructions = (S3Instructions) readInstructions.getSpecialInstructions();
-            return new ParquetFileReader(parquetFileURI,
-                    new CachedChannelProvider(
-                            new S3SeekableChannelProvider(s3Instructions), 1 << 7));
+        final SeekableChannelsProvider provider;
+        if (parquetFileURI.getScheme() != null && !parquetFileURI.getScheme().equals(FILE_URI_SCHEME)) {
+            // Need additional instructions to read from non-local file systems
+            provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileURI,
+                    readInstructions.getSpecialInstructions());
+        } else {
+            provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileURI, null);
         }
-        Assert.assertion(parquetFileURI.getScheme() == null
-                || parquetFileURI.getScheme().equals(ParquetFileReader.FILE_URI_SCHEME),
-                "Expected uri scheme to be null or \"file\", got uri as " + parquetFileURI);
-        return new ParquetFileReader(
-                parquetFileURI,
-                new CachedChannelProvider(
-                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7));
+        return new ParquetFileReader(parquetFileURI, new CachedChannelProvider(provider, 1 << 7));
     }
 
     @VisibleForTesting
