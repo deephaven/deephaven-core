@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -74,7 +75,7 @@ public class ParquetTools {
 
     /**
      * Reads in a table from a single parquet, metadata file, or directory with recognized layout. The source provided
-     * can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
+     * can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}.
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -102,7 +103,7 @@ public class ParquetTools {
 
     /**
      * Reads in a table from a single parquet, metadata file, or directory with recognized layout. The source provided
-     * can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
+     * can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}.
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -683,14 +684,14 @@ public class ParquetTools {
             @NotNull final URI source,
             @NotNull final ParquetInstructions instructions) {
         final String scheme = source.getScheme();
-        if (scheme != null && !scheme.isEmpty() && !scheme.equals(FILE_URI_SCHEME)) {
+        if (scheme != null && !scheme.equals(FILE_URI_SCHEME)) {
             if (!scheme.equals(S3_URI_SCHEME)) {
                 throw new IllegalArgumentException(
                         "We only support reading single parquet file URI hosted on S3, but got " + source);
             }
             return readSingleFileTable(source, instructions);
         }
-        return readTableInternal(new File(source), instructions);
+        return readTableInternal(new File(source.getPath()), instructions);
     }
 
     private static boolean ignoreDotFiles(Path path) {
@@ -970,7 +971,7 @@ public class ParquetTools {
 
     /**
      * Creates a single table via the parquet {@code source} using the provided {@code tableDefinition}. The source
-     * provided can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
+     * provided can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}
      * <p>
      * Callers wishing to be more explicit (for example, to skip some columns) may prefer to call
      * {@link #readSingleFileTable(String, ParquetInstructions, TableDefinition)}.
@@ -1016,7 +1017,7 @@ public class ParquetTools {
 
     /**
      * Creates a single table via the parquet {@code source} using the provided {@code tableDefinition}. The source
-     * provided can be a local file path or can be a CLI-style AWS S3 URI, e.g., "s3://bucket/key".
+     * provided can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}
      *
      * @param source the path or URI for the parquet file
      * @param readInstructions the instructions for customizations while reading
@@ -1171,6 +1172,9 @@ public class ParquetTools {
                     new CachedChannelProvider(
                             new S3SeekableChannelProvider(s3Instructions), 1 << 7));
         }
+        Assert.assertion(parquetFileURI.getScheme() == null
+                || parquetFileURI.getScheme().equals(ParquetFileReader.FILE_URI_SCHEME),
+                "Expected uri scheme to be null or \"file\", got uri as " + parquetFileURI);
         return new ParquetFileReader(
                 parquetFileURI,
                 new CachedChannelProvider(

@@ -3,10 +3,12 @@
  */
 package io.deephaven.parquet.table.util;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
+import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,7 +52,9 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
     public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
-        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
+        Assert.assertion(uri.getScheme() == null || uri.getScheme().equals(ParquetFileReader.FILE_URI_SCHEME),
+                "Expected uri scheme to be null or \"file\", got uri as " + uri);
+        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri.getPath()));
     }
 
 

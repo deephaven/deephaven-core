@@ -166,6 +166,8 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     @Override
     public int read(@NotNull final ByteBuffer destination) throws ClosedChannelException {
         Assert.neqNull(context, "context");
+        Assert.neq(context, "context", SeekableChannelsProvider.ChannelContext.NULL,
+                "SeekableChannelsProvider.ChannelContext.NULL");
         if (!destination.hasRemaining()) {
             return 0;
         }

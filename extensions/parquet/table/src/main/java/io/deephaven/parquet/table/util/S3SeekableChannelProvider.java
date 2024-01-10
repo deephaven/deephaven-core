@@ -30,7 +30,7 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
 
     public S3SeekableChannelProvider(final S3Instructions s3Instructions) {
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
-                .maxConcurrency(Integer.valueOf(s3Instructions.maxConcurrentRequests()))
+                .maxConcurrency(s3Instructions.maxConcurrentRequests())
                 .connectionTimeout(s3Instructions.connectionTimeout())
                 .build();
         // TODO Should we cache and reuse the client object?

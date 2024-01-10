@@ -173,10 +173,23 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             return NULL_DICTIONARY;
         }
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, getURI())) {
-            readChannel.position(dictionaryPageOffset);
-            return readDictionary(readChannel);
-        } catch (IOException e) {
+        try {
+            if (channelContext == SeekableChannelsProvider.ChannelContext.NULL) {
+                // Create a new context object and use that for reading the dictionary
+                try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext();
+                        final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, getURI())) {
+                    readChannel.position(dictionaryPageOffset);
+                    return readDictionary(readChannel);
+                }
+            } else {
+                // Use the context object provided by the caller
+                try (final SeekableByteChannel readChannel =
+                        channelsProvider.getReadChannel(channelContext, getURI())) {
+                    readChannel.position(dictionaryPageOffset);
+                    return readDictionary(readChannel);
+                }
+            }
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }

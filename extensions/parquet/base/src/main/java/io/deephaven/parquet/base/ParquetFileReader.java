@@ -50,19 +50,12 @@ public class ParquetFileReader {
      * @return The URI object
      */
     public static URI convertToURI(final String source) {
-        final URI ret;
         try {
-            ret = new URI(source);
+            return new URI(source);
         } catch (final URISyntaxException e) {
-            throw new UncheckedDeephavenException("Failed to convert source string " + source + " to URI, we expect "
-                    + " either local file paths or CLI-style S3 URIs, e.g., \"s3://bucket/key\" as input", e);
+            // Assuming the source is a file path, resolve to get the absolute path and convert to URI
+            return new File(source).getAbsoluteFile().toURI();
         }
-        final String scheme = ret.getScheme();
-        if (scheme != null && !scheme.isEmpty()) {
-            return ret;
-        }
-        // Resolve to get an absolute file path and convert to URI
-        return new File(ret.getPath()).getAbsoluteFile().toURI();
     }
 
     public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)

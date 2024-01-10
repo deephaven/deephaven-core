@@ -1178,16 +1178,14 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
-        String destAbsolutePathStr = dest.getAbsolutePath();
+        final String destAbsolutePathStr = dest.getAbsolutePath();
         ParquetTools.writeTable(table, destAbsolutePathStr);
-        destAbsolutePathStr = destAbsolutePathStr.replace(" ", "%20");
         fromDisk = readSingleFileTable(destAbsolutePathStr, ParquetInstructions.EMPTY);
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
-        String destRelativePathStr = rootFile.getName() + "/" + parentDirName + "/" + parquetFileName;
+        final String destRelativePathStr = rootFile.getName() + "/" + parentDirName + "/" + parquetFileName;
         ParquetTools.writeTable(table, destRelativePathStr);
-        destRelativePathStr = destRelativePathStr.replace(" ", "%20");
         fromDisk = readSingleFileTable(destRelativePathStr, ParquetInstructions.EMPTY);
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
