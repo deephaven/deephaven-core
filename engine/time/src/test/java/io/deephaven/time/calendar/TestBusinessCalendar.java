@@ -1503,14 +1503,18 @@ public class TestBusinessCalendar extends TestCalendar {
     }
 
     public void testFutureBusinessDate() {
-        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), 3), bCalendar.futureBusinessDate(3));
-        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), -3), bCalendar.futureBusinessDate(-3));
+        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), 3),
+                bCalendar.futureBusinessDate(3));
+        assertEquals(bCalendar.plusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), -3),
+                bCalendar.futureBusinessDate(-3));
         assertNull(bCalendar.futureBusinessDate(NULL_INT));
     }
 
     public void testPastBusinessDate() {
-        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), 3), bCalendar.pastBusinessDate(3));
-        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), -3), bCalendar.pastBusinessDate(-3));
+        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), 3),
+                bCalendar.pastBusinessDate(3));
+        assertEquals(bCalendar.minusBusinessDays(DateTimeUtils.todayLocalDate(bCalendar.timeZone()), -3),
+                bCalendar.pastBusinessDate(-3));
         assertNull(bCalendar.pastBusinessDate(NULL_INT));
     }
 

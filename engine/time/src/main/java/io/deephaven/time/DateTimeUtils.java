@@ -488,7 +488,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         return today(DateTimeUtils.timeZone());
     }
 
@@ -527,7 +527,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static LocalDate todayLocalDate() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         return todayLocalDate(DateTimeUtils.timeZone());
     }
 
