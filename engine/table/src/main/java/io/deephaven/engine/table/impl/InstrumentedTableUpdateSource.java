@@ -22,6 +22,8 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
             final BaseTable<?> table,
             final String description) {
         super(updateSourceRegistrar, description);
+        // verify that the updateSourceRegistrar's update graph is the same as the table's update graph (if applicable)
+        updateSourceRegistrar.getUpdateGraph(table);
         tableReference = new WeakReference<>(table);
     }
 
