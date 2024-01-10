@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.Map;
 
-public class ReplayTable extends QueryTable implements Runnable {
+public class ReplayTable extends ReplayTableBase implements Runnable {
     /**
      * Creates a new ReplayTable based on a row set, set of column sources, time column, and a replayer
      */
@@ -23,7 +22,6 @@ public class ReplayTable extends QueryTable implements Runnable {
     private final RowSet.Iterator rowSetIterator;
 
     private long nextRowKey = RowSequence.NULL_ROW_KEY;
-    private long currentTimeNanos = QueryConstants.NULL_LONG;
     private long nextTimeNanos = QueryConstants.NULL_LONG;
     private boolean done;
 
@@ -32,7 +30,7 @@ public class ReplayTable extends QueryTable implements Runnable {
             @NotNull final Map<String, ? extends ColumnSource<?>> columns,
             @NotNull final String timeColumn,
             @NotNull final Replayer replayer) {
-        super(RowSetFactory.empty().toTracking(), columns);
+        super("ReplayTable", RowSetFactory.empty().toTracking(), columns);
         this.replayer = Require.neqNull(replayer, "replayer");
         // NB: This will behave incorrectly if our row set or any data in columns can change. Our source table *must*
         // be static. We also seem to be assuming that timeSource has no null values in rowSet. It would be nice to use
@@ -41,8 +39,6 @@ public class ReplayTable extends QueryTable implements Runnable {
         replayer.registerTimeSource(rowSet, instantSource);
         nanoTimeSource = ReinterpretUtils.instantToLongSource(instantSource);
         rowSetIterator = rowSet.iterator();
-
-        setRefreshing(true);
 
         advanceIterators();
         if (!done) {
@@ -60,7 +56,7 @@ public class ReplayTable extends QueryTable implements Runnable {
     private void advanceIterators() {
         if (rowSetIterator.hasNext()) {
             nextRowKey = rowSetIterator.nextLong();
-            currentTimeNanos = nextTimeNanos;
+            final long currentTimeNanos = nextTimeNanos;
             nextTimeNanos = nanoTimeSource.getLong(nextRowKey);
             if (nextTimeNanos == QueryConstants.NULL_LONG || nextTimeNanos < currentTimeNanos) {
                 throw new RuntimeException(

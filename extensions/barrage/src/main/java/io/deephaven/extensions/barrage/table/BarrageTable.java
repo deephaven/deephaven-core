@@ -11,7 +11,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.impl.InstrumentedUpdateSource;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -266,10 +266,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
-    private class SourceRefresher extends InstrumentedUpdateSource {
+    private class SourceRefresher extends InstrumentedTableUpdateSource {
 
         SourceRefresher() {
-            super(updateGraph, "BarrageTable(" + System.identityHashCode(BarrageTable.this)
+            super(BarrageTable.this, "BarrageTable(" + System.identityHashCode(BarrageTable.this)
                     + (stats != null ? ") " + stats.tableKey : ")"));
         }
 
@@ -282,13 +282,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             } catch (Throwable err) {
                 beginLog(LogLevel.ERROR).append(": Failure during BarrageTable instrumentedRefresh: ")
                         .append(err).endl();
-                notifyListenersOnError(err, null);
-
                 tryToDeliverErrorToCallback(err);
-                if (err instanceof Error) {
-                    // rethrow if this was an error (which should not be swallowed)
-                    throw err;
-                }
+                // rethrow for the caller to handle
+                throw err;
             }
         }
     }
