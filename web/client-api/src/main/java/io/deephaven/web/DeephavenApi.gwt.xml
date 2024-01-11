@@ -6,6 +6,10 @@
   <inherits name="org.apache.arrow.flatbuf.FlightFlatbufFormat"/>
   <inherits name="io.deephaven.barrage.flatbuf.BarrageFlatbufFormat"/>
 
+  <inherits name="io.deephaven.base.Base" />
+  <inherits name="io.deephaven.Util" />
+  <inherits name="io.deephaven.chunk.Chunk" />
+
   <define-property name="dh.dev" values="true, false" />
   <set-property name="dh.dev" value="false" />
 

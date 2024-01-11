@@ -1,0 +1,5 @@
+<module>
+    <inherits name="io.deephaven.base.Base" />
+    <inherits name="io.deephaven.Util" />
+    <source path="" excludes="util/pools/" includes="util/pools/PoolableChunk.java" />
+</module>

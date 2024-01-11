@@ -22,6 +22,9 @@ repositories {
     mavenLocal()
 }
 dependencies {
+    implementation project(':engine-chunk')
+    implementation 'org.jetbrains:annotations:13.0'
+//    implementation 'org.jetbrains:annotations:13.0:sources'
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 

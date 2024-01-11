@@ -5,9 +5,7 @@ package io.deephaven.base.verify;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.EventQueue;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -520,6 +518,7 @@ public final class Require {
     /**
      * require (o != null &amp;&amp; (current thread holds o's lock))
      */
+    @GwtIncompatible
     public static void holdsLock(Object o, String name, int numCallsBelowRequirer) {
         neqNull(o, "o");
         if (!Thread.holdsLock(o)) {
@@ -527,6 +526,7 @@ public final class Require {
         }
     }
 
+    @GwtIncompatible
     public static void holdsLock(Object o, String name) {
         holdsLock(o, name, 1);
     }
@@ -535,6 +535,7 @@ public final class Require {
     /**
      * require (o != null &amp;&amp; !(current thread holds o's lock))
      */
+    @GwtIncompatible
     public static void notHoldsLock(Object o, String name, int numCallsBelowRequirer) {
         neqNull(o, "o");
         if (Thread.holdsLock(o)) {
@@ -542,10 +543,12 @@ public final class Require {
         }
     }
 
+    @GwtIncompatible
     public static void notHoldsLock(Object o, String name) {
         notHoldsLock(o, name, 1);
     }
 
+    @interface GwtIncompatible {}
 
     // ################################################################
     // instanceOf, notInstanceOf
@@ -554,6 +557,7 @@ public final class Require {
     /**
      * require (o instanceof type)
      */
+    @GwtIncompatible
     public static <T> void instanceOf(Object o, String name, Class<T> type, int numCallsBelowRequirer) {
         if (!type.isInstance(o)) {
             fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
@@ -562,6 +566,7 @@ public final class Require {
         }
     }
 
+    @GwtIncompatible
     public static <T> void instanceOf(Object o, String name, Class<T> type) {
         instanceOf(o, name, type, 1);
     }
@@ -570,6 +575,7 @@ public final class Require {
     /**
      * require !(o instanceof type)
      */
+    @GwtIncompatible
     public static <T> void notInstanceOf(Object o, String name, Class<T> type, int numCallsBelowRequirer) {
         if (type.isInstance(o)) {
             fail("!(" + name + " instanceof " + type + ")",
@@ -578,39 +584,9 @@ public final class Require {
         }
     }
 
+    @GwtIncompatible
     public static <T> void notInstanceOf(Object o, String name, Class<T> type) {
         notInstanceOf(o, name, type, 1);
-    }
-
-    // ################################################################
-    // isAWTThread, isNotAWTThread
-
-    // ----------------------------------------------------------------
-    /**
-     * require (current thread is AWT Event Dispatch Thread)
-     */
-    public static void isAWTThread() {
-        isAWTThread(1);
-    }
-
-    public static void isAWTThread(int numCallsBelowRequirer) {
-        if (!EventQueue.isDispatchThread()) {
-            fail("\"" + Thread.currentThread().getName() + "\".isAWTThread()", numCallsBelowRequirer + 1);
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /**
-     * require (current thread is AWT Event Dispatch Thread)
-     */
-    public static void isNotAWTThread() {
-        isNotAWTThread(1);
-    }
-
-    public static void isNotAWTThread(int numCallsBelowRequirer) {
-        if (EventQueue.isDispatchThread()) {
-            fail("!\"" + Thread.currentThread().getName() + "\".isAWTThread()", numCallsBelowRequirer + 1);
-        }
     }
 
     // ################################################################

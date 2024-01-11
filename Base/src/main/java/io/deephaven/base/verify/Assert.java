@@ -3,7 +3,6 @@
 //
 package io.deephaven.base.verify;
 
-import java.awt.EventQueue;
 import java.util.function.Consumer;
 
 // --------------------------------------------------------------------
@@ -322,6 +321,7 @@ public final class Assert {
 
     // ----------------------------------------------------------------
     /** assert (o != null &amp;&amp; (current thread holds o's lock)) */
+    @GwtIncompatible
     public static void holdsLock(Object o, String name) {
         neqNull(o, "o");
         if (!Thread.holdsLock(o)) {
@@ -331,6 +331,7 @@ public final class Assert {
 
     // ----------------------------------------------------------------
     /** assert (o != null &amp;&amp; !(current thread holds o's lock)) */
+    @GwtIncompatible
     public static void notHoldsLock(Object o, String name) {
         neqNull(o, "o");
         if (Thread.holdsLock(o)) {
@@ -340,9 +341,10 @@ public final class Assert {
 
     // ################################################################
     // instanceOf, notInstanceOf
-
+@interface GwtIncompatible {}
     // ----------------------------------------------------------------
     /** assert (o instanceof type) */
+    @GwtIncompatible
     public static void instanceOf(Object o, String name, Class<?> type) {
         if (!type.isInstance(o)) {
             fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
@@ -352,29 +354,11 @@ public final class Assert {
 
     // ----------------------------------------------------------------
     /** assert !(o instanceof type) */
+    @GwtIncompatible
     public static void notInstanceOf(Object o, String name, Class<?> type) {
         if (type.isInstance(o)) {
             fail("!(" + name + " instanceof " + type + ")",
                     name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ################################################################
-    // isAWTThread, isNotAWTThread
-
-    // ----------------------------------------------------------------
-    /** assert (current thread is AWT Event Dispatch Thread) */
-    public static void isAWTThread() {
-        if (!EventQueue.isDispatchThread()) {
-            fail("\"" + Thread.currentThread().getName() + "\".isAWTThread()");
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /** assert (current thread is AWT Event Dispatch Thread) */
-    public static void isNotAWTThread() {
-        if (EventQueue.isDispatchThread()) {
-            fail("!\"" + Thread.currentThread().getName() + "\".isAWTThread()");
         }
     }
 

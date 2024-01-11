@@ -48,12 +48,15 @@ public class RequirementFailure extends RuntimeException {
 
     // ----------------------------------------------------------------
     @Override
+    @GwtIncompatible
     public void printStackTrace(PrintStream s) {
         s.print(getFixedStackTrace());
     }
 
+    @interface GwtIncompatible {}
     // ----------------------------------------------------------------
     @Override
+    @GwtIncompatible
     public void printStackTrace(PrintWriter s) {
         s.print(getFixedStackTrace());
     }
@@ -62,6 +65,7 @@ public class RequirementFailure extends RuntimeException {
     /**
      * Gets a stack trace with a line added identifying the offending stack frame.
      */
+    @GwtIncompatible
     private StringBuffer getFixedStackTrace() {
         StringBuffer sb = getOriginalStackTrace();
 
@@ -80,6 +84,7 @@ public class RequirementFailure extends RuntimeException {
     /**
      * Gets the unmodified stack trace, instead of the one with the culprit identified.
      */
+    @GwtIncompatible
     public StringBuffer getOriginalStackTrace() {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);

@@ -53,6 +53,7 @@ public class ArrayTypeUtils {
         }
     }
 
+    @GwtIncompatible
     public static ArrayAccessor createArrayAccessor(Object element, int size) {
         if (element == null) {
             return new ObjectArrayAccessor(new Object[size]);
@@ -127,6 +128,7 @@ public class ArrayTypeUtils {
         return result;
     }
 
+    @GwtIncompatible
     public static Object toArray(Collection<?> objects, Class elementType) {
         if (elementType == boolean.class) {
             elementType = Boolean.class;
@@ -140,6 +142,7 @@ public class ArrayTypeUtils {
         return result;
     }
 
+    @GwtIncompatible
     public static Object boxedToPrimitive(Set<?> objects, Class type) {
         Iterator<?> it = objects.iterator();
         if (objects.isEmpty()) {
@@ -161,6 +164,7 @@ public class ArrayTypeUtils {
         return resultAccessor.getArray();
     }
 
+    @GwtIncompatible
     public static ArrayAccessor getArrayAccessorFromArray(Object arrayPrototype, int size) {
         final Class<?> c = arrayPrototype.getClass();
         if (c.equals(boolean[].class)) {
@@ -184,6 +188,7 @@ public class ArrayTypeUtils {
         }
     }
 
+    @GwtIncompatible
     public static Object toArray(Collection<?> objects) {
         if (objects.size() == 0) {
             return toArray(objects, Object.class);
@@ -197,6 +202,7 @@ public class ArrayTypeUtils {
         return toArray(objects, (ubType == null ? prototype.getClass() : ubType));
     }
 
+    @GwtIncompatible
     public static ArrayAccessor getAccessorForElementType(Class componentType, int size) {
         if (componentType.equals(boolean.class) || componentType.equals(Boolean.class)) {
             return new BooleanArrayAccessor(booleanNullArray(size));
@@ -446,7 +452,8 @@ public class ArrayTypeUtils {
             return (Object[]) value;
         }
     }
-
+    @interface GwtIncompatible {}
+    @GwtIncompatible
     public static boolean equals(Object actualValue, Object expectedValue) {
         final Class<?> ct = actualValue.getClass().getComponentType();
         if (Object.class.isAssignableFrom(ct)) {
@@ -469,6 +476,7 @@ public class ArrayTypeUtils {
         return false;
     }
 
+    @GwtIncompatible
     public static String toString(Object actualValue) {
         final Class<?> ct = actualValue.getClass().getComponentType();
         if (Object.class.isAssignableFrom(ct)) {

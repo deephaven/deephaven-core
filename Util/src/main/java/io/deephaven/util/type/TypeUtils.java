@@ -389,6 +389,7 @@ public class TypeUtils {
      * @param c class
      * @return true if Number.class is assignable from {@code c}, false otherwise
      */
+    @GwtIncompatible
     public static boolean isBoxedNumeric(@NotNull final Class<?> c) {
         return Number.class.isAssignableFrom(c);
     }
@@ -410,7 +411,7 @@ public class TypeUtils {
      * @return true if Character.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedChar(@NotNull final Class<?> c) {
-        return Character.class.isAssignableFrom(c);
+        return Character.class.equals(c);
     }
 
     /**
@@ -420,7 +421,7 @@ public class TypeUtils {
      * @return true if Integer.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedInteger(@NotNull final Class<?> c) {
-        return Integer.class.isAssignableFrom(c);
+        return Integer.class.equals(c);
     }
 
     /**
@@ -430,7 +431,7 @@ public class TypeUtils {
      * @return true if Long.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedLong(@NotNull final Class<?> c) {
-        return Long.class.isAssignableFrom(c);
+        return Long.class.equals(c);
     }
 
     /**
@@ -440,7 +441,7 @@ public class TypeUtils {
      * @return true if Short.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedShort(@NotNull final Class<?> c) {
-        return Short.class.isAssignableFrom(c);
+        return Short.class.equals(c);
     }
 
     /**
@@ -450,7 +451,7 @@ public class TypeUtils {
      * @return true if Float.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedFloat(@NotNull final Class<?> c) {
-        return Float.class.isAssignableFrom(c);
+        return Float.class.equals(c);
     }
 
     /**
@@ -460,7 +461,7 @@ public class TypeUtils {
      * @return true if Double.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedDouble(@NotNull final Class<?> c) {
-        return Double.class.isAssignableFrom(c);
+        return Double.class.equals(c);
     }
 
     /**
@@ -470,7 +471,7 @@ public class TypeUtils {
      * @return true if Byte.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedByte(@NotNull final Class<?> c) {
-        return Byte.class.isAssignableFrom(c);
+        return Byte.class.equals(c);
     }
 
     /**
@@ -490,7 +491,7 @@ public class TypeUtils {
      * @return true if Boolean.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedBoolean(@NotNull final Class<?> c) {
-        return Boolean.class.isAssignableFrom(c);
+        return Boolean.class.equals(c);
     }
 
     /**
@@ -499,6 +500,7 @@ public class TypeUtils {
      * @param c class
      * @return true if {@code c} is numeric, false otherwise
      */
+    @GwtIncompatible
     public static boolean isNumeric(@NotNull final Class<?> c) {
         return isPrimitiveNumeric(c) || isBoxedNumeric(c);
     }
@@ -519,6 +521,7 @@ public class TypeUtils {
      * @param type The class.
      * @return true if the type is a DateTime, {@link java.time.ZonedDateTime} or {@link Instant}.
      */
+    @GwtIncompatible
     public static boolean isDateTime(Class<?> type) {
         return Instant.class.isAssignableFrom(type)
                 || ZonedDateTime.class.isAssignableFrom(type)
@@ -532,7 +535,7 @@ public class TypeUtils {
      * @return true if the type is a String, false otherwise
      */
     public static boolean isString(Class<?> type) {
-        return String.class.isAssignableFrom(type);
+        return String.class.equals(type);
     }
 
     /**
@@ -541,6 +544,7 @@ public class TypeUtils {
      * @param type the class
      * @return true if the type is BigInteger or BigDecimal, false otherwise
      */
+    @GwtIncompatible
     public static boolean isBigNumeric(Class<?> type) {
         return BigInteger.class.isAssignableFrom(type) || BigDecimal.class.isAssignableFrom(type);
     }
@@ -564,6 +568,7 @@ public class TypeUtils {
      * @return a String representation of the object, null if it cannot be converted
      * @throws IOException if an IO error occurs during conversion
      */
+    @GwtIncompatible
     public static String objectToString(Object o) throws IOException {
         if (o == null) {
             return null;
@@ -592,6 +597,7 @@ public class TypeUtils {
      * @throws RuntimeException if the string fails to parse
      * @throws IOException if an IO error occurs during conversion
      */
+    @GwtIncompatible
     public static Optional<Object> fromString(String string, String typeString) throws IOException {
         final Class<?> type;
         try {
@@ -613,6 +619,7 @@ public class TypeUtils {
      * @throws RuntimeException if the string fails to parse
      * @throws IOException if an IO error occurs during conversion
      */
+    @GwtIncompatible
     public static Object fromString(String string, Class<?> type) throws IOException {
         final Class<?> boxedType = getBoxedType(type);
         try {
@@ -658,6 +665,7 @@ public class TypeUtils {
      * @return the base64 encoded string
      * @throws IOException if the string cannot be encoded
      */
+    @GwtIncompatible
     public static String encode64Serializable(Serializable serializable) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 ObjectOutputStream os = new ObjectOutputStream(bos)) {
@@ -674,6 +682,7 @@ public class TypeUtils {
      * @throws IOException if the string cannot be decoded
      * @throws ClassNotFoundException if the Object type is unknown
      */
+    @GwtIncompatible
     public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
         try (ObjectInputStream is =
                 new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
@@ -684,6 +693,7 @@ public class TypeUtils {
     /**
      * Determine the Class from the Type.
      */
+    @GwtIncompatible
     public static Class<?> getErasedType(Type paramType) {
         if (paramType instanceof Class) {
             return (Class<?>) paramType;
@@ -718,6 +728,7 @@ public class TypeUtils {
         }
     }
 
+    @interface GwtIncompatible {}
     /**
      * Determine the weakest parent of the two provided Classes.
      *
@@ -725,6 +736,7 @@ public class TypeUtils {
      * @param two the other class to compare
      * @return the weakest parent Class
      */
+    @GwtIncompatible
     private static Class<?> getWeakest(Class<?> one, Class<?> two) {
         if (one.isAssignableFrom(two)) {
             return one;
@@ -749,6 +761,7 @@ public class TypeUtils {
         return strongest;
     }
 
+    @GwtIncompatible
     private static Set<Class<?>> getFlattenedInterfaces(Class<?> cls) {
         final Set<Class<?>> set = new HashSet<>();
         while (cls != null && cls != Object.class) {
@@ -760,6 +773,7 @@ public class TypeUtils {
         return set;
     }
 
+    @GwtIncompatible
     private static void collectInterfaces(final Collection<Class<?>> into, final Class<?> cls) {
         if (into.add(cls)) {
             for (final Class<?> iface : cls.getInterfaces()) {
@@ -771,6 +785,7 @@ public class TypeUtils {
     }
 
 
+    @GwtIncompatible
     public static Class<?> classForName(String className) throws ClassNotFoundException {
         Class<?> result = primitiveClassNameToClass.get(className);
         if (result == null) {
