@@ -5,7 +5,7 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Tuple, Literal
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Tuple, Literal, Optional
 
 import jpy
 import numpy as np
@@ -305,7 +305,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
 
     return s
 
-def _np_array_to_j_array(dtype: dtypes.DType, np_array: np.ndarray) -> Union[jpy.JType | np.ndarray]:
+def _np_array_to_j_array(dtype: dtypes.DType, np_array: np.ndarray) -> Optional[Union[jpy.JType | np.ndarray]]:
     """Convert a multidimensional numpy array to a Java array of the same shape based on the given dtype.
 
     Args:

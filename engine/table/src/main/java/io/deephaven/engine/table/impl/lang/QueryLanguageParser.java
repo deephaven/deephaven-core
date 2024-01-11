@@ -1221,6 +1221,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         expressionTypes[ei] = convertVector(expressionTypes[ei],
                                 typeArguments[ei] == null ? null : typeArguments[ei][0]);
                     }
+                } else if (expressionTypes[ei].isArray() && !expressionTypes[ei].getComponentType().isPrimitive()) {
+                    expressions[ei] = new CastExpr(
+                            StaticJavaParser.parseClassOrInterfaceType("java.lang.Object"),
+                            expressions[ei]);
+                    expressionTypes[ei] = Object.class;
                 }
             }
         }
@@ -2460,6 +2465,25 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 typeArguments);
     }
 
+    private Optional<ArrayType> makeArrayTypeForCastExpression(Class<?> retType) {
+        if (retType.getComponentType() != null) {
+            final Class<?> componentType = retType.getComponentType();
+            if (componentType.isPrimitive()) {
+                return Optional.of(new ArrayType(new PrimitiveType(PrimitiveType.Primitive
+                        .valueOf(retType.getComponentType().getSimpleName().toUpperCase()))));
+            } else if (retType.getComponentType() == String.class || retType.getComponentType() == Boolean.class
+                    || retType.getComponentType() == Instant.class) {
+                return Optional.of(new ArrayType(
+                        StaticJavaParser.parseClassOrInterfaceType(retType.getComponentType().getSimpleName())));
+            } else if (retType.getComponentType().getComponentType() != null) {
+                final Optional<ArrayType> arrayType = makeArrayTypeForCastExpression(retType.getComponentType());
+                return arrayType.map(ArrayType::new);
+            }
+        }
+
+        return Optional.empty();
+    }
+
     private Optional<CastExpr> makeCastExpressionForPyCallable(Class<?> retType, MethodCallExpr callMethodCall) {
         if (retType.isPrimitive()) {
             return Optional.of(new CastExpr(
@@ -2467,23 +2491,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                             .valueOf(retType.getSimpleName().toUpperCase())),
                     callMethodCall));
         } else if (retType.getComponentType() != null) {
-            final Class<?> componentType = retType.getComponentType();
-            if (componentType.isPrimitive()) {
-                ArrayType arrayType;
-                if (componentType == boolean.class) {
-                    arrayType = new ArrayType(StaticJavaParser.parseClassOrInterfaceType("java.lang.Boolean"));
-                } else {
-                    arrayType = new ArrayType(new PrimitiveType(PrimitiveType.Primitive
-                            .valueOf(retType.getComponentType().getSimpleName().toUpperCase())));
-                }
-                return Optional.of(new CastExpr(arrayType, callMethodCall));
-            } else if (retType.getComponentType() == String.class || retType.getComponentType() == Boolean.class
-                    || retType.getComponentType() == Instant.class) {
-                ArrayType arrayType =
-                        new ArrayType(
-                                StaticJavaParser.parseClassOrInterfaceType(retType.getComponentType().getSimpleName()));
-                return Optional.of(new CastExpr(arrayType, callMethodCall));
-            }
+            Optional<ArrayType> arrayType = makeArrayTypeForCastExpression(retType);
+            return arrayType.map(type -> new CastExpr(type, callMethodCall));
         } else if (retType == Boolean.class) {
             return Optional
                     .of(new CastExpr(StaticJavaParser.parseClassOrInterfaceType("java.lang.Boolean"), callMethodCall));

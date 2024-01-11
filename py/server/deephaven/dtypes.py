@@ -206,7 +206,7 @@ _J_ARRAY_NP_TYPE_MAP = {
 }
 
 _NP_TYPE_CHAR_JNI_TYPE_SIG_MAP = {
-    "?": "Z",
+    "?": "Ljava/lang/Boolean;",
     "b": "B",
     "h": "S",
     "H": "C",

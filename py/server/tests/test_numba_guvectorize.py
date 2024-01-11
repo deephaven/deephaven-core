@@ -92,14 +92,13 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
 
-    def test_2d_array_output(self):
+    def test_md_array_output(self):
         @guvectorize([(int64[:], int64[:, :])], "(m)->(m, m)", nopython=True)
         def g(x, res):
             for i in range(x.shape[0]):
                 res[i] = x[i] + 5
 
-        t = (empty_table(100).update(["X=i%10", "Y=ii"]).group_by("X")
-             .update("Z=(long[][])g(Y)"))
+        t = (empty_table(100).update(["X=i%10", "Y=ii"]).group_by("X").update("Z=g(Y)"))
         self.assertEqual(t.columns[2].data_type, dtypes.from_jtype(jpy.get_type("[" * 2 + "J").jclass))
 
 if __name__ == '__main__':
