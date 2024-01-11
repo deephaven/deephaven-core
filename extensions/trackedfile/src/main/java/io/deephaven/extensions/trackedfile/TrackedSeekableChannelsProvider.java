@@ -1,14 +1,13 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.plugin.channelprovider.tracked;
+package io.deephaven.extensions.trackedfile;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
-import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,14 +18,16 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProviderPlugin.FILE_URI_SCHEME;
+
 /**
  * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven {@link TrackedFileHandleFactory}.
  */
-public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
+class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
     private static volatile SeekableChannelsProvider instance;
 
-    public static SeekableChannelsProvider getInstance() {
+    static SeekableChannelsProvider getInstance() {
         if (instance == null) {
             synchronized (TrackedSeekableChannelsProvider.class) {
                 if (instance == null) {
@@ -39,7 +40,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
-    public TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+    TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
     }
 
@@ -52,11 +53,9 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
     public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
-        Assert.assertion(uri.getScheme() == null || uri.getScheme().equals(ParquetFileReader.FILE_URI_SCHEME),
-                "Expected uri scheme to be null or \"file\", got uri as " + uri);
-        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri.getPath()));
+        Assert.assertion(uri.getScheme().equals(FILE_URI_SCHEME), "Expected a file uri, got " + uri);
+        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
     }
-
 
     @Override
     public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
@@ -90,4 +89,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
             return fileHandleFactory.writeAppendCreateHandleCreator.invoke(file);
         }
     }
+
+    @Override
+    public void close() {}
 }

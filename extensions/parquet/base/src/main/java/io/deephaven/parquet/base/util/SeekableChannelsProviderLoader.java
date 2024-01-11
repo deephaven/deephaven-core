@@ -32,6 +32,15 @@ public final class SeekableChannelsProviderLoader {
         providers = new ArrayList<>();
     }
 
+    /**
+     * Create a new {@link SeekableChannelsProvider} based on given URI and object using the plugins loaded by the
+     * {@link ServiceLoader}. For example, for a "S3" URI, we will create a {@link SeekableChannelsProvider} which can
+     * read files from S3.
+     *
+     * @param uri The URI
+     * @param object An optional object to pass to the {@link SeekableChannelsProviderPlugin} implementations.
+     * @return A {@link SeekableChannelsProvider} for the given URI.
+     */
     public SeekableChannelsProvider fromServiceLoader(@NotNull final URI uri, @Nullable final Object object) {
         if (providers.isEmpty()) {
             // Load the plugins
@@ -42,7 +51,7 @@ public final class SeekableChannelsProviderLoader {
         }
         for (final SeekableChannelsProviderPlugin plugin : providers) {
             if (plugin.isCompatible(uri, object)) {
-                return plugin.impl(uri, object);
+                return plugin.createProvider(uri, object);
             }
         }
         throw new UnsupportedOperationException("No plugin found for uri: " + uri);

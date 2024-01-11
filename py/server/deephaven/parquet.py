@@ -19,7 +19,7 @@ _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
-_JS3Instructions = jpy.get_type("io.deephaven.parquet.table.S3Instructions")
+_JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JDuration = jpy.get_type("java.time.Duration")
 

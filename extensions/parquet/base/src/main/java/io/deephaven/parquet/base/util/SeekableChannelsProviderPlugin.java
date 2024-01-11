@@ -18,5 +18,5 @@ public interface SeekableChannelsProviderPlugin {
     /**
      * Create a {@link SeekableChannelsProvider} for the given URI and config object.
      */
-    SeekableChannelsProvider impl(@NotNull final URI uri, @Nullable final Object object);
+    SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object object);
 }

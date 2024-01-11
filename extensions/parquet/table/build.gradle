@@ -48,8 +48,8 @@ dependencies {
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
-    implementation project(':plugin-trackedseekablechannel')
-    testRuntimeOnly project(':plugin-s3')
+    runtimeOnly project(':extensions-trackedfile')
+    testImplementation project(':extensions-s3')
 
     brotliTestImplementation project(':extensions-parquet-table')
     brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')

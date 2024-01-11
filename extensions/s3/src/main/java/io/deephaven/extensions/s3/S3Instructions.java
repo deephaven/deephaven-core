@@ -1,4 +1,7 @@
-package io.deephaven.parquet.table;
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+package io.deephaven.extensions.s3;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;

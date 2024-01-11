@@ -1,10 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.plugin.channelprovider.s3;
+package io.deephaven.extensions.s3;
 
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.table.S3Instructions;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -19,7 +18,7 @@ import java.time.Duration;
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from AWS S3 instances.
  */
-public final class S3SeekableChannelProvider implements SeekableChannelsProvider {
+final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private final S3AsyncClient s3AsyncClient;
     private final int fragmentSize;

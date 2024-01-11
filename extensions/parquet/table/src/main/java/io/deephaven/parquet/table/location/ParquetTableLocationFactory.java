@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.net.URI;
 
-import static io.deephaven.parquet.base.ParquetFileReader.S3_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 /**
  * {@link TableLocationFactory} for {@link ParquetTableLocation}s.
@@ -34,7 +34,7 @@ public final class ParquetTableLocationFactory implements TableLocationFactory<T
             @NotNull final ParquetTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         final URI parquetFileURI = locationKey.getURI();
-        if (S3_URI_SCHEME.equals(parquetFileURI.getScheme()) || new File(parquetFileURI.getPath()).exists()) {
+        if (!parquetFileURI.getScheme().equals(FILE_URI_SCHEME) || new File(parquetFileURI).exists()) {
             return new ParquetTableLocation(tableKey, locationKey, readInstructions);
         } else {
             return new NonexistentTableLocation(tableKey, locationKey);

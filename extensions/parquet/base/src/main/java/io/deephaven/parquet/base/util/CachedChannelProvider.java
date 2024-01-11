@@ -134,6 +134,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         return logicalClock = 1;
     }
 
+    @Override
+    public void close() {
+        wrappedProvider.close();
+    }
+
     /**
      * {@link SeekableByteChannel Channel} wrapper for pooled usage.
      */

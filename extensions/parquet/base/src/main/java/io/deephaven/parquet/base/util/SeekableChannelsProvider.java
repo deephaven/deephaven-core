@@ -3,11 +3,11 @@
  */
 package io.deephaven.parquet.base.util;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,7 +15,28 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public interface SeekableChannelsProvider {
+public interface SeekableChannelsProvider extends SafeCloseable {
+
+    /**
+     * Take the file source path or URI and convert it to a URI object.
+     *
+     * @param source The file source path or URI
+     * @return The URI object
+     */
+    static URI convertToURI(final String source) {
+        final URI uri;
+        try {
+            uri = new URI(source);
+        } catch (final URISyntaxException e) {
+            // If the URI is invalid, assume it's a file path
+            return new File(source).getAbsoluteFile().toURI();
+        }
+        if (uri.getScheme() == null) {
+            // Need to convert to a "file" URI
+            return new File(source).getAbsoluteFile().toURI();
+        }
+        return uri;
+    }
 
     interface ChannelContext extends SafeCloseable {
 
@@ -40,11 +61,7 @@ public interface SeekableChannelsProvider {
 
     default SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final String uriStr)
             throws IOException {
-        try {
-            return getReadChannel(context, new URI(uriStr));
-        } catch (final URISyntaxException e) {
-            throw new UncheckedDeephavenException("Cannot convert path string to URI: " + uriStr, e);
-        }
+        return getReadChannel(context, convertToURI(uriStr));
     }
 
     SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull URI uri) throws IOException;

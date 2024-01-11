@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.plugin.channelprovider.s3;
+package io.deephaven.extensions.s3;
 
 import io.deephaven.base.verify.Assert;
 import org.reactivestreams.Subscriber;
@@ -12,8 +12,7 @@ import software.amazon.awssdk.core.async.SdkPublisher;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-public final class ByteBufferAsyncResponseTransformer<ResponseT>
-        implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
+final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
 
     private final int bufferSize;
     private volatile CompletableFuture<ByteBuffer> cf;

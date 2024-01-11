@@ -31,6 +31,7 @@ import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
+import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -1072,16 +1073,30 @@ public final class ParquetTableReadWriteTest {
         final String absolutePath = destFile.getAbsolutePath();
         final URI fileURI = destFile.toURI();
         ParquetTools.writeTable(tableToSave, absolutePath);
+
+        // Read from file URI
         final Table fromDisk = ParquetTools.readTable(fileURI.toString());
         assertTableEquals(tableToSave, fromDisk);
+
+        // Read from "file://" + absolutePath
         final Table fromDisk2 = ParquetTools.readTable("file://" + absolutePath);
         assertTableEquals(tableToSave, fromDisk2);
 
+        // Read from absolutePath
+        final Table fromDisk3 = ParquetTools.readTable(absolutePath);
+        assertTableEquals(tableToSave, fromDisk3);
+
+        // Read from relative path
+        final String relativePath = rootFile.getName() + "/" + filename;
+        final Table fromDisk4 = ParquetTools.readTable(relativePath);
+        assertTableEquals(tableToSave, fromDisk4);
+
+        // Read from unsupported URI
         try {
             ParquetTools.readTable("https://" + absolutePath);
             TestCase.fail("Exception expected for invalid scheme");
         } catch (final RuntimeException e) {
-            assertTrue(e instanceof IllegalArgumentException);
+            assertTrue(e instanceof UnsupportedOperationException);
         }
     }
 

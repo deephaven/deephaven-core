@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.plugin.channelprovider.s3;
+package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.exceptions.CancellationException;
+import java.util.concurrent.CancellationException;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeoutException;
  * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability to
  * read ahead and cache fragments of the object.
  */
-public final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
+final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
 
     private static final long CLOSED_SENTINEL = -1;
 
@@ -205,8 +205,7 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         final ByteBuffer currentFragment;
         try {
             currentFragment = currFragmentFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
-        } catch (final InterruptedException | ExecutionException | TimeoutException
-                | java.util.concurrent.CancellationException e) {
+        } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
             final String operation =
                     "fetching fragment " + currFragmentIndex + " for file " + key + " in S3 bucket " + bucket;
             throw handleS3Exception(e, operation);
@@ -221,7 +220,7 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
         final int originalBufferLimit = currentFragment.limit();
         currentFragment.limit(currentFragment.position() + limit);
         destination.put(currentFragment);
-        // Need to reset buffer limit so we can read from the same buffer again in future
+        // Need to reset buffer limit, so we can read from the same buffer again in future
         currentFragment.limit(originalBufferLimit);
         position = localPosition + limit;
         return limit;
@@ -242,7 +241,7 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     private UncheckedDeephavenException handleS3Exception(final Exception e, final String operationDescription) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
-            return new CancellationException("Thread interrupted while " + operationDescription, e);
+            return new UncheckedDeephavenException("Thread interrupted while " + operationDescription, e);
         } else if (e instanceof ExecutionException) {
             return new UncheckedDeephavenException("Execution exception occurred while " + operationDescription, e);
         } else if (e instanceof TimeoutException) {
@@ -292,12 +291,11 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
             try {
                 headObjectResponse = s3AsyncClient.headObject(builder -> builder.bucket(bucket).key(key))
                         .get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
-            } catch (final InterruptedException | ExecutionException | TimeoutException
-                    | java.util.concurrent.CancellationException e) {
+            } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
                 final String operation = "fetching HEAD for file " + key + " in S3 bucket " + bucket;
                 throw handleS3Exception(e, operation);
             }
-            context.setSize(headObjectResponse.contentLength().longValue());
+            context.setSize(headObjectResponse.contentLength());
         }
         this.size = context.getSize();
         this.numFragmentsInObject = (int) ((size + fragmentSize - 1) / fragmentSize); // = ceil(size / fragmentSize)
@@ -314,7 +312,7 @@ public final class S3SeekableByteChannel implements SeekableByteChannel, Seekabl
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         position = CLOSED_SENTINEL;
     }
 

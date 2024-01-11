@@ -60,7 +60,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
-import static io.deephaven.parquet.base.ParquetFileReader.S3_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
@@ -167,9 +167,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return null;
         }
         final URI parquetFileURI = tl().getParquetFile();
-        if (S3_URI_SCHEME.equals(parquetFileURI.getScheme())) {
-            throw new UncheckedDeephavenException("Parquet files in S3 are not expected to have indexing files");
-        }
+        Assert.assertion(parquetFileURI.getScheme().equals(FILE_URI_SCHEME),
+                "Expected a file uri, got " + parquetFileURI);
         final File parquetFile = new File(parquetFileURI);
         try {
             ParquetFileReader parquetFileReader;

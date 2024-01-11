@@ -39,4 +39,7 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
         }
         return result;
     }
+
+    @Override
+    public void close() {}
 }

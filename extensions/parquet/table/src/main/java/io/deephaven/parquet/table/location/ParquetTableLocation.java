@@ -30,7 +30,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static io.deephaven.parquet.base.ParquetFileReader.S3_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -90,13 +90,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
         version = tableInfo.map(TableInfo::version).orElse(null);
 
-        final String uriScheme = tableLocationKey.getURI().getScheme();
-        if (S3_URI_SCHEME.equals(uriScheme)) {
+        if (!tableLocationKey.getURI().getScheme().equals(FILE_URI_SCHEME)) {
             handleUpdate(computeIndex(), 0L); // TODO What should I put here?
         } else {
             handleUpdate(computeIndex(), new File(tableLocationKey.getURI().toString()).lastModified());
         }
-
     }
 
     @Override

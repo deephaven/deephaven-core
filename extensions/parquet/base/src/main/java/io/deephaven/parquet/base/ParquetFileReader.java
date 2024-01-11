@@ -22,6 +22,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static io.deephaven.parquet.base.util.SeekableChannelsProvider.convertToURI;
+
 /**
  * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,
  * ex."s3://bucket/key".
@@ -30,7 +32,6 @@ public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
     private static final String MAGIC_STR = "PAR1";
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
-    public static final String S3_URI_SCHEME = "s3";
     public static final String FILE_URI_SCHEME = "file";
 
     public final FileMetaData fileMetaData;
@@ -41,22 +42,6 @@ public class ParquetFileReader {
      */
     private final URI rootURI;
     private final MessageType type;
-
-    // TODO Where should I keep this method?
-    /**
-     * Take the parquet file source path or URI and convert it to a URI object.
-     *
-     * @param source The parquet file source path or URI
-     * @return The URI object
-     */
-    public static URI convertToURI(final String source) {
-        try {
-            return new URI(source);
-        } catch (final URISyntaxException e) {
-            // Assuming the source is a file path, resolve to get the absolute path and convert to URI
-            return new File(source).getAbsoluteFile().toURI();
-        }
-    }
 
     public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
             throws IOException {

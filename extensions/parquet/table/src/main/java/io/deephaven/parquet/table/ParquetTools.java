@@ -55,8 +55,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.parquet.base.ParquetFileReader.S3_URI_SCHEME;
-import static io.deephaven.parquet.base.ParquetFileReader.convertToURI;
+import static io.deephaven.parquet.base.util.SeekableChannelsProvider.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
@@ -682,15 +681,10 @@ public class ParquetTools {
     private static Table readTableInternal(
             @NotNull final URI source,
             @NotNull final ParquetInstructions instructions) {
-        final String scheme = source.getScheme();
-        if (scheme != null && !scheme.equals(FILE_URI_SCHEME)) {
-            if (!scheme.equals(S3_URI_SCHEME)) {
-                throw new IllegalArgumentException(
-                        "We only support reading single parquet file URI hosted on S3, but got " + source);
-            }
+        if (!source.getScheme().equals(FILE_URI_SCHEME)) {
             return readSingleFileTable(source, instructions);
         }
-        return readTableInternal(new File(source.getPath()), instructions);
+        return readTableInternal(new File(source), instructions);
     }
 
     private static boolean ignoreDotFiles(Path path) {
@@ -1162,14 +1156,8 @@ public class ParquetTools {
     public static ParquetFileReader getParquetFileReaderChecked(
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
-        final SeekableChannelsProvider provider;
-        if (parquetFileURI.getScheme() != null && !parquetFileURI.getScheme().equals(FILE_URI_SCHEME)) {
-            // Need additional instructions to read from non-local file systems
-            provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileURI,
-                    readInstructions.getSpecialInstructions());
-        } else {
-            provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileURI, null);
-        }
+        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                parquetFileURI, readInstructions.getSpecialInstructions());
         return new ParquetFileReader(parquetFileURI, new CachedChannelProvider(provider, 1 << 7));
     }
 

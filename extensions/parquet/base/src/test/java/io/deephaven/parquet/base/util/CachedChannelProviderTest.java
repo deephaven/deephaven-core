@@ -186,6 +186,9 @@ public class CachedChannelProviderTest {
         public SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) {
             return new TestMockChannel(count.getAndIncrement(), path.toString());
         }
+
+        @Override
+        public void close() {}
     }
 
     private class TestMockChannel implements SeekableByteChannel {

@@ -20,11 +20,11 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
+import io.deephaven.parquet.base.util.SeekableChannelsProviderLoader;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.parquet.table.plugin.channelprovider.tracked.TrackedSeekableChannelsProvider;
 import io.deephaven.parquet.table.transfer.*;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
@@ -44,6 +44,8 @@ import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static io.deephaven.parquet.base.util.SeekableChannelsProvider.convertToURI;
 
 /**
  * API for writing DH tables in parquet format
@@ -312,7 +314,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(),
+        return new ParquetFileWriter(path,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(path), null),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);

@@ -3,16 +3,14 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+description 'Used to create a channel provider plugin for reading and writing local files.'
+
 dependencies {
     api project(':extensions-parquet-base')
 
     implementation project(':Base')
     implementation project(':Util')
-    implementation project(':extensions-parquet-table')
-
-    implementation platform('software.amazon.awssdk:bom:2.21.43')
-    implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:aws-crt-client'
+    implementation project(':engine-table')
 
     compileOnly depAnnotations
 
