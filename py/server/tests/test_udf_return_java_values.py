@@ -322,5 +322,12 @@ def fn(col) -> Optional[{np_dtype}]:
                 t = empty_table(10).update([f"X1 = {cast_str}f(ndim)"])
                 self.assertEqual(t.columns[0].data_type, dtypes.from_jtype(jpy.get_type("[" * ndim + "J").jclass))
 
+            with self.subTest(ndim):
+                cast_str = f"(long{'[]' * (ndim + 1)})"
+                with self.assertRaises(DHError) as cm:
+                    t = empty_table(10).update([f"X1 = {cast_str}f(ndim)"])
+                self.assertIn("java.lang.ClassCastException", str(cm.exception))
+
+
 if __name__ == '__main__':
     unittest.main()
