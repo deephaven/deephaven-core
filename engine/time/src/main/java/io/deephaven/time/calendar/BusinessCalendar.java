@@ -165,7 +165,6 @@ public class BusinessCalendar extends Calendar {
 
     // region Getters
 
-    // TODO: should there be a string equivalent?
     /**
      * Returns the first valid date for the business calendar.
      *
@@ -175,7 +174,6 @@ public class BusinessCalendar extends Calendar {
         return firstValidDate;
     }
 
-    // TODO: should there be a string equivalent?
     /**
      * Returns the last valid date for the business calendar.
      *
@@ -2099,7 +2097,6 @@ public class BusinessCalendar extends Calendar {
         return plusNonBusinessDays(time, -days);
     }
 
-    // TODO: should there be a string equivalent?
     /**
      * Adds a specified number of business days to the current date. Adding negative days is equivalent to subtracting
      * days.
@@ -2117,7 +2114,6 @@ public class BusinessCalendar extends Calendar {
         return plusBusinessDays(calendarDate(), days);
     }
 
-    // TODO: should there be a string equivalent?
     /**
      * Subtracts a specified number of business days from the current date. Subtracting negative days is equivalent to
      * adding days.
@@ -2135,7 +2131,6 @@ public class BusinessCalendar extends Calendar {
         return minusBusinessDays(calendarDate(), days);
     }
 
-    // TODO: should there be a string equivalent?
     /**
      * Adds a specified number of non-business days to the current date. Adding negative days is equivalent to
      * subtracting days.
@@ -2153,7 +2148,6 @@ public class BusinessCalendar extends Calendar {
         return this.plusNonBusinessDays(calendarDate(), days);
     }
 
-    // TODO: should there be a string equivalent?
     /**
      * Subtracts a specified number of non-business days to the current date. Subtracting negative days is equivalent to
      * adding days.
