@@ -3,10 +3,6 @@
  */
 package io.deephaven.engine.context;
 
-import io.deephaven.engine.liveness.Liveness;
-import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -16,7 +12,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.Period;
@@ -25,7 +20,7 @@ import java.util.*;
 /**
  * Variable scope used to resolve parameter values during query execution.
  */
-public abstract class QueryScope extends ReferenceCountedLivenessNode implements LogOutputAppendable {
+public interface QueryScope extends LogOutputAppendable {
 
     /**
      * Adds a parameter to the default instance {@link QueryScope}, or updates the value of an existing parameter.
@@ -34,7 +29,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @param value value to assign to the parameter.
      * @param <T> type of the parameter/value.
      */
-    public static <T> void addParam(final String name, final T value) {
+    static <T> void addParam(final String name, final T value) {
         ExecutionContext.getContext().getQueryScope().putParam(name, value);
     }
 
@@ -46,7 +41,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @return parameter value.
      * @throws MissingVariableException variable name is not defined.
      */
-    public static <T> T getParamValue(final String name) throws MissingVariableException {
+    static <T> T getParamValue(final String name) throws MissingVariableException {
         return ExecutionContext.getContext().getQueryScope().readParamValue(name);
     }
 
@@ -58,7 +53,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * A type of RuntimeException thrown when a variable referenced within the {@link QueryScope} is not defined or,
      * more likely, has not been added to the scope.
      */
-    public static class MissingVariableException extends RuntimeException {
+    class MissingVariableException extends RuntimeException {
 
         public MissingVariableException(final String message, final Throwable cause) {
             super(message, cause);
@@ -114,12 +109,6 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
         return value;
     }
 
-    protected QueryScope() {
-        super(false);
-
-        retainReference();
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Scope manipulation helper methods
     // -----------------------------------------------------------------------------------------------------------------
@@ -131,7 +120,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @return A newly-constructed array of newly-constructed Params.
      * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
-    public final QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
+    default QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
         final QueryScopeParam[] result = new QueryScopeParam[names.size()];
         int pi = 0;
         for (final String name : names) {
@@ -149,7 +138,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      *
      * @return A collection of scope variable names.
      */
-    public abstract Set<String> getParamNames();
+    Set<String> getParamNames();
 
     /**
      * Check if the scope has the given name.
@@ -157,7 +146,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @param name param name
      * @return True iff the scope has the given param name
      */
-    public abstract boolean hasParamName(String name);
+    boolean hasParamName(String name);
 
     /**
      * Get a QueryScopeParam by name.
@@ -166,7 +155,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @return newly-constructed QueryScopeParam (name + value-snapshot pair).
      * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
-    protected abstract <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException;
+    <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException;
 
     /**
      * Get the value of a given scope parameter by name.
@@ -175,7 +164,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @return parameter value.
      * @throws QueryScope.MissingVariableException If no such scope parameter exists.
      */
-    public abstract <T> T readParamValue(final String name) throws MissingVariableException;
+    <T> T readParamValue(final String name) throws MissingVariableException;
 
     /**
      * Get the value of a given scope parameter by name.
@@ -184,7 +173,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @param defaultValue default parameter value.
      * @return parameter value, or the default parameter value, if the value is not present.
      */
-    public abstract <T> T readParamValue(final String name, final T defaultValue);
+    <T> T readParamValue(final String name, final T defaultValue);
 
     /**
      * Add a parameter to the scope.
@@ -192,7 +181,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @param name parameter name.
      * @param value parameter value.
      */
-    public abstract <T> void putParam(final String name, final T value);
+    <T> void putParam(final String name, final T value);
 
     /**
      * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to
@@ -201,7 +190,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    public Object unwrapObject(Object object) {
+    default Object unwrapObject(Object object) {
         return object;
     }
 
@@ -210,7 +199,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LogOutput append(@NotNull final LogOutput logOutput) {
+    default LogOutput append(@NotNull final LogOutput logOutput) {
         logOutput.append('{');
         for (final String paramName : getParamNames()) {
             final Object paramValue = readParamValue(paramName);
@@ -231,16 +220,10 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
     // Map-based implementation, with remote scope and object reflection support
     // -----------------------------------------------------------------------------------------------------------------
 
-    public static class StandaloneImpl extends QueryScope {
+    class StandaloneQueryScope implements QueryScope {
 
         private final KeyedObjectHashMap<String, ValueRetriever> valueRetrievers =
                 new KeyedObjectHashMap<>(new ValueRetrieverNameKey());
-
-        @Override
-        protected void destroy() {
-            super.destroy();
-            valueRetrievers.clear();
-        }
 
         @Override
         public Set<String> getParamNames() {
@@ -253,7 +236,7 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
         }
 
         @Override
-        protected <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException {
+        public <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException {
             // noinspection unchecked
             final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
             if (valueRetriever == null) {
@@ -284,20 +267,9 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
 
         @Override
         public <T> void putParam(final String name, final T value) {
-            if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
-                manage((LivenessReferent) value);
-            }
             NameValidator.validateQueryParameterName(name);
             // TODO: Can I get rid of this applyValueConversions? It's too inconsistent to feel safe.
-            ValueRetriever<?> oldValueRetriever =
-                    valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
-
-            if (oldValueRetriever != null) {
-                Object oldValue = oldValueRetriever.getValue();
-                if (oldValue instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(oldValue)) {
-                    unmanage((LivenessReferent) oldValue);
-                }
-            }
+            valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
         }
 
         private static abstract class ValueRetriever<T> {
@@ -345,40 +317,6 @@ public abstract class QueryScope extends ReferenceCountedLivenessNode implements
             public Class<T> getType() {
                 // noinspection unchecked
                 return (Class<T>) (value != null ? value.getClass() : Object.class);
-            }
-
-            @Override
-            public QueryScopeParam<T> createParam() {
-                return new QueryScopeParam<>(getName(), getValue());
-            }
-        }
-
-        private static class ReflectiveValueRetriever<T> extends ValueRetriever<T> {
-
-            private final Object object;
-            private final Field field;
-
-            public ReflectiveValueRetriever(final Object object, final Field field) {
-                super(field.getName());
-                this.object = object;
-                this.field = field;
-                field.setAccessible(true);
-            }
-
-            @Override
-            public T getValue() {
-                try {
-                    // noinspection unchecked
-                    return (T) field.get(object);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public Class<T> getType() {
-                // noinspection unchecked
-                return (Class<T>) field.getType();
             }
 
             @Override

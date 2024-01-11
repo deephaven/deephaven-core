@@ -349,7 +349,7 @@ public class ExecutionContext {
          */
         @ScriptApi
         public Builder newQueryScope() {
-            this.queryScope = new QueryScope.StandaloneImpl();
+            this.queryScope = new QueryScope.StandaloneQueryScope();
             return this;
         }
 
@@ -387,7 +387,7 @@ public class ExecutionContext {
                 return newQueryScope();
             }
 
-            this.queryScope = new QueryScope.StandaloneImpl();
+            this.queryScope = new QueryScope.StandaloneQueryScope();
 
             final QueryScopeParam<?>[] params = getContext().getQueryScope().getParams(Arrays.asList(vars));
             for (final QueryScopeParam<?> param : params) {

@@ -6,7 +6,7 @@ package io.deephaven.engine.context;
 import java.util.Collections;
 import java.util.Set;
 
-public class EmptyQueryScope extends QueryScope {
+public class EmptyQueryScope implements QueryScope {
     public final static EmptyQueryScope INSTANCE = new EmptyQueryScope();
 
     private EmptyQueryScope() {}
@@ -22,7 +22,7 @@ public class EmptyQueryScope extends QueryScope {
     }
 
     @Override
-    protected <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
+    public <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
         throw new MissingVariableException("Missing variable " + name);
     }
 

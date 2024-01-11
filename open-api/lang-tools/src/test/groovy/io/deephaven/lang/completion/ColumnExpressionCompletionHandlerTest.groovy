@@ -41,7 +41,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
             doc = p.parse(src)
 
             Logger log = LoggerFactory.getLogger(CompletionHandler)
-            QueryScope variables = new QueryScope.StandaloneImpl()
+            QueryScope variables = new QueryScope.StandaloneQueryScope()
             variables.putParam("t", TableFactory.newTable(
                     Column.of('Date', LocalDate.class, new LocalDate[0]),
                     Column.of('DateTime', Instant.class, new Instant[0]))
@@ -90,7 +90,7 @@ t = t.updateView ( 'D
         doc = p.parse(src)
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
-        QueryScope variables = new QueryScope.StandaloneImpl();
+        QueryScope variables = new QueryScope.StandaloneQueryScope();
         variables.putParam('t', TableFactory.newTable(
             Column.of('Date', String.class, new String[0]),
             Column.of('Delta', Long.class, new Long[0]),
@@ -130,7 +130,7 @@ t = t.update('A=') .update( 'B=')
         doc = p.parse(src)
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
-        QueryScope variables = new QueryScope.StandaloneImpl()
+        QueryScope variables = new QueryScope.StandaloneQueryScope()
         variables.putParam('t', TableFactory.newTable(
                 Column.of('A1', Long.class, new Long[0]),
                 Column.of('A2', Integer.class, new Integer[0]),
@@ -188,7 +188,7 @@ t.where('"""
         doc = p.parse(src)
 
         Logger log = LoggerFactory.getLogger(CompletionHandler)
-        QueryScope variables = new QueryScope.StandaloneImpl()
+        QueryScope variables = new QueryScope.StandaloneQueryScope()
         variables.putParam('t', null);
 
         ChunkerCompleter completer = new ChunkerCompleter(log, variables)

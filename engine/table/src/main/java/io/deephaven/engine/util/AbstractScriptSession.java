@@ -64,7 +64,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
     private final File classCacheDirectory;
-    private final QueryScope queryScope;
+    private final ScriptSessionQueryScope queryScope;
 
     protected final ExecutionContext executionContext;
 
@@ -143,9 +143,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         // retain any objects which are created in the executed code, we'll release them when the script session
         // closes
-        LivenessScope localScope = new LivenessScope();
         try (final S initialSnapshot = takeSnapshot();
-                final SafeCloseable ignored = LivenessScopeStack.open(localScope, false)) {
+                final SafeCloseable ignored = LivenessScopeStack.open(queryScope, false)) {
 
             try {
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
@@ -155,8 +154,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                         .apply(() -> evaluate(script, scriptName));
             } catch (final RuntimeException err) {
                 evaluateErr = err;
-            } finally {
-                localScope.transferTo(queryScope);
             }
 
             // Observe changes during this evaluation (potentially capturing external changes from other threads)
@@ -293,7 +290,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
     // -----------------------------------------------------------------------------------------------------------------
 
-    public class ScriptSessionQueryScope extends QueryScope {
+    public class ScriptSessionQueryScope extends LivenessScope implements QueryScope {
         /**
          * Internal workaround to support python calling pushScope.
          */
@@ -312,7 +309,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         @Override
-        protected <T> QueryScopeParam<T> createParam(final String name)
+        public <T> QueryScopeParam<T> createParam(final String name)
                 throws QueryScope.MissingVariableException {
             if (!NameValidator.isValidQueryParameterName(name)) {
                 throw new QueryScope.MissingVariableException("Name " + name + " is invalid");

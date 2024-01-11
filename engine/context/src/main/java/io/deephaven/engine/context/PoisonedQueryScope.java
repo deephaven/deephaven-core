@@ -7,7 +7,7 @@ import io.deephaven.util.ExecutionContextRegistrationException;
 
 import java.util.Set;
 
-public class PoisonedQueryScope extends QueryScope {
+public class PoisonedQueryScope implements QueryScope {
 
     public static final PoisonedQueryScope INSTANCE = new PoisonedQueryScope();
 
@@ -28,7 +28,7 @@ public class PoisonedQueryScope extends QueryScope {
     }
 
     @Override
-    protected <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
+    public <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
         return fail();
     }
 
