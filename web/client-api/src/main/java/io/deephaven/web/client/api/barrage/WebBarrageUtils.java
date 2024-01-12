@@ -43,14 +43,14 @@ import java.util.stream.IntStream;
  * Utility to read barrage record batches.
  */
 public class WebBarrageUtils {
-    private static final int MAGIC = 0x6E687064;
+    public static final int FLATBUFFER_MAGIC = 0x6E687064;
 
     public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
         // TODO this doesnt look right, probably we can append the message rather than copying?
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
         int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
         int offset =
-                BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset);
+                BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, FLATBUFFER_MAGIC, messageType, messageOffset);
         outerBuilder.finish(offset);
         ByteBuffer byteBuffer = outerBuilder.dataBuffer();
         return bbToUint8ArrayView(byteBuffer);
@@ -63,7 +63,7 @@ public class WebBarrageUtils {
 
     public static Uint8Array emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
-        int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
+        int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC, BarrageMessageType.None, 0);
         builder.finish(offset);
         return bbToUint8ArrayView(builder.dataBuffer());
     }
