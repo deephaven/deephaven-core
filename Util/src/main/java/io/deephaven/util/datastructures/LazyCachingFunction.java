@@ -1,6 +1,11 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit LazyCachingSupplier and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.util.datastructures;
 
 import org.jetbrains.annotations.NotNull;
@@ -9,22 +14,22 @@ import java.lang.ref.SoftReference;
 import java.util.function.Function;
 
 /**
- * {@link Function} wrapper that caches the result in a {@link SoftReference}. Only suitable to wrap suppliers that are
+ * {@link Function} wrapper that caches the result in a {@link SoftReference}. Only suitable to wrap functions that are
  * safely repeatable and don't return {@code null}.
  */
 public final class LazyCachingFunction<INPUT_TYPE, OUTPUT_TYPE> implements Function<INPUT_TYPE, OUTPUT_TYPE> {
 
-    private final Function<INPUT_TYPE, OUTPUT_TYPE> internalSupplier;
+    private final Function<INPUT_TYPE, OUTPUT_TYPE> internalFunction;
 
     private volatile SoftReference<OUTPUT_TYPE> cachedResultRef;
 
     /**
      * Construct a {@link Function} wrapper.
      *
-     * @param internalSupplier The {@link Function} to wrap. Must be safely repeatable and must not return {@code null}.
+     * @param internalFunction The {@link Function} to wrap. Must be safely repeatable and must not return {@code null}.
      */
-    public LazyCachingFunction(@NotNull final Function<INPUT_TYPE, OUTPUT_TYPE> internalSupplier) {
-        this.internalSupplier = internalSupplier;
+    public LazyCachingFunction(@NotNull final Function<INPUT_TYPE, OUTPUT_TYPE> internalFunction) {
+        this.internalFunction = internalFunction;
     }
 
     @Override
@@ -38,7 +43,7 @@ public final class LazyCachingFunction<INPUT_TYPE, OUTPUT_TYPE> implements Funct
             if ((currentRef = cachedResultRef) != null && (current = currentRef.get()) != null) {
                 return current;
             }
-            cachedResultRef = new SoftReference<>(current = internalSupplier.apply(arg));
+            cachedResultRef = new SoftReference<>(current = internalFunction.apply(arg));
         }
         return current;
     }

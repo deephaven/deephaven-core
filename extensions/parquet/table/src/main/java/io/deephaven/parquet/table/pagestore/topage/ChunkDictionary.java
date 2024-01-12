@@ -54,7 +54,7 @@ public class ChunkDictionary<T, ATTR extends Any>
         this.lookup = lookup;
         this.dictionarySupplier = dictionarySupplier;
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
-            // Dictionary is already materialized till this point, therefore we can safely use NULL context
+            // Dictionary is already materialized at this point, therefore, we can safely use NULL context
             final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelsProvider.ChannelContext.NULL);
             final T[] values = ObjectChunk.makeArray(dictionary.getMaxId() + 1);
             for (int ki = 0; ki < values.length; ++ki) {

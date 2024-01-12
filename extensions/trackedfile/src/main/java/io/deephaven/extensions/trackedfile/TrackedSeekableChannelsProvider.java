@@ -46,7 +46,13 @@ class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
     @Override
     public ChannelContext makeContext() {
+        // No additional context required for local FS
         return ChannelContext.NULL;
+    }
+
+    @Override
+    public boolean isCompatibleWith(@NotNull ChannelContext context) {
+        return context == ChannelContext.NULL;
     }
 
     @Override

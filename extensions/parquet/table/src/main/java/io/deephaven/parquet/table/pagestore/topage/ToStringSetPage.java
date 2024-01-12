@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.stringset.LongBitmapStringSet;
@@ -98,8 +99,9 @@ public class ToStringSetPage<ATTR extends Any, STRING_ARRAY>
 
         @Override
         @NotNull
-        public final Object getResult(ColumnPageReader columnPageReader) throws IOException {
-            return toPage.getDictionaryKeysToPage().getResult(columnPageReader);
+        public Object getResult(ColumnPageReader columnPageReader,
+                SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+            return toPage.getDictionaryKeysToPage().getResult(columnPageReader, channelContext);
         }
 
         @Override

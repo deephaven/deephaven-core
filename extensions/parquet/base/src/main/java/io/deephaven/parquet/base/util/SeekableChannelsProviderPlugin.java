@@ -13,10 +13,10 @@ public interface SeekableChannelsProviderPlugin {
     /**
      * Check if this plugin is compatible with the given URI and config object.
      */
-    boolean isCompatible(@NotNull final URI uri, @Nullable final Object config);
+    boolean isCompatible(@NotNull URI uri, @Nullable Object config);
 
     /**
      * Create a {@link SeekableChannelsProvider} for the given URI and config object.
      */
-    SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object object);
+    SeekableChannelsProvider createProvider(@NotNull URI uri, @Nullable Object object);
 }

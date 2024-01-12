@@ -173,15 +173,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             return NULL_DICTIONARY;
         }
-        if (channelContext == SeekableChannelsProvider.ChannelContext.NULL) {
-            // Create a new context object and use that for reading the dictionary
-            try (final SeekableChannelsProvider.ChannelContext context = channelsProvider.makeContext()) {
-                return getDictionaryHelper(context, dictionaryPageOffset);
-            }
-        } else {
-            // Use the context object provided by the caller
-            return getDictionaryHelper(channelContext, dictionaryPageOffset);
-        }
+        return getDictionaryHelper(channelContext, dictionaryPageOffset);
     }
 
     private Dictionary getDictionaryHelper(final SeekableChannelsProvider.ChannelContext context,
@@ -205,8 +197,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public SeekableChannelsProvider.ChannelContext makeChannelContext() {
-        return channelsProvider.makeContext();
+    public SeekableChannelsProvider getChannelsProvider() {
+        return channelsProvider;
     }
 
     @NotNull
@@ -238,17 +230,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
         private long currentOffset;
         private long remainingValues;
-        private SeekableChannelsProvider.ChannelContext channelContext;
 
         ColumnPageReaderIteratorImpl(final long startOffset, final long numValues) {
             this.remainingValues = numValues;
             this.currentOffset = startOffset;
-            this.channelContext = SeekableChannelsProvider.ChannelContext.NULL;
-        }
-
-        @Override
-        public void setChannelContext(SeekableChannelsProvider.ChannelContext channelContext) {
-            this.channelContext = channelContext;
         }
 
         @Override
@@ -257,7 +242,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
 
         @Override
-        public ColumnPageReader next() {
+        public ColumnPageReader next(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
             if (!hasNext()) {
                 throw new NoSuchElementException("No next element");
             }
@@ -270,7 +255,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 currentOffset = readChannel.position() + pageHeader.getCompressed_page_size();
                 if (pageHeader.isSetDictionary_page_header()) {
                     // Dictionary page; skip it
-                    return next();
+                    return next(channelContext);
                 }
                 if (!pageHeader.isSetData_page_header() && !pageHeader.isSetData_page_header_v2()) {
                     throw new IllegalStateException(
@@ -298,8 +283,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                                 : (SeekableChannelsProvider.ChannelContext context) -> NULL_DICTIONARY;
                 final ColumnPageReader nextReader = new ColumnPageReaderImpl(channelsProvider, decompressor,
                         pageDictionarySupplier, nullMaterializerFactory, path, getURI(), fieldTypes,
-                        readChannel.position(), pageHeader, ColumnPageReaderImpl.NULL_NUM_VALUES, channelContext);
-                clearChannelContext();
+                        readChannel.position(), pageHeader, ColumnPageReaderImpl.NULL_NUM_VALUES);
                 return nextReader;
             } catch (IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header", e);
@@ -309,18 +293,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final class ColumnPageReaderIteratorIndexImpl implements ColumnPageReaderIterator {
         private int pos;
-        private SeekableChannelsProvider.ChannelContext channelContext;
 
         ColumnPageReaderIteratorIndexImpl() {
             pos = 0;
-            channelContext = SeekableChannelsProvider.ChannelContext.NULL;
         }
-
-        @Override
-        public void setChannelContext(SeekableChannelsProvider.ChannelContext channelContext) {
-            this.channelContext = channelContext;
-        }
-
 
         @Override
         public boolean hasNext() {
@@ -328,7 +304,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
 
         @Override
-        public ColumnPageReader next() {
+        public ColumnPageReader next(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
             if (!hasNext()) {
                 throw new NoSuchElementException("No next element");
             }
@@ -341,9 +317,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             final ColumnPageReader columnPageReader =
                     new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier,
                             nullMaterializerFactory, path, getURI(), fieldTypes, offsetIndex.getOffset(pos), null,
-                            numValues, channelContext);
+                            numValues);
             pos++;
-            clearChannelContext();
             return columnPageReader;
         }
     }
@@ -353,8 +328,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         ColumnPageDirectAccessorImpl() {}
 
         @Override
-        public ColumnPageReader getPageReader(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
-                final int pageNum) {
+        public ColumnPageReader getPageReader(final int pageNum) {
             if (pageNum < 0 || pageNum >= offsetIndex.getPageCount()) {
                 throw new IndexOutOfBoundsException(
                         "pageNum=" + pageNum + ", offsetIndex.getPageCount()=" + offsetIndex.getPageCount());
@@ -362,7 +336,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             // Page header and number of values will be populated later when we read the page header from the file
             return new ColumnPageReaderImpl(channelsProvider, decompressor, dictionarySupplier, nullMaterializerFactory,
                     path, getURI(), fieldTypes, offsetIndex.getOffset(pageNum), null,
-                    ColumnPageReaderImpl.NULL_NUM_VALUES, channelContext);
+                    ColumnPageReaderImpl.NULL_NUM_VALUES);
         }
     }
 }

@@ -573,48 +573,6 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readLongParquetFileFromS3Test() {
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .awsRegionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .connectionTimeout(Duration.ofSeconds(1))
-                .readTimeout(Duration.ofSeconds(60))
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-
-        final Table fromAws1 = ParquetTools.readSingleFileTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions, tableDefinition).select();
-        final Table fromDisk1 = ParquetTools.readSingleFileTable(
-                new File(
-                        "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
-                ParquetTools.SNAPPY,
-                tableDefinition).select();
-        assertTableEquals(fromAws1, fromDisk1);
-    }
-
-    @Test
     public void readRefParquetFileFromS3Test() {
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .awsRegionName("us-east-2")
@@ -663,6 +621,48 @@ public final class ParquetTableReadWriteTest {
                 ParquetTools.SNAPPY,
                 tableDefinition).head(5).select();
         assertTableEquals(fromAws2, fromDisk2);
+    }
+
+    @Test
+    public void readLongParquetFileFromS3Test() {
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .awsRegionName("us-east-2")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .connectionTimeout(Duration.ofSeconds(1))
+                .readTimeout(Duration.ofSeconds(60))
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("hash"),
+                ColumnDefinition.ofLong("version"),
+                ColumnDefinition.ofLong("size"),
+                ColumnDefinition.ofString("block_hash"),
+                ColumnDefinition.ofLong("block_number"),
+                ColumnDefinition.ofLong("index"),
+                ColumnDefinition.ofLong("virtual_size"),
+                ColumnDefinition.ofLong("lock_time"),
+                ColumnDefinition.ofLong("input_count"),
+                ColumnDefinition.ofLong("output_count"),
+                ColumnDefinition.ofBoolean("isCoinbase"),
+                ColumnDefinition.ofDouble("output_value"),
+                ColumnDefinition.ofTime("last_modified"),
+                ColumnDefinition.ofDouble("input_value"));
+
+        final Table fromAws1 = ParquetTools.readSingleFileTable(
+                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
+                readInstructions, tableDefinition).select();
+        final Table fromDisk1 = ParquetTools.readSingleFileTable(
+                new File(
+                        "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
+                ParquetTools.SNAPPY,
+                tableDefinition).select();
+        assertTableEquals(fromAws1, fromDisk1);
     }
 
     @Test

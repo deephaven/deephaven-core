@@ -99,8 +99,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         return (low - 1); // 'row' is somewhere in the middle of page
     }
 
-    private ChunkPage<ATTR> getPage(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
-            final int pageNum) {
+    private ChunkPage<ATTR> getPage(@Nullable final FillContext fillContext, final int pageNum) {
         if (pageNum < 0 || pageNum >= numPages) {
             throw new IllegalArgumentException("pageNum " + pageNum + " is out of range [0, " + numPages + ")");
         }
@@ -117,15 +116,16 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
                 if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
-                    final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(channelContext, pageNum);
+                    // Use the latest context while reading the page
+                    final SeekableChannelsProvider.ChannelContext channelContext = innerFillContext(fillContext);
+                    final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
                     try {
-                        page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum), reader));
+                        page = new PageCache.IntrusivePage<>(
+                                toPage(offsetIndex.getFirstRowIndex(pageNum), reader, channelContext));
                     } catch (final IOException except) {
                         throw new UncheckedIOException(except);
                     }
                     pageState.pageRef = new WeakReference<>(page);
-                    // Clear out the context to avoid retaining old copies
-                    reader.clearChannelContext();
                 }
             }
         }
@@ -153,9 +153,6 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             }
         }
 
-        // Use the latest context while reading the page
-        innerFillContext(fillContext);
-        final SeekableChannelsProvider.ChannelContext channelContext = getChannelContext(fillContext);
-        return getPage(channelContext, pageNum);
+        return getPage(fillContext, pageNum);
     }
 }

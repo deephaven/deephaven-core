@@ -48,7 +48,16 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         default void close() {}
     }
 
+    /**
+     * Create a new {@link ChannelContext} object for creating read and write channels via this provider.
+     */
     ChannelContext makeContext();
+
+    /**
+     * Check if the given context is compatible with this provider. Useful to test if we can use provided
+     * {@code context} object for creating channels with this provider.
+     */
+    boolean isCompatibleWith(@NotNull ChannelContext context);
 
     interface ContextHolder {
         void setContext(ChannelContext context);
@@ -59,14 +68,14 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         }
     }
 
-    default SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final String uriStr)
+    default SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull String uriStr)
             throws IOException {
         return getReadChannel(context, convertToURI(uriStr));
     }
 
-    SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull URI uri) throws IOException;
+    SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull URI uri) throws IOException;
 
-    default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
+    default SeekableByteChannel getWriteChannel(@NotNull String path, final boolean append) throws IOException {
         return getWriteChannel(Paths.get(path), append);
     }
 

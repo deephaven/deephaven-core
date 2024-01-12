@@ -53,6 +53,11 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public boolean isCompatibleWith(@NotNull ChannelContext context) {
+        return context instanceof S3SeekableByteChannel.S3ChannelContext;
+    }
+
+    @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
         throw new UnsupportedOperationException("Don't support writing to S3 yet");
     }

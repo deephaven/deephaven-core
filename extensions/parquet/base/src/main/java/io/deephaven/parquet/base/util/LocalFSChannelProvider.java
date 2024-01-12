@@ -16,7 +16,13 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public ChannelContext makeContext() {
+        // No additional context required for local FS
         return ChannelContext.NULL;
+    }
+
+    @Override
+    public boolean isCompatibleWith(@NotNull final ChannelContext context) {
+        return context == ChannelContext.NULL;
     }
 
     @Override

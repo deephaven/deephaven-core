@@ -21,7 +21,7 @@ public interface ColumnChunkReader {
     long numRows();
 
     /**
-     * @return The value stored under the corresponding ColumnMetaData.num_values field
+     * @return The value stored under the corresponding ColumnMetaData.num_values field.
      */
     long numValues();
 
@@ -41,21 +41,21 @@ public interface ColumnChunkReader {
      * Used to iterate over column page readers for each page with the capability to set channel context to for reading
      * the pages.
      */
-    interface ColumnPageReaderIterator extends Iterator<ColumnPageReader> {
+    interface ColumnPageReaderIterator {
+        /**
+         * @return Whether there are more pages to iterate over.
+         */
+        boolean hasNext();
 
         /**
-         * Set the {@code channelContext} to be used only for a single {@code next()} call. If not set,
-         * {@code SeekableChannelsProvider.ChannelContext.NULL} will be used
+         * @param channelContext The channel context to use for constructing the reader
+         * @return The next page reader.
          */
-        void setChannelContext(final SeekableChannelsProvider.ChannelContext channelContext);
-
-        default void clearChannelContext() {
-            setChannelContext(SeekableChannelsProvider.ChannelContext.NULL);
-        }
+        ColumnPageReader next(SeekableChannelsProvider.ChannelContext channelContext);
     }
 
     /**
-     * @return An iterator over individual parquet pages
+     * @return An iterator over individual parquet pages.
      */
     ColumnPageReaderIterator getPageIterator() throws IOException;
 
@@ -63,17 +63,16 @@ public interface ColumnChunkReader {
         /**
          * Directly access a page reader for a given page number.
          */
-        ColumnPageReader getPageReader(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
-                final int pageNum);
+        ColumnPageReader getPageReader(int pageNum);
     }
 
     /**
-     * @return An accessor for individual parquet pages
+     * @return An accessor for individual parquet pages.
      */
     ColumnPageDirectAccessor getPageAccessor();
 
     /**
-     * @return Whether this column chunk uses a dictionary-based encoding on every page
+     * @return Whether this column chunk uses a dictionary-based encoding on every page.
      */
     boolean usesDictionaryOnEveryPage();
 
@@ -107,7 +106,7 @@ public interface ColumnChunkReader {
     String getVersion();
 
     /**
-     * Create a new channel context for this column chunk reader.
+     * @return The channel provider for this column chunk reader.
      */
-    SeekableChannelsProvider.ChannelContext makeChannelContext();
+    SeekableChannelsProvider getChannelsProvider();
 }

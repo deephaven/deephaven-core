@@ -72,18 +72,16 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
                     pages = Arrays.copyOf(pages, newSize);
                 }
 
-                columnPageReaderIterator.setChannelContext(channelContext);
-                final ColumnPageReader columnPageReader = columnPageReaderIterator.next();
-
+                final ColumnPageReader columnPageReader = columnPageReaderIterator.next(channelContext);
                 long numRows;
                 WeakReference<PageCache.IntrusivePage<ATTR>> pageRef = PageCache.getNullPage();
                 final long prevRowOffset = pageRowOffsets[localNumPages];
 
                 try {
-                    numRows = columnPageReader.numRows();
+                    numRows = columnPageReader.numRows(channelContext);
 
                     if (numRows < 0) {
-                        page = new PageCache.IntrusivePage<>(toPage(prevRowOffset, columnPageReader));
+                        page = new PageCache.IntrusivePage<>(toPage(prevRowOffset, columnPageReader, channelContext));
                         pageRef = new WeakReference<>(page);
                         numRows = page.getPage().size();
                     }
@@ -91,8 +89,6 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
                     throw new UncheckedIOException(except);
                 }
 
-                // Clear out the context to avoid retaining old copies
-                columnPageReader.clearChannelContext();
                 columnPageReaders[localNumPages] = columnPageReader;
                 pages[localNumPages] = pageRef;
                 pageRowOffsets[localNumPages + 1] = prevRowOffset + numRows;
@@ -129,14 +125,9 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
                 if (page == null) {
                     try {
-                        // Use the latest context while reading the page
-                        final ColumnPageReader columnPageReader = columnPageReaders[pageNum];
-                        columnPageReader.setChannelContext(channelContext);
-                        page = new PageCache.IntrusivePage<>(
-                                toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
-                        // Clear out the context to avoid retaining old copies
-                        columnPageReader.clearChannelContext();
-                    } catch (IOException except) {
+                        page = new PageCache.IntrusivePage<>(toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum],
+                                channelContext));
+                    } catch (final IOException except) {
                         throw new UncheckedIOException(except);
                     }
 
@@ -165,8 +156,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         }
 
         // Use the latest channel context while reading page headers
-        innerFillContext(fillContext);
-        final SeekableChannelsProvider.ChannelContext channelContext = getChannelContext(fillContext);
+        final SeekableChannelsProvider.ChannelContext channelContext = innerFillContext(fillContext);
 
         if (pageNum >= localNumPages) {
             final int minPageNum = fillToRow(channelContext, localNumPages, rowKey);

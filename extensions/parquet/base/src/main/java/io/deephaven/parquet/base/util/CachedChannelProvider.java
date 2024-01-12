@@ -58,6 +58,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public boolean isCompatibleWith(@NotNull final ChannelContext context) {
+        return wrappedProvider.isCompatibleWith(context);
+    }
+
+    @Override
     public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
         final String uriString = uri.toString();
