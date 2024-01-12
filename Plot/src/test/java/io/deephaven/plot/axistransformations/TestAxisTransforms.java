@@ -16,6 +16,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestAxisTransforms {
+    static {
+        CalendarInit.noop();
+    }
 
     final double d1 = 3.5;
     final double d2 = 4.2;

@@ -22,6 +22,10 @@ import java.util.*;
  */
 public class TestStaticCalendarMethods extends BaseArrayTestCase {
 
+    static {
+        CalendarInit.noop();
+    }
+
     private final Map<Class<?>, Object[]> data = new HashMap<>();
 
     {

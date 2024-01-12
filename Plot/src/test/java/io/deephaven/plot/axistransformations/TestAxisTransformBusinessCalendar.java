@@ -3,16 +3,19 @@
  */
 package io.deephaven.plot.axistransformations;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.Calendars;
+import junit.framework.TestCase;
 
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Objects;
 
-public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
+public class TestAxisTransformBusinessCalendar extends TestCase {
+    static {
+        CalendarInit.noop();
+    }
 
     private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
 
