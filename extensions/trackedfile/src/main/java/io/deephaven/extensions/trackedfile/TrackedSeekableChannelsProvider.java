@@ -25,19 +25,6 @@ import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProvide
  */
 class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
-    private static volatile SeekableChannelsProvider instance;
-
-    static SeekableChannelsProvider getInstance() {
-        if (instance == null) {
-            synchronized (TrackedSeekableChannelsProvider.class) {
-                if (instance == null) {
-                    return instance = new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
-                }
-            }
-        }
-        return instance;
-    }
-
     private final TrackedFileHandleFactory fileHandleFactory;
 
     TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
@@ -59,7 +46,7 @@ class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
     public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
-        Assert.assertion(uri.getScheme().equals(FILE_URI_SCHEME), "Expected a file uri, got " + uri);
+        Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
         return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
     }
 

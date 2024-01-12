@@ -48,6 +48,9 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
     public URITableLocationKey(@NotNull final URI uri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions) {
         super(partitions);
+        if (!uri.isAbsolute()) {
+            throw new IllegalArgumentException("URI must be absolute");
+        }
         this.uri = uri;
         this.order = order;
     }

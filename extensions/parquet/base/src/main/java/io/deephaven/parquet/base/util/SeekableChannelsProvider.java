@@ -29,11 +29,11 @@ public interface SeekableChannelsProvider extends SafeCloseable {
             uri = new URI(source);
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return new File(source).getAbsoluteFile().toURI();
+            return new File(source).toURI();
         }
         if (uri.getScheme() == null) {
             // Need to convert to a "file" URI
-            return new File(source).getAbsoluteFile().toURI();
+            return new File(source).toURI();
         }
         return uri;
     }

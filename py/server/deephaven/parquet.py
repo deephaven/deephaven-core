@@ -19,41 +19,8 @@ _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
-_JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JDuration = jpy.get_type("java.time.Duration")
-
-def _build_s3_parquet_instructions(
-        aws_region_name: str,
-        max_concurrent_requests: int = None,
-        read_ahead_count: int = None,
-        fragment_size: int = None,
-        max_cache_size: int = None,
-        connection_timeout: _JDuration = None,
-        read_timeout: _JDuration = None,
-):
-    builder = _JS3Instructions.builder()
-    builder.awsRegionName(aws_region_name)
-
-    if max_concurrent_requests is not None:
-        builder.maxConcurrentRequests(max_concurrent_requests)
-
-    if read_ahead_count is not None:
-        builder.readAheadCount(read_ahead_count)
-
-    if fragment_size is not None:
-        builder.fragmentSize(fragment_size)
-
-    if max_cache_size is not None:
-        builder.maxCacheSize(max_cache_size)
-
-    if connection_timeout is not None:
-        builder.connectionTimeout(connection_timeout)
-
-    if read_timeout is not None:
-        builder.readTimeout(read_timeout)
-
-    return builder.build()
 
 
 @dataclass
@@ -76,13 +43,7 @@ def _build_parquet_instructions(
         is_refreshing: bool = False,
         for_read: bool = True,
         force_build: bool = False,
-        aws_region_name: str = None,
-        max_concurrent_requests: int = None,
-        read_ahead_count: int = None,
-        fragment_size: int = None,
-        max_cache_size: int = None,
-        connection_timeout: _JDuration = None,
-        read_timeout: _JDuration = None,
+        special_instructions: Optional[object] = None,
 ):
     if not any(
             [
@@ -94,13 +55,7 @@ def _build_parquet_instructions(
                 is_legacy_parquet,
                 target_page_size is not None,
                 is_refreshing,
-                aws_region_name is not None,
-                max_concurrent_requests is not None,
-                read_ahead_count is not None,
-                fragment_size is not None,
-                max_cache_size is not None,
-                connection_timeout is not None,
-                read_timeout is not None,
+                special_instructions is not None
             ]
     ):
         return None
@@ -137,17 +92,8 @@ def _build_parquet_instructions(
     if is_refreshing:
         builder.setIsRefreshing(is_refreshing)
 
-    if aws_region_name is not None:
-        s3_parquet_instructions = _build_s3_parquet_instructions(
-            aws_region_name=aws_region_name,
-            max_concurrent_requests=max_concurrent_requests,
-            read_ahead_count=read_ahead_count,
-            fragment_size=fragment_size,
-            max_cache_size=max_cache_size,
-            connection_timeout=connection_timeout,
-            read_timeout=read_timeout,
-        )
-        builder.setSpecialInstructions(s3_parquet_instructions)
+    if special_instructions is not None:
+        builder.setSpecialInstructions(special_instructions)
 
     return builder.build()
 
@@ -192,13 +138,7 @@ def read(
         is_refreshing: bool = False,
         file_layout: Optional[ParquetFileLayout] = None,
         table_definition: Union[Dict[str, DType], List[Column], None] = None,
-        aws_region_name: str = None,
-        max_concurrent_requests: int = None,
-        read_ahead_count: int = None,
-        fragment_size: int = None,
-        max_cache_size: int = None,
-        connection_timeout: _JDuration = None,
-        read_timeout: _JDuration = None,
+        special_instructions: Optional[object] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -212,22 +152,11 @@ def read(
             inferred.
         table_definition (Union[Dict[str, DType], List[Column], None]): the table definition, by default None. When None,
             the definition is inferred from the parquet file(s). Setting a definition guarantees the returned table will
-            have that definition. This is useful for bootstrapping purposes when the initial partitioned directory is
+            have that definition. This is useful for bootstrapping purposes when the initially partitioned directory is
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
-        aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, by default None
-        max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3,
-            by default 50.
-        read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
-            fragment, defaults to 1.
-        fragment_size (int): the maximum size of each fragment to read from S3. The fetched fragment can be smaller than
-            this in case fewer bytes remaining in the file, defaults to 5 MB.
-        max_cache_size (int): the maximum number of fragments to cache in memory, defaults to 32.
-        connection_timeout (Duration): the amount of time to wait when initially establishing a connection before giving
-            up and timing out, defaults to 2 seconds.
-        read_timeout (Duration): the amount of time to wait when reading a fragment before giving up and timing out,
-            defaults to 2 seconds
-        # TODO Make sure all the defaults are correct
+        special_instructions (Optional[object]): Special instructions for reading parquet files, useful when reading
+            files from a non-local file system, like S3. By default, None. When
 
     Returns:
         a table
@@ -243,13 +172,7 @@ def read(
             is_refreshing=is_refreshing,
             for_read=True,
             force_build=True,
-            aws_region_name=aws_region_name,
-            max_concurrent_requests=max_concurrent_requests,
-            read_ahead_count=read_ahead_count,
-            fragment_size=fragment_size,
-            max_cache_size=max_cache_size,
-            connection_timeout=connection_timeout,
-            read_timeout=read_timeout,
+            special_instructions=special_instructions,
         )
         j_table_definition = _j_table_definition(table_definition)
         if j_table_definition is not None:

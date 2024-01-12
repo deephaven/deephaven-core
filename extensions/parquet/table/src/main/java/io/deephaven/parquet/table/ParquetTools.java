@@ -681,7 +681,7 @@ public class ParquetTools {
     private static Table readTableInternal(
             @NotNull final URI source,
             @NotNull final ParquetInstructions instructions) {
-        if (!source.getScheme().equals(FILE_URI_SCHEME)) {
+        if (!FILE_URI_SCHEME.equals(source.getScheme())) {
             return readSingleFileTable(source, instructions);
         }
         return readTableInternal(new File(source), instructions);

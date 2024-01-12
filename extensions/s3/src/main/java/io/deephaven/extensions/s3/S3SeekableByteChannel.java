@@ -182,26 +182,18 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
             return -1;
         }
 
-        // Send async read request the current fragment, if it's not already in the cache
+        // Send async read requests for current fragment as well as read ahead fragments, if not already in cache
         final int currFragmentIndex = fragmentIndexForByteNumber(localPosition);
-        CompletableFuture<ByteBuffer> currFragmentFuture = context.getCachedFuture(currFragmentIndex);
-        if (currFragmentFuture == null) {
-            currFragmentFuture = computeFragmentFuture(currFragmentIndex);
-            context.setFragmentContext(currFragmentIndex, currFragmentFuture);
-        }
-
-        // Send async requests for read-ahead buffers and store them in the cache
-        final int numFragmentsToLoad = Math.min(readAheadCount, numFragmentsInObject - currFragmentIndex - 1);
-        for (int i = 0; i < numFragmentsToLoad; i++) {
-            final int readAheadFragmentIndex = i + currFragmentIndex + 1;
-            final CompletableFuture<ByteBuffer> readAheadFragmentFuture =
-                    context.getCachedFuture(readAheadFragmentIndex);
-            if (readAheadFragmentFuture == null) {
-                context.setFragmentContext(readAheadFragmentIndex, computeFragmentFuture(readAheadFragmentIndex));
+        final int numReadAheadFragments = Math.min(readAheadCount, numFragmentsInObject - currFragmentIndex - 1);
+        for (int idx = currFragmentIndex; idx <= currFragmentIndex + numReadAheadFragments; idx++) {
+            final CompletableFuture<ByteBuffer> future = context.getCachedFuture(idx);
+            if (future == null) {
+                context.setFragmentContext(idx, sendAsyncRequest(idx));
             }
         }
 
         // Wait till the current fragment is fetched
+        final CompletableFuture<ByteBuffer> currFragmentFuture = context.getCachedFuture(currFragmentIndex);
         final ByteBuffer currentFragment;
         try {
             currentFragment = currFragmentFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
@@ -230,7 +222,10 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
         return Math.toIntExact(byteNumber / fragmentSize);
     }
 
-    private CompletableFuture<ByteBuffer> computeFragmentFuture(final int fragmentIndex) {
+    /**
+     * @return A {@link CompletableFuture} that will be completed with the bytes of the fragment
+     */
+    private CompletableFuture<ByteBuffer> sendAsyncRequest(final int fragmentIndex) {
         final long readFrom = (long) fragmentIndex * fragmentSize;
         final long readTo = Math.min(readFrom + fragmentSize, size) - 1;
         final String range = "bytes=" + readFrom + "-" + readTo;
@@ -278,15 +273,17 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     @Override
     public long size() throws ClosedChannelException {
         checkClosed(position);
-        if (size < 0) {
-            populateSize();
-        }
+        populateSize();
         return size;
     }
 
     private void populateSize() {
+        if (size >= 0) {
+            return;
+        }
         if (context.getSize() < 0) {
-            // Fetch the size of the file on the first read using a blocking HEAD request
+            // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
+            // for future use
             final HeadObjectResponse headObjectResponse;
             try {
                 headObjectResponse = s3AsyncClient.headObject(builder -> builder.bucket(bucket).key(key))

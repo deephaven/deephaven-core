@@ -166,8 +166,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         if (!hasGroupingTable) {
             return null;
         }
-        final URI parquetFileURI = tl().getParquetFile();
-        Assert.assertion(parquetFileURI.getScheme().equals(FILE_URI_SCHEME),
+        final URI parquetFileURI = tl().getParquetKey().getURI();
+        Assert.assertion(FILE_URI_SCHEME.equals(parquetFileURI.getScheme()),
                 "Expected a file uri, got " + parquetFileURI);
         final File parquetFile = new File(parquetFileURI);
         try {

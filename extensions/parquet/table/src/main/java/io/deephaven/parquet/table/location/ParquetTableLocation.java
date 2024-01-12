@@ -26,7 +26,6 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.net.URI;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -90,10 +89,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
         version = tableInfo.map(TableInfo::version).orElse(null);
 
-        if (!tableLocationKey.getURI().getScheme().equals(FILE_URI_SCHEME)) {
+        if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
             handleUpdate(computeIndex(), 0L); // TODO What should I put here?
         } else {
-            handleUpdate(computeIndex(), new File(tableLocationKey.getURI().toString()).lastModified());
+            handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
         }
     }
 
@@ -105,8 +104,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public void refresh() {}
 
-    URI getParquetFile() {
-        return ((ParquetTableLocationKey) getKey()).getURI();
+    ParquetTableLocationKey getParquetKey() {
+        return (ParquetTableLocationKey) getKey();
     }
 
     ParquetInstructions getReadInstructions() {

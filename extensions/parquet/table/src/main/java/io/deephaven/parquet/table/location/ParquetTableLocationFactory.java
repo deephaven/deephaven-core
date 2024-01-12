@@ -34,7 +34,7 @@ public final class ParquetTableLocationFactory implements TableLocationFactory<T
             @NotNull final ParquetTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
         final URI parquetFileURI = locationKey.getURI();
-        if (!parquetFileURI.getScheme().equals(FILE_URI_SCHEME) || new File(parquetFileURI).exists()) {
+        if (!FILE_URI_SCHEME.equals(parquetFileURI.getScheme()) || new File(parquetFileURI).exists()) {
             return new ParquetTableLocation(tableKey, locationKey, readInstructions);
         } else {
             return new NonexistentTableLocation(tableKey, locationKey);
