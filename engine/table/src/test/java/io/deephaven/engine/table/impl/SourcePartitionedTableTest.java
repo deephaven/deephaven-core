@@ -116,10 +116,10 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
-        }), errors -> errors.size() == 1 &&
-                FindExceptionCause.isOrCausedBy(errors.get(0),
-                        TableLocationRemovedException.class).isPresent());
+        }, false), errors -> errors.size() == 1 &&
+                FindExceptionCause.isOrCausedBy(errors.get(0), TableLocationRemovedException.class).isPresent());
         getUpdateErrors().clear();
 
         assertEquals(1, partitionTable.size());
@@ -147,10 +147,10 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
-        }), errors -> errors.size() == 1 &&
-                FindExceptionCause.isOrCausedBy(errors.get(0),
-                        TableLocationRemovedException.class).isPresent());
+        }, false), errors -> errors.size() == 1 &&
+                FindExceptionCause.isOrCausedBy(errors.get(0), TableLocationRemovedException.class).isPresent());
         getUpdateErrors().clear();
 
         assertEquals(2, partitionTable.size());
@@ -163,10 +163,11 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf. Erroring P3 will
         // cause one error to come from the copied table, and one from the merged() table. We just need to validate
         // that the exceptions we see are a ConstituentTableException and an ISE
-        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(
-                () -> p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null)),
-                errors -> errors.size() == 1 &&
-                        FindExceptionCause.isOrCausedBy(errors.get(0), IllegalStateException.class).isPresent());
+        allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            p3.notifyListenersOnError(new IllegalStateException("This is a test error"), null);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }, false), errors -> errors.size() == 1 &&
+                FindExceptionCause.isOrCausedBy(errors.get(0), IllegalStateException.class).isPresent());
     }
 
     /**
@@ -197,10 +198,10 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             // This should process the pending update from the refresh above.
             updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
-        }),
-                errors -> errors.size() == 1 &&
-                        FindExceptionCause.isOrCausedBy(errors.get(0), TableDataException.class).isPresent());
+        }, false), errors -> errors.size() == 1 &&
+                FindExceptionCause.isOrCausedBy(errors.get(0), TableDataException.class).isPresent());
         getUpdateErrors().clear();
 
         // Then delete it for real
@@ -210,8 +211,9 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // We should NOT get an error here because the failed table should have removed itself from the registrar.
         updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
-        });
+        }, false);
 
         assertEquals(1, partitionTable.size());
         try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
@@ -240,8 +242,9 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
 
         allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
-        }), errors -> errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
+        }, false), errors -> errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
                 InvalidatedRegionException.class).isPresent()) &&
                 errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
                         TableLocationRemovedException.class).isPresent()));

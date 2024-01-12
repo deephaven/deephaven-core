@@ -10,6 +10,7 @@ import io.deephaven.time.DateTimeUtils;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -258,12 +259,13 @@ public class Calendar {
      *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate plusDays(final String date, final int days) {
+    public String plusDays(final String date, final int days) {
         if (date == null || days == NULL_INT) {
             return null;
         }
 
-        return plusDays(DateTimeUtils.parseLocalDate(date), days);
+        final LocalDate d = plusDays(DateTimeUtils.parseLocalDate(date), days);
+        return d == null ? null : d.toString();
     }
 
     /**
@@ -339,12 +341,13 @@ public class Calendar {
      *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate minusDays(final String date, final int days) {
+    public String minusDays(final String date, final int days) {
         if (date == null || days == NULL_INT) {
             return null;
         }
 
-        return minusDays(DateTimeUtils.parseLocalDate(date), days);
+        final LocalDate d = minusDays(DateTimeUtils.parseLocalDate(date), days);
+        return d == null ? null : d.toString();
     }
 
     /**
@@ -457,14 +460,16 @@ public class Calendar {
      * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] calendarDates(final String start, final String end, final boolean startInclusive,
+    public String[] calendarDates(final String start, final String end, final boolean startInclusive,
             final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
 
-        return calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
-                endInclusive);
+        final LocalDate[] dates =
+                calendarDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
+                        endInclusive);
+        return dates == null ? null : Arrays.stream(dates).map(DateTimeUtils::formatDate).toArray(String[]::new);
     }
 
     /**
@@ -528,7 +533,7 @@ public class Calendar {
      *         any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    public LocalDate[] calendarDates(final String start, final String end) {
+    public String[] calendarDates(final String start, final String end) {
         return calendarDates(start, end, true, true);
     }
 

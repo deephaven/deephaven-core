@@ -57,8 +57,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      */
     @Nullable
     public static PerformanceEntry createUpdatePerformanceEntry(
-            final UpdateGraph updateGraph,
-            final String description) {
+            @Nullable final UpdateGraph updateGraph,
+            @Nullable final String description) {
         if (updateGraph instanceof BaseUpdateGraph) {
             final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
             if (bug.updatePerformanceTracker != null) {
