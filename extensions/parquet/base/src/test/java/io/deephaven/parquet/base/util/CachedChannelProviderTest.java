@@ -168,6 +168,11 @@ public class CachedChannelProviderTest {
         }
 
         @Override
+        public boolean isCompatibleWith(@NotNull ChannelContext context) {
+            return context == ChannelContext.NULL;
+        }
+
+        @Override
         public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path);
         }
