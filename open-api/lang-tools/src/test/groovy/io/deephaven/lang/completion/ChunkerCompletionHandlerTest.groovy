@@ -1,6 +1,7 @@
 package io.deephaven.lang.completion
 
 import io.deephaven.engine.context.QueryScope
+import io.deephaven.engine.context.StandaloneQueryScope
 import io.deephaven.engine.context.TestExecutionContext
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableFactory
@@ -55,7 +56,7 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
 
         when:
         doc = p.parse(src)
-        QueryScope vars = new QueryScope.StandaloneQueryScope();
+        QueryScope vars = new StandaloneQueryScope();
         vars.putParam('t', TableFactory.emptyTable(0))
 
         then:
@@ -86,7 +87,7 @@ t = emptyTable(10).update(
 t = emptyTable(10)
 u = t.'''
         CompletionParser p = new CompletionParser()
-        QueryScope vars = new QueryScope.StandaloneQueryScope();
+        QueryScope vars = new StandaloneQueryScope();
         vars.putParam('t', TableFactory.emptyTable(0))
 
         when:
@@ -122,7 +123,7 @@ u = t.'''
         doc = p.parse(src)
 
         LoggerFactory.getLogger(CompletionHandler)
-        QueryScope variables = new QueryScope.StandaloneQueryScope();
+        QueryScope variables = new StandaloneQueryScope();
         variables.putParam('emptyTable', TableFactory.emptyTable(0))
 
 
@@ -148,7 +149,7 @@ c = 3
         p.update(uri, 1, [ makeChange(3, 0, src2) ])
         doc = p.finish(uri)
 
-        QueryScope variables = new QueryScope.StandaloneQueryScope();
+        QueryScope variables = new StandaloneQueryScope();
         variables.putParam('emptyTable', TableFactory.emptyTable(0))
 
         when: "Cursor is at EOF, table name completion from t is returned"
@@ -176,7 +177,7 @@ b = 2
         doc = p.parse(src)
 
         LoggerFactory.getLogger(CompletionHandler)
-        QueryScope variables = new QueryScope.StandaloneQueryScope();
+        QueryScope variables = new StandaloneQueryScope();
         variables.putParam('emptyTable', TableFactory.emptyTable(0))
 
         when: "Cursor is in the comment after the variablename+dot and completion is requested"

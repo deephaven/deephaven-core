@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -302,8 +301,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                     wrapped = PythonObjectWrapper.wrap(newValue);
                 }
                 // This isn't thread safe, we're relying on the GIL being kind to us (as we have historically done).
-                // There
-                // is no built-in for "replace a variable and return the old one".
+                // There is no built-in for "replace a variable and return the old one".
                 Object prev = globals.get(name);
                 globals.setItem(name, wrapped);
                 return prev;

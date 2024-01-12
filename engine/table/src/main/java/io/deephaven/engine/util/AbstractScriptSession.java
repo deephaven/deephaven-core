@@ -84,7 +84,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         createOrClearDirectory(classCacheDirectory);
 
         queryScope = new ScriptSessionQueryScope();
-        manage(queryScope);
         final QueryCompiler compilerContext =
                 QueryCompiler.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
 
@@ -232,6 +231,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     @Override
     protected void destroy() {
         super.destroy();
+
+        // Release a reference to the query scope, so if we're the last ones holding the bag, the scope and its contents
+        // can go away
+        queryScope.release();
+
         // Clear our session's script directory:
         if (classCacheDirectory.exists()) {
             FileUtils.deleteRecursively(classCacheDirectory);
