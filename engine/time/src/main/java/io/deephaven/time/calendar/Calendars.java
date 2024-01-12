@@ -63,8 +63,11 @@ public class Calendars {
         final String location = configuration.getProperty(property);
         try {
             load(location);
-        } catch (NoSuchFileException e) {
-            logger.warn().append("Problem loading calendars. importPath=").append(location).append(e).endl();
+        } catch (Exception e) {
+            logger.warn().append("Problem loading calendars. property=").append(property)
+                    .append(" importPath=").append(location).append(e).endl();
+            throw new RuntimeException("Problem loading calendars. property=" + property +
+                    " importPath=" + location, e);
         }
     }
 
@@ -90,7 +93,7 @@ public class Calendars {
                     logger.warn("Could not open " + filePath + " from classpath");
                     throw new RuntimeException("Could not open " + filePath + " from classpath");
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
                 throw new RuntimeException("Problem loading calendar: location=" + businessCalendarConfig, e);
             }
@@ -98,10 +101,7 @@ public class Calendars {
 
         try (final BufferedReader config = new BufferedReader(new InputStreamReader(configToLoad))) {
             config.lines().forEach(consumer);
-        } catch (NoSuchFileException e) {
-            logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
-            throw e;
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
             throw new RuntimeException("Problem loading calendar: location=" + businessCalendarConfig, e);
         }
