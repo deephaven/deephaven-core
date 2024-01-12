@@ -8,9 +8,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +41,6 @@ class WhereListener extends MergedListener {
     private final WhereFilter[] filters;
     private final ModifiedColumnSet filterColumns;
     private final ListenerRecorder recorder;
-    private final long minimumThreadSize;
     private final boolean permitParallelization;
     private final int segmentCount;
 
@@ -74,12 +75,6 @@ class WhereListener extends MergedListener {
         this.filterColumns = hasColumnArray ? null
                 : sourceTable.newModifiedColumnSet(
                         filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-
-        if (getUpdateGraph().parallelismFactor() > 1) {
-            minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
-        } else {
-            minimumThreadSize = Long.MAX_VALUE;
-        }
         if (QueryTable.PARALLEL_WHERE_SEGMENTS <= 0) {
             segmentCount = getUpdateGraph().parallelismFactor();
         } else {
@@ -116,7 +111,10 @@ class WhereListener extends MergedListener {
         final ListenerFilterExecution result = makeFilterExecution();
         final TableUpdate upstream = recorder.getUpdate().acquire();
         result.scheduleCompletion(
-                (x) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, x));
+                () -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, result),
+                exception -> {
+                    // ignore? Shouldn't we notify the listeners of the failure?
+                });
     }
 
     private ModifiedColumnSet getSourceModifiedColumnSet() {
@@ -202,9 +200,8 @@ class WhereListener extends MergedListener {
         return false;
     }
 
-    ListenerFilterExecution makeFilterExecution(RowSet refilter) {
-        return new ListenerFilterExecution(refilter, 0, refilter.size(), null, 0, 0, null, false, ModifiedColumnSet.ALL,
-                0);
+    ListenerFilterExecution makeFilterExecution(final RowSet refilter) {
+        return new ListenerFilterExecution(refilter, null, false, ModifiedColumnSet.ALL);
     }
 
     void setFinalExecutionStep() {
@@ -214,25 +211,26 @@ class WhereListener extends MergedListener {
     ListenerFilterExecution makeFilterExecution() {
         final ModifiedColumnSet sourceModColumns = getSourceModifiedColumnSet();
         final boolean runModifiedFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
-        return new ListenerFilterExecution(recorder.getAdded(), 0, recorder.getAdded().size(),
-                recorder.getModified(), 0, recorder.getModified().size(), null,
-                runModifiedFilters, sourceModColumns, 0);
+        return new ListenerFilterExecution(recorder.getAdded(), recorder.getModified(),
+                runModifiedFilters, sourceModColumns);
     }
 
     class ListenerFilterExecution extends AbstractFilterExecution {
+        private final JobScheduler jobScheduler;
+
         private ListenerFilterExecution(
                 final RowSet addedInput,
-                final long addStart,
-                final long addEnd,
                 final RowSet modifyInput,
-                final long modifyStart,
-                final long modifyEnd,
-                final ListenerFilterExecution parent,
                 final boolean runModifiedFilters,
-                final ModifiedColumnSet sourceModColumns,
-                final int filterIndex) {
-            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, addStart, addEnd, modifyInput,
-                    modifyStart, modifyEnd, parent, false, runModifiedFilters, sourceModColumns, filterIndex);
+                final ModifiedColumnSet sourceModColumns) {
+            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifyInput,
+                    false, runModifiedFilters, sourceModColumns);
+            // Create the proper JobScheduler for the following parallel tasks
+            if (getUpdateGraph().parallelismFactor() > 1) {
+                jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
+            } else {
+                jobScheduler = ImmediateJobScheduler.INSTANCE;
+            }
         }
 
         @Override
@@ -243,32 +241,8 @@ class WhereListener extends MergedListener {
         }
 
         @Override
-        void handleUncaughtException(Exception throwable) {
-            WhereListener.this.handleUncaughtException(throwable);
-        }
-
-        @Override
-        void accumulatePerformanceEntry(BasePerformanceEntry entry) {
-            WhereListener.this.accumulatePeformanceEntry(entry);
-        }
-
-        @Override
-        void onNoChildren() {}
-
-        @Override
-        ListenerFilterExecution makeChild(
-                final RowSet addedInput, final long addStart, final long addEnd, final RowSet modifyInput,
-                final long modifyStart, final long modifyEnd, final int filterIndex) {
-            return new ListenerFilterExecution(addedInput, addStart, addEnd, modifyInput, modifyStart, modifyEnd, this,
-                    runModifiedFilters, sourceModColumns, filterIndex);
-        }
-
-        @Override
-        void enqueueSubFilters(
-                List<AbstractFilterExecution> subFilters,
-                CombinationNotification combinationNotification) {
-            getUpdateGraph().addNotifications(subFilters);
-            getUpdateGraph().addNotification(combinationNotification);
+        JobScheduler jobScheduler() {
+            return jobScheduler;
         }
 
         @Override

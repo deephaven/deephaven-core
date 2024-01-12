@@ -1068,7 +1068,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeFilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
-                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
+                        () -> completeRefilterUpdate(listener, upstream, update, filterExecution.addedResult),
+                        exception -> {
+                            // ignore? Shouldn't we notify the listeners of the failure?
+                            System.out.println("Exception in refilter: " + exception.getMessage());
+                        });
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
@@ -1079,8 +1083,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 }
                 final RowSet unmatched = unmatchedRows.copy();
                 final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
-                filterExecution.scheduleCompletion(fe -> {
-                    final WritableRowSet newMapping = fe.addedResult;
+                filterExecution.scheduleCompletion(() -> {
+                    final WritableRowSet newMapping = filterExecution.addedResult;
                     // add back what we previously matched, but for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         if (upstream != null) {
@@ -1089,7 +1093,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         newMapping.insert(previouslyMatched);
                     }
-                    completeRefilterUpdate(listener, upstream, update, fe.addedResult);
+                    completeRefilterUpdate(listener, upstream, update, filterExecution.addedResult);
+                }, exception -> {
+                    // ignore? Shouldn't we notify the listeners of the failure?
+                    System.out.println("Exception in refilter: " + exception.getMessage());
                 });
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
@@ -1105,7 +1112,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeFilterExecution(matchedClone);
                 filterExecution.scheduleCompletion(
-                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
+                        () -> completeRefilterUpdate(listener, upstream, update, filterExecution.addedResult),
+                        exception -> {
+                            // ignore? Shouldn't we notify the listeners of the failure?
+                            System.out.println("Exception in refilter: " + exception.getMessage());
+                        });
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1226,41 +1237,20 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                     final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
                                             new CompletableFuture<>();
+
                                     final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
-                                            this, filters, rowSetToUse.copy(), 0, rowSetToUse.size(), null, 0,
-                                            usePrev) {
-                                        @Override
-                                        void handleUncaughtException(Exception throwable) {
-                                            currentMappingFuture.completeExceptionally(throwable);
-                                        }
-                                    };
-                                    final ExecutionContext executionContext = ExecutionContext.getContext();
-                                    initialFilterExecution.scheduleCompletion(x -> {
-                                        try (final SafeCloseable ignored = executionContext.open()) {
-                                            if (x.exceptionResult != null) {
-                                                currentMappingFuture.completeExceptionally(x.exceptionResult);
-                                            } else {
-                                                currentMappingFuture.complete(x.addedResult.toTracking());
-                                            }
-                                        }
+                                            this, filters, rowSetToUse.copy(), usePrev);
+                                    final TrackingWritableRowSet currentMapping;
+                                    initialFilterExecution.scheduleCompletion(() -> {
+                                        currentMappingFuture.complete(initialFilterExecution.addedResult.toTracking());
+                                    }, exception -> {
+                                        currentMappingFuture.completeExceptionally(exception);
                                     });
 
-                                    boolean cancelled = false;
-                                    TrackingWritableRowSet currentMapping = null;
                                     try {
-                                        boolean done = false;
-                                        while (!done) {
-                                            try {
-                                                currentMapping = currentMappingFuture.get();
-                                                done = true;
-                                            } catch (InterruptedException e) {
-                                                // cancel the job and wait for it to finish cancelling
-                                                cancelled = true;
-                                                initialFilterExecution.setCancelled();
-                                            }
-                                        }
-                                    } catch (ExecutionException e) {
-                                        if (cancelled) {
+                                        currentMapping = currentMappingFuture.get();
+                                    } catch (ExecutionException | InterruptedException e) {
+                                        if (e instanceof InterruptedException) {
                                             throw new CancellationException("interrupted while filtering");
                                         } else if (e.getCause() instanceof RuntimeException) {
                                             throw (RuntimeException) e.getCause();
