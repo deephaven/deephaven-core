@@ -16,6 +16,8 @@ import java.util.function.Function;
 /**
  * {@link Function} wrapper that caches the result in a {@link SoftReference}. Only suitable to wrap functions that are
  * safely repeatable and don't return {@code null}.
+ *
+ * @param <OUTPUT_TYPE> the type of results supplied by this function
  */
 public final class LazyCachingFunction<INPUT_TYPE, OUTPUT_TYPE> implements Function<INPUT_TYPE, OUTPUT_TYPE> {
 

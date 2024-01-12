@@ -16,11 +16,9 @@ public class ReplicateCachingSupplier {
 
     public static void main(final String[] args) throws IOException {
         final String[][] pairs = new String[][] {
-                {"Supplier<T>", "Function<INPUT_TYPE, OUTPUT_TYPE>"},
+                {"Supplier<OUTPUT_TYPE>", "Function<INPUT_TYPE, OUTPUT_TYPE>"},
                 {"internalSupplier\\.get\\(\\)", "internalFunction\\.apply\\(arg\\)"},
-                {"T get\\(\\)", "OUTPUT_TYPE apply\\(final INPUT_TYPE arg\\)"},
-                {"SoftReference<T>", "SoftReference<OUTPUT_TYPE>"},
-                {"T current", "OUTPUT_TYPE current"},
+                {"OUTPUT_TYPE get\\(\\)", "OUTPUT_TYPE apply\\(final INPUT_TYPE arg\\)"},
                 {"Supplier", "Function"},
                 {"supplier", "function"},
         };
