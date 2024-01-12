@@ -172,12 +172,15 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             // key doesn't even exist, just hand back a null table
             return Promise.resolve((JsTable) null);
         }
+        final String[] columnNames = descriptor.getKeyColumnNamesList().asArray(new String[0]);
+        final String[] columnTypes = keyColumnTypes.toArray(new String[0]);
+        final Object[][] keysData = keyList.stream().map(item -> new Object[] {item}).toArray(Object[][]::new);
         final ClientTableState entry = connection.newState((c, cts, metadata) -> {
             // TODO deephaven-core#2529 parallelize this
             connection.newTable(
-                    descriptor.getKeyColumnNamesList().asArray(new String[0]),
-                    keyColumnTypes.toArray(new String[0]),
-                    keyList.stream().map(item -> new Object[] {item}).toArray(Object[][]::new),
+                    columnNames,
+                    columnTypes,
+                    keysData,
                     null,
                     this)
                     .then(table -> {
