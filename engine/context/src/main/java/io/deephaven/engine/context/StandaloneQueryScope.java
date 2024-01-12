@@ -15,11 +15,11 @@ import java.time.Period;
 import java.util.Set;
 
 /**
- * Map-based implementation, with remote scope and object reflection support.
+ * Map-based implementation, extending LivenessArtifact to manage the objects passed into it.
  */
 public class StandaloneQueryScope extends LivenessArtifact implements QueryScope {
 
-    private final KeyedObjectHashMap<String, ValueRetriever> valueRetrievers =
+    private final KeyedObjectHashMap<String, ValueRetriever<?>> valueRetrievers =
             new KeyedObjectHashMap<>(new ValueRetrieverNameKey());
 
     /**
@@ -32,7 +32,7 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
         if (value instanceof String) {
             final String stringValue = (String) value;
 
-            if (stringValue.length() > 0 && stringValue.charAt(0) == '\''
+            if (!stringValue.isEmpty() && stringValue.charAt(0) == '\''
                     && stringValue.charAt(stringValue.length() - 1) == '\'') {
                 final String datetimeString = stringValue.substring(1, stringValue.length() - 1);
 
@@ -75,32 +75,32 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
 
     @Override
     public <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException {
-        // noinspection unchecked
-        final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
+        final ValueRetriever<?> valueRetriever = valueRetrievers.get(name);
         if (valueRetriever == null) {
             throw new MissingVariableException("Missing variable " + name);
         }
-        return valueRetriever.createParam();
+        //noinspection unchecked
+        return (QueryScopeParam<T>) valueRetriever.createParam();
     }
 
     @Override
     public <T> T readParamValue(final String name) throws MissingVariableException {
-        // noinspection unchecked
-        final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
+        final ValueRetriever<?> valueRetriever = valueRetrievers.get(name);
         if (valueRetriever == null) {
             throw new MissingVariableException("Missing variable " + name);
         }
-        return valueRetriever.getValue();
+        // noinspection unchecked
+        return (T) valueRetriever.getValue();
     }
 
     @Override
     public <T> T readParamValue(final String name, final T defaultValue) {
-        // noinspection unchecked
-        final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
+        final ValueRetriever<?> valueRetriever = valueRetrievers.get(name);
         if (valueRetriever == null) {
             return defaultValue;
         }
-        return valueRetriever.getValue();
+        // noinspection unchecked
+        return (T) valueRetriever.getValue();
     }
 
     @Override
@@ -111,7 +111,7 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
         NameValidator.validateQueryParameterName(name);
         // TODO: Can I get rid of this applyValueConversions? It's too inconsistent to feel safe.
         ValueRetriever<?> oldValueRetriever =
-                valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
+                valueRetrievers.put(name, new ValueRetriever<>(name, applyValueConversions(value)));
 
         if (oldValueRetriever != null) {
             Object oldValue = oldValueRetriever.getValue();
@@ -121,56 +121,33 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
         }
     }
 
-    private static abstract class ValueRetriever<T> {
+    private static class ValueRetriever<T> {
 
+        protected final T value;
         private final String name;
 
-        protected ValueRetriever(String name) {
+        protected ValueRetriever(String name, final T value) {
             this.name = name;
+            this.value = value;
         }
 
         public String getName() {
             return name;
         }
 
-        public abstract T getValue();
-
-        public abstract Class<T> getType();
-
-        public abstract QueryScopeParam<T> createParam();
-    }
-
-    private static class ValueRetrieverNameKey extends KeyedObjectKey.Basic<String, ValueRetriever> {
-
-        @Override
-        public String getKey(ValueRetriever valueRetriever) {
-            return valueRetriever.getName();
-        }
-    }
-
-    private static class SimpleValueRetriever<T> extends ValueRetriever<T> {
-
-        private final T value;
-
-        public SimpleValueRetriever(final String name, final T value) {
-            super(name);
-            this.value = value;
-        }
-
-        @Override
         public T getValue() {
             return value;
         }
 
-        @Override
-        public Class<T> getType() {
-            // noinspection unchecked
-            return (Class<T>) (value != null ? value.getClass() : Object.class);
-        }
-
-        @Override
         public QueryScopeParam<T> createParam() {
             return new QueryScopeParam<>(getName(), getValue());
+        }
+    }
+
+    private static class ValueRetrieverNameKey extends KeyedObjectKey.Basic<String, ValueRetriever<?>> {
+        @Override
+        public String getKey(ValueRetriever valueRetriever) {
+            return valueRetriever.getName();
         }
     }
 }
