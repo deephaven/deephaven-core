@@ -16,10 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.time.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -31,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code
  * <calendar>
  *     <name>USNYSE</name>
+ *     <!-- Optional description -->
  *     <description>New York Stock Exchange Calendar</description>
  *     <timeZone>America/New_York</timeZone>
  *     <default>
@@ -38,13 +36,15 @@ import java.util.concurrent.ConcurrentHashMap;
  *          <weekend>Saturday</weekend>
  *          <weekend>Sunday</weekend>
  *      </default>
+ *      <!-- Optional firstValidDate.  Defaults to the first holiday. -->
  *      <firstValidDate>1999-01-01</firstValidDate>
+ *      <!-- Optional lastValidDate.  Defaults to the first holiday. -->
  *      <lastValidDate>2003-12-31</lastValidDate>
  *      <holiday>
- *          <date>19990101</date>
+ *          <date>1999-01-01</date>
  *      </holiday>
  *      <holiday>
- *          <date>20020705</date>
+ *          <date>2002-07-05</date>
  *          <businessTime>
  *              <open>09:30</open>
  *              <close>13:00</close>
@@ -53,6 +53,25 @@ import java.util.concurrent.ConcurrentHashMap;
  * </calendar>
  * }
  * </pre>
+ *
+ * In addition, legacy XML files are supported. These files have dates formatted as `yyyyMMdd` instead of ISO-8601
+ * `yyy-MM-dd`. Additionally, legacy uses `businessPeriod` tags in place of the `businessTime` tags.
+ * 
+ * <pre>
+ * {@code
+ * <!-- Current format -->
+ * <businessTime><open>09:30</open><close>16:00</close></businessTime>
+ * }
+ * </pre>
+ * 
+ * <pre>
+ * {@code
+ * <!-- Legacy format -->
+ * <businessPeriod>09:30,16:00</businessPeriod>
+ * }
+ * </pre>
+ *
+ * The legacy format may be deprecated in a future release.
  */
 class BusinessCalendarXMLParser {
 
@@ -103,12 +122,16 @@ class BusinessCalendarXMLParser {
             Element root = loadXMLRootElement(file);
             calendarElements.calendarName = getText(getRequiredChild(root, "name"));
             calendarElements.timeZone = TimeZoneAliases.zoneId(getText(getRequiredChild(root, "timeZone")));
-            calendarElements.description = getText(getRequiredChild(root, "description"));
-            calendarElements.firstValidDate =
-                    DateTimeUtils.parseLocalDate(getText(getRequiredChild(root, "firstValidDate")));
-            calendarElements.lastValidDate =
-                    DateTimeUtils.parseLocalDate(getText(getRequiredChild(root, "lastValidDate")));
+            calendarElements.description = getText(root.getChild("description"));
             calendarElements.holidays = parseHolidays(root, calendarElements.timeZone);
+            final String firstValidDateStr = getText(root.getChild("firstValidDate"));
+            calendarElements.firstValidDate = DateTimeUtils.parseLocalDate(
+                    firstValidDateStr == null ? Collections.min(calendarElements.holidays.keySet()).toString()
+                            : firstValidDateStr);
+            final String lastValidDateStr = getText(root.getChild("lastValidDate"));
+            calendarElements.lastValidDate = DateTimeUtils.parseLocalDate(
+                    lastValidDateStr == null ? Collections.max(calendarElements.holidays.keySet()).toString()
+                            : lastValidDateStr);
 
             // Set the default values
             final Element defaultElement = getRequiredChild(root, "default");
@@ -150,9 +173,19 @@ class BusinessCalendarXMLParser {
     }
 
     private static CalendarDay<LocalTime> parseCalendarDaySchedule(final Element element) throws Exception {
-        final List<Element> businessPeriods = element.getChildren("businessTime");
-        return businessPeriods.isEmpty() ? CalendarDay.HOLIDAY
-                : new CalendarDay<>(parseBusinessRanges(businessPeriods));
+        final List<Element> businessTimes = element.getChildren("businessTime");
+        final List<Element> businessPeriods = element.getChildren("businessPeriod");
+
+        if (businessTimes.isEmpty() && businessPeriods.isEmpty()) {
+            return CalendarDay.HOLIDAY;
+        } else if (!businessTimes.isEmpty() && businessPeriods.isEmpty()) {
+            return new CalendarDay<>(parseBusinessRanges(businessTimes));
+        } else if (businessTimes.isEmpty() && !businessPeriods.isEmpty()) {
+            return new CalendarDay<>(parseBusinessRangesLegacy(businessPeriods));
+        } else {
+            throw new Exception("Cannot have both 'businessTime' and 'businessPeriod' tags in the same element: text="
+                    + element.getTextTrim());
+        }
     }
 
     private static TimeRange<LocalTime>[] parseBusinessRanges(final List<Element> businessRanges)
@@ -177,6 +210,31 @@ class BusinessCalendarXMLParser {
         return rst;
     }
 
+    private static TimeRange<LocalTime>[] parseBusinessRangesLegacy(final List<Element> businessRanges)
+            throws Exception {
+        // noinspection unchecked
+        final TimeRange<LocalTime>[] rst = new TimeRange[businessRanges.size()];
+        int i = 0;
+
+        for (Element br : businessRanges) {
+            final String[] openClose = br.getTextTrim().split(",");
+
+            if (openClose.length == 2) {
+                final String openTxt = openClose[0];
+                final String closeTxt = openClose[1];
+                final LocalTime open = DateTimeUtils.parseLocalTime(openTxt);
+                final LocalTime close = DateTimeUtils.parseLocalTime(closeTxt);
+                rst[i] = new TimeRange<>(open, close, true);
+            } else {
+                throw new IllegalArgumentException("Can not parse business periods; open/close = " + br.getText());
+            }
+
+            i++;
+        }
+
+        return rst;
+    }
+
     private static Map<LocalDate, CalendarDay<Instant>> parseHolidays(final Element root, final ZoneId timeZone)
             throws Exception {
         final Map<LocalDate, CalendarDay<Instant>> holidays = new ConcurrentHashMap<>();
@@ -184,7 +242,14 @@ class BusinessCalendarXMLParser {
 
         for (Element holidayElement : holidayElements) {
             final Element dateElement = getRequiredChild(holidayElement, "date");
-            final LocalDate date = DateTimeUtils.parseLocalDate(getText(dateElement));
+            String dateStr = getText(dateElement);
+
+            // Convert yyyyMMdd to yyyy-MM-dd
+            if (dateStr.length() == 8) {
+                dateStr = dateStr.substring(0, 4) + "-" + dateStr.substring(4, 6) + "-" + dateStr.substring(6, 8);
+            }
+
+            final LocalDate date = DateTimeUtils.parseLocalDate(dateStr);
             final CalendarDay<LocalTime> schedule = parseCalendarDaySchedule(holidayElement);
             holidays.put(date, CalendarDay.toInstant(schedule, date, timeZone));
         }

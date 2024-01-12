@@ -42,7 +42,7 @@ public class Calendar {
      */
     Calendar(final String name, final String description, final ZoneId timeZone) {
         this.name = Require.neqNull(name, "name");
-        this.description = Require.neqNull(description, "description");
+        this.description = description;
         this.timeZone = Require.neqNull(timeZone, "timeZone");
     }
 
