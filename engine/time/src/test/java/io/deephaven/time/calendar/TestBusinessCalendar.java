@@ -3,7 +3,6 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
@@ -645,14 +644,17 @@ public class TestBusinessCalendar extends TestCalendar {
         };
 
         assertEquals(bus, bCalendar.businessDates(start, end));
-        assertEquals(bus, bCalendar.businessDates(start.toString(), end.toString()));
+        assertEquals(Arrays.stream(bus).map(DateTimeUtils::formatDate).toArray(String[]::new),
+                bCalendar.businessDates(start.toString(), end.toString()));
         assertEquals(bus,
                 bCalendar.businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
         assertEquals(bus, bCalendar.businessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                 end.atTime(1, 24).atZone(timeZone).toInstant()));
 
         assertEquals(Arrays.copyOfRange(bus, 0, bus.length - 1), bCalendar.businessDates(start, end, true, false));
-        assertEquals(Arrays.copyOfRange(bus, 0, bus.length - 1),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(bus, 0, bus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.businessDates(start.toString(), end.toString(), true, false));
         assertEquals(Arrays.copyOfRange(bus, 0, bus.length - 1), bCalendar
                 .businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone), true, false));
@@ -661,7 +663,9 @@ public class TestBusinessCalendar extends TestCalendar {
                         end.atTime(1, 24).atZone(timeZone).toInstant(), true, false));
 
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length), bCalendar.businessDates(start, end, false, true));
-        assertEquals(Arrays.copyOfRange(bus, 1, bus.length),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(bus, 1, bus.length)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.businessDates(start.toString(), end.toString(), false, true));
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length), bCalendar
                 .businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone), false, true));
@@ -670,7 +674,9 @@ public class TestBusinessCalendar extends TestCalendar {
                         end.atTime(1, 24).atZone(timeZone).toInstant(), false, true));
 
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length - 1), bCalendar.businessDates(start, end, false, false));
-        assertEquals(Arrays.copyOfRange(bus, 1, bus.length - 1),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(bus, 1, bus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.businessDates(start.toString(), end.toString(), false, false));
         assertEquals(Arrays.copyOfRange(bus, 1, bus.length - 1), bCalendar
                 .businessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone), false, false));
@@ -780,7 +786,8 @@ public class TestBusinessCalendar extends TestCalendar {
         // };
 
         assertEquals(nonBus, bCalendar.nonBusinessDates(start, end));
-        assertEquals(nonBus, bCalendar.nonBusinessDates(start.toString(), end.toString()));
+        assertEquals(Arrays.stream(nonBus).map(DateTimeUtils::formatDate).toArray(String[]::new),
+                bCalendar.nonBusinessDates(start.toString(), end.toString()));
         assertEquals(nonBus,
                 bCalendar.nonBusinessDates(start.atTime(1, 24).atZone(timeZone), end.atTime(1, 24).atZone(timeZone)));
         assertEquals(nonBus, bCalendar.nonBusinessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
@@ -788,7 +795,9 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length - 1], true, false));
-        assertEquals(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length - 1].toString(), true, false));
         assertEquals(Arrays.copyOfRange(nonBus, 0, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone),
@@ -799,7 +808,9 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length),
                 bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length - 1], false, true));
-        assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(nonBus, 1, nonBus.length)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length - 1].toString(), false, true));
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone),
@@ -810,7 +821,9 @@ public class TestBusinessCalendar extends TestCalendar {
 
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0], nonBus[nonBus.length - 1], false, false));
-        assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1),
+        assertEquals(
+                Arrays.stream(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1)).map(DateTimeUtils::formatDate)
+                        .toArray(String[]::new),
                 bCalendar.nonBusinessDates(nonBus[0].toString(), nonBus[nonBus.length - 1].toString(), false, false));
         assertEquals(Arrays.copyOfRange(nonBus, 1, nonBus.length - 1),
                 bCalendar.nonBusinessDates(nonBus[0].atTime(1, 24).atZone(timeZone),
@@ -1104,7 +1117,7 @@ public class TestBusinessCalendar extends TestCalendar {
         Instant i = z.toInstant();
 
         assertEquals(d, bCalendar.plusBusinessDays(d, 0));
-        assertEquals(d, bCalendar.plusBusinessDays(s, 0));
+        assertEquals(d.toString(), bCalendar.plusBusinessDays(s, 0));
         assertEquals(z.withZoneSameInstant(timeZone), bCalendar.plusBusinessDays(z, 0));
         assertEquals(i, bCalendar.plusBusinessDays(i, 0));
 
@@ -1112,7 +1125,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i2 = d2.atTime(6, 24).atZone(timeZone2).toInstant();
         final ZonedDateTime z2 = d2.atTime(6, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d2, bCalendar.plusBusinessDays(d, 1));
-        assertEquals(d2, bCalendar.plusBusinessDays(s, 1));
+        assertEquals(d2.toString(), bCalendar.plusBusinessDays(s, 1));
         assertEquals(z2, bCalendar.plusBusinessDays(z, 1));
         assertEquals(i2, bCalendar.plusBusinessDays(i, 1));
 
@@ -1120,7 +1133,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i3 = d3.atTime(6, 24).atZone(timeZone2).toInstant();
         final ZonedDateTime z3 = d3.atTime(6, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d3, bCalendar.plusBusinessDays(d, 2));
-        assertEquals(d3, bCalendar.plusBusinessDays(s, 2));
+        assertEquals(d3.toString(), bCalendar.plusBusinessDays(s, 2));
         assertEquals(z3, bCalendar.plusBusinessDays(z, 2));
         assertEquals(i3, bCalendar.plusBusinessDays(i, 2));
 
@@ -1128,7 +1141,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i4 = d4.atTime(6, 24).atZone(timeZone2).toInstant();
         final ZonedDateTime z4 = d4.atTime(6, 24).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d4, bCalendar.plusBusinessDays(d, 7));
-        assertEquals(d4, bCalendar.plusBusinessDays(s, 7));
+        assertEquals(d4.toString(), bCalendar.plusBusinessDays(s, 7));
         assertEquals(z4, bCalendar.plusBusinessDays(z, 7));
         assertEquals(i4, bCalendar.plusBusinessDays(i, 7));
 
@@ -1138,7 +1151,7 @@ public class TestBusinessCalendar extends TestCalendar {
         i = z.toInstant();
 
         assertEquals(d, bCalendar.plusBusinessDays(d, 0));
-        assertEquals(d, bCalendar.plusBusinessDays(s, 0));
+        assertEquals(d.toString(), bCalendar.plusBusinessDays(s, 0));
         assertEquals(z.withZoneSameInstant(timeZone), bCalendar.plusBusinessDays(z, 0));
         assertEquals(i, bCalendar.plusBusinessDays(i, 0));
 
@@ -1146,7 +1159,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d5, bCalendar.plusBusinessDays(d, -1));
-        assertEquals(d5, bCalendar.plusBusinessDays(s, -1));
+        assertEquals(d5.toString(), bCalendar.plusBusinessDays(s, -1));
         assertEquals(z5, bCalendar.plusBusinessDays(z, -1));
         assertEquals(i5, bCalendar.plusBusinessDays(i, -1));
 
@@ -1154,7 +1167,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d6, bCalendar.plusBusinessDays(d, -2));
-        assertEquals(d6, bCalendar.plusBusinessDays(s, -2));
+        assertEquals(d6.toString(), bCalendar.plusBusinessDays(s, -2));
         assertEquals(z6, bCalendar.plusBusinessDays(z, -2));
         assertEquals(i6, bCalendar.plusBusinessDays(i, -2));
 
@@ -1162,7 +1175,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i7 = d7.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z7 = d7.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d7, bCalendar.plusBusinessDays(d, -7));
-        assertEquals(d7, bCalendar.plusBusinessDays(s, -7));
+        assertEquals(d7.toString(), bCalendar.plusBusinessDays(s, -7));
         assertEquals(z7, bCalendar.plusBusinessDays(z, -7));
         assertEquals(i7, bCalendar.plusBusinessDays(i, -7));
 
@@ -1209,7 +1222,7 @@ public class TestBusinessCalendar extends TestCalendar {
         Instant i = z.toInstant();
 
         assertEquals(d, bCalendar.minusBusinessDays(d, 0));
-        assertEquals(d, bCalendar.minusBusinessDays(s, 0));
+        assertEquals(d.toString(), bCalendar.minusBusinessDays(s, 0));
         assertEquals(z.withZoneSameInstant(timeZone), bCalendar.minusBusinessDays(z, 0));
         assertEquals(i, bCalendar.minusBusinessDays(i, 0));
 
@@ -1217,7 +1230,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i1 = d1.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z1 = d1.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d1, bCalendar.minusBusinessDays(d, -1));
-        assertEquals(d1, bCalendar.minusBusinessDays(s, -1));
+        assertEquals(d1.toString(), bCalendar.minusBusinessDays(s, -1));
         assertEquals(z1, bCalendar.minusBusinessDays(z, -1));
         assertEquals(i1, bCalendar.minusBusinessDays(i, -1));
 
@@ -1225,7 +1238,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i2 = d2.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z2 = d2.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d2, bCalendar.minusBusinessDays(d, -2));
-        assertEquals(d2, bCalendar.minusBusinessDays(s, -2));
+        assertEquals(d2.toString(), bCalendar.minusBusinessDays(s, -2));
         assertEquals(z2, bCalendar.minusBusinessDays(z, -2));
         assertEquals(i2, bCalendar.minusBusinessDays(i, -2));
 
@@ -1233,7 +1246,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i3 = d3.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z3 = d3.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d3, bCalendar.minusBusinessDays(d, -7));
-        assertEquals(d3, bCalendar.minusBusinessDays(s, -7));
+        assertEquals(d3.toString(), bCalendar.minusBusinessDays(s, -7));
         assertEquals(z3, bCalendar.minusBusinessDays(z, -7));
         assertEquals(i3, bCalendar.minusBusinessDays(i, -7));
 
@@ -1243,7 +1256,7 @@ public class TestBusinessCalendar extends TestCalendar {
         i = z.toInstant();
 
         assertEquals(d, bCalendar.minusBusinessDays(d, 0));
-        assertEquals(d, bCalendar.minusBusinessDays(s, 0));
+        assertEquals(d.toString(), bCalendar.minusBusinessDays(s, 0));
         assertEquals(z.withZoneSameInstant(timeZone), bCalendar.minusBusinessDays(z, 0));
         assertEquals(i, bCalendar.minusBusinessDays(i, 0));
 
@@ -1251,7 +1264,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i4 = d4.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z4 = d4.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d4, bCalendar.minusBusinessDays(d, 1));
-        assertEquals(d4, bCalendar.minusBusinessDays(s, 1));
+        assertEquals(d4.toString(), bCalendar.minusBusinessDays(s, 1));
         assertEquals(z4, bCalendar.minusBusinessDays(z, 1));
         assertEquals(i4, bCalendar.minusBusinessDays(i, 1));
 
@@ -1259,7 +1272,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d5, bCalendar.minusBusinessDays(d, 2));
-        assertEquals(d5, bCalendar.minusBusinessDays(s, 2));
+        assertEquals(d5.toString(), bCalendar.minusBusinessDays(s, 2));
         assertEquals(z5, bCalendar.minusBusinessDays(z, 2));
         assertEquals(i5, bCalendar.minusBusinessDays(i, 2));
 
@@ -1267,7 +1280,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d6, bCalendar.minusBusinessDays(d, 7));
-        assertEquals(d6, bCalendar.minusBusinessDays(s, 7));
+        assertEquals(d6.toString(), bCalendar.minusBusinessDays(s, 7));
         assertEquals(z6, bCalendar.minusBusinessDays(z, 7));
         assertEquals(i6, bCalendar.minusBusinessDays(i, 7));
 
@@ -1322,7 +1335,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i1 = d1.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z1 = d1.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d1, bCalendar.plusNonBusinessDays(d, 1));
-        assertEquals(d1, bCalendar.plusNonBusinessDays(s, 1));
+        assertEquals(d1.toString(), bCalendar.plusNonBusinessDays(s, 1));
         assertEquals(z1, bCalendar.plusNonBusinessDays(z, 1));
         assertEquals(i1, bCalendar.plusNonBusinessDays(i, 1));
 
@@ -1330,7 +1343,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i2 = d2.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z2 = d2.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d2, bCalendar.plusNonBusinessDays(d, 2));
-        assertEquals(d2, bCalendar.plusNonBusinessDays(s, 2));
+        assertEquals(d2.toString(), bCalendar.plusNonBusinessDays(s, 2));
         assertEquals(z2, bCalendar.plusNonBusinessDays(z, 2));
         assertEquals(i2, bCalendar.plusNonBusinessDays(i, 2));
 
@@ -1338,7 +1351,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i3 = d3.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z3 = d3.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d3, bCalendar.plusNonBusinessDays(d, 4));
-        assertEquals(d3, bCalendar.plusNonBusinessDays(s, 4));
+        assertEquals(d3.toString(), bCalendar.plusNonBusinessDays(s, 4));
         assertEquals(z3, bCalendar.plusNonBusinessDays(z, 4));
         assertEquals(i3, bCalendar.plusNonBusinessDays(i, 4));
 
@@ -1356,7 +1369,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i4 = d4.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z4 = d4.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d4, bCalendar.plusNonBusinessDays(d, -1));
-        assertEquals(d4, bCalendar.plusNonBusinessDays(s, -1));
+        assertEquals(d4.toString(), bCalendar.plusNonBusinessDays(s, -1));
         assertEquals(z4, bCalendar.plusNonBusinessDays(z, -1));
         assertEquals(i4, bCalendar.plusNonBusinessDays(i, -1));
 
@@ -1364,7 +1377,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d5, bCalendar.plusNonBusinessDays(d, -2));
-        assertEquals(d5, bCalendar.plusNonBusinessDays(s, -2));
+        assertEquals(d5.toString(), bCalendar.plusNonBusinessDays(s, -2));
         assertEquals(z5, bCalendar.plusNonBusinessDays(z, -2));
         assertEquals(i5, bCalendar.plusNonBusinessDays(i, -2));
 
@@ -1372,7 +1385,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d6, bCalendar.plusNonBusinessDays(d, -4));
-        assertEquals(d6, bCalendar.plusNonBusinessDays(s, -4));
+        assertEquals(d6.toString(), bCalendar.plusNonBusinessDays(s, -4));
         assertEquals(z6, bCalendar.plusNonBusinessDays(z, -4));
         assertEquals(i6, bCalendar.plusNonBusinessDays(i, -4));
 
@@ -1427,7 +1440,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i1 = d1.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z1 = d1.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d1, bCalendar.minusNonBusinessDays(d, -1));
-        assertEquals(d1, bCalendar.minusNonBusinessDays(s, -1));
+        assertEquals(d1.toString(), bCalendar.minusNonBusinessDays(s, -1));
         assertEquals(z1, bCalendar.minusNonBusinessDays(z, -1));
         assertEquals(i1, bCalendar.minusNonBusinessDays(i, -1));
 
@@ -1435,7 +1448,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i2 = d2.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z2 = d2.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d2, bCalendar.minusNonBusinessDays(d, -2));
-        assertEquals(d2, bCalendar.minusNonBusinessDays(s, -2));
+        assertEquals(d2.toString(), bCalendar.minusNonBusinessDays(s, -2));
         assertEquals(z2, bCalendar.minusNonBusinessDays(z, -2));
         assertEquals(i2, bCalendar.minusNonBusinessDays(i, -2));
 
@@ -1443,7 +1456,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i3 = d3.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z3 = d3.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d3, bCalendar.minusNonBusinessDays(d, -4));
-        assertEquals(d3, bCalendar.minusNonBusinessDays(s, -4));
+        assertEquals(d3.toString(), bCalendar.minusNonBusinessDays(s, -4));
         assertEquals(z3, bCalendar.minusNonBusinessDays(z, -4));
         assertEquals(i3, bCalendar.minusNonBusinessDays(i, -4));
 
@@ -1461,7 +1474,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i4 = d4.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z4 = d4.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d4, bCalendar.minusNonBusinessDays(d, 1));
-        assertEquals(d4, bCalendar.minusNonBusinessDays(s, 1));
+        assertEquals(d4.toString(), bCalendar.minusNonBusinessDays(s, 1));
         assertEquals(z4, bCalendar.minusNonBusinessDays(z, 1));
         assertEquals(i4, bCalendar.minusNonBusinessDays(i, 1));
 
@@ -1469,7 +1482,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i5 = d5.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z5 = d5.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d5, bCalendar.minusNonBusinessDays(d, 2));
-        assertEquals(d5, bCalendar.minusNonBusinessDays(s, 2));
+        assertEquals(d5.toString(), bCalendar.minusNonBusinessDays(s, 2));
         assertEquals(z5, bCalendar.minusNonBusinessDays(z, 2));
         assertEquals(i5, bCalendar.minusNonBusinessDays(i, 2));
 
@@ -1477,7 +1490,7 @@ public class TestBusinessCalendar extends TestCalendar {
         final Instant i6 = d6.atTime(6, 25).atZone(timeZone2).toInstant();
         final ZonedDateTime z6 = d6.atTime(6, 25).atZone(timeZone2).withZoneSameInstant(timeZone);
         assertEquals(d6, bCalendar.minusNonBusinessDays(d, 4));
-        assertEquals(d6, bCalendar.minusNonBusinessDays(s, 4));
+        assertEquals(d6.toString(), bCalendar.minusNonBusinessDays(s, 4));
         assertEquals(z6, bCalendar.minusNonBusinessDays(z, 4));
         assertEquals(i6, bCalendar.minusNonBusinessDays(i, 4));
 

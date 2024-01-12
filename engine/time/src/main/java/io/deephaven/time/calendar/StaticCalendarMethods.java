@@ -31,7 +31,7 @@ import java.util.Set;
  */
 public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.lang.String,java.lang.String) */
-    public static  java.time.LocalDate[] businessDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().businessDates( start, end );}
+    public static  java.lang.String[] businessDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().businessDates( start, end );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.time.Instant,java.time.Instant) */
     public static  java.time.LocalDate[] businessDates( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().businessDates( start, end );}
@@ -43,7 +43,7 @@ public class StaticCalendarMethods {
     public static  java.time.LocalDate[] businessDates( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().businessDates( start, end );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.lang.String,java.lang.String,boolean,boolean) */
-    public static  java.time.LocalDate[] businessDates( java.lang.String start, java.lang.String end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().businessDates( start, end, startInclusive, endInclusive );}
+    public static  java.lang.String[] businessDates( java.lang.String start, java.lang.String end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().businessDates( start, end, startInclusive, endInclusive );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.time.Instant,java.time.Instant,boolean,boolean) */
     public static  java.time.LocalDate[] businessDates( java.time.Instant start, java.time.Instant end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().businessDates( start, end, startInclusive, endInclusive );}
@@ -58,7 +58,7 @@ public class StaticCalendarMethods {
     public static  java.time.LocalDate calendarDate( ) {return Calendars.calendar().calendarDate( );}
 
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.lang.String,java.lang.String) */
-    public static  java.time.LocalDate[] calendarDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().calendarDates( start, end );}
+    public static  java.lang.String[] calendarDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().calendarDates( start, end );}
 
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.time.Instant,java.time.Instant) */
     public static  java.time.LocalDate[] calendarDates( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().calendarDates( start, end );}
@@ -70,7 +70,7 @@ public class StaticCalendarMethods {
     public static  java.time.LocalDate[] calendarDates( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().calendarDates( start, end );}
 
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.lang.String,java.lang.String,boolean,boolean) */
-    public static  java.time.LocalDate[] calendarDates( java.lang.String start, java.lang.String end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().calendarDates( start, end, startInclusive, endInclusive );}
+    public static  java.lang.String[] calendarDates( java.lang.String start, java.lang.String end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().calendarDates( start, end, startInclusive, endInclusive );}
 
     /** @see io.deephaven.time.calendar.Calendar#calendarDates(java.time.Instant,java.time.Instant,boolean,boolean) */
     public static  java.time.LocalDate[] calendarDates( java.time.Instant start, java.time.Instant end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().calendarDates( start, end, startInclusive, endInclusive );}
@@ -271,7 +271,7 @@ public class StaticCalendarMethods {
     public static  boolean isLastBusinessDayOfYear( java.time.ZonedDateTime time ) {return Calendars.calendar().isLastBusinessDayOfYear( time );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#minusBusinessDays(java.lang.String,int) */
-    public static  java.time.LocalDate minusBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().minusBusinessDays( date, days );}
+    public static  java.lang.String minusBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().minusBusinessDays( date, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#minusBusinessDays(java.time.Instant,int) */
     public static  java.time.Instant minusBusinessDays( java.time.Instant time, int days ) {return Calendars.calendar().minusBusinessDays( time, days );}
@@ -283,7 +283,7 @@ public class StaticCalendarMethods {
     public static  java.time.ZonedDateTime minusBusinessDays( java.time.ZonedDateTime time, int days ) {return Calendars.calendar().minusBusinessDays( time, days );}
 
     /** @see io.deephaven.time.calendar.Calendar#minusDays(java.lang.String,int) */
-    public static  java.time.LocalDate minusDays( java.lang.String date, int days ) {return Calendars.calendar().minusDays( date, days );}
+    public static  java.lang.String minusDays( java.lang.String date, int days ) {return Calendars.calendar().minusDays( date, days );}
 
     /** @see io.deephaven.time.calendar.Calendar#minusDays(java.time.Instant,int) */
     public static  java.time.Instant minusDays( java.time.Instant time, int days ) {return Calendars.calendar().minusDays( time, days );}
@@ -295,7 +295,7 @@ public class StaticCalendarMethods {
     public static  java.time.ZonedDateTime minusDays( java.time.ZonedDateTime time, int days ) {return Calendars.calendar().minusDays( time, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#minusNonBusinessDays(java.lang.String,int) */
-    public static  java.time.LocalDate minusNonBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().minusNonBusinessDays( date, days );}
+    public static  java.lang.String minusNonBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().minusNonBusinessDays( date, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#minusNonBusinessDays(java.time.Instant,int) */
     public static  java.time.Instant minusNonBusinessDays( java.time.Instant time, int days ) {return Calendars.calendar().minusNonBusinessDays( time, days );}
@@ -307,7 +307,7 @@ public class StaticCalendarMethods {
     public static  java.time.ZonedDateTime minusNonBusinessDays( java.time.ZonedDateTime time, int days ) {return Calendars.calendar().minusNonBusinessDays( time, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#nonBusinessDates(java.lang.String,java.lang.String) */
-    public static  java.time.LocalDate[] nonBusinessDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().nonBusinessDates( start, end );}
+    public static  java.lang.String[] nonBusinessDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().nonBusinessDates( start, end );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#nonBusinessDates(java.time.Instant,java.time.Instant) */
     public static  java.time.LocalDate[] nonBusinessDates( java.time.Instant start, java.time.Instant end ) {return Calendars.calendar().nonBusinessDates( start, end );}
@@ -319,7 +319,7 @@ public class StaticCalendarMethods {
     public static  java.time.LocalDate[] nonBusinessDates( java.time.ZonedDateTime start, java.time.ZonedDateTime end ) {return Calendars.calendar().nonBusinessDates( start, end );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#nonBusinessDates(java.lang.String,java.lang.String,boolean,boolean) */
-    public static  java.time.LocalDate[] nonBusinessDates( java.lang.String start, java.lang.String end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().nonBusinessDates( start, end, startInclusive, endInclusive );}
+    public static  java.lang.String[] nonBusinessDates( java.lang.String start, java.lang.String end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().nonBusinessDates( start, end, startInclusive, endInclusive );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#nonBusinessDates(java.time.Instant,java.time.Instant,boolean,boolean) */
     public static  java.time.LocalDate[] nonBusinessDates( java.time.Instant start, java.time.Instant end, boolean startInclusive, boolean endInclusive ) {return Calendars.calendar().nonBusinessDates( start, end, startInclusive, endInclusive );}
@@ -412,7 +412,7 @@ public class StaticCalendarMethods {
     public static  java.time.LocalDate pastNonBusinessDate( int days ) {return Calendars.calendar().pastNonBusinessDate( days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#plusBusinessDays(java.lang.String,int) */
-    public static  java.time.LocalDate plusBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().plusBusinessDays( date, days );}
+    public static  java.lang.String plusBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().plusBusinessDays( date, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#plusBusinessDays(java.time.Instant,int) */
     public static  java.time.Instant plusBusinessDays( java.time.Instant time, int days ) {return Calendars.calendar().plusBusinessDays( time, days );}
@@ -424,7 +424,7 @@ public class StaticCalendarMethods {
     public static  java.time.ZonedDateTime plusBusinessDays( java.time.ZonedDateTime time, int days ) {return Calendars.calendar().plusBusinessDays( time, days );}
 
     /** @see io.deephaven.time.calendar.Calendar#plusDays(java.lang.String,int) */
-    public static  java.time.LocalDate plusDays( java.lang.String date, int days ) {return Calendars.calendar().plusDays( date, days );}
+    public static  java.lang.String plusDays( java.lang.String date, int days ) {return Calendars.calendar().plusDays( date, days );}
 
     /** @see io.deephaven.time.calendar.Calendar#plusDays(java.time.Instant,int) */
     public static  java.time.Instant plusDays( java.time.Instant time, int days ) {return Calendars.calendar().plusDays( time, days );}
@@ -436,7 +436,7 @@ public class StaticCalendarMethods {
     public static  java.time.ZonedDateTime plusDays( java.time.ZonedDateTime time, int days ) {return Calendars.calendar().plusDays( time, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#plusNonBusinessDays(java.lang.String,int) */
-    public static  java.time.LocalDate plusNonBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().plusNonBusinessDays( date, days );}
+    public static  java.lang.String plusNonBusinessDays( java.lang.String date, int days ) {return Calendars.calendar().plusNonBusinessDays( date, days );}
 
     /** @see io.deephaven.time.calendar.BusinessCalendar#plusNonBusinessDays(java.time.Instant,int) */
     public static  java.time.Instant plusNonBusinessDays( java.time.Instant time, int days ) {return Calendars.calendar().plusNonBusinessDays( time, days );}
