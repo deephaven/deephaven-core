@@ -79,7 +79,7 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
         if (valueRetriever == null) {
             throw new MissingVariableException("Missing variable " + name);
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return (QueryScopeParam<T>) valueRetriever.createParam();
     }
 
