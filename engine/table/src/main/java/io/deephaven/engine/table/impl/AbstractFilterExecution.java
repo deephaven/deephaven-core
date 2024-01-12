@@ -93,8 +93,7 @@ abstract class AbstractFilterExecution {
         WritableRowSet addedResult;
         WritableRowSet modifyResult;
 
-        FilterExecutionContext() {
-        }
+        FilterExecutionContext() {}
 
         @Override
         public void close() {
@@ -103,10 +102,10 @@ abstract class AbstractFilterExecution {
 
         public void reset() {
             // TODO: having basePerformanceEntry as final and calling BasePerformanceEntry#baseEntryReset() would be
-            //  better, but it's package-private. Can we expose it?
+            // better, but it's package-private. Can we expose it?
             basePerformanceEntry = new BasePerformanceEntry();
             try (final SafeCloseable ignored1 = addedResult;
-                 final SafeCloseable ignored2 = modifyResult) {
+                    final SafeCloseable ignored2 = modifyResult) {
                 addedResult = null;
                 modifyResult = null;
             }
@@ -115,7 +114,7 @@ abstract class AbstractFilterExecution {
 
     /**
      * Run the single filter specified by this AbstractFilterExecution and store the results in addedResult and
-     * modifyResult.  Allows specification of the start and end positions in the added and modified inputs.
+     * modifyResult. Allows specification of the start and end positions in the added and modified inputs.
      *
      * @param context the context to use for this filter to accumulate results and performance data
      * @param filter the filter to execute
@@ -148,9 +147,9 @@ abstract class AbstractFilterExecution {
                 }
             }
             if (modifiedInputToUse != null) {
-                try (final RowSet processModifies = modifiedInputToUse.subSetByPositionRange(modifiedStart, modifiedEnd)) {
+                try (final RowSet processMods = modifiedInputToUse.subSetByPositionRange(modifiedStart, modifiedEnd)) {
                     context.modifyResult = filter.filter(
-                            processModifies, sourceTable.getRowSet(), sourceTable, usePrev);
+                            processMods, sourceTable.getRowSet(), sourceTable, usePrev);
                 }
             }
             // Explicitly end collection *before* we call onComplete.
