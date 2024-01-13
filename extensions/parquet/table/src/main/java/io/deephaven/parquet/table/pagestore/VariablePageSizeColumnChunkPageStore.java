@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
@@ -51,8 +51,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
     }
 
-    private void extendOnePage(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
-            final int prevNumPages) {
+    private void extendOnePage(@NotNull final SeekableChannelContext channelContext, final int prevNumPages) {
         PageCache.IntrusivePage<ATTR> page = null;
 
         synchronized (this) {
@@ -101,7 +100,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         }
     }
 
-    private int fillToRow(@NotNull final SeekableChannelsProvider.ChannelContext channelContext, int minPageNum,
+    private int fillToRow(@NotNull final SeekableChannelContext channelContext, int minPageNum,
             long row) {
         int localNumPages = numPages;
 
@@ -114,7 +113,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         return minPageNum;
     }
 
-    private ChunkPage<ATTR> getPage(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
+    private ChunkPage<ATTR> getPage(@NotNull final SeekableChannelContext channelContext,
             final int pageNum) {
         PageCache.IntrusivePage<ATTR> page = pages[pageNum].get();
 
@@ -156,7 +155,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         }
 
         // Use the latest channel context while reading page headers
-        final SeekableChannelsProvider.ChannelContext channelContext = innerFillContext(fillContext);
+        final SeekableChannelContext channelContext = innerFillContext(fillContext);
 
         if (pageNum >= localNumPages) {
             final int minPageNum = fillToRow(channelContext, localNumPages, rowKey);

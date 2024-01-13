@@ -3,15 +3,14 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.PrimitiveType;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.function.Function;
 
 public interface ColumnChunkReader {
@@ -51,7 +50,7 @@ public interface ColumnChunkReader {
          * @param channelContext The channel context to use for constructing the reader
          * @return The next page reader.
          */
-        ColumnPageReader next(SeekableChannelsProvider.ChannelContext channelContext);
+        ColumnPageReader next(SeekableChannelContext channelContext);
     }
 
     /**
@@ -80,7 +79,7 @@ public interface ColumnChunkReader {
      * @return Supplier for a Parquet dictionary for this column chunk
      * @apiNote The result will never return {@code null}. It will instead supply {@link #NULL_DICTIONARY}.
      */
-    Function<SeekableChannelsProvider.ChannelContext, Dictionary> getDictionarySupplier();
+    Function<SeekableChannelContext, Dictionary> getDictionarySupplier();
 
     Dictionary NULL_DICTIONARY = new NullDictionary();
 

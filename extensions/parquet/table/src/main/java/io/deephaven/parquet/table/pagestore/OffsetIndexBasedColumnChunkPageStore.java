@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
@@ -117,7 +117,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                 // Make sure no one materialized this page as we waited for the lock
                 if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
                     // Use the latest context while reading the page
-                    final SeekableChannelsProvider.ChannelContext channelContext = innerFillContext(fillContext);
+                    final SeekableChannelContext channelContext = innerFillContext(fillContext);
                     final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
                     try {
                         page = new PageCache.IntrusivePage<>(

@@ -7,6 +7,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.RunLengthBitPackingHybridBufferDecoder;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import org.apache.parquet.bytes.ByteBufferInputStream;
@@ -49,7 +50,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
-    private final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier;
+    private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
     private final PageMaterializer.Factory pageMaterializerFactory;
     private final ColumnDescriptor path;
     private final URI uri;
@@ -83,7 +84,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
      */
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
             CompressorAdapter compressorAdapter,
-            Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier,
+            Function<SeekableChannelContext, Dictionary> dictionarySupplier,
             PageMaterializer.Factory materializerFactory,
             ColumnDescriptor path,
             URI uri,
@@ -105,14 +106,14 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public Object materialize(@NotNull final Object nullValue,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, uri)) {
             ensurePageHeader(readChannel);
             return readDataPage(nullValue, readChannel, channelContext);
         }
     }
 
-    public int readRowCount(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+    public int readRowCount(@NotNull final SeekableChannelContext channelContext) throws IOException {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, uri)) {
             ensurePageHeader(readChannel);
             return readRowCountFromDataPage(readChannel);
@@ -122,7 +123,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, uri)) {
             ensurePageHeader(readChannel);
             return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel, channelContext);
@@ -214,7 +215,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private IntBuffer readKeyFromDataPage(IntBuffer keyDest, int nullPlaceholder,
-            ReadableByteChannel file, @NotNull final SeekableChannelsProvider.ChannelContext channelContext)
+            ReadableByteChannel file, @NotNull final SeekableChannelContext channelContext)
             throws IOException {
         int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         int compressedPageSize = pageHeader.getCompressed_page_size();
@@ -267,7 +268,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private Object readDataPage(Object nullValue, SeekableByteChannel file,
-            @NotNull SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+            @NotNull SeekableChannelContext channelContext) throws IOException {
         final int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
         switch (pageHeader.type) {
@@ -334,7 +335,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private IntBuffer readKeysFromPageV1(DataPageV1 page, IntBuffer keyDest, int nullPlaceholder,
-            @NotNull SeekableChannelsProvider.ChannelContext channelContext) {
+            @NotNull SeekableChannelContext channelContext) {
         RunLengthBitPackingHybridBufferDecoder rlDecoder = null;
         RunLengthBitPackingHybridBufferDecoder dlDecoder = null;
         try {
@@ -401,7 +402,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private Object readPageV1(DataPageV1 page, Object nullValue,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+            @NotNull final SeekableChannelContext channelContext) {
         RunLengthBitPackingHybridBufferDecoder dlDecoder = null;
         try {
             ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use
@@ -442,7 +443,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private void readKeysFromPageV2(DataPageV2 page, IntBuffer keyDest, int nullPlaceholder,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext)
+            @NotNull final SeekableChannelContext channelContext)
             throws IOException {
         if (path.getMaxRepetitionLevel() > 0) {
             throw new RuntimeException("Repeating levels not supported");
@@ -598,7 +599,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private ValuesReader getDataReader(Encoding dataEncoding, ByteBuffer in, int valueCount,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+            @NotNull final SeekableChannelContext channelContext) {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
         }
@@ -623,7 +624,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     @Override
-    public int numValues(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+    public int numValues(@NotNull final SeekableChannelContext channelContext) throws IOException {
         if (numValues >= 0) {
             return numValues;
         }
@@ -637,7 +638,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @NotNull
     @Override
-    public Dictionary getDictionary(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+    public Dictionary getDictionary(@NotNull final SeekableChannelContext channelContext) {
         return dictionarySupplier.apply(channelContext);
     }
 
@@ -647,7 +648,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     @Override
-    public long numRows(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+    public long numRows(@NotNull final SeekableChannelContext channelContext) throws IOException {
         if (rowCount == -1) {
             if (path.getMaxRepetitionLevel() == 0) {
                 rowCount = numValues(channelContext);

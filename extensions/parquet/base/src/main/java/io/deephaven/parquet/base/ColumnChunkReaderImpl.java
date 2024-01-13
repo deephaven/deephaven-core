@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
@@ -46,7 +47,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final ColumnDescriptor path;
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
-    private final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier;
+    private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
     private final PageMaterializer.Factory nullMaterializerFactory;
 
     private URI uri;
@@ -152,12 +153,12 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public Function<SeekableChannelsProvider.ChannelContext, Dictionary> getDictionarySupplier() {
+    public Function<SeekableChannelContext, Dictionary> getDictionarySupplier() {
         return dictionarySupplier;
     }
 
     @NotNull
-    private Dictionary getDictionary(final SeekableChannelsProvider.ChannelContext channelContext) {
+    private Dictionary getDictionary(final SeekableChannelContext channelContext) {
         final long dictionaryPageOffset;
         final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
         if (chunkMeta.isSetDictionary_page_offset()) {
@@ -176,7 +177,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         return getDictionaryHelper(channelContext, dictionaryPageOffset);
     }
 
-    private Dictionary getDictionaryHelper(final SeekableChannelsProvider.ChannelContext channelContext,
+    private Dictionary getDictionaryHelper(final SeekableChannelContext channelContext,
             final long dictionaryPageOffset) {
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, getURI())) {
             readChannel.position(dictionaryPageOffset);
@@ -242,7 +243,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
 
         @Override
-        public ColumnPageReader next(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+        public ColumnPageReader next(@NotNull final SeekableChannelContext channelContext) {
             if (!hasNext()) {
                 throw new NoSuchElementException("No next element");
             }
@@ -277,10 +278,10 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                         throw new UncheckedDeephavenException(
                                 "Unknown parquet data page header type " + pageHeader.type);
                 }
-                final Function<SeekableChannelsProvider.ChannelContext, Dictionary> pageDictionarySupplier =
+                final Function<SeekableChannelContext, Dictionary> pageDictionarySupplier =
                         (encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
                                 ? dictionarySupplier
-                                : (SeekableChannelsProvider.ChannelContext context) -> NULL_DICTIONARY;
+                                : (SeekableChannelContext context) -> NULL_DICTIONARY;
                 final ColumnPageReader nextReader = new ColumnPageReaderImpl(channelsProvider, decompressor,
                         pageDictionarySupplier, nullMaterializerFactory, path, getURI(), fieldTypes,
                         readChannel.position(), pageHeader, ColumnPageReaderImpl.NULL_NUM_VALUES);
@@ -304,7 +305,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
 
         @Override
-        public ColumnPageReader next(@NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+        public ColumnPageReader next(@NotNull final SeekableChannelContext channelContext) {
             if (!hasNext()) {
                 throw new NoSuchElementException("No next element");
             }

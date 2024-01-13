@@ -38,29 +38,19 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         return uri;
     }
 
-    interface ChannelContext extends SafeCloseable {
-
-        ChannelContext NULL = new ChannelContext() {};
-
-        /**
-         * Release any resources associated with this context. The context should not be used afterward.
-         */
-        default void close() {}
-    }
-
     /**
-     * Create a new {@link ChannelContext} object for creating read and write channels via this provider.
+     * Create a new {@link SeekableChannelContext} object for creating read and write channels via this provider.
      */
-    ChannelContext makeContext();
+    SeekableChannelContext makeContext();
 
     /**
      * Check if the given context is compatible with this provider. Useful to test if we can use provided
-     * {@code channelContext} object for creating channels with this provider.
+     * {@code context} object for creating channels with this provider.
      */
-    boolean isCompatibleWith(@NotNull ChannelContext channelContext);
+    boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext);
 
     interface ContextHolder {
-        void setContext(ChannelContext channelContext);
+        void setContext(SeekableChannelContext channelContext);
 
         @FinalDefault
         default void clearContext() {
@@ -68,12 +58,13 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         }
     }
 
-    default SeekableByteChannel getReadChannel(@NotNull ChannelContext channelContext, @NotNull String uriStr)
+    default SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull String uriStr)
             throws IOException {
         return getReadChannel(channelContext, convertToURI(uriStr));
     }
 
-    SeekableByteChannel getReadChannel(@NotNull ChannelContext channelContext, @NotNull URI uri) throws IOException;
+    SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri)
+            throws IOException;
 
     default SeekableByteChannel getWriteChannel(@NotNull String path, final boolean append) throws IOException {
         return getWriteChannel(Paths.get(path), append);

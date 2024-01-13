@@ -3,6 +3,7 @@
  */
 package io.deephaven.extensions.s3;
 
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
@@ -35,20 +36,20 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
+    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
         return new S3SeekableByteChannel(channelContext, uri, s3AsyncClient, s3Instructions);
     }
 
     @Override
-    public ChannelContext makeContext() {
+    public SeekableChannelContext makeContext() {
         return new S3SeekableByteChannel.S3ChannelContext(s3Instructions.maxCacheSize());
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull final ChannelContext channelContext) {
+    public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
         // A null context implies no caching
-        return channelContext == ChannelContext.NULL
+        return channelContext == SeekableChannelContext.NULL
                 || channelContext instanceof S3SeekableByteChannel.S3ChannelContext;
     }
 

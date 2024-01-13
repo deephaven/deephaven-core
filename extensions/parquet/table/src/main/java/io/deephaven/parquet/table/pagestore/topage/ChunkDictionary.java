@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
@@ -46,10 +46,10 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
      */
     ChunkDictionary(
             @NotNull final Lookup<T> lookup,
-            @NotNull final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier) {
+            @NotNull final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
             // Dictionary is already materialized at this point, therefore, we can safely use NULL context
-            final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelsProvider.ChannelContext.NULL);
+            final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelContext.NULL);
             final T[] values = ObjectChunk.makeArray(dictionary.getMaxId() + 1);
             for (int ki = 0; ki < values.length; ++ki) {
                 values[ki] = lookup.lookup(dictionary, ki);

@@ -5,6 +5,7 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.util.Helpers;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
@@ -64,7 +65,7 @@ public class ParquetFileReader {
             rootURI = parquetFileURI;
         }
         final byte[] footer;
-        try (final SeekableChannelsProvider.ChannelContext channelContext = channelsProvider.makeContext();
+        try (final SeekableChannelContext channelContext = channelsProvider.makeContext();
                 final SeekableByteChannel readChannel =
                         channelsProvider.getReadChannel(channelContext, parquetFileURI)) {
             final long fileLen = readChannel.size();

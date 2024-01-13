@@ -3,7 +3,7 @@
  */
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
@@ -53,7 +53,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     @Override
     @NotNull
     public final Object getResult(@NotNull final ColumnPageReader columnPageReader,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
         if (columnPageReader.getDictionary(channelContext) == ColumnChunkReader.NULL_DICTIONARY) {
             return ToPage.super.getResult(columnPageReader, channelContext);
         }
@@ -117,7 +117,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
             @Override
             public Object getResult(@NotNull final ColumnPageReader columnPageReader,
-                    @NotNull final SeekableChannelsProvider.ChannelContext channelContext)
+                    @NotNull final SeekableChannelContext channelContext)
                     throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader, channelContext);
             }

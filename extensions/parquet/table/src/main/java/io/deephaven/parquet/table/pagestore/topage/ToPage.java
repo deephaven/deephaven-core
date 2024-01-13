@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPageFactory;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.vector.VectorFactory;
@@ -55,7 +55,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
      * @return Gets the result from the columnPageReader.
      */
     default Object getResult(ColumnPageReader columnPageReader,
-            SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+            SeekableChannelContext channelContext) throws IOException {
         return columnPageReader.materialize(nullValue(), channelContext);
     }
 
@@ -81,7 +81,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
     @NotNull
     @FinalDefault
     default ChunkPage<ATTR> toPage(long offset, ColumnPageReader columnPageReader,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext, long mask)
+            @NotNull final SeekableChannelContext channelContext, long mask)
             throws IOException {
         return ChunkPageFactory.forChunkType(getChunkType())
                 .pageWrap(offset, convertResult(getResult(columnPageReader, channelContext)), mask);
@@ -128,7 +128,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
         @NotNull
         @Override
         public Object getResult(ColumnPageReader columnPageReader,
-                SeekableChannelsProvider.ChannelContext channelContext) throws IOException {
+                SeekableChannelContext channelContext) throws IOException {
             return toPage.getResult(columnPageReader, channelContext);
         }
 

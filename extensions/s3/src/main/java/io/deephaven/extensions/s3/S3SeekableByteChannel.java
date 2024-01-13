@@ -5,6 +5,8 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.base.verify.Assert;
 import java.util.concurrent.CancellationException;
+
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,9 +37,9 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     private static final long UNINITIALIZED_SIZE = -1;
 
     /**
-     * Channel context object used to store read-ahead buffers for efficiently reading from S3.
+     * Context object used to store read-ahead buffers for efficiently reading from S3.
      */
-    static final class S3ChannelContext implements SeekableChannelsProvider.ChannelContext {
+    static final class S3ChannelContext implements SeekableChannelContext {
 
         /**
          * Used to store information related to a single fragment
@@ -134,7 +136,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
 
     private long position;
 
-    S3SeekableByteChannel(@NotNull final SeekableChannelsProvider.ChannelContext channelContext, @NotNull final URI uri,
+    S3SeekableByteChannel(@NotNull final SeekableChannelContext channelContext, @NotNull final URI uri,
             @NotNull final S3AsyncClient s3AsyncClient, final S3Instructions s3Instructions) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         this.bucket = s3Uri.bucket().orElse(null);
@@ -148,7 +150,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     }
 
     @Override
-    public void setContext(@Nullable final SeekableChannelsProvider.ChannelContext channelContext) {
+    public void setContext(@Nullable final SeekableChannelContext channelContext) {
         // null context equivalent to clearing the context
         if (channelContext != null && !(channelContext instanceof S3ChannelContext)) {
             throw new IllegalArgumentException(
@@ -161,8 +163,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     @Override
     public int read(@NotNull final ByteBuffer destination) throws IOException {
         Assert.neqNull(s3ChannelContext, "s3ChannelContext");
-        Assert.neq(s3ChannelContext, "s3ChannelContext", SeekableChannelsProvider.ChannelContext.NULL,
-                "SeekableChannelsProvider.ChannelContext.NULL");
+        Assert.neq(s3ChannelContext, "s3ChannelContext", SeekableChannelContext.NULL, "SeekableChannelContext.NULL");
         if (!destination.hasRemaining()) {
             return 0;
         }

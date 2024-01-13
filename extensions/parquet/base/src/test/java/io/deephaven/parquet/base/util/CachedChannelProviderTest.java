@@ -163,22 +163,23 @@ public class CachedChannelProviderTest {
         AtomicInteger count = new AtomicInteger(0);
 
         @Override
-        public ChannelContext makeContext() {
-            return ChannelContext.NULL;
+        public SeekableChannelContext makeContext() {
+            return SeekableChannelContext.NULL;
         }
 
         @Override
-        public boolean isCompatibleWith(@NotNull ChannelContext channelContext) {
-            return channelContext == ChannelContext.NULL;
+        public boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext) {
+            return channelContext == SeekableChannelContext.NULL;
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull ChannelContext channelContext, @NotNull String path) {
+        public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext,
+                @NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path);
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull ChannelContext channelContext, @NotNull URI uri) {
+        public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri) {
             return new TestMockChannel(count.getAndIncrement(), uri.toString());
         }
 

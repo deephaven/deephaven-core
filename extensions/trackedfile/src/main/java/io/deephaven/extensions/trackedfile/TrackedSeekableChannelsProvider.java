@@ -8,6 +8,7 @@ import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,18 +33,18 @@ class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public ChannelContext makeContext() {
+    public SeekableChannelContext makeContext() {
         // No additional context required for local FS
-        return ChannelContext.NULL;
+        return SeekableChannelContext.NULL;
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull ChannelContext channelContext) {
-        return channelContext == ChannelContext.NULL;
+    public boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext) {
+        return channelContext == SeekableChannelContext.NULL;
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext channelContext,
+    public final SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL

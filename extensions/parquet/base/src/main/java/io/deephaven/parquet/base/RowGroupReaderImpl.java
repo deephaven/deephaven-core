@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
@@ -79,7 +80,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
 
         OffsetIndex offsetIndex = null;
         if (columnChunk.isSetOffset_index_offset()) {
-            try (final SeekableChannelsProvider.ChannelContext channelContext = channelsProvider.makeContext();
+            try (final SeekableChannelContext channelContext = channelsProvider.makeContext();
                     final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, rootURI)) {
                 readChannel.position(columnChunk.getOffset_index_offset());
                 offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(

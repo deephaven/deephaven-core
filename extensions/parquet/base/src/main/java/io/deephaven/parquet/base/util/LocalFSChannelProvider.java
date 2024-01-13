@@ -15,18 +15,19 @@ import java.nio.file.StandardOpenOption;
 public class LocalFSChannelProvider implements SeekableChannelsProvider {
 
     @Override
-    public ChannelContext makeContext() {
+    public SeekableChannelContext makeContext() {
         // No additional context required for local FS
-        return ChannelContext.NULL;
+        return SeekableChannelContext.NULL;
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull final ChannelContext channelContext) {
-        return channelContext == ChannelContext.NULL;
+    public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
+        return channelContext == SeekableChannelContext.NULL;
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext channelContext, @NotNull final URI uri)
+    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
+            @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
         return FileChannel.open(Path.of(uri), StandardOpenOption.READ);

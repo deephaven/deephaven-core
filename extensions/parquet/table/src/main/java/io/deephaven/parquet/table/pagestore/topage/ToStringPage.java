@@ -5,7 +5,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
@@ -18,7 +18,7 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
 
     public static <ATTR extends Any> ToPage<ATTR, String[]> create(
             final Class<?> nativeType,
-            final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier) {
+            final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (nativeType == null || String.class.equals(nativeType)) {
             // noinspection unchecked
             return dictionarySupplier == null ? (ToPage<ATTR, String[]>) INSTANCE

@@ -8,6 +8,7 @@ import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.engine.table.Releasable;
@@ -135,7 +136,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     ChunkPage<ATTR> toPage(final long offset, @NotNull final ColumnPageReader columnPageReader,
-            @NotNull final SeekableChannelsProvider.ChannelContext channelContext)
+            @NotNull final SeekableChannelContext channelContext)
             throws IOException {
         return toPage.toPage(offset, columnPageReader, channelContext, mask);
     }
@@ -174,22 +175,22 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public void close() {}
 
     /**
-     * Wrapper class for holding a {@link SeekableChannelsProvider.ChannelContext}.
+     * Wrapper class for holding a {@link SeekableChannelContext}.
      */
     private static class ChannelContextWrapper extends PagingContextHolder {
         @NotNull
-        private final SeekableChannelsProvider.ChannelContext channelContext;
+        private final SeekableChannelContext channelContext;
 
         private ChannelContextWrapper(
                 final int chunkCapacity,
                 @Nullable final SharedContext sharedContext,
-                @NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+                @NotNull final SeekableChannelContext channelContext) {
             super(chunkCapacity, sharedContext);
             this.channelContext = channelContext;
         }
 
         @NotNull
-        SeekableChannelsProvider.ChannelContext getChannelContext() {
+        SeekableChannelContext getChannelContext() {
             return channelContext;
         }
 
@@ -205,17 +206,16 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      * {@link #columnChunkReader}, if required.
      *
      * @param context The context to populate.
-     * @return The {@link SeekableChannelsProvider.ChannelContext} to use for reading pages via
-     *         {@link #columnChunkReader}.
+     * @return The {@link SeekableChannelContext} to use for reading pages via {@link #columnChunkReader}.
      */
-    final SeekableChannelsProvider.ChannelContext innerFillContext(@Nullable final FillContext context) {
+    final SeekableChannelContext innerFillContext(@Nullable final FillContext context) {
         if (context != null) {
             // Assuming PagingContextHolder is holding an object of ChannelContextWrapper
             final ChannelContextWrapper innerContext =
                     ((PagingContextHolder) context).updateInnerContext(this::fillContextUpdater);
             return innerContext.getChannelContext();
         }
-        return SeekableChannelsProvider.ChannelContext.NULL;
+        return SeekableChannelContext.NULL;
     }
 
     private <T extends FillContext> T fillContextUpdater(
@@ -225,7 +225,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final SeekableChannelsProvider channelsProvider = columnChunkReader.getChannelsProvider();
         if (currentInnerContext != null) {
             // Check if we can reuse the context object
-            final SeekableChannelsProvider.ChannelContext channelContext =
+            final SeekableChannelContext channelContext =
                     ((ChannelContextWrapper) currentInnerContext).getChannelContext();
             if (channelsProvider.isCompatibleWith(channelContext)) {
                 // noinspection unchecked
