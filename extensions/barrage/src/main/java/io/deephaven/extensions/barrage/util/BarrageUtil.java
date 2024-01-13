@@ -99,6 +99,9 @@ public class BarrageUtil {
     public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
             new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
 
+    /** The name of the attribute that indicates that a table is flat. */
+    public static final String TABLE_ATTRIBUTE_IS_FLAT = "IsFlat";
+
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
 
     private static final String ATTR_DH_PREFIX = "deephaven:";
@@ -119,14 +122,15 @@ public class BarrageUtil {
             Boolean.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
-        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes());
+        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
     }
 
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes) {
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
         return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes));
+                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes, isFlat));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -146,8 +150,9 @@ public class BarrageUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final StreamReaderOptions options,
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes) {
-        final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
+        final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
 
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
@@ -162,7 +167,19 @@ public class BarrageUtil {
 
     @NotNull
     public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes) {
+        return attributesToMetadata(attributes, false);
+    }
+
+    @NotNull
+    public static Map<String, String> attributesToMetadata(
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
         final Map<String, String> metadata = new HashMap<>();
+        if (isFlat) {
+            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, "true");
+            putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT,
+                    Boolean.class.getCanonicalName());
+        }
         for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
