@@ -19,8 +19,7 @@ import java.util.function.Supplier;
 /**
  * Chunk-backed dictionary for use by {@link ToPage} implementations.
  */
-public class ChunkDictionary<T, ATTR extends Any>
-        implements LongBitmapStringSet.ReversibleLookup<T> {
+public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet.ReversibleLookup<T> {
 
     @FunctionalInterface
     public interface Lookup<T> {
@@ -36,9 +35,6 @@ public class ChunkDictionary<T, ATTR extends Any>
         T lookup(@NotNull final Dictionary dictionary, final int key);
     }
 
-    private final Lookup<T> lookup;
-    private final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier;
-
     private final Supplier<ObjectChunk<T, ATTR>> valuesSupplier;
     private final Supplier<TObjectIntMap<T>> reverseMapSupplier;
 
@@ -51,8 +47,6 @@ public class ChunkDictionary<T, ATTR extends Any>
     ChunkDictionary(
             @NotNull final Lookup<T> lookup,
             @NotNull final Function<SeekableChannelsProvider.ChannelContext, Dictionary> dictionarySupplier) {
-        this.lookup = lookup;
-        this.dictionarySupplier = dictionarySupplier;
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
             // Dictionary is already materialized at this point, therefore, we can safely use NULL context
             final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelsProvider.ChannelContext.NULL);

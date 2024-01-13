@@ -34,29 +34,29 @@ class ColumnInstruction:
 
 
 def _build_parquet_instructions(
-        col_instructions: List[ColumnInstruction] = None,
-        compression_codec_name: str = None,
-        max_dictionary_keys: int = None,
-        max_dictionary_size: int = None,
-        is_legacy_parquet: bool = False,
-        target_page_size: int = None,
-        is_refreshing: bool = False,
-        for_read: bool = True,
-        force_build: bool = False,
-        special_instructions: Optional[object] = None,
+    col_instructions: List[ColumnInstruction] = None,
+    compression_codec_name: str = None,
+    max_dictionary_keys: int = None,
+    max_dictionary_size: int = None,
+    is_legacy_parquet: bool = False,
+    target_page_size: int = None,
+    is_refreshing: bool = False,
+    for_read: bool = True,
+    force_build: bool = False,
+    special_instructions: Optional[object] = None,
 ):
     if not any(
-            [
-                force_build,
-                col_instructions,
-                compression_codec_name,
-                max_dictionary_keys is not None,
-                max_dictionary_size is not None,
-                is_legacy_parquet,
-                target_page_size is not None,
-                is_refreshing,
-                special_instructions is not None
-            ]
+        [
+            force_build,
+            col_instructions,
+            compression_codec_name,
+            max_dictionary_keys is not None,
+            max_dictionary_size is not None,
+            is_legacy_parquet,
+            target_page_size is not None,
+            is_refreshing,
+            special_instructions is not None
+        ]
     ):
         return None
 
@@ -132,13 +132,13 @@ class ParquetFileLayout(Enum):
 
 
 def read(
-        path: str,
-        col_instructions: Optional[List[ColumnInstruction]] = None,
-        is_legacy_parquet: bool = False,
-        is_refreshing: bool = False,
-        file_layout: Optional[ParquetFileLayout] = None,
-        table_definition: Union[Dict[str, DType], List[Column], None] = None,
-        special_instructions: Optional[object] = None,
+    path: str,
+    col_instructions: Optional[List[ColumnInstruction]] = None,
+    is_legacy_parquet: bool = False,
+    is_refreshing: bool = False,
+    file_layout: Optional[ParquetFileLayout] = None,
+    table_definition: Union[Dict[str, DType], List[Column], None] = None,
+    special_instructions: Optional[object] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 

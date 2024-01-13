@@ -176,9 +176,9 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         return getDictionaryHelper(channelContext, dictionaryPageOffset);
     }
 
-    private Dictionary getDictionaryHelper(final SeekableChannelsProvider.ChannelContext context,
+    private Dictionary getDictionaryHelper(final SeekableChannelsProvider.ChannelContext channelContext,
             final long dictionaryPageOffset) {
-        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(context, getURI())) {
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, getURI())) {
             readChannel.position(dictionaryPageOffset);
             return readDictionary(readChannel);
         } catch (final IOException e) {

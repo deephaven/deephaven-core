@@ -58,20 +58,20 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull final ChannelContext context) {
-        return wrappedProvider.isCompatibleWith(context);
+    public boolean isCompatibleWith(@NotNull final ChannelContext channelContext) {
+        return wrappedProvider.isCompatibleWith(channelContext);
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
+    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext channelContext, @NotNull final URI uri)
             throws IOException {
         final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
         final CachedChannel channel = result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(context, uri), ChannelType.Read, uriString)
+                ? new CachedChannel(wrappedProvider.getReadChannel(channelContext, uri), ChannelType.Read, uriString)
                 : result.position(0);
-        channel.setContext(context);
+        channel.setContext(channelContext);
         return channel;
     }
 
@@ -224,9 +224,9 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
 
         @Override
-        public void setContext(ChannelContext context) {
+        public void setContext(ChannelContext channelContext) {
             if (wrappedChannel instanceof ContextHolder) {
-                ((ContextHolder) wrappedChannel).setContext(context);
+                ((ContextHolder) wrappedChannel).setContext(channelContext);
             }
         }
     }

@@ -174,23 +174,28 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public void close() {}
 
     /**
-     * Wrapper class which takes a {@link SeekableChannelsProvider.ChannelContext} and implements {@link FillContext},
-     * used to update the inner context of {@link PagingContextHolder}.
+     * Wrapper class for holding a {@link SeekableChannelsProvider.ChannelContext}.
      */
-    private static class ChannelContextWrapper implements FillContext {
+    private static class ChannelContextWrapper extends PagingContextHolder {
         @NotNull
         private final SeekableChannelsProvider.ChannelContext channelContext;
 
-        ChannelContextWrapper(@NotNull final SeekableChannelsProvider.ChannelContext context) {
-            this.channelContext = context;
+        private ChannelContextWrapper(
+                final int chunkCapacity,
+                @Nullable final SharedContext sharedContext,
+                @NotNull final SeekableChannelsProvider.ChannelContext channelContext) {
+            super(chunkCapacity, sharedContext);
+            this.channelContext = channelContext;
         }
 
+        @NotNull
         SeekableChannelsProvider.ChannelContext getChannelContext() {
             return channelContext;
         }
 
         @Override
         public void close() {
+            super.close();
             channelContext.close();
         }
     }
@@ -229,6 +234,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
         // Create a new context object
         // noinspection unchecked
-        return (T) new ChannelContextWrapper(channelsProvider.makeContext());
+        return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeContext());
     }
 }

@@ -168,17 +168,17 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public boolean isCompatibleWith(@NotNull ChannelContext context) {
-            return context == ChannelContext.NULL;
+        public boolean isCompatibleWith(@NotNull ChannelContext channelContext) {
+            return channelContext == ChannelContext.NULL;
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull String path) {
+        public SeekableByteChannel getReadChannel(@NotNull ChannelContext channelContext, @NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path);
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(@NotNull ChannelContext context, @NotNull URI uri) {
+        public SeekableByteChannel getReadChannel(@NotNull ChannelContext channelContext, @NotNull URI uri) {
             return new TestMockChannel(count.getAndIncrement(), uri.toString());
         }
 

@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.locations.TableLocationState;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
@@ -90,7 +91,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         version = tableInfo.map(TableInfo::version).orElse(null);
 
         if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
-            handleUpdate(computeIndex(), 0L); // TODO What should I put here?
+            // We do not have the last modified time for non-file URIs
+            handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
         } else {
             handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
         }

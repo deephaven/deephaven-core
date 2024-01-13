@@ -3,7 +3,6 @@
  */
 package io.deephaven.extensions.s3;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import java.util.concurrent.CancellationException;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
@@ -19,9 +18,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -36,15 +32,18 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
 
     private static final long CLOSED_SENTINEL = -1;
 
+    private static final long UNINITIALIZED_SIZE = -1;
+
     /**
-     * Context object used to store read-ahead buffers for efficiently reading from S3.
+     * Channel context object used to store read-ahead buffers for efficiently reading from S3.
      */
     static final class S3ChannelContext implements SeekableChannelsProvider.ChannelContext {
 
         /**
          * Used to store information related to a single fragment
          */
-        static class FragmentContext {
+        private static final class FragmentState {
+
             /**
              * The index of the fragment in the object
              */
@@ -55,7 +54,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
              */
             private CompletableFuture<ByteBuffer> future;
 
-            private FragmentContext(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
+            private FragmentState(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
                 this.fragmentIndex = fragmentIndex;
                 this.future = future;
             }
@@ -64,27 +63,27 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
         /**
          * Used to cache recently fetched fragments for faster lookup
          */
-        private final List<FragmentContext> bufferCache;
+        private final FragmentState[] bufferCache;
 
+        /**
+         * The size of the object in bytes, stored in context to avoid fetching multiple times
+         */
         private long size;
 
         S3ChannelContext(final int maxCacheSize) {
-            bufferCache = new ArrayList<>(maxCacheSize);
-            for (int i = 0; i < maxCacheSize; i++) {
-                bufferCache.add(null);
-            }
-            size = -1;
+            bufferCache = new FragmentState[maxCacheSize];
+            size = UNINITIALIZED_SIZE;
         }
 
         private int getIndex(final int fragmentIndex) {
-            return fragmentIndex % bufferCache.size();
+            return fragmentIndex % bufferCache.length;
         }
 
-        void setFragmentContext(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
+        void setFragmentState(final int fragmentIndex, final CompletableFuture<ByteBuffer> future) {
             final int cacheIdx = getIndex(fragmentIndex);
-            final FragmentContext cachedEntry = bufferCache.get(cacheIdx);
+            final FragmentState cachedEntry = bufferCache[cacheIdx];
             if (cachedEntry == null) {
-                bufferCache.set(cacheIdx, new FragmentContext(fragmentIndex, future));
+                bufferCache[cacheIdx] = new FragmentState(fragmentIndex, future);
             } else {
                 // We should not cache an already cached fragment
                 Assert.neq(cachedEntry.fragmentIndex, "cachedEntry.fragmentIndex", fragmentIndex, "fragmentIdx");
@@ -104,7 +103,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
          */
         @Nullable
         CompletableFuture<ByteBuffer> getCachedFuture(final int fragmentIndex) {
-            final FragmentContext cachedFragment = bufferCache.get(getIndex(fragmentIndex));
+            final FragmentState cachedFragment = bufferCache[getIndex(fragmentIndex)];
             if (cachedFragment != null && cachedFragment.fragmentIndex == fragmentIndex) {
                 return cachedFragment.future;
             }
@@ -123,9 +122,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     private final S3AsyncClient s3AsyncClient;
     private final String bucket;
     private final String key;
-    private final int fragmentSize;
-    private final int readAheadCount;
-    private final Duration readTimeout;
+    private final S3Instructions s3Instructions;
 
     /**
      * The size of the object in bytes, fetched at the time of first read
@@ -133,41 +130,38 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     private long size;
     private int numFragmentsInObject;
 
-    private S3ChannelContext context;
+    private S3ChannelContext s3ChannelContext;
 
     private long position;
 
-    S3SeekableByteChannel(@NotNull final SeekableChannelsProvider.ChannelContext context, @NotNull final URI uri,
-            @NotNull final S3AsyncClient s3AsyncClient, final int fragmentSize, final int readAheadCount,
-            final Duration readTimeout) {
+    S3SeekableByteChannel(@NotNull final SeekableChannelsProvider.ChannelContext channelContext, @NotNull final URI uri,
+            @NotNull final S3AsyncClient s3AsyncClient, final S3Instructions s3Instructions) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         this.bucket = s3Uri.bucket().orElse(null);
         this.key = s3Uri.key().orElse(null);
         this.s3AsyncClient = s3AsyncClient;
-        this.fragmentSize = fragmentSize;
-        this.readAheadCount = readAheadCount;
-        this.readTimeout = readTimeout;
-        Assert.instanceOf(context, "context", S3ChannelContext.class);
-        this.context = (S3ChannelContext) context;
-        this.size = -1;
+        this.s3Instructions = s3Instructions;
+        Assert.instanceOf(channelContext, "channelContext", S3ChannelContext.class);
+        this.s3ChannelContext = (S3ChannelContext) channelContext;
+        this.size = UNINITIALIZED_SIZE;
         this.position = 0;
     }
 
     @Override
-    public void setContext(@Nullable final SeekableChannelsProvider.ChannelContext context) {
+    public void setContext(@Nullable final SeekableChannelsProvider.ChannelContext channelContext) {
         // null context equivalent to clearing the context
-        if (context != null && !(context instanceof S3ChannelContext)) {
+        if (channelContext != null && !(channelContext instanceof S3ChannelContext)) {
             throw new IllegalArgumentException(
-                    "context must be null or an instance of ChannelContext, provided context" +
-                            " of class " + context.getClass().getName());
+                    "Context must be null or an instance of S3ChannelContext, provided context of class " +
+                            channelContext.getClass().getName());
         }
-        this.context = (S3ChannelContext) context;
+        this.s3ChannelContext = (S3ChannelContext) channelContext;
     }
 
     @Override
-    public int read(@NotNull final ByteBuffer destination) throws ClosedChannelException {
-        Assert.neqNull(context, "context");
-        Assert.neq(context, "context", SeekableChannelsProvider.ChannelContext.NULL,
+    public int read(@NotNull final ByteBuffer destination) throws IOException {
+        Assert.neqNull(s3ChannelContext, "s3ChannelContext");
+        Assert.neq(s3ChannelContext, "s3ChannelContext", SeekableChannelsProvider.ChannelContext.NULL,
                 "SeekableChannelsProvider.ChannelContext.NULL");
         if (!destination.hasRemaining()) {
             return 0;
@@ -184,72 +178,77 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
 
         // Send async read requests for current fragment as well as read ahead fragments, if not already in cache
         final int currFragmentIndex = fragmentIndexForByteNumber(localPosition);
-        final int numReadAheadFragments = Math.min(readAheadCount, numFragmentsInObject - currFragmentIndex - 1);
+        final int numReadAheadFragments =
+                Math.min(s3Instructions.readAheadCount(), numFragmentsInObject - currFragmentIndex - 1);
         for (int idx = currFragmentIndex; idx <= currFragmentIndex + numReadAheadFragments; idx++) {
-            final CompletableFuture<ByteBuffer> future = context.getCachedFuture(idx);
+            final CompletableFuture<ByteBuffer> future = s3ChannelContext.getCachedFuture(idx);
             if (future == null) {
-                context.setFragmentContext(idx, sendAsyncRequest(idx));
+                s3ChannelContext.setFragmentState(idx, sendAsyncRequest(idx));
             }
         }
 
         // Wait till the current fragment is fetched
-        final CompletableFuture<ByteBuffer> currFragmentFuture = context.getCachedFuture(currFragmentIndex);
+        final CompletableFuture<ByteBuffer> currFragmentFuture = s3ChannelContext.getCachedFuture(currFragmentIndex);
         final ByteBuffer currentFragment;
         try {
-            currentFragment = currFragmentFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            currentFragment = currFragmentFuture.get(s3Instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-            final String operation =
-                    "fetching fragment " + currFragmentIndex + " for file " + key + " in S3 bucket " + bucket;
-            throw handleS3Exception(e, operation);
+            throw handleS3Exception(e,
+                    String.format("fetching fragment %d for file %s in S3 bucket %s", currFragmentIndex, key, bucket));
         }
 
         // Copy the bytes from fragment from the offset up to the min of remaining fragment and destination bytes.
         // Therefore, the number of bytes read by this method can be less than the number of bytes remaining in the
         // destination buffer.
-        final int fragmentOffset = (int) (localPosition - (currFragmentIndex * fragmentSize));
+        final int fragmentOffset = (int) (localPosition - (currFragmentIndex * s3Instructions.fragmentSize()));
         currentFragment.position(fragmentOffset);
-        final int limit = Math.min(currentFragment.remaining(), destination.remaining());
+        final int sizeToCopy = Math.min(currentFragment.remaining(), destination.remaining());
         final int originalBufferLimit = currentFragment.limit();
-        currentFragment.limit(currentFragment.position() + limit);
+        currentFragment.limit(currentFragment.position() + sizeToCopy);
         destination.put(currentFragment);
         // Need to reset buffer limit, so we can read from the same buffer again in future
         currentFragment.limit(originalBufferLimit);
-        position = localPosition + limit;
-        return limit;
+        position = localPosition + sizeToCopy;
+        return sizeToCopy;
     }
 
     private int fragmentIndexForByteNumber(final long byteNumber) {
-        return Math.toIntExact(byteNumber / fragmentSize);
+        return Math.toIntExact(byteNumber / s3Instructions.fragmentSize());
     }
 
     /**
      * @return A {@link CompletableFuture} that will be completed with the bytes of the fragment
      */
     private CompletableFuture<ByteBuffer> sendAsyncRequest(final int fragmentIndex) {
+        final int fragmentSize = s3Instructions.fragmentSize();
         final long readFrom = (long) fragmentIndex * fragmentSize;
         final long readTo = Math.min(readFrom + fragmentSize, size) - 1;
         final String range = "bytes=" + readFrom + "-" + readTo;
         return s3AsyncClient.getObject(builder -> builder.bucket(bucket).key(key).range(range),
-                new ByteBufferAsyncResponseTransformer<>(fragmentSize));
+                new ByteBufferAsyncResponseTransformer<>((int) (readTo - readFrom + 1)));
     }
 
-    private UncheckedDeephavenException handleS3Exception(final Exception e, final String operationDescription) {
+    private IOException handleS3Exception(final Exception e, final String operationDescription) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
-            return new UncheckedDeephavenException("Thread interrupted while " + operationDescription, e);
-        } else if (e instanceof ExecutionException) {
-            return new UncheckedDeephavenException("Execution exception occurred while " + operationDescription, e);
-        } else if (e instanceof TimeoutException) {
-            return new UncheckedDeephavenException("Operation timeout while " + operationDescription + " after waiting "
-                    + "for duration " + readTimeout, e);
-        } else if (e instanceof CancellationException) {
-            return new UncheckedDeephavenException("Cancelled an operation while " + operationDescription, e);
+            return new IOException(String.format("Thread interrupted while %s", operationDescription), e);
         }
-        throw new UncheckedDeephavenException("Exception caught while " + operationDescription, e);
+        if (e instanceof ExecutionException) {
+            return new IOException(String.format("Execution exception occurred while %s", operationDescription), e);
+        }
+        if (e instanceof TimeoutException) {
+            return new IOException(String.format(
+                    "Operation timeout while %s after waiting for duration %s", operationDescription,
+                    s3Instructions.readTimeout()), e);
+        }
+        if (e instanceof CancellationException) {
+            return new IOException(String.format("Cancelled an operation while %s", operationDescription), e);
+        }
+        return new IOException(String.format("Exception caught while %s", operationDescription), e);
     }
 
     @Override
-    public int write(final ByteBuffer src) throws IOException {
+    public int write(final ByteBuffer src) {
         throw new NonWritableChannelException();
     }
 
@@ -271,30 +270,30 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     }
 
     @Override
-    public long size() throws ClosedChannelException {
+    public long size() throws IOException {
         checkClosed(position);
         populateSize();
         return size;
     }
 
-    private void populateSize() {
-        if (size >= 0) {
+    private void populateSize() throws IOException {
+        if (size != UNINITIALIZED_SIZE) {
             return;
         }
-        if (context.getSize() < 0) {
+        if (s3ChannelContext.getSize() < 0) {
             // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
             // for future use
             final HeadObjectResponse headObjectResponse;
             try {
                 headObjectResponse = s3AsyncClient.headObject(builder -> builder.bucket(bucket).key(key))
-                        .get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
+                        .get(s3Instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
             } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                final String operation = "fetching HEAD for file " + key + " in S3 bucket " + bucket;
-                throw handleS3Exception(e, operation);
+                throw handleS3Exception(e, String.format("fetching HEAD for file %s in S3 bucket %s", key, bucket));
             }
-            context.setSize(headObjectResponse.contentLength());
+            s3ChannelContext.setSize(headObjectResponse.contentLength());
         }
-        this.size = context.getSize();
+        this.size = s3ChannelContext.getSize();
+        final int fragmentSize = s3Instructions.fragmentSize();
         this.numFragmentsInObject = (int) ((size + fragmentSize - 1) / fragmentSize); // = ceil(size / fragmentSize)
     }
 

@@ -21,12 +21,12 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull final ChannelContext context) {
-        return context == ChannelContext.NULL;
+    public boolean isCompatibleWith(@NotNull final ChannelContext channelContext) {
+        return channelContext == ChannelContext.NULL;
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
+    public SeekableByteChannel getReadChannel(@NotNull final ChannelContext channelContext, @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
         return FileChannel.open(Path.of(uri), StandardOpenOption.READ);

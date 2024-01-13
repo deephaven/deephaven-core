@@ -38,12 +38,13 @@ class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull ChannelContext context) {
-        return context == ChannelContext.NULL;
+    public boolean isCompatibleWith(@NotNull ChannelContext channelContext) {
+        return channelContext == ChannelContext.NULL;
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext context, @NotNull final URI uri)
+    public final SeekableByteChannel getReadChannel(@NotNull final ChannelContext channelContext,
+            @NotNull final URI uri)
             throws IOException {
         // context is unused here because it is NULL
         Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);

@@ -72,8 +72,9 @@ public class ParquetTools {
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
     /**
-     * Reads in a table from a single parquet, metadata file, or directory with recognized layout. The source provided
-     * can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}.
+     * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
+     * provided can be a local file path or a URI to be resolved via the provided
+     * {@link SeekableChannelsProviderPlugin}.
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -100,8 +101,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from a single parquet, metadata file, or directory with recognized layout. The source provided
-     * can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}.
+     * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
+     * provided can be a local file path or a URI to be resolved via the provided
+     * {@link SeekableChannelsProviderPlugin}.
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -130,7 +132,7 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
+     * Reads in a table from a single parquet file, metadata file, or directory with recognized layout.
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
@@ -156,7 +158,7 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
+     * Reads in a table from a single parquet file, metadata file, or directory with recognized layout.
      *
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,

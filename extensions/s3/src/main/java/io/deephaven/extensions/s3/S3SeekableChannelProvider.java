@@ -13,7 +13,6 @@ import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
-import java.time.Duration;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from AWS S3 instances.
@@ -21,10 +20,7 @@ import java.time.Duration;
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private final S3AsyncClient s3AsyncClient;
-    private final int fragmentSize;
-    private final int maxCacheSize;
-    private final int readAheadCount;
-    private final Duration readTimeout;
+    private final S3Instructions s3Instructions;
 
     S3SeekableChannelProvider(final S3Instructions s3Instructions) {
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
@@ -35,31 +31,30 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
                 .build();
-        this.fragmentSize = s3Instructions.fragmentSize();
-        this.maxCacheSize = s3Instructions.maxCacheSize();
-        this.readAheadCount = s3Instructions.readAheadCount();
-        this.readTimeout = s3Instructions.readTimeout();
+        this.s3Instructions = s3Instructions;
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelsProvider.ChannelContext context,
+    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelsProvider.ChannelContext channelContext,
             @NotNull final URI uri) {
-        return new S3SeekableByteChannel(context, uri, s3AsyncClient, fragmentSize, readAheadCount, readTimeout);
+        return new S3SeekableByteChannel(channelContext, uri, s3AsyncClient, s3Instructions);
     }
 
     @Override
     public ChannelContext makeContext() {
-        return new S3SeekableByteChannel.S3ChannelContext(maxCacheSize);
+        return new S3SeekableByteChannel.S3ChannelContext(s3Instructions.maxCacheSize());
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull ChannelContext context) {
-        return context instanceof S3SeekableByteChannel.S3ChannelContext;
+    public boolean isCompatibleWith(@NotNull final ChannelContext channelContext) {
+        // A null context implies no caching
+        return channelContext == ChannelContext.NULL
+                || channelContext instanceof S3SeekableByteChannel.S3ChannelContext;
     }
 
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
-        throw new UnsupportedOperationException("Don't support writing to S3 yet");
+        throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
     }
 
     public void close() {

@@ -34,7 +34,7 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
 
     @Override
     public void onStream(final SdkPublisher<ByteBuffer> publisher) {
-        // TODO Can be improved with a buffer pool
+        // This could be improved with the addition of a buffer pool or similar resource allocation sharing support
         publisher.subscribe(new ByteBufferSubscriber(cf, ByteBuffer.allocate(bufferSize)));
     }
 
@@ -43,7 +43,7 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
         cf.completeExceptionally(throwable);
     }
 
-    final static class ByteBufferSubscriber implements Subscriber<ByteBuffer> {
+    private static final class ByteBufferSubscriber implements Subscriber<ByteBuffer> {
         private final CompletableFuture<ByteBuffer> resultFuture;
         private Subscription subscription;
         private final ByteBuffer byteBuffer;
@@ -79,7 +79,7 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
 
         @Override
         public void onComplete() {
-            resultFuture.complete(byteBuffer.asReadOnlyBuffer());
+            resultFuture.complete(byteBuffer.flip().asReadOnlyBuffer());
         }
     }
 }
