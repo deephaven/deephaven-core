@@ -48,7 +48,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
             @NotNull final Lookup<T> lookup,
             @NotNull final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
-            // Dictionary is already materialized at this point, therefore, we can safely use NULL context
+            // We use NULL channel context here and rely on materialization logic to provide the correct context
             final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelContext.NULL);
             final T[] values = ObjectChunk.makeArray(dictionary.getMaxId() + 1);
             for (int ki = 0; ki < values.length; ++ki) {

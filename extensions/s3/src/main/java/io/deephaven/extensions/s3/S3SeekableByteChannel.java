@@ -132,7 +132,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     private long size;
     private int numFragmentsInObject;
 
-    private S3ChannelContext s3ChannelContext;
+    private SeekableChannelContext channelContext;
 
     private long position;
 
@@ -143,27 +143,25 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
         this.key = s3Uri.key().orElse(null);
         this.s3AsyncClient = s3AsyncClient;
         this.s3Instructions = s3Instructions;
-        Assert.instanceOf(channelContext, "channelContext", S3ChannelContext.class);
-        this.s3ChannelContext = (S3ChannelContext) channelContext;
+        this.channelContext = channelContext;
         this.size = UNINITIALIZED_SIZE;
         this.position = 0;
     }
 
+    /**
+     * @param channelContext The {@link SeekableChannelContext} object used to cache read-ahead buffers for efficiently
+     *        reading from S3. An appropriate channel context should be set before the read and should be cleared after
+     *        the read is complete. A {@code null} parameter value is equivalent to clearing the context. This parameter
+     *        will be {@link SeekableChannelContext#NULL} if no caching and read ahead is desired.
+     */
     @Override
     public void setContext(@Nullable final SeekableChannelContext channelContext) {
-        // null context equivalent to clearing the context
-        if (channelContext != null && !(channelContext instanceof S3ChannelContext)) {
-            throw new IllegalArgumentException(
-                    "Context must be null or an instance of S3ChannelContext, provided context of class " +
-                            channelContext.getClass().getName());
-        }
-        this.s3ChannelContext = (S3ChannelContext) channelContext;
+        this.channelContext = channelContext;
     }
 
     @Override
     public int read(@NotNull final ByteBuffer destination) throws IOException {
-        Assert.neqNull(s3ChannelContext, "s3ChannelContext");
-        Assert.neq(s3ChannelContext, "s3ChannelContext", SeekableChannelContext.NULL, "SeekableChannelContext.NULL");
+        Assert.neqNull(channelContext, "channelContext");
         if (!destination.hasRemaining()) {
             return 0;
         }
@@ -171,7 +169,8 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
         checkClosed(localPosition);
 
         // Fetch the file size if this is the first read
-        populateSize();
+        final S3ChannelContext s3ChannelContext = getS3ChannelContextFrom(channelContext);
+        populateSize(s3ChannelContext);
         if (localPosition >= size) {
             // We are finished reading
             return -1;
@@ -179,8 +178,8 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
 
         // Send async read requests for current fragment as well as read ahead fragments, if not already in cache
         final int currFragmentIndex = fragmentIndexForByteNumber(localPosition);
-        final int numReadAheadFragments =
-                Math.min(s3Instructions.readAheadCount(), numFragmentsInObject - currFragmentIndex - 1);
+        final int numReadAheadFragments = channelContext == SeekableChannelContext.NULL ? 0
+                : Math.min(s3Instructions.readAheadCount(), numFragmentsInObject - currFragmentIndex - 1);
         for (int idx = currFragmentIndex; idx <= currFragmentIndex + numReadAheadFragments; idx++) {
             final CompletableFuture<ByteBuffer> future = s3ChannelContext.getCachedFuture(idx);
             if (future == null) {
@@ -211,6 +210,19 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
         currentFragment.limit(originalBufferLimit);
         position = localPosition + sizeToCopy;
         return sizeToCopy;
+    }
+
+    private static S3ChannelContext getS3ChannelContextFrom(@NotNull final SeekableChannelContext channelContext) {
+        final S3ChannelContext s3ChannelContext;
+        if (channelContext == SeekableChannelContext.NULL) {
+            // Create a new temporary context just for this read with a cache size of 1 just to support the current
+            // chunk with no read ahead
+            s3ChannelContext = new S3ChannelContext(1);
+        } else {
+            Assert.instanceOf(channelContext, "channelContext", S3ChannelContext.class);
+            s3ChannelContext = (S3ChannelContext) channelContext;
+        }
+        return s3ChannelContext;
     }
 
     private int fragmentIndexForByteNumber(final long byteNumber) {
@@ -273,15 +285,19 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     @Override
     public long size() throws IOException {
         checkClosed(position);
-        populateSize();
+        populateSize(getS3ChannelContextFrom(channelContext));
         return size;
     }
 
-    private void populateSize() throws IOException {
+    private void populateSize(final S3ChannelContext s3ChannelContext) throws IOException {
         if (size != UNINITIALIZED_SIZE) {
+            // Store the size in the context if it is uninitialized
+            if (s3ChannelContext.getSize() == UNINITIALIZED_SIZE) {
+                s3ChannelContext.setSize(size);
+            }
             return;
         }
-        if (s3ChannelContext.getSize() < 0) {
+        if (s3ChannelContext.getSize() == UNINITIALIZED_SIZE) {
             // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
             // for future use
             final HeadObjectResponse headObjectResponse;

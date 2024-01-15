@@ -174,7 +174,15 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             return NULL_DICTIONARY;
         }
-        return getDictionaryHelper(channelContext, dictionaryPageOffset);
+        if (channelContext == SeekableChannelContext.NULL) {
+            // Create a new context object and use that for reading the dictionary
+            try (final SeekableChannelContext newChannelContext = channelsProvider.makeContext()) {
+                return getDictionaryHelper(newChannelContext, dictionaryPageOffset);
+            }
+        } else {
+            // Use the context object provided by the caller
+            return getDictionaryHelper(channelContext, dictionaryPageOffset);
+        }
     }
 
     private Dictionary getDictionaryHelper(final SeekableChannelContext channelContext,
