@@ -232,7 +232,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
-        sig = inspect.signature(fn)
+        sig = inspect.signature(fn, eval_str=True)
         for n, p in sig.parameters.items():
             p_sig.params.append(_parse_param_annotation(p.annotation))
 
