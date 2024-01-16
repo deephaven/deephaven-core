@@ -13,8 +13,10 @@ import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A parser for reading business calendar XML files.
  *
+ * <p>
  * Business calendar XML files should be formatted as:
  *
  * <pre>
@@ -56,14 +59,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * In addition, legacy XML files are supported. These files have dates formatted as `yyyyMMdd` instead of ISO-8601
  * `yyy-MM-dd`. Additionally, legacy uses `businessPeriod` tags in place of the `businessTime` tags.
- * 
+ *
  * <pre>
  * {@code
  * <!-- Current format -->
  * <businessTime><open>09:30</open><close>16:00</close></businessTime>
  * }
  * </pre>
- * 
+ *
  * <pre>
  * {@code
  * <!-- Legacy format -->
@@ -73,7 +76,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * The legacy format may be deprecated in a future release.
  */
-class BusinessCalendarXMLParser {
+public final class BusinessCalendarXMLParser {
 
     private static class BusinessCalendarInputs {
         private String calendarName;
@@ -108,40 +111,80 @@ class BusinessCalendarXMLParser {
     public static BusinessCalendar loadBusinessCalendar(@NotNull final File file) {
         Require.neqNull(file, "file");
         final BusinessCalendarInputs in = parseBusinessCalendarInputs(file);
-
         return new BusinessCalendar(in.calendarName, in.description,
                 in.timeZone, in.firstValidDate, in.lastValidDate,
                 in.standardBusinessDay, in.weekendDays, in.holidays);
     }
 
+    /**
+     * Loads a business calendar from an XML input stream.
+     *
+     * @param inputStream XML input stream
+     * @return business calendar.
+     * @throws RequirementFailure if the input is null
+     */
+    public static BusinessCalendar loadBusinessCalendar(@NotNull final InputStream inputStream) {
+        Require.neqNull(inputStream, "inputStream");
+        final BusinessCalendarInputs in = parseBusinessCalendarInputs(inputStream);
+        return new BusinessCalendar(in.calendarName, in.description,
+                in.timeZone, in.firstValidDate, in.lastValidDate,
+                in.standardBusinessDay, in.weekendDays, in.holidays);
+    }
+
+    /**
+     * Loads a business calendar from an XML resource.
+     *
+     * @param resource XML input stream
+     * @return business calendar.
+     */
+    public static BusinessCalendar loadBusinessCalendarFromResource(String resource) throws IOException {
+        final InputStream in = Calendars.class.getResourceAsStream(resource);
+        if (in == null) {
+            throw new RuntimeException("Could not open resource " + resource + " from classpath");
+        }
+        try (final InputStream bin = new BufferedInputStream(in)) {
+            return loadBusinessCalendar(bin);
+        }
+    }
+
     private static BusinessCalendarInputs parseBusinessCalendarInputs(@NotNull final File file) {
         Require.neqNull(file, "file");
         try {
-            final BusinessCalendarInputs calendarElements = new BusinessCalendarInputs();
-
-            Element root = loadXMLRootElement(file);
-            calendarElements.calendarName = getText(getRequiredChild(root, "name"));
-            calendarElements.timeZone = TimeZoneAliases.zoneId(getText(getRequiredChild(root, "timeZone")));
-            calendarElements.description = getText(root.getChild("description"));
-            calendarElements.holidays = parseHolidays(root, calendarElements.timeZone);
-            final String firstValidDateStr = getText(root.getChild("firstValidDate"));
-            calendarElements.firstValidDate =
-                    firstValidDateStr == null ? Collections.min(calendarElements.holidays.keySet())
-                            : DateTimeUtils.parseLocalDate(firstValidDateStr);
-            final String lastValidDateStr = getText(root.getChild("lastValidDate"));
-            calendarElements.lastValidDate =
-                    lastValidDateStr == null ? Collections.max(calendarElements.holidays.keySet())
-                            : DateTimeUtils.parseLocalDate(lastValidDateStr);
-
-            // Set the default values
-            final Element defaultElement = getRequiredChild(root, "default");
-            calendarElements.weekendDays = parseWeekendDays(defaultElement);
-            calendarElements.standardBusinessDay = parseCalendarDaySchedule(defaultElement);
-
-            return calendarElements;
+            return fill(loadXMLRootElement(file));
         } catch (Exception e) {
             throw new RuntimeException("Unable to load calendar file: file=" + file.getPath(), e);
         }
+    }
+
+    private static BusinessCalendarInputs parseBusinessCalendarInputs(@NotNull final InputStream in) {
+        Require.neqNull(in, "in");
+        try {
+            return fill(loadXMLRootElement(in));
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to load calendar file: inputStream=" + in, e);
+        }
+    }
+
+    private static BusinessCalendarInputs fill(Element root) throws Exception {
+        final BusinessCalendarInputs calendarElements = new BusinessCalendarInputs();
+        calendarElements.calendarName = getText(getRequiredChild(root, "name"));
+        calendarElements.timeZone = TimeZoneAliases.zoneId(getText(getRequiredChild(root, "timeZone")));
+        calendarElements.description = getText(root.getChild("description"));
+        calendarElements.holidays = parseHolidays(root, calendarElements.timeZone);
+        final String firstValidDateStr = getText(root.getChild("firstValidDate"));
+        calendarElements.firstValidDate =
+                firstValidDateStr == null ? Collections.min(calendarElements.holidays.keySet())
+                        : DateTimeUtils.parseLocalDate(firstValidDateStr);
+        final String lastValidDateStr = getText(root.getChild("lastValidDate"));
+        calendarElements.lastValidDate =
+                lastValidDateStr == null ? Collections.max(calendarElements.holidays.keySet())
+                        : DateTimeUtils.parseLocalDate(lastValidDateStr);
+
+        // Set the default values
+        final Element defaultElement = getRequiredChild(root, "default");
+        calendarElements.weekendDays = parseWeekendDays(defaultElement);
+        calendarElements.standardBusinessDay = parseCalendarDaySchedule(defaultElement);
+        return calendarElements;
     }
 
     private static Element loadXMLRootElement(File calendarFile) throws Exception {
@@ -154,6 +197,21 @@ class BusinessCalendarXMLParser {
             throw new Exception("Error parsing business calendar: file=" + calendarFile, e);
         } catch (IOException e) {
             throw new Exception("Error loading business calendar: file=" + calendarFile, e);
+        }
+
+        return doc.getRootElement();
+    }
+
+    private static Element loadXMLRootElement(InputStream in) throws Exception {
+        final Document doc;
+
+        try {
+            final SAXBuilder builder = new SAXBuilder();
+            doc = builder.build(in);
+        } catch (JDOMException e) {
+            throw new Exception("Error parsing business calendar: inputStream=" + in, e);
+        } catch (IOException e) {
+            throw new Exception("Error loading business calendar: inputStream=" + in, e);
         }
 
         return doc.getRootElement();

@@ -15,6 +15,11 @@ _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 class CalendarTestCase(BaseTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        jpy.get_type('io.deephaven.time.calendar.CalendarInit').init()
+
     def setUp(self) -> None:
         super().setUp()
 

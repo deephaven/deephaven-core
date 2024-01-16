@@ -12,6 +12,12 @@ import java.util.Objects;
 
 public class TestCalendars extends BaseArrayTestCase {
 
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        CalendarInit.init();
+    }
+
     public void testDefault() {
         final BusinessCalendar calendar = Calendars.calendar();
         assertEquals(Configuration.getInstance().getProperty("Calendar.default"), Calendars.calendarName());

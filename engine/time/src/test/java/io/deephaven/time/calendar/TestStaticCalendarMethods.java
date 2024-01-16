@@ -21,7 +21,6 @@ import java.util.*;
  * See also {@code StaticCalendarMethodsGenerator}.
  */
 public class TestStaticCalendarMethods extends BaseArrayTestCase {
-
     private final Map<Class<?>, Object[]> data = new HashMap<>();
 
     {
@@ -91,6 +90,12 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
         } else {
             assertEquals(description, target, actual);
         }
+    }
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        CalendarInit.init();
     }
 
     // test to make sure these methods work inside the query strings
