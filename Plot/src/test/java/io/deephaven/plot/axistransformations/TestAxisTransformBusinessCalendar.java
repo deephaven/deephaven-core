@@ -4,6 +4,7 @@
 package io.deephaven.plot.axistransformations;
 
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.Calendars;
 import junit.framework.TestCase;
 

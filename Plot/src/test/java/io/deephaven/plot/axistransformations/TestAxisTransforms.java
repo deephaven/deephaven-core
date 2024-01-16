@@ -4,6 +4,7 @@
 package io.deephaven.plot.axistransformations;
 
 import io.deephaven.time.calendar.BusinessCalendar;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.Calendars;
 import org.junit.Before;
 import org.junit.Test;

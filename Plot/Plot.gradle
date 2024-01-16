@@ -27,6 +27,7 @@ dependencies {
 
     testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation TestTools.projectDependency(project, 'engine-time')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

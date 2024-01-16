@@ -3,7 +3,7 @@
  */
 package io.deephaven.time.calendar;
 
-final class CalendarInit {
+public final class CalendarInit {
 
     private static volatile boolean initialized = false;
 
@@ -11,7 +11,7 @@ final class CalendarInit {
      * This is a guarded initialization of {@link Calendars#addCalendar(BusinessCalendar)} for all the
      * {@link Calendars#calendarsFromConfiguration()}.
      */
-    static void init() {
+    public static void init() {
         if (!initialized) {
             synchronized (CalendarInit.class) {
                 if (!initialized) {
