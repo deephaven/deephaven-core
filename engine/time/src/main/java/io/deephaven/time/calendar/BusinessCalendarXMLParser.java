@@ -125,13 +125,13 @@ class BusinessCalendarXMLParser {
             calendarElements.description = getText(root.getChild("description"));
             calendarElements.holidays = parseHolidays(root, calendarElements.timeZone);
             final String firstValidDateStr = getText(root.getChild("firstValidDate"));
-            calendarElements.firstValidDate = DateTimeUtils.parseLocalDate(
-                    firstValidDateStr == null ? Collections.min(calendarElements.holidays.keySet()).toString()
-                            : firstValidDateStr);
+            calendarElements.firstValidDate =
+                    firstValidDateStr == null ? Collections.min(calendarElements.holidays.keySet())
+                            : DateTimeUtils.parseLocalDate(firstValidDateStr);
             final String lastValidDateStr = getText(root.getChild("lastValidDate"));
-            calendarElements.lastValidDate = DateTimeUtils.parseLocalDate(
-                    lastValidDateStr == null ? Collections.max(calendarElements.holidays.keySet()).toString()
-                            : lastValidDateStr);
+            calendarElements.lastValidDate =
+                    lastValidDateStr == null ? Collections.max(calendarElements.holidays.keySet())
+                            : DateTimeUtils.parseLocalDate(lastValidDateStr);
 
             // Set the default values
             final Element defaultElement = getRequiredChild(root, "default");
