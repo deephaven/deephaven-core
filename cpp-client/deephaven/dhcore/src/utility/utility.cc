@@ -145,7 +145,7 @@ TimePointToStr(
 }
 
 #ifdef __GNUG__
-std::string demangle(const char* name) {
+std::string demangle(const char *name) {
   int status = -1;
   char *res = abi::__cxa_demangle(name, nullptr, nullptr, &status);
   std::string result = status == 0 ? res : name;

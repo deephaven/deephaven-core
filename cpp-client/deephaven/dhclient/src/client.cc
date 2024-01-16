@@ -9,6 +9,7 @@
 
 #include <arrow/array.h>
 #include <arrow/scalar.h>
+#include "deephaven/client/arrowutil/arrow_client_table.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/impl/aggregate_impl.h"
 #include "deephaven/client/impl/client_impl.h"
@@ -22,14 +23,17 @@
 
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
-using deephaven::client::server::Server;
+using deephaven::client::arrowutil::ArrowClientTable;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
 using deephaven::client::impl::UpdateByOperationImpl;
+using deephaven::client::server::Server;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
+using deephaven::client::utility::ValueOrThrow;
+using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::utility::GetWhat;
 using deephaven::dhcore::utility::MakeReservedVector;
@@ -544,6 +548,16 @@ std::shared_ptr<Schema> TableHandle::Schema() const {
 
 std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::GetFlightStreamReader() const {
   return GetManager().CreateFlightWrapper().GetFlightStreamReader(*this);
+}
+
+std::shared_ptr<arrow::Table> TableHandle::ToArrowTable() const {
+  auto res = GetFlightStreamReader()->ToTable();
+  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
+}
+
+std::shared_ptr<ClientTable> TableHandle::ToClientTable() const {
+  auto at = ToArrowTable();
+  return ArrowClientTable::Create(std::move(at));
 }
 
 std::shared_ptr<SubscriptionHandle> TableHandle::Subscribe(
