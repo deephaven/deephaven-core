@@ -38,11 +38,11 @@ public class Calendar {
      * @param name calendar name.
      * @param description calendar description.
      * @param timeZone calendar time zone.
-     * @throws RequirementFailure if any parameter is {@code null}
+     * @throws RequirementFailure if {@code name} or {@code timeZone} is {@code null}
      */
     Calendar(final String name, final String description, final ZoneId timeZone) {
         this.name = Require.neqNull(name, "name");
-        this.description = Require.neqNull(description, "description");
+        this.description = description;
         this.timeZone = Require.neqNull(timeZone, "timeZone");
     }
 
