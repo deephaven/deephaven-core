@@ -12,8 +12,10 @@ import java.util.Objects;
 
 public class TestCalendars extends BaseArrayTestCase {
 
-    static {
-        CalendarInit.noop();
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        CalendarInit.init();
     }
 
     public void testDefault() {

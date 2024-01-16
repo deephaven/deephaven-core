@@ -5,13 +5,22 @@ package io.deephaven.time.calendar;
 
 final class CalendarInit {
 
-    static {
-        for (BusinessCalendar calendar : Calendars.calendarsFromConfiguration()) {
-            Calendars.addCalendar(calendar);
+    private static volatile boolean initialized = false;
+
+    /**
+     * This is a guarded initialization of {@link Calendars#addCalendar(BusinessCalendar)} for all the
+     * {@link Calendars#calendarsFromConfiguration()}.
+     */
+    static void init() {
+        if (!initialized) {
+            synchronized (CalendarInit.class) {
+                if (!initialized) {
+                    for (BusinessCalendar calendar : Calendars.calendarsFromConfiguration()) {
+                        Calendars.addCalendar(calendar);
+                    }
+                    initialized = true;
+                }
+            }
         }
-    }
-
-    static void noop() {
-
     }
 }
