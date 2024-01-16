@@ -26,7 +26,6 @@ import io.deephaven.io.log.LogLevel;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
-import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,6 +49,7 @@ public class BarrageBlinkTable extends BarrageTable {
             final Map<String, Object> attributes,
             @Nullable final ViewportChangedCallback vpCallback) {
         super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
+        setFlat();
     }
 
     private void processUpdate(final BarrageMessage update) {
