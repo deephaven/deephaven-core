@@ -171,7 +171,7 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
     }
 
     /**
-     * Factory for producing WritableRowSets and their components.
+     * Factory for producing WritableRowRedirections and their components.
      */
     interface Factory {
         TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity);

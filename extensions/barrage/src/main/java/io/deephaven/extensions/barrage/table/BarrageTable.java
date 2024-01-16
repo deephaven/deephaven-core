@@ -461,21 +461,17 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         } else {
             final WritableRowRedirection rowRedirection;
             final boolean isFlat = getAttribute.test(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT);
-            if (getAttribute.test(Table.APPEND_ONLY_TABLE_ATTRIBUTE)
-                    || getAttribute.test(Table.ADD_ONLY_TABLE_ATTRIBUTE)
-                    || isFlat) {
+            if (getAttribute.test(Table.APPEND_ONLY_TABLE_ATTRIBUTE) || isFlat) {
                 rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
             } else {
-                rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(1024);
+                rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(1024);
             }
 
             final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                     makeColumns(columns, writableSources, rowRedirection);
             table = new BarrageRedirectedTable(
-                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, vpCallback);
-            if (isFlat) {
-                table.setFlat();
-            }
+                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isFlat,
+                    vpCallback);
         }
 
         return table;
