@@ -143,7 +143,7 @@ public final class BusinessCalendarXMLParser {
             throw new RuntimeException("Could not open resource " + resource + " from classpath");
         }
         try (final InputStream bin = new BufferedInputStream(in)) {
-            return BusinessCalendarXMLParser.loadBusinessCalendar(bin);
+            return loadBusinessCalendar(bin);
         }
     }
 
