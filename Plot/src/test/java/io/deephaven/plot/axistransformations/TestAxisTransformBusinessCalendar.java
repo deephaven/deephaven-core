@@ -13,9 +13,6 @@ import java.time.ZoneId;
 import java.util.Objects;
 
 public class TestAxisTransformBusinessCalendar extends TestCase {
-    static {
-        CalendarInit.noop();
-    }
 
     private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
 
@@ -44,6 +41,7 @@ public class TestAxisTransformBusinessCalendar extends TestCase {
 
     @Override
     public void setUp() throws Exception {
+        CalendarInit.init();
         final String path = Paths
                 .get(Objects.requireNonNull(TestAxisTransformBusinessCalendar.class.getResource("/JPOSE.calendar"))
                         .toURI())

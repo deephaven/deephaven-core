@@ -5,6 +5,7 @@ package io.deephaven.plot.axistransformations;
 
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -16,9 +17,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestAxisTransforms {
-    static {
-        CalendarInit.noop();
-    }
 
     final double d1 = 3.5;
     final double d2 = 4.2;
@@ -30,6 +28,11 @@ public class TestAxisTransforms {
     final double d8 = -d3;
     final double d9 = -d4;
     private final double delta = 0.00001;
+
+    @Before
+    public void setUp() {
+        CalendarInit.init();
+    }
 
     @Test
     public void testLog() {
