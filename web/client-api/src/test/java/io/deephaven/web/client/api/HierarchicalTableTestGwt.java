@@ -70,7 +70,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
                         // This call effectively asserts that there are 10 rows after expand, so we don't need
                         // to worry about an update from the underlying table racing the expand
-                        return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED, (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 1, 1000);
+                        return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                                (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 1, 1000);
                     }).then(event -> {
                         treeTable.close();
 
