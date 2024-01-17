@@ -1239,12 +1239,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final int numDeltas = 4;
         final long blockSize = sz / numDeltas;
         for (int ii = 0; ii < numDeltas; ++ii) {
-            final RowSetBuilderSequential newRowsBuilder = RowSetFactory.builderSequential();
-            for (int jj = 0; jj < blockSize; ++jj) {
-                newRowsBuilder.appendKey(ii * blockSize + jj);
-            }
+            final RowSet newRows = RowSetFactory.fromRange(ii * blockSize, (ii + 1) * blockSize - 1);
             updateGraph.runWithinUnitTestCycle(() -> {
-                final RowSet newRows = newRowsBuilder.build();
                 TstUtils.addToTable(sourceTable, newRows);
                 sourceTable.notifyListeners(new TableUpdateImpl(
                         newRows,
