@@ -10,7 +10,9 @@ import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.StaticCalendarMethods;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -112,6 +114,11 @@ public class TestCalendarMethodsFromTable {
         } else {
             assertEquals(query, target, getVal(emptyTable(1).update(query), "X"));
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        CalendarInit.init();
     }
 
     @Test
