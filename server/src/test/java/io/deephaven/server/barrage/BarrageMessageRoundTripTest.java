@@ -801,7 +801,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         nugget.clients.add(new RemoteClient(
                                                 RowSetFactory.fromRange(size / 5, 2L * size / 5),
                                                 columns, nugget.barrageMessageProducer, nugget.originalTable,
-                                               "sub-changer"));
+                                                "sub-changer"));
                                     }
                                 }
 
