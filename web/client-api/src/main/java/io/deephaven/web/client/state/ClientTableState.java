@@ -314,7 +314,6 @@ public final class ClientTableState extends TableConfig {
             onRunning = null;
             onFailed = null;
         }
-
     }
 
     public List<String> getCustomColumnsString() {

@@ -121,7 +121,7 @@ public class SessionService {
                     }
                 } while ((curr = curr.getCause()) != null && --currDepth > 0);
 
-                // if this is a new top-level error, log it, possibly using an existing errorId
+                // this is a new top-level error; log it, possibly using an existing errorId
                 log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
             }
 
