@@ -19,21 +19,6 @@ import java.util.UUID;
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
 
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err) {
-        return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
-    }
-
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err,
-            final Code statusCode) {
-        if (err instanceof StatusRuntimeException) {
-            return (StatusRuntimeException) err;
-        }
-
-        final UUID errorId = UUID.randomUUID();
-        log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
-        return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
-    }
-
     /**
      * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
      *

@@ -4,6 +4,8 @@
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
@@ -13,6 +15,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -54,8 +57,20 @@ public class SessionService {
 
     @Singleton
     public static class ObfuscatingErrorTransformer implements ErrorTransformer {
+        private static final int MAX_STACK_TRACE_CAUSAL_DEPTH = 25;
+        private static final int MAX_CACHE_BUILDER_SIZE = 1009;
+        private static final int MAX_CACHE_DURATION_MIN = 1;
+
+        private final Cache<Throwable, UUID> idCache;
+
         @Inject
-        public ObfuscatingErrorTransformer() {}
+        public ObfuscatingErrorTransformer() {
+            idCache = CacheBuilder.newBuilder()
+                    .expireAfterAccess(MAX_CACHE_DURATION_MIN, TimeUnit.MINUTES)
+                    .maximumSize(MAX_CACHE_BUILDER_SIZE)
+                    .weakKeys()
+                    .build();
+        }
 
         @Override
         public StatusRuntimeException transform(final Throwable err) {
@@ -70,10 +85,47 @@ public class SessionService {
                 }
                 return sre;
             } else if (err instanceof InterruptedException) {
-                return GrpcUtil.securelyWrapError(log, err, Code.UNAVAILABLE);
+                return securelyWrapError(log, err, Code.UNAVAILABLE);
             } else {
-                return GrpcUtil.securelyWrapError(log, err);
+                return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
             }
+        }
+
+        public synchronized StatusRuntimeException securelyWrapError(
+                final Logger log,
+                final Throwable err,
+                final Code statusCode) {
+            if (err instanceof StatusRuntimeException) {
+                return (StatusRuntimeException) err;
+            }
+
+            UUID errorId;
+            Throwable curr = err;
+            int currDepth = 0;
+            boolean needToAdd = false;
+            do {
+                errorId = idCache.getIfPresent(curr);
+                needToAdd |= errorId == null;
+            } while (errorId == null && (curr = curr.getCause()) != null && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH);
+
+            if (needToAdd) {
+                if (errorId == null) {
+                    errorId = UuidCreator.getRandomBased();
+                }
+
+                curr = err;
+                do {
+                    if (curr.getStackTrace().length != 0) {
+                        // Stackless exceptions are not very useful, so we only add to the cache if the stack exists.
+                        idCache.put(curr, errorId);
+                    }
+                } while ((curr = curr.getCause()) != null && --currDepth > 0);
+
+                // if this is a new top-level error, log it, possibly using an existing errorId
+                log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
+            }
+
+            return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
         }
     }
 
