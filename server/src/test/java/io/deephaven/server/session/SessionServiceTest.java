@@ -9,6 +9,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
+import io.grpc.StatusRuntimeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -197,5 +198,60 @@ public class SessionServiceTest {
         Assert.eqTrue(session2.isExpired(), "session2.isExpired()");
         Assert.eqNull(sessionService.getSessionForToken(expiration2.token),
                 "sessionService.getSessionForToken(initialToken.token)");
+    }
+
+    @Test
+    public void testErrorIdDeDupesIdentity() {
+        final Exception e1 = new RuntimeException("e1");
+        final SessionService.ObfuscatingErrorTransformer transformer = new SessionService.ObfuscatingErrorTransformer();
+
+        final StatusRuntimeException t1 = transformer.transform(e1);
+        final StatusRuntimeException t2 = transformer.transform(e1);
+        Assert.neq(t1, "t1", t2, "t2");
+        Assert.equals(t1.getMessage(), "t1.getMessage()", t2.getMessage(), "t2.getMessage()");
+    }
+
+    @Test
+    public void testErrorIdDeDupesParentCause() {
+        final Exception parent = new RuntimeException("parent");
+        final Exception child = new RuntimeException("child", parent);
+        final SessionService.ObfuscatingErrorTransformer transformer = new SessionService.ObfuscatingErrorTransformer();
+
+        // important to transform parent then child for this test
+        final StatusRuntimeException t1 = transformer.transform(parent);
+        final StatusRuntimeException t2 = transformer.transform(child);
+        Assert.neq(t1, "t1", t2, "t2");
+        Assert.equals(t1.getMessage(), "t1.getMessage()", t2.getMessage(), "t2.getMessage()");
+    }
+
+    @Test
+    public void testErrorIdDeDupesChildCause() {
+        final Exception parent = new RuntimeException("parent");
+        final Exception child = new RuntimeException("child", parent);
+        final SessionService.ObfuscatingErrorTransformer transformer = new SessionService.ObfuscatingErrorTransformer();
+
+        // important to transform child then parent for this test
+        final StatusRuntimeException t1 = transformer.transform(child);
+        final StatusRuntimeException t2 = transformer.transform(parent);
+        Assert.neq(t1, "t1", t2, "t2");
+        Assert.equals(t1.getMessage(), "t1.getMessage()", t2.getMessage(), "t2.getMessage()");
+    }
+
+    @Test
+    public void testErrorIdDeDupesSharedAncestorCause() {
+        final Exception parent = new RuntimeException("parent");
+        final Exception child1 = new RuntimeException("child1", parent);
+        final Exception child2 = new RuntimeException("child2", parent);
+        final SessionService.ObfuscatingErrorTransformer transformer = new SessionService.ObfuscatingErrorTransformer();
+
+        // important to transform child then parent for this test
+        final StatusRuntimeException t1 = transformer.transform(child1);
+        final StatusRuntimeException t2 = transformer.transform(child2);
+        Assert.neq(t1, "t1", t2, "t2");
+        Assert.equals(t1.getMessage(), "t1.getMessage()", t2.getMessage(), "t2.getMessage()");
+
+        final StatusRuntimeException t3 = transformer.transform(parent);
+        Assert.neq(t1, "t1", t3, "t3");
+        Assert.equals(t1.getMessage(), "t1.getMessage()", t3.getMessage(), "t3.getMessage()");
     }
 }

@@ -91,14 +91,10 @@ public class SessionService {
             }
         }
 
-        public synchronized StatusRuntimeException securelyWrapError(
+        private synchronized StatusRuntimeException securelyWrapError(
                 final Logger log,
                 final Throwable err,
                 final Code statusCode) {
-            if (err instanceof StatusRuntimeException) {
-                return (StatusRuntimeException) err;
-            }
-
             UUID errorId;
             Throwable curr = err;
             int currDepth = 0;
@@ -106,7 +102,7 @@ public class SessionService {
             do {
                 errorId = idCache.getIfPresent(curr);
                 needToAdd |= errorId == null;
-            } while (errorId == null && (curr = curr.getCause()) != null && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH);
+            } while (errorId == null && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH && (curr = curr.getCause()) != null);
 
             if (needToAdd) {
                 if (errorId == null) {
