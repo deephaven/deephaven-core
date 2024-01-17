@@ -113,7 +113,7 @@ def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t
     // This provides a hostname that can be referenced from inside the docker container to access the host
     // OS, and connect to the test server.
     t.hostConfig.extraHosts.add('host.docker.internal:host-gateway')
-    t.hostConfig.portBindings.set(["4444:$seleniumPort"])
+    t.hostConfig.portBindings.set(["$seleniumPort:4444"])
     t.hostConfig.network.set(deephavenDocker.networkName.get())
 }
 def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
@@ -139,7 +139,7 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
     doFirst {
-        def webdriverUrl = 'http://localhost:4444/'
+        def webdriverUrl = "http://localhost:${seleniumPort}/"
         t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
                                       '-ea',
                                       '-style PRETTY',
