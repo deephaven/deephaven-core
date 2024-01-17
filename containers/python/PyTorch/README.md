@@ -15,9 +15,7 @@ For launch instructions, see the [README](https://github.com/deephaven/deephaven
 To launch Deephaven, execute the following in your deployment directory:
 
 ```bash
-compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/PyTorch/docker-compose.yml
-curl  -O "${compose_file}"
-
-docker-compose pull
-docker-compose up -d
+curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/PyTorch/docker-compose.yml
+docker compose pull
+docker compose up -d
 ```

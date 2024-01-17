@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"time"
 
 	"github.com/apache/arrow/go/v8/arrow/flight"
@@ -195,9 +196,11 @@ func (ts *tableStub) TimeTableQuery(period time.Duration, startTime time.Time) Q
 }
 
 // TimeTable creates a ticking time table in the global scope.
-// The period is time between adding new rows to the table.
-// The startTime is the time of the first row in the table.
-func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startTime time.Time) (*TableHandle, error) {
+// The period is time between adding new rows to the table. It needs to be either a signed integer type, time.Duration,
+// or string.
+// The startTime is the time of the first row in the table. It needs to be either a signed integer type, time.Time or a
+// string.
+func (ts *tableStub) TimeTable(ctx context.Context, period any, startTime any) (*TableHandle, error) {
 	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
@@ -205,9 +208,29 @@ func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startT
 
 	result := ts.client.ticketFact.newTicket()
 
-	req := tablepb2.TimeTableRequest{ResultId: &result,
-		Period:    &tablepb2.TimeTableRequest_PeriodNanos{PeriodNanos: period.Nanoseconds()},
-		StartTime: &tablepb2.TimeTableRequest_StartTimeNanos{StartTimeNanos: startTime.UnixNano()}}
+	req := tablepb2.TimeTableRequest{ResultId: &result}
+	periodVal := reflect.ValueOf(period)
+	if periodVal.CanInt() {
+		req.Period = &tablepb2.TimeTableRequest_PeriodNanos{PeriodNanos: periodVal.Int()}
+	} else if val, ok := period.(time.Duration); ok {
+		req.Period = &tablepb2.TimeTableRequest_PeriodNanos{PeriodNanos: val.Nanoseconds()}
+	} else if val, ok := period.(string); ok {
+		req.Period = &tablepb2.TimeTableRequest_PeriodString{PeriodString: val}
+	} else {
+		return nil, fmt.Errorf("expected period of type signed integer, time.Duration or string, found %T", period)
+	}
+
+	timeVal := reflect.ValueOf(startTime)
+	if timeVal.CanInt() {
+		req.StartTime = &tablepb2.TimeTableRequest_StartTimeNanos{StartTimeNanos: timeVal.Int()}
+	} else if val, ok := startTime.(time.Time); ok {
+		req.StartTime = &tablepb2.TimeTableRequest_StartTimeNanos{StartTimeNanos: val.UnixNano()}
+	} else if val, ok := startTime.(string); ok {
+		req.StartTime = &tablepb2.TimeTableRequest_StartTimeString{StartTimeString: val}
+	} else {
+		return nil, fmt.Errorf("expected startTime of type signed integer, time.Time or string, found %T", startTime)
+	}
+
 	resp, err := ts.stub.TimeTable(ctx, &req)
 	if err != nil {
 		return nil, err

@@ -3,26 +3,21 @@
  */
 package io.deephaven.engine.table.impl.replay;
 
-
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.util.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
-public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
+public abstract class QueryReplayGroupedTable extends ReplayTableBase implements Runnable {
 
 
     protected final WritableRowRedirection rowRedirection;
@@ -39,7 +34,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         return result;
     }
 
-    static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
+    protected static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
         private final RowSet.Iterator iterator;
         private final ColumnSource<Instant> columnSource;
@@ -74,11 +69,19 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         }
     }
 
-    protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn, Replayer replayer, WritableRowRedirection rowRedirection, String[] groupingColumns) {
+    protected QueryReplayGroupedTable(
+            @NotNull final String description,
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final Map<String, ? extends ColumnSource<?>> input,
+            @NotNull final String timeColumn,
+            @NotNull final Replayer replayer,
+            @NotNull final WritableRowRedirection rowRedirection,
+            @NotNull final String[] groupingColumns) {
 
-        super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
+        super(description, RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
         this.rowRedirection = rowRedirection;
+        this.replayer = Objects.requireNonNull(replayer, "replayer");
+
         Map<Object, RowSet> grouping;
 
         final ColumnSource<?>[] columnSources =
@@ -95,9 +98,6 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
                 allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
             }
         }
-        Require.requirement(replayer != null, "replayer != null");
-        setRefreshing(true);
-        this.replayer = replayer;
         run();
     }
 }

@@ -21,10 +21,12 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.test.types.SerialTest;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -76,11 +78,16 @@ public class FuzzerTest {
     private GroovyDeephavenSession getGroovySession(@Nullable Clock clock) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(
                 ExecutionContext.getContext().getUpdateGraph(),
-                ThreadInitializationFactory.NO_OP,
+                ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE,
                 GroovyDeephavenSession.RunScripts.serviceLoader());
         session.getExecutionContext().open();
         return session;
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        CalendarInit.init();
     }
 
     @Test

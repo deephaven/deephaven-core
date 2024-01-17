@@ -21,7 +21,6 @@ import java.time.temporal.ChronoField;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -385,8 +384,9 @@ public class DateTimeUtils {
     private abstract static class CachedDate {
 
         final ZoneId timeZone;
-        String value;
-        long valueExpirationTimeMillis;
+        volatile LocalDate date;
+        volatile String str;
+        volatile long valueExpirationTimeMillis;
 
         private CachedDate(@NotNull final ZoneId timeZone) {
             this.timeZone = timeZone;
@@ -397,17 +397,29 @@ public class DateTimeUtils {
             return timeZone;
         }
 
-        public String get() {
-            return get(currentClock().currentTimeMillis());
+        public LocalDate getLocalDate() {
+            return getLocalDate(currentClock().currentTimeMillis());
         }
 
-        public synchronized String get(final long currentTimeMillis) {
+        public LocalDate getLocalDate(final long currentTimeMillis) {
             if (currentTimeMillis >= valueExpirationTimeMillis) {
                 update(currentTimeMillis);
             }
-            return value;
+            return date;
         }
 
+        public String getStr() {
+            return getStr(currentClock().currentTimeMillis());
+        }
+
+        public synchronized String getStr(final long currentTimeMillis) {
+            if (currentTimeMillis >= valueExpirationTimeMillis) {
+                update(currentTimeMillis);
+            }
+            return str;
+        }
+
+        // Update methods should be synchronized!
         abstract void update(long currentTimeMillis);
     }
 
@@ -418,10 +430,10 @@ public class DateTimeUtils {
         }
 
         @Override
-        void update(final long currentTimeMillis) {
-            value = formatDate(epochMillisToInstant(currentTimeMillis), timeZone);
-            valueExpirationTimeMillis =
-                    epochMillis(atMidnight(epochNanosToInstant(millisToNanos(currentTimeMillis) + DAY), timeZone));
+        synchronized void update(final long currentTimeMillis) {
+            date = toLocalDate(epochMillisToInstant(currentTimeMillis), timeZone);
+            str = formatDate(date);
+            valueExpirationTimeMillis = epochMillis(date.plusDays(1).atStartOfDay(timeZone));
         }
     }
 
@@ -437,20 +449,29 @@ public class DateTimeUtils {
     private static final KeyedObjectHashMap<ZoneId, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
+    private static CachedCurrentDate getCachedCurrentDate(@NotNull final ZoneId timeZone) {
+        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new);
+    }
+
     /**
      * Provides the current date string according to the {@link #currentClock() current clock}. Under most
      * circumstances, this method will return the date according to current system time, but during replay simulations,
      * this method can return the date according to replay time.
      *
      * @param timeZone the time zone
-     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd". {@code null} if
+     *         the input is {@code null}.
      * @see #currentClock()
      * @see #setClock(Clock)
      */
     @ScriptApi
-    @NotNull
-    public static String today(@NotNull final ZoneId timeZone) {
-        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
+    @Nullable
+    public static String today(@Nullable final ZoneId timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
+        return getCachedCurrentDate(timeZone).getStr();
     }
 
     /**
@@ -467,7 +488,47 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
+        // noinspection ConstantConditions
         return today(DateTimeUtils.timeZone());
+    }
+
+    /**
+     * Provides the current date according to the {@link #currentClock() current clock}. Under most circumstances, this
+     * method will return the date according to current system time, but during replay simulations, this method can
+     * return the date according to replay time.
+     *
+     * @param timeZone the time zone
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd". {@code null} if
+     *         the input is {@code null}.
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate todayLocalDate(@Nullable final ZoneId timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
+        return getCachedCurrentDate(timeZone).getLocalDate();
+    }
+
+    /**
+     * Provides the current date according to the {@link #currentClock() current clock} and the
+     * {@link ZoneId#systemDefault() default time zone}. Under most circumstances, this method will return the date
+     * according to current system time, but during replay simulations, this method can return the date according to
+     * replay time.
+     *
+     * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd"
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     * @see ZoneId#systemDefault()
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDate todayLocalDate() {
+        // noinspection ConstantConditions
+        return todayLocalDate(DateTimeUtils.timeZone());
     }
 
     // endregion
@@ -478,12 +539,16 @@ public class DateTimeUtils {
      * Gets the time zone for a time zone name.
      *
      * @param timeZone the time zone name
-     * @return the corresponding time zone
-     * @throws NullPointerException if {@code timeZone} is {@code null}
+     * @return the corresponding time zone. {@code null} if the input is {@code null}.
      * @throws DateTimeException if {@code timeZone} has an invalid format
      * @throws ZoneRulesException if {@code timeZone} cannot be found
      */
-    public static ZoneId timeZone(@NotNull String timeZone) {
+    @Nullable
+    public static ZoneId timeZone(@Nullable String timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
         return TimeZoneAliases.zoneId(timeZone);
     }
 
@@ -1405,6 +1470,51 @@ public class DateTimeUtils {
     // region Arithmetic
 
     /**
+     * Adds days to a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param days number of days to add
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plusDays(@Nullable final LocalDate date, final long days) {
+        if (date == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return date.plusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds a time period to a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting date plus the specified time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plus(@Nullable final LocalDate date, final Period period) {
+        if (date == null || period == null) {
+            return null;
+        }
+
+        try {
+            return date.plus(period);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
      * Adds nanoseconds to an {@link Instant}.
      *
      * @param instant starting instant value
@@ -1537,6 +1647,51 @@ public class DateTimeUtils {
 
         try {
             return dateTime.plus(period);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts days from a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param days number of days to subtract
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minusDays(@Nullable final LocalDate date, final long days) {
+        if (date == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return date.minusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period from a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting date minus the specified time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minus(@Nullable final LocalDate date, final Period period) {
+        if (date == null || period == null) {
+            return null;
+        }
+
+        try {
+            return date.minus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -2602,36 +2757,114 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a 1-based int value of the day of the week for an {@link Instant} in the specified time zone, with 1
-     * being Monday and 7 being Sunday.
+     * Returns athe day of the week for a {@link ZonedDateTime} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     * @param date date to find the day of the week of
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static DayOfWeek dayOfWeek(@Nullable final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.getDayOfWeek();
+    }
+
+    /**
+     * Returns the day of the week for an {@link Instant} in the specified time zone.
+     *
+     * @param instant time to find the day of the week of
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return NULL_INT;
+            return null;
         }
 
         return dayOfWeek(toZonedDateTime(instant, timeZone));
     }
 
     /**
+     * Returns the day of the week for a {@link ZonedDateTime} in the specified time zone.
+     *
+     * @param dateTime time to find the day of the week of
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.getDayOfWeek();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
      * being Monday and 7 being Sunday.
      *
-     * @param dateTime time to find the day of the month of
+     * @param date date to find the day of the week of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final ZonedDateTime dateTime) {
+    public static int dayOfWeekValue(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for an {@link Instant} in the specified time zone, with 1
+     * being Monday and 7 being Sunday.
+     *
+     * @param instant time to find the day of the week of
+     * @param timeZone time zone
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static int dayOfWeekValue(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        if (instant == null || timeZone == null) {
+            return NULL_INT;
+        }
+
+        return dayOfWeekValue(toZonedDateTime(instant, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
+     * being Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the week of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static int dayOfWeekValue(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
         return dateTime.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a {@link ZonedDateTime} and specified time zone. The
+     * first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param date date to find the day of the month of
+     * @return A {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the month
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfMonth();
     }
 
     /**
@@ -2668,10 +2901,26 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
+     * time zone. The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param date date to find the day of the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfYear();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the year (Julian date) for an {@link Instant} in the specified time
      * zone. The first day of the year returns 1, the second day returns 2, etc.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the day of the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
      */
@@ -2688,7 +2937,7 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
      * time zone. The first day of the year returns 1, the second day returns 2, etc.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the day of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
      */
     @ScriptApi
@@ -2701,10 +2950,26 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}. January is 1,
+     * February is 2, etc.
+     *
+     * @param date date to find the month of the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getMonthValue();
+    }
+
+    /**
      * Returns a 1-based int value of the month of the year (Julian date) for an {@link Instant} in the specified time
      * zone. January is 1, February is 2, etc.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the month of the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
      */
@@ -2721,7 +2986,7 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the month of the year (Julian date) for a {@link ZonedDateTime} in the specified
      * time zone. January is 1, February is 2, etc.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the month of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
      */
     @ScriptApi
@@ -2734,9 +2999,24 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns the year for a {@link LocalDate}.
+     *
+     * @param date date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
+     */
+    @ScriptApi
+    public static int year(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getYear();
+    }
+
+    /**
      * Returns the year for an {@link Instant} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
      */
@@ -2752,7 +3032,7 @@ public class DateTimeUtils {
     /**
      * Returns the year for a {@link ZonedDateTime} in the specified time zone.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
      */
     @ScriptApi
@@ -2765,9 +3045,25 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns the year of the century (two-digit year) for a {@link LocalDate} in the specified time zone.
+     *
+     * @param date date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
+     *         (two-digit year)
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(date) % 100;
+    }
+
+    /**
      * Returns the year of the century (two-digit year) for an {@link Instant} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
      *         (two-digit year)
@@ -2795,6 +3091,24 @@ public class DateTimeUtils {
         }
 
         return year(dateTime) % 100;
+    }
+
+    /**
+     * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
+     *
+     * @param date date to compute the prior midnight for
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
+     *         midnight in the specified time zone
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime atMidnight(@Nullable final LocalDate date, @Nullable ZoneId timeZone) {
+        if (date == null || timeZone == null) {
+            return null;
+        }
+
+        return date.atStartOfDay(timeZone);
     }
 
     /**
@@ -2904,8 +3218,9 @@ public class DateTimeUtils {
      * start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
      *         of the window
      */
@@ -2926,8 +3241,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @return {@code null} if either input is {@code null};
-     *        otherwise, an {@link Instant} representing the end of the window
+     * @param intervalNanos size of the window in nanoseconds
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     *         window
      */
     @ScriptApi
     @Nullable
@@ -2945,8 +3261,9 @@ public class DateTimeUtils {
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @return {@code null} if either input is {@code null};
-     *        otherwise, a {@link ZonedDateTime} representing the end of the window
+     * @param intervalNanos size of the window in nanoseconds
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
+     *         the window
      */
     @ScriptApi
     @Nullable
@@ -2964,8 +3281,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
      */
@@ -2986,8 +3304,9 @@ public class DateTimeUtils {
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
      */
@@ -3146,6 +3465,22 @@ public class DateTimeUtils {
         }
 
         return ISO_LOCAL_DATE.format(dateTime);
+    }
+
+    /**
+     * Returns a {@link LocalDate} formatted as a "yyyy-MM-dd" string.
+     *
+     * @param date date to format as a string
+     * @return {@code null} if either input is {@code null}; otherwise, the time formatted as a "yyyy-MM-dd" string
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(date);
     }
 
     // endregion
@@ -3812,7 +4147,7 @@ public class DateTimeUtils {
         try {
             return LocalTime.parse(s, FORMATTER_ISO_LOCAL_TIME);
         } catch (java.time.format.DateTimeParseException e) {
-            throw new DateTimeParseException("Cannot parse local date: " + s, e);
+            throw new DateTimeParseException("Cannot parse local time: " + s, e);
         }
     }
 

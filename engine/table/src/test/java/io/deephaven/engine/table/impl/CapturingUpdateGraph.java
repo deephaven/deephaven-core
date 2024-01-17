@@ -12,9 +12,9 @@ import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +27,7 @@ public class CapturingUpdateGraph implements UpdateGraph {
 
     private final ExecutionContext context;
 
-    private final List<Runnable> sources = new ArrayList<>();
+    private final Queue<Runnable> sources = new ConcurrentLinkedQueue<>();
 
     public CapturingUpdateGraph(@NotNull final ControlledUpdateGraph delegate) {
         this.delegate = delegate;
@@ -50,6 +50,10 @@ public class CapturingUpdateGraph implements UpdateGraph {
 
     void refreshSources() {
         sources.forEach(Runnable::run);
+    }
+
+    void markSourcesRefreshedForUnitTests() {
+        delegate.markSourcesRefreshedForUnitTests();
     }
 
     @Override

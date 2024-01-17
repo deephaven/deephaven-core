@@ -57,6 +57,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
     testImplementation TestTools.projectDependency(project, 'engine-context')
+    testImplementation TestTools.projectDependency(project, 'engine-time')
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-rowset-test-utils')
     testImplementation project(':engine-test-utils')

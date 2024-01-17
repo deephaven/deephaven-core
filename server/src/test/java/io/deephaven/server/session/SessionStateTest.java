@@ -579,11 +579,14 @@ public class SessionStateTest {
 
     @Test
     public void testDependencyAlreadyReleased() {
-        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {
-        });
-        scheduler.runUntilQueueEmpty();
-        e1.release();
-        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+        final SessionState.ExportObject<Object> e1;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            e1 = session.newExport(nextExportId++).submit(() -> {
+            });
+            scheduler.runUntilQueueEmpty();
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+        }
 
         final MutableBoolean errored = new MutableBoolean();
         final MutableBoolean success = new MutableBoolean();

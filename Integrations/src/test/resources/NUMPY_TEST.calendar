@@ -1,0 +1,27 @@
+<!--
+  ~ Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+  -->
+
+<calendar>
+    <name>NUMPY_TEST</name>
+    <description>Calendar for testing numpy calendar creation</description>
+    <timeZone>Europe/Berlin</timeZone>
+    <firstValidDate>1990-01-01</firstValidDate>
+    <lastValidDate>2050-12-31</lastValidDate>
+    <default>
+        <businessTime><open>09:00</open><close>20:00</close></businessTime>
+        <weekend>Wednesday</weekend>
+        <weekend>Saturday</weekend>
+        <weekend>Sunday</weekend>
+    </default>
+    <holiday>
+        <date>2015-01-01</date>
+    </holiday>
+    <holiday>
+        <date>2015-04-06</date>
+    </holiday>
+    <holiday>
+        <date>2015-05-25</date>
+        <businessTime><open>11:00</open><close>21:00</close></businessTime>
+    </holiday>
+</calendar>
