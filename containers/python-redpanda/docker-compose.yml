@@ -10,12 +10,6 @@ services:
     environment:
       - START_OPTS=-Xmx4g
 
-  examples:
-    image: ghcr.io/deephaven/examples
-    volumes:
-      - ./data:/data
-    command: initialize
-
   redpanda:
     command:
     - redpanda
