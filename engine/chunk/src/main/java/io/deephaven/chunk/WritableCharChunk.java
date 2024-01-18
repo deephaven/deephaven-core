@@ -45,9 +45,8 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         return new WritableCharChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableCharChunk makeWritableChunkForPool(int size) {
-        return new WritableCharChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableCharChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableCharChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableCharChunk(this);

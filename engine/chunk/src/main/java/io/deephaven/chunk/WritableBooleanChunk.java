@@ -47,9 +47,8 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         return new WritableBooleanChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableBooleanChunk makeWritableChunkForPool(int size) {
-        return new WritableBooleanChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableBooleanChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableBooleanChunk(this);

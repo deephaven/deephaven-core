@@ -86,8 +86,4 @@ public class ResettableWritableLongChunk<ATTR_BASE extends Any>
         //noinspection unchecked
         return (WritableLongChunk<ATTR>) this;
     }
-
-    @Override
-    public void close() {
-    }
 }

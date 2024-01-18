@@ -86,8 +86,4 @@ public class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
         //noinspection unchecked
         return (WritableDoubleChunk<ATTR>) this;
     }
-
-    @Override
-    public void close() {
-    }
 }

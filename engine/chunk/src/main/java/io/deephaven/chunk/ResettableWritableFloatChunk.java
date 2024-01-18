@@ -86,8 +86,4 @@ public class ResettableWritableFloatChunk<ATTR_BASE extends Any>
         //noinspection unchecked
         return (WritableFloatChunk<ATTR>) this;
     }
-
-    @Override
-    public void close() {
-    }
 }

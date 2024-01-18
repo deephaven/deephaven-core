@@ -50,9 +50,8 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         return new WritableShortChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableShortChunk makeWritableChunkForPool(int size) {
-        return new WritableShortChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableShortChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableShortChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableShortChunk(this);

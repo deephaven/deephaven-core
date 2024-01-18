@@ -86,8 +86,4 @@ public class ResettableWritableByteChunk<ATTR_BASE extends Any>
         //noinspection unchecked
         return (WritableByteChunk<ATTR>) this;
     }
-
-    @Override
-    public void close() {
-    }
 }

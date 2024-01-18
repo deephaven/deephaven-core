@@ -50,9 +50,8 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
         return new WritableIntChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableIntChunk makeWritableChunkForPool(int size) {
-        return new WritableIntChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableIntChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableIntChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableIntChunk(this);

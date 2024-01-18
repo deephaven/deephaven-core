@@ -50,9 +50,8 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
         return new WritableFloatChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableFloatChunk makeWritableChunkForPool(int size) {
-        return new WritableFloatChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableFloatChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableFloatChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableFloatChunk(this);

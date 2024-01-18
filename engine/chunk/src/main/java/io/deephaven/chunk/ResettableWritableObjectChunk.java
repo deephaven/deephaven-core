@@ -89,8 +89,4 @@ public class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
         //noinspection unchecked
         return (WritableObjectChunk<T, ATTR>) this;
     }
-
-    @Override
-    public void close() {
-    }
 }

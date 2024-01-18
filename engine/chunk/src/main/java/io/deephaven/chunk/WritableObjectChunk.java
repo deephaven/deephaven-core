@@ -50,9 +50,8 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         return new WritableObjectChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableObjectChunk makeWritableChunkForPool(int size) {
-        return new WritableObjectChunk(makeArray(size), 0, size) {
+    public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunkForPool(int size) {
+        return new WritableObjectChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableObjectChunk(this);

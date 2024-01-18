@@ -50,9 +50,8 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return new WritableLongChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableLongChunk makeWritableChunkForPool(int size) {
-        return new WritableLongChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableLongChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
                 MultiChunkPool.forThisThread().giveWritableLongChunk(this);
