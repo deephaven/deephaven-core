@@ -767,6 +767,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return oldValue;
     }
 
+    @Override
+    protected Map<String, Object> getAllValues() {
+        synchronized (bindingBackingMap) {
+            return Map.copyOf(bindingBackingMap);
+        }
+    }
+
     public Binding getBinding() {
         return groovyShell.getContext();
     }

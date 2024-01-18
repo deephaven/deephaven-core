@@ -95,6 +95,13 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
+    protected Map<String, Object> getAllValues() {
+        synchronized (variables) {
+            return Map.copyOf(variables);
+        }
+    }
+
+    @Override
     public String scriptType() {
         return SCRIPT_TYPE;
     }

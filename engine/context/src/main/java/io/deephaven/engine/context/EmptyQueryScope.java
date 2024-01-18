@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -44,6 +45,11 @@ public class EmptyQueryScope implements QueryScope {
     @Override
     public <T> void putParam(String name, T value) {
         throw new IllegalStateException("EmptyQueryScope cannot create parameters");
+    }
+
+    @Override
+    public Map<String, Object> readAllValues() {
+        return Collections.emptyMap();
     }
 
     @Override

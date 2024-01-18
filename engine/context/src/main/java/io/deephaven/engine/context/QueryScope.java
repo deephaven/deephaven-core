@@ -9,16 +9,19 @@ import io.deephaven.base.log.LogOutputAppendable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * Variable scope used to resolve parameter values during query execution.
+ * Variable scope used to resolve parameter values during query execution and to expose named objects to users. Objects
+ * passed in will have their liveness managed by the scope.
  */
 public interface QueryScope extends LivenessNode, LogOutputAppendable {
 
     /**
      * Adds a parameter to the default instance {@link QueryScope}, or updates the value of an existing parameter.
+     * Objects passed in will have their liveness managed by the scope.
      *
      * @param name String name of the parameter to add.
      * @param value value to assign to the parameter.
@@ -40,10 +43,6 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
         return ExecutionContext.getContext().getQueryScope().readParamValue(name);
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Implementation
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * A type of RuntimeException thrown when a variable referenced within the {@link QueryScope} is not defined or,
      * more likely, has not been added to the scope.
@@ -63,10 +62,6 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
         }
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Scope manipulation helper methods
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * Get an array of Params by name. See createParam(name) implementations for details.
      *
@@ -82,10 +77,6 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
         }
         return result;
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // General scope manipulation methods
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
      * Get all known scope variable names.
@@ -112,7 +103,8 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException;
 
     /**
-     * Get the value of a given scope parameter by name.
+     * Get the value of a given scope parameter by name. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them.
      *
      * @param name parameter name.
      * @return parameter value.
@@ -121,7 +113,8 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     <T> T readParamValue(final String name) throws MissingVariableException;
 
     /**
-     * Get the value of a given scope parameter by name.
+     * Get the value of a given scope parameter by name. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them.
      *
      * @param name parameter name.
      * @param defaultValue default parameter value.
@@ -138,8 +131,16 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     <T> void putParam(final String name, final T value);
 
     /**
-     * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to
-     * returning the object itself.
+     * Returns an immutable map with all objects in the scope. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them.
+     *
+     * @return an immutable map with all known variables and their values.
+     */
+    Map<String, Object> readAllValues();
+
+    /**
+     * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning
+     * the object itself.
      *
      * @param object the scoped object
      * @return an obj which can be consumed by a client
@@ -147,10 +148,6 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     default Object unwrapObject(Object object) {
         return object;
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // LogOutputAppendable implementation
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {

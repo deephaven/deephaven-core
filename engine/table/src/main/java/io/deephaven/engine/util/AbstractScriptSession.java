@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -285,10 +286,17 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
      *
      * @param name the variable name to set
      * @param value the new value of the variable
-     * @return the old previous value for this name, if any. As with {@link #getVariable(String)}, may need to be
-     *         unwrapped.
+     * @return the old value for this name, if any. As with {@link #getVariable(String)}, may need to be unwrapped.
      */
     protected abstract Object setVariable(String name, @Nullable Object value);
+
+    /**
+     * Returns an immutable map with all known variables and their values.
+     *
+     * @return an immutable map with all known variables and their values. As with {@link #getVariable(String)}, values
+     *         may need to be unwrapped.
+     */
+    protected abstract Map<String, Object> getAllValues();
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
@@ -304,7 +312,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public Set<String> getParamNames() {
-            return AbstractScriptSession.this.getVariableNames(NameValidator::isValidQueryParameterName);
+            return getVariableNames(NameValidator::isValidQueryParameterName);
         }
 
         @Override
@@ -351,7 +359,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 manage((LivenessReferent) value);
             }
 
-            Object oldValue = AbstractScriptSession.this.setVariable(name, value);
+            Object oldValue = setVariable(name, value);
 
             Object unwrappedOldValue = unwrapObject(oldValue);
 
@@ -359,6 +367,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                     && DynamicNode.notDynamicOrIsRefreshing(unwrappedOldValue)) {
                 unmanage((LivenessReferent) unwrappedOldValue);
             }
+        }
+
+        @Override
+        public Map<String, Object> readAllValues() {
+            return AbstractScriptSession.this.getAllValues();
         }
 
         @Override

@@ -41,6 +41,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -248,28 +249,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 final String name = change.call(String.class, "__getitem__", int.class, 0);
                 final PyObject fromValue = change.call(PyObject.class, "__getitem__", int.class, 1);
                 final PyObject toValue = change.call(PyObject.class, "__getitem__", int.class, 2);
-                applyVariableChangeToDiff(diff, name, maybeUnwrap(fromValue), maybeUnwrap(toValue));
+                applyVariableChangeToDiff(diff, name, unwrapObject(fromValue), unwrapObject(toValue));
             }
             return diff;
         }
-    }
-
-    private Object maybeUnwrap(Object o) {
-        if (o instanceof PyObject) {
-            return maybeUnwrap((PyObject) o);
-        }
-        return o;
-    }
-
-    private Object maybeUnwrap(PyObject o) {
-        if (o == null) {
-            return null;
-        }
-        final Object javaObject = module.javaify(o);
-        if (javaObject != null) {
-            return javaObject;
-        }
-        return o;
     }
 
     @Override
@@ -315,6 +298,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         // This doesn't return the same Java instance of PyObject, so we won't decref it properly, but
         // again, that is consistent with how we've historically treated these references.
         return old;
+    }
+
+    @Override
+    protected Map<String, Object> getAllValues() {
+        return PyLib
+                .ensureGil(() -> scope.getEntries().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     @Override

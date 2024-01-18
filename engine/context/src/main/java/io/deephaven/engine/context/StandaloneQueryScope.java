@@ -6,13 +6,10 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.Period;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Map-based implementation, extending LivenessArtifact to manage the objects passed into it.
@@ -21,47 +18,6 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
 
     private final KeyedObjectHashMap<String, ValueRetriever<?>> valueRetrievers =
             new KeyedObjectHashMap<>(new ValueRetrieverNameKey());
-
-    /**
-     * Apply conversions to certain scope variable values.
-     *
-     * @param value value
-     * @return value, or an appropriately converted substitute.
-     */
-    private static Object applyValueConversions(final Object value) {
-        if (value instanceof String) {
-            final String stringValue = (String) value;
-
-            if (!stringValue.isEmpty() && stringValue.charAt(0) == '\''
-                    && stringValue.charAt(stringValue.length() - 1) == '\'') {
-                final String datetimeString = stringValue.substring(1, stringValue.length() - 1);
-
-                final Instant instant = DateTimeUtils.parseInstantQuiet(datetimeString);
-                if (instant != null) {
-                    return instant;
-                }
-
-                final long localTime = DateTimeUtils.parseDurationNanosQuiet(datetimeString);
-                if (localTime != QueryConstants.NULL_LONG) {
-                    return localTime;
-                }
-
-                final Period period = DateTimeUtils.parsePeriodQuiet(datetimeString);
-                if (period != null) {
-                    return period;
-                }
-
-                final Duration duration = DateTimeUtils.parseDurationQuiet(datetimeString);
-                if (duration != null) {
-                    return duration;
-                }
-
-                throw new RuntimeException("Cannot parse datetime/time/period : " + stringValue);
-            }
-        }
-
-        return value;
-    }
 
     @Override
     public Set<String> getParamNames() {
@@ -105,13 +61,12 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
 
     @Override
     public <T> void putParam(final String name, final T value) {
+        NameValidator.validateQueryParameterName(name);
         if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
             manage((LivenessReferent) value);
         }
-        NameValidator.validateQueryParameterName(name);
-        // TODO: Can I get rid of this applyValueConversions? It's too inconsistent to feel safe.
         ValueRetriever<?> oldValueRetriever =
-                valueRetrievers.put(name, new ValueRetriever<>(name, applyValueConversions(value)));
+                valueRetrievers.put(name, new ValueRetriever<>(name, (Object) value));
 
         if (oldValueRetriever != null) {
             Object oldValue = oldValueRetriever.getValue();
@@ -119,6 +74,12 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
                 unmanage((LivenessReferent) oldValue);
             }
         }
+    }
+
+    @Override
+    public Map<String, Object> readAllValues() {
+        return valueRetrievers.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().value));
     }
 
     private static class ValueRetriever<T> {
