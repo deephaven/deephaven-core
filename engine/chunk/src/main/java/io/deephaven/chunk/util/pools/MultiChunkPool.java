@@ -9,10 +9,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Provides a set of per-type {@link ChunkPool}s. Normally accessed via a {@link ThreadLocal}, to allow some threads to
  * share a common pool and others to allocate their own.
+ * <p>
+ * This type isn't compatible with GWT, and needs to be replaced with a different class that doesn't use the soft pool
+ * instances.
  */
 public final class MultiChunkPool {
 
@@ -29,29 +33,29 @@ public final class MultiChunkPool {
         return POOL_THREAD_LOCAL.get();
     }
 
-    private final BooleanChunkPool booleanChunkPool = new BooleanChunkPool();
-    private final CharChunkPool charChunkPool = new CharChunkPool();
-    private final ByteChunkPool byteChunkPool = new ByteChunkPool();
-    private final ShortChunkPool shortChunkPool = new ShortChunkPool();
-    private final IntChunkPool intChunkPool = new IntChunkPool();
-    private final LongChunkPool longChunkPool = new LongChunkPool();
-    private final FloatChunkPool floatChunkPool = new FloatChunkPool();
-    private final DoubleChunkPool doubleChunkPool = new DoubleChunkPool();
-    private final ObjectChunkPool objectChunkPool = new ObjectChunkPool();
+    private final BooleanChunkPool booleanChunkPool = new BooleanChunkSoftPool();
+    private final CharChunkSoftPool charChunkPool = new CharChunkSoftPool();
+    private final ByteChunkPool byteChunkPool = new ByteChunkSoftPool();
+    private final ShortChunkPool shortChunkPool = new ShortChunkSoftPool();
+    private final IntChunkPool intChunkPool = new IntChunkSoftPool();
+    private final LongChunkPool longChunkPool = new LongChunkSoftPool();
+    private final FloatChunkPool floatChunkPool = new FloatChunkSoftPool();
+    private final DoubleChunkPool doubleChunkPool = new DoubleChunkSoftPool();
+    private final ObjectChunkSoftPool objectChunkPool = new ObjectChunkSoftPool();
 
-    private final Map<ChunkType, ChunkPool> pools;
+    private final Map<ChunkType, Supplier<ChunkPool>> pools;
 
     {
-        final EnumMap<ChunkType, ChunkPool> tempPools = new EnumMap<>(ChunkType.class);
-        tempPools.put(ChunkType.Boolean, booleanChunkPool);
-        tempPools.put(ChunkType.Char, charChunkPool);
-        tempPools.put(ChunkType.Byte, byteChunkPool);
-        tempPools.put(ChunkType.Short, shortChunkPool);
-        tempPools.put(ChunkType.Int, intChunkPool);
-        tempPools.put(ChunkType.Long, longChunkPool);
-        tempPools.put(ChunkType.Float, floatChunkPool);
-        tempPools.put(ChunkType.Double, doubleChunkPool);
-        tempPools.put(ChunkType.Object, objectChunkPool);
+        final EnumMap<ChunkType, Supplier<ChunkPool>> tempPools = new EnumMap<>(ChunkType.class);
+        tempPools.put(ChunkType.Boolean, booleanChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Char, charChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Byte, byteChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Short, shortChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Int, intChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Long, longChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Float, floatChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Double, doubleChunkPool::asChunkPool);
+        tempPools.put(ChunkType.Object, objectChunkPool::asChunkPool);
         pools = Collections.unmodifiableMap(tempPools);
     }
 
@@ -59,14 +63,14 @@ public final class MultiChunkPool {
 
     @SuppressWarnings("unused")
     public ChunkPool getChunkPool(@NotNull final ChunkType chunkType) {
-        return pools.get(chunkType);
+        return pools.get(chunkType).get();
     }
 
     public BooleanChunkPool getBooleanChunkPool() {
         return booleanChunkPool;
     }
 
-    public CharChunkPool getCharChunkPool() {
+    public CharChunkSoftPool getCharChunkPool() {
         return charChunkPool;
     }
 
@@ -94,7 +98,7 @@ public final class MultiChunkPool {
         return doubleChunkPool;
     }
 
-    public ObjectChunkPool getObjectChunkPool() {
+    public ObjectChunkSoftPool getObjectChunkPool() {
         return objectChunkPool;
     }
 }
