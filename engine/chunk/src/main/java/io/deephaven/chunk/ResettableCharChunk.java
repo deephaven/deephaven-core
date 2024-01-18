@@ -18,7 +18,7 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
 
     public static <ATTR_BASE extends Any> ResettableCharChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getCharChunkPool().takeResettableCharChunk();
+            return MultiChunkPool.forThisThread().takeResettableCharChunk();
         }
         return new ResettableCharChunk<>();
     }
@@ -27,7 +27,7 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
         return new ResettableCharChunk<>() {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getCharChunkPool().giveResettableCharChunk(this);
+                MultiChunkPool.forThisThread().giveResettableCharChunk(this);
             }
         };
     }

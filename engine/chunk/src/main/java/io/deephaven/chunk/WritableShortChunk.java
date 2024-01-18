@@ -45,7 +45,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
 
     public static <ATTR extends Any> WritableShortChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getShortChunkPool().takeWritableShortChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableShortChunk(size);
         }
         return new WritableShortChunk<>(makeArray(size), 0, size);
     }
@@ -55,7 +55,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         return new WritableShortChunk(makeArray(size), 0, size) {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getShortChunkPool().giveWritableShortChunk(this);
+                MultiChunkPool.forThisThread().giveWritableShortChunk(this);
             }
         };
     }

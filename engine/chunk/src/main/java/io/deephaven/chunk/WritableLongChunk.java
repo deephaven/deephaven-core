@@ -45,7 +45,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
 
     public static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getLongChunkPool().takeWritableLongChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableLongChunk(size);
         }
         return new WritableLongChunk<>(makeArray(size), 0, size);
     }
@@ -55,7 +55,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return new WritableLongChunk(makeArray(size), 0, size) {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getLongChunkPool().giveWritableLongChunk(this);
+                MultiChunkPool.forThisThread().giveWritableLongChunk(this);
             }
         };
     }

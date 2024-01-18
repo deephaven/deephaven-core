@@ -23,7 +23,7 @@ public class ResettableWritableBooleanChunk<ATTR_BASE extends Any>
 
     public static <ATTR_BASE extends Any> ResettableWritableBooleanChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeResettableWritableBooleanChunk();
+            return MultiChunkPool.forThisThread().takeResettableWritableBooleanChunk();
         }
         return new ResettableWritableBooleanChunk<>();
     }
@@ -32,7 +32,7 @@ public class ResettableWritableBooleanChunk<ATTR_BASE extends Any>
         return new ResettableWritableBooleanChunk<>() {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getBooleanChunkPool().giveResettableWritableBooleanChunk(this);
+                MultiChunkPool.forThisThread().giveResettableWritableBooleanChunk(this);
             }
         };
     }

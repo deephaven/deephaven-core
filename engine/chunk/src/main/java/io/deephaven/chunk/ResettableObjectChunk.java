@@ -32,7 +32,7 @@ public class ResettableObjectChunk<T, ATTR_UPPER extends Any>
         return new ResettableObjectChunk<>() {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getObjectChunkPool().giveResettableObjectChunk(this);
+                MultiChunkPool.forThisThread().giveResettableObjectChunk(this);
             }
         };
     }

@@ -23,7 +23,7 @@ public class ResettableShortChunk<ATTR_UPPER extends Any>
 
     public static <ATTR_BASE extends Any> ResettableShortChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getShortChunkPool().takeResettableShortChunk();
+            return MultiChunkPool.forThisThread().takeResettableShortChunk();
         }
         return new ResettableShortChunk<>();
     }
@@ -32,7 +32,7 @@ public class ResettableShortChunk<ATTR_UPPER extends Any>
         return new ResettableShortChunk<>() {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getShortChunkPool().giveResettableShortChunk(this);
+                MultiChunkPool.forThisThread().giveResettableShortChunk(this);
             }
         };
     }

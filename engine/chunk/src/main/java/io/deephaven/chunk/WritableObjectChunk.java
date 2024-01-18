@@ -45,7 +45,7 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
 
     public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getObjectChunkPool().takeWritableObjectChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableObjectChunk(size);
         }
         return new WritableObjectChunk<>(makeArray(size), 0, size);
     }
@@ -55,7 +55,7 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         return new WritableObjectChunk(makeArray(size), 0, size) {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getObjectChunkPool().giveWritableObjectChunk(this);
+                MultiChunkPool.forThisThread().giveWritableObjectChunk(this);
             }
         };
     }

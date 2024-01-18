@@ -40,7 +40,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
 
     public static <ATTR extends Any> WritableCharChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getCharChunkPool().takeWritableCharChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableCharChunk(size);
         }
         return new WritableCharChunk<>(makeArray(size), 0, size);
     }
@@ -50,7 +50,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         return new WritableCharChunk(makeArray(size), 0, size) {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getCharChunkPool().giveWritableCharChunk(this);
+                MultiChunkPool.forThisThread().giveWritableCharChunk(this);
             }
         };
     }

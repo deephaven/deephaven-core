@@ -45,7 +45,7 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
 
     public static <ATTR extends Any> WritableByteChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getByteChunkPool().takeWritableByteChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableByteChunk(size);
         }
         return new WritableByteChunk<>(makeArray(size), 0, size);
     }
@@ -55,7 +55,7 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         return new WritableByteChunk(makeArray(size), 0, size) {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getByteChunkPool().giveWritableByteChunk(this);
+                MultiChunkPool.forThisThread().giveWritableByteChunk(this);
             }
         };
     }

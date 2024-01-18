@@ -23,7 +23,7 @@ public class ResettableBooleanChunk<ATTR_UPPER extends Any>
 
     public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeResettableBooleanChunk();
+            return MultiChunkPool.forThisThread().takeResettableBooleanChunk();
         }
         return new ResettableBooleanChunk<>();
     }
@@ -32,7 +32,7 @@ public class ResettableBooleanChunk<ATTR_UPPER extends Any>
         return new ResettableBooleanChunk<>() {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getBooleanChunkPool().giveResettableBooleanChunk(this);
+                MultiChunkPool.forThisThread().giveResettableBooleanChunk(this);
             }
         };
     }
