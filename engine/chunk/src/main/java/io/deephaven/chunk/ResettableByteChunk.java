@@ -21,9 +21,9 @@ public class ResettableByteChunk<ATTR_UPPER extends Any>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableByteChunk<ATTR_BASE> makeResettableChunk() {
-        // if (POOL_RESETTABLE_CHUNKS) {
-        // return MultiChunkPool.forThisThread().takeResettableByteChunk();
-        // }
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().takeResettableByteChunk();
+        }
         return new ResettableByteChunk<>();
     }
 

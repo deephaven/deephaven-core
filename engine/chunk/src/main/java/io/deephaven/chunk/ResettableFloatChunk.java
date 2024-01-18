@@ -21,9 +21,9 @@ public class ResettableFloatChunk<ATTR_UPPER extends Any>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableFloatChunk<ATTR_BASE> makeResettableChunk() {
-        // if (POOL_RESETTABLE_CHUNKS) {
-        // return MultiChunkPool.forThisThread().takeResettableFloatChunk();
-        // }
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().takeResettableFloatChunk();
+        }
         return new ResettableFloatChunk<>();
     }
 

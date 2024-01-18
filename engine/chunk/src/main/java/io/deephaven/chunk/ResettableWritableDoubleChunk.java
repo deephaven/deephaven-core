@@ -21,9 +21,9 @@ public class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
         implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableDoubleChunk<ATTR_BASE> makeResettableChunk() {
-        // if (POOL_RESETTABLE_CHUNKS) {
-        // return MultiChunkPool.forThisThread().takeResettableWritableDoubleChunk();
-        // }
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().takeResettableWritableDoubleChunk();
+        }
         return new ResettableWritableDoubleChunk<>();
     }
 

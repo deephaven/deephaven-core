@@ -21,9 +21,9 @@ public class ResettableDoubleChunk<ATTR_UPPER extends Any>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableDoubleChunk<ATTR_BASE> makeResettableChunk() {
-        // if (POOL_RESETTABLE_CHUNKS) {
-        // return MultiChunkPool.forThisThread().takeResettableDoubleChunk();
-        // }
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().takeResettableDoubleChunk();
+        }
         return new ResettableDoubleChunk<>();
     }
 
