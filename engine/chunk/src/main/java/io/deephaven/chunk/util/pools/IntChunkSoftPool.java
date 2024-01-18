@@ -111,7 +111,7 @@ public final class IntChunkSoftPool implements IntChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
+        // noinspection
         return ChunkPoolReleaseTracking.onTake(WritableIntChunk.makeWritableChunkForPool(capacity));
     }
 

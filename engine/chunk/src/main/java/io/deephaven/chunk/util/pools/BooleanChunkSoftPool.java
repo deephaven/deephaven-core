@@ -111,7 +111,7 @@ public final class BooleanChunkSoftPool implements BooleanChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
+        // noinspection
         return ChunkPoolReleaseTracking.onTake(WritableBooleanChunk.makeWritableChunkForPool(capacity));
     }
 

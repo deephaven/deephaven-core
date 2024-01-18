@@ -111,7 +111,7 @@ public final class FloatChunkSoftPool implements FloatChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
+        // noinspection
         return ChunkPoolReleaseTracking.onTake(WritableFloatChunk.makeWritableChunkForPool(capacity));
     }
 

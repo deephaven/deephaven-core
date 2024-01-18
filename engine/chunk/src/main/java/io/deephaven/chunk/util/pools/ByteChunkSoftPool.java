@@ -111,7 +111,7 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
+        // noinspection
         return ChunkPoolReleaseTracking.onTake(WritableByteChunk.makeWritableChunkForPool(capacity));
     }
 
