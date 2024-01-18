@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -48,17 +49,14 @@ import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
-import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
-import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -982,6 +980,37 @@ public class QueryTable extends BaseTable<QueryTable> {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
+        @ReferentialIntegrity
+        private Runnable delayedErrorReference;
+
+        private static final class DelayedErrorNotifier implements Runnable {
+
+            private final Throwable error;
+            private final UpdateGraph updateGraph;
+            private final WeakReference<BaseTable<?>> tableReference;
+
+            private DelayedErrorNotifier(@NotNull final Throwable error,
+                                         @NotNull final BaseTable<?> table) {
+                this.error = error;
+                updateGraph = table.getUpdateGraph();
+                tableReference = new WeakReference<>(table);
+                updateGraph.addSource(this);
+            }
+
+            @Override
+            public void run() {
+                updateGraph.removeSource(this);
+
+                final BaseTable<?> table = tableReference.get();
+                if (table == null) {
+                    return;
+                }
+
+                table.notifyListenersOnError(error, null);
+                table.forceReferenceCountToZero();
+            }
+        }
+
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
@@ -1068,11 +1097,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeFilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
-                        () -> completeRefilterUpdate(listener, upstream, update, filterExecution.addedResult),
-                        exception -> {
-                            // ignore? Shouldn't we notify the listeners of the failure?
-                            System.out.println("Exception in refilter: " + exception.getMessage());
-                        });
+                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        exception -> errorRefilterUpdate(listener, exception));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
@@ -1083,8 +1109,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 }
                 final RowSet unmatched = unmatchedRows.copy();
                 final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
-                filterExecution.scheduleCompletion(() -> {
-                    final WritableRowSet newMapping = filterExecution.addedResult;
+                filterExecution.scheduleCompletion((adds, mods) -> {
+                    final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         if (upstream != null) {
@@ -1093,11 +1119,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         newMapping.insert(previouslyMatched);
                     }
-                    completeRefilterUpdate(listener, upstream, update, filterExecution.addedResult);
-                }, exception -> {
-                    // ignore? Shouldn't we notify the listeners of the failure?
-                    System.out.println("Exception in refilter: " + exception.getMessage());
-                });
+                    completeRefilterUpdate(listener, upstream, update, adds);
+                }, exception -> errorRefilterUpdate(listener, exception));
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
@@ -1112,11 +1135,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeFilterExecution(matchedClone);
                 filterExecution.scheduleCompletion(
-                        () -> completeRefilterUpdate(listener, upstream, update, filterExecution.addedResult),
-                        exception -> {
-                            // ignore? Shouldn't we notify the listeners of the failure?
-                            System.out.println("Exception in refilter: " + exception.getMessage());
-                        });
+                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        exception -> errorRefilterUpdate(listener, exception));
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1157,6 +1177,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
 
             listener.setFinalExecutionStep();
+        }
+
+        private void errorRefilterUpdate(final WhereListener listener, final Exception e) {
+            // Notify listeners that we had an issue refreshing the table.
+            if (getLastNotificationStep() == updateGraph.clock().currentStep()) {
+                if (listener != null) {
+                    listener.forceReferenceCountToZero();
+                }
+                delayedErrorReference = new DelayedErrorNotifier(e, this);
+            } else {
+                notifyListenersOnError(e, null);
+                forceReferenceCountToZero();
+            }
         }
 
         private void setWhereListener(MergedListener whereListener) {
@@ -1241,11 +1274,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
                                             this, filters, rowSetToUse.copy(), usePrev);
                                     final TrackingWritableRowSet currentMapping;
-                                    initialFilterExecution.scheduleCompletion(() -> {
-                                        currentMappingFuture.complete(initialFilterExecution.addedResult.toTracking());
-                                    }, exception -> {
-                                        currentMappingFuture.completeExceptionally(exception);
-                                    });
+                                    initialFilterExecution.scheduleCompletion((adds, mods) -> {
+                                        currentMappingFuture.complete(adds.writableCast().toTracking());
+                                    }, currentMappingFuture::completeExceptionally);
 
                                     try {
                                         currentMapping = currentMappingFuture.get();

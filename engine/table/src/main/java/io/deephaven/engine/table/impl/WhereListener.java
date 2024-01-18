@@ -14,9 +14,12 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,6 +49,37 @@ class WhereListener extends MergedListener {
 
     private volatile long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    @ReferentialIntegrity
+    private Runnable delayedErrorReference;
+
+    private static final class DelayedErrorNotifier implements Runnable {
+
+        private final Throwable error;
+        private final UpdateGraph updateGraph;
+        private final WeakReference<BaseTable<?>> tableReference;
+
+        private DelayedErrorNotifier(@NotNull final Throwable error,
+                                     @NotNull final BaseTable<?> table) {
+            this.error = error;
+            updateGraph = table.getUpdateGraph();
+            tableReference = new WeakReference<>(table);
+            updateGraph.addSource(this);
+        }
+
+        @Override
+        public void run() {
+            updateGraph.removeSource(this);
+
+            final BaseTable<?> table = tableReference.get();
+            if (table == null) {
+                return;
+            }
+
+            table.notifyListenersOnError(error, null);
+            table.forceReferenceCountToZero();
+        }
+    }
 
     WhereListener(
             final Logger log,
@@ -111,10 +145,8 @@ class WhereListener extends MergedListener {
         final ListenerFilterExecution result = makeFilterExecution();
         final TableUpdate upstream = recorder.getUpdate().acquire();
         result.scheduleCompletion(
-                () -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, result),
-                exception -> {
-                    // ignore? Shouldn't we notify the listeners of the failure?
-                });
+                (adds, mods) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, adds, mods),
+                this::errorUpdate);
     }
 
     private ModifiedColumnSet getSourceModifiedColumnSet() {
@@ -132,7 +164,8 @@ class WhereListener extends MergedListener {
             final TableUpdate upstream,
             final ModifiedColumnSet sourceModColumns,
             final boolean runFilters,
-            final AbstractFilterExecution filterResult) {
+            final RowSet addfilterResult,
+            final RowSet modifiedfilterResult) {
         final TableUpdateImpl update = new TableUpdateImpl();
 
         // intersect removed with pre-shift keyspace
@@ -143,8 +176,8 @@ class WhereListener extends MergedListener {
         upstream.shifted().apply(currentMapping);
 
         // compute added against filters
-        update.added = filterResult.getAddedResult();
-        final RowSet matchingModifies = filterResult.getModifyResult();
+        update.added = addfilterResult;
+        final RowSet matchingModifies = modifiedfilterResult;
 
         // which propagate as mods?
         update.modified = (runFilters ? matchingModifies : upstream.modified()).intersect(currentMapping);
@@ -180,6 +213,17 @@ class WhereListener extends MergedListener {
         upstream.release();
 
         setFinalExecutionStep();
+    }
+
+    private void errorUpdate(final Exception e) {
+        // Notify listeners that we had an issue refreshing the table.
+        if (result.getLastNotificationStep() == result.updateGraph.clock().currentStep()) {
+            forceReferenceCountToZero();
+            delayedErrorReference = new DelayedErrorNotifier(e, result);
+        } else {
+            result.notifyListenersOnError(e, null);
+            forceReferenceCountToZero();
+        }
     }
 
     /**
@@ -226,7 +270,8 @@ class WhereListener extends MergedListener {
             super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifyInput,
                     false, runModifiedFilters, sourceModColumns);
             // Create the proper JobScheduler for the following parallel tasks
-            if (getUpdateGraph().parallelismFactor() > 1) {
+            if (permitParallelization
+                    && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1)) {
                 jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
             } else {
                 jobScheduler = ImmediateJobScheduler.INSTANCE;
@@ -234,10 +279,12 @@ class WhereListener extends MergedListener {
         }
 
         @Override
-        boolean doParallelization(long numberOfRows) {
+        boolean shouldParallelizeFilter(WhereFilter filter, long numberOfRows) {
             return permitParallelization
+                    && filter.permitParallelization()
                     && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1)
-                    && doParallelizationBase(numberOfRows);
+                    && !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
+                    && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
         }
 
         @Override

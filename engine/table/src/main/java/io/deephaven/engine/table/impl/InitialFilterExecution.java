@@ -29,7 +29,10 @@ class InitialFilterExecution extends AbstractFilterExecution {
         segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0
                 ? ExecutionContext.getContext().getOperationInitializer().parallelismFactor()
                 : QueryTable.PARALLEL_WHERE_SEGMENTS;
-        if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
+
+        // If any of the filters can be parallelized, we will use the OperationInitializerJobScheduler.
+        if (permitParallelization
+                && ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
             jobScheduler = new OperationInitializerJobScheduler();
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
@@ -42,9 +45,11 @@ class InitialFilterExecution extends AbstractFilterExecution {
     }
 
     @Override
-    boolean doParallelization(long numberOfRows) {
+    boolean shouldParallelizeFilter(WhereFilter filter, long numberOfRows) {
         return permitParallelization
-                && doParallelizationBase(numberOfRows);
+                && filter.permitParallelization()
+                && !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
+                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
     }
 
     @Override
