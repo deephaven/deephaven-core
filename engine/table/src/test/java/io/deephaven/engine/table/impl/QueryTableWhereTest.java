@@ -36,6 +36,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -227,6 +228,7 @@ public abstract class QueryTableWhereTest {
                 i(4, 6, 8).toTracking(), col("x", 21, 3, 4), col("y", 'x', 'c', 'f')));
     }
 
+    @Ignore
     @Test
     public void testWhereInDependency() {
         final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),

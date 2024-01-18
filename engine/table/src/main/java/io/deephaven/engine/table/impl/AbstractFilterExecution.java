@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -110,6 +111,9 @@ abstract class AbstractFilterExecution {
             final long modifiedEnd,
             final FilterComplete onComplete,
             final Consumer<Exception> onError) {
+        if (Thread.interrupted()) {
+            throw new CancellationException("interrupted while filtering");
+        }
         try {
             final RowSet adds;
             final RowSet mods;
@@ -149,6 +153,10 @@ abstract class AbstractFilterExecution {
             final RowSet modsToUse,
             final FilterComplete onComplete,
             final Consumer<Exception> onError) {
+        if (Thread.interrupted()) {
+            throw new CancellationException("interrupted while filtering");
+        }
+
         try {
             final RowSet adds;
             final RowSet mods;
@@ -183,6 +191,10 @@ abstract class AbstractFilterExecution {
             final RowSet modifiedInputToUse,
             final FilterComplete onComplete,
             final Consumer<Exception> onError) {
+        if (Thread.interrupted()) {
+            throw new CancellationException("interrupted while filtering");
+        }
+
         final long addSize = addedInputToUse == null ? 0 : addedInputToUse.size();
         final long modifySize = modifiedInputToUse == null ? 0 : modifiedInputToUse.size();
         final long updateSize = addSize + modifySize;
