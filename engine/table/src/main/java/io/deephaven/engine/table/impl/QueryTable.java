@@ -990,7 +990,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             private final WeakReference<BaseTable<?>> tableReference;
 
             private DelayedErrorNotifier(@NotNull final Throwable error,
-                                         @NotNull final BaseTable<?> table) {
+                    @NotNull final BaseTable<?> table) {
                 this.error = error;
                 updateGraph = table.getUpdateGraph();
                 tableReference = new WeakReference<>(table);

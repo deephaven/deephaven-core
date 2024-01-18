@@ -60,7 +60,7 @@ class WhereListener extends MergedListener {
         private final WeakReference<BaseTable<?>> tableReference;
 
         private DelayedErrorNotifier(@NotNull final Throwable error,
-                                     @NotNull final BaseTable<?> table) {
+                @NotNull final BaseTable<?> table) {
             this.error = error;
             updateGraph = table.getUpdateGraph();
             tableReference = new WeakReference<>(table);
@@ -145,7 +145,8 @@ class WhereListener extends MergedListener {
         final ListenerFilterExecution result = makeFilterExecution();
         final TableUpdate upstream = recorder.getUpdate().acquire();
         result.scheduleCompletion(
-                (adds, mods) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, adds, mods),
+                (adds, mods) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, adds,
+                        mods),
                 this::errorUpdate);
     }
 
@@ -284,7 +285,8 @@ class WhereListener extends MergedListener {
                     && filter.permitParallelization()
                     && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1)
                     && !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
-                    && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
+                    && (QueryTable.FORCE_PARALLEL_WHERE
+                            || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
         }
 
         @Override
