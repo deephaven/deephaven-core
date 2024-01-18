@@ -64,6 +64,41 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
     }
 
     @Override
+    public ChunkPool asChunkPool() {
+        return new ChunkPool() {
+            @Override
+            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+                return takeWritableShortChunk(capacity);
+            }
+
+            @Override
+            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+                giveWritableShortChunk(writableChunk.asWritableShortChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+                return takeResettableShortChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+                giveResettableShortChunk(resettableChunk.asResettableShortChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+                return takeResettableWritableShortChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+                giveResettableWritableShortChunk(resettableWritableChunk.asResettableWritableShortChunk());
+            }
+        };
+    }
+
+    @Override
     public <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked

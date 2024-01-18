@@ -64,6 +64,41 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
     }
 
     @Override
+    public ChunkPool asChunkPool() {
+        return new ChunkPool() {
+            @Override
+            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+                return takeWritableDoubleChunk(capacity);
+            }
+
+            @Override
+            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+                giveWritableDoubleChunk(writableChunk.asWritableDoubleChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+                return takeResettableDoubleChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+                giveResettableDoubleChunk(resettableChunk.asResettableDoubleChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+                return takeResettableWritableDoubleChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+                giveResettableWritableDoubleChunk(resettableWritableChunk.asResettableWritableDoubleChunk());
+            }
+        };
+    }
+
+    @Override
     public <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked

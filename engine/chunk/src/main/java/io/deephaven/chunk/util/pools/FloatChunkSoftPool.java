@@ -64,6 +64,41 @@ public final class FloatChunkSoftPool implements FloatChunkPool {
     }
 
     @Override
+    public ChunkPool asChunkPool() {
+        return new ChunkPool() {
+            @Override
+            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+                return takeWritableFloatChunk(capacity);
+            }
+
+            @Override
+            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+                giveWritableFloatChunk(writableChunk.asWritableFloatChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+                return takeResettableFloatChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+                giveResettableFloatChunk(resettableChunk.asResettableFloatChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+                return takeResettableWritableFloatChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+                giveResettableWritableFloatChunk(resettableWritableChunk.asResettableWritableFloatChunk());
+            }
+        };
+    }
+
+    @Override
     public <ATTR extends Any> WritableFloatChunk<ATTR> takeWritableFloatChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked

@@ -17,7 +17,7 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableWritableChunk} implementation for Object data.
  */
-public final class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
+public class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
         extends WritableObjectChunk<T, ATTR_BASE>
         implements ResettableWritableChunk<ATTR_BASE> {
 
@@ -29,7 +29,12 @@ public final class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
     }
 
     public static <T, ATTR_BASE extends Any> ResettableWritableObjectChunk<T, ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableWritableObjectChunk<>();
+        return new ResettableWritableObjectChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().getObjectChunkPool().giveResettableWritableObjectChunk(this);
+            }
+        };
     }
 
     private ResettableWritableObjectChunk(T[] data, int offset, int capacity) {
@@ -87,8 +92,5 @@ public final class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
 
     @Override
     public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getObjectChunkPool().giveResettableWritableObjectChunk(this);
-        }
     }
 }

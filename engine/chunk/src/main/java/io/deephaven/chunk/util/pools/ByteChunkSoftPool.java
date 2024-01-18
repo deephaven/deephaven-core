@@ -64,6 +64,41 @@ public final class ByteChunkSoftPool implements ByteChunkPool {
     }
 
     @Override
+    public ChunkPool asChunkPool() {
+        return new ChunkPool() {
+            @Override
+            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+                return takeWritableByteChunk(capacity);
+            }
+
+            @Override
+            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+                giveWritableByteChunk(writableChunk.asWritableByteChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+                return takeResettableByteChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+                giveResettableByteChunk(resettableChunk.asResettableByteChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+                return takeResettableWritableByteChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+                giveResettableWritableByteChunk(resettableWritableChunk.asResettableWritableByteChunk());
+            }
+        };
+    }
+
+    @Override
     public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked

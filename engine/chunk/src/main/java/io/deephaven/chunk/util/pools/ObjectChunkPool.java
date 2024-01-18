@@ -10,39 +10,7 @@ import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 public interface ObjectChunkPool {
-    default ChunkPool asChunkPool() {
-        return new ChunkPool() {
-            @Override
-            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
-                return takeWritableObjectChunk(capacity);
-            }
-
-            @Override
-            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-                giveWritableObjectChunk(writableChunk.asWritableObjectChunk());
-            }
-
-            @Override
-            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
-                return takeResettableObjectChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-                giveResettableObjectChunk(resettableChunk.asResettableObjectChunk());
-            }
-
-            @Override
-            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
-                return takeResettableWritableObjectChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-                giveResettableWritableObjectChunk(resettableWritableChunk.asResettableWritableObjectChunk());
-            }
-        };
-    }
+    ChunkPool asChunkPool();
 
     <TYPE, ATTR extends Any> WritableObjectChunk<TYPE, ATTR> takeWritableObjectChunk(int capacity);
 

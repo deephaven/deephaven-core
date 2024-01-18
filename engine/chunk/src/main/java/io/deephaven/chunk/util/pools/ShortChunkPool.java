@@ -16,48 +16,17 @@ import org.jetbrains.annotations.NotNull;
 
 public interface ShortChunkPool {
 
-    default ChunkPool asChunkPool() {
-        return new ChunkPool() {
-            @Override
-            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
-                return takeWritableShortChunk(capacity);
-            }
+    ChunkPool asChunkPool();
 
-            @Override
-            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-                giveWritableShortChunk(writableChunk.asWritableShortChunk());
-            }
-
-            @Override
-            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
-                return takeResettableShortChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-                giveResettableShortChunk(resettableChunk.asResettableShortChunk());
-            }
-
-            @Override
-            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
-                return takeResettableWritableShortChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-                giveResettableWritableShortChunk(resettableWritableChunk.asResettableWritableShortChunk());
-            }
-        };
-    }
     <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(int capacity);
 
     void giveWritableShortChunk(@NotNull WritableShortChunk<?> writableShortChunk);
 
     <ATTR extends Any> ResettableShortChunk<ATTR> takeResettableShortChunk();
 
-    void giveResettableShortChunk(@NotNull ResettableShortChunk resettableShortChunk);
+    void giveResettableShortChunk(@NotNull ResettableShortChunk<?> resettableShortChunk);
 
     <ATTR extends Any> ResettableWritableShortChunk<ATTR> takeResettableWritableShortChunk();
 
-    void giveResettableWritableShortChunk(@NotNull ResettableWritableShortChunk resettableWritableShortChunk);
+    void giveResettableWritableShortChunk(@NotNull ResettableWritableShortChunk<?> resettableWritableShortChunk);
 }

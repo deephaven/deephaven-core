@@ -62,6 +62,41 @@ public final class ObjectChunkSoftPool implements ChunkPool, ObjectChunkPool {
     }
 
     @Override
+    public ChunkPool asChunkPool() {
+        return new ChunkPool() {
+            @Override
+            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+                return takeWritableObjectChunk(capacity);
+            }
+
+            @Override
+            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+                giveWritableObjectChunk(writableChunk.asWritableObjectChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+                return takeResettableObjectChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+                giveResettableObjectChunk(resettableChunk.asResettableObjectChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+                return takeResettableWritableObjectChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+                giveResettableWritableObjectChunk(resettableWritableChunk.asResettableWritableObjectChunk());
+            }
+        };
+    }
+
+    @Override
     public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
         return takeWritableObjectChunk(capacity);
     }

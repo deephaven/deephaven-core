@@ -16,48 +16,17 @@ import org.jetbrains.annotations.NotNull;
 
 public interface FloatChunkPool {
 
-    default ChunkPool asChunkPool() {
-        return new ChunkPool() {
-            @Override
-            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
-                return takeWritableFloatChunk(capacity);
-            }
+    ChunkPool asChunkPool();
 
-            @Override
-            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-                giveWritableFloatChunk(writableChunk.asWritableFloatChunk());
-            }
-
-            @Override
-            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
-                return takeResettableFloatChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-                giveResettableFloatChunk(resettableChunk.asResettableFloatChunk());
-            }
-
-            @Override
-            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
-                return takeResettableWritableFloatChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-                giveResettableWritableFloatChunk(resettableWritableChunk.asResettableWritableFloatChunk());
-            }
-        };
-    }
     <ATTR extends Any> WritableFloatChunk<ATTR> takeWritableFloatChunk(int capacity);
 
     void giveWritableFloatChunk(@NotNull WritableFloatChunk<?> writableFloatChunk);
 
     <ATTR extends Any> ResettableFloatChunk<ATTR> takeResettableFloatChunk();
 
-    void giveResettableFloatChunk(@NotNull ResettableFloatChunk resettableFloatChunk);
+    void giveResettableFloatChunk(@NotNull ResettableFloatChunk<?> resettableFloatChunk);
 
     <ATTR extends Any> ResettableWritableFloatChunk<ATTR> takeResettableWritableFloatChunk();
 
-    void giveResettableWritableFloatChunk(@NotNull ResettableWritableFloatChunk resettableWritableFloatChunk);
+    void giveResettableWritableFloatChunk(@NotNull ResettableWritableFloatChunk<?> resettableWritableFloatChunk);
 }

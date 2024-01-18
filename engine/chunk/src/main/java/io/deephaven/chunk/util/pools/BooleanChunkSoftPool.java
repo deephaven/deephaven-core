@@ -64,6 +64,41 @@ public final class BooleanChunkSoftPool implements BooleanChunkPool {
     }
 
     @Override
+    public ChunkPool asChunkPool() {
+        return new ChunkPool() {
+            @Override
+            public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+                return takeWritableBooleanChunk(capacity);
+            }
+
+            @Override
+            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+                giveWritableBooleanChunk(writableChunk.asWritableBooleanChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+                return takeResettableBooleanChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+                giveResettableBooleanChunk(resettableChunk.asResettableBooleanChunk());
+            }
+
+            @Override
+            public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+                return takeResettableWritableBooleanChunk();
+            }
+
+            @Override
+            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+                giveResettableWritableBooleanChunk(resettableWritableChunk.asResettableWritableBooleanChunk());
+            }
+        };
+    }
+
+    @Override
     public <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked
