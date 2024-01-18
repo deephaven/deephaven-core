@@ -18,11 +18,11 @@ public class DefensiveCapture extends InputStream {
         this.in = Objects.requireNonNull(in);
     }
 
-    synchronized InputStream delegate() throws IOException {
+    private synchronized InputStream delegate() throws IOException {
         if (delegate != null) {
             return delegate;
         }
-        final BarrageProtoUtil.ExposedByteArrayOutputStream out = new BarrageProtoUtil.ExposedByteArrayOutputStream();
+        final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final int size = in.drainTo(out);
         in.close();
         in = null;

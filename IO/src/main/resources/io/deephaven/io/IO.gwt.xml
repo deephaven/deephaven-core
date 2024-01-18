@@ -1,0 +1,3 @@
+<module>
+    <source path="streams" includes="ByteBufferInputStream.java" />
+</module>

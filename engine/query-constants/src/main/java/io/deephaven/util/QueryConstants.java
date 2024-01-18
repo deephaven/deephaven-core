@@ -187,7 +187,9 @@ public class QueryConstants {
     /**
      * Minimum finite value of type float.
      */
-    @interface GwtIncompatible {}
+    @interface GwtIncompatible {
+    }
+
     @GwtIncompatible
     public static final float MIN_FINITE_FLOAT = Math.nextUp(-Float.MAX_VALUE);
 

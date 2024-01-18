@@ -17,9 +17,9 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableCharChunk<ATTR_BASE> makeResettableChunk() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().takeResettableCharChunk();
-        }
+        // if (POOL_RESETTABLE_CHUNKS) {
+        // return MultiChunkPool.forThisThread().takeResettableCharChunk();
+        // }
         return new ResettableCharChunk<>();
     }
 

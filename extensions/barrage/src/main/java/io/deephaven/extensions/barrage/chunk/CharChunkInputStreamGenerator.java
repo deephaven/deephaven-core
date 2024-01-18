@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import com.google.common.annotations.GwtIncompatible;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -48,10 +49,12 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @Override
+    @GwtIncompatible
     public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) {
         return new CharChunkInputStream(options, subset);
     }
 
+    @GwtIncompatible
     private class CharChunkInputStream extends BaseChunkInputStream {
         private CharChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);

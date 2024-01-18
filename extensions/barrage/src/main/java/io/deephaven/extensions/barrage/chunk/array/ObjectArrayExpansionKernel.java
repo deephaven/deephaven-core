@@ -86,7 +86,7 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
             if (rowLen == 0) {
                 result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
             } else {
-                final Object[] row = (Object[]) Array.newInstance(componentType, rowLen);
+                final Object[] row = (Object[]) new Object[rowLen];
                 typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;
                 result.set(outOffset + i, row);

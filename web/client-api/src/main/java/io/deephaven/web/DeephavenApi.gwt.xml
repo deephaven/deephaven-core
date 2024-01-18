@@ -8,9 +8,14 @@
 
   <inherits name="io.deephaven.base.Base" />
   <inherits name="io.deephaven.Util" />
+  <inherits name="io.deephaven.io.IO" />
   <inherits name="io.deephaven.chunk.Chunk" />
+  <inherits name="io.deephaven.extensions.barrage.Barrage" />
 
   <define-property name="dh.dev" values="true, false" />
+  <source path="client" />
+  <source path="shared" />
+  <super-source path="super" />
   <set-property name="dh.dev" value="false" />
 
   <inherits name="io.deephaven.javascript.proto.dhinternal.DeephavenInternal" />

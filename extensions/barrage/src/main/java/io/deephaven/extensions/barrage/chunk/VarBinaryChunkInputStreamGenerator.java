@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import com.google.common.annotations.GwtIncompatible;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
@@ -214,6 +215,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
+    @GwtIncompatible
     public void close() {
         if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
             if (chunk instanceof PoolableChunk) {
@@ -226,12 +228,14 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
+    @GwtIncompatible
     public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset)
             throws IOException {
         computePayload();
         return new ObjectChunkInputStream(options, subset);
     }
 
+    @GwtIncompatible
     private class ObjectChunkInputStream extends BaseChunkInputStream {
 
         private int cachedSize = -1;

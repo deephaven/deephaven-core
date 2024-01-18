@@ -452,7 +452,10 @@ public class ArrayTypeUtils {
             return (Object[]) value;
         }
     }
-    @interface GwtIncompatible {}
+
+    @interface GwtIncompatible {
+    }
+
     @GwtIncompatible
     public static boolean equals(Object actualValue, Object expectedValue) {
         final Class<?> ct = actualValue.getClass().getComponentType();

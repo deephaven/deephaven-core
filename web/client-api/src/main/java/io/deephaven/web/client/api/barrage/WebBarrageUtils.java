@@ -50,7 +50,8 @@ public class WebBarrageUtils {
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
         int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
         int offset =
-                BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, FLATBUFFER_MAGIC, messageType, messageOffset);
+                BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, FLATBUFFER_MAGIC, messageType,
+                        messageOffset);
         outerBuilder.finish(offset);
         ByteBuffer byteBuffer = outerBuilder.dataBuffer();
         return bbToUint8ArrayView(byteBuffer);
@@ -63,7 +64,8 @@ public class WebBarrageUtils {
 
     public static Uint8Array emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
-        int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC, BarrageMessageType.None, 0);
+        int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC,
+                BarrageMessageType.None, 0);
         builder.finish(offset);
         return bbToUint8ArrayView(builder.dataBuffer());
     }
@@ -220,7 +222,7 @@ public class WebBarrageUtils {
 
     public static ByteBuffer typedArrayToAlignedLittleEndianByteBuffer(TypedArray data) {
         // Slice before wrapping to align contents
-        //TODO potentially only do this if not aligned already
+        // TODO potentially only do this if not aligned already
         ByteBuffer bb = TypedArrayHelper.wrap(data.slice());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         return bb;

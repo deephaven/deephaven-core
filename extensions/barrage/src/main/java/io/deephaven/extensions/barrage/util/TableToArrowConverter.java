@@ -65,8 +65,8 @@ public class TableToArrowConverter {
         public void onNext(final BarrageStreamGeneratorImpl.View messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+                    try (final ExposedByteArrayOutputStream baos =
+                            new ExposedByteArrayOutputStream()) {
                         ((Drainable) inputStream).drainTo(baos);
                         batchMessages.add(baos.toByteArray());
                         inputStream.close();

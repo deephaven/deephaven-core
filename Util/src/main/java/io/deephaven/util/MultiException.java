@@ -84,7 +84,9 @@ public class MultiException extends Exception {
         return causes;
     }
 
-    @interface GwtIncompatible {}
+    @interface GwtIncompatible {
+    }
+
     @Override
     @GwtIncompatible
     public void printStackTrace(PrintWriter s) {

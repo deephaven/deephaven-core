@@ -71,7 +71,7 @@ public class CollectionUtil {
         for (int nIndex = 0; nIndex < data.length; nIndex += 2) {
             Object key = data[nIndex];
             if (null != key) {
-                Require.instanceOf(key, "key", typeK);
+                // Require.instanceOf(key, "key", typeK);
             }
             if (!allowDuplicateKeys) {
                 Require.requirement(false == map.containsKey(key), "false==map.containsKey(data[nIndex])", key,
@@ -79,7 +79,7 @@ public class CollectionUtil {
             }
             Object value = data[nIndex + 1];
             if (null != value) {
-                Require.instanceOf(value, "value", typeV);
+                // Require.instanceOf(value, "value", typeV);
             }
             map.put((K) key, (V) value);
         }
@@ -113,7 +113,7 @@ public class CollectionUtil {
     public static <TYPE> Set<TYPE> setFromArray(@NotNull final Class<TYPE> type, @NotNull final Object... data) {
         final Set<TYPE> set = newSizedLinkedHashSet(data.length);
         for (final Object elem : data) {
-            Require.requirement(elem == null || type.isInstance(elem), "elem == null || type.isInstance(elem)");
+            // Require.requirement(elem == null || type.isInstance(elem), "elem == null || type.isInstance(elem)");
             // noinspection unchecked
             Require.requirement(set.add((TYPE) elem), "set.add((TYPE)elem)");
         }

@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import com.google.common.annotations.GwtIncompatible;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -25,6 +26,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
     // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
     // each instance.
     @SuppressWarnings("rawtypes")
+    @GwtIncompatible
     protected static final AtomicIntegerFieldUpdater<BaseChunkInputStreamGenerator> REFERENCE_COUNT_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BaseChunkInputStreamGenerator.class, "refCount");
 
@@ -51,11 +53,11 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
 
     @Override
     public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-        }
+        // if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
+        // if (chunk instanceof PoolableChunk) {
+        // ((PoolableChunk) chunk).close();
+        // }
+        // }
     }
 
     /**
@@ -78,6 +80,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
         return ((numElements + 63) / 64);
     }
 
+    @GwtIncompatible
     abstract class BaseChunkInputStream extends DrainableColumn {
         protected final StreamReaderOptions options;
         protected final RowSequence subset;

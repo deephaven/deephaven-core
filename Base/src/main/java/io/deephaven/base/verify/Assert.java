@@ -341,7 +341,9 @@ public final class Assert {
 
     // ################################################################
     // instanceOf, notInstanceOf
-@interface GwtIncompatible {}
+    @interface GwtIncompatible {
+    }
+
     // ----------------------------------------------------------------
     /** assert (o instanceof type) */
     @GwtIncompatible

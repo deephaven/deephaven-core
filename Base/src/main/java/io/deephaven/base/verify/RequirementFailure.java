@@ -53,7 +53,9 @@ public class RequirementFailure extends RuntimeException {
         s.print(getFixedStackTrace());
     }
 
-    @interface GwtIncompatible {}
+    @interface GwtIncompatible {
+    }
+
     // ----------------------------------------------------------------
     @Override
     @GwtIncompatible

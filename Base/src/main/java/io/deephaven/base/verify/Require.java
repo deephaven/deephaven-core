@@ -548,7 +548,8 @@ public final class Require {
         notHoldsLock(o, name, 1);
     }
 
-    @interface GwtIncompatible {}
+    @interface GwtIncompatible {
+    }
 
     // ################################################################
     // instanceOf, notInstanceOf

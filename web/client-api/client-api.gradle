@@ -22,9 +22,15 @@ repositories {
     mavenLocal()
 }
 dependencies {
+    Classpaths.inheritGrpcPlatform(project)
+    implementation(group:'io.grpc', name:'grpc-api', classifier:'sources')
+
     implementation project(':engine-chunk')
+    implementation project(':extensions-barrage')
+    implementation project(':DataStructures')
     implementation 'org.jetbrains:annotations:13.0'
-//    implementation 'org.jetbrains:annotations:13.0:sources'
+    implementation 'org.immutables:value-annotations:2.9.2'
+//    implementation 'org.immutables:value-annotations:2.9.2:sources'
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 

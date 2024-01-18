@@ -21,9 +21,9 @@ public class ResettableLongChunk<ATTR_UPPER extends Any>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableLongChunk<ATTR_BASE> makeResettableChunk() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().takeResettableLongChunk();
-        }
+        // if (POOL_RESETTABLE_CHUNKS) {
+        // return MultiChunkPool.forThisThread().takeResettableLongChunk();
+        // }
         return new ResettableLongChunk<>();
     }
 

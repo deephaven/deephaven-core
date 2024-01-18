@@ -19,6 +19,8 @@ import io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
@@ -58,6 +60,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Time
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.web.client.api.barrage.WebBarrageMessage;
+import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -106,6 +110,7 @@ import org.apache.arrow.flatbuf.Schema;
 import org.gwtproject.nio.TypedArrayHelper;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1459,6 +1464,13 @@ public class WorkerConnection {
                 stream.onData(new JsConsumer<FlightData>() {
                     @Override
                     public void apply(FlightData data) {
+                        try {
+                            WebBarrageMessage webBarrageMessage =
+                                    new WebBarrageStreamReader().parseFrom(BarrageSnapshotOptions.builder().build(),
+                                            includedColumns, new ChunkType[0], new Class[0], new Class[0], data);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                         ByteBuffer body = typedArrayToAlignedLittleEndianByteBuffer(data.getDataBody_asU8());
                         Message headerMessage = Message
                                 .getRootAsMessage(TypedArrayHelper.wrap(data.getDataHeader_asU8()));

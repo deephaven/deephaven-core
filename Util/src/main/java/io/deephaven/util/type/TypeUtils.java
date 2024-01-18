@@ -728,7 +728,9 @@ public class TypeUtils {
         }
     }
 
-    @interface GwtIncompatible {}
+    @interface GwtIncompatible {
+    }
+
     /**
      * Determine the weakest parent of the two provided Classes.
      *

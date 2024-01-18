@@ -21,9 +21,9 @@ public class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
         implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <T, ATTR_BASE extends Any> ResettableWritableObjectChunk<T, ATTR_BASE> makeResettableChunk() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().takeResettableWritableObjectChunk();
-        }
+        // if (POOL_RESETTABLE_CHUNKS) {
+        // return MultiChunkPool.forThisThread().takeResettableWritableObjectChunk();
+        // }
         return new ResettableWritableObjectChunk<>();
     }
 

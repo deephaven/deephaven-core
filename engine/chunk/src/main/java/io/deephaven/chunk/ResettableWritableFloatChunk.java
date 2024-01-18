@@ -21,9 +21,9 @@ public class ResettableWritableFloatChunk<ATTR_BASE extends Any>
         implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableFloatChunk<ATTR_BASE> makeResettableChunk() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().takeResettableWritableFloatChunk();
-        }
+        // if (POOL_RESETTABLE_CHUNKS) {
+        // return MultiChunkPool.forThisThread().takeResettableWritableFloatChunk();
+        // }
         return new ResettableWritableFloatChunk<>();
     }
 

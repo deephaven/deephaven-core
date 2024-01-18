@@ -1,5 +1,9 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.barrage;
 
+import com.google.common.io.LittleEndianDataInputStream;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
@@ -7,9 +11,12 @@ import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.type.TypeUtils;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import org.apache.arrow.flatbuf.Message;
@@ -17,22 +24,17 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.gwtproject.nio.TypedArrayHelper;
 
-import java.io.DataInput;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 /**
- * Consumes FlightData fields from Flight/Barrage producers and builds
- * browser-compatible WebBarrageMessage payloads that can be used to
- * maintain table data.
+ * Consumes FlightData fields from Flight/Barrage producers and builds browser-compatible WebBarrageMessage payloads
+ * that can be used to maintain table data.
  */
 public class WebBarrageStreamReader {
     private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
@@ -47,8 +49,9 @@ public class WebBarrageStreamReader {
     // hold in-progress messages that aren't finished being built
     private WebBarrageMessage msg;
 
-    public WebBarrageMessage parseFrom(BitSet expectedColumns, ChunkType[] columnChunkTypes, Class<?>[] columnTypes, Class<?>[] componentTypes,
-                                       FlightData flightData) {
+    public WebBarrageMessage parseFrom(final StreamReaderOptions options, BitSet expectedColumns,
+            ChunkType[] columnChunkTypes, Class<?>[] columnTypes, Class<?>[] componentTypes,
+            FlightData flightData) throws IOException {
         ByteBuffer headerAsBB = TypedArrayHelper.wrap(flightData.getDataHeader_asU8());
         Message header = headerAsBB.hasRemaining() ? Message.getRootAsMessage(headerAsBB) : null;
 
@@ -57,7 +60,7 @@ public class WebBarrageStreamReader {
             BarrageMessageWrapper wrapper =
                     BarrageMessageWrapper.getRootAsBarrageMessageWrapper(msgAsBB);
             if (wrapper.magic() != WebBarrageUtils.FLATBUFFER_MAGIC) {
-                //TODO warn
+                // TODO warn
             } else if (wrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata) {
                 if (msg != null) {
                     throw new IllegalStateException(
@@ -153,12 +156,13 @@ public class WebBarrageStreamReader {
 
         final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
         msg.length = batch.length();
-
+        final LittleEndianDataInputStream ois =
+                new LittleEndianDataInputStream(new ByteBufferInputStream(body));
         final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                         i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-        final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+        final long[] bufferInfo = new long[batch.buffersLength()];
         for (int bi = 0; bi < batch.buffersLength(); ++bi) {
             int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
             int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
@@ -168,9 +172,9 @@ public class WebBarrageStreamReader {
                 // our parsers handle overhanging buffers
                 length += Math.max(0, nextOffset - offset - length);
             }
-            bufferInfo.add(length);
+            bufferInfo[bi] = length;
         }
-        final TLongIterator bufferInfoIter = bufferInfo.iterator();
+        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
 
         // add and mod rows are never combined in a batch. all added rows must be received before the first
@@ -254,172 +258,6 @@ public class WebBarrageStreamReader {
 
         // otherwise, must wait for more data
         return null;
-    }
-
-    static WritableChunk<Values> extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
-            final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk, final int offset, final int totalRows) throws IOException {
-        return extractChunkFromInputStream(options, 1, chunkType, type, componentType, fieldNodeIter, bufferInfoIter, is,
-                outChunk, offset, totalRows);
-    }
-
-    static WritableChunk<Values> extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final int factor,
-            final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
-            final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
-        switch (chunkType) {
-            case Boolean:
-                throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
-            case Char:
-                return CharChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Character.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Byte:
-                if (type == Boolean.class || type == boolean.class) {
-                    return BooleanChunkInputStreamGenerator.extractChunkFromInputStream(
-                            options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-                }
-                return ByteChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Byte.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Short:
-                return ShortChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Short.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Int:
-                return IntChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Integer.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Long:
-                if (factor == 1) {
-                    return LongChunkInputStreamGenerator.extractChunkFromInputStream(
-                            Long.BYTES, options,
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-                }
-                return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithConversion(
-                        Long.BYTES, options,
-                        (long v) -> (v*factor),
-                        fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Float:
-                return FloatChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Float.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Double:
-                return DoubleChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Double.BYTES, options,fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-            case Object:
-                if (type.isArray()) {
-                    if (componentType == byte.class) {
-                        return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                                is,
-                                fieldNodeIter,
-                                bufferInfoIter,
-                                (buf, off, len) -> Arrays.copyOfRange(buf, off, off + len),
-                                outChunk, outOffset, totalRows
-                        );
-                    } else {
-                        return VarListChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, type, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-                    }
-                }
-                if (Vector.class.isAssignableFrom(type)) {
-                    //noinspection unchecked
-                    return VectorChunkInputStreamGenerator.extractChunkFromInputStream(
-                            options, (Class<Vector<?>>)type, componentType, fieldNodeIter, bufferInfoIter, is,
-                            outChunk, outOffset, totalRows);
-                }
-                if (type == BigInteger.class) {
-                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                            is,
-                            fieldNodeIter,
-                            bufferInfoIter,
-                            BigInteger::new,
-                            outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == BigDecimal.class) {
-                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                            is,
-                            fieldNodeIter,
-                            bufferInfoIter,
-                            (final byte[] buf, final int offset, final int length) -> {
-                                // read the int scale value as little endian, arrow's endianness.
-                                final byte b1 = buf[offset];
-                                final byte b2 = buf[offset + 1];
-                                final byte b3 = buf[offset + 2];
-                                final byte b4 = buf[offset + 3];
-                                final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-                                return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
-                            },
-                            outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Instant.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToInstant(io.readLong()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == ZonedDateTime.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), DateTimeUtils.timeZone()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Byte.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Byte.BYTES, options, io -> TypeUtils.box(io.readByte()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Character.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Character.BYTES, options, io -> TypeUtils.box(io.readChar()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Double.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Double.BYTES, options, io -> TypeUtils.box(io.readDouble()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Float.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Float.BYTES, options, io -> TypeUtils.box(io.readFloat()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Integer.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Integer.BYTES, options, io -> TypeUtils.box(io.readInt()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Long.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> TypeUtils.box(io.readLong()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == Short.class) {
-                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Short.BYTES, options, io -> TypeUtils.box(io.readShort()),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
-                    );
-                }
-                if (type == String.class ||
-                        options.columnConversionMode().equals(ColumnConversionMode.Stringify)) {
-                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter,
-                            (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8), outChunk, outOffset, totalRows);
-                }
-                throw new UnsupportedOperationException("Do not yet support column conversion mode: " + options.columnConversionMode());
-            default:
-                throw new UnsupportedOperationException();
-        }
     }
 
     private static RangeSet extractIndex(final ByteBuffer bb) {

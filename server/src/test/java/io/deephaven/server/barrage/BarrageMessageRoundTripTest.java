@@ -30,8 +30,8 @@ import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
@@ -1425,8 +1425,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         public void onNext(final BarrageStreamGeneratorImpl.View messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+                    try (final ExposedByteArrayOutputStream baos =
+                            new ExposedByteArrayOutputStream()) {
                         ((Drainable) inputStream).drainTo(baos);
                         inputStream.close();
                         final BarrageMessage message =

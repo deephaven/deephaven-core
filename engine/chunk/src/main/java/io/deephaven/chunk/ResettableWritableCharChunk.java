@@ -17,9 +17,9 @@ public class ResettableWritableCharChunk<ATTR_BASE extends Any>
         implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableCharChunk<ATTR_BASE> makeResettableChunk() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().takeResettableWritableCharChunk();
-        }
+        // if (POOL_RESETTABLE_CHUNKS) {
+        // return MultiChunkPool.forThisThread().takeResettableWritableCharChunk();
+        // }
         return new ResettableWritableCharChunk<>();
     }
 
