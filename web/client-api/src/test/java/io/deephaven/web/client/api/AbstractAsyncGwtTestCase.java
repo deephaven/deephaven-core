@@ -10,6 +10,7 @@ import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.subscription.ViewportData;
+import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -181,6 +182,10 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTable> table(String tableName) {
         return session -> session.getTable(tableName, null);
+    }
+
+    public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTreeTable> treeTable(String tableName) {
+        return session -> session.getTreeTable(tableName);
     }
 
     /**

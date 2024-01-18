@@ -34,6 +34,12 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(5000);
 
+                    assertFalse(table.isRefreshing());
+                    assertFalse(table.isClosed());
+                    assertFalse(table.isBlinkTable());
+                    assertFalse(table.hasInputTable());
+                    assertFalse((table.isUncoalesced()));
+
                     assertEquals(2., table.getSize(), 0);
                     assertEquals(2., table.getTotalSize(), 0);
 
