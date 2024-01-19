@@ -24,7 +24,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 
-public final class ChunkUtils {
+final class ChunkUtils {
 
     public static <T> void applyInto(
             Predicate<? super T> booleanFunction,
