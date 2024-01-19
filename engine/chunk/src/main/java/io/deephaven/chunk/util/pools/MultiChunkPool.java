@@ -37,14 +37,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Provides a set of per-type {@link ChunkPool}s. Normally accessed via a {@link ThreadLocal}, to allow some threads to
  * share a common pool and others to allocate their own.
- * <p>
- * This type isn't compatible with GWT, and needs to be replaced with a different class that doesn't use the soft pool
- * instances.
  */
 public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, CharChunkPool, ShortChunkPool,
         IntChunkPool, LongChunkPool, FloatChunkPool, DoubleChunkPool, ObjectChunkPool {
@@ -72,19 +68,19 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
     private final DoubleChunkPool doubleChunkPool = new DoubleChunkSoftPool();
     private final ObjectChunkPool objectChunkPool = new ObjectChunkSoftPool();
 
-    private final Map<ChunkType, Supplier<ChunkPool>> pools;
+    private final Map<ChunkType, ChunkPool> pools;
 
     {
-        final EnumMap<ChunkType, Supplier<ChunkPool>> tempPools = new EnumMap<>(ChunkType.class);
-        tempPools.put(ChunkType.Boolean, booleanChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Char, charChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Byte, byteChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Short, shortChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Int, intChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Long, longChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Float, floatChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Double, doubleChunkPool::asChunkPool);
-        tempPools.put(ChunkType.Object, objectChunkPool::asChunkPool);
+        final EnumMap<ChunkType, ChunkPool> tempPools = new EnumMap<>(ChunkType.class);
+        tempPools.put(ChunkType.Boolean, booleanChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Char, charChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Byte, byteChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Short, shortChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Int, intChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Long, longChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Float, floatChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Double, doubleChunkPool.asChunkPool());
+        tempPools.put(ChunkType.Object, objectChunkPool.asChunkPool());
         pools = Collections.unmodifiableMap(tempPools);
     }
 
@@ -92,7 +88,7 @@ public final class MultiChunkPool implements BooleanChunkPool, ByteChunkPool, Ch
 
     @SuppressWarnings("unused")
     public ChunkPool getChunkPool(@NotNull final ChunkType chunkType) {
-        return pools.get(chunkType).get();
+        return pools.get(chunkType);
     }
 
     public BooleanChunkPool getBooleanChunkPool() {
