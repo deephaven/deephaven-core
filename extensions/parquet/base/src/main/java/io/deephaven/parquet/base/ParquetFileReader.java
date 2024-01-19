@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
@@ -13,14 +12,13 @@ import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.*;
 
 import static io.deephaven.parquet.base.util.SeekableChannelsProvider.convertToURI;
@@ -52,15 +50,9 @@ public class ParquetFileReader {
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this.channelsProvider = channelsProvider;
-        if (!parquetFileURI.getRawPath().endsWith(".parquet")) {
-            // Construct a new URI for the parent directory
-            try {
-                rootURI = new URI(parquetFileURI.getScheme(), parquetFileURI.getHost(),
-                        new File(parquetFileURI.getPath()).getParent(), parquetFileURI.getRawFragment());
-            } catch (final URISyntaxException e) {
-                throw new UncheckedDeephavenException("Cannot construct URI for parent directory of " + parquetFileURI,
-                        e);
-            }
+        if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
+            // Construct a new file URI for the parent directory
+            rootURI = Path.of(parquetFileURI).getParent().toUri();
         } else {
             rootURI = parquetFileURI;
         }

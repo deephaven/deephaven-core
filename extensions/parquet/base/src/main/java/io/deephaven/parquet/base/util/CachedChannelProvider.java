@@ -225,7 +225,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
 
         @Override
-        public void setContext(@NotNull final SeekableChannelContext channelContext) {
+        public final void setContext(@Nullable final SeekableChannelContext channelContext) {
             if (wrappedChannel instanceof ContextHolder) {
                 ((ContextHolder) wrappedChannel).setContext(channelContext);
             }

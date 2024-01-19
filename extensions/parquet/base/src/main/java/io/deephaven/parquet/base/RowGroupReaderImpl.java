@@ -70,7 +70,8 @@ public class RowGroupReaderImpl implements RowGroupReader {
     }
 
     @Override
-    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path) {
+    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path,
+            @NotNull final SeekableChannelContext channelContext) {
         String key = path.toString();
         ColumnChunk columnChunk = chunkMap.get(key);
         List<Type> fieldTypes = schemaMap.get(key);
@@ -80,12 +81,11 @@ public class RowGroupReaderImpl implements RowGroupReader {
 
         OffsetIndex offsetIndex = null;
         if (columnChunk.isSetOffset_index_offset()) {
-            try (final SeekableChannelContext channelContext = channelsProvider.makeContext();
-                    final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, rootURI)) {
+            try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, rootURI)) {
                 readChannel.position(columnChunk.getOffset_index_offset());
                 offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
                         new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new UncheckedIOException(e);
             }
         }

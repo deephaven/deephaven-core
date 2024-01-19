@@ -28,10 +28,12 @@ import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -123,8 +125,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         if (uri != null) {
             return uri;
         }
-        if (columnChunk.isSetFile_path()) {
-            return uri = rootURI.resolve(columnChunk.getFile_path());
+        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(uri.getScheme())) {
+            return uri = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
         } else {
             return uri = rootURI;
         }

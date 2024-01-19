@@ -11,6 +11,7 @@ import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
 import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,15 +40,16 @@ class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext) {
-        return channelContext == SeekableChannelContext.NULL;
+    public boolean isCompatibleWith(@Nullable SeekableChannelContext channelContext) {
+        // Context is not used, hence always compatible
+        return true;
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
+    public final SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
             @NotNull final URI uri)
             throws IOException {
-        // context is unused here because it is NULL
+        // context is unused here
         Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
         return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
     }

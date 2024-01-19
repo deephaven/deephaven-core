@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base.util;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,15 +22,16 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
-        return channelContext == SeekableChannelContext.NULL;
+    public boolean isCompatibleWith(@Nullable final SeekableChannelContext channelContext) {
+        // Context is not used, hence always compatible
+        return true;
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
+    public SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
             @NotNull final URI uri)
             throws IOException {
-        // context is unused here because it is NULL
+        // context is unused here
         return FileChannel.open(Path.of(uri), StandardOpenOption.READ);
     }
 

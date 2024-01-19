@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocationState;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
+import io.deephaven.parquet.base.util.SeekableChannelContext;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -46,6 +47,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final Map<String, GroupingColumnInfo> groupingColumns;
     private final Map<String, ColumnTypeInfo> columnTypes;
     private final String version;
+    private final SeekableChannelContext channelContext;
 
     private volatile RowGroupReader[] rowGroupReaders;
 
@@ -61,6 +63,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             parquetMetadata = tableLocationKey.getMetadata();
             rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
+
+        // Use a common channelContext for creating all column chunk readers
+        channelContext = getChannelProvider().makeContext();
 
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
@@ -153,8 +158,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList =
                 columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+        final ColumnChunkReader[] columnChunkReaders;
+        columnChunkReaders = Arrays.stream(getRowGroupReaders())
+                .map(rgr -> rgr.getColumnChunk(nameList, channelContext)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,
