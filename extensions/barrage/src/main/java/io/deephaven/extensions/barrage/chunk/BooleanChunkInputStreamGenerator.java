@@ -3,7 +3,6 @@
  */
 package io.deephaven.extensions.barrage.chunk;
 
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -23,6 +22,7 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -162,7 +162,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
     static WritableChunk<Values> extractChunkFromInputStream(
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
@@ -175,7 +175,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             final StreamReaderOptions options,
             final ByteConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,

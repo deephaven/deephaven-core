@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -26,6 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "ObjectChunkInputStream Serialization";
@@ -399,7 +399,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final Mapper<T> mapper,
             final WritableChunk<Values> outChunk,
             final int outOffset,

@@ -6,8 +6,6 @@ package io.deephaven.extensions.barrage.util;
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.protobuf.CodedInputStream;
 import com.google.rpc.Code;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -29,7 +27,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
@@ -167,7 +167,7 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                         i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-        final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+        final long[] bufferInfo = new long[batch.buffersLength()];
         for (int bi = 0; bi < batch.buffersLength(); ++bi) {
             int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
             int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
@@ -178,9 +178,9 @@ public class ArrowToTableConverter {
                 // our parsers handle overhanging buffers
                 length += Math.max(0, nextOffset - offset - length);
             }
-            bufferInfo.add(length);
+            bufferInfo[bi] = length;
         }
-        final TLongIterator bufferInfoIter = bufferInfo.iterator();
+        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
         msg.rowsRemoved = RowSetFactory.empty();
         msg.shifted = RowSetShiftData.EMPTY;

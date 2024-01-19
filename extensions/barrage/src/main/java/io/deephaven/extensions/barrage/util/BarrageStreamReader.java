@@ -33,8 +33,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
 public class BarrageStreamReader implements StreamReader {
@@ -198,7 +200,7 @@ public class BarrageStreamReader implements StreamReader {
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                     i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-                    final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+                    final long[] bufferInfo = new long[batch.buffersLength()];
                     for (int bi = 0; bi < batch.buffersLength(); ++bi) {
                         int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
                         int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
@@ -208,9 +210,9 @@ public class BarrageStreamReader implements StreamReader {
                             // our parsers handle overhanging buffers
                             length += Math.max(0, nextOffset - offset - length);
                         }
-                        bufferInfo.add(length);
+                        bufferInfo[bi] = length;
                     }
-                    final TLongIterator bufferInfoIter = bufferInfo.iterator();
+                    final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
                     // add and mod rows are never combined in a batch. all added rows must be received before the first
                     // mod rows will be received.
