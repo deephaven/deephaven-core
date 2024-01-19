@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.table.impl.util.RowSetShiftCallback;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.vector.*;
@@ -351,7 +351,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             this.isPrimitive = source.getType().isPrimitive();
             this.expectedSource =
                     SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
-            Assert.eqTrue(this.expectedSource instanceof ShiftData.RowSetShiftCallback,
+            Assert.eqTrue(this.expectedSource instanceof RowSetShiftCallback,
                     "expectedSource instanceof ShiftData.RowSetShiftCallback");
 
             this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
@@ -401,8 +401,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            ((ShiftData.RowSetShiftCallback) expectedSource).shift(
-                    rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            ((RowSetShiftCallback) expectedSource).shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 
         public void remove(final RowSet toRemove) {
