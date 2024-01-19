@@ -404,8 +404,7 @@ public class WorkerConnection {
             // signal that the user needs to re-authenticate, make a new session
             // TODO (deephaven-core#3501) in theory we could make a new session for some auth types
             info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
-                || status.getCode() == Code.Unavailable) {
+        } else if (status.isTransportError()) {
             // fire deprecated event for now
             info.notifyConnectionError(status);
 
@@ -1537,7 +1536,7 @@ public class WorkerConnection {
                 });
                 stream.onStatus(err -> {
                     checkStatus(err);
-                    if (!err.isOk()) {
+                    if (!err.isOk() && !err.isTransportError()) {
                         state.setResolution(ClientTableState.ResolutionState.FAILED, err.getDetails());
                     }
                 });

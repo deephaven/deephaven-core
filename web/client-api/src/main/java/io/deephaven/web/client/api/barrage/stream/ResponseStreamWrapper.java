@@ -45,6 +45,11 @@ public class ResponseStreamWrapper<T> {
         default boolean isOk() {
             return getCode() == Code.OK;
         }
+
+        @JsOverlay
+        default boolean isTransportError() {
+            return getCode() == Code.Internal || getCode() == Code.Unknown || getCode() == Code.Unavailable;
+        }
     }
     @JsType(isNative = true)
     public interface ServiceError {
