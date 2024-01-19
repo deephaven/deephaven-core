@@ -42,7 +42,8 @@ public abstract class S3Instructions {
 
     /**
      * The number of fragments to send asynchronous read requests for while reading the current fragment, defaults to
-     * {@value #DEFAULT_READ_AHEAD_COUNT}.
+     * {@value #DEFAULT_READ_AHEAD_COUNT}. This means by default, we will fetch {@value #DEFAULT_READ_AHEAD_COUNT}
+     * fragments in advance when reading current fragment.
      */
     @Value.Default
     public int readAheadCount() {
@@ -50,8 +51,8 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The maximum size of each fragment to read from S3. The fetched fragment can be smaller than this in case fewer
-     * bytes remaining in the file, defaults to {@value #DEFAULT_FRAGMENT_SIZE} bytes.
+     * The maximum size of each fragment to read from S3, defaults to {@value #DEFAULT_FRAGMENT_SIZE} bytes. If there
+     * are fewer bytes remaining in the file, the fetched fragment can be smaller.
      */
     @Value.Default
     public int fragmentSize() {
@@ -59,7 +60,9 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}.
+     * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is
+     * done at deephaven layer using a modulo-based logic. For example, if the max cache size is 32,fragment {@code i}
+     * will be cached in slot {@code i % 32} and will stay there until it is evicted by a more recent fragment.
      */
     @Value.Default
     public int maxCacheSize() {

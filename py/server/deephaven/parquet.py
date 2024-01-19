@@ -26,20 +26,20 @@ _JDuration = jpy.get_type("java.time.Duration")
 @dataclass
 class ColumnInstruction:
     """  This class specifies the instructions for reading/writing a Parquet column. """
-    column_name: str = None
-    parquet_column_name: str = None
-    codec_name: str = None
-    codec_args: str = None
+    column_name: Optional[str] = None
+    parquet_column_name: Optional[str] = None
+    codec_name: Optional[str] = None
+    codec_args: Optional[str] = None
     use_dictionary: bool = False
 
 
 def _build_parquet_instructions(
-    col_instructions: List[ColumnInstruction] = None,
-    compression_codec_name: str = None,
-    max_dictionary_keys: int = None,
-    max_dictionary_size: int = None,
+    col_instructions: Optional[List[ColumnInstruction]] = None,
+    compression_codec_name: Optional[str] = None,
+    max_dictionary_keys: Optional[int] = None,
+    max_dictionary_size: Optional[int] = None,
     is_legacy_parquet: bool = False,
-    target_page_size: int = None,
+    target_page_size: Optional[int] = None,
     is_refreshing: bool = False,
     for_read: bool = True,
     force_build: bool = False,
@@ -156,7 +156,7 @@ def read(
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
         special_instructions (Optional[object]): Special instructions for reading parquet files, useful when reading
-            files from a non-local file system, like S3. By default, None. When
+            files from a non-local file system, like S3. By default, None.
 
     Returns:
         a table
@@ -228,12 +228,12 @@ def delete(path: str) -> None:
 def write(
     table: Table,
     path: str,
-    col_definitions: List[Column] = None,
-    col_instructions: List[ColumnInstruction] = None,
-    compression_codec_name: str = None,
-    max_dictionary_keys: int = None,
-    max_dictionary_size: int = None,
-    target_page_size: int = None,
+    col_definitions: Optional[List[Column]] = None,
+    col_instructions: Optional[List[ColumnInstruction]] = None,
+    compression_codec_name: Optional[str] = None,
+    max_dictionary_keys: Optional[int] = None,
+    max_dictionary_size: Optional[int] = None,
+    target_page_size: Optional[int] = None,
 ) -> None:
     """ Write a table to a Parquet file.
 
@@ -242,12 +242,12 @@ def write(
         path (str): the destination file path; the file name should end in a ".parquet" extension. If the path
             includes non-existing directories they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
-        col_definitions (List[Column]): the column definitions to use, default is None
-        col_instructions (List[ColumnInstruction]): instructions for customizations while writing, default is None
-        compression_codec_name (str): the default compression codec to use, if not specified, defaults to SNAPPY
-        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
-        max_dictionary_size (int): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
-        target_page_size (int): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        col_definitions (Optional[List[Column]]): the column definitions to use, default is None
+        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing, default is None
+        compression_codec_name (Optional[str]): the default compression codec to use, if not specified, defaults to SNAPPY
+        max_dictionary_keys (Optional[int]): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        max_dictionary_size (Optional[int]): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
 
     Raises:
         DHError
@@ -284,12 +284,12 @@ def batch_write(
     tables: List[Table],
     paths: List[str],
     col_definitions: List[Column],
-    col_instructions: List[ColumnInstruction] = None,
-    compression_codec_name: str = None,
-    max_dictionary_keys: int = None,
-    max_dictionary_size: int = None,
-    target_page_size: int = None,
-    grouping_cols: List[str] = None,
+    col_instructions: Optional[List[ColumnInstruction]] = None,
+    compression_codec_name: Optional[str] = None,
+    max_dictionary_keys: Optional[int] = None,
+    max_dictionary_size: Optional[int] = None,
+    target_page_size: Optional[int] = None,
+    grouping_cols: Optional[List[str]] = None,
 ):
     """ Writes tables to disk in parquet format to a supplied set of paths.
 
@@ -304,12 +304,12 @@ def batch_write(
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
         col_definitions (List[Column]): the column definitions to use
-        col_instructions (List[ColumnInstruction]): instructions for customizations while writing
-        compression_codec_name (str): the compression codec to use, if not specified, defaults to SNAPPY
-        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
-        max_dictionary_size (int): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
-        target_page_size (int): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
-        grouping_cols (List[str]): the group column names
+        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
+        compression_codec_name (Optional[str]): the compression codec to use, if not specified, defaults to SNAPPY
+        max_dictionary_keys (Optional[int]): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        max_dictionary_size (Optional[int]): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        grouping_cols (Optional[List[str]]): the group column names
 
     Raises:
         DHError
