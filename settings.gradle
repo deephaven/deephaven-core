@@ -212,6 +212,12 @@ project(':engine-query-constants').projectDir = file('engine/query-constants')
 include(':engine-sql')
 project(':engine-sql').projectDir = file('engine/sql')
 
+include ':engine-processor'
+project(':engine-processor').projectDir = file('engine/processor')
+
+include ':engine-processor-functions'
+project(':engine-processor-functions').projectDir = file('engine/processor-functions')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -379,12 +385,6 @@ include ':sql'
 
 include ':function'
 project(':function').projectDir = file('function')
-
-include ':processor'
-project(':processor').projectDir = file('java/processor')
-
-include ':processor-functions'
-project(':processor-functions').projectDir = file('java/processor-functions')
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {

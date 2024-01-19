@@ -8,7 +8,7 @@ description 'Kafka: Integrating Engine tables with Kafka'
 dependencies {
     api project(':engine-table')
 
-    api project(':processor')
+    api project(':engine-processor')
 
     api 'org.apache.avro:avro:1.11.2'
 
