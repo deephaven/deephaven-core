@@ -13,10 +13,10 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
-import io.deephaven.functions.ToByteFunction;
-import io.deephaven.functions.ToCharFunction;
-import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToShortFunction;
+import io.deephaven.function.ToByteFunction;
+import io.deephaven.function.ToCharFunction;
+import io.deephaven.function.ToFloatFunction;
+import io.deephaven.function.ToShortFunction;
 
 import java.util.function.Function;
 import java.util.function.Predicate;

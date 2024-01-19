@@ -6,7 +6,7 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.function.ToBooleanFunction;
 
 import java.util.Objects;
 

@@ -4,7 +4,7 @@
 package io.deephaven.processor.functions;
 
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.TypedFunction;
 import io.deephaven.processor.ObjectProcessor;
 
 import java.util.List;

@@ -377,8 +377,8 @@ include ':clock-impl'
 
 include ':sql'
 
-include ':functions'
-project(':functions').projectDir = file('java/functions')
+include ':function'
+project(':function').projectDir = file('function')
 
 include ':processor'
 project(':processor').projectDir = file('java/processor')

@@ -6,8 +6,8 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.functions.ToDoubleFunction;
-import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.function.ToDoubleFunction;
+import io.deephaven.function.ToObjectFunction;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.Objects;
