@@ -25,6 +25,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import javax.inject.Inject;
 import javax.inject.Named;
