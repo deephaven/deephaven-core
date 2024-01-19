@@ -404,8 +404,7 @@ public class WorkerConnection {
             // signal that the user needs to re-authenticate, make a new session
             // TODO (deephaven-core#3501) in theory we could make a new session for some auth types
             info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
-                || status.getCode() == Code.Unavailable) {
+        } else if (status.isTransportError()) {
             // fire deprecated event for now
             info.notifyConnectionError(status);
 
@@ -455,7 +454,7 @@ public class WorkerConnection {
         exportNotifications.onData(update -> {
             if (update.getUpdateFailureMessage() != null && !update.getUpdateFailureMessage().isEmpty()) {
                 cache.get(new TableTicket(update.getExportId().getTicket_asU8())).ifPresent(state1 -> {
-                    state1.forActiveTables(t -> t.failureHandled(update.getUpdateFailureMessage()));
+                    state1.setResolution(ClientTableState.ResolutionState.FAILED, update.getUpdateFailureMessage());
                 });
             } else {
                 exportedTableUpdateMessage(new TableTicket(update.getExportId().getTicket_asU8()),
@@ -1537,11 +1536,8 @@ public class WorkerConnection {
                 });
                 stream.onStatus(err -> {
                     checkStatus(err);
-                    if (!err.isOk()) {
-                        // TODO (core#1181): fix this hack that enables barrage errors to propagate to the UI widget
-                        state.forActiveSubscriptions((table, subscription) -> {
-                            table.failureHandled(err.getDetails());
-                        });
+                    if (!err.isOk() && !err.isTransportError()) {
+                        state.setResolution(ClientTableState.ResolutionState.FAILED, err.getDetails());
                     }
                 });
                 BiDiStream<FlightData, FlightData> oldStream = subscriptionStreams.put(state, stream);
