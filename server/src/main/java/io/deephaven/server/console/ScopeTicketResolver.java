@@ -52,7 +52,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         final String scopeName = nameForDescriptor(descriptor, logId);
 
         QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        Object scopeVar = queryScope.readParamValue(scopeName, null);
+        Object scopeVar = queryScope.unwrapObject(queryScope.readParamValue(scopeName, null));
         if (scopeVar == null) {
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + ": no table exists with name '" + scopeName + "'");
@@ -73,6 +73,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         queryScope.toMap().forEach((varName, varObj) -> {
+            varObj = queryScope.unwrapObject(varObj);
             if (varObj instanceof Table) {
                 visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName),
                         flightTicketForName(varName)));

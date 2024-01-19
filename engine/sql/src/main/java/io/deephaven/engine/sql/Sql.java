@@ -82,10 +82,12 @@ public final class Sql {
     private static Map<String, Table> currentScriptSessionNamedTables() {
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)
-        final Map<String, Table> scope = ExecutionContext.getContext().getQueryScope()
+        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Map<String, Table> scope = queryScope
                 .toMap()
                 .entrySet()
                 .stream()
+                .map(e -> Map.entry(e.getKey(), queryScope.unwrapObject(e.getValue())))
                 .filter(e -> e.getValue() instanceof Table)
                 .collect(Collectors.toMap(Entry::getKey, e -> (Table) e.getValue()));
 
