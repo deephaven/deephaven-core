@@ -18,7 +18,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.table.impl.util.ShiftCallback;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -32,7 +32,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  */
 public class ImmutableConstantByteSource
         extends AbstractColumnSource<Byte>
-        implements ImmutableColumnSourceGetDefaults.ForByte, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements ImmutableColumnSourceGetDefaults.ForByte, ShiftCallback, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final byte value;

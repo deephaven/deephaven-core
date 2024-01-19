@@ -25,7 +25,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.table.impl.util.ShiftCallback;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -39,7 +39,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 public class ImmutableConstantLongSource
         extends AbstractColumnSource<Long>
-        implements ImmutableColumnSourceGetDefaults.ForLong, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements ImmutableColumnSourceGetDefaults.ForLong, ShiftCallback, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> , ConvertibleTimeSource {
 
     private final long value;

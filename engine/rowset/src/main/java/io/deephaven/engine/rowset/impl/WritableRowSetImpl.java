@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.rowset.impl;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
@@ -258,11 +257,6 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final WritableRowSet invert(final RowSet keys, final long maximumPosition) {
         return new WritableRowSetImpl(innerSet.ixInvertOnNew(getInnerSet(keys), maximumPosition));
-    }
-
-    @Override
-    public final TLongArrayList[] findMissing(final RowSet keys) {
-        return RowSetUtils.findMissing(this, keys);
     }
 
     @NotNull

@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.table.impl.util.ShiftCallback;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -23,7 +23,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
-        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
+        implements ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
         ConvertibleTimeSource {
 
     protected final ImmutableConstantLongSource nanoSource;

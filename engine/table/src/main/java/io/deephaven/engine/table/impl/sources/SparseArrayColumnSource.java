@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.table.impl.util.RowSetShiftCallback;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -73,7 +73,7 @@ import java.util.Collection;
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
         implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
-        WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback {
+        WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
 
