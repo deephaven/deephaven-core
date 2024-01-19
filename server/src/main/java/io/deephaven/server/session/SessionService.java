@@ -57,6 +57,7 @@ public class SessionService {
 
     @Singleton
     public static class ObfuscatingErrorTransformer implements ErrorTransformer {
+        @VisibleForTesting
         static final int MAX_STACK_TRACE_CAUSAL_DEPTH = 25;
         private static final int MAX_CACHE_BUILDER_SIZE = 1009;
         private static final int MAX_CACHE_DURATION_MIN = 1;
