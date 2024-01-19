@@ -101,9 +101,11 @@ public class SessionService {
                 shouldLog = errorId == null;
 
                 int currDepth = 0;
-                for (Throwable causeToCheck = err.getCause(); errorId == null
-                        && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH
-                        && causeToCheck != null; causeToCheck = causeToCheck.getCause()) {
+                // @formatter:off
+                for (Throwable causeToCheck = err.getCause();
+                     errorId == null && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH && causeToCheck != null;
+                     causeToCheck = causeToCheck.getCause()) {
+                    // @formatter:on
                     errorId = idCache.getIfPresent(causeToCheck);
                 }
 
@@ -111,8 +113,11 @@ public class SessionService {
                     errorId = UuidCreator.getRandomBased();
                 }
 
-                for (Throwable throwableToAdd = err; currDepth > 0; throwableToAdd =
-                        throwableToAdd.getCause(), --currDepth) {
+                // @formatter:off
+                for (Throwable throwableToAdd = err;
+                     currDepth > 0;
+                     throwableToAdd = throwableToAdd.getCause(), --currDepth) {
+                    // @formatter:on
                     if (throwableToAdd.getStackTrace().length > 0) {
                         // Note that stackless exceptions are singletons, so it would be a bad idea to cache them
                         idCache.put(throwableToAdd, errorId);
