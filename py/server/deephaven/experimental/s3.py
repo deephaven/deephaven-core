@@ -13,28 +13,18 @@ import numpy as np
 import pandas as pd
 
 from deephaven import time
+from deephaven._wrapper import JObjectWrapper
 from deephaven.dtypes import Duration
 
-_JDuration = jpy.get_type("java.time.Duration")
-_JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
 
-
-def build_s3_instructions(
-        aws_region_name: str,
-        max_concurrent_requests: Optional[int] = None,
-        read_ahead_count: Optional[int] = None,
-        fragment_size: Optional[int] = None,
-        max_cache_size: Optional[int] = None,
-        connection_timeout: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
-        read_timeout: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
-) -> Optional[object]:
+class S3Instructions(JObjectWrapper):
     """
-    Build specialized instructions for accessing files stored in AWS S3.
+    Used to provide specialized instructions for reading from AWS S3.
 
     Args:
         aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, mandatory parameter.
         max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3,
-            by default 50.
+            by default is 50.
         read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
             fragment, defaults to 1, which means fetch one next fragment in advance when reading current fragment.
         fragment_size (int): the maximum size of each fragment to read from S3, defaults to 5 MB. If there are fewer
@@ -52,25 +42,42 @@ def build_s3_instructions(
             types. Default to 2 seconds.
     """
 
-    builder = _JS3Instructions.builder()
-    builder.awsRegionName(aws_region_name)
+    j_object_type = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
 
-    if max_concurrent_requests is not None:
-        builder.maxConcurrentRequests(max_concurrent_requests)
+    def __init__(self,
+                 aws_region_name: str,
+                 max_concurrent_requests: Optional[int] = None,
+                 read_ahead_count: Optional[int] = None,
+                 fragment_size: Optional[int] = None,
+                 max_cache_size: Optional[int] = None,
+                 connection_timeout: Union[
+                     Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
+                 read_timeout: Union[
+                     Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None):
 
-    if read_ahead_count is not None:
-        builder.readAheadCount(read_ahead_count)
+        builder = self.j_object_type.builder()
+        builder.awsRegionName(aws_region_name)
 
-    if fragment_size is not None:
-        builder.fragmentSize(fragment_size)
+        if max_concurrent_requests is not None:
+            builder.maxConcurrentRequests(max_concurrent_requests)
 
-    if max_cache_size is not None:
-        builder.maxCacheSize(max_cache_size)
+        if read_ahead_count is not None:
+            builder.readAheadCount(read_ahead_count)
 
-    if connection_timeout is not None:
-        builder.connectionTimeout(time.to_j_duration(connection_timeout))
+        if fragment_size is not None:
+            builder.fragmentSize(fragment_size)
 
-    if read_timeout is not None:
-        builder.readTimeout(time.to_j_duration(read_timeout))
+        if max_cache_size is not None:
+            builder.maxCacheSize(max_cache_size)
 
-    return builder.build()
+        if connection_timeout is not None:
+            builder.connectionTimeout(time.to_j_duration(connection_timeout))
+
+        if read_timeout is not None:
+            builder.readTimeout(time.to_j_duration(read_timeout))
+
+        self._j_object = builder.build()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object

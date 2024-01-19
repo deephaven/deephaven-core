@@ -11,6 +11,7 @@ from typing import List, Optional, Union, Dict
 import jpy
 
 from deephaven import DHError
+from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.table import Table
@@ -43,7 +44,7 @@ def _build_parquet_instructions(
     is_refreshing: bool = False,
     for_read: bool = True,
     force_build: bool = False,
-    special_instructions: Optional[object] = None,
+    special_instructions: Optional[JObjectWrapper] = None,
 ):
     if not any(
         [
@@ -93,7 +94,7 @@ def _build_parquet_instructions(
         builder.setIsRefreshing(is_refreshing)
 
     if special_instructions is not None:
-        builder.setSpecialInstructions(special_instructions)
+        builder.setSpecialInstructions(special_instructions.j_object)
 
     return builder.build()
 
@@ -138,7 +139,7 @@ def read(
     is_refreshing: bool = False,
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Union[Dict[str, DType], List[Column], None] = None,
-    special_instructions: Optional[object] = None,
+    special_instructions: Optional[JObjectWrapper] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -155,8 +156,8 @@ def read(
             have that definition. This is useful for bootstrapping purposes when the initially partitioned directory is
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
-        special_instructions (Optional[object]): Special instructions for reading parquet files, useful when reading
-            files from a non-local file system, like S3. By default, None.
+        special_instructions (Optional[JObjectWrapper]): Special instructions for reading parquet files, useful when
+            reading files from a non-local file system, like S3. By default, None.
 
     Returns:
         a table
