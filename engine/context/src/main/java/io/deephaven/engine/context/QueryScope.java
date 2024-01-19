@@ -136,7 +136,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      *
      * @return an immutable map with all known variables and their values.
      */
-    Map<String, Object> readAllValues();
+    Map<String, Object> toMap();
 
     /**
      * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning

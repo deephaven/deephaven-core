@@ -303,7 +303,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     @Override
     protected Map<String, Object> getAllValues() {
         return PyLib
-                .ensureGil(() -> scope.getEntries().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                .ensureGil(() -> scope.getEntries()
+                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     @Override

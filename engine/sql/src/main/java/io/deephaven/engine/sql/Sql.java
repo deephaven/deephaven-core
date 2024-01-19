@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * Experimental SQL execution. Subject to change.
@@ -79,16 +80,15 @@ public final class Sql {
     }
 
     private static Map<String, Table> currentScriptSessionNamedTables() {
-        final Map<String, Table> scope = new HashMap<>();
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)
-        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        for (String name : queryScope.getParamNames()) {
-            Object paramValue = queryScope.unwrapObject(queryScope.readParamValue(name));
-            if (paramValue instanceof Table) {
-                scope.put(name, (Table) paramValue);
-            }
-        }
+        final Map<String, Table> scope = ExecutionContext.getContext().getQueryScope()
+                .toMap()
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue() instanceof Table)
+                .collect(Collectors.toMap(Entry::getKey, e -> (Table) e.getValue()));
+
         return scope;
     }
 

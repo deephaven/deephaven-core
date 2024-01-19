@@ -53,7 +53,7 @@ public class PoisonedQueryScope implements QueryScope {
     }
 
     @Override
-    public Map<String, Object> readAllValues() {
+    public Map<String, Object> toMap() {
         return fail();
     }
 

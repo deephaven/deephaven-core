@@ -77,9 +77,9 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
     }
 
     @Override
-    public Map<String, Object> readAllValues() {
+    public Map<String, Object> toMap() {
         return valueRetrievers.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().value));
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().value));
     }
 
     private static class ValueRetriever<T> {

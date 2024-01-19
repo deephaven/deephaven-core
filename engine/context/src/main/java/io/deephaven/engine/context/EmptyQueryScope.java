@@ -48,7 +48,7 @@ public class EmptyQueryScope implements QueryScope {
     }
 
     @Override
-    public Map<String, Object> readAllValues() {
+    public Map<String, Object> toMap() {
         return Collections.emptyMap();
     }
 

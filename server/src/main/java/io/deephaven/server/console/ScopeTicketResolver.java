@@ -55,11 +55,11 @@ public class ScopeTicketResolver extends TicketResolverBase {
         Object scopeVar = queryScope.readParamValue(scopeName, null);
         if (scopeVar == null) {
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
+                    "Could not resolve '" + logId + ": no table exists with name '" + scopeName + "'");
         }
         if (!(scopeVar instanceof Table)) {
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+                    "Could not resolve '" + logId + "': no table exists with name '" + scopeName + "'");
         }
 
         Table transformed = authorization.transform((Table) scopeVar);
@@ -72,8 +72,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        queryScope.getParamNames().forEach((varName) -> {
-            Object varObj = queryScope.readParamValue(varName);
+        queryScope.toMap().forEach((varName, varObj) -> {
             if (varObj instanceof Table) {
                 visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName),
                         flightTicketForName(varName)));
