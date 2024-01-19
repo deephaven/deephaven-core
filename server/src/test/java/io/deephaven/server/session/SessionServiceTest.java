@@ -244,7 +244,6 @@ public class SessionServiceTest {
         final Exception child2 = new RuntimeException("child2", parent);
         final SessionService.ObfuscatingErrorTransformer transformer = new SessionService.ObfuscatingErrorTransformer();
 
-        // important to transform child then parent for this test
         final StatusRuntimeException t1 = transformer.transform(child1);
         final StatusRuntimeException t2 = transformer.transform(child2);
         Assert.neq(t1, "t1", t2, "t2");
