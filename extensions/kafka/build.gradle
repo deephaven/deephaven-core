@@ -28,6 +28,7 @@ dependencies {
 
     api project(':extensions-protobuf')
 
+    implementation project(':engine-processor-functions')
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation depTrove3

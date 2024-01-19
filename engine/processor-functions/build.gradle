@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     api project(':engine-processor')
+    api project(':engine-chunk')
     api project(':function')
 
     implementation project(':engine-time')

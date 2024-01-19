@@ -7,6 +7,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.function.ToObjectFunction;
+import io.deephaven.processor.functions.ChunkUtils;
 
 import java.util.Objects;
 
