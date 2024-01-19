@@ -318,7 +318,10 @@ include(':qst:graphviz')
 include(':application-mode')
 
 include(':util-immutables')
-project(':util-immutables').projectDir = file('Util/util-immutables')
+project(':util-immutables').projectDir = file('Util/immutables')
+
+include ':util-function'
+project(':util-function').projectDir = file('Util/function')
 
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
@@ -382,9 +385,6 @@ include ':clock'
 include ':clock-impl'
 
 include ':sql'
-
-include ':function'
-project(':function').projectDir = file('function')
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
