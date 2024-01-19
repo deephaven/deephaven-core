@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    api project(':qst')
+    api project(':qst-type')
 
     compileOnly depAnnotations
 

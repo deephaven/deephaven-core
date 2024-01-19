@@ -5,7 +5,7 @@ plugins {
 
 
 dependencies {
-    api project(':qst')
+    api project(':qst-type')
     api project(':engine-chunk')
 
     Classpaths.inheritJUnitPlatform(project)
