@@ -307,7 +307,11 @@ project(':java-client-barrage-examples').projectDir = file('java-client/barrage-
 include(':java-client-example-utilities')
 project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
 
-include(':qst:graphviz')
+include(':qst-graphviz')
+project(':qst-graphviz').projectDir = file('qst/graphviz')
+
+include(':qst-type')
+project(':qst-type').projectDir = file('qst/type')
 
 include(':application-mode')
 

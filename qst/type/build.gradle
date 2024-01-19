@@ -3,15 +3,10 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description = 'The Deephaven Query Syntax Tree POJOs'
+description = 'The Deephaven QST Types'
 
 dependencies {
-    api project(':qst-type')
-    api project(':table-api')
-    implementation project(':engine-query-constants')
-
     Classpaths.inheritImmutables(project)
-
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
