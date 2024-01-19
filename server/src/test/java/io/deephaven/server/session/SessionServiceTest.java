@@ -254,4 +254,23 @@ public class SessionServiceTest {
         Assert.neq(t1, "t1", t3, "t3");
         Assert.equals(t1.getMessage(), "t1.getMessage()", t3.getMessage(), "t3.getMessage()");
     }
+
+    @Test
+    public void testErrorCausalLimit() {
+        final Exception leaf = new RuntimeException("leaf");
+        final Exception p1 = new RuntimeException("lastIncluded", leaf);
+        Exception p0 = p1;
+        for (int i = SessionService.ObfuscatingErrorTransformer.MAX_STACK_TRACE_CAUSAL_DEPTH - 1; i > 0; --i) {
+            p0 = new RuntimeException("e" + i, p0);
+        }
+
+        final SessionService.ObfuscatingErrorTransformer transformer = new SessionService.ObfuscatingErrorTransformer();
+        final StatusRuntimeException t0 = transformer.transform(p0);
+        final StatusRuntimeException t1 = transformer.transform(p1);
+        Assert.equals(t0.getMessage(), "t0.getMessage()", t1.getMessage(), "t1.getMessage()");
+
+        // this one should not have made it
+        final StatusRuntimeException tleaf = transformer.transform(leaf);
+        Assert.notEquals(t0.getMessage(), "t0.getMessage()", tleaf.getMessage(), "tleaf.getMessage()");
+    }
 }

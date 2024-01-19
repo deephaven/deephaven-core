@@ -57,7 +57,7 @@ public class SessionService {
 
     @Singleton
     public static class ObfuscatingErrorTransformer implements ErrorTransformer {
-        private static final int MAX_STACK_TRACE_CAUSAL_DEPTH = 25;
+        static final int MAX_STACK_TRACE_CAUSAL_DEPTH = 25;
         private static final int MAX_CACHE_BUILDER_SIZE = 1009;
         private static final int MAX_CACHE_DURATION_MIN = 1;
 
@@ -85,38 +85,41 @@ public class SessionService {
                 }
                 return sre;
             } else if (err instanceof InterruptedException) {
-                return securelyWrapError(log, err, Code.UNAVAILABLE);
+                return securelyWrapError(err, Code.UNAVAILABLE);
             } else {
-                return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
+                return securelyWrapError(err, Code.INVALID_ARGUMENT);
             }
         }
 
-        private synchronized StatusRuntimeException securelyWrapError(
-                final Logger log,
-                final Throwable err,
-                final Code statusCode) {
+        private StatusRuntimeException securelyWrapError(@NotNull final Throwable err, final Code statusCode) {
             UUID errorId;
-            Throwable curr = err;
-            int currDepth = 0;
-            boolean needToAdd = false;
-            do {
-                errorId = idCache.getIfPresent(curr);
-                needToAdd |= errorId == null;
-            } while (errorId == null && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH && (curr = curr.getCause()) != null);
+            final boolean shouldLog;
 
-            if (needToAdd) {
+            synchronized (idCache) {
+                errorId = idCache.getIfPresent(err);
+                shouldLog = errorId == null;
+
+                int currDepth = 0;
+                for (Throwable causeToCheck = err.getCause(); errorId == null
+                        && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH
+                        && causeToCheck != null; causeToCheck = causeToCheck.getCause()) {
+                    errorId = idCache.getIfPresent(causeToCheck);
+                }
+
                 if (errorId == null) {
                     errorId = UuidCreator.getRandomBased();
                 }
 
-                curr = err;
-                do {
-                    if (curr.getStackTrace().length != 0) {
-                        // Stackless exceptions are not very useful, so we only add to the cache if the stack exists.
-                        idCache.put(curr, errorId);
+                for (Throwable throwableToAdd = err; currDepth > 0; throwableToAdd =
+                        throwableToAdd.getCause(), --currDepth) {
+                    if (throwableToAdd.getStackTrace().length > 0) {
+                        // Note that stackless exceptions are singletons, so it would be a bad idea to cache them
+                        idCache.put(throwableToAdd, errorId);
                     }
-                } while ((curr = curr.getCause()) != null && --currDepth > 0);
+                }
+            }
 
+            if (shouldLog) {
                 // this is a new top-level error; log it, possibly using an existing errorId
                 log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
             }
