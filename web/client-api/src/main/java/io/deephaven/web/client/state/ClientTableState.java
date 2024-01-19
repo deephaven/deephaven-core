@@ -283,6 +283,9 @@ public final class ClientTableState extends TableConfig {
             assert resolution == ResolutionState.RELEASED : "Trying to unrelease CTS " + this + " to " + resolution;
             return;
         }
+        if (this.resolution == resolution) {
+            return;
+        }
         this.resolution = resolution;
         if (resolution == ResolutionState.RUNNING) {
             if (onRunning != null) {
@@ -301,6 +304,8 @@ public final class ClientTableState extends TableConfig {
             // after a failure, we should discard onRunning (and this state entirely)
             onRunning = null;
             onReleased = null;
+
+            forActiveTables(t -> t.failureHandled(failMsg));
         } else if (resolution == ResolutionState.RELEASED) {
             if (onReleased != null) {
                 onReleased.forEach(JsRunnable::run);

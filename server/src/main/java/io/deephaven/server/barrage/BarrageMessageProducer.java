@@ -1495,7 +1495,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (pendingError != null) {
             StatusRuntimeException ex = errorTransformer.transform(pendingError);
             for (final Subscription subscription : activeSubscriptions) {
-                // TODO (core#801): effective error reporting to api clients
                 GrpcUtil.safelyError(subscription.listener, ex);
             }
         }
