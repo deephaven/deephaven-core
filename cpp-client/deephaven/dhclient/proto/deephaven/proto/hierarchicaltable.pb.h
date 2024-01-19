@@ -1258,6 +1258,7 @@ class HierarchicalTableDescriptor final :
 
   enum : int {
     kSnapshotSchemaFieldNumber = 1,
+    kIsStaticFieldNumber = 2,
   };
   // bytes snapshot_schema = 1;
   void clear_snapshot_schema();
@@ -1273,6 +1274,15 @@ class HierarchicalTableDescriptor final :
   std::string* _internal_mutable_snapshot_schema();
   public:
 
+  // bool is_static = 2;
+  void clear_is_static();
+  bool is_static() const;
+  void set_is_static(bool value);
+  private:
+  bool _internal_is_static() const;
+  void _internal_set_is_static(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
  private:
   class _Internal;
@@ -1282,6 +1292,7 @@ class HierarchicalTableDescriptor final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr snapshot_schema_;
+    bool is_static_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2915,6 +2926,26 @@ inline void HierarchicalTableDescriptor::set_allocated_snapshot_schema(std::stri
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor.snapshot_schema)
+}
+
+// bool is_static = 2;
+inline void HierarchicalTableDescriptor::clear_is_static() {
+  _impl_.is_static_ = false;
+}
+inline bool HierarchicalTableDescriptor::_internal_is_static() const {
+  return _impl_.is_static_;
+}
+inline bool HierarchicalTableDescriptor::is_static() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor.is_static)
+  return _internal_is_static();
+}
+inline void HierarchicalTableDescriptor::_internal_set_is_static(bool value) {
+  
+  _impl_.is_static_ = value;
+}
+inline void HierarchicalTableDescriptor::set_is_static(bool value) {
+  _internal_set_is_static(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor.is_static)
 }
 
 // -------------------------------------------------------------------

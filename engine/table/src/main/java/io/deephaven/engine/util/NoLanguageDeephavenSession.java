@@ -4,8 +4,8 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
@@ -25,14 +24,17 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     private final String scriptType;
     private final Map<String, Object> variables;
 
-    public NoLanguageDeephavenSession(final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory) {
-        this(updateGraph, threadInitializationFactory, SCRIPT_TYPE);
+    public NoLanguageDeephavenSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer) {
+        this(updateGraph, operationInitializer, SCRIPT_TYPE);
     }
 
-    public NoLanguageDeephavenSession(final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory, final String scriptType) {
-        super(updateGraph, threadInitializationFactory, null, null);
+    public NoLanguageDeephavenSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final String scriptType) {
+        super(updateGraph, operationInitializer, null, null);
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();

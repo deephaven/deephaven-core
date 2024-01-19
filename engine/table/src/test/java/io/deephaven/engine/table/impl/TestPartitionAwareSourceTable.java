@@ -387,7 +387,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         errorNotification.reset();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(SUT::refresh);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            SUT.refresh();
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }, false);
         assertIsSatisfied();
         errorNotification.assertInvoked();
 

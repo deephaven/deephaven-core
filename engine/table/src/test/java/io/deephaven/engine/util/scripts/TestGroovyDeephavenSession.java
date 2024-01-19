@@ -48,8 +48,9 @@ public class TestGroovyDeephavenSession {
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
+        final ExecutionContext context = ExecutionContext.getContext();
         session = new GroovyDeephavenSession(
-                ExecutionContext.getContext().getUpdateGraph(), ThreadInitializationFactory.NO_OP, NoOp.INSTANCE, null,
+                context.getUpdateGraph(), context.getOperationInitializer(), NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         executionContext = session.getExecutionContext().open();
     }

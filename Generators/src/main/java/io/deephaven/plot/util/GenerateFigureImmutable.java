@@ -3,12 +3,12 @@
  */
 package io.deephaven.plot.util;
 
+import io.deephaven.gen.GenUtils;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
 import io.deephaven.plot.errors.PlotExceptionCause;
-import io.deephaven.libs.GroovyStaticImportGenerator;
-import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
+import io.deephaven.gen.JavaFunction;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -23,7 +23,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
+import static io.deephaven.gen.GenUtils.indent;
+import static io.deephaven.gen.GenUtils.typesToImport;
 
 /**
  * Creates a functional interface for plotting.
@@ -33,6 +34,7 @@ public class GenerateFigureImmutable {
     // See also GroovyStaticImportGenerator
 
     private static final Logger log = Logger.getLogger(GenerateFigureImmutable.class.toString());
+    private static final String GRADLE_TASK = ":Generators:generateFigureImmutable";
 
     private static final String CLASS_NAME_INTERFACE = "io.deephaven.plot.Figure";
     private static final String CLASS_NAME_IMPLEMENTATION = "io.deephaven.plot.FigureImpl";
@@ -91,15 +93,14 @@ public class GenerateFigureImmutable {
 
 
     private JavaFunction signature(final JavaFunction f) {
-        return new JavaFunction(
-                outputClass,
-                outputClassNameShort,
-                functionNamer.apply(f),
-                f.getTypeParameters(),
-                f.getReturnType(),
-                f.getParameterTypes(),
-                f.getParameterNames(),
-                f.isVarArgs());
+        final Type returnType = new Type() {
+            @Override
+            public String getTypeName() {
+                return isInterface ? "Figure" : "FigureImpl";
+            }
+        };
+
+        return f.transform(outputClass, outputClassNameShort, functionNamer.apply(f), returnType);
     }
 
     private void addPublicNonStatic(Method m) {
@@ -157,41 +158,6 @@ public class GenerateFigureImmutable {
         return imports;
     }
 
-    private static Set<String> typesToImport(Type t) {
-        Set<String> result = new LinkedHashSet<>();
-
-        if (t instanceof Class) {
-            final Class<?> c = (Class) t;
-            final boolean isArray = c.isArray();
-            final boolean isPrimitive = c.isPrimitive();
-
-            if (isPrimitive) {
-                return result;
-            } else if (isArray) {
-                return typesToImport(c.getComponentType());
-            } else {
-                result.add(t.getTypeName());
-            }
-        } else if (t instanceof ParameterizedType) {
-            final ParameterizedType pt = (ParameterizedType) t;
-            result.add(pt.getRawType().getTypeName());
-
-            for (Type a : pt.getActualTypeArguments()) {
-                result.addAll(typesToImport(a));
-            }
-        } else if (t instanceof TypeVariable) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof GenericArrayType) {
-            GenericArrayType at = (GenericArrayType) t;
-            return typesToImport(at.getGenericComponentType());
-        } else {
-            throw new UnsupportedOperationException("Unsupported Type type: " + t.getClass());
-        }
-
-        return result;
-    }
-
     private String generateImplements() {
         final StringBuilder sb = new StringBuilder();
 
@@ -209,15 +175,7 @@ public class GenerateFigureImmutable {
 
     private String generateCode() {
 
-        String code = "/**\n" +
-                " * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending\n" +
-                " */\n" +
-                "/****************************************************************************************************************************\n"
-                +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GenerateFigureImmutable or \"./gradlew :Generators:generateFigureImmutable\" to regenerate\n"
-                +
-                " ****************************************************************************************************************************/\n\n";
-
+        String code = GenUtils.javaHeader(GenerateFigureImmutable.class, GRADLE_TASK);
         code += "package io.deephaven.plot;\n\n";
 
         Set<String> imports = generateImports();
@@ -229,7 +187,7 @@ public class GenerateFigureImmutable {
         code += "\n";
         code += "/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.";
         code += "*/\n";
-        code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\"})\n";
+        code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\", \"rawtypes\"})\n";
         code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateImplements()
                 + " {\n";
 
@@ -659,6 +617,7 @@ public class GenerateFigureImmutable {
                                 + "\n");
     }
 
+    @SuppressWarnings("DuplicateBranchesInSwitch")
     private static String createInstanceGetter(final JavaFunction f) {
         switch (f.getClassName()) {
             case "io.deephaven.plot.BaseFigure":
@@ -680,136 +639,80 @@ public class GenerateFigureImmutable {
     }
 
     private String createFunctionSignature(final JavaFunction f) {
-        String s = "    " + (isInterface ? "@Override " : "@Override public ");
-
-        if (f.getTypeParameters().length > 0) {
-            s += "<";
-
-            for (int i = 0; i < f.getTypeParameters().length; i++) {
-                if (i != 0) {
-                    s += ",";
-                }
-
-                TypeVariable<Method> t = f.getTypeParameters()[i];
-                log.info("BOUNDS: " + Arrays.toString(t.getBounds()));
-                s += t;
-
-                Type[] bounds = t.getBounds();
-
-                if (bounds.length != 1) {
-                    throw new RuntimeException("Unsupported bounds: " + Arrays.toString(bounds));
-                }
-
-                Type bound = bounds[0];
-
-                if (!bound.equals(Object.class)) {
-                    s += " extends " + bound.getTypeName();
-                }
-
-            }
-
-            s += ">";
-        }
-
-        s += " " + outputClassNameShort + " " + f.getMethodName() + "(";
-
-        for (int i = 0; i < f.getParameterTypes().length; i++) {
-            if (i != 0) {
-                s += ",";
-            }
-
-            Type t = f.getParameterTypes()[i];
-
-            String typeString = t.getTypeName().replace("$", ".");
-
-            if (f.isVarArgs() && i == f.getParameterTypes().length - 1) {
-                final int index = typeString.lastIndexOf("[]");
-                typeString = typeString.substring(0, index) + "..." + typeString.substring(index + 2);
-            }
-
-            s += " " + typeString + " " + f.getParameterNames()[i];
-        }
-
-        s += " )";
-
-        return s;
-    }
-
-    private static String createCallArgs(final JavaFunction f) {
-        String callArgs = "";
-
-        for (int i = 0; i < f.getParameterTypes().length; i++) {
-            if (i != 0) {
-                callArgs += ",";
-            }
-
-            callArgs += " " + f.getParameterNames()[i];
-        }
-
-        return callArgs;
+        return GenUtils.javaFunctionSignature(f, (isInterface ? "@Override" : "@Override public"));
     }
 
     private String createFunction(final JavaFunction f) {
-        final String returnType = f.getReturnType().getTypeName().replace("$", ".");
-        final Class returnClass = f.getReturnClass();
+        final Class<?> returnClass = f.getReturnClass();
         final JavaFunction signature = signature(f);
 
-        String s = createFunctionSignature(f);
+        String sigPrefix;
+        String javadoc = null;
+        String funcBody;
 
         if (isInterface) {
-            return s + ";\n";
-        }
-
-        final String callArgs = createCallArgs(f);
-
-        s += " {\n" + indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n";
-
-        if (returnClass != null && BaseFigure.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(fc);\n";
-        } else if (returnClass != null && Chart.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final ChartImpl chart = (ChartImpl) " + createInstanceGetter(f) + "."
-                    + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(chart);\n";
-        } else if (returnClass != null && Axes.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final AxesImpl axes = (AxesImpl) " + createInstanceGetter(f) + "."
-                    + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(axes);\n";
-        } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)
-                && f.getClassName().equals("io.deephaven.plot.Axes")) {
-            s += indent(2) + "final AxesImpl axes = " + createInstanceGetter(f) + ";\n";
-            s += indent(2) + "final AxisImpl axis = (AxisImpl) axes." + signature.getMethodName() + "(" + callArgs
-                    + ");\n" +
-                    indent(2) + "return make(axes, axis);\n";
-        } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final AxisImpl axis = (AxisImpl) " + createInstanceGetter(f) + "."
-                    + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(null, axis);\n";
-        } else if (returnClass != null && DataSeries.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final DataSeriesInternal series = (DataSeriesInternal) " + createInstanceGetter(f) + "."
-                    + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(series);\n";
-        } else if (returnClass != null && Series.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final SeriesInternal series = (SeriesInternal) " + createInstanceGetter(f) + "."
-                    + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(series);\n";
-        } else if (returnClass != null && MultiSeries.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final " + returnClass.getSimpleName() + " mseries = " + createInstanceGetter(f) + "."
-                    + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make((SeriesInternal) mseries);\n";
-        } else if (returnClass != null && void.class.equals(returnClass)) {
-            s += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(fc);\n";
+            sigPrefix = "@Override";
+            funcBody = ";\n";
         } else {
-            System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
+            final String callArgs = GenUtils.javaArgString(f, false);
+            sigPrefix = "@Override public";
+            funcBody = " {\n" + indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n";
 
-            s += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
-                    indent(2) + "return make(fc);\n";
+            if (returnClass != null && BaseFigure.class.isAssignableFrom(returnClass)) {
+                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs
+                        + ");\n" +
+                        indent(2) + "return make(fc);\n";
+            } else if (returnClass != null && Chart.class.isAssignableFrom(returnClass)) {
+                funcBody += indent(2) + "final ChartImpl chart = (ChartImpl) " + createInstanceGetter(f) + "."
+                        + signature.getMethodName() + "(" + callArgs + ");\n" +
+                        indent(2) + "return make(chart);\n";
+            } else if (returnClass != null && Axes.class.isAssignableFrom(returnClass)) {
+                funcBody += indent(2) + "final AxesImpl axes = (AxesImpl) " + createInstanceGetter(f) + "."
+                        + signature.getMethodName() + "(" + callArgs + ");\n" +
+                        indent(2) + "return make(axes);\n";
+            } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)
+                    && f.getClassName().equals("io.deephaven.plot.Axes")) {
+                funcBody += indent(2) + "final AxesImpl axes = " + createInstanceGetter(f) + ";\n";
+                funcBody += indent(2) + "final AxisImpl axis = (AxisImpl) axes." + signature.getMethodName() + "("
+                        + callArgs
+                        + ");\n" +
+                        indent(2) + "return make(axes, axis);\n";
+            } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)) {
+                funcBody += indent(2) + "final AxisImpl axis = (AxisImpl) " + createInstanceGetter(f) + "."
+                        + signature.getMethodName() + "(" + callArgs + ");\n" +
+                        indent(2) + "return make(null, axis);\n";
+            } else if (returnClass != null && DataSeries.class.isAssignableFrom(returnClass)) {
+                funcBody += indent(2) + "final DataSeriesInternal series = (DataSeriesInternal) "
+                        + createInstanceGetter(f) + "."
+                        + signature.getMethodName() + "(" + callArgs + ");\n" +
+                        indent(2) + "return make(series);\n";
+            } else if (returnClass != null && Series.class.isAssignableFrom(returnClass)) {
+                funcBody +=
+                        indent(2) + "final SeriesInternal series = (SeriesInternal) " + createInstanceGetter(f) + "."
+                                + signature.getMethodName() + "(" + callArgs + ");\n" +
+                                indent(2) + "return make(series);\n";
+            } else if (returnClass != null && MultiSeries.class.isAssignableFrom(returnClass)) {
+                funcBody += indent(2) + "final " + returnClass.getSimpleName() + " mseries = " + createInstanceGetter(f)
+                        + "."
+                        + signature.getMethodName() + "(" + callArgs + ");\n" +
+                        indent(2) + "return make((SeriesInternal) mseries);\n";
+            } else if (void.class.equals(returnClass)) {
+                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs
+                        + ");\n" +
+                        indent(2) + "return make(fc);\n";
+            } else {
+                final String returnType = f.getReturnType().getTypeName().replace("$", ".");
+                System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
+
+                funcBody += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs
+                        + ");\n" +
+                        indent(2) + "return make(fc);\n";
+            }
+
+            funcBody += indent(1) + "}\n";
         }
 
-        s += indent(1) + "}\n";
-
-        return s;
+        return GenUtils.javaFunction(signature, sigPrefix, javadoc, funcBody);
     }
 
     private String createSignatureGroupFunction(final TreeSet<JavaFunction> fs) {
@@ -821,72 +724,77 @@ public class GenerateFigureImmutable {
         final JavaFunction f0 = fs.first();
         final JavaFunction s0 = signature(f0);
 
-
-        final String signature = createFunctionSignature(s0);
+        String sigPrefix;
+        String javadoc = null;
+        String funcBody;
 
         if (isInterface) {
-            return signature + ";\n";
+            sigPrefix = "@Override";
+            funcBody = ";\n";
+        } else {
+            final String callArgs = GenUtils.javaArgString(f0, false);
+            sigPrefix = "@Override public";
+            final String signature = GenUtils.javaFunctionSignature(s0, sigPrefix);
+            funcBody = " {\n" +
+                    indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n" +
+                    indent(2) + "Series series = series(fc);\n";
+
+            boolean firstFunc = true;
+
+            for (final JavaFunction f : fs) {
+                final String returnType = f.getReturnType().getTypeName().replace("$", ".");
+                Class<?> returnClass = f.getReturnClass();
+
+                if (returnClass == null) {
+                    throw new UnsupportedOperationException("Null return class. f=" + f);
+                }
+
+                if (firstFunc) {
+                    funcBody += indent(2) + "if( series instanceof " + f.getClassNameShort() + "){\n";
+                } else {
+                    funcBody += indent(2) + "} else if( series instanceof " + f.getClassNameShort() + "){\n";
+                }
+
+                funcBody +=
+                        indent(3) + returnClass.getSimpleName() + " result = ((" + f.getClassNameShort() + ") series)."
+                                + f.getMethodName() + "(" + callArgs + ");\n";
+
+                if (DataSeries.class.isAssignableFrom(returnClass)) {
+                    funcBody += indent(3) + "return make((DataSeriesInternal)result);\n";
+                } else if (MultiSeries.class.isAssignableFrom(returnClass)
+                        || Series.class.isAssignableFrom(returnClass)) {
+                    funcBody += indent(3) + "return make((SeriesInternal)result);\n";
+                } else {
+                    throw new IllegalStateException("UnsupportedReturnType: " + returnType + " " + f);
+                    // System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
+                    // funcBody += indent(3) + "return make(fc);";
+                }
+
+                funcBody += indent(2) + "} ";
+
+                if (!f.getClassNameShort().equals("MultiSeries")
+                        && !f.getClassNameShort().equals("XYDataSeriesFunction")) {
+                    funcBody += makeMultiSeriesGetter(f);
+                }
+
+                firstFunc = false;
+            }
+            funcBody += "else {\n" +
+                    indent(3)
+                    + "throw new PlotUnsupportedOperationException(\"Series type does not support this method.  seriesType=\" + series.getClass() + \" method='"
+                    + signature.trim() + "'\", figure);\n" +
+                    indent(2) + "}\n";
+            funcBody += indent(1) + "}\n";
         }
 
-        final String callArgs = createCallArgs(f0);
-
-        String s = signature;
-        s += " {\n" +
-                indent(2) + "final BaseFigureImpl fc = this.figure.copy();\n" +
-                indent(2) + "Series series = series(fc);\n";
-
-        boolean firstFunc = true;
-
-        for (final JavaFunction f : fs) {
-            final String returnType = f.getReturnType().getTypeName().replace("$", ".");
-            Class returnClass = f.getReturnClass();
-
-            if (returnClass == null) {
-                throw new UnsupportedOperationException("Null return class. f=" + f);
-            }
-
-            if (firstFunc) {
-                s += indent(2) + "if( series instanceof " + f.getClassNameShort() + "){\n";
-            } else {
-                s += indent(2) + "} else if( series instanceof " + f.getClassNameShort() + "){\n";
-            }
-
-            s += indent(3) + returnClass.getSimpleName() + " result = ((" + f.getClassNameShort() + ") series)."
-                    + f.getMethodName() + "(" + callArgs + ");\n";
-
-            if (DataSeries.class.isAssignableFrom(returnClass)) {
-                s += indent(3) + "return make((DataSeriesInternal)result);\n";
-            } else if (MultiSeries.class.isAssignableFrom(returnClass) || Series.class.isAssignableFrom(returnClass)) {
-                s += indent(3) + "return make((SeriesInternal)result);\n";
-            } else {
-                throw new IllegalStateException("UnsupportedReturnType: " + returnType + " " + f);
-                // System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
-                // s += indent(3) + "return make(fc);";
-            }
-
-            s += indent(2) + "} ";
-
-            if (!f.getClassNameShort().equals("MultiSeries") && !f.getClassNameShort().equals("XYDataSeriesFunction")) {
-                s += makeMultiSeriesGetter(f);
-            }
-
-            firstFunc = false;
-        }
-        s += "else {\n" +
-                indent(3)
-                + "throw new PlotUnsupportedOperationException(\"Series type does not support this method.  seriesType=\" + series.getClass() + \" method='"
-                + signature.trim() + "'\", figure);\n" +
-                indent(2) + "}\n";
-        s += indent(1) + "}\n";
-
-        return s;
+        return GenUtils.javaFunction(s0, sigPrefix, javadoc, funcBody);
     }
 
-    private Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> commonSignatureGroups(
+    private Map<String, TreeSet<JavaFunction>> commonSignatureGroups(
             final String[] interfaces) throws ClassNotFoundException {
-        final Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> methods = new TreeMap<>();
+        final Map<String, TreeSet<JavaFunction>> methods = new TreeMap<>();
 
-        final Set<GroovyStaticImportGenerator.JavaFunction> functionSet = new HashSet<>();
+        final Set<JavaFunction> functionSet = new HashSet<>();
         for (String iface : interfaces) {
             final Class<?> c = Class.forName(iface, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing class: " + c);
@@ -898,11 +806,11 @@ public class GenerateFigureImmutable {
                 boolean isObject = m.getDeclaringClass().equals(Object.class);
 
                 if (!isStatic && isPublic && !isObject) {
-                    final GroovyStaticImportGenerator.JavaFunction f = new GroovyStaticImportGenerator.JavaFunction(m);
+                    final JavaFunction f = new JavaFunction(m);
                     if (functionSet.add(f)) { // avoids repeating methods that have the same parameter types but
                                               // different parameter names
                         final String key = createFunctionSignature(f);
-                        final TreeSet<GroovyStaticImportGenerator.JavaFunction> mm =
+                        final TreeSet<JavaFunction> mm =
                                 methods.computeIfAbsent(key, k -> new TreeSet<>());
                         mm.add(f);
                     }
@@ -923,7 +831,6 @@ public class GenerateFigureImmutable {
     }
 
     private static String createMultiSeriesArgs(JavaFunction f) {
-        final Type[] types = f.getParameterTypes();
         final String[] names = f.getParameterNames();
         String args = String.join(", ", names);
         if (!names[names.length - 1].equals("keys")) {
@@ -993,7 +900,6 @@ public class GenerateFigureImmutable {
         });
 
 
-        @SuppressWarnings("unchecked")
         GenerateFigureImmutable gen = new GenerateFigureImmutable(isInterface, imports, interfaces,
                 seriesInterfaces, skips, JavaFunction::getMethodName);
 
@@ -1005,10 +911,7 @@ public class GenerateFigureImmutable {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            if (!code.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GenerateFigureImmutable or \"./gradlew :Generators:generateFigureImmutable\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GenerateFigureImmutable.class, GRADLE_TASK, oldCode, code);
         } else {
 
             PrintWriter out = new PrintWriter(file);

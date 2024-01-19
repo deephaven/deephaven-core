@@ -18,6 +18,7 @@ import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.DeephavenChannelImpl;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.auth.CommunityAuthorizationProvider;
+import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
@@ -58,7 +59,8 @@ public abstract class DeephavenApiServerTestBase {
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
             JsPluginNoopConsumerModule.class,
-            SchedulerDelegatingImplModule.class
+            SchedulerDelegatingImplModule.class,
+            CalendarsFromConfigurationModule.class
     })
     public interface TestComponent {
 

@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -69,7 +70,7 @@ public class CharDeltaOperator extends BaseCharUpdateByOperator {
     ) {
         super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.control = control;
-        this.inputSource = inputSource;
+        this.inputSource = ReinterpretUtils.maybeConvertToPrimitive(inputSource);
         // region constructor
         // endregion constructor
     }

@@ -28,6 +28,7 @@ import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -62,7 +63,6 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -127,8 +127,11 @@ public abstract class FlightMessageRoundTripTest {
 
         @Singleton
         @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
-            return new NoLanguageDeephavenSession(updateGraph, ThreadInitializationFactory.NO_OP, "non-script-session");
+        AbstractScriptSession<?> provideAbstractScriptSession(
+                final UpdateGraph updateGraph,
+                final OperationInitializer operationInitializer) {
+            return new NoLanguageDeephavenSession(
+                    updateGraph, operationInitializer, "non-script-session");
         }
 
         @Provides
@@ -183,6 +186,12 @@ public abstract class FlightMessageRoundTripTest {
         @Singleton
         static UpdateGraph provideUpdateGraph() {
             return ExecutionContext.getContext().getUpdateGraph();
+        }
+
+        @Provides
+        @Singleton
+        static OperationInitializer provideOperationInitializer() {
+            return ExecutionContext.getContext().getOperationInitializer();
         }
     }
 
