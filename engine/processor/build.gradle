@@ -8,8 +8,6 @@ dependencies {
     api project(':qst')
     api project(':engine-chunk')
 
-    implementation project(':engine-time')
-
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
