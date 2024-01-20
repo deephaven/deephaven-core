@@ -3,7 +3,7 @@
  */
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.processor.functions.ObjectProcessorFunctions;
+import io.deephaven.processor.function.ObjectProcessorFunctions;
 import io.deephaven.function.TypedFunction;
 
 import java.util.List;

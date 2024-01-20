@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.processor.functions;
+package io.deephaven.processor.function;
 
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.function.TypedFunction;
