@@ -145,7 +145,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     synchronized void remove(Subscription sub) {
         if (subscriptions.remove(sub)) {
-            sub.notifyObserverAborted();
+            sub.notifyObserverCancelled();
         }
     }
 
@@ -250,8 +250,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         }
 
         // must be sync wrt parent
-        private void notifyObserverAborted() {
-            GrpcUtil.safelyError(observer, Code.ABORTED, "subscription cancelled");
+        private void notifyObserverCancelled() {
+            GrpcUtil.safelyError(observer, Code.CANCELLED, "subscription cancelled");
         }
     }
 

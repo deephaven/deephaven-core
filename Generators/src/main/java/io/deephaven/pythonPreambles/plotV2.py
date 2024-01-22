@@ -19,11 +19,10 @@ import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Instant, PyObject
+from deephaven.dtypes import Instant, PyObject, BusinessCalendar
 from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
 from deephaven.table import Table
-from deephaven.calendar import BusinessCalendar
 from deephaven.jcompat import j_function
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
@@ -71,6 +70,8 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
 
     if obj is None:
         return None
+    elif isinstance(obj, jpy.JType):
+        return obj
 
     _assert_type(name, obj, types)
 

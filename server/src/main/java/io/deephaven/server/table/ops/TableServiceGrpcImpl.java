@@ -100,15 +100,20 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     private final TableServiceContextualAuthWiring authWiring;
     private final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap;
 
+    private final ExportedTableUpdateListener.Factory exportedTableUpdateListenerFactory;
+
     @Inject
-    public TableServiceGrpcImpl(final TicketRouter ticketRouter,
+    public TableServiceGrpcImpl(
+            final TicketRouter ticketRouter,
             final SessionService sessionService,
             final TableServiceContextualAuthWiring authWiring,
-            final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap) {
+            final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap,
+            final ExportedTableUpdateListener.Factory exportedTableUpdateListenerFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authWiring;
         this.operationMap = operationMap;
+        this.exportedTableUpdateListenerFactory = exportedTableUpdateListenerFactory;
     }
 
     private <T> GrpcTableOperation<T> getOp(final BatchTableRequest.Operation.OpCase op) {
@@ -609,7 +614,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
         authWiring.checkPermissionExportedTableUpdates(session.getAuthContext(), request, Collections.emptyList());
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
+        final ExportedTableUpdateListener listener =
+                exportedTableUpdateListenerFactory.create(session, responseObserver);
         session.addExportListener(listener);
         ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
                 () -> session.removeExportListener(listener));

@@ -134,8 +134,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
                 readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
-                processNewLocationsUpdateRoot = new InstrumentedUpdateSource(
-                        result.getUpdateGraph(),
+                processNewLocationsUpdateRoot = new InstrumentedTableUpdateSource(
+                        result,
                         SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
                                 + "-processPendingLocations") {
                     @Override

@@ -5,9 +5,10 @@ package io.deephaven.plot.util;
 
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
+import io.deephaven.gen.GenUtils;
+import io.deephaven.gen.JavaFunction;
 import io.deephaven.plot.util.functions.ClosureFunction;
 import io.deephaven.engine.table.Table;
-import io.deephaven.libs.GroovyStaticImportGenerator;
 import io.deephaven.util.type.TypeUtils;
 import groovy.lang.Closure;
 
@@ -23,13 +24,15 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
+import static io.deephaven.gen.GenUtils.indent;
+
 
 /**
  * Generates methods for the MultiSeries datasets.
  */
 public class GenerateMultiSeries {
     private static final Logger log = Logger.getLogger(GenerateMultiSeries.class.toString());
+    private static final String GRADLE_TASK = ":Generators:generateMultiSeries";
 
     public static void main(String[] args) throws ClassNotFoundException, IOException, NoSuchMethodException {
 
@@ -220,10 +223,7 @@ public class GenerateMultiSeries {
 
             if (assertNoChange) {
                 String oldCode = new String(Files.readAllBytes(Paths.get(outputFile)));
-                if (!newcode.equals(oldCode)) {
-                    throw new RuntimeException("Change in generated code for " + outputFile
-                            + ".  Run GenerateMultiSeries or \"./gradlew :Generators:generateMultiSeries\" to regenerate\n");
-                }
+                GenUtils.assertGeneratedCodeSame(GenerateMultiSeries.class, GRADLE_TASK, oldCode, newcode);
             } else {
                 PrintWriter out = new PrintWriter(outputFile);
                 out.print(newcode);
@@ -240,25 +240,25 @@ public class GenerateMultiSeries {
                         .append(" series) {\n").append(indent(2)).append("$$initializeSeries$$(series);\n")
                         .append(indent(1)).append("}\n\n");
             }
-            final List<GroovyStaticImportGenerator.JavaFunction> sortedMethods = new ArrayList<>();
-            final List<GroovyStaticImportGenerator.JavaFunction> methodsWithFunctionParameter = new ArrayList<>();
+            final List<JavaFunction> sortedMethods = new ArrayList<>();
+            final List<JavaFunction> methodsWithFunctionParameter = new ArrayList<>();
             for (final String clazz : interfaces) {
                 final Class dataseries = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
                 final Method[] methods = Arrays.stream(dataseries.getMethods())
                         .filter(m -> !skip.contains(m))
                         .toArray(Method[]::new);
 
-                final GroovyStaticImportGenerator.JavaFunction[] functionalMethods =
+                final JavaFunction[] functionalMethods =
                         filterBadMethods(Arrays.stream(methods)
                                 .filter(m -> hasFunction(m.getParameterTypes()))
-                                .map(GroovyStaticImportGenerator.JavaFunction::new)
-                                .toArray(GroovyStaticImportGenerator.JavaFunction[]::new));
+                                .map(JavaFunction::new)
+                                .toArray(JavaFunction[]::new));
 
-                final GroovyStaticImportGenerator.JavaFunction[] nonFunctionalMethods =
+                final JavaFunction[] nonFunctionalMethods =
                         Arrays.stream(methods)
                                 .filter(m -> !hasFunction(m.getParameterTypes()))
-                                .map(GroovyStaticImportGenerator.JavaFunction::new)
-                                .toArray(GroovyStaticImportGenerator.JavaFunction[]::new);
+                                .map(JavaFunction::new)
+                                .toArray(JavaFunction[]::new);
                 Arrays.sort(functionalMethods);
                 Arrays.sort(nonFunctionalMethods);
                 Collections.addAll(methodsWithFunctionParameter, functionalMethods);
@@ -266,7 +266,7 @@ public class GenerateMultiSeries {
             }
 
             final Set<String> methodsDone = new HashSet<>(); // used to avoid duplicates
-            for (final GroovyStaticImportGenerator.JavaFunction function : methodsWithFunctionParameter) {
+            for (final JavaFunction function : methodsWithFunctionParameter) {
                 final String mapName = createMapName(function);
                 if (!methodsDone.add(mapName)) {
                     continue;
@@ -276,8 +276,8 @@ public class GenerateMultiSeries {
                 code.append("\n\n");
             }
 
-            final Map<String, GroovyStaticImportGenerator.JavaFunction> mapToFunction = new HashMap<>();
-            for (final GroovyStaticImportGenerator.JavaFunction function : sortedMethods) {
+            final Map<String, JavaFunction> mapToFunction = new HashMap<>();
+            for (final JavaFunction function : sortedMethods) {
                 final String mapName = createMapName(function);
                 if (mapToFunction.get(mapName) != null) {
                     continue;
@@ -331,9 +331,9 @@ public class GenerateMultiSeries {
         }
 
         private String createInitializeFunction(
-                final Map<String, GroovyStaticImportGenerator.JavaFunction> mapToFunction) {
+                final Map<String, JavaFunction> mapToFunction) {
             final StringBuilder code = new StringBuilder();
-            final Map<GroovyStaticImportGenerator.JavaFunction, Function<String, String>> functionToGenerics =
+            final Map<JavaFunction, Function<String, String>> functionToGenerics =
                     createFunctionToGenerics(mapToFunction.values());
 
             code.append(indent(1)).append("@SuppressWarnings(\"unchecked\") \n").append(indent(1)).append("private ")
@@ -350,9 +350,9 @@ public class GenerateMultiSeries {
 
             boolean objectArrayInitialized = false;
             int numConsumers = 0;
-            for (final Map.Entry<String, GroovyStaticImportGenerator.JavaFunction> entry : mapToFunction.entrySet()) {
+            for (final Map.Entry<String, JavaFunction> entry : mapToFunction.entrySet()) {
                 final String map = entry.getKey();
-                final GroovyStaticImportGenerator.JavaFunction function = entry.getValue();
+                final JavaFunction function = entry.getValue();
                 final boolean oneArg = function.getParameterNames().length == 1;
 
                 if (oneArg) {
@@ -429,12 +429,12 @@ public class GenerateMultiSeries {
             return indent(2) + "this.series.initializeSeries((SERIES2) series);\n" + indent(1) + "}\n";
         }
 
-        private Map<GroovyStaticImportGenerator.JavaFunction, Function<String, String>> createFunctionToGenerics(
-                Collection<GroovyStaticImportGenerator.JavaFunction> functionSet) {
-            final Map<GroovyStaticImportGenerator.JavaFunction, Function<String, String>> map = new HashMap<>();
+        private Map<JavaFunction, Function<String, String>> createFunctionToGenerics(
+                Collection<JavaFunction> functionSet) {
+            final Map<JavaFunction, Function<String, String>> map = new HashMap<>();
             final Map<String, Type> generics = new HashMap<>();
             final Map<String, Integer> counter = new HashMap<>();
-            for (final GroovyStaticImportGenerator.JavaFunction function : functionSet) {
+            for (final JavaFunction function : functionSet) {
                 for (TypeVariable<Method> typeVariable : function.getTypeParameters()) {
                     final String typeName = typeVariable.getTypeName();
                     final Type[] bounds = typeVariable.getBounds();
@@ -466,11 +466,11 @@ public class GenerateMultiSeries {
         }
 
         private String createGenericInitializeSeries(
-                final Map<String, GroovyStaticImportGenerator.JavaFunction> mapToFunction,
-                final Map<GroovyStaticImportGenerator.JavaFunction, Function<String, String>> functionToGenerics) {
+                final Map<String, JavaFunction> mapToFunction,
+                final Map<JavaFunction, Function<String, String>> functionToGenerics) {
             final List<String> args = new ArrayList<>();
             final Set<String> variableNames = new HashSet<>();
-            for (final GroovyStaticImportGenerator.JavaFunction function : mapToFunction.values()) {
+            for (final JavaFunction function : mapToFunction.values()) {
                 for (final TypeVariable<Method> typeVariable : function.getTypeParameters()) {
                     String genericTypes = getGenericTypes(typeVariable);
                     if (!genericTypes.isEmpty()) {
@@ -487,7 +487,7 @@ public class GenerateMultiSeries {
             return args.isEmpty() ? "" : "<" + String.join(", ", args) + "> ";
         }
 
-        private String createMapName(final GroovyStaticImportGenerator.JavaFunction function) {
+        private String createMapName(final JavaFunction function) {
             return "%METHOD%SeriesNameTo%TYPES%Map".replaceAll("%TYPES%", createArgsString(function))
                     .replaceAll("%METHOD%", function.getMethodName());
         }
@@ -497,7 +497,7 @@ public class GenerateMultiSeries {
                     ".HashMapWithDefault<>();\n";
         }
 
-        private String createMethod(final String returnClass, final GroovyStaticImportGenerator.JavaFunction function,
+        private String createMethod(final String returnClass, final JavaFunction function,
                 final String mapName) {
             final StringBuilder code = new StringBuilder();
             code.append(createMethodHeader(returnClass, function));
@@ -519,7 +519,7 @@ public class GenerateMultiSeries {
         }
 
         private String createMethodWithFunctionParameter(String returnClass,
-                GroovyStaticImportGenerator.JavaFunction function) throws ClassNotFoundException {
+                JavaFunction function) throws ClassNotFoundException {
             final StringBuilder code = new StringBuilder();
             code.append(createMethodHeader(returnClass, function));
             if (isTransform) {
@@ -533,7 +533,7 @@ public class GenerateMultiSeries {
             return code.toString();
         }
 
-        private String createFunctionalBody(final String returnClass, GroovyStaticImportGenerator.JavaFunction function)
+        private String createFunctionalBody(final String returnClass, JavaFunction function)
                 throws ClassNotFoundException {
             if (function.getParameterTypes()[0].getTypeName().startsWith("groovy.lang.Closure")) {
                 return indent(2) + "return " + function.getMethodName()
@@ -556,7 +556,7 @@ public class GenerateMultiSeries {
         }
 
         private String getFigureFunctionInput(final String returnClass,
-                final GroovyStaticImportGenerator.JavaFunction function, final String tableMethodName)
+                final JavaFunction function, final String tableMethodName)
                 throws ClassNotFoundException {
             final StringBuilder code = new StringBuilder();
             code.append(isSwappable ? "new SelectableDataSetSwappableTable(getSwappableTable()), "
@@ -626,17 +626,17 @@ public class GenerateMultiSeries {
             return code.toString();
         }
 
-        private static GroovyStaticImportGenerator.JavaFunction[] filterBadMethods(
-                final GroovyStaticImportGenerator.JavaFunction[] functions) {
-            final List<GroovyStaticImportGenerator.JavaFunction> retList = new ArrayList<>();
+        private static JavaFunction[] filterBadMethods(
+                final JavaFunction[] functions) {
+            final List<JavaFunction> retList = new ArrayList<>();
 
-            final Map<Pair<String, Integer>, GroovyStaticImportGenerator.JavaFunction> functionMap = new HashMap<>();
+            final Map<Pair<String, Integer>, JavaFunction> functionMap = new HashMap<>();
 
-            for (final GroovyStaticImportGenerator.JavaFunction function : functions) {
+            for (final JavaFunction function : functions) {
                 if (function.getParameterTypes()[0].getTypeName().contains("Function")) {
                     final Pair<String, Integer> methodPair =
                             new Pair<>(function.getMethodName(), function.getParameterNames().length);
-                    final GroovyStaticImportGenerator.JavaFunction oldFunction = functionMap.get(methodPair);
+                    final JavaFunction oldFunction = functionMap.get(methodPair);
 
                     if (oldFunction != null) {
                         if (oldFunction.getTypeParameters().length < 1 && function.getTypeParameters().length > 0) {
@@ -652,10 +652,10 @@ public class GenerateMultiSeries {
             }
 
             retList.addAll(functionMap.values());
-            return retList.toArray(new GroovyStaticImportGenerator.JavaFunction[0]);
+            return retList.toArray(new JavaFunction[0]);
         }
 
-        private String getFunctionInput(GroovyStaticImportGenerator.JavaFunction function) {
+        private String getFunctionInput(JavaFunction function) {
             if (function.getMethodName().endsWith("ByX")) {
                 return "getX()";
             } else if (function.getMethodName().endsWith("ByY")) {
@@ -668,7 +668,7 @@ public class GenerateMultiSeries {
                     + function.getMethodName() + " param class " + function.getParameterTypes()[0].getClass());
         }
 
-        private String getReturnTypeName(final GroovyStaticImportGenerator.JavaFunction function) {
+        private String getReturnTypeName(final JavaFunction function) {
             if (function.getTypeParameters().length < 1) { // non generics
                 final String[] params = function.getParameterTypes()[0].getTypeName().split(",");
                 final String returnType = params[params.length - 1];
@@ -709,7 +709,7 @@ public class GenerateMultiSeries {
             throw new IllegalStateException("No column name constant corresponds to method name " + methodName);
         }
 
-        private String createTransformBody(final GroovyStaticImportGenerator.JavaFunction function) {
+        private String createTransformBody(final JavaFunction function) {
             final List<String> args = new ArrayList<>();
             Collections.addAll(args, function.getParameterNames());
             args.add("multiSeriesKey");
@@ -717,7 +717,7 @@ public class GenerateMultiSeries {
                     + function.getMethodName() + "(" + String.join(", ", args) + ");\n" + indent(1) + "}\n\n";
         }
 
-        private String createExceptionMethodBody(final GroovyStaticImportGenerator.JavaFunction function) {
+        private String createExceptionMethodBody(final JavaFunction function) {
             return indent(2)
                     + "throw new PlotUnsupportedOperationException(\"DataSeries \" + this.getClass() + \" does not support method "
                     + function.getMethodName() + " for arguments " + Arrays.toString(function.getParameterTypes())
@@ -726,7 +726,7 @@ public class GenerateMultiSeries {
         }
 
         private String createMethodHeader(final String returnClass,
-                final GroovyStaticImportGenerator.JavaFunction function) {
+                final JavaFunction function) {
             String methodHeader = indent(1) + (!isInterface ? "@Override public " : "") + getGenericTypes(function)
                     + returnClass + (isGeneric ? "<SERIES>" : "") + " " + function.getMethodName() + "(";
 
@@ -746,7 +746,7 @@ public class GenerateMultiSeries {
                     + (!isInterface ? " {\n" : ";\n");
         }
 
-        private String getGenericTypes(final GroovyStaticImportGenerator.JavaFunction function) {
+        private String getGenericTypes(final JavaFunction function) {
             final TypeVariable<Method>[] typeParameters = function.getTypeParameters();
             if (typeParameters.length == 0) {
                 return "";
@@ -770,7 +770,7 @@ public class GenerateMultiSeries {
             return typeVariable.getName() + (bounds.isEmpty() ? "" : " extends " + String.join(" & ", bounds));
         }
 
-        private String createMapCode(final GroovyStaticImportGenerator.JavaFunction function, final String mapName) {
+        private String createMapCode(final JavaFunction function, final String mapName) {
             final Type[] vars = function.getParameterTypes();
             final String[] names = function.getParameterNames();
             final StringBuilder code = new StringBuilder();
@@ -832,7 +832,7 @@ public class GenerateMultiSeries {
                     .toString();
         }
 
-        private String createSmartKeyArgs(final GroovyStaticImportGenerator.JavaFunction function,
+        private String createSmartKeyArgs(final JavaFunction function,
                 final Map<String, String> tableToTableHandleVarMap) {
             List<String> args = new ArrayList<>();
             final Type[] vars = function.getParameterTypes();
@@ -852,7 +852,7 @@ public class GenerateMultiSeries {
             return String.join(", ", args);
         }
 
-        private String createArgsString(final GroovyStaticImportGenerator.JavaFunction function) {
+        private String createArgsString(final JavaFunction function) {
             StringBuilder args = new StringBuilder();
             for (final Type type : function.getParameterTypes()) {
                 String typeName = type.getTypeName();
@@ -865,7 +865,7 @@ public class GenerateMultiSeries {
         }
     }
 
-    private static String getMapType(GroovyStaticImportGenerator.JavaFunction function) {
+    private static String getMapType(JavaFunction function) {
         final String className;
         final Type[] types = function.getParameterTypes();
         if (types.length == 1) {

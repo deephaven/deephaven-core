@@ -5,7 +5,7 @@ package io.deephaven.protobuf;
 
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.function.ToBooleanFunction;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
 import org.immutables.value.Value.Parameter;
