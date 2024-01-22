@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -1058,5 +1059,45 @@ public abstract class QueryTableWhereTest {
         assertEquals(1_000_000, result.size());
         assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
         assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+    }
+
+    @Test
+    public void testFilterErrorInitial() {
+        final QueryTable table = testRefreshingTable(
+                i(2, 4, 6, 8).toTracking(),
+                col("x", 1, 2, 3, 4),
+                col("y", "a", "b", "c", null));
+
+        try {
+            final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+        } catch (Exception e) {
+            Assert.eqTrue(e instanceof FormulaEvaluationException
+                    && e.getCause() != null && e.getCause() instanceof NullPointerException,
+                    "NPE causing FormulaEvaluationException expected.");
+        }
+    }
+
+    @Test
+    public void testFilterErrorUpdate() {
+        final QueryTable table = testRefreshingTable(
+                i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3),
+                col("y", "a", "b", "c"));
+
+        final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+
+        Assert.eqFalse(table.isFailed(), "table.isFailed()");
+        Assert.eqFalse(whereResult.isFailed(), "whereResult.isFailed()");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(8), col("x", 5), col("y", (String) null));
+            table.notifyListeners(i(8), i(), i());
+        });
+
+        Assert.eqFalse(table.isFailed(), "table.isFailed()");
+
+        // The where result should have failed, because the filter expression is invalid for the new data.
+        Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
     }
 }
