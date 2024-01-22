@@ -97,6 +97,7 @@ public class ReplicateSourcesAndChunks {
 
         replicateFactories();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/util/pools/CharChunkPool.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/util/pools/CharChunkSoftPool.java");
 
         replicateChunkFillers();
 
