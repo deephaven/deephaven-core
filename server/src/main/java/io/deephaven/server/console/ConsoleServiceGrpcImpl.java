@@ -7,13 +7,13 @@ import com.google.common.base.Throwables;
 import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -284,13 +284,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             exportBuilder.submit(() -> {
-                ScriptSession scriptSession =
-                        exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
+                QueryScope queryScope = exportedConsole != null ? exportedConsole.get().getQueryScope()
+                        : ExecutionContext.getContext().getQueryScope();
+
                 Table table = exportedTable.get();
-                scriptSession.setVariable(request.getVariableName(), table);
-                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
-                    scriptSession.manage(table);
-                }
+                queryScope.putParam(request.getVariableName(), table);
                 responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
                 responseObserver.onCompleted();
             });
@@ -310,7 +308,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 final ScriptSession scriptSession = scriptSessionProvider.get();
                 scriptSession.evaluateScript(
                         "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
+                settings[0] = scriptSession.getQueryScope().readParamValue("jedi_settings");
             } catch (Exception err) {
                 if (!ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE.getAndSet(true)) {
                     log.error().append("Autocomplete package not found; disabling autocomplete.").endl();

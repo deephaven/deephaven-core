@@ -1,8 +1,8 @@
 package io.deephaven.server.console.completer;
 
 import com.google.rpc.Code;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.completion.ChunkerCompleter;
@@ -172,7 +172,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
             SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
             StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
-        final VariableProvider vars = scriptSession.getVariableProvider();
+        final QueryScope vars = scriptSession.getQueryScope();
         final VersionedTextDocumentIdentifier doc = request.getTextDocument();
         final CompletionLookups h = CompletionLookups.preload(scriptSession, customCompletionFactory);
         // The only stateful part of a completer is the CompletionLookups, which are already
