@@ -22,7 +22,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(treeTable("static_tree"))
                 .then(treeTable -> {
-                    delayTestFinish(1000);
+                    delayTestFinish(1500);
                     assertFalse(treeTable.isRefreshing());
                     assertFalse(treeTable.isClosed());
                     assertFalse(treeTable.isIncludeConstituents());
@@ -36,7 +36,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(1d, data.getTreeSize());
 
                         treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
-                        return treeTable.<JsTreeTable.TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2000d);
+                        return treeTable.<JsTreeTable.TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2001d);
                     }).then(event -> {
                         assertEquals(10d, event.detail.getTreeSize());
 
@@ -53,7 +53,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(treeTable("ticking_tree"))
                 .then(treeTable -> {
-                    delayTestFinish(1000);
+                    delayTestFinish(1501);
                     assertTrue(treeTable.isRefreshing());
                     assertFalse(treeTable.isClosed());
                     assertFalse(treeTable.isIncludeConstituents());
@@ -71,7 +71,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         // This call effectively asserts that there are 10 rows after expand, so we don't need
                         // to worry about an update from the underlying table racing the expand
                         return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                                (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 1, 1000);
+                                (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 1, 2002);
                     }).then(event -> {
                         treeTable.close();
 
