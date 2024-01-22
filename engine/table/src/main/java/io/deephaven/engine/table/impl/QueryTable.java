@@ -983,34 +983,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         @ReferentialIntegrity
         private Runnable delayedErrorReference;
 
-        private static final class DelayedErrorNotifier implements Runnable {
-
-            private final Throwable error;
-            private final UpdateGraph updateGraph;
-            private final WeakReference<BaseTable<?>> tableReference;
-
-            private DelayedErrorNotifier(@NotNull final Throwable error,
-                    @NotNull final BaseTable<?> table) {
-                this.error = error;
-                updateGraph = table.getUpdateGraph();
-                tableReference = new WeakReference<>(table);
-                updateGraph.addSource(this);
-            }
-
-            @Override
-            public void run() {
-                updateGraph.removeSource(this);
-
-                final BaseTable<?> table = tableReference.get();
-                if (table == null) {
-                    return;
-                }
-
-                table.notifyListenersOnError(error, null);
-                table.forceReferenceCountToZero();
-            }
-        }
-
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
@@ -1185,9 +1157,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                 if (listener != null) {
                     listener.forceReferenceCountToZero();
                 }
-                delayedErrorReference = new DelayedErrorNotifier(e, this);
+                delayedErrorReference = new DelayedErrorNotifier(e, listener == null ? null : listener.entry, this);
             } else {
-                notifyListenersOnError(e, null);
+                notifyListenersOnError(e, listener == null ? null : listener.entry);
                 forceReferenceCountToZero();
             }
         }

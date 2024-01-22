@@ -138,45 +138,6 @@ abstract class AbstractFilterExecution {
     }
 
     /**
-     * Run the single filter specified by this AbstractFilterExecution and store the results in addedResult and
-     * modifyResult. Processes all rows in the added and modified inputs.
-     *
-     * @param filter the filter to execute
-     * @param addsToUse the added input to use for this filter
-     * @param modsToUse the modified input to use for this filter
-     * @param onComplete the routine to call after the filter has been successfully executed
-     * @param onError the routine to call if a filter raises an exception
-     */
-    private void doFilter(
-            final WhereFilter filter,
-            final RowSet addsToUse,
-            final RowSet modsToUse,
-            final FilterComplete onComplete,
-            final Consumer<Exception> onError) {
-        if (Thread.interrupted()) {
-            throw new CancellationException("interrupted while filtering");
-        }
-
-        try {
-            final RowSet adds;
-            final RowSet mods;
-            if (addsToUse != null) {
-                adds = filter.filter(addsToUse, sourceTable.getRowSet(), sourceTable, usePrev);
-            } else {
-                adds = null;
-            }
-            if (modsToUse != null) {
-                mods = filter.filter(modsToUse, sourceTable.getRowSet(), sourceTable, usePrev);
-            } else {
-                mods = null;
-            }
-            onComplete.accept(adds, mods);
-        } catch (Exception e) {
-            onError.accept(e);
-        }
-    }
-
-    /**
      * Run the filter specified by this AbstractFilterExecution in parallel
      *
      * @param filter the filter to execute
@@ -305,7 +266,9 @@ abstract class AbstractFilterExecution {
 
                     // Run serially or parallelized?
                     if (!shouldParallelizeFilter(filters[idx], updateSize)) {
-                        doFilter(filters[idx], addsToUse, modsToUse, onFilterComplete, nec);
+                        doFilter(filters[idx], addsToUse, 0, addsToUse == null ? 0 : addsToUse.size(),
+                                modsToUse, 0, modsToUse == null ? 0 : modsToUse.size(),
+                                onFilterComplete, nec);
                     } else {
                         doFilterParallel(filters[idx], addsToUse, modsToUse, onFilterComplete, nec);
                     }

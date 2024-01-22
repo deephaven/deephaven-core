@@ -10,16 +10,15 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,34 +51,6 @@ class WhereListener extends MergedListener {
 
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
-
-    private static final class DelayedErrorNotifier implements Runnable {
-
-        private final Throwable error;
-        private final UpdateGraph updateGraph;
-        private final WeakReference<BaseTable<?>> tableReference;
-
-        private DelayedErrorNotifier(@NotNull final Throwable error,
-                @NotNull final BaseTable<?> table) {
-            this.error = error;
-            updateGraph = table.getUpdateGraph();
-            tableReference = new WeakReference<>(table);
-            updateGraph.addSource(this);
-        }
-
-        @Override
-        public void run() {
-            updateGraph.removeSource(this);
-
-            final BaseTable<?> table = tableReference.get();
-            if (table == null) {
-                return;
-            }
-
-            table.notifyListenersOnError(error, null);
-            table.forceReferenceCountToZero();
-        }
-    }
 
     WhereListener(
             final Logger log,
@@ -220,9 +191,9 @@ class WhereListener extends MergedListener {
         // Notify listeners that we had an issue refreshing the table.
         if (result.getLastNotificationStep() == result.updateGraph.clock().currentStep()) {
             forceReferenceCountToZero();
-            delayedErrorReference = new DelayedErrorNotifier(e, result);
+            delayedErrorReference = new DelayedErrorNotifier(e, entry, result);
         } else {
-            result.notifyListenersOnError(e, null);
+            result.notifyListenersOnError(e, entry);
             forceReferenceCountToZero();
         }
     }
