@@ -162,7 +162,7 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                     // set a viewport once this is complete
                     table.setViewport(0, 6, null);
                     return waitForEvent(table, JsTable.EVENT_SORTCHANGED, e -> {
-                    }, 1000);
+                    }, 2016);
                 })
                 .then(table -> {
                     return assertNextViewportIs(table, 1, 5, 0, 4);

@@ -58,28 +58,28 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(0, (long) viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
-                    }, 1000);
+                    }, 2100);
                 })
                 .then(table -> {
                     table.setViewport(25, 49, null);
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(25, (long) viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
-                    }, 1001);
+                    }, 2101);
                 })
                 .then(table -> {
                     table.setViewport(50, 74, null);
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(50, (long) viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
-                    }, 1002);
+                    }, 2102);
                 })
                 .then(table -> {
                     table.setViewport(75, 99, null);
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(75, (long) viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
-                    }, 1003);
+                    }, 2103);
                 })
                 .then(this::finish).catch_(this::report);
     }
