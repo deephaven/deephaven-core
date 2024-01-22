@@ -17,19 +17,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for short data.
  */
-public final class ResettableShortChunk<ATTR_UPPER extends Any>
+public class ResettableShortChunk<ATTR_UPPER extends Any>
         extends ShortChunk<ATTR_UPPER>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableShortChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getShortChunkPool().takeResettableShortChunk();
+            return MultiChunkPool.forThisThread().takeResettableShortChunk();
         }
         return new ResettableShortChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableShortChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableShortChunk<>();
+        return new ResettableShortChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableShortChunk(this);
+            }
+        };
     }
 
     private ResettableShortChunk(short[] data, int offset, int capacity) {
@@ -84,8 +89,5 @@ public final class ResettableShortChunk<ATTR_UPPER extends Any>
 
     @Override
     public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getShortChunkPool().giveResettableShortChunk(this);
-        }
     }
 }

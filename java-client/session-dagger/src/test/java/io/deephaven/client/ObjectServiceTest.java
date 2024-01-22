@@ -16,6 +16,7 @@ import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableObject;
 import io.deephaven.client.impl.TypedTicket;
 import io.deephaven.client.impl.UnknownObject;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableTools;
@@ -94,7 +95,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
     @Test
     public void fetchable() throws ExecutionException, InterruptedException, TimeoutException,
             InvalidProtocolBufferException, TableHandleException {
-        getScriptSession().setVariable("my_objects", myObjects());
+        ExecutionContext.getContext().getQueryScope().putParam("my_objects", myObjects());
         final TypedTicket tt = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         try (
                 final Fetchable fetchable = session.fetchable(tt).get(5, TimeUnit.SECONDS);
@@ -106,7 +107,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
     @Test
     public void fetch() throws ExecutionException, InterruptedException, TimeoutException,
             InvalidProtocolBufferException, TableHandleException {
-        getScriptSession().setVariable("my_objects", myObjects());
+        ExecutionContext.getContext().getQueryScope().putParam("my_objects", myObjects());
         final TypedTicket tt = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         try (final ServerData dataAndExports = session.fetch(tt).get(5, TimeUnit.SECONDS)) {
             checkMyObject(dataAndExports);
@@ -115,9 +116,8 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
 
     @Test
     public void bidirectional() throws InterruptedException, ExecutionException, TimeoutException {
-        final ScriptSession scriptSession = getScriptSession();
-        scriptSession.setVariable("my_echo", EchoObjectType.INSTANCE);
-        scriptSession.setVariable("my_objects", myObjects());
+        ExecutionContext.getContext().getQueryScope().putParam("my_echo", EchoObjectType.INSTANCE);
+        ExecutionContext.getContext().getQueryScope().putParam("my_objects", myObjects());
         final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, new ScopeId("my_echo"));
         final TypedTicket myObjects = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         try (
@@ -131,9 +131,8 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
 
     @Test
     public void messageStream() throws InterruptedException {
-        final ScriptSession scriptSession = getScriptSession();
-        scriptSession.setVariable("my_echo", EchoObjectType.INSTANCE);
-        scriptSession.setVariable("my_objects", myObjects());
+        ExecutionContext.getContext().getQueryScope().putParam("my_echo", EchoObjectType.INSTANCE);
+        ExecutionContext.getContext().getQueryScope().putParam("my_objects", myObjects());
         final TypedTicket echo = new TypedTicket(EchoObjectType.NAME, new ScopeId("my_echo"));
         final TypedTicket myObjects = new TypedTicket(MyObjectsObjectType.NAME, new ScopeId("my_objects"));
         final EchoHandler echoHandler = new EchoHandler();
