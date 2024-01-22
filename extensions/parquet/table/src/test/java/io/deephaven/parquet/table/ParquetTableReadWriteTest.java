@@ -6,6 +6,7 @@ package io.deephaven.parquet.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
@@ -55,6 +56,7 @@ import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -114,6 +116,9 @@ public final class ParquetTableReadWriteTest {
 
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
     private static final ParquetInstructions REFRESHING = ParquetInstructions.builder().setIsRefreshing(true).build();
+
+    private static final boolean ENABLE_S3_TESTING =
+            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
     private static File rootFile;
 
@@ -573,201 +578,8 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readRefParquetFileFromS3Test() {
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .awsRegionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .connectionTimeout(Duration.ofSeconds(1))
-                .readTimeout(Duration.ofSeconds(60))
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-
-        final Table fromAws1 = ParquetTools.readSingleFileTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                readInstructions, tableDefinition).head(5).select();
-        final Table fromDisk1 = ParquetTools.readSingleFileTable(
-                new File(
-                        "/Users/shivammalhotra/Documents/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet"),
-                ParquetTools.SNAPPY,
-                tableDefinition).head(5).select();
-        assertTableEquals(fromAws1, fromDisk1);
-
-        final Table fromAws2 = ParquetTools.readSingleFileTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions, tableDefinition).head(5).select();
-        final Table fromDisk2 = ParquetTools.readSingleFileTable(
-                new File(
-                        "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
-                ParquetTools.SNAPPY,
-                tableDefinition).head(5).select();
-        assertTableEquals(fromAws2, fromDisk2);
-    }
-
-    @Test
-    public void readLongParquetFileFromS3Test() {
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .awsRegionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .connectionTimeout(Duration.ofSeconds(1))
-                .readTimeout(Duration.ofSeconds(60))
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-
-        final Table fromAws1 = ParquetTools.readSingleFileTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions, tableDefinition).select();
-        final Table fromDisk1 = ParquetTools.readSingleFileTable(
-                new File(
-                        "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
-                ParquetTools.SNAPPY,
-                tableDefinition).select();
-        assertTableEquals(fromAws1, fromDisk1);
-    }
-
-    @Test
-    public void readRefParquetFileLocally() {
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-        final Table fromAws1 =
-                ParquetTools.readSingleFileTable(
-                        new File(
-                                "/Users/shivammalhotra/Documents/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet"),
-                        ParquetTools.SNAPPY,
-                        tableDefinition).head(5).select();
-    }
-
-    @Test
-    public void profileReadingFromS3() {
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .awsRegionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofMinutes(5))
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-
-        long totalTime = 0;
-        long NUM_RUNS = 1;
-        for (int i = 0; i < NUM_RUNS; i++) {
-            final long start = System.nanoTime();
-            ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
-            final long end = System.nanoTime();
-            totalTime += end - start;
-            System.out.println((i + 1) + ". Execution time AWS is " + (end - start) / 1000_000_000.0 + " sec");
-        }
-        System.out.println("Average execution time AWS is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
-
-        final S3Instructions s3Instructions2 = S3Instructions.builder()
-                .awsRegionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofMinutes(5))
-                .build();
-        final ParquetInstructions readInstructions2 = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions2)
-                .build();
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-
-        totalTime = 0;
-        for (int i = 0; i < NUM_RUNS; i++) {
-            final long start = System.nanoTime();
-            ParquetTools.readSingleFileTable(
-                    "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                    readInstructions2, tableDefinition).head(5).select();
-            final long end = System.nanoTime();
-            totalTime += end - start;
-            System.out.println((i + 1) + ". Execution time AWS is " + (end - start) / 1000_000_000.0 + " sec");
-        }
-        System.out.println("Average execution time AWS is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
-
-        NUM_RUNS = 100;
-        totalTime = 0;
-        for (int i = 0; i < NUM_RUNS; i++) {
-            final long start = System.nanoTime();
-            ParquetTools.readTable("/Users/shivammalhotra/documents/multiColFile.parquet").select();
-            final long end = System.nanoTime();
-            totalTime += end - start;
-            // System.out.println((i + 1) + ". Execution time local is " + (end - start) / 1000_000_000.0 + " sec");
-        }
-        System.out.println("Average execution time local is " + totalTime / (NUM_RUNS * 1000_000_000.0) + " sec");
-    }
-
-    @Test
-    public void readParquetFileFromS3Test() {
+    public void readSampleParquetFilesFromS3Test1() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .awsRegionName("us-east-1")
                 .readAheadCount(1)
@@ -800,6 +612,47 @@ public final class ParquetTableReadWriteTest {
                         .select().sumBy();
         final Table dhTable4 = TableTools.emptyTable(5).update("A=(int)i").sumBy();
         assertTableEquals(fromAws4, dhTable4);
+    }
+
+    @Test
+    public void readSampleParquetFilesFromS3Test2() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .awsRegionName("us-east-2")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .connectionTimeout(Duration.ofSeconds(1))
+                .readTimeout(Duration.ofSeconds(60))
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("hash"),
+                ColumnDefinition.ofLong("version"),
+                ColumnDefinition.ofLong("size"),
+                ColumnDefinition.ofString("block_hash"),
+                ColumnDefinition.ofLong("block_number"),
+                ColumnDefinition.ofLong("index"),
+                ColumnDefinition.ofLong("virtual_size"),
+                ColumnDefinition.ofLong("lock_time"),
+                ColumnDefinition.ofLong("input_count"),
+                ColumnDefinition.ofLong("output_count"),
+                ColumnDefinition.ofBoolean("isCoinbase"),
+                ColumnDefinition.ofDouble("output_value"),
+                ColumnDefinition.ofTime("last_modified"),
+                ColumnDefinition.ofDouble("input_value"));
+
+        // Reading just the first 5 rows to keep the test brief
+        ParquetTools.readSingleFileTable(
+                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
+                readInstructions, tableDefinition).select();
+
+        ParquetTools.readSingleFileTable(
+                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
+                readInstructions, tableDefinition).select();
     }
 
     @Test

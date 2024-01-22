@@ -143,18 +143,21 @@ final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChanne
     private long size;
     private int numFragmentsInObject;
 
+    /**
+     * The {@link SeekableChannelContext} object used to cache read-ahead buffers for efficiently reading from S3. This
+     * is set before the read and cleared when closing the channel.
+     */
     private SeekableChannelContext channelContext;
 
     private long position;
 
-    S3SeekableByteChannel(@NotNull final SeekableChannelContext channelContext, @NotNull final URI uri,
-            @NotNull final S3AsyncClient s3AsyncClient, final S3Instructions s3Instructions) {
+    S3SeekableByteChannel(@NotNull final URI uri, @NotNull final S3AsyncClient s3AsyncClient,
+            @NotNull final S3Instructions s3Instructions) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         this.bucket = s3Uri.bucket().orElse(null);
         this.key = s3Uri.key().orElse(null);
         this.s3AsyncClient = s3AsyncClient;
         this.s3Instructions = s3Instructions;
-        this.channelContext = channelContext;
         this.size = UNINITIALIZED_SIZE;
         this.position = 0;
     }

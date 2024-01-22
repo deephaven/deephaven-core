@@ -38,7 +38,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
-        return new S3SeekableByteChannel(channelContext, uri, s3AsyncClient, s3Instructions);
+        // context is unused here, will be set before reading from the channel
+        return new S3SeekableByteChannel(uri, s3AsyncClient, s3Instructions);
     }
 
     @Override

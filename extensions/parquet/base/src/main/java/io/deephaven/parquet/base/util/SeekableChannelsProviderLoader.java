@@ -30,6 +30,10 @@ public final class SeekableChannelsProviderLoader {
 
     private SeekableChannelsProviderLoader() {
         providers = new ArrayList<>();
+        // Load the plugins
+        for (final SeekableChannelsProviderPlugin plugin : ServiceLoader.load(SeekableChannelsProviderPlugin.class)) {
+            providers.add(plugin);
+        }
     }
 
     /**
@@ -42,13 +46,6 @@ public final class SeekableChannelsProviderLoader {
      * @return A {@link SeekableChannelsProvider} for the given URI.
      */
     public SeekableChannelsProvider fromServiceLoader(@NotNull final URI uri, @Nullable final Object object) {
-        if (providers.isEmpty()) {
-            // Load the plugins
-            for (final SeekableChannelsProviderPlugin plugin : ServiceLoader
-                    .load(SeekableChannelsProviderPlugin.class)) {
-                providers.add(plugin);
-            }
-        }
         for (final SeekableChannelsProviderPlugin plugin : providers) {
             if (plugin.isCompatible(uri, object)) {
                 return plugin.createProvider(uri, object);
