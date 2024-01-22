@@ -1070,6 +1070,7 @@ public abstract class QueryTableWhereTest {
 
         try {
             final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+            Assert.statementNeverExecuted("Expected exception not thrown.");
         } catch (Exception e) {
             Assert.eqTrue(e instanceof FormulaEvaluationException
                     && e.getCause() != null && e.getCause() instanceof NullPointerException,
