@@ -6,6 +6,7 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -84,7 +86,13 @@ abstract class AbstractFilterExecution {
      */
     @FunctionalInterface
     public interface FilterComplete {
-        void accept(RowSet adds, RowSet mods);
+        /**
+         * Called when a filter has been completed successfully.
+         *
+         * @param adds the added rows resulting from the filter
+         * @param mods the modified rows resulting from the filter
+         */
+        void accept(@NotNull WritableRowSet adds, @NotNull WritableRowSet mods);
     }
 
     /**
@@ -96,36 +104,36 @@ abstract class AbstractFilterExecution {
      * @param addStart the start position in the added input
      * @param addEnd the end position in the added input (exclusive)
      * @param modsToUse the modified input to use for this filter
-     * @param modifiedStart the start position in the modified input
-     * @param modifiedEnd the end position in the modified input (exclusive)
+     * @param modStart the start position in the modified input
+     * @param modEnd the end position in the modified input (exclusive)
      * @param onComplete the routine to call after the filter has been successfully executed
      * @param onError the routine to call if a filter raises an exception
      */
     private void doFilter(
             final WhereFilter filter,
-            final RowSet addsToUse,
+            final WritableRowSet addsToUse,
             final long addStart,
             final long addEnd,
-            final RowSet modsToUse,
-            final long modifiedStart,
-            final long modifiedEnd,
-            final FilterComplete onComplete,
+            final WritableRowSet modsToUse,
+            final long modStart,
+            final long modEnd,
+            final BiConsumer<WritableRowSet, WritableRowSet> onComplete,
             final Consumer<Exception> onError) {
         if (Thread.interrupted()) {
             throw new CancellationException("interrupted while filtering");
         }
         try {
-            final RowSet adds;
-            final RowSet mods;
-            if (addsToUse != null) {
+            final WritableRowSet adds;
+            final WritableRowSet mods;
+            if (addsToUse != null && addStart < addEnd) {
                 try (final RowSet processAdds = addsToUse.subSetByPositionRange(addStart, addEnd)) {
                     adds = filter.filter(processAdds, sourceTable.getRowSet(), sourceTable, usePrev);
                 }
             } else {
                 adds = null;
             }
-            if (modsToUse != null) {
-                try (final RowSet processMods = modsToUse.subSetByPositionRange(modifiedStart, modifiedEnd)) {
+            if (modsToUse != null && modStart < modEnd) {
+                try (final RowSet processMods = modsToUse.subSetByPositionRange(modStart, modEnd)) {
                     mods = filter.filter(processMods, sourceTable.getRowSet(), sourceTable, usePrev);
                 }
             } else {
@@ -148,9 +156,9 @@ abstract class AbstractFilterExecution {
      */
     private void doFilterParallel(
             final WhereFilter filter,
-            final RowSet addedInputToUse,
-            final RowSet modifiedInputToUse,
-            final FilterComplete onComplete,
+            final WritableRowSet addedInputToUse,
+            final WritableRowSet modifiedInputToUse,
+            final BiConsumer<WritableRowSet, WritableRowSet> onComplete,
             final Consumer<Exception> onError) {
         if (Thread.interrupted()) {
             throw new CancellationException("interrupted while filtering");
@@ -164,8 +172,8 @@ abstract class AbstractFilterExecution {
                 QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT - 1) / QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
         final long targetSize = (updateSize + targetSegments - 1) / targetSegments;
 
-        final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-        final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+        final RowSetBuilderRandom addedBuilder = addSize <= 0 ? null : RowSetFactory.builderRandom();
+        final RowSetBuilderRandom modifiedBuilder = modifySize <= 0 ? null : RowSetFactory.builderRandom();
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
@@ -176,16 +184,16 @@ abstract class AbstractFilterExecution {
                     final long startOffSet = idx * targetSize;
                     final long endOffset = startOffSet + targetSize;
 
-                    final FilterComplete onFilterComplete = (adds, mods) -> {
+                    final BiConsumer<WritableRowSet, WritableRowSet> onFilterComplete = (adds, mods) -> {
                         // Clean up the row sets created by the filter.
                         try (final RowSet ignored = adds;
                                 final RowSet ignored2 = mods) {
-                            if (adds != null) {
+                            if (addedBuilder != null) {
                                 synchronized (addedBuilder) {
                                     addedBuilder.addRowSet(adds);
                                 }
                             }
-                            if (mods != null) {
+                            if (modifiedBuilder != null) {
                                 synchronized (modifiedBuilder) {
                                     modifiedBuilder.addRowSet(mods);
                                 }
@@ -213,7 +221,9 @@ abstract class AbstractFilterExecution {
                                 modifiedInputToUse, startOffSet - addSize, endOffset - addSize,
                                 onFilterComplete, nec);
                     }
-                }, () -> onComplete.accept(addedBuilder.build(), modifiedBuilder.build()),
+                }, () -> onComplete.accept(
+                        addedBuilder == null ? null : addedBuilder.build(),
+                        modifiedBuilder == null ? null : modifiedBuilder.build()),
                 onError);
     }
 
@@ -233,10 +243,18 @@ abstract class AbstractFilterExecution {
             @NotNull final Consumer<Exception> onError) {
 
         // Start with the input row sets and narrow with each filter.
-        final MutableObject<RowSet> localAddInput =
-                new MutableObject<>(addedInput == null ? null : addedInput.copy());
-        final MutableObject<RowSet> localModInput =
-                new MutableObject<>(modifiedInput == null ? null : modifiedInput.copy());
+        final MutableObject<WritableRowSet> localAddInput = new MutableObject<>(
+                addedInput != null && addedInput.isNonempty()
+                        ? addedInput.copy()
+                        : null);
+        final MutableObject<WritableRowSet> localModInput = new MutableObject<>(
+                runModifiedFilters && modifiedInput != null && modifiedInput.isNonempty()
+                        ? modifiedInput.copy()
+                        : null);
+        if (localAddInput.getValue() == null && localModInput.getValue() == null) {
+            onComplete.accept(RowSetFactory.empty(), RowSetFactory.empty());
+            return;
+        }
 
         // Iterate serially through the filters. Each filter will successively restrict the input to the next filter,
         // until we reach the end of the filter chain.
@@ -247,13 +265,13 @@ abstract class AbstractFilterExecution {
                 0, filters.length,
                 (context, idx, nec, resume) -> {
                     // Use the restricted output for the next filter (if this is not the first invocation)
-                    final RowSet addsToUse = localAddInput.getValue();
-                    final RowSet modsToUse = localModInput.getValue();
+                    final WritableRowSet addsToUse = localAddInput.getValue();
+                    final WritableRowSet modsToUse = localModInput.getValue();
 
-                    final long updateSize = (addsToUse == null ? 0 : addsToUse.size())
-                            + (modsToUse == null ? 0 : modsToUse.size());
+                    final long updateSize = (addsToUse != null ? addsToUse.size() : 0)
+                            + (modsToUse != null ? modsToUse.size() : 0);
 
-                    final FilterComplete onFilterComplete = (adds, mods) -> {
+                    final BiConsumer<WritableRowSet, WritableRowSet> onFilterComplete = (adds, mods) -> {
                         // Clean up the row sets created by the filter.
                         try (final RowSet ignored = localAddInput.getValue();
                                 final RowSet ignored2 = localModInput.getValue()) {
@@ -266,7 +284,8 @@ abstract class AbstractFilterExecution {
 
                     // Run serially or parallelized?
                     if (!shouldParallelizeFilter(filters[idx], updateSize)) {
-                        doFilter(filters[idx], addsToUse, 0, addsToUse == null ? 0 : addsToUse.size(),
+                        doFilter(filters[idx],
+                                addsToUse, 0, addsToUse == null ? 0 : addsToUse.size(),
                                 modsToUse, 0, modsToUse == null ? 0 : modsToUse.size(),
                                 onFilterComplete, nec);
                     } else {
@@ -274,10 +293,10 @@ abstract class AbstractFilterExecution {
                     }
                 }, () -> {
                     // Return empty RowSets instead of null.
-                    final RowSet addedResult = localAddInput.getValue() == null
+                    final WritableRowSet addedResult = localAddInput.getValue() == null
                             ? RowSetFactory.empty()
                             : localAddInput.getValue();
-                    final RowSet modifiedResult = localModInput.getValue() == null
+                    final WritableRowSet modifiedResult = localModInput.getValue() == null
                             ? RowSetFactory.empty()
                             : localModInput.getValue();
                     final BasePerformanceEntry baseEntry = jobScheduler().getAccumulatedPerformance();

@@ -14,8 +14,9 @@ import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
  * the {@link io.deephaven.engine.updategraph.OperationInitializer OperationInitializer}.
  */
 class InitialFilterExecution extends AbstractFilterExecution {
-    private final boolean permitParallelization;
+
     private final int segmentCount;
+    private final boolean permitParallelization;
 
     private final JobScheduler jobScheduler;
 
@@ -25,14 +26,16 @@ class InitialFilterExecution extends AbstractFilterExecution {
             final RowSet addedInput,
             final boolean usePrev) {
         super(sourceTable, filters, addedInput, null, usePrev, false, ModifiedColumnSet.ALL);
-        permitParallelization = permitParallelization(filters);
         segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0
                 ? ExecutionContext.getContext().getOperationInitializer().parallelismFactor()
                 : QueryTable.PARALLEL_WHERE_SEGMENTS;
+        permitParallelization = permitParallelization(filters)
+                && !QueryTable.DISABLE_PARALLEL_WHERE
+                && segmentCount > 1
+                && ExecutionContext.getContext().getOperationInitializer().canParallelize();
 
         // If any of the filters can be parallelized, we will use the OperationInitializerJobScheduler.
-        if (permitParallelization
-                && ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
+        if (permitParallelization) {
             jobScheduler = new OperationInitializerJobScheduler();
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
@@ -42,14 +45,6 @@ class InitialFilterExecution extends AbstractFilterExecution {
     @Override
     int getTargetSegments() {
         return segmentCount;
-    }
-
-    @Override
-    boolean shouldParallelizeFilter(WhereFilter filter, long numberOfRows) {
-        return permitParallelization
-                && filter.permitParallelization()
-                && !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
-                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
     }
 
     @Override
