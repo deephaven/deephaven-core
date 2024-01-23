@@ -4,7 +4,6 @@
 package io.deephaven.util.channel;
 
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

@@ -320,6 +320,9 @@ include(':application-mode')
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/util-immutables')
 
+include(':util-channel')
+project(':util-channel').projectDir = file('Util/channel')
+
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
 

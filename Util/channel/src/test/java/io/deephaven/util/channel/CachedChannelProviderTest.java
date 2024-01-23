@@ -5,8 +5,7 @@ package io.deephaven.util.channel;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -17,14 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class CachedChannelProviderTest {
 
     private final List<String> closed = new ArrayList<>();
-
-    @org.junit.After
-    public void tearDown() {
-        closed.clear();
-    }
 
     @Test
     public void testSimpleRead() throws IOException {
@@ -39,13 +38,13 @@ public class CachedChannelProviderTest {
             for (int jj = 0; jj < 10; ++jj) {
                 // Call read to hit the assertions inside the mock channel, which doesn't read anything
                 sameFile[jj].read(buffer);
-                Assert.assertEquals(buffer.remaining(), buffer.capacity());
+                assertEquals(buffer.remaining(), buffer.capacity());
                 sameFile[jj].close();
             }
         }
-        Assert.assertEquals(closed.size(), 900);
+        assertEquals(900, closed.size());
         for (int ii = 0; ii < 900; ++ii) {
-            Assert.assertTrue(closed.get(ii).endsWith("r" + ii / 10));
+            assertTrue(closed.get(ii).endsWith("r" + ii / 10));
         }
     }
 
@@ -59,8 +58,8 @@ public class CachedChannelProviderTest {
                             : cachedChannelProvider.getWriteChannel("w" + i, false));
             rc.close();
         }
-        Assert.assertEquals(closed.size(), 900);
-        Assert.assertTrue(closed.get(0).endsWith("r0"));
+        assertEquals(900, closed.size());
+        assertTrue(closed.get(0).endsWith("r0"));
     }
 
     @Test
@@ -74,9 +73,9 @@ public class CachedChannelProviderTest {
             rc.write(buffer);
             rc.close();
         }
-        Assert.assertEquals(closed.size(), 900);
+        assertEquals(900, closed.size());
         for (int i = 0; i < 900; i++) {
-            Assert.assertTrue(closed.get(i).endsWith("w" + (i)));
+            assertTrue(closed.get(i).endsWith("w" + (i)));
         }
     }
 
@@ -88,9 +87,9 @@ public class CachedChannelProviderTest {
             SeekableByteChannel rc = cachedChannelProvider.getWriteChannel("a" + i, true);
             rc.close();
         }
-        Assert.assertEquals(closed.size(), 900);
+        assertEquals(900, closed.size());
         for (int i = 0; i < 900; i++) {
-            Assert.assertTrue(closed.get(i).endsWith("a" + (i)));
+            assertTrue(closed.get(i).endsWith("a" + (i)));
         }
     }
 
@@ -107,10 +106,10 @@ public class CachedChannelProviderTest {
                 channels.get(49 - j).close();
             }
         }
-        Assert.assertEquals(closed.size(), 900);
+        assertEquals(900, closed.size());
         for (int i = 0; i < 1; i++) {
             for (int j = 0; j < 50; j++) {
-                Assert.assertTrue(closed.get(j + 50 * i).endsWith("r" + (50 * i + 49 - j)));
+                assertTrue(closed.get(j + 50 * i).endsWith("r" + (50 * i + 49 - j)));
             }
         }
     }
@@ -131,7 +130,7 @@ public class CachedChannelProviderTest {
         }
         for (int step = 0; step < 10; ++step) {
             for (int ci = 0; ci < someResult.length; ++ci) {
-                Assert.assertSame(someResult[ci],
+                assertSame(someResult[ci],
                         cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + ci));
                 // Call read to hit the assertions inside the mock channel, which doesn't read anything
                 someResult[ci].read(buffer);
@@ -140,7 +139,7 @@ public class CachedChannelProviderTest {
                 someResult[someResult.length - ci - 1].close();
             }
         }
-        Assert.assertEquals(closed.size(), 0);
+        assertEquals(0, closed.size());
     }
 
     @Test
@@ -160,14 +159,14 @@ public class CachedChannelProviderTest {
             final SeekableByteChannel[] reused = new SeekableByteChannel[100];
             for (int ri = 0; ri < 100; ++ri) {
                 SeekableByteChannel rc = cachedChannelProvider.getWriteChannel("w" + (ri / 10) % 10, false);
-                Assert.assertSame(rc, someResult[ri % 100]);
+                assertSame(rc, someResult[ri % 100]);
                 reused[ri] = rc;
             }
             for (int ri = 0; ri < 100; ++ri) {
                 reused[99 - ri].close();
             }
         }
-        Assert.assertEquals(closed.size(), 0);
+        assertEquals(0, closed.size());
     }
 
 
@@ -232,13 +231,13 @@ public class CachedChannelProviderTest {
 
         @Override
         public int read(ByteBuffer dst) {
-            Assert.assertTrue(channelContext instanceof TestChannelProvider.TestChannelContext);
+            assertTrue(channelContext instanceof TestChannelProvider.TestChannelContext);
             return 0;
         }
 
         @Override
         public int write(ByteBuffer src) {
-            Assert.assertNull(channelContext);
+            assertNull(channelContext);
             return 0;
         }
 
