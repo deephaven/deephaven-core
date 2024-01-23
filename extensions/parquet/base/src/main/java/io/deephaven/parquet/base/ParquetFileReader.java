@@ -54,6 +54,7 @@ public class ParquetFileReader {
             // Construct a new file URI for the parent directory
             rootURI = Path.of(parquetFileURI).getParent().toUri();
         } else {
+            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;
         }
         final byte[] footer;

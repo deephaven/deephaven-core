@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.verify.Assert;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -14,17 +15,24 @@ import java.util.concurrent.CompletableFuture;
 
 final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
 
-    private final int bufferSize;
-    private volatile CompletableFuture<ByteBuffer> cf;
+    private final BufferPool.BufferHolder bufferHolder;
+    private final ByteBuffer byteBuffer;
 
-    ByteBufferAsyncResponseTransformer(final int bufferSize) {
-        this.bufferSize = bufferSize;
+    private volatile boolean released;
+    private volatile CompletableFuture<ByteBuffer> currentFuture;
+
+    /**
+     * @param bufferHolder A {@link BufferPool.BufferHolder} that will provide a buffer to store the response bytes.
+     *        This will be {@link BufferPool.BufferHolder#close}d when {@link #release()} is called.
+     */
+    ByteBufferAsyncResponseTransformer(@NotNull final BufferPool.BufferHolder bufferHolder) {
+        this.bufferHolder = bufferHolder;
+        this.byteBuffer = bufferHolder.get();
     }
 
     @Override
     public CompletableFuture<ByteBuffer> prepare() {
-        cf = new CompletableFuture<>();
-        return cf;
+        return currentFuture = new CompletableFuture<>();
     }
 
     @Override
@@ -34,28 +42,43 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
 
     @Override
     public void onStream(final SdkPublisher<ByteBuffer> publisher) {
-        // This could be improved with the addition of a buffer pool or similar resource allocation sharing support
-        publisher.subscribe(new ByteBufferSubscriber(cf, ByteBuffer.allocate(bufferSize)));
+        publisher.subscribe(new ByteBufferSubscriber(currentFuture));
     }
 
     @Override
     public void exceptionOccurred(final Throwable throwable) {
-        cf.completeExceptionally(throwable);
+        currentFuture.completeExceptionally(throwable);
     }
 
-    private static final class ByteBufferSubscriber implements Subscriber<ByteBuffer> {
-        private final CompletableFuture<ByteBuffer> resultFuture;
-        private Subscription subscription;
-        private final ByteBuffer byteBuffer;
+    /**
+     * Prevent further mutation of the underlying buffer by this ByteBufferAsyncResponseTransformer and any of its
+     * Subscribers.
+     */
+    public synchronized void release() {
+        released = true;
+        bufferHolder.close();
+    }
 
-        ByteBufferSubscriber(final CompletableFuture<ByteBuffer> resultFuture, final ByteBuffer byteBuffer) {
+    private final class ByteBufferSubscriber implements Subscriber<ByteBuffer> {
+
+        private final CompletableFuture<ByteBuffer> resultFuture;
+        /**
+         * A duplicate of the underlying buffer used to store the response bytes without modifying the original reusable
+         * buffer.
+         */
+        private final ByteBuffer duplicate;
+
+        private Subscription subscription;
+
+        ByteBufferSubscriber(CompletableFuture<ByteBuffer> resultFuture) {
             this.resultFuture = resultFuture;
-            this.byteBuffer = byteBuffer;
+            this.duplicate = byteBuffer.duplicate();
         }
 
         @Override
         public void onSubscribe(final Subscription s) {
             if (subscription != null) {
+                // Only maintain the first successful subscription
                 s.cancel();
                 return;
             }
@@ -66,9 +89,17 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
         @Override
         public void onNext(final ByteBuffer responseBytes) {
             // Assuming responseBytes will fit in the buffer
-            Assert.assertion(responseBytes.remaining() <= byteBuffer.remaining(),
-                    "responseBytes.remaining() <= byteBuffer.remaining()");
-            byteBuffer.put(responseBytes);
+            Assert.assertion(responseBytes.remaining() <= duplicate.remaining(),
+                    "responseBytes.remaining() <= duplicate.remaining()");
+            if (released) {
+                return;
+            }
+            synchronized (ByteBufferAsyncResponseTransformer.this) {
+                if (released) {
+                    return;
+                }
+                duplicate.put(responseBytes);
+            }
             subscription.request(1);
         }
 
@@ -79,7 +110,7 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
 
         @Override
         public void onComplete() {
-            resultFuture.complete(byteBuffer.flip().asReadOnlyBuffer());
+            resultFuture.complete(byteBuffer.asReadOnlyBuffer().limit(duplicate.position()));
         }
     }
 }

@@ -117,6 +117,7 @@ public final class ParquetTableReadWriteTest {
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
     private static final ParquetInstructions REFRESHING = ParquetInstructions.builder().setIsRefreshing(true).build();
 
+    // TODO(deephaven-core#5064): Add support for local S3 testing
     private static final boolean ENABLE_S3_TESTING =
             Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
@@ -645,7 +646,6 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofTime("last_modified"),
                 ColumnDefinition.ofDouble("input_value"));
 
-        // Reading just the first 5 rows to keep the test brief
         ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
                 readInstructions, tableDefinition).select();

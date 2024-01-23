@@ -22,24 +22,28 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
+    private final BufferPool bufferPool;
 
-    S3SeekableChannelProvider(final S3Instructions s3Instructions) {
+    S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
                 .maxConcurrency(s3Instructions.maxConcurrentRequests())
                 .connectionTimeout(s3Instructions.connectionTimeout())
                 .build();
+        // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
+        // TODO(deephaven-core#5063): Add support for caching clients for re-use
         this.s3AsyncClient = S3AsyncClient.builder()
                 .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
                 .build();
         this.s3Instructions = s3Instructions;
+        this.bufferPool = new SegmentedBufferPool(s3Instructions.fragmentSize());
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
         // context is unused here, will be set before reading from the channel
-        return new S3SeekableByteChannel(uri, s3AsyncClient, s3Instructions);
+        return new S3SeekableByteChannel(uri, s3AsyncClient, s3Instructions, bufferPool);
     }
 
     @Override
