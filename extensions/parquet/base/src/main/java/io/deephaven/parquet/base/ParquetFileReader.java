@@ -4,8 +4,8 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.util.Helpers;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 
-import static io.deephaven.parquet.base.util.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
  * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,

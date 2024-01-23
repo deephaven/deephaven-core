@@ -3,7 +3,7 @@
  */
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.parquet.base.util.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;

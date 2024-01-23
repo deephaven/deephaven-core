@@ -5,7 +5,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;

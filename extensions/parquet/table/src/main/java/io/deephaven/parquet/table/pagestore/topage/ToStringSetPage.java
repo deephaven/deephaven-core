@@ -4,7 +4,7 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.stringset.LongBitmapStringSet;

@@ -6,8 +6,6 @@ plugins {
 description 'Used to create a channel provider plugin for reading and writing files stored in S3.'
 
 dependencies {
-    api project(':extensions-parquet-base')
-
     implementation project(':Base')
     implementation project(':Util')
 

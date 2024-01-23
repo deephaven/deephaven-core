@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.util.datastructures.LazyCachingSupplier;

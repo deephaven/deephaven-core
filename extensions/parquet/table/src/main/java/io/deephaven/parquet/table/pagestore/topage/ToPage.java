@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPageFactory;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.vector.VectorFactory;

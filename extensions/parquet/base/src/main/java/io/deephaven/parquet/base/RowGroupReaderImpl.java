@@ -3,8 +3,8 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.SeekableChannelContext;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.format.Util;

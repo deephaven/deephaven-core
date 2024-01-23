@@ -1,4 +1,4 @@
-package io.deephaven.parquet.base.util;
+package io.deephaven.util.channel;
 
 import io.deephaven.util.SafeCloseable;
 

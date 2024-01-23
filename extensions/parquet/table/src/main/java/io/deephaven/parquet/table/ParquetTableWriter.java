@@ -20,7 +20,7 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
-import io.deephaven.parquet.base.util.SeekableChannelsProviderLoader;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
@@ -45,7 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static io.deephaven.parquet.base.util.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
  * API for writing DH tables in parquet format

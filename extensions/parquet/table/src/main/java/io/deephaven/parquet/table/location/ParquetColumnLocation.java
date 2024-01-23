@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table.location;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
@@ -27,8 +26,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.table.*;
 import io.deephaven.parquet.table.metadata.CodecInfo;

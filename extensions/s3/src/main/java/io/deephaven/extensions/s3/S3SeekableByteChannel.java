@@ -6,8 +6,8 @@ package io.deephaven.extensions.s3;
 import io.deephaven.base.verify.Assert;
 import java.util.concurrent.CancellationException;
 
-import io.deephaven.parquet.base.util.SeekableChannelContext;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -4,8 +4,8 @@
 package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.base.util.SeekableChannelsProviderPlugin;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

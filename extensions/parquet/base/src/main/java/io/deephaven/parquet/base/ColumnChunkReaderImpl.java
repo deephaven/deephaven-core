@@ -4,8 +4,8 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import io.deephaven.util.datastructures.LazyCachingFunction;

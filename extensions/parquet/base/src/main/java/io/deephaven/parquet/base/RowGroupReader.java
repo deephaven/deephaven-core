@@ -3,7 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.format.RowGroup;
 import org.jetbrains.annotations.NotNull;
 

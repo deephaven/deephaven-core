@@ -8,8 +8,8 @@ import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
-import io.deephaven.parquet.base.util.SeekableChannelContext;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
