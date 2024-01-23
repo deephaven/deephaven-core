@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,6 +23,15 @@ import java.util.*;
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
  */
 public class CachedChannelProvider implements SeekableChannelsProvider {
+
+    public interface ContextHolder {
+        void setContext(SeekableChannelContext channelContext);
+
+        @FinalDefault
+        default void clearContext() {
+            setContext(null);
+        }
+    }
 
     private final SeekableChannelsProvider wrappedProvider;
     private final int maximumPooledCount;

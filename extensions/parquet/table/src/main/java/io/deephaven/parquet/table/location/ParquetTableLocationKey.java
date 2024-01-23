@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table.location;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;

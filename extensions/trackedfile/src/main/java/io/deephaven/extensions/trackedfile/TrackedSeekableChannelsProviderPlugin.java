@@ -33,7 +33,6 @@ public final class TrackedSeekableChannelsProviderPlugin implements SeekableChan
             }
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
-        // TODO I am confused which constructor should I use, this or getInstance()??
         return new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
     }
 }

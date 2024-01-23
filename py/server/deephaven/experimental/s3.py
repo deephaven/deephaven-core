@@ -30,8 +30,7 @@ class S3Instructions(JObjectWrapper):
         fragment_size (int): the maximum size of each fragment to read from S3, defaults to 5 MB. If there are fewer
             bytes remaining in the file, the fetched fragment can be smaller.
         max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 32. This
-            caching is done at deephaven layer using a modulo-based logic. For example, if the max cache size is 32,
-            fragment i will be cached in slot i % 32 and will stay there until it is evicted by a more recent fragment.
+            caching is done at deephaven layer for faster access of recently read fragments.
         connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
             the amount of time to wait when initially establishing a connection before giving up and timing out, can be
             expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other

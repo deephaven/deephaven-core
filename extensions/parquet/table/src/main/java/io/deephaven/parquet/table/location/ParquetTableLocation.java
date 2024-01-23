@@ -47,7 +47,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final Map<String, GroupingColumnInfo> groupingColumns;
     private final Map<String, ColumnTypeInfo> columnTypes;
     private final String version;
-    private final SeekableChannelContext channelContext;
 
     private volatile RowGroupReader[] rowGroupReaders;
 
@@ -63,9 +62,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             parquetMetadata = tableLocationKey.getMetadata();
             rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
-
-        // Use a common channelContext for creating all column chunk readers
-        channelContext = getChannelProvider().makeContext();
 
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
@@ -159,8 +155,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final List<String> nameList =
                 columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
         final ColumnChunkReader[] columnChunkReaders;
-        columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(nameList, channelContext)).toArray(ColumnChunkReader[]::new);
+        try (final SeekableChannelContext channelContext = getChannelProvider().makeContext()) {
+            columnChunkReaders = Arrays.stream(getRowGroupReaders())
+                    .map(rgr -> rgr.getColumnChunk(nameList, channelContext)).toArray(ColumnChunkReader[]::new);
+        }
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,

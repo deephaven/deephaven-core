@@ -6,8 +6,8 @@ package io.deephaven.extensions.s3;
 import io.deephaven.base.verify.Assert;
 import java.util.concurrent.CancellationException;
 
+import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.SeekableChannelContext;
-import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeoutException;
  * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability to
  * read ahead and cache fragments of the object.
  */
-final class S3SeekableByteChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
+final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelProvider.ContextHolder {
 
     private static final long CLOSED_SENTINEL = -1;
 

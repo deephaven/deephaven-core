@@ -213,7 +213,7 @@ public class CachedChannelProviderTest {
         public void close() {}
     }
 
-    private final class TestMockChannel implements SeekableByteChannel, SeekableChannelsProvider.ContextHolder {
+    private final class TestMockChannel implements SeekableByteChannel, CachedChannelProvider.ContextHolder {
 
         private final int id;
         private final String path;

@@ -48,7 +48,7 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
         private Subscription subscription;
         private final ByteBuffer byteBuffer;
 
-        ByteBufferSubscriber(CompletableFuture<ByteBuffer> resultFuture, ByteBuffer byteBuffer) {
+        ByteBufferSubscriber(final CompletableFuture<ByteBuffer> resultFuture, final ByteBuffer byteBuffer) {
             this.resultFuture = resultFuture;
             this.byteBuffer = byteBuffer;
         }

@@ -61,8 +61,7 @@ public abstract class S3Instructions {
 
     /**
      * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is
-     * done at deephaven layer using a modulo-based logic. For example, if the max cache size is 32,fragment {@code i}
-     * will be cached in slot {@code i % 32} and will stay there until it is evicted by a more recent fragment.
+     * done at deephaven layer for faster access of recently read fragments.
      */
     @Value.Default
     public int maxCacheSize() {

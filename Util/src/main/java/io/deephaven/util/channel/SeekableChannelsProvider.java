@@ -49,15 +49,6 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext);
 
-    interface ContextHolder {
-        void setContext(SeekableChannelContext channelContext);
-
-        @FinalDefault
-        default void clearContext() {
-            setContext(null);
-        }
-    }
-
     default SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull String uriStr)
             throws IOException {
         return getReadChannel(channelContext, convertToURI(uriStr));
