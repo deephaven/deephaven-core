@@ -140,7 +140,7 @@ public class TimeLiteralReplacedExpression {
                 instanceVariablesString.append("        private ZonedDateTime _zdt").append(zdtIndex)
                         .append("=DateTimeUtils.parseZonedDateTime(\"")
                         .append(expression, matcher.start() + 2, matcher.end() - 1).append("\");\n");
-                newVariables.put("_zdt" + zdtIndex, Instant.class);
+                newVariables.put("_zdt" + zdtIndex, ZonedDateTime.class);
                 zdtIndex++;
             } else {
                 throw new Exception(
