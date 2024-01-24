@@ -3886,8 +3886,9 @@ public class DateTimeUtils {
                 return epochNanosToInstant(nanos);
             }
 
-            if(s.startsWith("Z") || s.startsWith("z")) {
-                throw new RuntimeException("A 'Z' or 'z' prefix is not allowed for Instant parsing.  Use parseZonedDateTime instead.");
+            if (s.startsWith("Z") || s.startsWith("z")) {
+                throw new RuntimeException(
+                        "A 'Z' or 'z' prefix is not allowed for Instant parsing.  Use parseZonedDateTime instead.");
             }
 
             return parseZonedDateTime(s).toInstant();
