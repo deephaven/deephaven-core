@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -48,17 +49,14 @@ import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
-import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
-import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -982,6 +980,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
+        @ReferentialIntegrity
+        Runnable delayedErrorReference;
+
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
@@ -1066,9 +1067,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeFilterExecution(source.getRowSet().copy());
+                        listener.makeRefilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
-                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
+                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
@@ -1078,9 +1080,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                     unmatchedRows.insert(upstream.modified());
                 }
                 final RowSet unmatched = unmatchedRows.copy();
-                final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
-                filterExecution.scheduleCompletion(fe -> {
-                    final WritableRowSet newMapping = fe.addedResult;
+                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatched);
+                filterExecution.scheduleCompletion((adds, mods) -> {
+                    final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         if (upstream != null) {
@@ -1089,8 +1091,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         newMapping.insert(previouslyMatched);
                     }
-                    completeRefilterUpdate(listener, upstream, update, fe.addedResult);
-                });
+                    completeRefilterUpdate(listener, upstream, update, adds);
+                }, exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
@@ -1103,9 +1105,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final RowSet matchedClone = matchedRows.copy();
 
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeFilterExecution(matchedClone);
+                        listener.makeRefilterExecution(matchedClone);
                 filterExecution.scheduleCompletion(
-                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
+                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1141,11 +1144,24 @@ public class QueryTable extends BaseTable<QueryTable> {
             update.shifted = upstream == null ? RowSetShiftData.EMPTY : upstream.shifted();
 
             notifyListeners(update);
-            if (upstream != null) {
-                upstream.release();
-            }
 
-            listener.setFinalExecutionStep();
+            // Release the upstream update and set the final notification step.
+            listener.finalizeUpdate(upstream);
+        }
+
+        private void errorRefilterUpdate(final WhereListener listener, final Exception e, final TableUpdate upstream) {
+            // Notify listeners that we had an issue refreshing the table.
+            if (getLastNotificationStep() == updateGraph.clock().currentStep()) {
+                if (listener != null) {
+                    listener.forceReferenceCountToZero();
+                }
+                delayedErrorReference = new DelayedErrorNotifier(e, listener == null ? null : listener.entry, this);
+            } else {
+                notifyListenersOnError(e, listener == null ? null : listener.entry);
+                forceReferenceCountToZero();
+            }
+            // Release the upstream update and set the final notification step.
+            listener.finalizeUpdate(upstream);
         }
 
         private void setWhereListener(MergedListener whereListener) {
@@ -1226,41 +1242,18 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                     final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
                                             new CompletableFuture<>();
-                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
-                                            this, filters, rowSetToUse.copy(), 0, rowSetToUse.size(), null, 0,
-                                            usePrev) {
-                                        @Override
-                                        void handleUncaughtException(Exception throwable) {
-                                            currentMappingFuture.completeExceptionally(throwable);
-                                        }
-                                    };
-                                    final ExecutionContext executionContext = ExecutionContext.getContext();
-                                    initialFilterExecution.scheduleCompletion(x -> {
-                                        try (final SafeCloseable ignored = executionContext.open()) {
-                                            if (x.exceptionResult != null) {
-                                                currentMappingFuture.completeExceptionally(x.exceptionResult);
-                                            } else {
-                                                currentMappingFuture.complete(x.addedResult.toTracking());
-                                            }
-                                        }
-                                    });
 
-                                    boolean cancelled = false;
-                                    TrackingWritableRowSet currentMapping = null;
+                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
+                                            this, filters, rowSetToUse.copy(), usePrev);
+                                    final TrackingWritableRowSet currentMapping;
+                                    initialFilterExecution.scheduleCompletion((adds, mods) -> {
+                                        currentMappingFuture.complete(adds.writableCast().toTracking());
+                                    }, currentMappingFuture::completeExceptionally);
+
                                     try {
-                                        boolean done = false;
-                                        while (!done) {
-                                            try {
-                                                currentMapping = currentMappingFuture.get();
-                                                done = true;
-                                            } catch (InterruptedException e) {
-                                                // cancel the job and wait for it to finish cancelling
-                                                cancelled = true;
-                                                initialFilterExecution.setCancelled();
-                                            }
-                                        }
-                                    } catch (ExecutionException e) {
-                                        if (cancelled) {
+                                        currentMapping = currentMappingFuture.get();
+                                    } catch (ExecutionException | InterruptedException e) {
+                                        if (e instanceof InterruptedException) {
                                             throw new CancellationException("interrupted while filtering");
                                         } else if (e.getCause() instanceof RuntimeException) {
                                             throw (RuntimeException) e.getCause();
