@@ -1144,9 +1144,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             update.shifted = upstream == null ? RowSetShiftData.EMPTY : upstream.shifted();
 
             notifyListeners(update);
-            if (upstream != null) {
-                upstream.release();
-            }
+
             // Release the upstream update and set the final notification step.
             listener.finalizeUpdate(upstream);
         }
