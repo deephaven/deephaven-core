@@ -117,7 +117,7 @@ class WhereListener extends MergedListener {
         // we should not get here if the recorder is null and we did not request a refilter
         Assert.neqNull(recorder, "recorder");
 
-        final ListenerFilterExecution result = makeRefilterExecution();
+        final ListenerFilterExecution result = makeUpdateFilterExecution();
         final TableUpdate upstream = recorder.getUpdate().acquire();
         result.scheduleCompletion(
                 (adds, mods) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, adds,
@@ -238,7 +238,7 @@ class WhereListener extends MergedListener {
         return new ListenerFilterExecution(refilter, null, false, ModifiedColumnSet.ALL);
     }
 
-    ListenerFilterExecution makeRefilterExecution() {
+    ListenerFilterExecution makeUpdateFilterExecution() {
         final ModifiedColumnSet sourceModColumns = getSourceModifiedColumnSet();
         final boolean runModifiedFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
         return new ListenerFilterExecution(recorder.getAdded(), recorder.getModified(),
