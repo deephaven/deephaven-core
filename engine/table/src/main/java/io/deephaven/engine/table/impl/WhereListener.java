@@ -17,8 +17,10 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,8 +50,8 @@ class WhereListener extends MergedListener {
     private volatile long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
-    @ReferentialIntegrity
-    private Runnable delayedErrorReference;
+    private static final AtomicLongFieldUpdater<WhereListener> FINAL_NOTIFICATION_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(WhereListener.class, "finalNotificationStep");
 
     WhereListener(
             final Logger log,
@@ -115,12 +117,12 @@ class WhereListener extends MergedListener {
         // we should not get here if the recorder is null and we did not request a refilter
         Assert.neqNull(recorder, "recorder");
 
-        final ListenerFilterExecution result = makeFilterExecution();
+        final ListenerFilterExecution result = makeRefilterExecution();
         final TableUpdate upstream = recorder.getUpdate().acquire();
         result.scheduleCompletion(
                 (adds, mods) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, adds,
                         mods),
-                this::errorUpdate);
+                exception -> errorUpdate(exception, upstream));
     }
 
     private ModifiedColumnSet getSourceModifiedColumnSet() {
@@ -186,19 +188,31 @@ class WhereListener extends MergedListener {
 
         result.notifyListeners(update);
 
-        upstream.release();
-
-        setFinalExecutionStep();
+        // Release the upstream update and set the final notification step.
+        finalizeUpdate(upstream);
     }
 
-    private void errorUpdate(final Exception e) {
+    private void errorUpdate(final Exception e, final TableUpdate upstream) {
         // Notify listeners that we had an issue refreshing the table.
         if (result.getLastNotificationStep() == result.updateGraph.clock().currentStep()) {
             forceReferenceCountToZero();
-            delayedErrorReference = new DelayedErrorNotifier(e, entry, result);
+            result.delayedErrorReference = new DelayedErrorNotifier(e, entry, result);
         } else {
             result.notifyListenersOnError(e, entry);
             forceReferenceCountToZero();
+        }
+
+        // Release the upstream update and set the final notification step.
+        finalizeUpdate(upstream);
+    }
+
+    void finalizeUpdate(@Nullable final TableUpdate upstream) {
+        final long oldStep = FINAL_NOTIFICATION_STEP_UPDATER.get(this);
+        final long step = getUpdateGraph().clock().currentStep();
+        if (oldStep < step && FINAL_NOTIFICATION_STEP_UPDATER.compareAndSet(this, oldStep, step)) {
+            if (upstream != null) {
+                upstream.release();
+            }
         }
     }
 
@@ -220,15 +234,11 @@ class WhereListener extends MergedListener {
         return false;
     }
 
-    ListenerFilterExecution makeFilterExecution(final RowSet refilter) {
+    ListenerFilterExecution makeRefilterExecution(final RowSet refilter) {
         return new ListenerFilterExecution(refilter, null, false, ModifiedColumnSet.ALL);
     }
 
-    void setFinalExecutionStep() {
-        finalNotificationStep = getUpdateGraph().clock().currentStep();
-    }
-
-    ListenerFilterExecution makeFilterExecution() {
+    ListenerFilterExecution makeRefilterExecution() {
         final ModifiedColumnSet sourceModColumns = getSourceModifiedColumnSet();
         final boolean runModifiedFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
         return new ListenerFilterExecution(recorder.getAdded(), recorder.getModified(),
@@ -257,6 +267,12 @@ class WhereListener extends MergedListener {
         @Override
         JobScheduler jobScheduler() {
             return jobScheduler;
+        }
+
+
+        @Override
+        boolean permitParallelization() {
+            return permitParallelization;
         }
 
         @Override

@@ -52,6 +52,11 @@ class InitialFilterExecution extends AbstractFilterExecution {
         return jobScheduler;
     }
 
+    @Override
+    boolean permitParallelization() {
+        return permitParallelization;
+    }
+
     BasePerformanceEntry getBasePerformanceEntry() {
         return basePerformanceEntry;
     }

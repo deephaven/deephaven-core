@@ -981,7 +981,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         private MergedListener whereListener;
 
         @ReferentialIntegrity
-        private Runnable delayedErrorReference;
+        Runnable delayedErrorReference;
 
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
@@ -1067,10 +1067,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeFilterExecution(source.getRowSet().copy());
+                        listener.makeRefilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
                         (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
-                        exception -> errorRefilterUpdate(listener, exception));
+                        exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
@@ -1080,7 +1080,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     unmatchedRows.insert(upstream.modified());
                 }
                 final RowSet unmatched = unmatchedRows.copy();
-                final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
+                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatched);
                 filterExecution.scheduleCompletion((adds, mods) -> {
                     final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
@@ -1092,7 +1092,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         newMapping.insert(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
-                }, exception -> errorRefilterUpdate(listener, exception));
+                }, exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
@@ -1105,10 +1105,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final RowSet matchedClone = matchedRows.copy();
 
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeFilterExecution(matchedClone);
+                        listener.makeRefilterExecution(matchedClone);
                 filterExecution.scheduleCompletion(
                         (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
-                        exception -> errorRefilterUpdate(listener, exception));
+                        exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1147,11 +1147,11 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (upstream != null) {
                 upstream.release();
             }
-
-            listener.setFinalExecutionStep();
+            // Release the upstream update and set the final notification step.
+            listener.finalizeUpdate(upstream);
         }
 
-        private void errorRefilterUpdate(final WhereListener listener, final Exception e) {
+        private void errorRefilterUpdate(final WhereListener listener, final Exception e, final TableUpdate upstream) {
             // Notify listeners that we had an issue refreshing the table.
             if (getLastNotificationStep() == updateGraph.clock().currentStep()) {
                 if (listener != null) {
@@ -1162,6 +1162,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 notifyListenersOnError(e, listener == null ? null : listener.entry);
                 forceReferenceCountToZero();
             }
+            // Release the upstream update and set the final notification step.
+            listener.finalizeUpdate(upstream);
         }
 
         private void setWhereListener(MergedListener whereListener) {

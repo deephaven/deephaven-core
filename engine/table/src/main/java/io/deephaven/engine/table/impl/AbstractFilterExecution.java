@@ -313,9 +313,19 @@ abstract class AbstractFilterExecution {
     abstract int getTargetSegments();
 
     /**
+     * Should this operation be allowed to run parallelized?
+     */
+    abstract boolean permitParallelization();
+
+    /**
      * Should a filter of the given size be parallelized or executed within this thread?
      */
-    abstract boolean shouldParallelizeFilter(WhereFilter filter, long numberOfRows);
+    boolean shouldParallelizeFilter(WhereFilter filter, long numberOfRows) {
+        return permitParallelization()
+                && numberOfRows != 0
+                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT)
+                && filter.permitParallelization();
+    }
 
     /**
      * Should parallelization be allowed for this operation.
