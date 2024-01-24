@@ -28,11 +28,11 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         TestCase.assertEquals("_zdt0", tlre.getConvertedFormula());
 
         final HashMap<String, Class<?>> newVars = new HashMap<>();
-        newVars.put("_zdt0", Instant.class);
+        newVars.put("_zdt0", ZonedDateTime.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
         TestCase.assertEquals(
-                "        private ZonedDateTime _zdt0=DateTimeUtils.parseZonedDateTime(\"2010-01-01T12:34:56.891 NY\");\n",
+                "        private ZonedDateTime _zdt0=DateTimeUtils.parseZonedDateTime(\"Z2010-01-01T12:34:56.891 NY\");\n",
                 tlre.getInstanceVariablesString());
     }
 
