@@ -186,7 +186,7 @@ abstract class AbstractFilterExecution {
                     final BiConsumer<WritableRowSet, WritableRowSet> onFilterComplete = (adds, mods) -> {
                         // Clean up the row sets created by the filter.
                         try (final RowSet ignored = adds;
-                             final RowSet ignored2 = mods) {
+                                final RowSet ignored2 = mods) {
                             if (addedResult != null) {
                                 synchronized (addedResult) {
                                     addedResult.insert(adds);
@@ -270,7 +270,7 @@ abstract class AbstractFilterExecution {
                     final BiConsumer<WritableRowSet, WritableRowSet> onFilterComplete = (adds, mods) -> {
                         // Clean up the row sets created by the filter.
                         try (final RowSet ignored = localAddInput.getValue();
-                             final RowSet ignored2 = localModInput.getValue()) {
+                                final RowSet ignored2 = localModInput.getValue()) {
                             // Store the output as the next filter input.
                             localAddInput.setValue(adds);
                             localModInput.setValue(mods);
