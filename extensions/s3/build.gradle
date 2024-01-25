@@ -10,6 +10,7 @@ dependencies {
 
     implementation project(':Base')
     implementation project(':Util')
+    implementation project(':Configuration')
 
     implementation platform('software.amazon.awssdk:bom:2.21.43')
     implementation 'software.amazon.awssdk:s3'

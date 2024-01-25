@@ -15,16 +15,23 @@ import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 
+import static io.deephaven.extensions.s3.S3Instructions.MAX_FRAGMENT_SIZE;
+
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from AWS S3 instances.
  */
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
+    private static final BufferPool bufferPool = new SegmentedBufferPool(MAX_FRAGMENT_SIZE);
+
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
-    private final BufferPool bufferPool;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
+        if (s3Instructions.fragmentSize() > MAX_FRAGMENT_SIZE) {
+            throw new IllegalArgumentException("Fragment size " + s3Instructions.fragmentSize() + " is larger than " +
+                    " maximum allowed " + MAX_FRAGMENT_SIZE);
+        }
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
                 .maxConcurrency(s3Instructions.maxConcurrentRequests())
                 .connectionTimeout(s3Instructions.connectionTimeout())
@@ -36,7 +43,6 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .httpClient(asyncHttpClient)
                 .build();
         this.s3Instructions = s3Instructions;
-        this.bufferPool = new SegmentedBufferPool(s3Instructions.fragmentSize());
     }
 
     @Override

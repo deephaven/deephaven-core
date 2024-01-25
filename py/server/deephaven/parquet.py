@@ -11,17 +11,16 @@ from typing import List, Optional, Union, Dict
 import jpy
 
 from deephaven import DHError
-from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.table import Table
+from deephaven.experimental import s3
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
-_JDuration = jpy.get_type("java.time.Duration")
 
 
 @dataclass
@@ -44,7 +43,7 @@ def _build_parquet_instructions(
     is_refreshing: bool = False,
     for_read: bool = True,
     force_build: bool = False,
-    special_instructions: Optional[JObjectWrapper] = None,
+    special_instructions: Optional[s3.S3Instructions] = None,
 ):
     if not any(
         [
@@ -139,7 +138,7 @@ def read(
     is_refreshing: bool = False,
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Union[Dict[str, DType], List[Column], None] = None,
-    special_instructions: Optional[JObjectWrapper] = None,
+    special_instructions: Optional[s3.S3Instructions] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -156,7 +155,7 @@ def read(
             have that definition. This is useful for bootstrapping purposes when the initially partitioned directory is
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
             file_layout must also be set.
-        special_instructions (Optional[JObjectWrapper]): Special instructions for reading parquet files, useful when
+        special_instructions (Optional[s3.S3Instructions]): Special instructions for reading parquet files, useful when
             reading files from a non-local file system, like S3. By default, None.
 
     Returns:

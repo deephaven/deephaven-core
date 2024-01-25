@@ -1,12 +1,13 @@
 package io.deephaven.extensions.s3;
 
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 
-public interface BufferPool {
+interface BufferPool {
 
-    interface BufferHolder extends AutoCloseable {
+    interface BufferHolder extends SafeCloseable {
 
         /**
          * @return The buffer if available, else {@code null}

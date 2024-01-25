@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -13,21 +14,19 @@ import software.amazon.awssdk.core.async.SdkPublisher;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncResponseTransformer<ResponseT, ByteBuffer> {
+final class ByteBufferAsyncResponseTransformer<ResponseT>
+        implements AsyncResponseTransformer<ResponseT, ByteBuffer>, SafeCloseable {
 
-    private final BufferPool.BufferHolder bufferHolder;
     private final ByteBuffer byteBuffer;
 
     private volatile boolean released;
     private volatile CompletableFuture<ByteBuffer> currentFuture;
 
     /**
-     * @param bufferHolder A {@link BufferPool.BufferHolder} that will provide a buffer to store the response bytes.
-     *        This will be {@link BufferPool.BufferHolder#close}d when {@link #release()} is called.
+     * @param byteBuffer A {@link ByteBuffer} to store the response bytes.
      */
-    ByteBufferAsyncResponseTransformer(@NotNull final BufferPool.BufferHolder bufferHolder) {
-        this.bufferHolder = bufferHolder;
-        this.byteBuffer = bufferHolder.get();
+    ByteBufferAsyncResponseTransformer(@NotNull final ByteBuffer byteBuffer) {
+        this.byteBuffer = byteBuffer;
     }
 
     @Override
@@ -54,9 +53,9 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
      * Prevent further mutation of the underlying buffer by this ByteBufferAsyncResponseTransformer and any of its
      * Subscribers.
      */
-    public synchronized void release() {
+    @Override
+    public synchronized void close() {
         released = true;
-        bufferHolder.close();
     }
 
     private final class ByteBufferSubscriber implements Subscriber<ByteBuffer> {
@@ -64,7 +63,7 @@ final class ByteBufferAsyncResponseTransformer<ResponseT> implements AsyncRespon
         private final CompletableFuture<ByteBuffer> resultFuture;
         /**
          * A duplicate of the underlying buffer used to store the response bytes without modifying the original reusable
-         * buffer.
+         * buffer's position, limit, or mark.
          */
         private final ByteBuffer duplicate;
 

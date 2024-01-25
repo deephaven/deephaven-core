@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.configuration.Configuration;
 import org.immutables.value.Value;
 
 import java.time.Duration;
@@ -17,7 +18,12 @@ public abstract class S3Instructions {
 
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
-    private final static int DEFAULT_FRAGMENT_SIZE = 512 << 20; // 5 MB
+
+    private final static String MAX_FRAGMENT_SIZE_CONFIG_PARAM = "S3.maxFragmentSize";
+    final static int MAX_FRAGMENT_SIZE =
+            Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MB
+    private final static int DEFAULT_FRAGMENT_SIZE = MAX_FRAGMENT_SIZE;
+
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KB
     private final static int DEFAULT_MAX_CACHE_SIZE = 32;
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
@@ -41,8 +47,8 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The number of fragments to send asynchronous read requests for while reading the current fragment, defaults to
-     * {@value #DEFAULT_READ_AHEAD_COUNT}. This means by default, we will fetch {@value #DEFAULT_READ_AHEAD_COUNT}
+     * The number of fragments to send asynchronous read requests for while reading the current fragment. Defaults to
+     * {@value #DEFAULT_READ_AHEAD_COUNT}, which means by default, we will fetch {@value #DEFAULT_READ_AHEAD_COUNT}
      * fragments in advance when reading current fragment.
      */
     @Value.Default
@@ -51,8 +57,9 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The maximum size of each fragment to read from S3, defaults to {@value #DEFAULT_FRAGMENT_SIZE} bytes. If there
-     * are fewer bytes remaining in the file, the fetched fragment can be smaller.
+     * The maximum size of each fragment to read from S3, defaults to the value of config parameter
+     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}. If there are fewer bytes remaining in the file, the fetched fragment can
+     * be smaller.
      */
     @Value.Default
     public int fragmentSize() {
@@ -61,7 +68,7 @@ public abstract class S3Instructions {
 
     /**
      * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is
-     * done at deephaven layer for faster access of recently read fragments.
+     * done at the deephaven layer for faster access to recently read fragments.
      */
     @Value.Default
     public int maxCacheSize() {
@@ -103,7 +110,12 @@ public abstract class S3Instructions {
     @Value.Check
     final void boundsCheckMaxFragmentSize() {
         if (fragmentSize() < MIN_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= 8*1024 or 8 KB");
+            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
+                    " bytes");
+        }
+        if (fragmentSize() > MAX_FRAGMENT_SIZE) {
+            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be <= " + MAX_FRAGMENT_SIZE +
+                    " bytes");
         }
     }
 
