@@ -99,6 +99,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         runCommand("PREFIX=${prefix}; " +
                    '''set -eux; \\
                       cmp /tmp/build-dependencies.sh ${PREFIX}/build-dependencies.sh; \\
+                      rm -f /tmp/build-dependencies.sh; \\
                       rm -fr ${PREFIX}/src/deephaven/build; \\
                       mkdir -p ${PREFIX}/src/deephaven/build; \\
                       cd ${PREFIX}/src/deephaven/build; \\
