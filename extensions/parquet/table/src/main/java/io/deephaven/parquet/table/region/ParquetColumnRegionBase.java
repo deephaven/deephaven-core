@@ -8,7 +8,6 @@ import io.deephaven.engine.table.impl.sources.regioned.GenericColumnRegionBase;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.rowset.RowSequence;
@@ -28,27 +27,32 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
 
         // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
         Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
-        Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(),
-                "ColumnRegion.firstrRowOffset()");
+        Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()",
+                firstRowOffset(), "ColumnRegion.firstRowOffset()");
     }
 
     @Override
-    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
+    public final Chunk<? extends ATTR> getChunk(
+            @NotNull final GetContext context,
             @NotNull final RowSequence rowSequence) {
         throwIfInvalidated();
         return columnChunkPageStore.getChunk(context, rowSequence);
     }
 
     @Override
-    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey,
+    public final Chunk<? extends ATTR> getChunk(
+            @NotNull final GetContext context,
+            final long firstKey,
             final long lastKey) {
         throwIfInvalidated();
         return columnChunkPageStore.getChunk(context, firstKey, lastKey);
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super ATTR> destination, @NotNull final RowSequence rowSequence) {
+    public final void fillChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final RowSequence rowSequence) {
         throwIfInvalidated();
         columnChunkPageStore.fillChunk(context, destination, rowSequence);
     }
@@ -65,7 +69,7 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
     @Override
     public final ChunkPage<ATTR> getChunkPageContaining(final long elementIndex) {
         throwIfInvalidated();
-        return columnChunkPageStore.getPageContaining(elementIndex);
+        return columnChunkPageStore.getPageContaining(null, elementIndex);
     }
 
     @Override
@@ -73,17 +77,5 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
     public void releaseCachedResources() {
         ParquetColumnRegion.super.releaseCachedResources();
         columnChunkPageStore.releaseCachedResources();
-    }
-
-    @Override
-    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        throwIfInvalidated();
-        return columnChunkPageStore.makeFillContext(chunkCapacity, sharedContext);
-    }
-
-    @Override
-    public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
-        throwIfInvalidated();
-        return columnChunkPageStore.makeGetContext(chunkCapacity, sharedContext);
     }
 }

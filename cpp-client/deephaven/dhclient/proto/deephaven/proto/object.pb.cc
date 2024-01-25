@@ -26,8 +26,9 @@ namespace proto {
 namespace backplane {
 namespace grpc {
 PROTOBUF_CONSTEXPR FetchObjectRequest::FetchObjectRequest(
-    ::_pbi::ConstantInitialized)
-  : source_id_(nullptr){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.source_id_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct FetchObjectRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR FetchObjectRequestDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -38,10 +39,11 @@ struct FetchObjectRequestDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FetchObjectRequestDefaultTypeInternal _FetchObjectRequest_default_instance_;
 PROTOBUF_CONSTEXPR FetchObjectResponse::FetchObjectResponse(
-    ::_pbi::ConstantInitialized)
-  : typed_export_ids_()
-  , type_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , data_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.typed_export_ids_)*/{}
+  , /*decltype(_impl_.type_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.data_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct FetchObjectResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR FetchObjectResponseDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -52,8 +54,9 @@ struct FetchObjectResponseDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FetchObjectResponseDefaultTypeInternal _FetchObjectResponse_default_instance_;
 PROTOBUF_CONSTEXPR ConnectRequest::ConnectRequest(
-    ::_pbi::ConstantInitialized)
-  : source_id_(nullptr){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.source_id_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ConnectRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ConnectRequestDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -64,9 +67,10 @@ struct ConnectRequestDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConnectRequestDefaultTypeInternal _ConnectRequest_default_instance_;
 PROTOBUF_CONSTEXPR ClientData::ClientData(
-    ::_pbi::ConstantInitialized)
-  : references_()
-  , payload_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.references_)*/{}
+  , /*decltype(_impl_.payload_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ClientDataDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ClientDataDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -77,9 +81,10 @@ struct ClientDataDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ClientDataDefaultTypeInternal _ClientData_default_instance_;
 PROTOBUF_CONSTEXPR ServerData::ServerData(
-    ::_pbi::ConstantInitialized)
-  : exported_references_()
-  , payload_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}){}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.exported_references_)*/{}
+  , /*decltype(_impl_.payload_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ServerDataDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ServerDataDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -90,8 +95,10 @@ struct ServerDataDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ServerDataDefaultTypeInternal _ServerData_default_instance_;
 PROTOBUF_CONSTEXPR StreamRequest::StreamRequest(
-    ::_pbi::ConstantInitialized)
-  : _oneof_case_{}{}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.message_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_._oneof_case_)*/{}} {}
 struct StreamRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR StreamRequestDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -102,8 +109,10 @@ struct StreamRequestDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StreamRequestDefaultTypeInternal _StreamRequest_default_instance_;
 PROTOBUF_CONSTEXPR StreamResponse::StreamResponse(
-    ::_pbi::ConstantInitialized)
-  : _oneof_case_{}{}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.message_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_._oneof_case_)*/{}} {}
 struct StreamResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR StreamResponseDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -114,7 +123,7 @@ struct StreamResponseDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StreamResponseDefaultTypeInternal _StreamResponse_default_instance_;
 PROTOBUF_CONSTEXPR BrowserNextResponse::BrowserNextResponse(
-    ::_pbi::ConstantInitialized){}
+    ::_pbi::ConstantInitialized) {}
 struct BrowserNextResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR BrowserNextResponseDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -140,56 +149,56 @@ const uint32_t TableStruct_deephaven_2fproto_2fobject_2eproto::offsets[] PROTOBU
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectRequest, source_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectRequest, _impl_.source_id_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, type_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, data_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, typed_export_ids_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, _impl_.type_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, _impl_.data_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchObjectResponse, _impl_.typed_export_ids_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConnectRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConnectRequest, source_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConnectRequest, _impl_.source_id_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ClientData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ClientData, payload_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ClientData, references_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ClientData, _impl_.payload_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ClientData, _impl_.references_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ServerData, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ServerData, payload_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ServerData, exported_references_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ServerData, _impl_.payload_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ServerData, _impl_.exported_references_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamRequest, _internal_metadata_),
   ~0u,  // no _extensions_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamRequest, _oneof_case_[0]),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamRequest, _impl_._oneof_case_[0]),
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamRequest, message_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamRequest, _impl_.message_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamResponse, _internal_metadata_),
   ~0u,  // no _extensions_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamResponse, _oneof_case_[0]),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamResponse, _impl_._oneof_case_[0]),
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   ::_pbi::kInvalidFieldOffsetTag,
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamResponse, message_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::StreamResponse, _impl_.message_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::BrowserNextResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -292,33 +301,42 @@ class FetchObjectRequest::_Internal {
 
 const ::io::deephaven::proto::backplane::grpc::TypedTicket&
 FetchObjectRequest::_Internal::source_id(const FetchObjectRequest* msg) {
-  return *msg->source_id_;
+  return *msg->_impl_.source_id_;
 }
 void FetchObjectRequest::clear_source_id() {
-  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
-    delete source_id_;
+  if (GetArenaForAllocation() == nullptr && _impl_.source_id_ != nullptr) {
+    delete _impl_.source_id_;
   }
-  source_id_ = nullptr;
+  _impl_.source_id_ = nullptr;
 }
 FetchObjectRequest::FetchObjectRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FetchObjectRequest)
 }
 FetchObjectRequest::FetchObjectRequest(const FetchObjectRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  FetchObjectRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.source_id_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_source_id()) {
-    source_id_ = new ::io::deephaven::proto::backplane::grpc::TypedTicket(*from.source_id_);
-  } else {
-    source_id_ = nullptr;
+    _this->_impl_.source_id_ = new ::io::deephaven::proto::backplane::grpc::TypedTicket(*from._impl_.source_id_);
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.FetchObjectRequest)
 }
 
-inline void FetchObjectRequest::SharedCtor() {
-source_id_ = nullptr;
+inline void FetchObjectRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.source_id_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
 }
 
 FetchObjectRequest::~FetchObjectRequest() {
@@ -332,11 +350,11 @@ FetchObjectRequest::~FetchObjectRequest() {
 
 inline void FetchObjectRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete source_id_;
+  if (this != internal_default_instance()) delete _impl_.source_id_;
 }
 
 void FetchObjectRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void FetchObjectRequest::Clear() {
@@ -345,10 +363,10 @@ void FetchObjectRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
-    delete source_id_;
+  if (GetArenaForAllocation() == nullptr && _impl_.source_id_ != nullptr) {
+    delete _impl_.source_id_;
   }
-  source_id_ = nullptr;
+  _impl_.source_id_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -422,35 +440,32 @@ size_t FetchObjectRequest::ByteSizeLong() const {
   if (this->_internal_has_source_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *source_id_);
+        *_impl_.source_id_);
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FetchObjectRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     FetchObjectRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FetchObjectRequest::GetClassData() const { return &_class_data_; }
 
-void FetchObjectRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<FetchObjectRequest *>(to)->MergeFrom(
-      static_cast<const FetchObjectRequest &>(from));
-}
 
-
-void FetchObjectRequest::MergeFrom(const FetchObjectRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FetchObjectRequest)
-  GOOGLE_DCHECK_NE(&from, this);
+void FetchObjectRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<FetchObjectRequest*>(&to_msg);
+  auto& from = static_cast<const FetchObjectRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FetchObjectRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_source_id()) {
-    _internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::TypedTicket::MergeFrom(from._internal_source_id());
+    _this->_internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::TypedTicket::MergeFrom(
+        from._internal_source_id());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FetchObjectRequest::CopyFrom(const FetchObjectRequest& from) {
@@ -467,7 +482,7 @@ bool FetchObjectRequest::IsInitialized() const {
 void FetchObjectRequest::InternalSwap(FetchObjectRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(source_id_, other->source_id_);
+  swap(_impl_.source_id_, other->_impl_.source_id_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata FetchObjectRequest::GetMetadata() const {
@@ -483,47 +498,61 @@ class FetchObjectResponse::_Internal {
 };
 
 void FetchObjectResponse::clear_typed_export_ids() {
-  typed_export_ids_.Clear();
+  _impl_.typed_export_ids_.Clear();
 }
 FetchObjectResponse::FetchObjectResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  typed_export_ids_(arena) {
-  SharedCtor();
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FetchObjectResponse)
 }
 FetchObjectResponse::FetchObjectResponse(const FetchObjectResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      typed_export_ids_(from.typed_export_ids_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  FetchObjectResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.typed_export_ids_){from._impl_.typed_export_ids_}
+    , decltype(_impl_.type_){}
+    , decltype(_impl_.data_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  type_.InitDefault();
+  _impl_.type_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    type_.Set("", GetArenaForAllocation());
+    _impl_.type_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_type().empty()) {
-    type_.Set(from._internal_type(), 
-      GetArenaForAllocation());
+    _this->_impl_.type_.Set(from._internal_type(), 
+      _this->GetArenaForAllocation());
   }
-  data_.InitDefault();
+  _impl_.data_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    data_.Set("", GetArenaForAllocation());
+    _impl_.data_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_data().empty()) {
-    data_.Set(from._internal_data(), 
-      GetArenaForAllocation());
+    _this->_impl_.data_.Set(from._internal_data(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.FetchObjectResponse)
 }
 
-inline void FetchObjectResponse::SharedCtor() {
-type_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  type_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-data_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  data_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void FetchObjectResponse::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.typed_export_ids_){arena}
+    , decltype(_impl_.type_){}
+    , decltype(_impl_.data_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.type_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.type_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.data_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.data_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 FetchObjectResponse::~FetchObjectResponse() {
@@ -537,12 +566,13 @@ FetchObjectResponse::~FetchObjectResponse() {
 
 inline void FetchObjectResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  type_.Destroy();
-  data_.Destroy();
+  _impl_.typed_export_ids_.~RepeatedPtrField();
+  _impl_.type_.Destroy();
+  _impl_.data_.Destroy();
 }
 
 void FetchObjectResponse::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void FetchObjectResponse::Clear() {
@@ -551,9 +581,9 @@ void FetchObjectResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  typed_export_ids_.Clear();
-  type_.ClearToEmpty();
-  data_.ClearToEmpty();
+  _impl_.typed_export_ids_.Clear();
+  _impl_.type_.ClearToEmpty();
+  _impl_.data_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -666,7 +696,7 @@ size_t FetchObjectResponse::ByteSizeLong() const {
 
   // repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_ids = 3;
   total_size += 1UL * this->_internal_typed_export_ids_size();
-  for (const auto& msg : this->typed_export_ids_) {
+  for (const auto& msg : this->_impl_.typed_export_ids_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -685,36 +715,32 @@ size_t FetchObjectResponse::ByteSizeLong() const {
         this->_internal_data());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FetchObjectResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     FetchObjectResponse::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FetchObjectResponse::GetClassData() const { return &_class_data_; }
 
-void FetchObjectResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<FetchObjectResponse *>(to)->MergeFrom(
-      static_cast<const FetchObjectResponse &>(from));
-}
 
-
-void FetchObjectResponse::MergeFrom(const FetchObjectResponse& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FetchObjectResponse)
-  GOOGLE_DCHECK_NE(&from, this);
+void FetchObjectResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<FetchObjectResponse*>(&to_msg);
+  auto& from = static_cast<const FetchObjectResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FetchObjectResponse)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  typed_export_ids_.MergeFrom(from.typed_export_ids_);
+  _this->_impl_.typed_export_ids_.MergeFrom(from._impl_.typed_export_ids_);
   if (!from._internal_type().empty()) {
-    _internal_set_type(from._internal_type());
+    _this->_internal_set_type(from._internal_type());
   }
   if (!from._internal_data().empty()) {
-    _internal_set_data(from._internal_data());
+    _this->_internal_set_data(from._internal_data());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FetchObjectResponse::CopyFrom(const FetchObjectResponse& from) {
@@ -733,14 +759,14 @@ void FetchObjectResponse::InternalSwap(FetchObjectResponse* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  typed_export_ids_.InternalSwap(&other->typed_export_ids_);
+  _impl_.typed_export_ids_.InternalSwap(&other->_impl_.typed_export_ids_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &type_, lhs_arena,
-      &other->type_, rhs_arena
+      &_impl_.type_, lhs_arena,
+      &other->_impl_.type_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &data_, lhs_arena,
-      &other->data_, rhs_arena
+      &_impl_.data_, lhs_arena,
+      &other->_impl_.data_, rhs_arena
   );
 }
 
@@ -759,33 +785,42 @@ class ConnectRequest::_Internal {
 
 const ::io::deephaven::proto::backplane::grpc::TypedTicket&
 ConnectRequest::_Internal::source_id(const ConnectRequest* msg) {
-  return *msg->source_id_;
+  return *msg->_impl_.source_id_;
 }
 void ConnectRequest::clear_source_id() {
-  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
-    delete source_id_;
+  if (GetArenaForAllocation() == nullptr && _impl_.source_id_ != nullptr) {
+    delete _impl_.source_id_;
   }
-  source_id_ = nullptr;
+  _impl_.source_id_ = nullptr;
 }
 ConnectRequest::ConnectRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ConnectRequest)
 }
 ConnectRequest::ConnectRequest(const ConnectRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ConnectRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.source_id_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_source_id()) {
-    source_id_ = new ::io::deephaven::proto::backplane::grpc::TypedTicket(*from.source_id_);
-  } else {
-    source_id_ = nullptr;
+    _this->_impl_.source_id_ = new ::io::deephaven::proto::backplane::grpc::TypedTicket(*from._impl_.source_id_);
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ConnectRequest)
 }
 
-inline void ConnectRequest::SharedCtor() {
-source_id_ = nullptr;
+inline void ConnectRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.source_id_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
 }
 
 ConnectRequest::~ConnectRequest() {
@@ -799,11 +834,11 @@ ConnectRequest::~ConnectRequest() {
 
 inline void ConnectRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete source_id_;
+  if (this != internal_default_instance()) delete _impl_.source_id_;
 }
 
 void ConnectRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ConnectRequest::Clear() {
@@ -812,10 +847,10 @@ void ConnectRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
-    delete source_id_;
+  if (GetArenaForAllocation() == nullptr && _impl_.source_id_ != nullptr) {
+    delete _impl_.source_id_;
   }
-  source_id_ = nullptr;
+  _impl_.source_id_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -889,35 +924,32 @@ size_t ConnectRequest::ByteSizeLong() const {
   if (this->_internal_has_source_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *source_id_);
+        *_impl_.source_id_);
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConnectRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ConnectRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConnectRequest::GetClassData() const { return &_class_data_; }
 
-void ConnectRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ConnectRequest *>(to)->MergeFrom(
-      static_cast<const ConnectRequest &>(from));
-}
 
-
-void ConnectRequest::MergeFrom(const ConnectRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ConnectRequest)
-  GOOGLE_DCHECK_NE(&from, this);
+void ConnectRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ConnectRequest*>(&to_msg);
+  auto& from = static_cast<const ConnectRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ConnectRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (from._internal_has_source_id()) {
-    _internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::TypedTicket::MergeFrom(from._internal_source_id());
+    _this->_internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::TypedTicket::MergeFrom(
+        from._internal_source_id());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ConnectRequest::CopyFrom(const ConnectRequest& from) {
@@ -934,7 +966,7 @@ bool ConnectRequest::IsInitialized() const {
 void ConnectRequest::InternalSwap(ConnectRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(source_id_, other->source_id_);
+  swap(_impl_.source_id_, other->_impl_.source_id_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ConnectRequest::GetMetadata() const {
@@ -950,35 +982,47 @@ class ClientData::_Internal {
 };
 
 void ClientData::clear_references() {
-  references_.Clear();
+  _impl_.references_.Clear();
 }
 ClientData::ClientData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  references_(arena) {
-  SharedCtor();
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ClientData)
 }
 ClientData::ClientData(const ClientData& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      references_(from.references_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ClientData* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.references_){from._impl_.references_}
+    , decltype(_impl_.payload_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  payload_.InitDefault();
+  _impl_.payload_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    payload_.Set("", GetArenaForAllocation());
+    _impl_.payload_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_payload().empty()) {
-    payload_.Set(from._internal_payload(), 
-      GetArenaForAllocation());
+    _this->_impl_.payload_.Set(from._internal_payload(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ClientData)
 }
 
-inline void ClientData::SharedCtor() {
-payload_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  payload_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void ClientData::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.references_){arena}
+    , decltype(_impl_.payload_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.payload_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.payload_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 ClientData::~ClientData() {
@@ -992,11 +1036,12 @@ ClientData::~ClientData() {
 
 inline void ClientData::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  payload_.Destroy();
+  _impl_.references_.~RepeatedPtrField();
+  _impl_.payload_.Destroy();
 }
 
 void ClientData::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ClientData::Clear() {
@@ -1005,8 +1050,8 @@ void ClientData::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  references_.Clear();
-  payload_.ClearToEmpty();
+  _impl_.references_.Clear();
+  _impl_.payload_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1099,7 +1144,7 @@ size_t ClientData::ByteSizeLong() const {
 
   // repeated .io.deephaven.proto.backplane.grpc.TypedTicket references = 2;
   total_size += 1UL * this->_internal_references_size();
-  for (const auto& msg : this->references_) {
+  for (const auto& msg : this->_impl_.references_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -1111,33 +1156,29 @@ size_t ClientData::ByteSizeLong() const {
         this->_internal_payload());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ClientData::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ClientData::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ClientData::GetClassData() const { return &_class_data_; }
 
-void ClientData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ClientData *>(to)->MergeFrom(
-      static_cast<const ClientData &>(from));
-}
 
-
-void ClientData::MergeFrom(const ClientData& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ClientData)
-  GOOGLE_DCHECK_NE(&from, this);
+void ClientData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ClientData*>(&to_msg);
+  auto& from = static_cast<const ClientData&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ClientData)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  references_.MergeFrom(from.references_);
+  _this->_impl_.references_.MergeFrom(from._impl_.references_);
   if (!from._internal_payload().empty()) {
-    _internal_set_payload(from._internal_payload());
+    _this->_internal_set_payload(from._internal_payload());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ClientData::CopyFrom(const ClientData& from) {
@@ -1156,10 +1197,10 @@ void ClientData::InternalSwap(ClientData* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  references_.InternalSwap(&other->references_);
+  _impl_.references_.InternalSwap(&other->_impl_.references_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &payload_, lhs_arena,
-      &other->payload_, rhs_arena
+      &_impl_.payload_, lhs_arena,
+      &other->_impl_.payload_, rhs_arena
   );
 }
 
@@ -1176,35 +1217,47 @@ class ServerData::_Internal {
 };
 
 void ServerData::clear_exported_references() {
-  exported_references_.Clear();
+  _impl_.exported_references_.Clear();
 }
 ServerData::ServerData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
-  exported_references_(arena) {
-  SharedCtor();
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ServerData)
 }
 ServerData::ServerData(const ServerData& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message(),
-      exported_references_(from.exported_references_) {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ServerData* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.exported_references_){from._impl_.exported_references_}
+    , decltype(_impl_.payload_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  payload_.InitDefault();
+  _impl_.payload_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    payload_.Set("", GetArenaForAllocation());
+    _impl_.payload_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   if (!from._internal_payload().empty()) {
-    payload_.Set(from._internal_payload(), 
-      GetArenaForAllocation());
+    _this->_impl_.payload_.Set(from._internal_payload(), 
+      _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ServerData)
 }
 
-inline void ServerData::SharedCtor() {
-payload_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  payload_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void ServerData::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.exported_references_){arena}
+    , decltype(_impl_.payload_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.payload_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.payload_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 ServerData::~ServerData() {
@@ -1218,11 +1271,12 @@ ServerData::~ServerData() {
 
 inline void ServerData::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  payload_.Destroy();
+  _impl_.exported_references_.~RepeatedPtrField();
+  _impl_.payload_.Destroy();
 }
 
 void ServerData::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void ServerData::Clear() {
@@ -1231,8 +1285,8 @@ void ServerData::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  exported_references_.Clear();
-  payload_.ClearToEmpty();
+  _impl_.exported_references_.Clear();
+  _impl_.payload_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1325,7 +1379,7 @@ size_t ServerData::ByteSizeLong() const {
 
   // repeated .io.deephaven.proto.backplane.grpc.TypedTicket exported_references = 2;
   total_size += 1UL * this->_internal_exported_references_size();
-  for (const auto& msg : this->exported_references_) {
+  for (const auto& msg : this->_impl_.exported_references_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -1337,33 +1391,29 @@ size_t ServerData::ByteSizeLong() const {
         this->_internal_payload());
   }
 
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ServerData::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     ServerData::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ServerData::GetClassData() const { return &_class_data_; }
 
-void ServerData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<ServerData *>(to)->MergeFrom(
-      static_cast<const ServerData &>(from));
-}
 
-
-void ServerData::MergeFrom(const ServerData& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ServerData)
-  GOOGLE_DCHECK_NE(&from, this);
+void ServerData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ServerData*>(&to_msg);
+  auto& from = static_cast<const ServerData&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ServerData)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  exported_references_.MergeFrom(from.exported_references_);
+  _this->_impl_.exported_references_.MergeFrom(from._impl_.exported_references_);
   if (!from._internal_payload().empty()) {
-    _internal_set_payload(from._internal_payload());
+    _this->_internal_set_payload(from._internal_payload());
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ServerData::CopyFrom(const ServerData& from) {
@@ -1382,10 +1432,10 @@ void ServerData::InternalSwap(ServerData* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  exported_references_.InternalSwap(&other->exported_references_);
+  _impl_.exported_references_.InternalSwap(&other->_impl_.exported_references_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &payload_, lhs_arena,
-      &other->payload_, rhs_arena
+      &_impl_.payload_, lhs_arena,
+      &other->_impl_.payload_, rhs_arena
   );
 }
 
@@ -1405,11 +1455,11 @@ class StreamRequest::_Internal {
 
 const ::io::deephaven::proto::backplane::grpc::ConnectRequest&
 StreamRequest::_Internal::connect(const StreamRequest* msg) {
-  return *msg->message_.connect_;
+  return *msg->_impl_.message_.connect_;
 }
 const ::io::deephaven::proto::backplane::grpc::ClientData&
 StreamRequest::_Internal::data(const StreamRequest* msg) {
-  return *msg->message_.data_;
+  return *msg->_impl_.message_.data_;
 }
 void StreamRequest::set_allocated_connect(::io::deephaven::proto::backplane::grpc::ConnectRequest* connect) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -1422,7 +1472,7 @@ void StreamRequest::set_allocated_connect(::io::deephaven::proto::backplane::grp
           message_arena, connect, submessage_arena);
     }
     set_has_connect();
-    message_.connect_ = connect;
+    _impl_.message_.connect_ = connect;
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.StreamRequest.connect)
 }
@@ -1437,27 +1487,35 @@ void StreamRequest::set_allocated_data(::io::deephaven::proto::backplane::grpc::
           message_arena, data, submessage_arena);
     }
     set_has_data();
-    message_.data_ = data;
+    _impl_.message_.data_ = data;
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.StreamRequest.data)
 }
 StreamRequest::StreamRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.StreamRequest)
 }
 StreamRequest::StreamRequest(const StreamRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  StreamRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.message_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , /*decltype(_impl_._oneof_case_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   clear_has_message();
   switch (from.message_case()) {
     case kConnect: {
-      _internal_mutable_connect()->::io::deephaven::proto::backplane::grpc::ConnectRequest::MergeFrom(from._internal_connect());
+      _this->_internal_mutable_connect()->::io::deephaven::proto::backplane::grpc::ConnectRequest::MergeFrom(
+          from._internal_connect());
       break;
     }
     case kData: {
-      _internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ClientData::MergeFrom(from._internal_data());
+      _this->_internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ClientData::MergeFrom(
+          from._internal_data());
       break;
     }
     case MESSAGE_NOT_SET: {
@@ -1467,8 +1525,16 @@ StreamRequest::StreamRequest(const StreamRequest& from)
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.StreamRequest)
 }
 
-inline void StreamRequest::SharedCtor() {
-clear_has_message();
+inline void StreamRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.message_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , /*decltype(_impl_._oneof_case_)*/{}
+  };
+  clear_has_message();
 }
 
 StreamRequest::~StreamRequest() {
@@ -1488,7 +1554,7 @@ inline void StreamRequest::SharedDtor() {
 }
 
 void StreamRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void StreamRequest::clear_message() {
@@ -1496,13 +1562,13 @@ void StreamRequest::clear_message() {
   switch (message_case()) {
     case kConnect: {
       if (GetArenaForAllocation() == nullptr) {
-        delete message_.connect_;
+        delete _impl_.message_.connect_;
       }
       break;
     }
     case kData: {
       if (GetArenaForAllocation() == nullptr) {
-        delete message_.data_;
+        delete _impl_.message_.data_;
       }
       break;
     }
@@ -1510,7 +1576,7 @@ void StreamRequest::clear_message() {
       break;
     }
   }
-  _oneof_case_[0] = MESSAGE_NOT_SET;
+  _impl_._oneof_case_[0] = MESSAGE_NOT_SET;
 }
 
 
@@ -1610,56 +1676,54 @@ size_t StreamRequest::ByteSizeLong() const {
     case kConnect: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *message_.connect_);
+          *_impl_.message_.connect_);
       break;
     }
     // .io.deephaven.proto.backplane.grpc.ClientData data = 2;
     case kData: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *message_.data_);
+          *_impl_.message_.data_);
       break;
     }
     case MESSAGE_NOT_SET: {
       break;
     }
   }
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData StreamRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     StreamRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*StreamRequest::GetClassData() const { return &_class_data_; }
 
-void StreamRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<StreamRequest *>(to)->MergeFrom(
-      static_cast<const StreamRequest &>(from));
-}
 
-
-void StreamRequest::MergeFrom(const StreamRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.StreamRequest)
-  GOOGLE_DCHECK_NE(&from, this);
+void StreamRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<StreamRequest*>(&to_msg);
+  auto& from = static_cast<const StreamRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.StreamRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   switch (from.message_case()) {
     case kConnect: {
-      _internal_mutable_connect()->::io::deephaven::proto::backplane::grpc::ConnectRequest::MergeFrom(from._internal_connect());
+      _this->_internal_mutable_connect()->::io::deephaven::proto::backplane::grpc::ConnectRequest::MergeFrom(
+          from._internal_connect());
       break;
     }
     case kData: {
-      _internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ClientData::MergeFrom(from._internal_data());
+      _this->_internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ClientData::MergeFrom(
+          from._internal_data());
       break;
     }
     case MESSAGE_NOT_SET: {
       break;
     }
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void StreamRequest::CopyFrom(const StreamRequest& from) {
@@ -1676,8 +1740,8 @@ bool StreamRequest::IsInitialized() const {
 void StreamRequest::InternalSwap(StreamRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(message_, other->message_);
-  swap(_oneof_case_[0], other->_oneof_case_[0]);
+  swap(_impl_.message_, other->_impl_.message_);
+  swap(_impl_._oneof_case_[0], other->_impl_._oneof_case_[0]);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata StreamRequest::GetMetadata() const {
@@ -1695,7 +1759,7 @@ class StreamResponse::_Internal {
 
 const ::io::deephaven::proto::backplane::grpc::ServerData&
 StreamResponse::_Internal::data(const StreamResponse* msg) {
-  return *msg->message_.data_;
+  return *msg->_impl_.message_.data_;
 }
 void StreamResponse::set_allocated_data(::io::deephaven::proto::backplane::grpc::ServerData* data) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -1708,23 +1772,30 @@ void StreamResponse::set_allocated_data(::io::deephaven::proto::backplane::grpc:
           message_arena, data, submessage_arena);
     }
     set_has_data();
-    message_.data_ = data;
+    _impl_.message_.data_ = data;
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.StreamResponse.data)
 }
 StreamResponse::StreamResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.StreamResponse)
 }
 StreamResponse::StreamResponse(const StreamResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
+  StreamResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.message_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , /*decltype(_impl_._oneof_case_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   clear_has_message();
   switch (from.message_case()) {
     case kData: {
-      _internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ServerData::MergeFrom(from._internal_data());
+      _this->_internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ServerData::MergeFrom(
+          from._internal_data());
       break;
     }
     case MESSAGE_NOT_SET: {
@@ -1734,8 +1805,16 @@ StreamResponse::StreamResponse(const StreamResponse& from)
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.StreamResponse)
 }
 
-inline void StreamResponse::SharedCtor() {
-clear_has_message();
+inline void StreamResponse::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.message_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , /*decltype(_impl_._oneof_case_)*/{}
+  };
+  clear_has_message();
 }
 
 StreamResponse::~StreamResponse() {
@@ -1755,7 +1834,7 @@ inline void StreamResponse::SharedDtor() {
 }
 
 void StreamResponse::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
+  _impl_._cached_size_.Set(size);
 }
 
 void StreamResponse::clear_message() {
@@ -1763,7 +1842,7 @@ void StreamResponse::clear_message() {
   switch (message_case()) {
     case kData: {
       if (GetArenaForAllocation() == nullptr) {
-        delete message_.data_;
+        delete _impl_.message_.data_;
       }
       break;
     }
@@ -1771,7 +1850,7 @@ void StreamResponse::clear_message() {
       break;
     }
   }
-  _oneof_case_[0] = MESSAGE_NOT_SET;
+  _impl_._oneof_case_[0] = MESSAGE_NOT_SET;
 }
 
 
@@ -1856,45 +1935,42 @@ size_t StreamResponse::ByteSizeLong() const {
     case kData: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *message_.data_);
+          *_impl_.message_.data_);
       break;
     }
     case MESSAGE_NOT_SET: {
       break;
     }
   }
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData StreamResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
     StreamResponse::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*StreamResponse::GetClassData() const { return &_class_data_; }
 
-void StreamResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<StreamResponse *>(to)->MergeFrom(
-      static_cast<const StreamResponse &>(from));
-}
 
-
-void StreamResponse::MergeFrom(const StreamResponse& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.StreamResponse)
-  GOOGLE_DCHECK_NE(&from, this);
+void StreamResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<StreamResponse*>(&to_msg);
+  auto& from = static_cast<const StreamResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.StreamResponse)
+  GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   switch (from.message_case()) {
     case kData: {
-      _internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ServerData::MergeFrom(from._internal_data());
+      _this->_internal_mutable_data()->::io::deephaven::proto::backplane::grpc::ServerData::MergeFrom(
+          from._internal_data());
       break;
     }
     case MESSAGE_NOT_SET: {
       break;
     }
   }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void StreamResponse::CopyFrom(const StreamResponse& from) {
@@ -1911,8 +1987,8 @@ bool StreamResponse::IsInitialized() const {
 void StreamResponse::InternalSwap(StreamResponse* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(message_, other->message_);
-  swap(_oneof_case_[0], other->_oneof_case_[0]);
+  swap(_impl_.message_, other->_impl_.message_);
+  swap(_impl_._oneof_case_[0], other->_impl_._oneof_case_[0]);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata StreamResponse::GetMetadata() const {
@@ -1934,6 +2010,7 @@ BrowserNextResponse::BrowserNextResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
 }
 BrowserNextResponse::BrowserNextResponse(const BrowserNextResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  BrowserNextResponse* const _this = this; (void)_this;
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.BrowserNextResponse)
 }

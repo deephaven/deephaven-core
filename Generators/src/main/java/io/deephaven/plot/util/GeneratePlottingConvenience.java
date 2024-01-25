@@ -3,10 +3,10 @@
  */
 package io.deephaven.plot.util;
 
+import io.deephaven.gen.GenUtils;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.FigureImpl;
-import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
-import java.lang.reflect.WildcardType;
+import io.deephaven.gen.JavaFunction;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,16 +19,19 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.deephaven.plot.util.PlotGeneratorUtils.indent;
+import static io.deephaven.gen.GenUtils.indent;
+import static io.deephaven.gen.GenUtils.typesToImport;
 
 /**
  * Create static functions that resolve against the last created instance of a plotting figure class. This is to make a
  * cleaner plotting interface
  */
+@SuppressWarnings("StringConcatenationInLoop")
 public class GeneratePlottingConvenience {
     // See also GroovyStaticImportGenerator
 
     private static final Logger log = Logger.getLogger(GeneratePlottingConvenience.class.toString());
+    private static final String GRADLE_TASK = ":Generators:generatePlottingConvenience";
 
     private static final String OUTPUT_CLASS = "io.deephaven.plot.PlottingConvenience";
     private static final String OUTPUT_CLASS_NAME_SHORT = OUTPUT_CLASS.substring(OUTPUT_CLASS.lastIndexOf('.') + 1);
@@ -102,15 +105,7 @@ public class GeneratePlottingConvenience {
         log.info("Processing public method: " + m);
 
         final JavaFunction f = new JavaFunction(m);
-        final JavaFunction signature = new JavaFunction(
-                OUTPUT_CLASS,
-                OUTPUT_CLASS_NAME_SHORT,
-                functionNamer.apply(f),
-                f.getTypeParameters(),
-                f.getReturnType(),
-                f.getParameterTypes(),
-                f.getParameterNames(),
-                f.isVarArgs());
+        final JavaFunction signature = f.transform(OUTPUT_CLASS, OUTPUT_CLASS_NAME_SHORT, functionNamer.apply(f), null);
 
         boolean skip = skip(f, ignoreSkips);
 
@@ -150,55 +145,9 @@ public class GeneratePlottingConvenience {
         return imports;
     }
 
-    private static Set<String> typesToImport(Type t) {
-        Set<String> result = new LinkedHashSet<>();
-
-        if (t instanceof Class) {
-            final Class<?> c = (Class) t;
-            final boolean isArray = c.isArray();
-            final boolean isPrimitive = c.isPrimitive();
-
-            if (isPrimitive) {
-                return result;
-            } else if (isArray) {
-                return typesToImport(c.getComponentType());
-            } else {
-                result.add(t.getTypeName());
-            }
-        } else if (t instanceof ParameterizedType) {
-            final ParameterizedType pt = (ParameterizedType) t;
-            result.add(pt.getRawType().getTypeName());
-
-            for (Type a : pt.getActualTypeArguments()) {
-                result.addAll(typesToImport(a));
-            }
-        } else if (t instanceof TypeVariable) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof WildcardType) {
-            // type variables are generic so they don't need importing
-            return result;
-        } else if (t instanceof GenericArrayType) {
-            GenericArrayType at = (GenericArrayType) t;
-            return typesToImport(at.getGenericComponentType());
-        } else {
-            throw new UnsupportedOperationException("Unsupported Type type: " + t.getClass());
-        }
-
-        return result;
-    }
-
     private String generateCode() {
 
-        String code = "/**\n" +
-                " * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending\n" +
-                " */\n" +
-                "/****************************************************************************************************************************\n"
-                +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n"
-                +
-                " ****************************************************************************************************************************/\n\n";
-
+        String code = GenUtils.javaHeader(GeneratePlottingConvenience.class, GRADLE_TASK);
         code += "package io.deephaven.plot;\n\n";
 
         Set<String> imports = generateImports();
@@ -250,72 +199,19 @@ public class GeneratePlottingConvenience {
     }
 
     private static String createFunction(final JavaFunction f, final JavaFunction signature, final boolean isStatic) {
-        String returnType = f.getReturnType().getTypeName().replace("$", ".");
-        String s = createJavadoc(f, signature);
-        s += "    public static ";
-
-        if (f.getTypeParameters().length > 0) {
-            s += "<";
-
-            for (int i = 0; i < f.getTypeParameters().length; i++) {
-                if (i != 0) {
-                    s += ",";
-                }
-
-                TypeVariable<Method> t = f.getTypeParameters()[i];
-                log.info("BOUNDS: " + Arrays.toString(t.getBounds()));
-                s += t;
-
-                Type[] bounds = t.getBounds();
-
-                if (bounds.length != 1) {
-                    throw new RuntimeException("Unsupported bounds: " + Arrays.toString(bounds));
-                }
-
-                Type bound = bounds[0];
-
-                if (!bound.equals(Object.class)) {
-                    s += " extends " + bound.getTypeName();
-                }
-
-            }
-
-            s += ">";
-        }
-
-        s += " " + returnType + " " + signature.getMethodName() + "(";
-        String callArgs = "";
-
-        for (int i = 0; i < f.getParameterTypes().length; i++) {
-            if (i != 0) {
-                s += ",";
-                callArgs += ",";
-            }
-
-            Type t = f.getParameterTypes()[i];
-
-            String typeString = t.getTypeName().replace("$", ".");
-
-            if (f.isVarArgs() && i == f.getParameterTypes().length - 1) {
-                final int index = typeString.lastIndexOf("[]");
-                typeString = typeString.substring(0, index) + "..." + typeString.substring(index + 2);
-            }
-
-            s += " " + typeString + " " + f.getParameterNames()[i];
-            callArgs += " " + f.getParameterNames()[i];
-        }
-
-        s += " ) {\n";
-        s += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ")
+        final String javadoc = createJavadoc(f, signature);
+        final String sigPrefix = "public static";
+        final String callArgs = GenUtils.javaArgString(signature, false);
+        String funcBody = " {\n";
+        funcBody += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ")
                 + (isStatic ? (f.getClassNameShort() + ".") : "FigureFactory.figure().") + f.getMethodName() + "("
                 + callArgs + " );\n";
-        s += indent(1) + "}\n";
-
-        return s;
+        funcBody += indent(1) + "}\n";
+        return GenUtils.javaFunction(signature, sigPrefix, javadoc, funcBody);
     }
 
     private static String createJavadoc(final JavaFunction f, final JavaFunction signature) {
-        return "    /**\n    * See {@link " + f.getClassName() + "#" + signature.getMethodName() + "} \n    **/\n";
+        return "    /**\n    * See {@link " + f.getClassName() + "#" + signature.getMethodName() + "} \n    **/";
     }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
@@ -392,9 +288,8 @@ public class GeneratePlottingConvenience {
                 "catErrorBarBy",
                 "treemapPlot"));
 
-        @SuppressWarnings("unchecked")
         GeneratePlottingConvenience gen = new GeneratePlottingConvenience(staticImports, imports,
-                Arrays.asList(javaFunction -> !keepers.contains(javaFunction.getMethodName())),
+                List.of(javaFunction -> !keepers.contains(javaFunction.getMethodName())),
                 JavaFunction::getMethodName);
 
         final String code = gen.generateCode()
@@ -406,10 +301,7 @@ public class GeneratePlottingConvenience {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            if (!code.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GeneratePlottingConvenience.class, GRADLE_TASK, oldCode, code);
         } else {
 
             PrintWriter out = new PrintWriter(file);

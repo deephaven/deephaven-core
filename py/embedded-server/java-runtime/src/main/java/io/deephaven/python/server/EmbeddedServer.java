@@ -13,6 +13,7 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
+import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -56,6 +57,7 @@ public class EmbeddedServer {
             CommunityAuthorizationModule.class,
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
+            CalendarsFromConfigurationModule.class,
     })
     public interface PythonServerComponent extends JettyServerComponent {
         @Component.Builder

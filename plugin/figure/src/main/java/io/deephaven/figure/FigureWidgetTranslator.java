@@ -82,7 +82,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class FigureWidgetTranslator {
-    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     private final List<String> errorList = new ArrayList<>();
     private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
@@ -682,28 +682,33 @@ public class FigureWidgetTranslator {
             final DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
             return businessCalendar.isBusinessDay(day);
         }).forEach(businessCalendarDescriptor::addBusinessDays);
-        businessCalendar.getDefaultBusinessPeriods().stream().map(period -> {
-            final String[] array = period.split(",");
+        businessCalendar.standardBusinessDay().businessTimeRanges().stream().map(period -> {
+            // noinspection ConstantConditions
+            final String open = TIME_FORMATTER.withZone(businessCalendar.timeZone())
+                    .format(period.start());
+            // noinspection ConstantConditions
+            final String close = TIME_FORMATTER.withZone(businessCalendar.timeZone())
+                    .format(period.end());
             final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
-            businessPeriod.setOpen(array[0]);
-            businessPeriod.setClose(array[1]);
+            businessPeriod.setOpen(open);
+            businessPeriod.setClose(close);
             return businessPeriod;
         }).forEach(businessCalendarDescriptor::addBusinessPeriods);
 
-        businessCalendar.getHolidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey))
+        businessCalendar.holidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey))
                 .map(entry -> {
                     final LocalDate.Builder localDate = LocalDate.newBuilder();
                     localDate.setYear(entry.getKey().getYear());
                     localDate.setMonth(entry.getKey().getMonthValue());
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
-                    Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
+                    entry.getValue().businessTimeRanges().stream().map(bp -> {
                         // noinspection ConstantConditions
-                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
-                                .format(bp.getStartTime());
+                        final String open = TIME_FORMATTER.withZone(businessCalendar.timeZone())
+                                .format(bp.start());
                         // noinspection ConstantConditions
-                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
-                                .format(bp.getEndTime());
+                        final String close = TIME_FORMATTER.withZone(businessCalendar.timeZone())
+                                .format(bp.end());
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                         businessPeriod.setOpen(open);
                         businessPeriod.setClose(close);

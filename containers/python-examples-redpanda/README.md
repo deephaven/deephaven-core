@@ -7,18 +7,16 @@ A Docker Compose deployment for [Deephaven](https://deephaven.io).
 - [Deephaven](https://deephaven.io)
 - [Python](https://python.org/) scripting
 - [Deephaven Examples](https://github.com/deephaven/examples)
-- [Redpanda](https://vectorized.io/), a Kakfa-compatible event streaming platform.
+- [Redpanda](https://vectorized.io/), a Kakfa-compatible event streaming platform
 
 ## Launch Deephaven
 
-For instructions on launching and using Kafka, see [Kafka in Deephaven: an introduction](https://deephaven.io/core/docs/conceptual/kafka-in-deephaven/) and [Simple Kafka import](https://deephaven.io/core/docs/how-to-guides/kafka-simple/).  For full instructions to work with Deephaven, see the [Quick start](https://deephaven.io/core/docs/tutorials/quickstart).
+For instructions on launching and using Kafka in Deephaven, see[How to connect to a Kafka stream](https://deephaven.io/core/groovy/docs/how-to-guides/data-import-export/kafka-stream/). For instructions on getting started with Deephaven, see the [Quickstart](https://deephaven.io/core/docs/tutorials/quickstart).
 
 To launch Deephaven, execute the following in your deployment directory:
 
 ```bash
-compose_file=https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples-redpanda/docker-compose.yml
-curl  -O "${compose_file}"
-
-docker-compose pull
-docker-compose up -d
+curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples-redpanda/docker-compose.yml
+docker compose pull
+docker compose up -d
 ```

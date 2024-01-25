@@ -99,14 +99,4 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getResultRegion().getChunk(context, firstKey, lastKey);
     }
-
-    @Override
-    public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-        return getResultRegion().makeFillContext(chunkCapacity, sharedContext);
-    }
-
-    @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
-        return getResultRegion().makeGetContext(chunkCapacity, sharedContext);
-    }
 }

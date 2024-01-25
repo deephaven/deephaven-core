@@ -28,8 +28,8 @@ public class JsVariableDefinition {
     private final String applicationName;
 
     public JsVariableDefinition(String type, String title, String id, String description) {
-        // base64('s/') ==> 'cy8'
-        if (!id.startsWith("cy8")) {
+        // base64('s/' + str) starts with 'cy8' or 'cy9'
+        if (!id.startsWith("cy")) {
             throw new IllegalArgumentException("Cannot create a VariableDefinition from a non-scope ticket");
         }
         this.type = type;

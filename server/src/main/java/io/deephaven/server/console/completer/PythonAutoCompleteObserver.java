@@ -11,14 +11,12 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jpy.PyObject;
 
 import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
@@ -49,7 +47,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
         switch (value.getRequestCase()) {
             case OPEN_DOCUMENT: {
                 final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
-                PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                PyObject completer =
+                        (PyObject) scriptSession.get().getQueryScope().readParamValue("jedi_settings");
                 completer.callMethod("open_doc", doc.getText(), doc.getUri(), doc.getVersion());
                 break;
             }
@@ -57,7 +56,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 ChangeDocumentRequest request = value.getChangeDocument();
                 final VersionedTextDocumentIdentifier text = request.getTextDocument();
 
-                PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                PyObject completer =
+                        (PyObject) scriptSession.get().getQueryScope().readParamValue("jedi_settings");
                 String uri = text.getUri();
                 int version = text.getVersion();
                 String document = completer.callMethod("get_doc", text.getUri()).getStringValue();
@@ -75,7 +75,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 break;
             }
             case CLOSE_DOCUMENT: {
-                PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                PyObject completer =
+                        (PyObject) scriptSession.get().getQueryScope().readParamValue("jedi_settings");
                 CloseDocumentRequest request = value.getCloseDocument();
                 completer.callMethod("close_doc", request.getTextDocument().getUri());
                 break;
@@ -110,7 +111,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 request.getRequestId() > 0 ? request.getRequestId() : request.getGetCompletionItems().getRequestId();
         try {
             final ScriptSession scriptSession = exportedConsole.get();
-            PyObject completer = (PyObject) scriptSession.getVariable("jedi_settings");
+            PyObject completer = scriptSession.getQueryScope().readParamValue("jedi_settings");
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
                 log.trace().append("Ignoring completion request because jedi is disabled").endl();

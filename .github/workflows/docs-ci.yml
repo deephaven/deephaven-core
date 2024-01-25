@@ -52,7 +52,7 @@ jobs:
 
       - name: Upload Javadocs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
@@ -109,7 +109,7 @@ jobs:
           
       - name: Upload JavaScript/TypeScript docs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: typedoc-${{ steps.dhc-version.outputs.version }}
           path: 'web/client-api/types/build/documentation/'
@@ -171,14 +171,14 @@ jobs:
  
       - name: Upload Python Server Docs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/docs/'
           
       - name: Upload Python Client Docs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/pyclient-docs/'
@@ -208,7 +208,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: docs-ci-pydoc-jvm-err
@@ -253,14 +253,14 @@ jobs:
   
       - name: Upload Client C++ Docs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppClientDocs/'
           
       - name: Upload Client C++ Example Docs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppExamplesDocs/'
@@ -327,7 +327,7 @@ jobs:
         
       - name: Upload R Docs
         if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rdoc-${{ steps.dhc-version.outputs.version }}
           path: 'R/rdeephaven/docs/'
@@ -345,5 +345,5 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
