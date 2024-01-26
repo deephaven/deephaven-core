@@ -27,6 +27,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.extensions.s3.AwsCredentials;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -588,6 +589,7 @@ public final class ParquetTableReadWriteTest {
                 .maxConcurrentRequests(50)
                 .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
+                .credentials(AwsCredentials.defaultCredentials())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)

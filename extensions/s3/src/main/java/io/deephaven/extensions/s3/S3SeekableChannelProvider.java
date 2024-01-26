@@ -3,6 +3,7 @@
  */
 package io.deephaven.extensions.s3;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
@@ -22,25 +23,26 @@ import static io.deephaven.extensions.s3.S3Instructions.MAX_FRAGMENT_SIZE;
  */
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
-    private static final BufferPool bufferPool = new SegmentedBufferPool(MAX_FRAGMENT_SIZE);
+    // We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
+    // There can be a performance penalty though if the fragment size is much smaller than the maximum size.
+    private static final int POOLED_BUFFER_SIZE = MAX_FRAGMENT_SIZE;
+    private static final BufferPool bufferPool = new SegmentedBufferPool(POOLED_BUFFER_SIZE);
 
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        if (s3Instructions.fragmentSize() > MAX_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("Fragment size " + s3Instructions.fragmentSize() + " is larger than " +
-                    " maximum allowed " + MAX_FRAGMENT_SIZE);
-        }
         final SdkAsyncHttpClient asyncHttpClient = AwsCrtAsyncHttpClient.builder()
                 .maxConcurrency(s3Instructions.maxConcurrentRequests())
                 .connectionTimeout(s3Instructions.connectionTimeout())
                 .build();
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
+        Assert.instanceOf(s3Instructions.credentials(), "credentials", AwsCredentialsImpl.class);
         this.s3AsyncClient = S3AsyncClient.builder()
                 .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
+                .credentialsProvider(((AwsCredentialsImpl) s3Instructions.credentials()).awsCredentialsProvider())
                 .build();
         this.s3Instructions = s3Instructions;
     }

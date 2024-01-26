@@ -562,6 +562,12 @@ class ParquetTestCase(BaseTestCase):
                               read_ahead_count=-1,
                               )
 
+        # Fails since we provide the key without the secret key
+        with self.assertRaises(DHError):
+            s3.S3Instructions(aws_region_name="us-east-1",
+                              aws_access_key_id="Some key without secret",
+                              )
+
         s3_instructions = s3.S3Instructions(aws_region_name="us-east-1",
                                             read_ahead_count=1,
                                             )

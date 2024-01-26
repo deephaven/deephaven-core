@@ -92,6 +92,13 @@ public abstract class S3Instructions {
         return DEFAULT_READ_TIMEOUT;
     }
 
+    /**
+     * The credentials to use when reading or writing to S3.
+     */
+    @Value.Default
+    public AwsCredentials credentials() {
+        return AwsCredentials.defaultCredentials();
+    }
 
     @Value.Check
     final void boundsCheckMaxConcurrentRequests() {
@@ -141,6 +148,8 @@ public abstract class S3Instructions {
         Builder connectionTimeout(Duration connectionTimeout);
 
         Builder readTimeout(Duration connectionTimeout);
+
+        Builder credentials(AwsCredentials credentials);
 
         S3Instructions build();
     }

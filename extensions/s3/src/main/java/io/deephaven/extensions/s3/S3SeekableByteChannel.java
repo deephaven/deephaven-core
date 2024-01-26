@@ -70,7 +70,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
              */
             private SafeCloseable bufferRelease;
 
-            private boolean matches(final int fragmentIndex) {
+            private boolean matches(final long fragmentIndex) {
                 return this.fragmentIndex == fragmentIndex;
             }
 
@@ -108,12 +108,12 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
             size = UNINITIALIZED_SIZE;
         }
 
-        private int getIndex(final int fragmentIndex) {
+        private int getIndex(final long fragmentIndex) {
             // TODO(deephaven-core#5061): Experiment with LRU caching
-            return fragmentIndex % bufferCache.length;
+            return (int) (fragmentIndex % bufferCache.length);
         }
 
-        private FragmentState getFragmentState(final int fragmentIndex) {
+        private FragmentState getFragmentState(final long fragmentIndex) {
             final int cacheIdx = getIndex(fragmentIndex);
             FragmentState cachedEntry = bufferCache[cacheIdx];
             if (cachedEntry == null) {
@@ -127,7 +127,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
          * else will return {@code null}
          */
         @Nullable
-        private Future<ByteBuffer> getCachedFuture(final int fragmentIndex) {
+        private Future<ByteBuffer> getCachedFuture(final long fragmentIndex) {
             final FragmentState cachedFragment = bufferCache[getIndex(fragmentIndex)];
             if (cachedFragment != null && cachedFragment.matches(fragmentIndex)) {
                 return cachedFragment.future;
@@ -164,7 +164,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
      * The size of the object in bytes, fetched at the time of first read
      */
     private long size;
-    private int numFragmentsInObject;
+    private long numFragmentsInObject;
 
     /**
      * The {@link SeekableChannelContext} object used to cache read-ahead buffers for efficiently reading from S3. This
@@ -217,11 +217,11 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
             }
 
             // Send async read requests for current fragment as well as read ahead fragments
-            final int currFragmentIndex = fragmentIndexForByteNumber(localPosition);
+            final long currFragmentIndex = fragmentIndexForByteNumber(localPosition);
             final int numReadAheadFragments = channelContext != s3ChannelContext
                     ? 0 // We have a local S3ChannelContext, we don't want to do any read-ahead caching
-                    : Math.min(s3Instructions.readAheadCount(), numFragmentsInObject - currFragmentIndex - 1);
-            for (int idx = currFragmentIndex; idx <= currFragmentIndex + numReadAheadFragments; idx++) {
+                    : (int) Math.min(s3Instructions.readAheadCount(), numFragmentsInObject - currFragmentIndex - 1);
+            for (long idx = currFragmentIndex; idx <= currFragmentIndex + numReadAheadFragments; idx++) {
                 sendAsyncRequest(idx, s3ChannelContext);
             }
 
@@ -269,15 +269,15 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         return s3ChannelContext;
     }
 
-    private int fragmentIndexForByteNumber(final long byteNumber) {
-        return Math.toIntExact(byteNumber / s3Instructions.fragmentSize());
+    private long fragmentIndexForByteNumber(final long byteNumber) {
+        return byteNumber / s3Instructions.fragmentSize();
     }
 
     /**
      * If not already cached in the context, sends an async request to fetch the fragment at the provided index and
      * caches it in the context.
      */
-    private void sendAsyncRequest(final int fragmentIndex, @NotNull final S3ChannelContext s3ChannelContext) {
+    private void sendAsyncRequest(final long fragmentIndex, @NotNull final S3ChannelContext s3ChannelContext) {
         final S3ChannelContext.FragmentState fragmentState = s3ChannelContext.getFragmentState(fragmentIndex);
         if (fragmentState.matches(fragmentIndex)) {
             // We already have the fragment cached
@@ -287,7 +287,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         fragmentState.cancelAndRelease();
 
         final int fragmentSize = s3Instructions.fragmentSize();
-        final long readFrom = (long) fragmentIndex * fragmentSize;
+        final long readFrom = fragmentIndex * fragmentSize;
         final long readTo = Math.min(readFrom + fragmentSize, size) - 1;
         final String range = "bytes=" + readFrom + "-" + readTo;
 
@@ -382,7 +382,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         }
         this.size = s3ChannelContext.getSize();
         final int fragmentSize = s3Instructions.fragmentSize();
-        this.numFragmentsInObject = (int) ((size + fragmentSize - 1) / fragmentSize); // = ceil(size / fragmentSize)
+        this.numFragmentsInObject = (size + fragmentSize - 1) / fragmentSize; // = ceil(size / fragmentSize)
     }
 
     @Override
