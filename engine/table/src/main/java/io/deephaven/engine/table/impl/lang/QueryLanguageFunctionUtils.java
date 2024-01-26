@@ -4,12 +4,14 @@
 package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 
 import static java.lang.Math.*;
 
@@ -21133,6 +21135,69 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean eq(String a, LocalDate b) {
+        if (a == null) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+
+        final LocalDate aDate = DateTimeUtils.parseLocalDate(a);
+        return aDate.compareTo(b) == 0;
+    }
+
+    public static boolean eq(LocalDate a, String b) {
+        return eq(b, a);
+    }
+
+    public static int compareTo(String a, LocalDate b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        final LocalDate aDate = DateTimeUtils.parseLocalDate(a);
+        return aDate.compareTo(b);
+    }
+
+    public static int compareTo(LocalDate a, String b) {
+        return -compareTo(b, a);
+    }
+
+    public static boolean less(String a, LocalDate b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(LocalDate a, String b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean lessEquals(String a, LocalDate b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(LocalDate a, String b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean greater(String a, LocalDate b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(LocalDate a, String b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greaterEquals(String a, LocalDate b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(LocalDate a, String b) {
         return compareTo(a, b) >= 0;
     }
 }

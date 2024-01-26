@@ -12,6 +12,7 @@ import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 
 @SuppressWarnings({"unused", "WeakerAccess", "NumericOverflow"})
 public final class TestQueryLanguageFunctionUtils extends TestCase {
@@ -14786,4 +14787,212 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(greaterEquals(fv11, bv10));
         TestCase.assertTrue(greaterEquals(dv11, bv10));
     }
+    
+    public static void test_string_locadate_compare() {
+        final String s1 = "2023-11-23";
+        final String s2 = "2023-11-24";
+        final LocalDate d1 = LocalDate.of(2023, 11, 23);
+        final LocalDate d2 = LocalDate.of(2023, 11, 24);
+        final String snull = null;
+        final LocalDate dnull = null;
+
+        TestCase.assertEquals(-1, compareTo(s1, s2));
+        TestCase.assertEquals(1, compareTo(s2, s1));
+        TestCase.assertEquals(0, compareTo(s1, s1));
+        TestCase.assertEquals(0, compareTo(s2, s2));
+
+        TestCase.assertEquals(-1, compareTo(d1, d2));
+        TestCase.assertEquals(1, compareTo(d2, d1));
+        TestCase.assertEquals(0, compareTo(d1, d1));
+        TestCase.assertEquals(0, compareTo(d2, d2));
+
+        TestCase.assertEquals(-1, compareTo(s1, d2));
+        TestCase.assertEquals(1, compareTo(s2, d1));
+        TestCase.assertEquals(0, compareTo(s1, d1));
+        TestCase.assertEquals(0, compareTo(s2, d2));
+
+        TestCase.assertEquals(-1, compareTo(d1, s2));
+        TestCase.assertEquals(1, compareTo(d2, s1));
+        TestCase.assertEquals(0, compareTo(d1, s1));
+        TestCase.assertEquals(0, compareTo(d2, s2));
+
+        TestCase.assertEquals(0, compareTo(snull, snull));
+        TestCase.assertEquals(1, compareTo(s1, snull));
+        TestCase.assertEquals(-1, compareTo(snull, s1));
+
+        TestCase.assertEquals(0, compareTo(dnull, dnull));
+        TestCase.assertEquals(1, compareTo(d1, snull));
+        TestCase.assertEquals(-1, compareTo(snull, d1));
+
+        TestCase.assertEquals(0, compareTo(snull, dnull));
+        TestCase.assertEquals(1, compareTo(s1, snull));
+        TestCase.assertEquals(-1, compareTo(snull, d1));
+
+        TestCase.assertEquals(0, compareTo(dnull, snull));
+        TestCase.assertEquals(1, compareTo(d1, snull));
+        TestCase.assertEquals(-1, compareTo(dnull, s1));
+    }
+
+    public static void test_string_locadate_eq() {
+        final String s1 = "2023-11-23";
+        final String s2 = "2023-11-24";
+        final LocalDate d1 = LocalDate.of(2023, 11, 23);
+        final LocalDate d2 = LocalDate.of(2023, 11, 24);
+        final String snull = null;
+        final LocalDate dnull = null;
+
+        TestCase.assertTrue(eq(s1, s1));
+        TestCase.assertTrue(eq(s2, s2));
+        TestCase.assertTrue(eq(snull, snull));
+        TestCase.assertFalse(eq(s1, s2));
+        TestCase.assertFalse(eq(s2, s1));
+        TestCase.assertFalse(eq(s1, snull));
+        TestCase.assertFalse(eq(snull, s1));
+
+        TestCase.assertTrue(eq(d1, d1));
+        TestCase.assertTrue(eq(d2, d2));
+        TestCase.assertTrue(eq(dnull, dnull));
+        TestCase.assertFalse(eq(d1, d2));
+        TestCase.assertFalse(eq(d2, d1));
+        TestCase.assertFalse(eq(d1, dnull));
+        TestCase.assertFalse(eq(dnull, d1));
+
+        TestCase.assertTrue(eq(s1, d1));
+        TestCase.assertTrue(eq(s2, d2));
+        TestCase.assertTrue(eq(snull, dnull));
+        TestCase.assertFalse(eq(s1, d2));
+        TestCase.assertFalse(eq(s2, d1));
+        TestCase.assertFalse(eq(s1, dnull));
+        TestCase.assertFalse(eq(snull, d1));
+
+        TestCase.assertTrue(eq(d1, s1));
+        TestCase.assertTrue(eq(d2, s2));
+        TestCase.assertTrue(eq(dnull, snull));
+        TestCase.assertFalse(eq(d1, s2));
+        TestCase.assertFalse(eq(d2, s1));
+        TestCase.assertFalse(eq(d1, snull));
+        TestCase.assertFalse(eq(dnull, s1));
+    }
+
+    public static void test_string_locadate_comps() {
+        final String s1 = "2023-11-23";
+        final String s2 = "2023-11-24";
+        final LocalDate d1 = LocalDate.of(2023, 11, 23);
+        final LocalDate d2 = LocalDate.of(2023, 11, 24);
+        final String snull = null;
+        final LocalDate dnull = null;
+
+        TestCase.assertFalse(less(s1, s1));
+        TestCase.assertFalse(less(s2, s2));
+        TestCase.assertTrue(less(s1, s2));
+        TestCase.assertTrue(less(snull, s1));
+        TestCase.assertFalse(less(s1, snull));
+        TestCase.assertFalse(less(snull, snull));
+
+        TestCase.assertFalse(less(d1, d1));
+        TestCase.assertFalse(less(d2, d2));
+        TestCase.assertTrue(less(d1, d2));
+        TestCase.assertTrue(less(dnull, d1));
+        TestCase.assertFalse(less(d1, dnull));
+        TestCase.assertFalse(less(dnull, dnull));
+        
+        TestCase.assertFalse(less(s1, d1));
+        TestCase.assertFalse(less(s2, d2));
+        TestCase.assertTrue(less(s1, d2));
+        TestCase.assertTrue(less(snull, d1));
+        TestCase.assertFalse(less(s1, dnull));
+        TestCase.assertFalse(less(snull, dnull));
+
+        TestCase.assertFalse(less(d1, s1));
+        TestCase.assertFalse(less(d2, s2));
+        TestCase.assertTrue(less(d1, s2));
+        TestCase.assertTrue(less(dnull, s1));
+        TestCase.assertFalse(less(d1, snull));
+        TestCase.assertFalse(less(dnull, snull));
+        
+        TestCase.assertTrue(lessEquals(s1, s1));
+        TestCase.assertTrue(lessEquals(s2, s2));
+        TestCase.assertTrue(lessEquals(s1, s2));
+        TestCase.assertTrue(lessEquals(snull, s1));
+        TestCase.assertFalse(lessEquals(s1, snull));
+        TestCase.assertTrue(lessEquals(snull, snull));
+
+        TestCase.assertTrue(lessEquals(d1, d1));
+        TestCase.assertTrue(lessEquals(d2, d2));
+        TestCase.assertTrue(lessEquals(d1, d2));
+        TestCase.assertTrue(lessEquals(dnull, d1));
+        TestCase.assertFalse(lessEquals(d1, dnull));
+        TestCase.assertTrue(lessEquals(dnull, dnull));
+
+        TestCase.assertTrue(lessEquals(s1, d1));
+        TestCase.assertTrue(lessEquals(s2, d2));
+        TestCase.assertTrue(lessEquals(s1, d2));
+        TestCase.assertTrue(lessEquals(snull, d1));
+        TestCase.assertFalse(lessEquals(s1, dnull));
+        TestCase.assertTrue(lessEquals(snull, dnull));
+
+        TestCase.assertTrue(lessEquals(d1, s1));
+        TestCase.assertTrue(lessEquals(d2, s2));
+        TestCase.assertTrue(lessEquals(d1, s2));
+        TestCase.assertTrue(lessEquals(dnull, s1));
+        TestCase.assertFalse(lessEquals(d1, snull));
+        TestCase.assertTrue(lessEquals(dnull, snull));
+
+        TestCase.assertFalse(greater(s1, s1));
+        TestCase.assertFalse(greater(s2, s2));
+        TestCase.assertFalse(greater(s1, s2));
+        TestCase.assertFalse(greater(snull, s1));
+        TestCase.assertTrue(greater(s1, snull));
+        TestCase.assertFalse(greater(snull, snull));
+
+        TestCase.assertFalse(greater(d1, d1));
+        TestCase.assertFalse(greater(d2, d2));
+        TestCase.assertFalse(greater(d1, d2));
+        TestCase.assertFalse(greater(dnull, d1));
+        TestCase.assertTrue(greater(d1, dnull));
+        TestCase.assertFalse(greater(dnull, dnull));
+
+        TestCase.assertFalse(greater(s1, d1));
+        TestCase.assertFalse(greater(s2, d2));
+        TestCase.assertFalse(greater(s1, d2));
+        TestCase.assertFalse(greater(snull, d1));
+        TestCase.assertTrue(greater(s1, dnull));
+        TestCase.assertFalse(greater(snull, dnull));
+
+        TestCase.assertFalse(greater(d1, s1));
+        TestCase.assertFalse(greater(d2, s2));
+        TestCase.assertFalse(greater(d1, s2));
+        TestCase.assertFalse(greater(dnull, s1));
+        TestCase.assertTrue(greater(d1, snull));
+        TestCase.assertFalse(greater(dnull, snull));
+
+        TestCase.assertTrue(greaterEquals(s1, s1));
+        TestCase.assertTrue(greaterEquals(s2, s2));
+        TestCase.assertFalse(greaterEquals(s1, s2));
+        TestCase.assertFalse(greaterEquals(snull, s1));
+        TestCase.assertTrue(greaterEquals(s1, snull));
+        TestCase.assertTrue(greaterEquals(snull, snull));
+
+        TestCase.assertTrue(greaterEquals(d1, d1));
+        TestCase.assertTrue(greaterEquals(d2, d2));
+        TestCase.assertFalse(greaterEquals(d1, d2));
+        TestCase.assertFalse(greaterEquals(dnull, d1));
+        TestCase.assertTrue(greaterEquals(d1, dnull));
+        TestCase.assertTrue(greaterEquals(dnull, dnull));
+
+        TestCase.assertTrue(greaterEquals(s1, d1));
+        TestCase.assertTrue(greaterEquals(s2, d2));
+        TestCase.assertFalse(greaterEquals(s1, d2));
+        TestCase.assertFalse(greaterEquals(snull, d1));
+        TestCase.assertTrue(greaterEquals(s1, dnull));
+        TestCase.assertTrue(greaterEquals(snull, dnull));
+
+        TestCase.assertTrue(greaterEquals(d1, s1));
+        TestCase.assertTrue(greaterEquals(d2, s2));
+        TestCase.assertFalse(greaterEquals(d1, s2));
+        TestCase.assertFalse(greaterEquals(dnull, s1));
+        TestCase.assertTrue(greaterEquals(d1, snull));
+        TestCase.assertTrue(greaterEquals(dnull, snull));
+    }
+    
 }
