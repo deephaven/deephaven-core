@@ -260,7 +260,7 @@ class WhereListener extends MergedListener {
             if (permitParallelization) {
                 jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
             } else {
-                jobScheduler = ImmediateJobScheduler.INSTANCE;
+                jobScheduler = new ImmediateJobScheduler();
             }
         }
 
