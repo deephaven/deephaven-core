@@ -14787,7 +14787,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(greaterEquals(fv11, bv10));
         TestCase.assertTrue(greaterEquals(dv11, bv10));
     }
-    
+
     public static void test_string_locadate_compare() {
         final String s1 = "2023-11-23";
         final String s2 = "2023-11-24";
@@ -14895,7 +14895,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(less(dnull, d1));
         TestCase.assertFalse(less(d1, dnull));
         TestCase.assertFalse(less(dnull, dnull));
-        
+
         TestCase.assertFalse(less(s1, d1));
         TestCase.assertFalse(less(s2, d2));
         TestCase.assertTrue(less(s1, d2));
@@ -14909,7 +14909,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(less(dnull, s1));
         TestCase.assertFalse(less(d1, snull));
         TestCase.assertFalse(less(dnull, snull));
-        
+
         TestCase.assertTrue(lessEquals(s1, s1));
         TestCase.assertTrue(lessEquals(s2, s2));
         TestCase.assertTrue(lessEquals(s1, s2));
@@ -14994,5 +14994,5 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(greaterEquals(d1, snull));
         TestCase.assertTrue(greaterEquals(dnull, snull));
     }
-    
+
 }
