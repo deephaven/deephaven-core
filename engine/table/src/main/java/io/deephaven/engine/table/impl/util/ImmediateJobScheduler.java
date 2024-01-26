@@ -44,8 +44,9 @@ public class ImmediateJobScheduler implements JobScheduler {
         }
 
         try {
-            while (!pendingJobs.isEmpty()) {
-                pendingJobs.removeLast().run();
+            Runnable job;
+            while ((job = pendingJobs.pollLast()) != null) {
+                job.run();
             }
         } finally {
             processingThread.set(null);
