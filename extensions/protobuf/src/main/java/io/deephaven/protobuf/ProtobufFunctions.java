@@ -5,7 +5,7 @@ package io.deephaven.protobuf;
 
 import com.google.protobuf.Message;
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.TypedFunction;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;

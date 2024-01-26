@@ -28,6 +28,7 @@ import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -62,7 +63,6 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -127,8 +127,11 @@ public abstract class FlightMessageRoundTripTest {
 
         @Singleton
         @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
-            return new NoLanguageDeephavenSession(updateGraph, ThreadInitializationFactory.NO_OP, "non-script-session");
+        AbstractScriptSession<?> provideAbstractScriptSession(
+                final UpdateGraph updateGraph,
+                final OperationInitializer operationInitializer) {
+            return new NoLanguageDeephavenSession(
+                    updateGraph, operationInitializer, "non-script-session");
         }
 
         @Provides
@@ -184,6 +187,12 @@ public abstract class FlightMessageRoundTripTest {
         static UpdateGraph provideUpdateGraph() {
             return ExecutionContext.getContext().getUpdateGraph();
         }
+
+        @Provides
+        @Singleton
+        static OperationInitializer provideOperationInitializer() {
+            return ExecutionContext.getContext().getOperationInitializer();
+        }
     }
 
     public interface TestComponent {
@@ -193,13 +202,9 @@ public abstract class FlightMessageRoundTripTest {
 
         SessionService sessionService();
 
-        AbstractScriptSession<?> scriptSession();
-
         GrpcServer server();
 
         TestAuthModule.BasicAuthTestImpl basicAuthHandler();
-
-        Map<String, AuthenticationRequestHandler> authRequestHandlers();
 
         ExecutionContext executionContext();
 
@@ -216,7 +221,6 @@ public abstract class FlightMessageRoundTripTest {
     protected SessionService sessionService;
 
     private SessionState currentSession;
-    private AbstractScriptSession<?> scriptSession;
     private SafeCloseable executionContext;
     private Location serverLocation;
     protected TestComponent component;
@@ -243,7 +247,6 @@ public abstract class FlightMessageRoundTripTest {
         server.start();
         localPort = server.getPort();
 
-        scriptSession = component.scriptSession();
         sessionService = component.sessionService();
 
         serverLocation = Location.forGrpcInsecure("localhost", localPort);
@@ -302,7 +305,6 @@ public abstract class FlightMessageRoundTripTest {
         clientChannel.shutdownNow();
 
         sessionService.closeAllSessions();
-        scriptSession.release();
         executionContext.close();
 
         closeClient();
@@ -365,7 +367,7 @@ public abstract class FlightMessageRoundTripTest {
                 .allocator(new RootAllocator())
                 .build();
 
-        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // do get cannot be invoked by unauthenticated user
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
@@ -386,7 +388,7 @@ public abstract class FlightMessageRoundTripTest {
                 .allocator(new RootAllocator())
                 .build();
 
-        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // do get cannot be invoked by unauthenticated user
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
@@ -407,7 +409,7 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testLoginHeaderCustomBearer() {
         closeClient();
-        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // add the bearer token override
         final MutableBoolean tokenChanged = new MutableBoolean();
@@ -447,7 +449,7 @@ public abstract class FlightMessageRoundTripTest {
                 .allocator(new RootAllocator())
                 .build();
 
-        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         // do get cannot be invoked by unauthenticated user
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
@@ -482,7 +484,7 @@ public abstract class FlightMessageRoundTripTest {
         final String ANONYMOUS = "Anonymous";
 
         closeClient();
-        scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
+        ExecutionContext.getContext().getQueryScope().putParam("test", TableTools.emptyTable(10).update("I=i"));
 
         final MutableBoolean tokenChanged = new MutableBoolean();
         flightClient = FlightClient.builder().location(serverLocation)
@@ -651,8 +653,8 @@ public abstract class FlightMessageRoundTripTest {
                 () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
-        scriptSession.setVariable(staticTableName, table);
-        scriptSession.setVariable(tickingTableName, tickingTable);
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
 
         // test fetch info from scoped ticket
         assertInfoMatchesTable(flightClient.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
@@ -681,30 +683,28 @@ public abstract class FlightMessageRoundTripTest {
         final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> TableTools.timeTable(1_000_000).update("I = i"));
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
-            // stuff table into the scope
-            scriptSession.setVariable(staticTableName, table);
-            scriptSession.setVariable(tickingTableName, tickingTable);
+        // stuff table into the scope
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tickingTableName, tickingTable);
 
-            // test fetch info from scoped ticket
-            assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
-                    table);
-            assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
-                    tickingTable);
+        // test fetch info from scoped ticket
+        assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
+                table);
+        assertSchemaMatchesTable(flightClient.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
+                tickingTable);
 
-            // test list flights which runs through scoped tickets
-            final MutableInt seenTables = new MutableInt();
-            flightClient.listFlights(Criteria.ALL).forEach(fi -> {
-                seenTables.increment();
-                if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
-                    assertInfoMatchesTable(fi, table);
-                } else {
-                    assertInfoMatchesTable(fi, tickingTable);
-                }
-            });
+        // test list flights which runs through scoped tickets
+        final MutableInt seenTables = new MutableInt();
+        flightClient.listFlights(Criteria.ALL).forEach(fi -> {
+            seenTables.increment();
+            if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
+                assertInfoMatchesTable(fi, table);
+            } else {
+                assertInfoMatchesTable(fi, tickingTable);
+            }
+        });
 
-            Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
-        }
+        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
     }
 
     @Test
@@ -712,74 +712,72 @@ public abstract class FlightMessageRoundTripTest {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
-            // stuff table into the scope
-            scriptSession.setVariable(staticTableName, table);
+        // stuff table into the scope
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
 
-            // build up a snapshot request
-            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
+        // build up a snapshot request
+        byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
 
-            FlightDescriptor fd = FlightDescriptor.command(magic);
+        FlightDescriptor fd = FlightDescriptor.command(magic);
 
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
-                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+        try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-                final FlatBufferBuilder metadata = new FlatBufferBuilder();
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
-                // use 0 for batch size and max message size to use server-side defaults
-                int optOffset =
-                        BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
-                                false, 0, 0);
+            // use 0 for batch size and max message size to use server-side defaults
+            int optOffset =
+                    BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
+                            false, 0, 0);
 
-                final int ticOffset =
-                        BarrageSnapshotRequest.createTicketVector(metadata,
-                                ScopeTicketHelper.nameToBytes(staticTableName));
-                BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-                BarrageSnapshotRequest.addColumns(metadata, 0);
-                BarrageSnapshotRequest.addViewport(metadata, 0);
-                BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-                BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-                metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+            final int ticOffset =
+                    BarrageSnapshotRequest.createTicketVector(metadata,
+                            ScopeTicketHelper.nameToBytes(staticTableName));
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+            BarrageSnapshotRequest.addColumns(metadata, 0);
+            BarrageSnapshotRequest.addViewport(metadata, 0);
+            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
-                final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-                final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-                wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                        wrapper,
-                        0x6E687064, // the numerical representation of the ASCII "dphn".
-                        BarrageMessageType.BarrageSnapshotRequest,
-                        innerOffset));
+            final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+            final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+            wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                    wrapper,
+                    0x6E687064, // the numerical representation of the ASCII "dphn".
+                    BarrageMessageType.BarrageSnapshotRequest,
+                    innerOffset));
 
-                // extract the bytes and package them in an ArrowBuf for transmission
-                byte[] msg = wrapper.sizedByteArray();
-                ArrowBuf data = allocator.buffer(msg.length);
-                data.writeBytes(msg);
+            // extract the bytes and package them in an ArrowBuf for transmission
+            byte[] msg = wrapper.sizedByteArray();
+            ArrowBuf data = allocator.buffer(msg.length);
+            data.writeBytes(msg);
 
-                erw.getWriter().putMetadata(data);
-                erw.getWriter().completed();
+            erw.getWriter().putMetadata(data);
+            erw.getWriter().completed();
 
-                // read everything from the server (expecting schema message and one data message)
-                int totalRowCount = 0;
-                while (erw.getReader().next()) {
-                    final int offset = totalRowCount;
-                    final VectorSchemaRoot root = erw.getReader().getRoot();
-                    final int rowCount = root.getRowCount();
-                    totalRowCount += rowCount;
+            // read everything from the server (expecting schema message and one data message)
+            int totalRowCount = 0;
+            while (erw.getReader().next()) {
+                final int offset = totalRowCount;
+                final VectorSchemaRoot root = erw.getReader().getRoot();
+                final int rowCount = root.getRowCount();
+                totalRowCount += rowCount;
 
-                    // check the values against the source table
-                    org.apache.arrow.vector.IntVector iv =
-                            (org.apache.arrow.vector.IntVector) root.getVector(0);
-                    for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
-                    }
-                    org.apache.arrow.vector.Float8Vector dv =
-                            (org.apache.arrow.vector.Float8Vector) root.getVector(1);
-                    for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
-                                dv.get(i));
-                    }
+                // check the values against the source table
+                org.apache.arrow.vector.IntVector iv =
+                        (org.apache.arrow.vector.IntVector) root.getVector(0);
+                for (int i = 0; i < rowCount; ++i) {
+                    assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
                 }
-                assertEquals(table.size(), totalRowCount);
+                org.apache.arrow.vector.Float8Vector dv =
+                        (org.apache.arrow.vector.Float8Vector) root.getVector(1);
+                for (int i = 0; i < rowCount; ++i) {
+                    assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
+                            dv.get(i));
+                }
             }
+            assertEquals(table.size(), totalRowCount);
         }
     }
 
@@ -788,34 +786,32 @@ public abstract class FlightMessageRoundTripTest {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
-            // stuff table into the scope
-            scriptSession.setVariable(staticTableName, table);
+        // stuff table into the scope
+        ExecutionContext.getContext().getQueryScope().putParam(staticTableName, table);
 
-            // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
-            byte[] empty = new byte[] {};
-            final FlightDescriptor fd = FlightDescriptor.command(empty);
-            try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
-                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+        // java-flight requires us to send a message, but cannot add app metadata, send a dummy message
+        byte[] empty = new byte[] {};
+        final FlightDescriptor fd = FlightDescriptor.command(empty);
+        try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-                byte[] msg = new byte[0];
-                ArrowBuf data = allocator.buffer(msg.length);
-                data.writeBytes(msg);
+            byte[] msg = new byte[0];
+            ArrowBuf data = allocator.buffer(msg.length);
+            data.writeBytes(msg);
 
-                erw.getWriter().putMetadata(data);
-                erw.getWriter().completed();
+            erw.getWriter().putMetadata(data);
+            erw.getWriter().completed();
 
-                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
-                    erw.getReader().next();
-                });
+            Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                erw.getReader().next();
+            });
 
-                String expectedMessage = "failed to receive Barrage request metadata";
-                String actualMessage = exception.getMessage();
+            String expectedMessage = "failed to receive Barrage request metadata";
+            String actualMessage = exception.getMessage();
 
-                assertTrue(actualMessage.contains(expectedMessage));
-            }
-
+            assertTrue(actualMessage.contains(expectedMessage));
         }
+
     }
 
     @Test
@@ -837,7 +833,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         };
 
-        scriptSession.setVariable(tableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
         assertEquals(0, numTransforms.intValue());
@@ -849,8 +845,8 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(1, numTransforms.intValue());
 
         // check that the table was transformed
-        Object result = scriptSession.getVariable(resultTableName);
-        assertTrue(result instanceof Table);
+        Object result = ExecutionContext.getContext().getQueryScope().readParamValue(resultTableName, null);
+        assertTrue(result + "", result instanceof Table);
         assertEquals(1, ((Table) result).getColumnSources().size());
         assertEquals(2, table.getColumnSources().size());
     }
@@ -861,7 +857,7 @@ public abstract class FlightMessageRoundTripTest {
         final String tableName = "testSimpleServiceAuthWiringTest";
         final String resultTableName = tableName + "Result";
         final Table table = TableTools.emptyTable(10).update("I = -i", "J = -i");
-        scriptSession.setVariable(tableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
         try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
@@ -894,7 +890,7 @@ public abstract class FlightMessageRoundTripTest {
         // stuff table into the scope
         final String tableName = "testSimpleContextualAuthWiringTest";
         final Table table = TableTools.emptyTable(10).update("I = -i", "J = -i");
-        scriptSession.setVariable(tableName, table);
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
         try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
@@ -1017,7 +1013,7 @@ public abstract class FlightMessageRoundTripTest {
     public void testBarrageMessageAppendingMarshaller() {
         final int size = 100;
         final Table source = TableTools.emptyTable(size).update("I = ii", "J = `str_` + i");
-        scriptSession.setVariable("test", source);
+        ExecutionContext.getContext().getQueryScope().putParam("test", source);
 
         // fetch schema over flight
         final SchemaResult schema = flightClient.getSchema(arrowFlightDescriptorForName("test"));
@@ -1068,7 +1064,7 @@ public abstract class FlightMessageRoundTripTest {
             final Table appendOnly = TableTools.timeTable("PT1s")
                     .update("I = ii % 3", "J = `str_` + i");
             final Table withMods = appendOnly.lastBy("I");
-            scriptSession.setVariable("test", withMods);
+            ExecutionContext.getContext().getQueryScope().putParam("test", withMods);
         }
 
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()

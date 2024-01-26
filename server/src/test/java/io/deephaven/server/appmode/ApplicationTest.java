@@ -29,12 +29,11 @@ public class ApplicationTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private AbstractScriptSession session = null;
+    private AbstractScriptSession<?> session = null;
 
     @After
     public void tearDown() {
         if (session != null) {
-            session.release();
             session = null;
         }
     }
@@ -53,7 +52,7 @@ public class ApplicationTest {
     public void app01() throws IOException {
         session = new GroovyDeephavenSession(
                 ExecutionContext.getContext().getUpdateGraph(),
-                ThreadInitializationFactory.NO_OP,
+                ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app01(),
@@ -69,7 +68,7 @@ public class ApplicationTest {
     public void app02() throws IOException, InterruptedException, TimeoutException {
         session = new PythonDeephavenSession(
                 ExecutionContext.getDefaultContext().getUpdateGraph(),
-                ThreadInitializationFactory.NO_OP,
+                ExecutionContext.getContext().getOperationInitializer(), ThreadInitializationFactory.NO_OP,
                 NoOp.INSTANCE, null, false,
                 PythonEvaluatorJpy.withGlobalCopy());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app02(),

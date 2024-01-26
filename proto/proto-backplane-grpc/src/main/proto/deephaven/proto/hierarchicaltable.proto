@@ -161,6 +161,9 @@ message HierarchicalTableDescriptor {
   // "treeTable.isParentIdentifierColumn" is always "true" if set, and is set on the single column that links a
   // TreeTable row to its parent row.
   bytes snapshot_schema = 1;
+
+  // Whether or not this table might change.
+  bool is_static = 2;
 }
 
 message HierarchicalTableViewRequest {

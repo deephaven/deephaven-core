@@ -45,17 +45,16 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
 
     public static <ATTR extends Any> WritableIntChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getIntChunkPool().takeWritableIntChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableIntChunk(size);
         }
         return new WritableIntChunk<>(makeArray(size), 0, size);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static WritableIntChunk makeWritableChunkForPool(int size) {
-        return new WritableIntChunk(makeArray(size), 0, size) {
+    public static <ATTR extends Any> WritableIntChunk<ATTR> makeWritableChunkForPool(int size) {
+        return new WritableIntChunk<>(makeArray(size), 0, size) {
             @Override
             public void close() {
-                MultiChunkPool.forThisThread().getIntChunkPool().giveWritableIntChunk(this);
+                MultiChunkPool.forThisThread().giveWritableIntChunk(this);
             }
         };
     }

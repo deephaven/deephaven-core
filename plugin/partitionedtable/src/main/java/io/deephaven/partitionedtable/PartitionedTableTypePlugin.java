@@ -38,7 +38,8 @@ public class PartitionedTableTypePlugin extends ObjectTypeBase.FetchOnly {
         // Send Schema wrapped in Message
         ByteString schemaWrappedInMessage = BarrageUtil.schemaBytesFromTableDefinition(
                 partitionedTable.constituentDefinition(),
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                false);
 
         PartitionedTableDescriptor result = PartitionedTableDescriptor.newBuilder()
                 .addAllKeyColumnNames(partitionedTable.keyColumnNames())
