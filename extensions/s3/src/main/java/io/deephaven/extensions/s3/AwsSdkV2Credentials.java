@@ -5,7 +5,7 @@ package io.deephaven.extensions.s3;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
-interface AwsCredentialsImpl extends AwsCredentials {
+interface AwsSdkV2Credentials extends AwsCredentials {
 
     AwsCredentialsProvider awsCredentialsProvider();
 }

@@ -10,7 +10,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
  * Default AWS credentials provider that looks for credentials at a number of locations as described in
  * {@link DefaultCredentialsProvider}
  */
-enum DefaultCredentials implements AwsCredentialsImpl {
+enum DefaultCredentials implements AwsSdkV2Credentials {
     DEFAULT_CREDENTIALS;
 
     @Override

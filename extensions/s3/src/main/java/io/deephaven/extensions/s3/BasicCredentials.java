@@ -15,7 +15,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  */
 @Immutable
 @SimpleStyle
-abstract class BasicCredentials implements AwsCredentialsImpl {
+abstract class BasicCredentials implements AwsSdkV2Credentials {
 
     static BasicCredentials of(final String awsAccessKeyId, final String awsSecretAccessKey) {
         return ImmutableBasicCredentials.of(awsAccessKeyId, awsSecretAccessKey);
