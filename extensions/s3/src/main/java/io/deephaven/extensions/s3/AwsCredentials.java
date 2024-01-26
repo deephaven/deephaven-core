@@ -9,7 +9,7 @@ public interface AwsCredentials {
         return DefaultCredentials.DEFAULT_CREDENTIALS;
     }
 
-    static AwsCredentials staticCredentials(final String awsAccessKeyId, final String awsSecretAccessKey) {
-        return StaticCredentials.of(awsAccessKeyId, awsSecretAccessKey);
+    static AwsCredentials basicCredentials(final String awsAccessKeyId, final String awsSecretAccessKey) {
+        return BasicCredentials.of(awsAccessKeyId, awsSecretAccessKey);
     }
 }

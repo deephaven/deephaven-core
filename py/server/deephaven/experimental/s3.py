@@ -93,7 +93,7 @@ class S3Instructions(JObjectWrapper):
                 raise DHError("Either both aws_access_key_id and aws_secret_access_key must be provided or neither")
 
             if aws_access_key_id is not None:
-                builder.credentials(_JAwsCredentials.staticCredentials(aws_access_key_id, aws_secret_access_key))
+                builder.credentials(_JAwsCredentials.basicCredentials(aws_access_key_id, aws_secret_access_key))
 
             self._j_object = builder.build()
         except Exception as e:

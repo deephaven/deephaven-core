@@ -11,14 +11,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
- * AWS credentials provider that uses static access key and secret key.
+ * AWS credentials provider that uses access key and secret key provided at construction.
  */
 @Immutable
 @SimpleStyle
-abstract class StaticCredentials implements AwsCredentialsImpl {
+abstract class BasicCredentials implements AwsCredentialsImpl {
 
-    static StaticCredentials of(final String awsAccessKeyId, final String awsSecretAccessKey) {
-        return ImmutableStaticCredentials.of(awsAccessKeyId, awsSecretAccessKey);
+    static BasicCredentials of(final String awsAccessKeyId, final String awsSecretAccessKey) {
+        return ImmutableBasicCredentials.of(awsAccessKeyId, awsSecretAccessKey);
     }
 
     @Value.Parameter

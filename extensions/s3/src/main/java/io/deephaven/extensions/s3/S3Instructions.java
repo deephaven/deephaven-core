@@ -6,6 +6,7 @@ package io.deephaven.extensions.s3;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.configuration.Configuration;
 import org.immutables.value.Value;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 
 import java.time.Duration;
 
@@ -93,7 +94,7 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The credentials to use when reading or writing to S3.
+     * The credentials to use when reading or writing to S3. By default, uses {@link DefaultCredentialsProvider}.
      */
     @Value.Default
     public AwsCredentials credentials() {
