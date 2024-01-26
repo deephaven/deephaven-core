@@ -7,12 +7,15 @@ import io.deephaven.util.SafeCloseable;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
 public class ImmediateJobScheduler implements JobScheduler {
 
-    private final AtomicReference<Thread> processingThread = new AtomicReference<>();
+    private volatile Thread processingThread;
+    private static final AtomicReferenceFieldUpdater<ImmediateJobScheduler, Thread> PROCESSING_THREAD_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(ImmediateJobScheduler.class, Thread.class, "processingThread");
+
     private final Deque<Runnable> pendingJobs = new ArrayDeque<>();
 
     @Override
@@ -21,11 +24,10 @@ public class ImmediateJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        final Thread localProcessingThread = processingThread.get();
         final Thread thisThread = Thread.currentThread();
-        final boolean thisThreadIsProcessing = localProcessingThread == thisThread;
+        final boolean thisThreadIsProcessing = processingThread == thisThread;
 
-        if (!thisThreadIsProcessing && !processingThread.compareAndSet(null, thisThread)) {
+        if (!thisThreadIsProcessing && !PROCESSING_THREAD_UPDATER.compareAndSet(this, null, thisThread)) {
             throw new IllegalCallerException("An unexpected thread submitted a job to this job scheduler");
         }
 
@@ -49,7 +51,7 @@ public class ImmediateJobScheduler implements JobScheduler {
                 job.run();
             }
         } finally {
-            processingThread.set(null);
+            PROCESSING_THREAD_UPDATER.set(this, null);
         }
     }
 
