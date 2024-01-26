@@ -23,8 +23,10 @@ import static io.deephaven.extensions.s3.S3Instructions.MAX_FRAGMENT_SIZE;
  */
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
-    // We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
-    // There can be a performance penalty though if the fragment size is much smaller than the maximum size.
+    /**
+     * We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
+     * There can be a performance penalty though if the fragment size is much smaller than the maximum size.
+     */
     private static final int POOLED_BUFFER_SIZE = MAX_FRAGMENT_SIZE;
     private static final BufferPool bufferPool = new SegmentedBufferPool(POOLED_BUFFER_SIZE);
 
