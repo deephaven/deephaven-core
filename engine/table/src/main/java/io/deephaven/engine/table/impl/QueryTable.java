@@ -1479,7 +1479,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             && analyzer.allowCrossColumnParallelization()) {
                         jobScheduler = new OperationInitializerJobScheduler();
                     } else {
-                        jobScheduler = ImmediateJobScheduler.INSTANCE;
+                        jobScheduler = new ImmediateJobScheduler();
                     }
 
                     final QueryTable resultTable;
