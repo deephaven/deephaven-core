@@ -36,8 +36,8 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
         public char curVal = NULL_CHAR;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableCharChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableCharChunk.makeWritableChunk(chunkSize);
         }
 
         @Override

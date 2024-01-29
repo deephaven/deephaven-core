@@ -41,8 +41,8 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
         public double curVal = NULL_DOUBLE;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
         }
 
         @Override

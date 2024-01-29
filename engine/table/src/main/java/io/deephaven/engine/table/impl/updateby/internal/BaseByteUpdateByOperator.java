@@ -47,8 +47,8 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
         public byte curVal = NULL_BYTE;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableByteChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableByteChunk.makeWritableChunk(chunkSize);
         }
 
         @Override

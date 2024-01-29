@@ -41,8 +41,8 @@ public abstract class BaseIntUpdateByOperator extends UpdateByOperator {
         public int curVal = NULL_INT;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableIntChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableIntChunk.makeWritableChunk(chunkSize);
         }
 
         @Override

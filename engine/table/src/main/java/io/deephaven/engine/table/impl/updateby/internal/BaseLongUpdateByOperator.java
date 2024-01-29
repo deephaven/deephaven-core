@@ -41,8 +41,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         public long curVal = NULL_LONG;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableLongChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableLongChunk.makeWritableChunk(chunkSize);
         }
 
         @Override
