@@ -1,48 +1,57 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.table.util;
+package io.deephaven.extensions.trackedfile;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProviderPlugin.FILE_URI_SCHEME;
+
 /**
  * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven {@link TrackedFileHandleFactory}.
  */
-public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
-
-    private static volatile SeekableChannelsProvider instance;
-
-    public static SeekableChannelsProvider getInstance() {
-        if (instance == null) {
-            synchronized (TrackedSeekableChannelsProvider.class) {
-                if (instance == null) {
-                    return instance = new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
-                }
-            }
-        }
-        return instance;
-    }
+class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
-    public TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+    TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, path.toFile());
+    public SeekableChannelContext makeContext() {
+        // No additional context required for local FS
+        return SeekableChannelContext.NULL;
+    }
+
+    @Override
+    public boolean isCompatibleWith(@Nullable SeekableChannelContext channelContext) {
+        // Context is not used, hence always compatible
+        return true;
+    }
+
+    @Override
+    public final SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
+            @NotNull final URI uri)
+            throws IOException {
+        // context is unused here
+        Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
+        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
     }
 
     @Override
@@ -77,4 +86,7 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
             return fileHandleFactory.writeAppendCreateHandleCreator.invoke(file);
         }
     }
+
+    @Override
+    public void close() {}
 }

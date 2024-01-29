@@ -3,14 +3,15 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public interface ColumnChunkReader {
     /**
@@ -19,7 +20,7 @@ public interface ColumnChunkReader {
     long numRows();
 
     /**
-     * @return The value stored under the corresponding ColumnMetaData.num_values field
+     * @return The value stored under the corresponding ColumnMetaData.num_values field.
      */
     long numValues();
 
@@ -36,24 +37,41 @@ public interface ColumnChunkReader {
     OffsetIndex getOffsetIndex();
 
     /**
-     * @return An iterator over individual parquet pages
+     * Used to iterate over column page readers for each page with the capability to set channel context to for reading
+     * the pages.
      */
-    Iterator<ColumnPageReader> getPageIterator() throws IOException;
+    interface ColumnPageReaderIterator {
+        /**
+         * @return Whether there are more pages to iterate over.
+         */
+        boolean hasNext();
+
+        /**
+         * @param channelContext The channel context to use for constructing the reader
+         * @return The next page reader.
+         */
+        ColumnPageReader next(SeekableChannelContext channelContext);
+    }
+
+    /**
+     * @return An iterator over individual parquet pages.
+     */
+    ColumnPageReaderIterator getPageIterator() throws IOException;
 
     interface ColumnPageDirectAccessor {
         /**
          * Directly access a page reader for a given page number.
          */
-        ColumnPageReader getPageReader(final int pageNum);
+        ColumnPageReader getPageReader(int pageNum);
     }
 
     /**
-     * @return An accessor for individual parquet pages
+     * @return An accessor for individual parquet pages.
      */
     ColumnPageDirectAccessor getPageAccessor();
 
     /**
-     * @return Whether this column chunk uses a dictionary-based encoding on every page
+     * @return Whether this column chunk uses a dictionary-based encoding on every page.
      */
     boolean usesDictionaryOnEveryPage();
 
@@ -61,7 +79,7 @@ public interface ColumnChunkReader {
      * @return Supplier for a Parquet dictionary for this column chunk
      * @apiNote The result will never return {@code null}. It will instead supply {@link #NULL_DICTIONARY}.
      */
-    Supplier<Dictionary> getDictionarySupplier();
+    Function<SeekableChannelContext, Dictionary> getDictionarySupplier();
 
     Dictionary NULL_DICTIONARY = new NullDictionary();
 
@@ -85,4 +103,9 @@ public interface ColumnChunkReader {
      */
     @Nullable
     String getVersion();
+
+    /**
+     * @return The channel provider for this column chunk reader.
+     */
+    SeekableChannelsProvider getChannelsProvider();
 }

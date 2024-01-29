@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.format.RowGroup;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,9 +17,10 @@ public interface RowGroupReader {
      * Returns the accessor to a given Column Chunk
      * 
      * @param path the full column path
+     * @param channelContext the channel context to use while reading the parquet file
      * @return the accessor to a given Column Chunk
      */
-    ColumnChunkReader getColumnChunk(@NotNull List<String> path);
+    ColumnChunkReader getColumnChunk(@NotNull List<String> path, @NotNull final SeekableChannelContext channelContext);
 
     long numRows();
 

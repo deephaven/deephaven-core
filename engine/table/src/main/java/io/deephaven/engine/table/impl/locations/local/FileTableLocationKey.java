@@ -68,7 +68,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     /**
      * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
      * {@code partitions}, then compares {@code file}.
-     * 
+     *
      * @inheritDoc
      */
     @Override

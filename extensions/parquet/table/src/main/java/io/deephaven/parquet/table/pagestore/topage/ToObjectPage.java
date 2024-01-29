@@ -5,13 +5,14 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
 
@@ -22,7 +23,7 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
     ToPage<ATTR, T[]> create(
             final Class<T> nativeType,
             @NotNull final ObjectCodec<T> codec,
-            final Supplier<Dictionary> dictionarySupplier) {
+            final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (!nativeType.isPrimitive()) {
             return dictionarySupplier == null ? new ToObjectPage<>(nativeType, codec) :
                     new ToPageWithDictionary<>(
