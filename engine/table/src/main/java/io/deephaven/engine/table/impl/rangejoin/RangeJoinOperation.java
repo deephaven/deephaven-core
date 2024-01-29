@@ -255,7 +255,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
             jobScheduler = new OperationInitializerJobScheduler();
         } else {
-            jobScheduler = ImmediateJobScheduler.INSTANCE;
+            jobScheduler = new ImmediateJobScheduler();
         }
 
         final ExecutionContext executionContext = ExecutionContext.newBuilder()

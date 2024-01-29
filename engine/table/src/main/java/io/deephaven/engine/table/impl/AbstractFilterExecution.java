@@ -4,7 +4,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -172,8 +171,8 @@ abstract class AbstractFilterExecution {
                 QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT - 1) / QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
         final long targetSize = (updateSize + targetSegments - 1) / targetSegments;
 
-        final RowSetBuilderRandom addedBuilder = addSize <= 0 ? null : RowSetFactory.builderRandom();
-        final RowSetBuilderRandom modifiedBuilder = modifySize <= 0 ? null : RowSetFactory.builderRandom();
+        final WritableRowSet addedResult = addSize <= 0 ? null : RowSetFactory.empty();
+        final WritableRowSet modifiedResult = modifySize <= 0 ? null : RowSetFactory.empty();
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
@@ -188,14 +187,14 @@ abstract class AbstractFilterExecution {
                         // Clean up the row sets created by the filter.
                         try (final RowSet ignored = adds;
                                 final RowSet ignored2 = mods) {
-                            if (addedBuilder != null) {
-                                synchronized (addedBuilder) {
-                                    addedBuilder.addRowSet(adds);
+                            if (addedResult != null) {
+                                synchronized (addedResult) {
+                                    addedResult.insert(adds);
                                 }
                             }
-                            if (modifiedBuilder != null) {
-                                synchronized (modifiedBuilder) {
-                                    modifiedBuilder.addRowSet(mods);
+                            if (modifiedResult != null) {
+                                synchronized (modifiedResult) {
+                                    modifiedResult.insert(mods);
                                 }
                             }
                         }
@@ -221,10 +220,7 @@ abstract class AbstractFilterExecution {
                                 modifiedInputToUse, startOffSet - addSize, endOffset - addSize,
                                 onFilterComplete, nec);
                     }
-                }, () -> onComplete.accept(
-                        addedBuilder == null ? null : addedBuilder.build(),
-                        modifiedBuilder == null ? null : modifiedBuilder.build()),
-                onError);
+                }, () -> onComplete.accept(addedResult, modifiedResult), onError);
     }
 
     public LogOutput append(LogOutput output) {
