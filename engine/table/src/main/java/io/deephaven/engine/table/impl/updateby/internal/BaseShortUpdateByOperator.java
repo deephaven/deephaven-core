@@ -41,8 +41,8 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
         public short curVal = NULL_SHORT;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableShortChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableShortChunk.makeWritableChunk(chunkSize);
         }
 
         @Override

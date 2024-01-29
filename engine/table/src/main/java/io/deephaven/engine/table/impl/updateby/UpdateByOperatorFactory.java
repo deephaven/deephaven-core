@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
 import io.deephaven.engine.table.impl.updateby.rollingcount.*;
+import io.deephaven.engine.table.impl.updateby.rollingformula.*;
 import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
 import io.deephaven.engine.table.impl.updateby.rollingavg.*;
 import io.deephaven.engine.table.impl.updateby.rollingminmax.*;
@@ -513,6 +514,20 @@ public class UpdateByOperatorFactory {
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeRollingCountOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final RollingFormulaSpec spec) {
+            final boolean isTimeBased = spec.revWindowScale().isTimeBased();
+            final String timestampCol = spec.revWindowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingFormulaOperator(fc,
                             source,
                             spec))
                     .forEach(ops::add);
@@ -1341,5 +1356,69 @@ public class UpdateByOperatorFactory {
 
             throw new IllegalArgumentException("Can not perform RollingWAvg on type " + csType);
         }
+
+        private UpdateByOperator makeRollingFormulaOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final RollingFormulaSpec rs) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (rs.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            }
+
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+            if (csType == char.class || csType == Character.class) {
+                return new CharRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            }
+
+            if (csType == Boolean.class || csType == boolean.class) {
+                return new ByteRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        NULL_BOOLEAN_AS_BYTE);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+            }
+            return new ObjectRollingFormulaOperator(pair, affectingColumns, rowRedirection,
+                    rs.revWindowScale().timestampCol(),
+                    prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+        }
+
     }
 }
