@@ -13,7 +13,6 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-22.04
-    if: ${{ github.repository_owner == 'deephaven' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,14 +40,14 @@ jobs:
           cat gradle.properties
 
       - name: Setup Node for deployment to npmjs
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version-file: 'web/client-api/types/.nvmrc'
           registry-url: 'https://registry.npmjs.org'
 
       # TODO(deephaven-core#2614): Improve gradle/CI assemble and publishing of artifacts
 
-      - name: Publish to Maven Local
+      - name: Build all artifacts, publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
         uses: burrunan/gradle-cache-action@v1
         with:
