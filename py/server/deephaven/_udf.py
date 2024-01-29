@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import inspect
 import re
+import sys
 from dataclasses import dataclass, field
 from functools import wraps
 from typing import Callable, List, Any, Union, Tuple, _GenericAlias
@@ -104,10 +105,11 @@ def _parse_param_annotation(annotation: Any) -> _ParsedParamAnnotation:
     return p_annotation
 
 
-def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedParamAnnotation, t: type) -> None:
+def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedParamAnnotation, t: Union[type, str]) -> None:
     """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
+    t = eval(t) if isinstance(t, str) else t
     p_annotation.orig_types.add(t)
     tc = _encode_param_type(t)
     if "[" in tc:
@@ -232,7 +234,10 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
-        sig = inspect.signature(fn, eval_str=True)
+        if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+            sig = inspect.signature(fn, eval_str=True)
+        else:
+            sig = inspect.signature(fn)
         for n, p in sig.parameters.items():
             p_sig.params.append(_parse_param_annotation(p.annotation))
 
@@ -240,7 +245,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return p_sig
 
 
-def _is_from_np_type(param_types:set[type], np_type_char: str) -> bool:
+def _is_from_np_type(param_types: set[type], np_type_char: str) -> bool:
     """ Determine if the given numpy type char comes for a numpy type in the given set of parameter type annotations"""
     for t in param_types:
         if issubclass(t, np.generic) and np.dtype(t).char == np_type_char:
