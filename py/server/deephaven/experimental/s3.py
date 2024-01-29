@@ -24,31 +24,6 @@ _JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
 class S3Instructions(JObjectWrapper):
     """
     S3Instructions provides specialized instructions for reading from AWS S3.
-
-    Args:
-        aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, mandatory parameter.
-        max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3.
-            default is 50.
-        read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
-            fragment. Defaults to 1, which means fetch the next fragment in advance when reading the current fragment.
-        fragment_size (int): the maximum size of each fragment to read from S3, defaults to 5 MB. If there are fewer
-            bytes remaining in the file, the fetched fragment can be smaller.
-        max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 32. This
-            caching is done at the deephaven layer for faster access to recently read fragments.
-        connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
-            the amount of time to wait when initially establishing a connection before giving up and timing out, can be
-            expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other
-            time duration types. Default to 2 seconds.
-        read_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
-            the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as an
-            integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration
-            types. Default to 2 seconds.
-        aws_access_key_id (str): the AWS access key for reading parquet files stored in AWS S3. Both access key and
-            secret key must be provided to use static credentials, else default credentials will be used from
-            software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
-        aws_secret_access_key (str): the AWS secret access key for reading parquet files stored in AWS S3. Both access
-            key and secret key must be provided to use static credentials, else default credentials will be used from
-            software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
     """
 
     j_object_type = _JS3Instructions
@@ -65,6 +40,38 @@ class S3Instructions(JObjectWrapper):
                      Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
                  aws_access_key_id: Optional[str] = None,
                  aws_secret_access_key: Optional[str] = None):
+
+        """
+        Initializes the instructions.
+
+        Args:
+            aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, mandatory parameter.
+            max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3.
+                default is 50.
+            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
+                fragment. Default to 1, which means fetch the next fragment in advance when reading the current fragment.
+            fragment_size (int): the maximum size of each fragment to read from S3, defaults to 5 MB. If there are fewer
+                bytes remaining in the file, the fetched fragment can be smaller.
+            max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 32. This
+                caching is done at the deephaven layer for faster access to recently read fragments.
+            connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+                the amount of time to wait when initially establishing a connection before giving up and timing out, can
+                be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
+                other time duration types. Default to 2 seconds.
+            read_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+                the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
+                an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
+                duration types. Default to 2 seconds.
+            aws_access_key_id (str): the AWS access key for reading parquet files stored in AWS S3. Both access key and
+                secret key must be provided to use static credentials, else default credentials will be used from
+                software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
+            aws_secret_access_key (str): the AWS secret access key for reading parquet files stored in AWS S3. Both
+                access key and secret key must be provided to use static credentials, else default credentials will be
+                used from software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
+
+        Raises:
+            DHError: If unable to build the instructions object.
+        """
 
         try:
             builder = self.j_object_type.builder()
