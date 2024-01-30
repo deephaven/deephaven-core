@@ -142,6 +142,10 @@ public abstract class S3Instructions {
 
         Builder endpointOverride(URI endpointOverride);
 
+        default Builder endpointOverride(String endpointOverride) {
+            return endpointOverride(URI.create(endpointOverride));
+        }
+
         S3Instructions build();
     }
 

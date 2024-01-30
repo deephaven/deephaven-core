@@ -39,7 +39,8 @@ class S3Instructions(JObjectWrapper):
                  read_timeout: Union[
                      Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
                  aws_access_key_id: Optional[str] = None,
-                 aws_secret_access_key: Optional[str] = None):
+                 aws_secret_access_key: Optional[str] = None,
+                 endpoint_override: Optional[str] = None):
 
         """
         Initializes the instructions.
@@ -68,6 +69,7 @@ class S3Instructions(JObjectWrapper):
             aws_secret_access_key (str): the AWS secret access key for reading parquet files stored in AWS S3. Both
                 access key and secret key must be provided to use static credentials, else default credentials will be
                 used from software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
+            endpoint_override (str): the endpoint with which the SDK should communicate.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -101,6 +103,9 @@ class S3Instructions(JObjectWrapper):
 
             if aws_access_key_id is not None:
                 builder.credentials(_JAwsCredentials.basicCredentials(aws_access_key_id, aws_secret_access_key))
+
+            if endpoint_override is not None:
+                builder.endpointOverride(endpoint_override)
 
             self._j_object = builder.build()
         except Exception as e:
