@@ -53,7 +53,6 @@ public class ShortRollingFormulaOperator extends BaseRollingFormulaOperator {
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
 
-            final String inputColumnName = pair.rightColumn;
             shortWindowValues = new ShortRingBuffer(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
@@ -63,7 +62,7 @@ public class ShortRollingFormulaOperator extends BaseRollingFormulaOperator {
             formulaInputSource = (SingleValueColumnSource<ShortVector>)SingleValueColumnSource.getSingleValueColumnSource(vectorType);
             formulaInputSource.set(new ShortRingBufferVectorWrapper(shortWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
-                    Collections.singletonMap(inputColumnName, formulaInputSource));
+                    Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
             formulaOutputSource = formulaCopy.getDataView();
 

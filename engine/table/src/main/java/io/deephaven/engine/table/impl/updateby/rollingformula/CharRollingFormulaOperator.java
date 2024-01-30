@@ -48,7 +48,6 @@ public class CharRollingFormulaOperator extends BaseRollingFormulaOperator {
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
 
-            final String inputColumnName = pair.rightColumn;
             charWindowValues = new CharRingBuffer(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
@@ -58,7 +57,7 @@ public class CharRollingFormulaOperator extends BaseRollingFormulaOperator {
             formulaInputSource = (SingleValueColumnSource<CharVector>)SingleValueColumnSource.getSingleValueColumnSource(vectorType);
             formulaInputSource.set(new CharRingBufferVectorWrapper(charWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
-                    Collections.singletonMap(inputColumnName, formulaInputSource));
+                    Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
             formulaOutputSource = formulaCopy.getDataView();
 

@@ -10,9 +10,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.generator.CharGenerator;
-import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
-import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -1215,6 +1213,48 @@ public class TestRollingFormula extends BaseUpdateByTest {
                 throw ex;
             }
         }
+    }
+
+    // endregion
+
+    // region Special Tests
+
+    @Test
+    public void testRepeatedColumnTypes() {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131,
+                new String[] {"intCol2", "longCol2"},
+                new TestDataGenerator[] {
+                        new IntGenerator(10, 100, .1),
+                        new LongGenerator(10, 100, .1),
+                }).t;
+
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
+        Table actual;
+        Table expected;
+
+        String[] testColumns = new String[] {"intCol", "intCol2", "longCol", "longCol2"};
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Count vs. RollingCount
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(x)", "x", testColumns));
+        expected = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, testColumns));
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Identity vs. RollingGroup
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "x", "x", testColumns));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, testColumns))
+                .update(Arrays.stream(testColumns).map(c -> c + "=" + c + ".getDirect()").toArray(String[]::new));
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
     }
 
     // endregion

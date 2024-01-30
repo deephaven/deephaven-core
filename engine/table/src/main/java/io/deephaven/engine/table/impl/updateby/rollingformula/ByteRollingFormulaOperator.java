@@ -54,7 +54,6 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
 
-            final String inputColumnName = pair.rightColumn;
             byteWindowValues = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
@@ -64,7 +63,7 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
             formulaInputSource = (SingleValueColumnSource<ByteVector>)SingleValueColumnSource.getSingleValueColumnSource(vectorType);
             formulaInputSource.set(new ByteRingBufferVectorWrapper(byteWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
-                    Collections.singletonMap(inputColumnName, formulaInputSource));
+                    Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
             formulaOutputSource = formulaCopy.getDataView();
 

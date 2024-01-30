@@ -30,6 +30,7 @@ import static io.deephaven.util.QueryConstants.*;
 
 
 abstract class BaseRollingFormulaOperator extends UpdateByOperator {
+    protected final String PARAM_COLUMN_NAME = "__PARAM_COLUMN__";
     protected final WritableColumnSource<?> outputSource;
     protected final WritableColumnSource<?> maybeInnerSource;
 
@@ -99,26 +100,27 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true);
-        final String inputColumnName = pair.rightColumn;
         final String outputColumnName = pair.leftColumn;
 
         // Must use the primitive column source for the formula column.
         final ColumnSource<?> reinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(inputSource);
         vectorType = getVectorType(reinterpretedSource);
 
+        // Handle the rare (and probably not useful) case where the formula is an identity formula. We need to make
+        // a copy of the RingBuffer wrapper and store that as a DirectVector. If not, we will point to the live data
+        // in the ring.
+        final String formulaToUse = formula.equals(paramToken) ? formula + ".getDirect()" : formula;
+
         // Re-use the formula column if it's already been created for this type. No need to synchronize; these
         // operators are created serially.
+        // TODO: does generic Object need to be handled uniquely?
         formulaColumn = formulaColumnMap.computeIfAbsent(reinterpretedSource.getType(), t -> {
-            // Handle the rare (and probably not useful) case where the formula is an identity formula. We need to make
-            // a copy of the RingBuffer wrapper and store that as a DirectVector.
-            final String formulaToUse = formula.equals(paramToken) ? formula + ".getDirect()" : formula;
-
             final FormulaColumn tmp = FormulaColumn.createFormulaColumn(outputColumnName,
-                    FormulaUtil.replaceFormulaTokens(formulaToUse, paramToken, inputColumnName));
+                    FormulaUtil.replaceFormulaTokens(formulaToUse, paramToken, PARAM_COLUMN_NAME));
 
             final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
-                    .fromGenericType(inputColumnName, vectorType, reinterpretedSource.getType());
-            tmp.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition));
+                    .fromGenericType(PARAM_COLUMN_NAME, vectorType, reinterpretedSource.getType());
+            tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition));
             return tmp;
         });
 

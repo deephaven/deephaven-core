@@ -47,15 +47,13 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
 
-            final String inputColumnName = pair.rightColumn;
-
             // Make a copy of the operator formula column.
             final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
             formulaInputSource = (SingleValueColumnSource<ObjectVector<T>>)SingleValueColumnSource.getSingleValueColumnSource(vectorType);
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
-                    Collections.singletonMap(inputColumnName, formulaInputSource));
+                    Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
             formulaOutputSource = formulaCopy.getDataView();
 
             windowValues = new ObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, true);
