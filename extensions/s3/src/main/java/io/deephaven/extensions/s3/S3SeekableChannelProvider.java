@@ -3,7 +3,6 @@
  */
 package io.deephaven.extensions.s3;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
@@ -40,11 +39,10 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .build();
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
-        Assert.instanceOf(s3Instructions.credentials(), "credentials", AwsSdkV2Credentials.class);
         this.s3AsyncClient = S3AsyncClient.builder()
                 .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
-                .credentialsProvider(((AwsSdkV2Credentials) s3Instructions.credentials()).awsCredentialsProvider())
+                .credentialsProvider(s3Instructions.awsCredentialsProvider())
                 .build();
         this.s3Instructions = s3Instructions;
     }

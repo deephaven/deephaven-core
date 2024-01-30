@@ -5,15 +5,17 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.configuration.Configuration;
-import org.immutables.value.Value;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Default;
+import org.immutables.value.Value.Immutable;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 import java.time.Duration;
 
 /**
  * This class provides instructions intended for reading and writing data to AWS S3 instances.
  */
-@Value.Immutable
+@Immutable
 @BuildableStyle
 public abstract class S3Instructions {
 
@@ -22,7 +24,7 @@ public abstract class S3Instructions {
 
     private final static String MAX_FRAGMENT_SIZE_CONFIG_PARAM = "S3.maxFragmentSize";
     final static int MAX_FRAGMENT_SIZE =
-            Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MB
+            Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MiB
     private final static int DEFAULT_FRAGMENT_SIZE = MAX_FRAGMENT_SIZE;
 
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KB
@@ -42,7 +44,7 @@ public abstract class S3Instructions {
     /**
      * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
      */
-    @Value.Default
+    @Default
     public int maxConcurrentRequests() {
         return DEFAULT_MAX_CONCURRENT_REQUESTS;
     }
@@ -52,17 +54,17 @@ public abstract class S3Instructions {
      * {@value #DEFAULT_READ_AHEAD_COUNT}, which means by default, we will fetch {@value #DEFAULT_READ_AHEAD_COUNT}
      * fragments in advance when reading current fragment.
      */
-    @Value.Default
+    @Default
     public int readAheadCount() {
         return DEFAULT_READ_AHEAD_COUNT;
     }
 
     /**
-     * The maximum size of each fragment to read from S3, defaults to the value of config parameter
-     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}. If there are fewer bytes remaining in the file, the fetched fragment can
-     * be smaller.
+     * The maximum byte size of each fragment to read from S3, defaults to the value of config parameter
+     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}, or 5 MiB if unset. If there are fewer bytes remaining in the file, the
+     * fetched fragment can be smaller.
      */
-    @Value.Default
+    @Default
     public int fragmentSize() {
         return DEFAULT_FRAGMENT_SIZE;
     }
@@ -71,7 +73,7 @@ public abstract class S3Instructions {
      * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is
      * done at the deephaven layer for faster access to recently read fragments.
      */
-    @Value.Default
+    @Default
     public int maxCacheSize() {
         return DEFAULT_MAX_CACHE_SIZE;
     }
@@ -80,7 +82,7 @@ public abstract class S3Instructions {
      * The amount of time to wait when initially establishing a connection before giving up and timing out, defaults to
      * 2 seconds.
      */
-    @Value.Default
+    @Default
     public Duration connectionTimeout() {
         return DEFAULT_CONNECTION_TIMEOUT;
     }
@@ -88,51 +90,18 @@ public abstract class S3Instructions {
     /**
      * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds
      */
-    @Value.Default
+    @Default
     public Duration readTimeout() {
         return DEFAULT_READ_TIMEOUT;
     }
 
     /**
-     * The credentials to use when reading or writing to S3. By default, uses {@link DefaultCredentialsProvider}.
+     * The credentials to use when reading or writing to S3. By default, uses
+     * {@link AwsCredentials#defaultCredentials()}.
      */
-    @Value.Default
+    @Default
     public AwsCredentials credentials() {
         return AwsCredentials.defaultCredentials();
-    }
-
-    @Value.Check
-    final void boundsCheckMaxConcurrentRequests() {
-        if (maxConcurrentRequests() < 1) {
-            throw new IllegalArgumentException("maxConcurrentRequests(=" + maxConcurrentRequests() + ") must be >= 1");
-        }
-    }
-
-    @Value.Check
-    final void boundsCheckReadAheadCount() {
-        if (readAheadCount() < 0) {
-            throw new IllegalArgumentException("readAheadCount(=" + readAheadCount() + ") must be >= 0");
-        }
-    }
-
-    @Value.Check
-    final void boundsCheckMaxFragmentSize() {
-        if (fragmentSize() < MIN_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
-                    " bytes");
-        }
-        if (fragmentSize() > MAX_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be <= " + MAX_FRAGMENT_SIZE +
-                    " bytes");
-        }
-    }
-
-    @Value.Check
-    final void boundsCheckMaxCacheSize() {
-        if (maxCacheSize() < readAheadCount() + 1) {
-            throw new IllegalArgumentException("maxCacheSize(=" + maxCacheSize() + ") must be >= 1 + " +
-                    "readAheadCount(=" + readAheadCount() + ")");
-        }
     }
 
     public interface Builder {
@@ -153,5 +122,51 @@ public abstract class S3Instructions {
         Builder credentials(AwsCredentials credentials);
 
         S3Instructions build();
+    }
+
+    @Check
+    final void boundsCheckMaxConcurrentRequests() {
+        if (maxConcurrentRequests() < 1) {
+            throw new IllegalArgumentException("maxConcurrentRequests(=" + maxConcurrentRequests() + ") must be >= 1");
+        }
+    }
+
+    @Check
+    final void boundsCheckReadAheadCount() {
+        if (readAheadCount() < 0) {
+            throw new IllegalArgumentException("readAheadCount(=" + readAheadCount() + ") must be >= 0");
+        }
+    }
+
+    @Check
+    final void boundsCheckMaxFragmentSize() {
+        if (fragmentSize() < MIN_FRAGMENT_SIZE) {
+            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
+                    " bytes");
+        }
+        if (fragmentSize() > MAX_FRAGMENT_SIZE) {
+            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be <= " + MAX_FRAGMENT_SIZE +
+                    " bytes");
+        }
+    }
+
+    @Check
+    final void boundsCheckMaxCacheSize() {
+        if (maxCacheSize() < readAheadCount() + 1) {
+            throw new IllegalArgumentException("maxCacheSize(=" + maxCacheSize() + ") must be >= 1 + " +
+                    "readAheadCount(=" + readAheadCount() + ")");
+        }
+    }
+
+    @Check
+    final void awsSdkV2Credentials() {
+        if (!(credentials() instanceof AwsSdkV2Credentials)) {
+            throw new IllegalArgumentException(
+                    "credentials() must be created via provided io.deephaven.extensions.s3.AwsCredentials methods");
+        }
+    }
+
+    final AwsCredentialsProvider awsCredentialsProvider() {
+        return ((AwsSdkV2Credentials) credentials()).awsCredentialsProvider();
     }
 }
