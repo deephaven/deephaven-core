@@ -636,22 +636,22 @@ public class UpdateBySpecBuilderTest {
     void rollingFormula() {
         check(RollingFormulaSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2), "sum(x)", "x"),
                 UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
-                                UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
-                                        .setReverseWindowScale(time("Timestamp", 1))
-                                        .setForwardWindowScale(time("Timestamp", 2))
-                                        .setFormula("sum(x)")
-                                        .setParamToken("x")
-                                        .build())
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                .setReverseWindowScale(time("Timestamp", 1))
+                                .setForwardWindowScale(time("Timestamp", 2))
+                                .setFormula("sum(x)")
+                                .setParamToken("x")
+                                .build())
                         .build());
 
         check(RollingFormulaSpec.ofTicks(42L, 43L, "sum(x)", "x"),
                 UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
-                                UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
-                                        .setReverseWindowScale(ticks(42L))
-                                        .setForwardWindowScale(ticks(43L))
-                                        .setFormula("sum(x)")
-                                        .setParamToken("x")
-                                        .build())
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                .setReverseWindowScale(ticks(42L))
+                                .setForwardWindowScale(ticks(43L))
+                                .setFormula("sum(x)")
+                                .setParamToken("x")
+                                .build())
                         .build());
     }
 
