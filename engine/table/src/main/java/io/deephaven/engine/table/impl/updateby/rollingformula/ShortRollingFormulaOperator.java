@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -164,11 +165,12 @@ public class ShortRollingFormulaOperator extends BaseRollingFormulaOperator {
             final long forwardWindowScaleUnits,
             @NotNull final String formula,
             @NotNull final String paramToken,
-            @NotNull final ColumnSource<?> inputSource
+            @NotNull final ColumnSource<?> inputSource,
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap
             // region extra-constructor-args
             // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, inputSource);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, inputSource, formulaColumnMap);
         // region constructor
         // endregion constructor
     }

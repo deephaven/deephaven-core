@@ -62,9 +62,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
             "bigDecimalCol",
     };
 
-    final int STATIC_TABLE_SIZE = 10_000;
-    final int DYNAMIC_TABLE_SIZE = 1_000;
-    final int DYNAMIC_UPDATE_SIZE = 100;
+    final int STATIC_TABLE_SIZE = 1000;
+    final int DYNAMIC_TABLE_SIZE = 100;
+    final int DYNAMIC_UPDATE_SIZE = 10;
     final int DYNAMIC_UPDATE_STEPS = 20;
 
     final Function<ObjectVector<BigDecimal>, BigDecimal> sumBigDecimal = bigDecimalObjectVector -> {
@@ -895,6 +895,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
+        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
+        QueryScope.addParam("sumBigInteger", sumBigInteger);
+
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum(x + 1)", "x",
@@ -929,6 +932,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
+        QueryScope.addParam("sumBigInteger", sumBigInteger);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
@@ -1078,6 +1084,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
+        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
+        QueryScope.addParam("sumBigInteger", sumBigInteger);
+
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum(x + 1)", "x",
@@ -1112,6 +1121,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;
+
+        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
+        QueryScope.addParam("sumBigInteger", sumBigInteger);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed

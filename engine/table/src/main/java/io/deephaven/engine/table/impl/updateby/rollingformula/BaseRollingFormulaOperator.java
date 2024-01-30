@@ -92,7 +92,8 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             final long forwardWindowScaleUnits,
             @NotNull final String formula,
             @NotNull final String paramToken,
-            @NotNull final ColumnSource<?> inputSource
+            @NotNull final ColumnSource<?> inputSource,
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
@@ -101,20 +102,25 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
         final String inputColumnName = pair.rightColumn;
         final String outputColumnName = pair.leftColumn;
 
-        // Handle the rare (and probably not useful) case where the formula is an identity formula. We need to make
-        // a copy of the RingBuffer wrapper and store that as a DirectVector.
-        final String formulaToUse = formula.equals(paramToken) ? formula + ".getDirect()" : formula;
-
-        formulaColumn = FormulaColumn.createFormulaColumn(outputColumnName,
-                FormulaUtil.replaceFormulaTokens(formulaToUse, paramToken, inputColumnName));
-
         // Must use the primitive column source for the formula column.
         final ColumnSource<?> reinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(inputSource);
         vectorType = getVectorType(reinterpretedSource);
 
-        final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
-                .fromGenericType(inputColumnName, vectorType, reinterpretedSource.getType());
-        formulaColumn.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition));
+        // Re-use the formula column if it's already been created for this type. No need to synchronize; these
+        // operators are created serially.
+        formulaColumn = formulaColumnMap.computeIfAbsent(reinterpretedSource.getType(), t -> {
+            // Handle the rare (and probably not useful) case where the formula is an identity formula. We need to make
+            // a copy of the RingBuffer wrapper and store that as a DirectVector.
+            final String formulaToUse = formula.equals(paramToken) ? formula + ".getDirect()" : formula;
+
+            final FormulaColumn tmp = FormulaColumn.createFormulaColumn(outputColumnName,
+                    FormulaUtil.replaceFormulaTokens(formulaToUse, paramToken, inputColumnName));
+
+            final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
+                    .fromGenericType(inputColumnName, vectorType, reinterpretedSource.getType());
+            tmp.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition));
+            return tmp;
+        });
 
         if (rowRedirection != null) {
             // region create-dense

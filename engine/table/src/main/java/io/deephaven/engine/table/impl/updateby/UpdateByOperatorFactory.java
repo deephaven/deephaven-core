@@ -9,6 +9,7 @@ import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
 import io.deephaven.engine.table.impl.updateby.delta.*;
@@ -525,11 +526,12 @@ public class UpdateByOperatorFactory {
             final boolean isTimeBased = spec.revWindowScale().isTimeBased();
             final String timestampCol = spec.revWindowScale().timestampCol();
 
+            // These operators can re-use formula columns when the types match.
+            final Map<Class<?>, FormulaColumn> formulaColumnMap = new HashMap<>();
+
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
-                    .map(fc -> makeRollingFormulaOperator(fc,
-                            source,
-                            spec))
+                    .map(fc -> makeRollingFormulaOperator(fc, source, formulaColumnMap, spec))
                     .forEach(ops::add);
             return null;
         }
@@ -1359,6 +1361,7 @@ public class UpdateByOperatorFactory {
 
         private UpdateByOperator makeRollingFormulaOperator(@NotNull final MatchPair pair,
                 @NotNull final Table source,
+                @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
                 @NotNull final RollingFormulaSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
@@ -1374,50 +1377,53 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
-            if (csType == char.class || csType == Character.class) {
-                return new CharRollingFormulaOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
-            }
-
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap,
                         NULL_BOOLEAN_AS_BYTE);
             } else if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap,
                         NULL_BYTE);
             } else if (csType == char.class || csType == Character.class) {
                 return new CharRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                        formulaColumnMap);
             }
             return new ObjectRollingFormulaOperator(pair, affectingColumns, rowRedirection,
                     rs.revWindowScale().timestampCol(),
-                    prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource);
+                    prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(), columnSource,
+                    formulaColumnMap);
         }
 
     }
