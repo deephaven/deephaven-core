@@ -21,10 +21,13 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 public class RowGroupReaderImpl implements RowGroupReader {
 
@@ -79,9 +82,19 @@ public class RowGroupReaderImpl implements RowGroupReader {
             return null;
         }
 
+        // TODO Pass this to lower layers
+        final URI columnChunkURI;
+        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
+            columnChunkURI = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
+        } else {
+            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
+            columnChunkURI = rootURI;
+        }
+
         OffsetIndex offsetIndex = null;
         if (columnChunk.isSetOffset_index_offset()) {
-            try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(channelContext, rootURI)) {
+            try (final SeekableByteChannel readChannel =
+                    channelsProvider.getReadChannel(channelContext, columnChunkURI)) {
                 readChannel.position(columnChunk.getOffset_index_offset());
                 offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
                         new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));

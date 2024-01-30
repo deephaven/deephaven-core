@@ -468,6 +468,21 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void basicWriteReadTest() {
+        final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "basicWriteReadTest.parquet";
+        final File destFile = new File(rootFile, filename);
+        writeTable(table, destFile, EMPTY);
+
+        final Table fromDisk = readTable(destFile);
+        assertTableEquals(table, fromDisk);
+
+        final File metadataFile = new File(rootFile, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(table, fromDiskWithMetadata);
+    }
+
+    @Test
     public void testVectorColumns() {
         final Table table = getTableFlat(20000, true, false);
         // Take a groupBy to create vector columns containing null values
