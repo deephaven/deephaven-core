@@ -109,7 +109,11 @@ def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedParamAnnotation,
     """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
+    # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get the type
+    # when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature, so that
+    # annotation is already a type, and we can remove this line.
     t = eval(t) if isinstance(t, str) else t
+    
     p_annotation.orig_types.add(t)
     tc = _encode_param_type(t)
     if "[" in tc:
