@@ -20,4 +20,31 @@ dependencies {
 
     Classpaths.inheritAutoService(project)
     Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    testImplementation "org.testcontainers:testcontainers:1.19.4"
+    testImplementation "org.testcontainers:junit-jupiter:1.19.4"
+    testImplementation "org.testcontainers:localstack:1.19.4"
+    testImplementation "org.testcontainers:minio:1.19.4"
+
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
+
+test {
+    useJUnitPlatform {
+        excludeTags("testcontainers")
+    }
+}
+
+tasks.register('testOutOfBand', Test) {
+    useJUnitPlatform {
+        includeTags("testcontainers")
+    }
+}
+

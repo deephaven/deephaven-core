@@ -7,9 +7,10 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
+import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
@@ -39,11 +40,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .build();
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
-        this.s3AsyncClient = S3AsyncClient.builder()
+        final S3AsyncClientBuilder builder = S3AsyncClient.builder()
                 .region(Region.of(s3Instructions.awsRegionName()))
                 .httpClient(asyncHttpClient)
-                .credentialsProvider(s3Instructions.awsCredentialsProvider())
-                .build();
+                .credentialsProvider(s3Instructions.awsCredentialsProvider());
+        s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);
+        this.s3AsyncClient = builder.build();
         this.s3Instructions = s3Instructions;
     }
 

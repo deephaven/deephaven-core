@@ -10,7 +10,9 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
+import java.net.URI;
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * This class provides instructions intended for reading and writing data to AWS S3 instances.
@@ -27,7 +29,7 @@ public abstract class S3Instructions {
             Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MiB
     private final static int DEFAULT_FRAGMENT_SIZE = MAX_FRAGMENT_SIZE;
 
-    private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KB
+    private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private final static int DEFAULT_MAX_CACHE_SIZE = 32;
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
@@ -60,9 +62,10 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The maximum byte size of each fragment to read from S3, defaults to the value of config parameter
-     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}, or 5 MiB if unset. If there are fewer bytes remaining in the file, the
-     * fetched fragment can be smaller.
+     * The byte size of each fragment to read from S3, defaults to the value of config parameter
+     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}, or 5 MiB if unset. Must be between 8 KiB and the value of config
+     * parameter {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}. If there are fewer bytes remaining in the file, the fetched
+     * fragment can be smaller.
      */
     @Default
     public int fragmentSize() {
@@ -71,7 +74,8 @@ public abstract class S3Instructions {
 
     /**
      * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is
-     * done at the deephaven layer for faster access to recently read fragments.
+     * done at the deephaven layer for faster access to recently read fragments. Must be greater than or equal to
+     * {@code 1 + readAheadCount()}.
      */
     @Default
     public int maxCacheSize() {
@@ -104,6 +108,21 @@ public abstract class S3Instructions {
         return AwsCredentials.defaultCredentials();
     }
 
+    /**
+     * Configure the endpoint with which the SDK should communicate.
+     */
+    public abstract Optional<URI> endpointOverride();
+
+    // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style
+    // requests via software.amazon.awssdk.services.s3.S3BaseClientBuilder.forcePathStyle. Originally, AWS planned to
+    // deprecate path-style requests, but that has been delayed an indefinite amount of time. In the meantime, we'll
+    // keep S3Instructions simpler.
+    // https://aws.amazon.com/blogs/storage/update-to-amazon-s3-path-deprecation-plan/
+    // @Default
+    // public boolean forcePathStyle() {
+    // return false;
+    // }
+
     public interface Builder {
         Builder awsRegionName(String awsRegionName);
 
@@ -120,6 +139,8 @@ public abstract class S3Instructions {
         Builder readTimeout(Duration connectionTimeout);
 
         Builder credentials(AwsCredentials credentials);
+
+        Builder endpointOverride(URI endpointOverride);
 
         S3Instructions build();
     }
