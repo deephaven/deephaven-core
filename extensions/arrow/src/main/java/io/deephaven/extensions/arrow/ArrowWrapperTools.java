@@ -157,11 +157,12 @@ public class ArrowWrapperTools {
                 channel.position(block.getOffset());
 
                 final ByteBuffer metadataBuf = ByteBuffer.wrap(rawMetadataBuf, 0, block.getMetadataLength());
-                int numRead = channel.read(metadataBuf);
-                if (numRead != block.getMetadataLength()) {
-                    throw new IOException("Unexpected end of input trying to read block " + ii + " of '" + path + "'");
+                while (metadataBuf.hasRemaining()) {
+                    if (channel.read(metadataBuf) == -1) {
+                        throw new IOException(
+                                "Unexpected end of input trying to read block " + ii + " of '" + path + "'");
+                    }
                 }
-
                 metadataBuf.flip();
                 if (metadataBuf.getInt() == IPC_CONTINUATION_TOKEN) {
                     // if the continuation token is present, skip the length

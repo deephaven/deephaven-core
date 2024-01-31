@@ -183,10 +183,7 @@ public class ParquetFileReader {
     private int readIntLittleEndian(SeekableByteChannel f) throws IOException {
         ByteBuffer tempBuf = ByteBuffer.allocate(Integer.BYTES);
         tempBuf.order(ByteOrder.LITTLE_ENDIAN);
-        int read = f.read(tempBuf);
-        if (read != 4) {
-            throw new IOException("Expected four bytes, only read " + read);
-        }
+        Helpers.readExact(f, tempBuf);
         tempBuf.flip();
         return tempBuf.getInt();
     }

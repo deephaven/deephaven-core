@@ -15,20 +15,24 @@ import java.nio.channels.ReadableByteChannel;
 
 public class Helpers {
     public static void readBytes(ReadableByteChannel f, byte[] buffer) throws IOException {
-        int read = f.read(ByteBuffer.wrap(buffer));
-        if (read != buffer.length) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + buffer.length);
-        }
+        readExact(f, ByteBuffer.wrap(buffer));
     }
 
     public static BytesInput readBytes(ReadableByteChannel f, int expected) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(expected);
-        int read = f.read(buffer);
-        if (read != expected) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + expected);
-        }
+        readExact(f, buffer);
         buffer.flip();
         return BytesInput.from(buffer);
+    }
+
+    public static void readExact(ReadableByteChannel f, ByteBuffer buffer) throws IOException {
+        final int expected = buffer.remaining();
+        while (buffer.hasRemaining()) {
+            if (f.read(buffer) == -1) {
+                throw new EOFException(String.format("Reached end-of-file before completing, expected=%d, remaining=%d",
+                        expected, buffer.remaining()));
+            }
+        }
     }
 
     static int readUnsignedVarInt(ByteBuffer in) {
