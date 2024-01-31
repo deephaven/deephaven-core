@@ -144,8 +144,9 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                 boolean success;
                 do {
                     final ByteBuffer headerBuffer = ByteBuffer.allocate(maxHeader);
-                    file.read(headerBuffer);
+                    Helpers.readExact(file, headerBuffer);
                     headerBuffer.flip();
+
                     final ByteBufferInputStream bufferedIS = ByteBufferInputStream.wrap(headerBuffer);
                     try {
                         pageHeader = Util.readPageHeader(bufferedIS);
