@@ -9,10 +9,7 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -27,7 +24,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@TestMethodOrder(OrderAnnotation.class)
 public abstract class S3SeekableChannelTestBase {
 
     public abstract S3Client s3Client();
@@ -49,12 +45,6 @@ public abstract class S3SeekableChannelTestBase {
     void tearDown() {
         // we _could_ delete the bucket on teardown, but the container will be deleted soon enough regardless.
         client.close();
-    }
-
-    @Order(0)
-    @Test
-    void init() {
-        // empty on purpose; ensures that singleton container spin-up time gets allocated to this method
     }
 
     @Test

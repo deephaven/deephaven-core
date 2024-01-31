@@ -16,7 +16,8 @@ import java.net.URI;
 
 final class SingletonContainers {
 
-    // This pattern allows the respective images to be spun up as a container once per-JVM as opposed to once per-test.
+    // This pattern allows the respective images to be spun up as a container once per-JVM as opposed to once per-class
+    // or once per-test.
     // https://java.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
     // https://testcontainers.com/guides/testcontainers-container-lifecycle/#_using_singleton_containers
 
@@ -25,6 +26,10 @@ final class SingletonContainers {
                 new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.1.0")).withServices(Service.S3);
         static {
             LOCALSTACK_S3.start();
+        }
+
+        static void init() {
+            // no-op, ensures this class is initialized
         }
 
         static S3Instructions.Builder s3Instructions(S3Instructions.Builder builder) {
@@ -56,6 +61,10 @@ final class SingletonContainers {
                         .withEnv("MINIO_DOMAIN", "localhost");
         static {
             MINIO.start();
+        }
+
+        static void init() {
+            // no-op, ensures this class is initialized
         }
 
         static S3Instructions.Builder s3Instructions(S3Instructions.Builder builder) {
