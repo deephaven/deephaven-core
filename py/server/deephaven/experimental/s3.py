@@ -31,7 +31,7 @@ class S3Instructions(JObjectWrapper):
     S3Instructions provides specialized instructions for reading from AWS S3.
     """
 
-    j_object_type = _JS3Instructions if _JS3Instructions is not None else type(None)
+    j_object_type = _JS3Instructions or type(None)
 
     def __init__(self,
                  aws_region_name: str,
@@ -78,7 +78,7 @@ class S3Instructions(JObjectWrapper):
             DHError: If unable to build the instructions object.
         """
 
-        if _JS3Instructions is None or _JAwsCredentials is None:
+        if not _JS3Instructions or not _JAwsCredentials:
             raise DHError(message="S3Instructions requires the S3 specific deephaven extensions to be included in "
                                   "the package")
 
