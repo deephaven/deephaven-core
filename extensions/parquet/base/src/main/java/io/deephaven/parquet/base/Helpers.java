@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.parquet.base;
 
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.bytes.BytesUtils;
@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-public class Helpers {
+final class Helpers {
     public static void readBytes(ReadableByteChannel f, byte[] buffer) throws IOException {
         readExact(f, ByteBuffer.wrap(buffer));
     }

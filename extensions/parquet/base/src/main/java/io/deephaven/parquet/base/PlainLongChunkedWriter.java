@@ -8,7 +8,6 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
@@ -26,7 +25,7 @@ import java.nio.LongBuffer;
 /**
  * A writer for encoding longs in the PLAIN format
  */
-public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer> {
+final class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Long.BYTES;
     private final ByteBufferAllocator allocator;
 
