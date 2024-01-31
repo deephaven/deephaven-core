@@ -158,7 +158,11 @@ public class ArrowWrapperTools {
 
                 final ByteBuffer metadataBuf = ByteBuffer.wrap(rawMetadataBuf, 0, block.getMetadataLength());
                 while (metadataBuf.hasRemaining()) {
-                    if (channel.read(metadataBuf) == -1) {
+                    final int read = channel.read(metadataBuf);
+                    if (read == 0) {
+                        throw new IllegalStateException("ReadableByteChannel.read returned 0");
+                    }
+                    if (read == -1) {
                         throw new IOException(
                                 "Unexpected end of input trying to read block " + ii + " of '" + path + "'");
                     }

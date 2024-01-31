@@ -25,12 +25,27 @@ public class Helpers {
         return BytesInput.from(buffer);
     }
 
-    public static void readExact(ReadableByteChannel f, ByteBuffer buffer) throws IOException {
-        final int expected = buffer.remaining();
-        while (buffer.hasRemaining()) {
-            if (f.read(buffer) == -1) {
-                throw new EOFException(String.format("Reached end-of-file before completing, expected=%d, remaining=%d",
-                        expected, buffer.remaining()));
+    /**
+     * Reads exactly {@code dst.remaining()} bytes from the blocking {@code channel} into {@code dst}. It is required
+     * that {@code channel} is in blocking mode, and thus will always return a non-zero
+     * {@link ReadableByteChannel#read(ByteBuffer)}.
+     *
+     * @param channel the readable channel
+     * @param dst the destination buffer
+     * @throws IOException if an IO error occurs
+     */
+    public static void readExact(ReadableByteChannel channel, ByteBuffer dst) throws IOException {
+        final int expected = dst.remaining();
+        while (dst.hasRemaining()) {
+            final int read = channel.read(dst);
+            if (read == 0) {
+                throw new IllegalStateException(
+                        "ReadableByteChannel.read returned 0. Either the caller has broken the contract and passed in a non-blocking channel, or the blocking channel implementation is incorrectly returning 0.");
+            }
+            if (read == -1) {
+                throw new EOFException(
+                        String.format("Reached end-of-stream before completing, expected=%d, remaining=%d", expected,
+                                dst.remaining()));
             }
         }
     }
