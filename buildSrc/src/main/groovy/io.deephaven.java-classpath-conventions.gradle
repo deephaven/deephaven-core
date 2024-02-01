@@ -6,7 +6,7 @@ plugins {
 // TODO(deephaven-core#1162): Adopt java-platform to manage versions
 ext {
     depAnnotations = 'org.jetbrains:annotations:24.0.0'
-    depCommonsCompress = 'org.apache.commons:commons-compress:1.22'
+    depCommonsCompress = 'org.apache.commons:commons-compress:1.25.0'
     depCommonsLang3 = 'org.apache.commons:commons-lang3:3.12.0'
     depCommonsIo = 'commons-io:commons-io:2.11.0'
     depJdom2 = 'org.jdom:jdom2:2.0.6.1'
