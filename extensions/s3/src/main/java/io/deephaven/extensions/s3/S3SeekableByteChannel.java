@@ -75,12 +75,18 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
             }
 
             private void cancelAndRelease() {
-                try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(
-                        future == null ? null : () -> future.cancel(true), bufferRelease)) {
+                try (
+                        final SafeCloseable ignored1 = cancelOnClose(future, true);
+                        final SafeCloseable ignored2 = bufferRelease) {
                     fragmentIndex = UNINITIALIZED_FRAGMENT_INDEX;
                     future = null;
                     bufferRelease = null;
                 }
+            }
+
+            // do not inline, needs to capture future at time of method call
+            private static SafeCloseable cancelOnClose(Future<?> future, boolean mayInterruptIfRunning) {
+                return future == null ? null : () -> future.cancel(mayInterruptIfRunning);
             }
 
             private void set(
