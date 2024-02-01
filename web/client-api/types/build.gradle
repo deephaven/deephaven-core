@@ -5,6 +5,8 @@ plugins {
 
 configurations {
     dts
+    typedoc
+    npmModule
 }
 dependencies {
     dts project(path: ':web-client-api', configuration: 'dts')
@@ -17,7 +19,7 @@ if (preId) {
     npmVersion += preId + new Date().format("yyyyMMdd")
 }
 
-Docker.registerDockerTask(project, 'typedoc') {
+def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
     copyIn {
         from(configurations.dts) {
             into 'dist'
@@ -58,5 +60,14 @@ Docker.registerDockerTask(project, 'typedoc') {
     containerOutPath = '/out'
     copyOut {
         into "$buildDir/"
+    }
+}
+
+artifacts {
+    typedoc(layout.buildDirectory.dir('documentation')) {
+        builtBy typedocAndTarball
+    }
+    npmModule(layout.buildDirectory.files('deephaven-jsapi-types*.tgz').singleFile) {
+        builtBy typedocAndTarball
     }
 }
