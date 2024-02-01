@@ -27,7 +27,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.extensions.s3.AwsCredentials;
+import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -583,13 +583,13 @@ public final class ParquetTableReadWriteTest {
     public void readSampleParquetFilesFromS3Test1() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .awsRegionName("us-east-1")
+                .regionName("us-east-1")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)
                 .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
-                .credentials(AwsCredentials.defaultCredentials())
+                .credentials(Credentials.defaultCredentials())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -621,7 +621,7 @@ public final class ParquetTableReadWriteTest {
     public void readSampleParquetFilesFromS3Test2() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .awsRegionName("us-east-2")
+                .regionName("us-east-2")
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
                 .maxConcurrentRequests(50)

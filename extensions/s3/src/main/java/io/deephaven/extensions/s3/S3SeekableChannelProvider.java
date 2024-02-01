@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import static io.deephaven.extensions.s3.S3Instructions.MAX_FRAGMENT_SIZE;
 
 /**
- * {@link SeekableChannelsProvider} implementation that is used to fetch objects from AWS S3 instances.
+ * {@link SeekableChannelsProvider} implementation that is used to fetch objects from S3 instances.
  */
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
@@ -41,7 +41,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
         final S3AsyncClientBuilder builder = S3AsyncClient.builder()
-                .region(Region.of(s3Instructions.awsRegionName()))
+                .region(Region.of(s3Instructions.regionName()))
                 .httpClient(asyncHttpClient)
                 .credentialsProvider(s3Instructions.awsCredentialsProvider());
         s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);

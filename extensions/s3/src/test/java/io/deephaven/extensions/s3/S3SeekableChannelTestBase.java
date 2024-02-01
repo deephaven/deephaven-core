@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -20,6 +22,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +38,8 @@ public abstract class S3SeekableChannelTestBase {
 
     private String bucket;
 
+    private final List<String> keys = new ArrayList<>();
+
     @BeforeEach
     void setUp() {
         bucket = UUID.randomUUID().toString();
@@ -43,7 +49,11 @@ public abstract class S3SeekableChannelTestBase {
 
     @AfterEach
     void tearDown() {
-        // we _could_ delete the bucket on teardown, but the container will be deleted soon enough regardless.
+        for (String key : keys) {
+            client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+        }
+        keys.clear();
+        client.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build());
         client.close();
     }
 
@@ -92,6 +102,7 @@ public abstract class S3SeekableChannelTestBase {
 
     private void putObject(String key, RequestBody body) {
         client.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(), body);
+        keys.add(key);
     }
 
     private SeekableChannelsProvider providerImpl(URI uri) {

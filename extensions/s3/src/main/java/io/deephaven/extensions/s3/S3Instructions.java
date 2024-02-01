@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * This class provides instructions intended for reading and writing data to AWS S3 instances.
+ * This class provides instructions intended for reading and writing data to S3-compatible instances.
  */
 @Immutable
 @BuildableStyle
@@ -39,9 +39,9 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The AWS region name to use when reading or writing to S3.
+     * The region name to use when reading or writing to S3.
      */
-    public abstract String awsRegionName();
+    public abstract String regionName();
 
     /**
      * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
@@ -62,7 +62,7 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The byte size of each fragment to read from S3, defaults to the value of config parameter
+     * The maximum byte size of each fragment to read from S3, defaults to the value of config parameter
      * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}, or 5 MiB if unset. Must be between 8 KiB and the value of config
      * parameter {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}. If there are fewer bytes remaining in the file, the fetched
      * fragment can be smaller.
@@ -73,13 +73,14 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The maximum number of fragments to cache in memory, defaults to {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is
-     * done at the deephaven layer for faster access to recently read fragments. Must be greater than or equal to
-     * {@code 1 + readAheadCount()}.
+     * The maximum number of fragments to cache in memory, defaults to
+     * {@code Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE)}, which is at least
+     * {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is done at the deephaven layer for faster access to recently read
+     * fragments. Must be greater than or equal to {@code 1 + readAheadCount()}.
      */
     @Default
     public int maxCacheSize() {
-        return DEFAULT_MAX_CACHE_SIZE;
+        return Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE);
     }
 
     /**
@@ -100,31 +101,23 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The credentials to use when reading or writing to S3. By default, uses
-     * {@link AwsCredentials#defaultCredentials()}.
+     * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#defaultCredentials()}.
      */
     @Default
-    public AwsCredentials credentials() {
-        return AwsCredentials.defaultCredentials();
+    public Credentials credentials() {
+        return Credentials.defaultCredentials();
     }
 
     /**
-     * Configure the endpoint with which the SDK should communicate.
+     * The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when
+     * connecting to non-AWS, S3-compatible APIs.
+     *
+     * @see <a href="https://docs.aws.amazon.com/general/latest/gr/s3.html">Amazon Simple Storage Service endpoints</a>
      */
     public abstract Optional<URI> endpointOverride();
 
-    // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style
-    // requests via software.amazon.awssdk.services.s3.S3BaseClientBuilder.forcePathStyle. Originally, AWS planned to
-    // deprecate path-style requests, but that has been delayed an indefinite amount of time. In the meantime, we'll
-    // keep S3Instructions simpler.
-    // https://aws.amazon.com/blogs/storage/update-to-amazon-s3-path-deprecation-plan/
-    // @Default
-    // public boolean forcePathStyle() {
-    // return false;
-    // }
-
     public interface Builder {
-        Builder awsRegionName(String awsRegionName);
+        Builder regionName(String regionName);
 
         Builder maxConcurrentRequests(int maxConcurrentRequests);
 
@@ -138,7 +131,7 @@ public abstract class S3Instructions {
 
         Builder readTimeout(Duration connectionTimeout);
 
-        Builder credentials(AwsCredentials credentials);
+        Builder credentials(Credentials credentials);
 
         Builder endpointOverride(URI endpointOverride);
 
@@ -187,11 +180,21 @@ public abstract class S3Instructions {
     final void awsSdkV2Credentials() {
         if (!(credentials() instanceof AwsSdkV2Credentials)) {
             throw new IllegalArgumentException(
-                    "credentials() must be created via provided io.deephaven.extensions.s3.AwsCredentials methods");
+                    "credentials() must be created via provided io.deephaven.extensions.s3.Credentials methods");
         }
     }
 
     final AwsCredentialsProvider awsCredentialsProvider() {
         return ((AwsSdkV2Credentials) credentials()).awsCredentialsProvider();
     }
+
+    // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style
+    // requests via software.amazon.awssdk.services.s3.S3BaseClientBuilder.forcePathStyle. Originally, AWS planned to
+    // deprecate path-style requests, but that has been delayed an indefinite amount of time. In the meantime, we'll
+    // keep S3Instructions simpler.
+    // https://aws.amazon.com/blogs/storage/update-to-amazon-s3-path-deprecation-plan/
+    // @Default
+    // public boolean forcePathStyle() {
+    // return false;
+    // }
 }

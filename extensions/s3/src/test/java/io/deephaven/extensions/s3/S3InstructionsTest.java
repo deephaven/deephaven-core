@@ -13,15 +13,15 @@ public class S3InstructionsTest {
 
     @Test
     void defaults() {
-        final S3Instructions instructions = S3Instructions.builder().awsRegionName("some-region").build();
-        assertThat(instructions.awsRegionName()).isEqualTo("some-region");
+        final S3Instructions instructions = S3Instructions.builder().regionName("some-region").build();
+        assertThat(instructions.regionName()).isEqualTo("some-region");
         assertThat(instructions.maxConcurrentRequests()).isEqualTo(50);
         assertThat(instructions.readAheadCount()).isEqualTo(1);
         assertThat(instructions.fragmentSize()).isEqualTo(5 * (1 << 20));
         assertThat(instructions.maxCacheSize()).isEqualTo(32);
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
-        assertThat(instructions.credentials()).isEqualTo(AwsCredentials.defaultCredentials());
+        assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
         assertThat(instructions.endpointOverride()).isEmpty();
     }
 
@@ -37,7 +37,7 @@ public class S3InstructionsTest {
     @Test
     void minMaxConcurrentRequests() {
         assertThat(S3Instructions.builder()
-                .awsRegionName("some-region")
+                .regionName("some-region")
                 .maxConcurrentRequests(1)
                 .build()
                 .maxConcurrentRequests())
@@ -48,7 +48,7 @@ public class S3InstructionsTest {
     void tooSmallMaxConcurrentRequests() {
         try {
             S3Instructions.builder()
-                    .awsRegionName("some-region")
+                    .regionName("some-region")
                     .maxConcurrentRequests(0)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -59,7 +59,7 @@ public class S3InstructionsTest {
     @Test
     void minReadAheadCount() {
         assertThat(S3Instructions.builder()
-                .awsRegionName("some-region")
+                .regionName("some-region")
                 .readAheadCount(0)
                 .build()
                 .readAheadCount())
@@ -70,7 +70,7 @@ public class S3InstructionsTest {
     void tooSmallReadAheadCount() {
         try {
             S3Instructions.builder()
-                    .awsRegionName("some-region")
+                    .regionName("some-region")
                     .readAheadCount(-1)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -81,7 +81,7 @@ public class S3InstructionsTest {
     @Test
     void minFragmentSize() {
         assertThat(S3Instructions.builder()
-                .awsRegionName("some-region")
+                .regionName("some-region")
                 .fragmentSize(8 * (1 << 10))
                 .build()
                 .fragmentSize())
@@ -92,7 +92,7 @@ public class S3InstructionsTest {
     void tooSmallFragmentSize() {
         try {
             S3Instructions.builder()
-                    .awsRegionName("some-region")
+                    .regionName("some-region")
                     .fragmentSize(8 * (1 << 10) - 1)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -103,7 +103,7 @@ public class S3InstructionsTest {
     @Test
     void maxFragmentSize() {
         assertThat(S3Instructions.builder()
-                .awsRegionName("some-region")
+                .regionName("some-region")
                 .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE)
                 .build()
                 .fragmentSize())
@@ -114,7 +114,7 @@ public class S3InstructionsTest {
     void tooBigFragmentSize() {
         try {
             S3Instructions.builder()
-                    .awsRegionName("some-region")
+                    .regionName("some-region")
                     .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE + 1)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -125,7 +125,7 @@ public class S3InstructionsTest {
     @Test
     void minMaxCacheSize() {
         assertThat(S3Instructions.builder()
-                .awsRegionName("some-region")
+                .regionName("some-region")
                 .readAheadCount(99)
                 .maxCacheSize(100)
                 .build()
@@ -137,7 +137,7 @@ public class S3InstructionsTest {
     void tooSmallCacheSize() {
         try {
             S3Instructions.builder()
-                    .awsRegionName("some-region")
+                    .regionName("some-region")
                     .readAheadCount(99)
                     .maxCacheSize(99)
                     .build();
@@ -149,19 +149,19 @@ public class S3InstructionsTest {
     @Test
     void basicCredentials() {
         assertThat(S3Instructions.builder()
-                .awsRegionName("some-region")
-                .credentials(AwsCredentials.basicCredentials("foo", "bar"))
+                .regionName("some-region")
+                .credentials(Credentials.basicCredentials("foo", "bar"))
                 .build()
                 .credentials())
-                .isEqualTo(AwsCredentials.basicCredentials("foo", "bar"));
+                .isEqualTo(Credentials.basicCredentials("foo", "bar"));
     }
 
     @Test
     void badCredentials() {
         try {
             S3Instructions.builder()
-                    .awsRegionName("some-region")
-                    .credentials(new AwsCredentials() {})
+                    .regionName("some-region")
+                    .credentials(new Credentials() {})
                     .build();
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("credentials");
