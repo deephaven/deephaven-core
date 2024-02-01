@@ -277,7 +277,29 @@ class VectorizationTestCase(BaseTestCase):
         self.assertIn("null", t.to_string())
         self.assertEqual(t.columns[1].data_type, dtypes.long)
         self.assertEqual(t.columns[2].data_type, dtypes.long)
+    def test_1d_array_args(self):
+        with self.subTest("1d array input"):
+            def f(arr: np.ndarray[np.int32]) -> np.int32:
+                return np.max(arr)
 
+            t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X").update("Y = Y.toArray()")
+            t1 = t.update("Z = f(Y)")
+            self.assertEqual(_udf.vectorized_count, 1)
+            self.assertEqual(t1.columns[0].data_type, dtypes.int32)
+            self.assertEqual(t1.columns[1].data_type, dtypes.int32_array)
+            self.assertEqual(t1.columns[2].data_type, dtypes.int32)
+
+        _udf.vectorized_count = 0
+        with self.subTest("1d array output"):
+            def f1(arr: np.ndarray[np.int32]) -> np.ndarray[np.int32]:
+                return arr + 5
+
+            t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X").update("Y = Y.toArray()")
+            t1 = t.update("Z = f1(Y)")
+            self.assertEqual(_udf.vectorized_count, 1)
+            self.assertEqual(t1.columns[0].data_type, dtypes.int32)
+            self.assertEqual(t1.columns[1].data_type, dtypes.int32_array)
+            self.assertEqual(t1.columns[2].data_type, dtypes.int32_array)
 
 if __name__ == "__main__":
     unittest.main()
