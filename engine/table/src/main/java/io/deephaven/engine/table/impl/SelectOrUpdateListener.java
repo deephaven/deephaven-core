@@ -88,7 +88,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         if (enableParallelUpdate) {
             jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
         } else {
-            jobScheduler = ImmediateJobScheduler.INSTANCE;
+            jobScheduler = new ImmediateJobScheduler();
         }
 
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,

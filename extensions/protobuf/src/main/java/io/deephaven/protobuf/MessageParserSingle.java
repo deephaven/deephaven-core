@@ -5,7 +5,7 @@ package io.deephaven.protobuf;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.TypedFunction;
 
 /**
  * A specialized / simplified version of {@link MessageParser} that produces a single unnamed function.

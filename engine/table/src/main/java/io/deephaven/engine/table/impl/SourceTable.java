@@ -209,46 +209,39 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
     }
 
-    private class LocationChangePoller extends InstrumentedUpdateSource {
+    private class LocationChangePoller extends InstrumentedTableUpdateSource {
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(updateGraph, description + ".rowSetUpdateSource");
+            super(SourceTable.this.updateSourceRegistrar, SourceTable.this, description + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 
         @Override
         protected void instrumentedRefresh() {
-            try {
-                final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
-                final ImmutableTableLocationKey[] removedKeys =
-                        maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-                if (removedKeys.length > 0) {
-                    throw new TableLocationRemovedException("Source table does not support removed locations",
-                            removedKeys);
-                }
-                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
-
-                // NB: This class previously had functionality to notify "location listeners", but it was never used.
-                // Resurrect from git history if needed.
-                if (!locationSizesInitialized) {
-                    // We don't want to start polling size changes until the initial RowSet has been computed.
-                    return;
-                }
-
-                final RowSet added = refreshLocationSizes();
-                if (added.isEmpty()) {
-                    return;
-                }
-
-                rowSet.insert(added);
-                notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
-            } catch (Exception e) {
-                updateSourceRegistrar.removeSource(this);
-
-                // Notify listeners to the SourceTable when we had an issue refreshing available locations.
-                notifyListenersOnError(e, null);
+            final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
+            final ImmutableTableLocationKey[] removedKeys =
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+            if (removedKeys.length > 0) {
+                throw new TableLocationRemovedException("Source table does not support removed locations",
+                        removedKeys);
             }
+            maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+
+            // NB: This class previously had functionality to notify "location listeners", but it was never used.
+            // Resurrect from git history if needed.
+            if (!locationSizesInitialized) {
+                // We don't want to start polling size changes until the initial RowSet has been computed.
+                return;
+            }
+
+            final RowSet added = refreshLocationSizes();
+            if (added.isEmpty()) {
+                return;
+            }
+
+            rowSet.insert(added);
+            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
 
     }

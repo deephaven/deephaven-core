@@ -8,6 +8,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -78,9 +79,10 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
+    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", 50000);
+                    "minSnapshotCellCount", Long.MAX_VALUE);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", Long.MAX_VALUE);
@@ -96,6 +98,9 @@ public class BarrageUtil {
      */
     public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
             new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
+
+    /** The name of the attribute that indicates that a table is flat. */
+    public static final String TABLE_ATTRIBUTE_IS_FLAT = "IsFlat";
 
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
 
@@ -117,14 +122,15 @@ public class BarrageUtil {
             Boolean.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
-        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes());
+        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
     }
 
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes) {
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
         return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes));
+                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes, isFlat));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -144,8 +150,9 @@ public class BarrageUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final StreamReaderOptions options,
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes) {
-        final Map<String, String> schemaMetadata = attributesToMetadata(attributes);
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
+        final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
 
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
@@ -160,7 +167,19 @@ public class BarrageUtil {
 
     @NotNull
     public static Map<String, String> attributesToMetadata(@NotNull final Map<String, Object> attributes) {
+        return attributesToMetadata(attributes, false);
+    }
+
+    @NotNull
+    public static Map<String, String> attributesToMetadata(
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
         final Map<String, String> metadata = new HashMap<>();
+        if (isFlat) {
+            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, "true");
+            putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT,
+                    Boolean.class.getCanonicalName());
+        }
         for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
@@ -704,22 +723,18 @@ public class BarrageUtil {
             try (final RowSequence.Iterator rsIt = targetViewport.getRowSequenceIterator()) {
                 while (rsIt.hasMore()) {
                     // compute the next range to snapshot
-                    final long cellCount =
-                            Math.max(MIN_SNAPSHOT_CELL_COUNT,
-                                    Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
+                    final long cellCount = Math.max(
+                            MIN_SNAPSHOT_CELL_COUNT, Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
+                    final long numRows = Math.min(Math.max(1, cellCount / columnCount), ArrayUtil.MAX_ARRAY_SIZE);
 
-                    final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(cellCount);
+                    final RowSequence snapshotPartialViewport = rsIt.getNextRowSequenceWithLength(numRows);
                     // add these ranges to the running total
-                    snapshotPartialViewport.forEachRowKeyRange((start, end) -> {
-                        snapshotViewport.insertRange(start, end);
-                        return true;
-                    });
+                    snapshotPartialViewport.forAllRowKeyRanges(snapshotViewport::insertRange);
 
                     // grab the snapshot and measure elapsed time for next projections
                     long start = System.nanoTime();
-                    final BarrageMessage msg =
-                            ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
-                                    columns, snapshotPartialViewport, null);
+                    final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
+                            log, table, columns, snapshotPartialViewport, null);
                     msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data for DoGet
                     long elapsed = System.nanoTime() - start;
                     // accumulate snapshot time in the metrics
@@ -741,7 +756,7 @@ public class BarrageUtil {
                         }
                     }
 
-                    if (msg.rowsIncluded.size() > 0) {
+                    if (!msg.rowsIncluded.isEmpty()) {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage

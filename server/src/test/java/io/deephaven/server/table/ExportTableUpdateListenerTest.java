@@ -47,6 +47,7 @@ public class ExportTableUpdateListenerTest {
     private TestControlledScheduler scheduler;
     private TestSessionState session;
     private QueuingResponseObserver observer;
+    private SessionService.ErrorTransformer errorTransformer;
 
     @Before
     public void setup() {
@@ -59,6 +60,8 @@ public class ExportTableUpdateListenerTest {
         scheduler = new TestControlledScheduler();
         session = new TestSessionState();
         observer = new QueuingResponseObserver();
+
+        errorTransformer = new SessionService.ObfuscatingErrorTransformer();
     }
 
     @After
@@ -72,9 +75,15 @@ public class ExportTableUpdateListenerTest {
         executionContext.close();
     }
 
+    private ExportedTableUpdateListener createListener(
+            final SessionState session,
+            final QueuingResponseObserver observer) {
+        return new ExportedTableUpdateListener(session, observer, errorTransformer);
+    }
+
     @Test
     public void testLifeCycleStaticTable() {
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -99,7 +108,7 @@ public class ExportTableUpdateListenerTest {
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -114,7 +123,7 @@ public class ExportTableUpdateListenerTest {
 
     @Test
     public void testLifeCycleTickingTable() {
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -150,7 +159,7 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -176,7 +185,7 @@ public class ExportTableUpdateListenerTest {
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -209,7 +218,7 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -226,10 +235,7 @@ public class ExportTableUpdateListenerTest {
         Assert.equals(updateId, "updateId", t1.getExportId(), "t1.getExportId()");
         Assert.eq(msg.getSize(), "msg.getSize()", 42);
         Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
-
-        // TODO (core#801): validate that our error is not directly embedded in the update (that would be a security
-        // concern)
-        Assert.eqTrue(msg.getUpdateFailureMessage().contains("awful"), "msg.contains('awful')");
+        Assert.eqFalse(msg.getUpdateFailureMessage().contains("awful"), "msg.contains('awful')");
     }
 
     @Test
@@ -242,7 +248,7 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -276,7 +282,7 @@ public class ExportTableUpdateListenerTest {
         final MutableObject<SessionState.ExportObject<QueryTable>> t1 = new MutableObject<>();
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }

@@ -3,17 +3,17 @@
  */
 package io.deephaven.kafka;
 
-import io.deephaven.functions.ToBooleanFunction;
-import io.deephaven.functions.ToByteFunction;
-import io.deephaven.functions.ToCharFunction;
-import io.deephaven.functions.ToDoubleFunction;
-import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToIntFunction;
-import io.deephaven.functions.ToLongFunction;
-import io.deephaven.functions.ToObjectFunction;
-import io.deephaven.functions.ToPrimitiveFunction;
-import io.deephaven.functions.ToShortFunction;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.ToBooleanFunction;
+import io.deephaven.function.ToByteFunction;
+import io.deephaven.function.ToCharFunction;
+import io.deephaven.function.ToDoubleFunction;
+import io.deephaven.function.ToFloatFunction;
+import io.deephaven.function.ToIntFunction;
+import io.deephaven.function.ToLongFunction;
+import io.deephaven.function.ToObjectFunction;
+import io.deephaven.function.ToPrimitiveFunction;
+import io.deephaven.function.ToShortFunction;
+import io.deephaven.function.TypedFunction;
 import io.deephaven.qst.type.BoxedBooleanType;
 import io.deephaven.qst.type.BoxedByteType;
 import io.deephaven.qst.type.BoxedCharType;

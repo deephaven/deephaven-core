@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSet;
@@ -10,22 +9,19 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.util.MultiException;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * The AbstractFilterExecution incorporates the idea that we have an added and modified RowSet to filter and that there
  * are a resulting pair of added and modified rows representing what was filtered. There is also the possibility that we
  * encounter an exception "exceptionResult" in which case the operation should be considered a failure.
- *
+ * <p>
  * The strategy that is used to divide the work is that there is some target split (by default the number of threads in
  * the TableMapTransform or LiveTableMonitor update thread pools) that we will divide our operation into. If there is
  * not enough work (defined by the {@link QueryTable#PARALLEL_WHERE_ROWS_PER_SEGMENT}) for more than one thread, we
@@ -33,12 +29,12 @@ import java.util.stream.Stream;
  * it. For example, you might imagine we have a sequence of filters like "isBusinessTime" followed by a filter on
  * spread. The isBusinessTime filter would produce unequal results, therefore we do an N-way split on each result set to
  * avoid some threads doing inordinately more work than others.
- *
+ * <p>
  * After a unit of work is completed, it percolates the result to its parent. Finally we call a completion routine,
  * which will either notify a downstream table (in the listener case) or set the value of a future (in the
  * initialization case).
  */
-abstract class AbstractFilterExecution extends AbstractNotification {
+abstract class AbstractFilterExecution {
     final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
 
     final QueryTable sourceTable;
@@ -48,273 +44,264 @@ abstract class AbstractFilterExecution extends AbstractNotification {
     final ModifiedColumnSet sourceModColumns;
 
     /**
-     * The added RowSet we are filtering, and the positions within that RowSet that we must filter.
+     * The added RowSet we are filtering.
      */
     final RowSet addedInput;
-    final long addStart;
-    final long addEnd;
 
     /**
-     * The modified RowSet we are filtering, and the positions within that RowSet that we must filter.
+     * The modified RowSet we are filtering.
      */
-    final RowSet modifyInput;
-    final long modifyStart;
-    final long modifyEnd;
+    final RowSet modifiedInput;
 
     /**
      * For initial filtering we may need to usePrev.
      */
     final boolean usePrev;
 
-    /**
-     * The immediate parent of this FilterExecution.
-     */
-    final AbstractFilterExecution parent;
-
-    /**
-     * How many child tasks have been spun off into other threads. We can not perform our combination step until this
-     * reaches zero.
-     */
-    final AtomicInteger remainingChildren = new AtomicInteger();
-
-    /**
-     * The added and modified with the filter applied. Or an exceptional result.
-     */
-    WritableRowSet addedResult;
-    WritableRowSet modifyResult;
-    Exception exceptionResult;
-
-    /**
-     * Which filter are we currently processing, zero-based.
-     */
-    int filterIndex;
-
     AbstractFilterExecution(
             QueryTable sourceTable,
             WhereFilter[] filters,
             RowSet addedInput,
-            long addStart,
-            long addEnd,
-            RowSet modifyInput,
-            long modifyStart,
-            long modifyEnd,
-            AbstractFilterExecution parent,
+            RowSet modifiedInput,
             boolean usePrev,
             boolean runModifiedFilters,
-            ModifiedColumnSet sourceModColumns,
-            int filterIndex) {
-        super(false);
+            ModifiedColumnSet sourceModColumns) {
         this.sourceTable = sourceTable;
         this.filters = filters;
         this.addedInput = addedInput;
-        this.addStart = addStart;
-        this.addEnd = addEnd;
-        this.modifyInput = modifyInput;
-        this.modifyStart = modifyStart;
-        this.modifyEnd = modifyEnd;
-        this.parent = parent;
+        this.modifiedInput = modifiedInput;
         this.usePrev = usePrev;
         this.runModifiedFilters = runModifiedFilters;
         this.sourceModColumns = sourceModColumns;
-        this.filterIndex = filterIndex;
     }
 
     /**
-     * Run as a notification, accumulating performance results.
+     * Retrieve the {@link JobScheduler} to use for this operation.
      */
-    @Override
-    public void run() {
-        try {
-            basePerformanceEntry.onBaseEntryStart();
-            doFilter(x -> parent.onChildCompleted());
-        } finally {
-            basePerformanceEntry.onBaseEntryEnd();
-        }
+    abstract JobScheduler jobScheduler();
+
+    /**
+     * This is called when a filter has been completed successfully.
+     */
+    @FunctionalInterface
+    public interface FilterComplete {
+        /**
+         * Called when a filter has been completed successfully.
+         *
+         * @param adds the added rows resulting from the filter
+         * @param mods the modified rows resulting from the filter
+         */
+        void accept(@NotNull WritableRowSet adds, @NotNull WritableRowSet mods);
     }
 
     /**
-     * Run the filter specified by this AbstractFilterExecution, scheduling the next filter if necessary.
+     * Run the single filter specified by this AbstractFilterExecution and store the results in addedResult and
+     * modifyResult. Allows specification of the start and end positions in the added and modified inputs.
      *
-     * @param onCompletion the routine to call after the filter has been completely executed
+     * @param filter the filter to execute
+     * @param addsToUse the added input to use for this filter
+     * @param addStart the start position in the added input
+     * @param addEnd the end position in the added input (exclusive)
+     * @param modsToUse the modified input to use for this filter
+     * @param modStart the start position in the modified input
+     * @param modEnd the end position in the modified input (exclusive)
+     * @param onComplete the routine to call after the filter has been successfully executed
+     * @param onError the routine to call if a filter raises an exception
      */
-    public void doFilter(Consumer<AbstractFilterExecution> onCompletion) {
+    private void doFilter(
+            final WhereFilter filter,
+            final WritableRowSet addsToUse,
+            final long addStart,
+            final long addEnd,
+            final WritableRowSet modsToUse,
+            final long modStart,
+            final long modEnd,
+            final BiConsumer<WritableRowSet, WritableRowSet> onComplete,
+            final Consumer<Exception> onError) {
+        if (Thread.interrupted()) {
+            throw new CancellationException("interrupted while filtering");
+        }
         try {
-            if (addedInput != null) {
-                if (Thread.interrupted()) {
-                    throw new CancellationException("interrupted while filtering");
+            final WritableRowSet adds;
+            final WritableRowSet mods;
+            if (addsToUse != null && addStart < addEnd) {
+                try (final RowSet processAdds = addsToUse.subSetByPositionRange(addStart, addEnd)) {
+                    adds = filter.filter(processAdds, sourceTable.getRowSet(), sourceTable, usePrev);
                 }
-                try (final RowSet processAdds = addedInput.subSetByPositionRange(addStart, addEnd)) {
-                    addedResult = filters[filterIndex].filter(
-                            processAdds, sourceTable.getRowSet(), sourceTable, usePrev);
-                }
-            }
-            if (modifyInput != null) {
-                if (Thread.interrupted()) {
-                    throw new CancellationException("interrupted while filtering");
-                }
-                try (final RowSet processModifies = modifyInput.subSetByPositionRange(modifyStart, modifyEnd)) {
-                    modifyResult = filters[filterIndex].filter(
-                            processModifies, sourceTable.getRowSet(), sourceTable, usePrev);
-                }
-            }
-            if (Thread.interrupted()) {
-                throw new CancellationException("interrupted while filtering");
-            }
-            scheduleNextFilter(onCompletion);
-        } catch (Exception e) {
-            exceptionResult = e;
-            onCompletion.accept(this);
-        }
-    }
-
-    RowSet getAddedResult() {
-        return addedResult == null ? RowSetFactory.empty() : addedResult;
-    }
-
-    RowSet getModifyResult() {
-        return modifyResult == null ? RowSetFactory.empty() : modifyResult;
-    }
-
-    /**
-     * Collapse other's result into this AbstractFilterExecution's result.
-     *
-     * @param other the result to combine into this
-     */
-    void combine(AbstractFilterExecution other) {
-        if (this.addedResult == null) {
-            this.addedResult = other.addedResult;
-        } else if (other.addedResult != null) {
-            this.addedResult.insert(other.addedResult);
-        }
-        if (this.modifyResult == null) {
-            this.modifyResult = other.modifyResult;
-        } else if (other.modifyResult != null) {
-            this.modifyResult.insert(other.modifyResult);
-        }
-        if (this.exceptionResult == null) {
-            this.exceptionResult = other.exceptionResult;
-        } else if (other.exceptionResult != null) {
-            if (MultiException.class.isAssignableFrom(this.exceptionResult.getClass())) {
-                final MultiException exception = (MultiException) this.exceptionResult;
-                this.exceptionResult = new MultiException("where()", Stream.concat(
-                        Arrays.stream(exception.getCauses()), Stream.of(other.exceptionResult))
-                        .toArray(Throwable[]::new));
             } else {
-                this.exceptionResult = new MultiException("where()", this.exceptionResult, other.exceptionResult);
+                adds = null;
             }
+            if (modsToUse != null && modStart < modEnd) {
+                try (final RowSet processMods = modsToUse.subSetByPositionRange(modStart, modEnd)) {
+                    mods = filter.filter(processMods, sourceTable.getRowSet(), sourceTable, usePrev);
+                }
+            } else {
+                mods = null;
+            }
+            onComplete.accept(adds, mods);
+        } catch (Exception e) {
+            onError.accept(e);
         }
     }
 
-    @Override
-    public boolean canExecute(long step) {
-        // we can execute as soon as we are instantiated
-        return true;
-    }
-
-    @Override
-    public LogOutput append(LogOutput output) {
-        return output.append("FilterExecution{")
-                .append(System.identityHashCode(this)).append(": ")
-                .append(filters[filterIndex].toString())
-                .append(", remaining children=").append(remainingChildren.get()).append("}");
-    }
-
-    @Override
-    public String toString() {
-        return new LogOutputStringImpl().append(this).toString();
-    }
-
     /**
-     * If there is a subsequent filter to execute, schedule it for execution (either in this thread or in another
-     * thread), and then execute onCompletion.
+     * Run the filter specified by this AbstractFilterExecution in parallel
      *
-     * @param onCompletion
+     * @param filter the filter to execute
+     * @param addedInputToUse the added input to use for this filter
+     * @param modifiedInputToUse the modified input to use for this filter
+     * @param onComplete the routine to call after the filter has been successfully executed
+     * @param onError the routine to call if a filter raises an exception
      */
-    private void scheduleNextFilter(Consumer<AbstractFilterExecution> onCompletion) {
-        if ((filterIndex == filters.length - 1) ||
-                ((modifyResult == null || modifyResult.isEmpty()) && (addedResult == null || addedResult.isEmpty()))) {
-            onCompletion.accept(this);
-            return;
+    private void doFilterParallel(
+            final WhereFilter filter,
+            final WritableRowSet addedInputToUse,
+            final WritableRowSet modifiedInputToUse,
+            final BiConsumer<WritableRowSet, WritableRowSet> onComplete,
+            final Consumer<Exception> onError) {
+        if (Thread.interrupted()) {
+            throw new CancellationException("interrupted while filtering");
         }
-        final AbstractFilterExecution nextFilterExecution = makeChild(
-                addedResult, 0, addedResult == null ? 0 : addedResult.size(), modifyResult, 0,
-                modifyResult == null ? 0 : modifyResult.size(), filterIndex + 1);
-        nextFilterExecution.scheduleCompletion(result -> {
-            this.exceptionResult = result.exceptionResult;
-            this.addedResult = result.addedResult;
-            this.modifyResult = result.modifyResult;
-            onCompletion.accept(this);
-        });
-    }
 
-    /**
-     * Cleanup one child reference, and if it is the last reference, invoke onNoChildren.
-     */
-    protected void onChildCompleted() {
-        final int remaining = remainingChildren.decrementAndGet();
-        if (remaining < 0) {
-            // noinspection ConstantConditions
-            throw Assert.statementNeverExecuted();
-        }
-        if (remaining == 0) {
-            onNoChildren();
-        }
-    }
-
-    /**
-     * Execute this filter either completely within this thread; or alternatively split it and assign it to the desired
-     * thread pool.
-     *
-     * @param onCompletion the routine to call after the filter has been completely executed.
-     */
-    public void scheduleCompletion(Consumer<AbstractFilterExecution> onCompletion) {
-        final long updateSize = (addedInput == null ? 0 : addedInput.size())
-                + (modifyInput == null ? 0 : modifyInput.size());
-        if (!doParallelization(updateSize)) {
-            doFilter(onCompletion);
-            return;
-        }
+        final long addSize = addedInputToUse == null ? 0 : addedInputToUse.size();
+        final long modifySize = modifiedInputToUse == null ? 0 : modifiedInputToUse.size();
+        final long updateSize = addSize + modifySize;
 
         final int targetSegments = (int) Math.min(getTargetSegments(), (updateSize +
                 QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT - 1) / QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
         final long targetSize = (updateSize + targetSegments - 1) / targetSegments;
 
-        // we need to cut this into pieces
-        final List<AbstractFilterExecution> subFilters = new ArrayList<>();
+        final WritableRowSet addedResult = addSize <= 0 ? null : RowSetFactory.empty();
+        final WritableRowSet modifiedResult = modifySize <= 0 ? null : RowSetFactory.empty();
 
-        long addedOffset = 0;
-        long modifiedOffset = 0;
+        jobScheduler().iterateParallel(
+                ExecutionContext.getContext(),
+                this::append,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, targetSegments,
+                (localContext, idx, nec, resume) -> {
+                    final long startOffSet = idx * targetSize;
+                    final long endOffset = startOffSet + targetSize;
 
-        while (addedInput != null && addedOffset < addedInput.size()) {
-            final long startOffset = addedOffset;
-            final long endOffset = addedOffset + targetSize;
-            if (!runModifiedFilters || endOffset <= addedInput.size()) {
-                subFilters.add(makeChild(addedInput, startOffset, endOffset, null, 0, 0, filterIndex));
-            } else {
-                subFilters.add(makeChild(addedInput, startOffset, addedInput.size(), modifyInput, 0,
-                        modifiedOffset = targetSize - (addedInput.size() - startOffset), filterIndex));
-            }
-            addedOffset = endOffset;
-        }
-        while (modifyInput != null && modifiedOffset < modifyInput.size()) {
-            subFilters.add(makeChild(
-                    null, 0, 0, modifyInput, modifiedOffset, modifiedOffset += targetSize, filterIndex));
-        }
+                    final BiConsumer<WritableRowSet, WritableRowSet> onFilterComplete = (adds, mods) -> {
+                        // Clean up the row sets created by the filter.
+                        try (final RowSet ignored = adds;
+                                final RowSet ignored2 = mods) {
+                            if (addedResult != null) {
+                                synchronized (addedResult) {
+                                    addedResult.insert(adds);
+                                }
+                            }
+                            if (modifiedResult != null) {
+                                synchronized (modifiedResult) {
+                                    modifiedResult.insert(mods);
+                                }
+                            }
+                        }
+                        resume.run();
+                    };
 
-        Assert.gtZero(subFilters.size(), "subFilters.size()");
+                    if (endOffset < addSize) {
+                        // Entirely within the added input
+                        doFilter(filter,
+                                addedInputToUse, startOffSet, endOffset,
+                                null, 0, 0,
+                                onFilterComplete, nec);
+                    } else if (startOffSet < addSize) {
+                        // Partially within the added input (might include some modified input)
+                        doFilter(filter,
+                                addedInputToUse, startOffSet, addSize,
+                                modifiedInputToUse, 0, endOffset - addSize,
+                                onFilterComplete, nec);
+                    } else {
+                        // Entirely within the modified input
+                        doFilter(filter,
+                                null, 0, 0,
+                                modifiedInputToUse, startOffSet - addSize, endOffset - addSize,
+                                onFilterComplete, nec);
+                    }
+                }, () -> onComplete.accept(addedResult, modifiedResult), onError);
+    }
 
-        remainingChildren.set(subFilters.size());
-
-        enqueueSubFilters(subFilters, new CombinationNotification(subFilters, onCompletion));
+    public LogOutput append(LogOutput output) {
+        return output.append("FilterExecution{")
+                .append(System.identityHashCode(this)).append(": ");
     }
 
     /**
-     * Enqueue a set of (satisfied) subfilters for execution and the combination notification represented by those
-     * subfilters.
+     * Execute all filters; this may execute some filters in parallel when appropriate.
+     *
+     * @param onComplete the routine to call after the filter has been completely executed.
+     * @param onError the routine to call if the filter experiences an exception.
      */
-    abstract void enqueueSubFilters(
-            List<AbstractFilterExecution> subFilters,
-            CombinationNotification combinationNotification);
+    public void scheduleCompletion(
+            @NotNull final AbstractFilterExecution.FilterComplete onComplete,
+            @NotNull final Consumer<Exception> onError) {
+
+        // Start with the input row sets and narrow with each filter.
+        final MutableObject<WritableRowSet> localAddInput = new MutableObject<>(
+                addedInput != null && addedInput.isNonempty()
+                        ? addedInput.copy()
+                        : null);
+        final MutableObject<WritableRowSet> localModInput = new MutableObject<>(
+                runModifiedFilters && modifiedInput != null && modifiedInput.isNonempty()
+                        ? modifiedInput.copy()
+                        : null);
+        if (localAddInput.getValue() == null && localModInput.getValue() == null) {
+            onComplete.accept(RowSetFactory.empty(), RowSetFactory.empty());
+            return;
+        }
+
+        // Iterate serially through the filters. Each filter will successively restrict the input to the next filter,
+        // until we reach the end of the filter chain.
+        jobScheduler().iterateSerial(
+                ExecutionContext.getContext(),
+                this::append,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, filters.length,
+                (context, idx, nec, resume) -> {
+                    // Use the restricted output for the next filter (if this is not the first invocation)
+                    final WritableRowSet addsToUse = localAddInput.getValue();
+                    final WritableRowSet modsToUse = localModInput.getValue();
+
+                    final long updateSize = (addsToUse != null ? addsToUse.size() : 0)
+                            + (modsToUse != null ? modsToUse.size() : 0);
+
+                    final BiConsumer<WritableRowSet, WritableRowSet> onFilterComplete = (adds, mods) -> {
+                        // Clean up the row sets created by the filter.
+                        try (final RowSet ignored = localAddInput.getValue();
+                                final RowSet ignored2 = localModInput.getValue()) {
+                            // Store the output as the next filter input.
+                            localAddInput.setValue(adds);
+                            localModInput.setValue(mods);
+                        }
+                        resume.run();
+                    };
+
+                    // Run serially or parallelized?
+                    if (!shouldParallelizeFilter(filters[idx], updateSize)) {
+                        doFilter(filters[idx],
+                                addsToUse, 0, addsToUse == null ? 0 : addsToUse.size(),
+                                modsToUse, 0, modsToUse == null ? 0 : modsToUse.size(),
+                                onFilterComplete, nec);
+                    } else {
+                        doFilterParallel(filters[idx], addsToUse, modsToUse, onFilterComplete, nec);
+                    }
+                }, () -> {
+                    // Return empty RowSets instead of null.
+                    final WritableRowSet addedResult = localAddInput.getValue() == null
+                            ? RowSetFactory.empty()
+                            : localAddInput.getValue();
+                    final WritableRowSet modifiedResult = localModInput.getValue() == null
+                            ? RowSetFactory.empty()
+                            : localModInput.getValue();
+                    final BasePerformanceEntry baseEntry = jobScheduler().getAccumulatedPerformance();
+                    if (baseEntry != null) {
+                        basePerformanceEntry.accumulate(baseEntry);
+                    }
+                    onComplete.accept(addedResult, modifiedResult);
+                }, onError);
+    }
 
     /**
      * @return how many ways should we spit execution
@@ -322,113 +309,26 @@ abstract class AbstractFilterExecution extends AbstractNotification {
     abstract int getTargetSegments();
 
     /**
+     * Should this operation be allowed to run parallelized?
+     */
+    abstract boolean permitParallelization();
+
+    /**
      * Should a filter of the given size be parallelized or executed within this thread?
      */
-    abstract boolean doParallelization(long numberOfRows);
-
-    boolean doParallelizationBase(long numberOfRows) {
-        return !QueryTable.DISABLE_PARALLEL_WHERE && numberOfRows != 0
-                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT);
-    }
-
-    /**
-     * If a filter throws an uncaught exception, then we invoke this method to percolate the error back to the user.
-     */
-    abstract void handleUncaughtException(Exception throwable);
-
-    /**
-     * When executing on a thread pool, we call accumulatePerformanceEntry with the performance data from that thread
-     * pool's execution so that it can be properly attributed to this operation.
-     */
-    abstract void accumulatePerformanceEntry(BasePerformanceEntry entry);
-
-    /**
-     * Called after all child filters have been executed, which can indicate that the combination notification should be
-     * run.
-     */
-    abstract void onNoChildren();
-
-    /**
-     * Make a child AbstractFilterExecution of the correct type.
-     */
-    abstract AbstractFilterExecution makeChild(
-            final RowSet addedInput,
-            final long addStart,
-            final long addEnd,
-            final RowSet modifyInput,
-            final long modifyStart,
-            final long modifyEnd,
-            final int filterIndex);
-
-    /**
-     * The combination notification executes after all of our child sub filters; combines the result; and calls our
-     * completion routine.
-     */
-    class CombinationNotification extends AbstractNotification {
-        private final List<AbstractFilterExecution> subFilters;
-        private final Consumer<AbstractFilterExecution> onCompletion;
-
-        public CombinationNotification(List<AbstractFilterExecution> subFilters,
-                Consumer<AbstractFilterExecution> onCompletion) {
-            super(false);
-            this.subFilters = subFilters;
-            this.onCompletion = onCompletion;
-        }
-
-        @Override
-        public boolean canExecute(long step) {
-            return remainingChildren.get() == 0;
-        }
-
-        @Override
-        public void run() {
-            BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
-
-            try {
-                basePerformanceEntry.onBaseEntryStart();
-
-                final AbstractFilterExecution combined = subFilters.get(0);
-                accumulatePerformanceEntry(combined.basePerformanceEntry);
-                for (int ii = 1; ii < subFilters.size(); ++ii) {
-                    final AbstractFilterExecution executionToCombine = subFilters.get(ii);
-                    combined.combine(executionToCombine);
-                    accumulatePerformanceEntry(executionToCombine.basePerformanceEntry);
-                }
-                if (combined.exceptionResult != null) {
-                    handleUncaughtException(combined.exceptionResult);
-                } else {
-                    addedResult = combined.addedResult;
-                    modifyResult = combined.modifyResult;
-                    onCompletion.accept(combined);
-                }
-            } catch (Exception e) {
-                handleUncaughtException(e);
-            } finally {
-                basePerformanceEntry.onBaseEntryEnd();
-                accumulatePerformanceEntry(basePerformanceEntry);
-            }
-        }
-
-        @Override
-        public LogOutput append(LogOutput output) {
-            return output.append("CombinedNotification{")
-                    .append(System.identityHashCode(this)).append(": ")
-                    .append(filters[filterIndex].toString())
-                    .append(", remaining children=").append(remainingChildren.get()).append("}");
-        }
-
-        @Override
-        public String toString() {
-            return new LogOutputStringImpl().append(this).toString();
-        }
+    boolean shouldParallelizeFilter(WhereFilter filter, long numberOfRows) {
+        return permitParallelization()
+                && numberOfRows != 0
+                && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT)
+                && filter.permitParallelization();
     }
 
     /**
      * Should parallelization be allowed for this operation.
      *
-     * @return true if we should permit parallelization
-     *
      * @param filters the filters that we are operating on
+     *
+     * @return true if we should permit parallelization (if any filters can be parallelized)
      */
     static boolean permitParallelization(WhereFilter[] filters) {
         final Boolean threadLocal = QueryTable.isParallelWhereDisabledForThread();
@@ -438,6 +338,6 @@ abstract class AbstractFilterExecution extends AbstractNotification {
         if (QueryTable.DISABLE_PARALLEL_WHERE) {
             return false;
         }
-        return Arrays.stream(filters).allMatch(WhereFilter::permitParallelization);
+        return Arrays.stream(filters).anyMatch(WhereFilter::permitParallelization);
     }
 }

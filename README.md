@@ -179,6 +179,13 @@ cd deephaven-core
 ./gradlew server-jetty-app:run -Pgroovy
 ```
 
+#### Debugging
+
+You can debug the server by adding the `-Pdebug` flag, and then attaching a debugger to port 5005. This can be used in conjunction with other flags. For example, if you wanted to debug a server and startup with Groovy:
+```sh
+./gradlew server-jetty-app:run -Pgroovy -Pdebug
+```
+
 ## Get the authentication key
 
 Deephaven, by default, uses [pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/) to authenticate against unauthorized access. 

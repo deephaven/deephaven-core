@@ -27,10 +27,8 @@ public interface ReplayerInterface {
 
     /**
      * Shuts down the replayer.
-     *
-     * @throws IOException problem shutting down the replayer.
      */
-    void shutdown() throws IOException;
+    void shutdown();
 
     /**
      * Wait a specified interval for the replayer to complete.  If the replayer has not completed by the

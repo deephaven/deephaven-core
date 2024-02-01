@@ -52,6 +52,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
+import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -347,6 +348,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     // This group of fields represent the underlying state of the original HierarchicalTable
     private final JsWidget widget;
+    private final boolean isRefreshing;
     private final InitialTableDefinition tableDefinition;
     private final Column[] visibleColumns;
     private final Map<String, Column> columnsByName = new HashMap<>();
@@ -407,6 +409,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
         Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
+        this.isRefreshing = !treeDescriptor.getIsStatic();
         this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
         Column[] columns = new Column[0];
         Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
@@ -853,6 +856,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface RowReferenceUnion {
         @JsOverlay
+        static RowReferenceUnion of(@DoNotAutobox Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
         default boolean isTreeRow() {
             return this instanceof TreeRow;
         }
@@ -961,9 +969,25 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return promise.asPromise();
     }
 
+    /**
+     * True if this table has been closed.
+     *
+     * @return boolean
+     */
     @JsProperty(name = "isClosed")
     public boolean isClosed() {
         return closed;
+    }
+
+    /**
+     * True if this table may receive updates from the server, including size changed events, updated events after
+     * initial snapshot.
+     *
+     * @return boolean
+     */
+    @JsProperty(name = "isRefreshing")
+    public boolean isRefreshing() {
+        return isRefreshing;
     }
 
     /**

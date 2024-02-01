@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -255,120 +256,6 @@ public abstract class QueryTableWhereTest {
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(103), col("A", 5), col("B", 8));
             setTable.notifyListeners(i(103), i(), i());
-
-            TestCase.assertFalse(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // this will do the notification for table; which should first fire the recorder for setTable1
-            updateGraph.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the recorder for setTable2
-            updateGraph.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the merged listener for 1
-            boolean flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            // to get table 1 satisfied we need to still fire a notification for the filter execution, then the combined
-            // execution
-            if (QueryTable.FORCE_PARALLEL_WHERE) {
-                // the merged notification for table 2 goes first
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-
-                log.debug().append("Flushing parallel notifications for setTable1").endl();
-                TestCase.assertFalse(setTable1.satisfied(updateGraph.clock().currentStep()));
-                // we need to flush our intermediate notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-                // and our final notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            }
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            if (!QueryTable.FORCE_PARALLEL_WHERE) {
-                // the next notification should be the merged listener for setTable2
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            } else {
-                log.debug().append("Flushing parallel notifications for setTable2").endl();
-                // we need to flush our intermediate notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-                // and our final notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            }
-
-            log.debug().append("Set Tables should be satisfied.").end();
-
-            // now we have the two set table's filtered we are ready to make sure nothing else is satisfied
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            log.debug().append("Flushing DynamicFilter Notifications.").endl();
-
-            // the dynamicFilter1 updates
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // the dynamicFilter2 updates
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            log.debug().append("Flushed DynamicFilter Notifications.").endl();
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-
-            log.debug().append("Checking Composed.").endl();
-
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // now that both filters are complete, we can run the merged listener
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-            if (QueryTable.FORCE_PARALLEL_WHERE) {
-                TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-                // and the filter execution
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-                // and the combination
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            }
-
-            log.debug().append("Composed flushed.").endl();
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // and we are done
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertFalse(flushed);
         });
 
         TableTools.show(composed);
@@ -1172,5 +1059,46 @@ public abstract class QueryTableWhereTest {
         assertEquals(1_000_000, result.size());
         assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
         assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+    }
+
+    @Test
+    public void testFilterErrorInitial() {
+        final QueryTable table = testRefreshingTable(
+                i(2, 4, 6, 8).toTracking(),
+                col("x", 1, 2, 3, 4),
+                col("y", "a", "b", "c", null));
+
+        try {
+            final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+            Assert.statementNeverExecuted("Expected exception not thrown.");
+        } catch (Exception e) {
+            Assert.eqTrue(e instanceof FormulaEvaluationException
+                    && e.getCause() != null && e.getCause() instanceof NullPointerException,
+                    "NPE causing FormulaEvaluationException expected.");
+        }
+    }
+
+    @Test
+    public void testFilterErrorUpdate() {
+        final QueryTable table = testRefreshingTable(
+                i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3),
+                col("y", "a", "b", "c"));
+
+        final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+
+        Assert.eqFalse(table.isFailed(), "table.isFailed()");
+        Assert.eqFalse(whereResult.isFailed(), "whereResult.isFailed()");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(8), col("x", 5), col("y", (String) null));
+            table.notifyListeners(i(8), i(), i());
+        });
+
+        Assert.eqFalse(table.isFailed(), "table.isFailed()");
+
+        // The where result should have failed, because the filter expression is invalid for the new data.
+        Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
     }
 }

@@ -6,13 +6,15 @@ import unittest
 from dataclasses import dataclass
 
 import numpy as np
+import jpy
 
 from deephaven import DHError, new_table, dtypes
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, MAX_LONG
-from deephaven.numpy import to_numpy, to_table
+from deephaven.numpy import to_numpy, to_table, to_np_busdaycalendar
 from deephaven.jcompat import j_array_list
+from deephaven.calendar import add_calendar, remove_calendar, calendar
 from tests.testbase import BaseTestCase
 
 
@@ -145,6 +147,71 @@ class NumpyTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 tmp_table3 = to_table(np_array[:, [0, 1, 3]], [col.name for col in tmp_table.columns])
             self.assertIn("doesn't match", cm.exception.root_cause)
+
+    def get_resource_path(self, resource_path) -> str:
+        obj = jpy.get_type("io.deephaven.integrations.python.PythonTimeComponentsTest")()
+        Paths = jpy.get_type("java.nio.file.Paths")
+        Objects = jpy.get_type("java.util.Objects")
+        return Paths.get(Objects.requireNonNull(obj.getClass().getResource(resource_path)).toURI()).toString()
+
+    def test_to_np_busdaycalendar(self):
+
+        with self.assertRaises(DHError) as cm:
+            to_np_busdaycalendar("test")
+
+        add_calendar(self.get_resource_path("/NUMPY_TEST.calendar"))
+        jcal = calendar("NUMPY_TEST")
+
+        # Include partial days
+
+        npcal = to_np_busdaycalendar(jcal, include_partial=True)
+
+        # Check weekdays vs weekends for a normal week
+        days = ["2023-11-06", "2023-11-07", "2023-11-08", "2023-11-09", "2023-11-10", "2023-11-11", "2023-11-12"]
+        target = np.array([1, 1, 0, 1, 1, 0, 0])
+        actual = np.is_busday([np.datetime64(d, 'D') for d in days], busdaycal=npcal)
+        self.assertTrue(np.array_equal(actual, target))
+
+        # Check holidays
+        days = ["2015-01-01", "2015-04-06", "2015-05-25"]
+        target = np.array([0, 0, 0])
+        actual = np.is_busday([np.datetime64(d, 'D') for d in days], busdaycal=npcal)
+        self.assertTrue(np.array_equal(actual, target))
+
+        # Exclude partial days
+
+        npcal = to_np_busdaycalendar(jcal, include_partial=False)
+
+        # Check weekdays vs weekends for a normal week
+        days = ["2023-11-06", "2023-11-07", "2023-11-08", "2023-11-09", "2023-11-10", "2023-11-11", "2023-11-12"]
+        target = np.array([1, 1, 0, 1, 1, 0, 0])
+        actual = np.is_busday([np.datetime64(d, 'D') for d in days], busdaycal=npcal)
+        self.assertTrue(np.array_equal(actual, target))
+
+        # Check holidays
+        days = ["2015-01-01", "2015-04-06", "2015-05-25"]
+        target = np.array([0, 0, 1])
+        actual = np.is_busday([np.datetime64(d, 'D') for d in days], busdaycal=npcal)
+        self.assertTrue(np.array_equal(actual, target))
+
+        remove_calendar("NUMPY_TEST")
+
+    def test_to_np_busdaycalendar_empty(self):
+
+        with self.assertRaises(DHError) as cm:
+            to_np_busdaycalendar("test")
+
+        add_calendar(self.get_resource_path("/EMPTY.calendar"))
+        jcal = calendar("EMPTY")
+
+        # Include partial days
+
+        with self.assertRaises(DHError) as cm:
+            npcal = to_np_busdaycalendar(jcal, include_partial=True)
+
+        self.assertTrue("Cannot construct a numpy.busdaycal with a weekmask of all zeros" in cm.exception.root_cause)
+
+        remove_calendar("EMPTY")
 
 
 if __name__ == '__main__':

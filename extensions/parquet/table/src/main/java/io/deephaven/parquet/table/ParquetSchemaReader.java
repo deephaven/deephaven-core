@@ -98,7 +98,8 @@ public class ParquetSchemaReader {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
-        final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReaderChecked(new File(filePath));
+        final ParquetFileReader parquetFileReader =
+                ParquetTools.getParquetFileReaderChecked(new File(filePath), readInstructions);
         final ParquetMetadata parquetMetadata =
                 new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
         return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
