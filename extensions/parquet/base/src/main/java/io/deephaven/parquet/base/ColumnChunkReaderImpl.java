@@ -125,7 +125,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         if (uri != null) {
             return uri;
         }
-        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(uri.getScheme())) {
+        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
             return uri = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
