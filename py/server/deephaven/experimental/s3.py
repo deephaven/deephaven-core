@@ -12,8 +12,13 @@ from deephaven import time, DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.dtypes import Duration
 
-_JAwsCredentials = jpy.get_type("io.deephaven.extensions.s3.AwsCredentials")
-_JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
+# If we move S3 to a permanent module, we should remove this try/except block and just import the types directly.
+try:
+    _JAwsCredentials = jpy.get_type("io.deephaven.extensions.s3.AwsCredentials")
+    _JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
+except Exception:
+    _JAwsCredentials = None
+    _JS3Instructions = None
 
 """
     This module is useful for reading files stored in S3.
@@ -26,7 +31,7 @@ class S3Instructions(JObjectWrapper):
     S3Instructions provides specialized instructions for reading from AWS S3.
     """
 
-    j_object_type = _JS3Instructions
+    j_object_type = _JS3Instructions or type(None)
 
     def __init__(self,
                  aws_region_name: str,
@@ -74,6 +79,10 @@ class S3Instructions(JObjectWrapper):
         Raises:
             DHError: If unable to build the instructions object.
         """
+
+        if not _JS3Instructions or not _JAwsCredentials:
+            raise DHError(message="S3Instructions requires the S3 specific deephaven extensions to be included in "
+                                  "the package")
 
         try:
             builder = self.j_object_type.builder()
