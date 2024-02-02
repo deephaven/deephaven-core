@@ -13,10 +13,8 @@ import java.time.Duration;
 @BuildableStyle
 public abstract class RollingFormulaSpec extends RollingOpSpec {
 
-    @Value.Parameter
     public abstract String formula();
 
-    @Value.Parameter
     public abstract String paramToken();
 
     public static RollingFormulaSpec ofTicks(long revTicks, String formula, String paramToken) {
@@ -72,12 +70,7 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        return
-        // is primitive or boxed numeric
-        applicableToNumeric(inputType)
-                || inputType == char.class || inputType == Character.class
-                // is boolean?
-                || inputType == boolean.class || inputType == Boolean.class;
+        return true;
     }
 
     @Override
