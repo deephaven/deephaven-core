@@ -225,7 +225,7 @@ class UpdateByTestCase(BaseTestCase):
                             self.assertEqual(ct.size, rct.size)
 
     def test_rolling_ops(self):
-        for op in self.rolling_ops:make_user_exec_ctx
+        for op in self.rolling_ops:
             with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="c")
@@ -239,8 +239,6 @@ class UpdateByTestCase(BaseTestCase):
                       self.ticking_table.partition_by("b").proxy(),
                       ]
 
-#         exec_ctx = make_user_exec_ctx()
-#         with exec_ctx:
         for op in self.rolling_ops:
             with self.subTest(op):
                 for pt_proxy in pt_proxies:
