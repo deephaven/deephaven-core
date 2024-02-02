@@ -600,11 +600,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
-        final UpdateBy.UpdateByOperatorCollection collection = UpdateBy.getOperatorCollection(
-                target.constituentDefinition(),
-                control,
-                operations,
-                byColumns);
+        final UpdateBy.UpdateByOperatorCollection collection = UpdateBy.UpdateByOperatorCollection
+                .from(target.constituentDefinition(), control, operations, byColumns);
         return basicTransform(ct -> UpdateBy.updateBy((QueryTable) ct, collection.copy(), control));
     }
 

@@ -373,9 +373,7 @@ public abstract class UpdateBy {
 
                 // clear them now and let them set their own prev states
                 if (!initialStep && !toClear.isEmpty()) {
-                    forAllOperators(op -> {
-                        op.clearOutputRows(toClear);
-                    });
+                    forAllOperators(op -> op.clearOutputRows(toClear));
                 }
             } else {
                 // identify which rows we need to clear in our Object columns (actual clearing will be performed later)
@@ -805,6 +803,7 @@ public abstract class UpdateBy {
                                 maxInfluencerChunkSize);
                     }
 
+                    // noinspection unchecked
                     chunkArr = new Chunk[srcIndices.length];
                     chunkContexts = new ChunkSource.GetContext[srcIndices.length];
 
@@ -892,9 +891,7 @@ public abstract class UpdateBy {
 
             // clear the sparse output columns for rows that no longer exist
             if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
-                forAllOperators(op -> {
-                    op.clearOutputRows(toClear);
-                });
+                forAllOperators(op -> op.clearOutputRows(toClear));
             }
 
             // release remaining resources
@@ -956,7 +953,6 @@ public abstract class UpdateBy {
                         // add the window modified rows to this set
                         modifiedRowSet.insert(win.getAffectedRows(winCtx));
                         // add the modified output column sets to the downstream set
-                        final UpdateByOperator[] winOps = win.getOperators();
                         for (int winOpIdx : win.getDirtyOperators(winCtx)) {
                             // these were created directly from the result output columns so no transformer needed
                             win.operators[winOpIdx].extractDownstreamModifiedColumnSet(upstream, downstream);
@@ -1129,37 +1125,64 @@ public abstract class UpdateBy {
     // region UpdateBy implementation
 
     /**
-     * This helper class will process the update by clauses and create the operators.
+     * This helper class will process the update by clauses and organize the operators into windows that can be
+     * processed together. The operators are not fully initialized; the input sources and output sources will not be
+     * assigned or created until {@link UpdateByOperator#initializeSources(Table, RowRedirection)} is called.
      */
     public static class UpdateByOperatorCollection {
+        /**
+         * The name of the timestamp column, if any.
+         */
         final String timestampColumnName;
+
+        /**
+         * The names of the unique input columns used by the update operators.
+         */
         final String[] inputColumnNames;
+
+        /**
+         * The names of the output columns created by the update operators, in the order specified by the updateBy call.
+         */
         final String[] outputColumnNames;
-        final TObjectIntHashMap<String> inputColumnToSlotMap;
+
+        /**
+         * The names of the columns used to group the input rows into buckets. Empty if no key is specified.
+         */
         final String[] byColumnNames;
+
+        /**
+         * The names of the columns that are preserved without being overridden by the update operators.
+         */
         final String[] preservedColumnNames;
-        final UpdateByWindow[] windowArr;
+
+        /**
+         * The description of the updateBy operation for error reporting.
+         */
         final StringBuilder descriptionBuilder;
 
-        private UpdateByOperatorCollection(final UpdateByOperatorCollection source) {
-            // We can directly assign these, they are effectively constant
-            timestampColumnName = source.timestampColumnName;
-            inputColumnNames = source.inputColumnNames;
-            outputColumnNames = source.outputColumnNames;
-            inputColumnToSlotMap = source.inputColumnToSlotMap;
-            byColumnNames = source.byColumnNames;
-            preservedColumnNames = source.preservedColumnNames;
+        /**
+         * Contains the operators for this updateBy call, organized into windows that can be processed together.
+         */
+        final UpdateByWindow[] windowArr;
 
-            descriptionBuilder = new StringBuilder(source.descriptionBuilder);
-
-            // Recreate the window array with copies
-            this.windowArr = new UpdateByWindow[source.windowArr.length];
-            for (int ii = 0; ii < source.windowArr.length; ii++) {
-                this.windowArr[ii] = source.windowArr[ii].copy();
-            }
+        private UpdateByOperatorCollection(
+                final String timestampColumnName,
+                final String[] inputColumnNames,
+                final String[] outputColumnNames,
+                final String[] byColumnNames,
+                final String[] preservedColumnNames,
+                final StringBuilder descriptionBuilder,
+                final UpdateByWindow[] windowArr) {
+            this.timestampColumnName = timestampColumnName;
+            this.inputColumnNames = inputColumnNames;
+            this.outputColumnNames = outputColumnNames;
+            this.byColumnNames = byColumnNames;
+            this.preservedColumnNames = preservedColumnNames;
+            this.descriptionBuilder = descriptionBuilder;
+            this.windowArr = windowArr;
         }
 
-        public UpdateByOperatorCollection(
+        public static UpdateByOperatorCollection from(
                 @NotNull final TableDefinition tableDef,
                 @NotNull final UpdateByControl control,
                 @NotNull final Collection<? extends UpdateByOperation> clauses,
@@ -1176,21 +1199,21 @@ public abstract class UpdateBy {
                 throw new IllegalArgumentException("At least one operator must be specified");
             }
 
-            descriptionBuilder = new StringBuilder("updateBy(ops={")
+            final StringBuilder descriptionBuilder = new StringBuilder("updateBy(ops={")
                     .append(updateByOperatorFactory.describe(clauses))
                     .append("}");
 
             final MutableObject<String> timestampColumnName = new MutableObject<>(null);
-            // create an initial set of all source columns
+            // Track which columns are preserved without being overridden by the update operators.
             final LinkedHashSet<String> preservedColumnSet = new LinkedHashSet<>(tableDef.getColumnNameSet());
 
             final Set<String> problems = new LinkedHashSet<>();
             final Set<String> opResultColumnSet = new HashSet<>();
 
-            final ArrayList<String> inputSourceList = new ArrayList<>();
-            inputColumnToSlotMap = new TObjectIntHashMap<>();
+            final ArrayList<String> inputColumnList = new ArrayList<>();
+            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>();
 
-            windowArr = windowSpecs.stream().map(clauseList -> {
+            final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
                         updateByOperatorFactory.getOperators(clauseList).toArray(UpdateByOperator[]::new);
                 final int[][] windowOpSourceSlots = new int[windowOps.length][];
@@ -1200,8 +1223,7 @@ public abstract class UpdateBy {
 
                     // Verify no collision in the resulting column names and mark which columns are preserved.
                     final String[] opResultNames = op.getOutputColumnNames();
-                    for (int ii = 0; ii < opResultNames.length; ii++) {
-                        final String name = opResultNames[ii];
+                    for (final String name : opResultNames) {
                         if (opResultColumnSet.contains(name)) {
                             problems.add(name);
                         }
@@ -1232,8 +1254,8 @@ public abstract class UpdateBy {
                         final int maybeExistingSlot = inputColumnToSlotMap.get(name);
                         if (maybeExistingSlot == inputColumnToSlotMap.getNoEntryValue()) {
                             // create a new input source
-                            final int srcIdx = inputSourceList.size();
-                            inputSourceList.add(name);
+                            final int srcIdx = inputColumnList.size();
+                            inputColumnList.add(name);
                             inputColumnToSlotMap.put(name, srcIdx);
                             // map the window operator indices to this new source
                             windowOpSourceSlots[opIdx][colIdx] = srcIdx;
@@ -1252,32 +1274,35 @@ public abstract class UpdateBy {
                         String.join(", ", problems) + "}");
             }
 
-            preservedColumnNames = preservedColumnSet.toArray(String[]::new);
-            inputColumnNames = inputSourceList.toArray(String[]::new);
-            byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
-            outputColumnNames = updateByOperatorFactory.getOutputColumns(clauses).toArray(String[]::new);
-            this.timestampColumnName = timestampColumnName.getValue();
-        }
-
-        public void initializeOperators(@NotNull final QueryTable source, final RowRedirection rowRedirection) {
-            for (UpdateByWindow win : windowArr) {
-                for (UpdateByOperator op : win.operators) {
-                    op.initializeSources(source, rowRedirection);
-                }
-            }
+            return new UpdateByOperatorCollection(
+                    timestampColumnName.getValue(),
+                    inputColumnList.toArray(String[]::new),
+                    updateByOperatorFactory.getOutputColumns(clauses).toArray(String[]::new),
+                    byColumns.stream().map(ColumnName::name).toArray(String[]::new),
+                    preservedColumnSet.toArray(String[]::new),
+                    descriptionBuilder,
+                    windowArr);
         }
 
         public UpdateByOperatorCollection copy() {
-            return new UpdateByOperatorCollection(this);
-        }
-    }
+            // Create a new StringBuilder with the same contents
+            final StringBuilder localDescriptionBuilder = new StringBuilder(descriptionBuilder);
 
-    public static UpdateByOperatorCollection getOperatorCollection(
-            @NotNull final TableDefinition tableDef,
-            @NotNull final UpdateByControl control,
-            @NotNull final Collection<? extends UpdateByOperation> clauses,
-            @NotNull final Collection<? extends ColumnName> byColumns) {
-        return new UpdateByOperatorCollection(tableDef, control, clauses, byColumns);
+            // Recreate the windows with copies of each operator.
+            final UpdateByWindow[] localWindowArr = new UpdateByWindow[windowArr.length];
+            for (int ii = 0; ii < windowArr.length; ii++) {
+                localWindowArr[ii] = windowArr[ii].copy();
+            }
+
+            return new UpdateByOperatorCollection(
+                    timestampColumnName,
+                    inputColumnNames,
+                    outputColumnNames,
+                    byColumnNames,
+                    preservedColumnNames,
+                    localDescriptionBuilder,
+                    localWindowArr);
+        }
     }
 
     public static Table updateBy(@NotNull final QueryTable source,
@@ -1285,7 +1310,7 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
         final UpdateByOperatorCollection operatorCollection =
-                getOperatorCollection(source.getDefinition(), control, clauses, byColumns);
+                UpdateByOperatorCollection.from(source.getDefinition(), control, clauses, byColumns);
         return updateBy(source, operatorCollection, control);
     }
 
@@ -1303,7 +1328,7 @@ public abstract class UpdateBy {
 
         QueryTable.checkInitiateOperation(source);
 
-        // create the rowRedirection if instructed
+        // Create the rowRedirection (if instructed by the user)
         final RowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
@@ -1331,21 +1356,19 @@ public abstract class UpdateBy {
             rowRedirection = null;
         }
 
-        // We have the source table; we can initialize the operators.
-        operatorCollection.initializeOperators(source, rowRedirection);
-
         final ColumnSource<?>[] inputSourceArr = Arrays.stream(operatorCollection.inputColumnNames)
                 .map(colName -> ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(colName)))
                 .toArray(ColumnSource[]::new);
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
 
-        final Set<String> problems = new LinkedHashSet<>();
+        final List<String> problems = new ArrayList<>();
 
-        // Go through all the operators and add the output columns to the result sources
-        for (final UpdateByWindow win : operatorCollection.windowArr) {
-            for (final UpdateByOperator op : win.operators) {
-                // We've already verified that the output column names are unique
+        // We have the source table and the row redirection; we can initialize the operators and add the output
+        // columns to the result sources
+        for (UpdateByWindow win : operatorCollection.windowArr) {
+            for (UpdateByOperator op : win.operators) {
+                op.initializeSources(source, rowRedirection);
                 resultSources.putAll(op.getOutputColumns());
             }
         }
@@ -1364,7 +1387,7 @@ public abstract class UpdateBy {
                         control);
 
                 if (source.isRefreshing()) {
-                    // start tracking previous values
+                    // Tracking previous values
                     if (rowRedirection != null) {
                         rowRedirection.writableCast().startTrackingPrevValues();
                     }
@@ -1381,7 +1404,7 @@ public abstract class UpdateBy {
         operatorCollection.descriptionBuilder.append(", byColumns={")
                 .append(Arrays.toString(operatorCollection.byColumnNames)).append("})");
 
-        // Ensure the source has all the byColumns
+        // Verify the source has all the byColumns
         for (final String byColumn : operatorCollection.byColumnNames) {
             if (!source.hasColumns(byColumn)) {
                 problems.add(byColumn);
@@ -1410,7 +1433,7 @@ public abstract class UpdateBy {
                     control);
 
             if (source.isRefreshing()) {
-                // start tracking previous values
+                // Tracking previous values
                 if (rowRedirection != null) {
                     rowRedirection.writableCast().startTrackingPrevValues();
                 }
