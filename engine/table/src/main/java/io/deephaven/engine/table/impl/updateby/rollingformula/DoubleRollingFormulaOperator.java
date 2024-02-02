@@ -16,12 +16,12 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.DoubleRingBufferVectorWrapper;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.vector.DoubleVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +43,6 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
     // endregion extra-fields
 
     protected class Context extends BaseRollingFormulaOperator.Context {
-        private final SingleValueColumnSource<DoubleVector> formulaInputSource;
         private final ColumnSource<?> formulaOutputSource;
 
         private DoubleChunk<? extends Values> influencerValuesChunk;
@@ -59,7 +58,7 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
             final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            formulaInputSource = (SingleValueColumnSource<DoubleVector>)SingleValueColumnSource.getSingleValueColumnSource(vectorType);
+            final SingleValueColumnSource<DoubleVector> formulaInputSource = (SingleValueColumnSource<DoubleVector>) SingleValueColumnSource.getSingleValueColumnSource(vectorType);
             formulaInputSource.set(new DoubleRingBufferVectorWrapper(doubleWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
@@ -154,24 +153,54 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
         }
     }
 
-
     public DoubleRollingFormulaOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final String formula,
             @NotNull final String paramToken,
-            @NotNull final ColumnSource<?> inputSource,
-            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
+            @NotNull final TableDefinition tableDef
             // region extra-constructor-args
             // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, inputSource, formulaColumnMap);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
         // region constructor
         // endregion constructor
+    }
+
+    protected DoubleRollingFormulaOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final Class<?> vectorType,
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
+            @NotNull final TableDefinition tableDef
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+    ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
+        // region constructor
+        // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new DoubleRollingFormulaOperator(pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                vectorType,
+                formulaColumnMap,
+                tableDef
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 
     @Override

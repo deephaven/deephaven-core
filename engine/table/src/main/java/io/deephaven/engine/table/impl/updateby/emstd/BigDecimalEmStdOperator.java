@@ -5,10 +5,8 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,15 +18,15 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /***
  * Compute an exponential moving standard deviation for a BigDecimal column source. The output is expressed as a
  * BigDecimal value and is computed using the following formula:
- *
+ * <p>
  * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
- *
+ * <p>
  * This function is described in the following document:
- *
+ * <p>
  * "Incremental calculation of weighted mean and variance" Tony Finch, University of Cambridge Computing Service
  * (February 2009)
  * https://web.archive.org/web/20181222175223/http://people.ds.cam.ac.uk/fanf2/hermes/doc/antiforgery/stats.pdf
- *
+ * <p>
  * NOTE: `alpha` as used in the paper has been replaced with `1 - alpha` per the convention adopted by Deephaven.
  */
 public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecimal> {
@@ -131,24 +129,29 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the {@link RowRedirection} to use for dense output sources
      * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
      * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource a reference to the input column source for this operation
      */
     public BigDecimalEmStdOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,
-            final ColumnSource<?> valueSource,
-            final boolean sourceRefreshing,
             @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource,
-                sourceRefreshing, mathContext);
+        super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, mathContext);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalEmStdOperator(
+                pair,
+                affectingColumns,
+                control,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                mathContext);
     }
 
     @NotNull

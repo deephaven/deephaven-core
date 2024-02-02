@@ -13,11 +13,11 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
@@ -105,17 +105,30 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public DoubleRollingAvgOperator(@NotNull final MatchPair pair,
-                                  @NotNull final String[] affectingColumns,
-                                  @Nullable final RowRedirection rowRedirection,
-                                  @Nullable final String timestampColumnName,
-                                  final long reverseWindowScaleUnits,
-                                  final long forwardWindowScaleUnits
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
+    public DoubleRollingAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new DoubleRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 }

@@ -11,11 +11,11 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import org.jetbrains.annotations.NotNull;
@@ -71,13 +71,14 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
         }
 
         @Override
-        public void accumulateRolling(@NotNull final RowSequence inputKeys,
-                                      @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
-                                      @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
-                                      @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
-                                      @NotNull final IntChunk<? extends Values> pushChunk,
-                                      @NotNull final IntChunk<? extends Values> popChunk,
-                                      final int len) {
+        public void accumulateRolling(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
+                @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
+                @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
+                @NotNull final IntChunk<? extends Values> pushChunk,
+                @NotNull final IntChunk<? extends Values> popChunk,
+                final int len) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -150,22 +151,41 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
     }
 
 
-    public ObjectRollingFormulaOperator(@NotNull final MatchPair pair,
-                                        @NotNull final String[] affectingColumns,
-                                        @Nullable final RowRedirection rowRedirection,
-                                        @Nullable final String timestampColumnName,
-                                        final long reverseWindowScaleUnits,
-                                        final long forwardWindowScaleUnits,
-                                        @NotNull final String formula,
-                                        @NotNull final String paramToken,
-                                        @NotNull final ColumnSource<?> inputSource,
-                                        @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap
-                                        // region extra-constructor-args
-                                        // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, inputSource, formulaColumnMap);
-        // region constructor
-        // endregion constructor
+    public ObjectRollingFormulaOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final String formula,
+            @NotNull final String paramToken,
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
+            @NotNull final TableDefinition tableDef) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
+    }
+
+    protected ObjectRollingFormulaOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final Class<?> vectorType,
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
+            @NotNull final TableDefinition tableDef) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new ObjectRollingFormulaOperator<>(pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                vectorType,
+                formulaColumnMap,
+                tableDef);
     }
 
     @Override

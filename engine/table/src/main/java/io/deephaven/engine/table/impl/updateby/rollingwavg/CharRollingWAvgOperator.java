@@ -3,10 +3,8 @@ package io.deephaven.engine.table.impl.updateby.rollingwavg;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,20 +57,33 @@ public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public CharRollingWAvgOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits,
-                                   @NotNull final String weightColumnName,
-                                   @NotNull final ColumnSource weightColumnSource
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
+    public CharRollingWAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final String weightColumnName
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, weightColumnName, weightColumnSource);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, weightColumnName);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new CharRollingWAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                weightColumnName
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 
     /**

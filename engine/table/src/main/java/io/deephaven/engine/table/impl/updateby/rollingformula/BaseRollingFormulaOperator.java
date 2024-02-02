@@ -12,7 +12,6 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaUtil;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -28,19 +27,21 @@ import java.util.function.BiConsumer;
 
 import static io.deephaven.util.QueryConstants.*;
 
-
 abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     protected final String PARAM_COLUMN_NAME = "__PARAM_COLUMN__";
-    protected final WritableColumnSource<?> outputSource;
-    protected final WritableColumnSource<?> maybeInnerSource;
+
+    @NotNull
+    final Map<Class<?>, FormulaColumn> formulaColumnMap;
+    @NotNull
+    final TableDefinition tableDef;
 
     final FormulaColumn formulaColumn;
-    final ChunkType outputChunkType;
     final Class<?> vectorType;
-    final Object nullValue;
 
-    // region extra-fields
-    // endregion extra-fields
+    protected WritableColumnSource<?> outputSource;
+    protected WritableColumnSource<?> maybeInnerSource;
+    ChunkType outputChunkType;
+    Object nullValue;
 
     abstract class Context extends UpdateByOperator.Context {
         protected final ChunkSink.FillFromContext outputFillContext;
@@ -87,24 +88,21 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     public BaseRollingFormulaOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final String formula,
             @NotNull final String paramToken,
-            @NotNull final ColumnSource<?> inputSource,
-            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
-                forwardWindowScaleUnits, true);
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
+            @NotNull final TableDefinition tableDef) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        this.formulaColumnMap = formulaColumnMap;
+        this.tableDef = tableDef;
+
         final String outputColumnName = pair.leftColumn;
 
-        // Must use the primitive column source for the formula column.
-        final ColumnSource<?> reinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(inputSource);
-        vectorType = getVectorType(reinterpretedSource);
+        final Class<?> columnType = tableDef.getColumn(pair.rightColumn).getDataType();
+        vectorType = getVectorType(columnType);
 
         // Handle the rare (and probably not useful) case where the formula is an identity formula. We need to make
         // a copy of the RingBuffer wrapper and store that as a DirectVector. If not, we will point to the live data
@@ -114,15 +112,43 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
         // Re-use the formula column if it's already been created for this type. No need to synchronize; these
         // operators are created serially.
         // TODO: does generic Object need to be handled uniquely?
-        formulaColumn = formulaColumnMap.computeIfAbsent(reinterpretedSource.getType(), t -> {
+        formulaColumn = formulaColumnMap.computeIfAbsent(columnType, t -> {
             final FormulaColumn tmp = FormulaColumn.createFormulaColumn(outputColumnName,
                     FormulaUtil.replaceFormulaTokens(formulaToUse, paramToken, PARAM_COLUMN_NAME));
 
             final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
-                    .fromGenericType(PARAM_COLUMN_NAME, vectorType, reinterpretedSource.getType());
+                    .fromGenericType(PARAM_COLUMN_NAME, vectorType, columnType);
             tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition));
             return tmp;
         });
+    }
+
+    protected BaseRollingFormulaOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final Class<?> vectorType,
+            @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
+            @NotNull final TableDefinition tableDef) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        this.formulaColumnMap = formulaColumnMap;
+        this.tableDef = tableDef;
+
+        final Class<?> columnType = tableDef.getColumn(pair.rightColumn).getDataType();
+        this.vectorType = vectorType;
+
+        // Re-use the formula column that already been created for this type.
+        // TODO: does generic Object need to be handled uniquely?
+        formulaColumn = formulaColumnMap.computeIfAbsent(columnType, t -> {
+            throw new IllegalStateException("formulaColumnMap should have been populated for " + columnType);
+        });
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        this.rowRedirection = rowRedirection;
 
         if (rowRedirection != null) {
             // region create-dense
@@ -137,12 +163,9 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
         }
         outputChunkType = outputSource.getChunkType();
         nullValue = getNullValue(outputChunkType);
-        // region constructor
-        // endregion constructor
     }
 
-    private static Class<?> getVectorType(ColumnSource<?> cs) {
-        final Class<?> type = cs.getType();
+    private static Class<?> getVectorType(final Class<?> type) {
         if (type == Boolean.class) {
             return ObjectVector.class;
         }

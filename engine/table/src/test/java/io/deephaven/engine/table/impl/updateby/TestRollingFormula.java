@@ -4,6 +4,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -1254,7 +1255,21 @@ public class TestRollingFormula extends BaseUpdateByTest {
                 .update(Arrays.stream(testColumns).map(c -> c + "=" + c + ".getDirect()").toArray(String[]::new));
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+    }
 
+    @Test
+    public void testProxy() {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131).t;
+
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
+        Table actual;
+        Table expected;
+
+        PartitionedTable pt = t.partitionBy("Sym");
+        actual = pt.proxy().updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(x)", "x", "intCol"))
+                .target().merge();
     }
 
     // endregion

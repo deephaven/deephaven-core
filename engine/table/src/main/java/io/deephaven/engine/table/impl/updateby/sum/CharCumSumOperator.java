@@ -1,29 +1,23 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumProdOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-package io.deephaven.engine.table.impl.updateby.prod;
+package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
-public class ByteCumProdOperator extends BaseLongUpdateByOperator {
+public class CharCumSumOperator extends BaseLongUpdateByOperator {
     // region extra-fields
-    final byte nullValue;
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
-        public ByteChunk<? extends Values> byteValueChunk;
+        public CharChunk<? extends Values> charValueChunk;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -31,40 +25,38 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            byteValueChunk = valueChunks[0].asByteChunk();
+            charValueChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
         public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            final byte val = byteValueChunk.get(pos);
+            // read the value from the values chunk
+            final char currentVal = charValueChunk.get(pos);
 
-            if (val != nullValue) {
-                curVal = curVal == NULL_LONG ? val : curVal * val;
+            if(curVal == NULL_LONG) {
+                curVal = currentVal == NULL_CHAR ? NULL_LONG : currentVal;
+            } else if (currentVal != NULL_CHAR) {
+                curVal += currentVal;
             }
         }
     }
 
-    public ByteCumProdOperator(
-            @NotNull final MatchPair pair
-            // region extra-constructor-args
-            ,final byte nullValue
-            // endregion extra-constructor-args
+    public CharCumSumOperator(@NotNull final MatchPair pair
+                              // region extra-constructor-args
+                              // endregion extra-constructor-args
     ) {
         super(pair, new String[] { pair.rightColumn });
         // region constructor
-        this.nullValue = nullValue;
         // endregion constructor
     }
 
     @Override
     public UpdateByOperator copy() {
-        return new ByteCumProdOperator(
-                pair
-                // region extra-copy-args
-                , nullValue
-                // endregion extra-copy-args
+        return new CharCumSumOperator(pair
+              // region extra-copy-args
+              // endregion extra-copy-args
         );
     }
 
