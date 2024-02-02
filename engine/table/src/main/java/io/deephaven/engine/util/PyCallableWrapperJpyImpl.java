@@ -45,6 +45,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     // TODO: support for vectorizing functions that return arrays
     // https://github.com/deephaven/deephaven-core/issues/4649
     private static final Set<Class<?>> vectorizableReturnTypes = Set.of(
+            boolean.class, boolean[].class,
             Boolean.class, Boolean[].class,
             byte.class, byte[].class,
             short.class, short[].class,
