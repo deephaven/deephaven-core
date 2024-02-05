@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * This class provides instructions intended for reading and writing data to S3-compatible instances.
+ * This class provides instructions intended for reading from and writing to S3-compatible instances.
  */
 @Immutable
 @BuildableStyle
