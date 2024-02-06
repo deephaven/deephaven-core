@@ -244,8 +244,8 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long offsetsBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long offsetsBuffer = bufferInfoIter.nextLong();
 
         final Class<?> componentType = type.getComponentType();
         final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;

@@ -182,8 +182,8 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long payloadBuffer = bufferInfoIter.nextLong();
 
         final WritableByteChunk<Values> chunk;
         if (outChunk != null) {

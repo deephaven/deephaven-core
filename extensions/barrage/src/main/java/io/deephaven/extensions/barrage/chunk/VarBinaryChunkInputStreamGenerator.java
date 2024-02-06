@@ -405,9 +405,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final int outOffset,
             final int totalRows) throws IOException {
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long offsetsBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long offsetsBuffer = bufferInfoIter.nextLong();
+        final long payloadBuffer = bufferInfoIter.nextLong();
 
         final int numElements = nodeInfo.numElements;
         final WritableObjectChunk<T, Values> chunk;
