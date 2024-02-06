@@ -1,11 +1,13 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.util.channel;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -14,8 +16,23 @@ import java.nio.file.StandardOpenOption;
 public class LocalFSChannelProvider implements SeekableChannelsProvider {
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        return FileChannel.open(path, StandardOpenOption.READ);
+    public SeekableChannelContext makeContext() {
+        // No additional context required for local FS
+        return SeekableChannelContext.NULL;
+    }
+
+    @Override
+    public boolean isCompatibleWith(@Nullable final SeekableChannelContext channelContext) {
+        // Context is not used, hence always compatible
+        return true;
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
+            @NotNull final URI uri)
+            throws IOException {
+        // context is unused here
+        return FileChannel.open(Path.of(uri), StandardOpenOption.READ);
     }
 
     @Override
@@ -31,4 +48,7 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
         }
         return result;
     }
+
+    @Override
+    public void close() {}
 }

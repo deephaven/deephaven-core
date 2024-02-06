@@ -3,7 +3,7 @@ configurations {
     pwGen
 }
 dependencies {
-    implementation('org.postgresql:postgresql:42.4.0') {
+    implementation('org.postgresql:postgresql:42.7.1') {
         because 'Postgres driver to connect to a running DB to query for user information'
     }
     implementation('org.mindrot:jbcrypt:0.4') {

@@ -1,17 +1,19 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.util.channel;
 
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -21,6 +23,15 @@ import java.util.*;
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
  */
 public class CachedChannelProvider implements SeekableChannelsProvider {
+
+    public interface ContextHolder {
+        void setContext(SeekableChannelContext channelContext);
+
+        @FinalDefault
+        default void clearContext() {
+            setContext(null);
+        }
+    }
 
     private final SeekableChannelsProvider wrappedProvider;
     private final int maximumPooledCount;
@@ -52,13 +63,27 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        final String pathKey = path.toAbsolutePath().toString();
+    public SeekableChannelContext makeContext() {
+        return wrappedProvider.makeContext();
+    }
+
+    @Override
+    public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
+        return wrappedProvider.isCompatibleWith(channelContext);
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
+            @NotNull final URI uri)
+            throws IOException {
+        final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
-        final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
+        final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
+        final CachedChannel channel = result == null
+                ? new CachedChannel(wrappedProvider.getReadChannel(channelContext, uri), ChannelType.Read, uriString)
                 : result.position(0);
+        channel.setContext(channelContext);
+        return channel;
     }
 
     @Override
@@ -125,10 +150,15 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         return logicalClock = 1;
     }
 
+    @Override
+    public void close() {
+        wrappedProvider.close();
+    }
+
     /**
      * {@link SeekableByteChannel Channel} wrapper for pooled usage.
      */
-    private class CachedChannel implements SeekableByteChannel {
+    private class CachedChannel implements SeekableByteChannel, ContextHolder {
 
         private final SeekableByteChannel wrappedChannel;
         private final ChannelType channelType;
@@ -163,7 +193,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
 
         @Override
-        public SeekableByteChannel position(final long newPosition) throws IOException {
+        public CachedChannel position(final long newPosition) throws IOException {
             Require.eqTrue(isOpen, "isOpen");
             wrappedChannel.position(newPosition);
             return this;
@@ -196,11 +226,19 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         public void close() throws IOException {
             Require.eqTrue(isOpen, "isOpen");
             isOpen = false;
+            clearContext();
             returnPoolableChannel(this);
         }
 
         private void dispose() throws IOException {
             wrappedChannel.close();
+        }
+
+        @Override
+        public final void setContext(@Nullable final SeekableChannelContext channelContext) {
+            if (wrappedChannel instanceof ContextHolder) {
+                ((ContextHolder) wrappedChannel).setContext(channelContext);
+            }
         }
     }
 

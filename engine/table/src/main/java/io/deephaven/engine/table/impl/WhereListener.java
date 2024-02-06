@@ -4,18 +4,23 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,12 +44,14 @@ class WhereListener extends MergedListener {
     private final WhereFilter[] filters;
     private final ModifiedColumnSet filterColumns;
     private final ListenerRecorder recorder;
-    private final long minimumThreadSize;
     private final boolean permitParallelization;
     private final int segmentCount;
 
     private volatile long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    private static final AtomicLongFieldUpdater<WhereListener> FINAL_NOTIFICATION_STEP_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(WhereListener.class, "finalNotificationStep");
 
     WhereListener(
             final Logger log,
@@ -70,21 +77,18 @@ class WhereListener extends MergedListener {
                 manage((LivenessReferent) filter);
             }
         }
-        permitParallelization = AbstractFilterExecution.permitParallelization(filters);
-        this.filterColumns = hasColumnArray ? null
-                : sourceTable.newModifiedColumnSet(
-                        filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-
-        if (getUpdateGraph().parallelismFactor() > 1) {
-            minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
-        } else {
-            minimumThreadSize = Long.MAX_VALUE;
-        }
         if (QueryTable.PARALLEL_WHERE_SEGMENTS <= 0) {
             segmentCount = getUpdateGraph().parallelismFactor();
         } else {
             segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS;
         }
+        permitParallelization = AbstractFilterExecution.permitParallelization(filters)
+                && !QueryTable.DISABLE_PARALLEL_WHERE
+                && segmentCount > 1
+                && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1);
+        this.filterColumns = hasColumnArray ? null
+                : sourceTable.newModifiedColumnSet(
+                        filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @NotNull
@@ -113,10 +117,12 @@ class WhereListener extends MergedListener {
         // we should not get here if the recorder is null and we did not request a refilter
         Assert.neqNull(recorder, "recorder");
 
-        final ListenerFilterExecution result = makeFilterExecution();
+        final ListenerFilterExecution result = makeUpdateFilterExecution();
         final TableUpdate upstream = recorder.getUpdate().acquire();
         result.scheduleCompletion(
-                (x) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, x));
+                (adds, mods) -> completeUpdate(upstream, result.sourceModColumns, result.runModifiedFilters, adds,
+                        mods),
+                exception -> errorUpdate(exception, upstream));
     }
 
     private ModifiedColumnSet getSourceModifiedColumnSet() {
@@ -133,45 +139,48 @@ class WhereListener extends MergedListener {
     private void completeUpdate(
             final TableUpdate upstream,
             final ModifiedColumnSet sourceModColumns,
-            final boolean runFilters,
-            final AbstractFilterExecution filterResult) {
+            final boolean modifiesWereFiltered,
+            final WritableRowSet addFilterResult,
+            final WritableRowSet modifiedFilterResult) {
         final TableUpdateImpl update = new TableUpdateImpl();
+        try (final SafeCloseable ignored = modifiedFilterResult) {
+            // Intersect removed with pre-shift keyspace
+            update.removed = currentMapping.extract(upstream.removed());
 
-        // intersect removed with pre-shift keyspace
-        update.removed = upstream.removed().intersect(currentMapping);
-        currentMapping.remove(update.removed);
+            // Shift keyspace
+            upstream.shifted().apply(currentMapping);
 
-        // shift keyspace
-        upstream.shifted().apply(currentMapping);
+            // Compute added against filters
+            update.added = addFilterResult;
 
-        // compute added against filters
-        update.added = filterResult.getAddedResult();
-        final RowSet matchingModifies = filterResult.getModifyResult();
+            if (modifiesWereFiltered) {
+                update.modified = modifiedFilterResult.intersect(currentMapping);
 
-        // which propagate as mods?
-        update.modified = (runFilters ? matchingModifies : upstream.modified()).intersect(currentMapping);
+                // Matching modifies in the current mapping are adds
+                try (final WritableRowSet modsToAdd = modifiedFilterResult.minus(currentMapping)) {
+                    update.added.writableCast().insert(modsToAdd);
+                }
 
-        // remaining matchingModifies are adds
-        update.added.writableCast().insert(matchingModifies.minus(update.modified));
+                // Unmatched upstream mods are removes if they are in our output rowset
+                try (final WritableRowSet modsToRemove = upstream.modified().minus(modifiedFilterResult)) {
+                    modsToRemove.writableCast().retain(currentMapping);
 
-        final WritableRowSet modsToRemove;
-        if (!runFilters) {
-            modsToRemove = RowSetFactory.empty();
-        } else {
-            modsToRemove = upstream.modified().minus(matchingModifies);
-            modsToRemove.writableCast().retain(currentMapping);
+                    // Note modsToRemove is currently in post-shift keyspace
+                    currentMapping.update(update.added, modsToRemove);
+
+                    // Move modsToRemove into pre-shift keyspace and add to myRemoved
+                    upstream.shifted().unapply(modsToRemove);
+                    update.removed.writableCast().insert(modsToRemove);
+                }
+            } else {
+                update.modified = upstream.modified().intersect(currentMapping);
+                currentMapping.insert(update.added);
+            }
         }
-        // note modsToRemove is currently in post-shift keyspace
-        currentMapping.update(update.added, modsToRemove);
-
-        // move modsToRemove into pre-shift keyspace and add to myRemoved
-        upstream.shifted().unapply(modsToRemove);
-        update.removed.writableCast().insert(modsToRemove);
 
         update.modifiedColumnSet = sourceModColumns;
         if (update.modified.isEmpty()) {
-            update.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
+            update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
         }
 
         // note shifts are pass-through since filter will never translate keyspace
@@ -179,9 +188,32 @@ class WhereListener extends MergedListener {
 
         result.notifyListeners(update);
 
-        upstream.release();
+        // Release the upstream update and set the final notification step.
+        finalizeUpdate(upstream);
+    }
 
-        setFinalExecutionStep();
+    private void errorUpdate(final Exception e, final TableUpdate upstream) {
+        // Notify listeners that we had an issue refreshing the table.
+        if (result.getLastNotificationStep() == result.updateGraph.clock().currentStep()) {
+            forceReferenceCountToZero();
+            result.delayedErrorReference = new DelayedErrorNotifier(e, entry, result);
+        } else {
+            result.notifyListenersOnError(e, entry);
+            forceReferenceCountToZero();
+        }
+
+        // Release the upstream update and set the final notification step.
+        finalizeUpdate(upstream);
+    }
+
+    void finalizeUpdate(@Nullable final TableUpdate upstream) {
+        final long oldStep = FINAL_NOTIFICATION_STEP_UPDATER.get(this);
+        final long step = getUpdateGraph().clock().currentStep();
+        if (oldStep < step && FINAL_NOTIFICATION_STEP_UPDATER.compareAndSet(this, oldStep, step)) {
+            if (upstream != null) {
+                upstream.release();
+            }
+        }
     }
 
     /**
@@ -202,73 +234,45 @@ class WhereListener extends MergedListener {
         return false;
     }
 
-    ListenerFilterExecution makeFilterExecution(RowSet refilter) {
-        return new ListenerFilterExecution(refilter, 0, refilter.size(), null, 0, 0, null, false, ModifiedColumnSet.ALL,
-                0);
+    ListenerFilterExecution makeRefilterExecution(final RowSet refilter) {
+        return new ListenerFilterExecution(refilter, null, false, ModifiedColumnSet.ALL);
     }
 
-    void setFinalExecutionStep() {
-        finalNotificationStep = getUpdateGraph().clock().currentStep();
-    }
-
-    ListenerFilterExecution makeFilterExecution() {
+    ListenerFilterExecution makeUpdateFilterExecution() {
         final ModifiedColumnSet sourceModColumns = getSourceModifiedColumnSet();
         final boolean runModifiedFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
-        return new ListenerFilterExecution(recorder.getAdded(), 0, recorder.getAdded().size(),
-                recorder.getModified(), 0, recorder.getModified().size(), null,
-                runModifiedFilters, sourceModColumns, 0);
+        return new ListenerFilterExecution(recorder.getAdded(), recorder.getModified(),
+                runModifiedFilters, sourceModColumns);
     }
 
     class ListenerFilterExecution extends AbstractFilterExecution {
+
+        private final JobScheduler jobScheduler;
+
         private ListenerFilterExecution(
                 final RowSet addedInput,
-                final long addStart,
-                final long addEnd,
                 final RowSet modifyInput,
-                final long modifyStart,
-                final long modifyEnd,
-                final ListenerFilterExecution parent,
                 final boolean runModifiedFilters,
-                final ModifiedColumnSet sourceModColumns,
-                final int filterIndex) {
-            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, addStart, addEnd, modifyInput,
-                    modifyStart, modifyEnd, parent, false, runModifiedFilters, sourceModColumns, filterIndex);
+                final ModifiedColumnSet sourceModColumns) {
+            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifyInput,
+                    false, runModifiedFilters, sourceModColumns);
+            // Create the proper JobScheduler for the following parallel tasks
+            if (permitParallelization) {
+                jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
+            } else {
+                jobScheduler = new ImmediateJobScheduler();
+            }
         }
 
         @Override
-        boolean doParallelization(long numberOfRows) {
-            return permitParallelization
-                    && (QueryTable.FORCE_PARALLEL_WHERE || getUpdateGraph().parallelismFactor() > 1)
-                    && doParallelizationBase(numberOfRows);
+        JobScheduler jobScheduler() {
+            return jobScheduler;
         }
 
-        @Override
-        void handleUncaughtException(Exception throwable) {
-            WhereListener.this.handleUncaughtException(throwable);
-        }
 
         @Override
-        void accumulatePerformanceEntry(BasePerformanceEntry entry) {
-            WhereListener.this.accumulatePeformanceEntry(entry);
-        }
-
-        @Override
-        void onNoChildren() {}
-
-        @Override
-        ListenerFilterExecution makeChild(
-                final RowSet addedInput, final long addStart, final long addEnd, final RowSet modifyInput,
-                final long modifyStart, final long modifyEnd, final int filterIndex) {
-            return new ListenerFilterExecution(addedInput, addStart, addEnd, modifyInput, modifyStart, modifyEnd, this,
-                    runModifiedFilters, sourceModColumns, filterIndex);
-        }
-
-        @Override
-        void enqueueSubFilters(
-                List<AbstractFilterExecution> subFilters,
-                CombinationNotification combinationNotification) {
-            getUpdateGraph().addNotifications(subFilters);
-            getUpdateGraph().addNotification(combinationNotification);
+        boolean permitParallelization() {
+            return permitParallelization;
         }
 
         @Override
