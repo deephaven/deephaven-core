@@ -33,7 +33,7 @@ dependencies {
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation 'com.tdunning:t-digest:3.2'
     implementation 'com.squareup:javapoet:1.13.0'
-    implementation 'io.github.classgraph:classgraph:4.8.154'
+    implementation 'io.github.classgraph:classgraph:4.8.165'
 
     implementation project(':plugin')
     implementation depCommonsLang3
