@@ -191,7 +191,8 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             final ColumnSource<?> formulaOutputSource) {
         final ChunkType chunkType = valueChunk.getChunkType();
         if (chunkType == ChunkType.Boolean) {
-            throw new IllegalStateException("Output chunk type should not be Boolean but should have been reinterpreted to byte");
+            throw new IllegalStateException(
+                    "Output chunk type should not be Boolean but should have been reinterpreted to byte");
         }
         if (chunkType == ChunkType.Byte) {
             return i -> valueChunk.asWritableByteChunk().set(i, formulaOutputSource.getByte(0));
