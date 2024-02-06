@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.ByteRingBufferVectorWrapper;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.IntConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -40,11 +42,11 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
 
     // region extra-fields
-    final byte nullValue;
     // endregion extra-fields
 
     protected class Context extends BaseRollingFormulaOperator.Context {
         private final ColumnSource<?> formulaOutputSource;
+        private final IntConsumer outputSetter;
 
         private ByteChunk<? extends Values> influencerValuesChunk;
         private ByteRingBuffer byteWindowValues;
@@ -59,13 +61,13 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
             final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            final SingleValueColumnSource<ByteVector> formulaInputSource = (SingleValueColumnSource<ByteVector>) SingleValueColumnSource.getSingleValueColumnSource(vectorType);
+            final SingleValueColumnSource<ByteVector> formulaInputSource = (SingleValueColumnSource<ByteVector>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
             formulaInputSource.set(new ByteRingBufferVectorWrapper(byteWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
-            formulaOutputSource = formulaCopy.getDataView();
-
+            formulaOutputSource = ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
+            outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
         @Override
@@ -100,7 +102,7 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
                 final int popCount = popChunk.get(ii);
 
                 if (pushCount == NULL_INT) {
-                    writeNullToOutputChunk(ii);
+                    outputValues.fillWithNullValue(ii, 1);
                     continue;
                 }
 
@@ -115,8 +117,8 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
                     pushIndex += pushCount;
                 }
 
-                // write the results to the output chunk
-                writeToOutputChunk(ii);
+                // If not empty (even if completely full of null), run the formula over the window values.
+                outputSetter.accept(ii);
             }
 
             // chunk output to column
@@ -143,12 +145,6 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
         }
 
         @Override
-        public void writeToOutputChunk(int outIdx) {
-            // If not empty (even if completely full of null), run the formula over the window values.
-            outputSetter.accept(formulaOutputSource.get(0), outIdx);
-        }
-
-        @Override
         public void reset() {
             byteWindowValues.clear();
         }
@@ -165,12 +161,10 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
             // region extra-constructor-args
-            ,final byte nullValue
             // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
         // region constructor
-        this.nullValue = nullValue;
         // endregion constructor
     }
 
@@ -184,12 +178,10 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
             // region extra-constructor-args
-            ,final byte nullValue
             // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
         // region constructor
-        this.nullValue = nullValue;
         // endregion constructor
     }
 
@@ -200,11 +192,10 @@ public class ByteRollingFormulaOperator extends BaseRollingFormulaOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
-                vectorType,
+                inputVectorType,
                 formulaColumnMap,
                 tableDef
                 // region extra-copy-args
-                , nullValue
                 // endregion extra-copy-args
         );
     }

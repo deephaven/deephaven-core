@@ -9,7 +9,7 @@ import io.deephaven.base.ringbuffer.FloatRingBuffer;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 
-public class FloatRingBufferVectorWrapper implements FloatVector {
+public class FloatRingBufferVectorWrapper implements FloatVector, RingBufferVectorWrapper {
     private final FloatRingBuffer ringBuffer;
 
     public FloatRingBufferVectorWrapper(final FloatRingBuffer ringBuffer) {

@@ -9,7 +9,7 @@ import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 
-public class LongRingBufferVectorWrapper implements LongVector {
+public class LongRingBufferVectorWrapper implements LongVector, RingBufferVectorWrapper {
     private final LongRingBuffer ringBuffer;
 
     public LongRingBufferVectorWrapper(final LongRingBuffer ringBuffer) {

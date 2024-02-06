@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 /***
- * Compute an exponential moving standard deviation for a BigDecimal column source. The output is expressed as a
+ * Compute an exponential moving standard deviation for a short column source. The output is expressed as a
  * BigDecimal value and is computed using the following formula:
  * <p>
  * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)

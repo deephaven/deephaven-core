@@ -9,7 +9,7 @@ import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 
-public class ByteRingBufferVectorWrapper implements ByteVector {
+public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper {
     private final ByteRingBuffer ringBuffer;
 
     public ByteRingBufferVectorWrapper(final ByteRingBuffer ringBuffer) {

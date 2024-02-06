@@ -16,13 +16,14 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.ObjectRingBufferVectorWrapper;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.ObjectVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.IntConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -38,8 +39,9 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
     // endregion extra-fields
 
     protected class Context extends BaseRollingFormulaOperator.Context {
-        private final SingleValueColumnSource<ObjectVector<T>> formulaInputSource;
         private final ColumnSource<?> formulaOutputSource;
+        private final IntConsumer outputSetter;
+
         private ObjectChunk<T, ? extends Values> influencerValuesChunk;
         private ObjectRingBuffer<T> windowValues;
 
@@ -47,16 +49,19 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
 
+            windowValues = new ObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, true);
+
             // Make a copy of the operator formula column.
             final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            formulaInputSource = (SingleValueColumnSource<ObjectVector<T>>)SingleValueColumnSource.getSingleValueColumnSource(vectorType);
+            final SingleValueColumnSource<ObjectVector<?>> formulaInputSource = (SingleValueColumnSource<ObjectVector<?>>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
+            formulaInputSource.set(new ObjectRingBufferVectorWrapper(windowValues, inputVectorType));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
-            formulaOutputSource = formulaCopy.getDataView();
 
-            windowValues = new ObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, true);
+            formulaOutputSource = formulaCopy.getDataView();
+            outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
         @Override
@@ -91,7 +96,7 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
                 final int popCount = popChunk.get(ii);
 
                 if (pushCount == NULL_INT) {
-                    writeNullToOutputChunk(ii);
+                    outputValues.fillWithNullValue(ii, 1);
                     continue;
                 }
 
@@ -106,8 +111,8 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
                     pushIndex += pushCount;
                 }
 
-                // write the results to the output chunk
-                writeToOutputChunk(ii);
+                // If not empty (even if completely full of null), run the formula over the window values.
+                outputSetter.accept(ii);
             }
 
             // chunk output to column
@@ -131,17 +136,6 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
             for (int ii = 0; ii < count; ii++) {
                 windowValues.removeUnsafe();
             }
-        }
-
-        @Override
-        public void writeToOutputChunk(int outIdx) {
-            // If not empty (even if completely full of null), run the formula over the window values.
-            formulaInputSource.set(new ObjectVectorDirect<>(windowValues.getAll()));
-            outputSetter.accept(formulaOutputSource.get(0), outIdx);
-        }
-
-        void writeNullToOutputChunk(final int outIdx) {
-            outputSetter.accept(nullValue, outIdx);
         }
 
         @Override
@@ -183,7 +177,7 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
-                vectorType,
+                inputVectorType,
                 formulaColumnMap,
                 tableDef);
     }

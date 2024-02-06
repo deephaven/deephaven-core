@@ -1131,6 +1131,11 @@ public abstract class UpdateBy {
      */
     public static class UpdateByOperatorCollection {
         /**
+         * The table definition used to initialize the operator collection.
+         */
+        final TableDefinition tableDef;
+
+        /**
          * The name of the timestamp column, if any.
          */
         final String timestampColumnName;
@@ -1156,9 +1161,9 @@ public abstract class UpdateBy {
         final String[] preservedColumnNames;
 
         /**
-         * The description of the updateBy operation for error reporting.
+         * The description of the updateBy operator collection (for error reporting or logging).
          */
-        final StringBuilder descriptionBuilder;
+        final String description;
 
         /**
          * Contains the operators for this updateBy call, organized into windows that can be processed together.
@@ -1166,19 +1171,21 @@ public abstract class UpdateBy {
         final UpdateByWindow[] windowArr;
 
         private UpdateByOperatorCollection(
+                final TableDefinition tableDef,
                 final String timestampColumnName,
                 final String[] inputColumnNames,
                 final String[] outputColumnNames,
                 final String[] byColumnNames,
                 final String[] preservedColumnNames,
-                final StringBuilder descriptionBuilder,
+                final String description,
                 final UpdateByWindow[] windowArr) {
+            this.tableDef = tableDef;
             this.timestampColumnName = timestampColumnName;
             this.inputColumnNames = inputColumnNames;
             this.outputColumnNames = outputColumnNames;
             this.byColumnNames = byColumnNames;
             this.preservedColumnNames = preservedColumnNames;
-            this.descriptionBuilder = descriptionBuilder;
+            this.description = description;
             this.windowArr = windowArr;
         }
 
@@ -1236,12 +1243,10 @@ public abstract class UpdateBy {
                     if (op.getTimestampColumnName() != null) {
                         if (timestampColumnName.getValue() == null) {
                             timestampColumnName.setValue(op.getTimestampColumnName());
-                        } else {
-                            if (!timestampColumnName.getValue().equals(op.getTimestampColumnName())) {
-                                throw new UncheckedTableException(
-                                        "Cannot reference more than one timestamp source on a single UpdateBy call {"
-                                                + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
-                            }
+                        } else if (!timestampColumnName.getValue().equals(op.getTimestampColumnName())) {
+                            throw new UncheckedTableException(
+                                    "Cannot reference more than one timestamp source on a single UpdateBy call {"
+                                            + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
                         }
                     }
 
@@ -1274,20 +1279,36 @@ public abstract class UpdateBy {
                         String.join(", ", problems) + "}");
             }
 
+            if (!byColumns.isEmpty()) {
+                descriptionBuilder.append(", byColumns={").append(byColumns).append("})");
+
+                // Verify the source has all the byColumns
+                final Set<String> byColumnSet = tableDef.getColumnNameSet();
+                for (final ColumnName byColumn : byColumns) {
+                    if (!byColumnSet.contains(byColumn.name())) {
+                        problems.add(byColumn.name());
+                    }
+                }
+
+                if (!problems.isEmpty()) {
+                    throw new UncheckedTableException(
+                            descriptionBuilder + ": Missing byColumns in parent table {" +
+                                    String.join(", ", problems) + "}");
+                }
+            }
+
             return new UpdateByOperatorCollection(
+                    tableDef,
                     timestampColumnName.getValue(),
                     inputColumnList.toArray(String[]::new),
                     updateByOperatorFactory.getOutputColumns(clauses).toArray(String[]::new),
                     byColumns.stream().map(ColumnName::name).toArray(String[]::new),
                     preservedColumnSet.toArray(String[]::new),
-                    descriptionBuilder,
+                    descriptionBuilder.toString(),
                     windowArr);
         }
 
         public UpdateByOperatorCollection copy() {
-            // Create a new StringBuilder with the same contents
-            final StringBuilder localDescriptionBuilder = new StringBuilder(descriptionBuilder);
-
             // Recreate the windows with copies of each operator.
             final UpdateByWindow[] localWindowArr = new UpdateByWindow[windowArr.length];
             for (int ii = 0; ii < windowArr.length; ii++) {
@@ -1295,12 +1316,13 @@ public abstract class UpdateBy {
             }
 
             return new UpdateByOperatorCollection(
+                    tableDef,
                     timestampColumnName,
                     inputColumnNames,
                     outputColumnNames,
                     byColumnNames,
                     preservedColumnNames,
-                    localDescriptionBuilder,
+                    description,
                     localWindowArr);
         }
     }
@@ -1327,6 +1349,11 @@ public abstract class UpdateBy {
             @NotNull final UpdateByControl control) {
 
         QueryTable.checkInitiateOperation(source);
+        // Assert that the operator collection and source table definitions are compatible.
+        operatorCollection.tableDef.checkMutualCompatibility(
+                source.getDefinition(),
+                "OperatorCollection TableDef",
+                "Source TableDef");
 
         // Create the rowRedirection (if instructed by the user)
         final RowRedirection rowRedirection;
@@ -1362,8 +1389,6 @@ public abstract class UpdateBy {
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
 
-        final List<String> problems = new ArrayList<>();
-
         // We have the source table and the row redirection; we can initialize the operators and add the output
         // columns to the result sources
         for (UpdateByWindow win : operatorCollection.windowArr) {
@@ -1374,7 +1399,6 @@ public abstract class UpdateBy {
         }
 
         if (operatorCollection.byColumnNames.length == 0) {
-            operatorCollection.descriptionBuilder.append(")");
             return LivenessScopeStack.computeEnclosed(() -> {
                 final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
                         operatorCollection.windowArr,
@@ -1399,22 +1423,6 @@ public abstract class UpdateBy {
                 }
                 return zkm.result();
             }, source::isRefreshing, DynamicNode::isRefreshing);
-        }
-
-        operatorCollection.descriptionBuilder.append(", byColumns={")
-                .append(Arrays.toString(operatorCollection.byColumnNames)).append("})");
-
-        // Verify the source has all the byColumns
-        for (final String byColumn : operatorCollection.byColumnNames) {
-            if (!source.hasColumns(byColumn)) {
-                problems.add(byColumn);
-            }
-        }
-
-        if (!problems.isEmpty()) {
-            throw new UncheckedTableException(
-                    operatorCollection.descriptionBuilder + ": Missing byColumns in parent table {" +
-                            String.join(", ", problems) + "}");
         }
 
         // TODO: test whether the source is static and that UpdateBy call uses only cumulative operators. In this

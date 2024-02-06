@@ -1,13 +1,8 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingFormulaOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.rollingformula;
 
-import io.deephaven.base.ringbuffer.IntRingBuffer;
+import io.deephaven.base.ringbuffer.ObjectRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -19,11 +14,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.IntRingBufferVectorWrapper;
-import io.deephaven.vector.IntVector;
+import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.ObjectRingBufferVectorWrapper;
+import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,54 +25,56 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
- * Rolling formula operator for source int columns. The output column type will be entirely dependent on the formula
+ * Rolling formula operator for source byte columns. The output column type will be entirely dependent on the formula
  * provided by the user.
  */
 
-public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
+public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
-
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseRollingFormulaOperator.Context {
         private final ColumnSource<?> formulaOutputSource;
         private final IntConsumer outputSetter;
 
-        private IntChunk<? extends Values> influencerValuesChunk;
-        private IntRingBuffer intWindowValues;
+        private ByteChunk<? extends Values> influencerValuesChunk;
+        /**
+         * The value chunks are coming from a reinterpreted column, but we want to present an ObjectVector<Boolean>
+         * to the formula.
+         */
+        private ObjectRingBuffer<Boolean> windowValues;
 
         @SuppressWarnings("unchecked")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
 
-            intWindowValues = new IntRingBuffer(BUFFER_INITIAL_CAPACITY, true);
+            windowValues = new ObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
             final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            final SingleValueColumnSource<IntVector> formulaInputSource = (SingleValueColumnSource<IntVector>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
-            formulaInputSource.set(new IntRingBufferVectorWrapper(intWindowValues));
+            final SingleValueColumnSource<ObjectVector<?>> formulaInputSource = (SingleValueColumnSource<ObjectVector<?>>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
+            formulaInputSource.set(new ObjectRingBufferVectorWrapper(windowValues, inputVectorType));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
-            formulaOutputSource = ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
+            formulaOutputSource = formulaCopy.getDataView();
             outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
         @Override
         public void close() {
             super.close();
-            intWindowValues = null;
+            windowValues = null;
         }
 
         @Override
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            influencerValuesChunk = valueChunks[0].asIntChunk();
+            influencerValuesChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
@@ -127,30 +123,30 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
 
         @Override
         public void push(int pos, int count) {
-            intWindowValues.ensureRemaining(count);
+            windowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final int val = influencerValuesChunk.get(pos + ii);
-                intWindowValues.addUnsafe(val);
+                final byte val = influencerValuesChunk.get(pos + ii);
+                windowValues.addUnsafe(val == NULL_BYTE ? null : val != 0);
             }
         }
 
         @Override
         public void pop(int count) {
-            Assert.geq(intWindowValues.size(), "intWindowValues.size()", count);
+            Assert.geq(windowValues.size(), "byteWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                intWindowValues.removeUnsafe();
+                windowValues.removeUnsafe();
             }
         }
 
         @Override
         public void reset() {
-            intWindowValues.clear();
+            windowValues.clear();
         }
     }
 
-    public IntRollingFormulaOperator(
+    public BooleanRollingFormulaOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
@@ -159,16 +155,11 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final String formula,
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
-            @NotNull final TableDefinition tableDef
-            // region extra-constructor-args
-            // endregion extra-constructor-args
-    ) {
+            @NotNull final TableDefinition tableDef) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
-        // region constructor
-        // endregion constructor
     }
 
-    protected IntRollingFormulaOperator(
+    protected BooleanRollingFormulaOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
@@ -176,28 +167,20 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
             final long forwardWindowScaleUnits,
             final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
-            @NotNull final TableDefinition tableDef
-            // region extra-constructor-args
-            // endregion extra-constructor-args
-    ) {
+            @NotNull final TableDefinition tableDef) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
-        // region constructor
-        // endregion constructor
     }
 
     @Override
     public UpdateByOperator copy() {
-        return new IntRollingFormulaOperator(pair,
+        return new BooleanRollingFormulaOperator(pair,
                 affectingColumns,
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 inputVectorType,
                 formulaColumnMap,
-                tableDef
-                // region extra-copy-args
-                // endregion extra-copy-args
-        );
+                tableDef);
     }
 
     @Override

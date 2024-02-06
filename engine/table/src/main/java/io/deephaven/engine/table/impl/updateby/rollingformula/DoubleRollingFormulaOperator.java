@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.DoubleRingBufferVectorWrapper;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.IntConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -44,6 +46,7 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     protected class Context extends BaseRollingFormulaOperator.Context {
         private final ColumnSource<?> formulaOutputSource;
+        private final IntConsumer outputSetter;
 
         private DoubleChunk<? extends Values> influencerValuesChunk;
         private DoubleRingBuffer doubleWindowValues;
@@ -58,13 +61,13 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
             final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            final SingleValueColumnSource<DoubleVector> formulaInputSource = (SingleValueColumnSource<DoubleVector>) SingleValueColumnSource.getSingleValueColumnSource(vectorType);
+            final SingleValueColumnSource<DoubleVector> formulaInputSource = (SingleValueColumnSource<DoubleVector>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
             formulaInputSource.set(new DoubleRingBufferVectorWrapper(doubleWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
-            formulaOutputSource = formulaCopy.getDataView();
-
+            formulaOutputSource = ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
+            outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
         @Override
@@ -99,7 +102,7 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
                 final int popCount = popChunk.get(ii);
 
                 if (pushCount == NULL_INT) {
-                    writeNullToOutputChunk(ii);
+                    outputValues.fillWithNullValue(ii, 1);
                     continue;
                 }
 
@@ -114,8 +117,8 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
                     pushIndex += pushCount;
                 }
 
-                // write the results to the output chunk
-                writeToOutputChunk(ii);
+                // If not empty (even if completely full of null), run the formula over the window values.
+                outputSetter.accept(ii);
             }
 
             // chunk output to column
@@ -139,12 +142,6 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
             for (int ii = 0; ii < count; ii++) {
                 doubleWindowValues.removeUnsafe();
             }
-        }
-
-        @Override
-        public void writeToOutputChunk(int outIdx) {
-            // If not empty (even if completely full of null), run the formula over the window values.
-            outputSetter.accept(formulaOutputSource.get(0), outIdx);
         }
 
         @Override
@@ -195,7 +192,7 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
-                vectorType,
+                inputVectorType,
                 formulaColumnMap,
                 tableDef
                 // region extra-copy-args

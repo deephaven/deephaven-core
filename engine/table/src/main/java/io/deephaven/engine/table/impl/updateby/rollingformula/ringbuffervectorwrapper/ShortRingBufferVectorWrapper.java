@@ -9,7 +9,7 @@ import io.deephaven.base.ringbuffer.ShortRingBuffer;
 import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
 
-public class ShortRingBufferVectorWrapper implements ShortVector {
+public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVectorWrapper {
     private final ShortRingBuffer ringBuffer;
 
     public ShortRingBufferVectorWrapper(final ShortRingBuffer ringBuffer) {

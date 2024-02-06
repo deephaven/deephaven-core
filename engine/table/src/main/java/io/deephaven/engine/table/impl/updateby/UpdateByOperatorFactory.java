@@ -1357,16 +1357,16 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
-            if (csType == Boolean.class || csType == boolean.class) {
-                return new ByteRollingFormulaOperator(pair, affectingColumns,
+            if (csType == boolean.class || csType == Boolean.class) {
+                return new BooleanRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, NULL_BOOLEAN_AS_BYTE);
+                        formulaColumnMap, tableDef);
             } else if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, NULL_BYTE);
+                        formulaColumnMap, tableDef);
             } else if (csType == char.class || csType == Character.class) {
                 return new CharRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),

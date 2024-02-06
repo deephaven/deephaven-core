@@ -290,6 +290,16 @@ public class TestRollingFormula extends BaseUpdateByTest {
                         "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Boolean identity
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "x", "x", "boolCol"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "boolCol"))
+                .update("boolCol=boolCol.getDirect()");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
@@ -404,6 +414,16 @@ public class TestRollingFormula extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "bigDecimalCol", "bigIntCol"))
                 .update("bigDecimalCol=(Object)(bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol)",
                         "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Boolean identity
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "x", "x", "boolCol"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "boolCol"))
+                .update("boolCol=boolCol.getDirect()");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }

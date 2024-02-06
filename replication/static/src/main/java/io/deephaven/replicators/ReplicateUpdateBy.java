@@ -235,10 +235,6 @@ public class ReplicateUpdateBy {
             if (f.contains("Int")) {
                 fixupInteger(f);
             }
-
-            if (f.contains("Byte")) {
-                fixupByte(f);
-            }
         }
 
     }

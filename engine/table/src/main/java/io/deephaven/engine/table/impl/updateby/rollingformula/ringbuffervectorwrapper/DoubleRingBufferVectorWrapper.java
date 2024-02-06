@@ -9,7 +9,7 @@ import io.deephaven.base.ringbuffer.DoubleRingBuffer;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 
-public class DoubleRingBufferVectorWrapper implements DoubleVector {
+public class DoubleRingBufferVectorWrapper implements DoubleVector, RingBufferVectorWrapper {
     private final DoubleRingBuffer ringBuffer;
 
     public DoubleRingBufferVectorWrapper(final DoubleRingBuffer ringBuffer) {

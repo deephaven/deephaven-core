@@ -4,7 +4,7 @@ import io.deephaven.base.ringbuffer.CharRingBuffer;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 
-public class CharRingBufferVectorWrapper implements CharVector {
+public class CharRingBufferVectorWrapper implements CharVector, RingBufferVectorWrapper {
     private final CharRingBuffer ringBuffer;
 
     public CharRingBufferVectorWrapper(final CharRingBuffer ringBuffer) {
