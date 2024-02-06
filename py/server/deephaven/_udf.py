@@ -411,6 +411,7 @@ def _dh_vectorize(fn):
     and (3) the input arrays.
     """
     p_sig = _parse_signature(fn)
+    return_array = p_sig.ret_annotation.has_array
     ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
     @wraps(fn)
@@ -428,10 +429,18 @@ def _dh_vectorize(fn):
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
                 converted_args = _convert_args(p_sig, scalar_args)
-                chunk_result[i] = _scalar(fn(*converted_args), ret_dtype)
+                ret = fn(*converted_args)
+                if return_array:
+                    chunk_result[i] = dtypes.array(ret_dtype, ret)
+                else:
+                    chunk_result[i] = _scalar(ret, ret_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = _scalar(fn(), ret_dtype)
+                ret = fn()
+                if return_array:
+                    chunk_result[i] = dtypes.array(ret_dtype, ret)
+                else:
+                    chunk_result[i] = _scalar(ret, ret_dtype)
 
         return chunk_result
 
