@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -130,13 +131,14 @@ public class TestGroovyDeephavenSession {
 
     @Test
     public void testUnloadedWildcardPackageImport() {
-        // it's unlikely we have loaded anything from this groovy package
-        final String packageString = "groovy.time";
-
-        if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
-            Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
+        // Pick three packages we won't have loaded directly - a JRE package, a third party package (from a jar), and a
+        // package in the current source set
+        for (String packageString : Set.of("java.util", "groovy.time", "io.deephaven.engine.util.scripts.wontbeused")) {
+            if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
+                Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
+            }
+            session.evaluateScript("import " + packageString + ".*").throwIfError();
         }
-        session.evaluateScript("import " + packageString + ".*").throwIfError();
     }
 
     /**
