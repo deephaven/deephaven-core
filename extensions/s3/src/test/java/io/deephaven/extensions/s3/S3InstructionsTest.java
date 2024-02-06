@@ -30,7 +30,7 @@ public class S3InstructionsTest {
         try {
             S3Instructions.builder().build();
         } catch (IllegalStateException e) {
-            assertThat(e).hasMessageContaining("awsRegionName");
+            assertThat(e).hasMessageContaining("regionName");
         }
     }
 
