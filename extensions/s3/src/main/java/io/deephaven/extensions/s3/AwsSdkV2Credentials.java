@@ -7,5 +7,5 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 interface AwsSdkV2Credentials extends Credentials {
 
-    AwsCredentialsProvider awsCredentialsProvider();
+    AwsCredentialsProvider awsV2CredentialsProvider();
 }

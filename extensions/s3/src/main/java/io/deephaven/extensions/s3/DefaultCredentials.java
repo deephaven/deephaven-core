@@ -14,7 +14,7 @@ enum DefaultCredentials implements AwsSdkV2Credentials {
     DEFAULT_CREDENTIALS;
 
     @Override
-    public AwsCredentialsProvider awsCredentialsProvider() {
+    public final AwsCredentialsProvider awsV2CredentialsProvider() {
         return DefaultCredentialsProvider.create();
     }
 }

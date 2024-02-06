@@ -51,16 +51,14 @@ class S3Instructions(JObjectWrapper):
         Initializes the instructions.
 
         Args:
-            region_name (str): the region name for reading parquet files stored in an S3-compatible API, mandatory
-                parameter.
-            max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3.
-                default is 50.
+            region_name (str): the region name for reading parquet files, mandatory parameter.
+            max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 50.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
                 fragment. Default to 1, which means fetch the next fragment in advance when reading the current fragment.
-            fragment_size (int): the maximum size of each fragment to read from S3, defaults to 5 MB. If there are fewer
-                bytes remaining in the file, the fetched fragment can be smaller.
+            fragment_size (int): the maximum size of each fragment to read, defaults to 5 MB. If there are fewer bytes
+                remaining in the file, the fetched fragment can be smaller.
             max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 32. This
-                caching is done at the deephaven layer for faster access to recently read fragments.
+                caching is done at the Deephaven layer for faster access to recently read fragments.
             connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
                 the amount of time to wait when initially establishing a connection before giving up and timing out, can
                 be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
@@ -69,10 +67,10 @@ class S3Instructions(JObjectWrapper):
                 the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
                 an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
                 duration types. Default to 2 seconds.
-            access_key_id (str): the access key for reading parquet files stored in S3. Both access key and secret
-                access key must be provided to use static credentials, else default credentials will be used.
-            secret_access_key (str): the secret access key for reading parquet files stored in S3. Both access key and
-                secret key must be provided to use static credentials, else default credentials will be used.
+            access_key_id (str): the access key for reading files. Both access key and secret access key must be provided
+                to use static credentials, else default credentials will be used.
+            secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
+                provided to use static credentials, else default credentials will be used.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
 

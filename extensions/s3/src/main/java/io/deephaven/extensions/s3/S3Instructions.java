@@ -15,7 +15,8 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * This class provides instructions intended for reading from and writing to S3-compatible instances.
+ * This class provides instructions intended for reading from and writing to S3-compatible APIs. The default values
+ * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
 @BuildableStyle
@@ -184,8 +185,8 @@ public abstract class S3Instructions {
         }
     }
 
-    final AwsCredentialsProvider awsCredentialsProvider() {
-        return ((AwsSdkV2Credentials) credentials()).awsCredentialsProvider();
+    final AwsCredentialsProvider awsV2CredentialsProvider() {
+        return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider();
     }
 
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style

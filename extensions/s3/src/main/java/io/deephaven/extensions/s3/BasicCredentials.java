@@ -28,8 +28,8 @@ abstract class BasicCredentials implements AwsSdkV2Credentials {
     @Value.Parameter
     abstract String secretAccessKey();
 
-    public AwsCredentialsProvider awsCredentialsProvider() {
-        final AwsBasicCredentials awsCreds = AwsBasicCredentials.create(accessKeyId(), secretAccessKey());
-        return StaticCredentialsProvider.create(awsCreds);
+    @Override
+    public final AwsCredentialsProvider awsV2CredentialsProvider() {
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId(), secretAccessKey()));
     }
 }
