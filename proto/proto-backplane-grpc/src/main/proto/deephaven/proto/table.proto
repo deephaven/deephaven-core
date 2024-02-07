@@ -765,18 +765,12 @@ message RangeJoinTablesRequest {
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string exact_match_columns = 4;
-  // Provide detailed range match parameters for the range join (alternative to providing `range_match`)
   string left_start_column = 5;
   RangeStartRule range_start_rule = 6;
   string right_range_column = 7;
   RangeEndRule range_end_rule = 8;
   string left_end_column = 9;
   repeated Aggregation aggregations = 10;
-  // Specifies the range match criteria for determining the responsive rows from rightTable for each row from this
-  // Table, within the buckets created by matching on the exactMatches. Providing `range_match` in the GRPC call
-  // is the alternative to detailed range match parameters provided in the `range_start_column`, `range_start_rule`,
-  // `right_range_column`, `range_end_rule`, and `left_end_column` fields.
-  string range_match = 11;
 }
 
 message ComboAggregateRequest {
