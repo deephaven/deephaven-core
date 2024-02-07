@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 
 
 /**
- * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability to
+ * {@link SeekableByteChannel} class used to fetch objects from S3 buckets using an async client with the ability to
  * read ahead and cache fragments of the object.
  */
 final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelProvider.ContextHolder {

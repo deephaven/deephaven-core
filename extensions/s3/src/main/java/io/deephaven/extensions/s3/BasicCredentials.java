@@ -11,25 +11,25 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
- * AWS credentials provider that uses access key and secret key provided at construction.
+ * Basic credentials that uses access key id and secret access key provided at construction.
  */
 @Immutable
 @SimpleStyle
 abstract class BasicCredentials implements AwsSdkV2Credentials {
 
-    static BasicCredentials of(final String awsAccessKeyId, final String awsSecretAccessKey) {
-        return ImmutableBasicCredentials.of(awsAccessKeyId, awsSecretAccessKey);
+    static BasicCredentials of(final String accessKeyId, final String secretAccessKey) {
+        return ImmutableBasicCredentials.of(accessKeyId, secretAccessKey);
     }
 
     @Value.Parameter
-    abstract String awsAccessKeyId();
+    abstract String accessKeyId();
 
     @Value.Redacted
     @Value.Parameter
-    abstract String awsSecretAccessKey();
+    abstract String secretAccessKey();
 
-    public AwsCredentialsProvider awsCredentialsProvider() {
-        final AwsBasicCredentials awsCreds = AwsBasicCredentials.create(awsAccessKeyId(), awsSecretAccessKey());
-        return StaticCredentialsProvider.create(awsCreds);
+    @Override
+    public final AwsCredentialsProvider awsV2CredentialsProvider() {
+        return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId(), secretAccessKey()));
     }
 }
