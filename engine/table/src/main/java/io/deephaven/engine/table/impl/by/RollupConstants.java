@@ -33,6 +33,12 @@ public final class RollupConstants {
     static final String ROLLUP_RUNNING_SUM_COLUMN_ID = "_RS_";
 
     /**
+     * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for sum of
+     * weights columns used in rollup wavg aggregations.
+     */
+    static final String ROLLUP_SUM_WEIGHTS_COLUMN_ID = "_RSW_";
+
+    /**
      * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for running
      * sum of squares columns used in rollup aggregations.
      */
