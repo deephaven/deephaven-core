@@ -718,9 +718,21 @@ public class ChunkedOperatorAggregationHelper {
                                 getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true);
                     }
                 }
-                ac.operators[oi].removeChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
-                        permutedKeyIndices, slotsToRemoveFrom, runStarts, runLengths,
-                        firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                try {
+                    ac.operators[oi].removeChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
+                            permutedKeyIndices, slotsToRemoveFrom, runStarts, runLengths,
+                            firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                } catch (Exception ex) {
+                    throw new AggregationOperatorException(
+                            "Failed to remove data, inputcolumns=" + Arrays.toString(ac.inputNames[oi]) + ", outputs="
+                                    + ac.operators[oi].getResultColumns().keySet(),
+                            ex);
+                } catch (Error err) {
+                    err.addSuppressed(new AggregationOperatorException(
+                            "Failed to remove data, inputcolumns=" + Arrays.toString(ac.inputNames[oi]) + ", outputs="
+                                    + ac.operators[oi].getResultColumns().keySet()));
+                    throw err;
+                }
 
                 anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots, slotsModifiedByOperator,
                         anyOperatorModified, firstOperator, oi);
@@ -794,9 +806,21 @@ public class ChunkedOperatorAggregationHelper {
                                 getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToInsertChunk, false);
                     }
                 }
-                ac.operators[oi].addChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
-                        permutedKeyIndices, slotsToAddTo, runStarts, runLengths,
-                        firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                try {
+                    ac.operators[oi].addChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
+                            permutedKeyIndices, slotsToAddTo, runStarts, runLengths,
+                            firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                } catch (Exception ex) {
+                    throw new AggregationOperatorException(
+                            "Failed to add data, inputcolumns=" + Arrays.toString(ac.inputNames[oi]) + ", outputs="
+                                    + ac.operators[oi].getResultColumns().keySet(),
+                            ex);
+                } catch (Error err) {
+                    err.addSuppressed(new AggregationOperatorException(
+                            "Failed to add data, inputcolumns=" + Arrays.toString(ac.inputNames[oi]) + ", outputs="
+                                    + ac.operators[oi].getResultColumns().keySet()));
+                    throw err;
+                }
 
                 anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots, slotsModifiedByOperator,
                         anyOperatorModified, firstOperator, oi);
@@ -895,10 +919,24 @@ public class ChunkedOperatorAggregationHelper {
                         }
                         chunkInitialized[inputSlot] = true;
                     }
-                    ac.operators[oi].shiftChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
-                            inputSlot >= 0 ? postValueChunks[inputSlot] : null, usePreKeys,
-                            usePostKeys, slots, runStarts, runLengths,
-                            firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                    try {
+                        ac.operators[oi].shiftChunk(bucketedContexts[oi],
+                                inputSlot >= 0 ? valueChunks[inputSlot] : null,
+                                inputSlot >= 0 ? postValueChunks[inputSlot] : null, usePreKeys,
+                                usePostKeys, slots, runStarts, runLengths,
+                                firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                    } catch (Exception ex) {
+                        throw new AggregationOperatorException(
+                                "Failed to shift data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                        + ", outputs=" + ac.operators[oi].getResultColumns().keySet(),
+                                ex);
+                    } catch (Error err) {
+                        err.addSuppressed(new AggregationOperatorException(
+                                "Failed to shift data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                        + ", outputs=" + ac.operators[oi].getResultColumns().keySet()));
+                        throw err;
+                    }
+
                     anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots,
                             slotsModifiedByOperator, anyOperatorModified, firstOperator, oi);
                     firstOperator = false;
@@ -961,8 +999,21 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         if (operatorsToProcessIndicesOnly[oi]) {
-                            ac.operators[oi].modifyRowKeys(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
-                                    runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                            try {
+                                ac.operators[oi].modifyRowKeys(bucketedContexts[oi], permutedKeyIndices, slots,
+                                        runStarts,
+                                        runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                            } catch (Exception ex) {
+                                throw new AggregationOperatorException(
+                                        "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                                + ", outputs=" + ac.operators[oi].getResultColumns().keySet(),
+                                        ex);
+                            } catch (Error err) {
+                                err.addSuppressed(new AggregationOperatorException(
+                                        "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                                + ", outputs=" + ac.operators[oi].getResultColumns().keySet()));
+                                throw err;
+                            }
                         } else /* operatorsToProcess[oi] */ {
                             final int inputSlot = ac.inputSlot(oi);
                             if (inputSlot >= 0 && !chunkInitialized[inputSlot]) {
@@ -987,10 +1038,22 @@ public class ChunkedOperatorAggregationHelper {
                                 chunkInitialized[inputSlot] = true;
                             }
 
-                            ac.operators[oi].modifyChunk(bucketedContexts[oi],
-                                    inputSlot >= 0 ? valueChunks[inputSlot] : null,
-                                    inputSlot >= 0 ? postValueChunks[inputSlot] : null, permutedKeyIndices, slots,
-                                    runStarts, runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                            try {
+                                ac.operators[oi].modifyChunk(bucketedContexts[oi],
+                                        inputSlot >= 0 ? valueChunks[inputSlot] : null,
+                                        inputSlot >= 0 ? postValueChunks[inputSlot] : null, permutedKeyIndices, slots,
+                                        runStarts, runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                            } catch (Exception ex) {
+                                throw new AggregationOperatorException(
+                                        "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                                + ", outputs=" + ac.operators[oi].getResultColumns().keySet(),
+                                        ex);
+                            } catch (Error er) {
+                                er.addSuppressed(new AggregationOperatorException(
+                                        "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                                + ", outputs=" + ac.operators[oi].getResultColumns().keySet()));
+                                throw er;
+                            }
                         }
 
                         anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots,
@@ -1039,9 +1102,20 @@ public class ChunkedOperatorAggregationHelper {
                             setFalse(slotsModifiedByOperator, runStarts.size());
                         }
 
-                        ac.operators[oi].modifyRowKeys(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
-                                runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
-
+                        try {
+                            ac.operators[oi].modifyRowKeys(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
+                                    runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
+                        } catch (Exception ex) {
+                            throw new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                            + ", outputs=" + ac.operators[oi].getResultColumns().keySet(),
+                                    ex);
+                        } catch (Error err) {
+                            err.addSuppressed(new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                            + ", outputs=" + ac.operators[oi].getResultColumns().keySet()));
+                            throw err;
+                        }
                         anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots,
                                 slotsModifiedByOperator, anyOperatorModified, firstOperator, oi);
                         firstOperator = false;
@@ -1629,8 +1703,20 @@ public class ChunkedOperatorAggregationHelper {
                                     workingChunks[inputSlot] = ac.inputColumns[oi] == null ? null
                                             : ac.inputColumns[oi].getChunk(getContexts[oi], chunkRows);
                                 }
-                                ac.operators[oi].addChunk(operatorContexts[oi], chunkRowsSize,
-                                        inputSlot < 0 ? null : workingChunks[inputSlot], keyIndices, ii);
+                                try {
+                                    ac.operators[oi].addChunk(operatorContexts[oi], chunkRowsSize,
+                                            inputSlot < 0 ? null : workingChunks[inputSlot], keyIndices, ii);
+                                } catch (Exception ex) {
+                                    throw new AggregationOperatorException(
+                                            "Failed to add data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                                    + ", outputs=" + ac.operators[oi].getResultColumns().keySet(),
+                                            ex);
+                                } catch (Error err) {
+                                    err.addSuppressed(new AggregationOperatorException(
+                                            "Failed to add data, inputcolumns=" + Arrays.toString(ac.inputNames[oi])
+                                                    + ", outputs=" + ac.operators[oi].getResultColumns().keySet()));
+                                    throw err;
+                                }
                             }
                         } while (rsIt.hasMore());
                     }
@@ -1831,9 +1917,21 @@ public class ChunkedOperatorAggregationHelper {
                                             permuteKernels[ii], chunkPosition, workingChunks[ii]);
                         }
                     }
-                    ac.operators[ii].addChunk(bucketedContexts[ii],
-                            inputSlot >= 0 ? valueChunks[inputSlot] : null,
-                            permutedKeyIndices, outputPositions, runStarts, runLengths, unusedModifiedSlots);
+                    try {
+                        ac.operators[ii].addChunk(bucketedContexts[ii],
+                                inputSlot >= 0 ? valueChunks[inputSlot] : null,
+                                permutedKeyIndices, outputPositions, runStarts, runLengths, unusedModifiedSlots);
+                    } catch (Exception ex) {
+                        throw new AggregationOperatorException(
+                                "Failed to add data, inputcolumns=" + Arrays.toString(ac.inputNames[ii]) + ", outputs="
+                                        + ac.operators[ii].getResultColumns().keySet(),
+                                ex);
+                    } catch (Error err) {
+                        err.addSuppressed(new AggregationOperatorException(
+                                "Failed to add data, inputcolumns=" + Arrays.toString(ac.inputNames[ii]) + ", outputs="
+                                        + ac.operators[ii].getResultColumns().keySet()));
+                        throw err;
+                    }
                 }
             }
         }
@@ -2166,7 +2264,19 @@ public class ChunkedOperatorAggregationHelper {
 
                 for (int ii = 0; ii < ac.size(); ++ii) {
                     if (operatorsToProcessIndicesOnly[ii]) {
-                        modifiedOperators[ii] |= ac.operators[ii].modifyRowKeys(opContexts[ii], postKeyIndices, 0);
+                        try {
+                            modifiedOperators[ii] |= ac.operators[ii].modifyRowKeys(opContexts[ii], postKeyIndices, 0);
+                        } catch (Exception ex) {
+                            throw new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                            + ", outputs=" + ac.operators[ii].getResultColumns().keySet(),
+                                    ex);
+                        } catch (Error err) {
+                            err.addSuppressed(new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                            + ", outputs=" + ac.operators[ii].getResultColumns().keySet()));
+                            throw err;
+                        }
                         continue;
                     }
                     if (operatorsToProcess[ii]) {
@@ -2185,8 +2295,20 @@ public class ChunkedOperatorAggregationHelper {
                             preValues = workingPreChunks[inputSlot];
                             postValues = workingPostChunks[inputSlot];
                         }
-                        modifiedOperators[ii] |= ac.operators[ii].modifyChunk(opContexts[ii], chunkSize, preValues,
-                                postValues, postKeyIndices, 0);
+                        try {
+                            modifiedOperators[ii] |= ac.operators[ii].modifyChunk(opContexts[ii], chunkSize, preValues,
+                                    postValues, postKeyIndices, 0);
+                        } catch (Exception ex) {
+                            throw new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                            + ", outputs=" + ac.operators[ii].getResultColumns().keySet(),
+                                    ex);
+                        } catch (Error er) {
+                            er.addSuppressed(new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                            + ", outputs=" + ac.operators[ii].getResultColumns().keySet()));
+                            throw er;
+                        }
                     }
                 }
             }
@@ -2203,7 +2325,19 @@ public class ChunkedOperatorAggregationHelper {
                 final LongChunk<OrderedRowKeys> postKeyIndices = postChunkOk.asRowKeyChunk();
                 for (int ii = 0; ii < ac.size(); ++ii) {
                     if (operatorsToProcessIndicesOnly[ii]) {
-                        modifiedOperators[ii] |= ac.operators[ii].modifyRowKeys(opContexts[ii], postKeyIndices, 0);
+                        try {
+                            modifiedOperators[ii] |= ac.operators[ii].modifyRowKeys(opContexts[ii], postKeyIndices, 0);
+                        } catch (Exception ex) {
+                            throw new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                            + ", outputs=" + ac.operators[ii].getResultColumns().keySet(),
+                                    ex);
+                        } catch (Error err) {
+                            err.addSuppressed(new AggregationOperatorException(
+                                    "Failed to modify data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                            + ", outputs=" + ac.operators[ii].getResultColumns().keySet()));
+                            throw err;
+                        }
                     }
                 }
             }
@@ -2247,7 +2381,7 @@ public class ChunkedOperatorAggregationHelper {
 
                     modifiedOperators[ii] |=
                             processColumnNoKey(remove, chunkOk, inputSlot >= 0 ? workingChunks[inputSlot] : null,
-                                    ac.operators[ii], opContexts[ii], keyIndices);
+                                    ac.operators[ii], opContexts[ii], keyIndices, ac.inputNames[ii]);
                 }
             } while (rsIt.hasMore());
         }
@@ -2319,8 +2453,20 @@ public class ChunkedOperatorAggregationHelper {
                         newValues = workingPostChunks[inputSlot];
                     }
 
-                    modifiedOperators[ii] |= ac.operators[ii].shiftChunk(opContexts[ii], previousValues, newValues,
-                            preKeyIndices, postKeyIndices, 0);
+                    try {
+                        modifiedOperators[ii] |= ac.operators[ii].shiftChunk(opContexts[ii], previousValues, newValues,
+                                preKeyIndices, postKeyIndices, 0);
+                    } catch (Exception ex) {
+                        throw new AggregationOperatorException(
+                                "Failed to shift data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                        + ", outputs=" + ac.operators[ii].getResultColumns().keySet(),
+                                ex);
+                    } catch (Error err) {
+                        err.addSuppressed(new AggregationOperatorException(
+                                "Failed to shift data, inputcolumns=" + Arrays.toString(ac.inputNames[ii])
+                                        + ", outputs=" + ac.operators[ii].getResultColumns().keySet()));
+                        throw err;
+                    }
                 }
             }
         }
@@ -2329,11 +2475,30 @@ public class ChunkedOperatorAggregationHelper {
     private static boolean processColumnNoKey(boolean remove, RowSequence chunkOk, Chunk<? extends Values> values,
             IterativeChunkedAggregationOperator operator,
             IterativeChunkedAggregationOperator.SingletonContext opContext,
-            LongChunk<? extends RowKeys> keyIndices) {
+            LongChunk<? extends RowKeys> keyIndices,
+            String[] inputNames) {
         if (remove) {
-            return operator.removeChunk(opContext, chunkOk.intSize(), values, keyIndices, 0);
+            try {
+                return operator.removeChunk(opContext, chunkOk.intSize(), values, keyIndices, 0);
+            } catch (Exception ex) {
+                throw new AggregationOperatorException("Failed to remove data, inputcolumns="
+                        + Arrays.toString(inputNames) + ", outputs=" + operator.getResultColumns().keySet(), ex);
+            } catch (Error err) {
+                err.addSuppressed(new AggregationOperatorException("Failed to remove data, inputcolumns="
+                        + Arrays.toString(inputNames) + ", outputs=" + operator.getResultColumns().keySet()));
+                throw err;
+            }
         } else {
-            return operator.addChunk(opContext, chunkOk.intSize(), values, keyIndices, 0);
+            try {
+                return operator.addChunk(opContext, chunkOk.intSize(), values, keyIndices, 0);
+            } catch (Exception ex) {
+                throw new AggregationOperatorException("Failed to add data, inputcolumns=" + Arrays.toString(inputNames)
+                        + ", outputs=" + operator.getResultColumns().keySet(), ex);
+            } catch (Error err) {
+                err.addSuppressed(new AggregationOperatorException("Failed to add data, inputcolumns="
+                        + Arrays.toString(inputNames) + ", outputs=" + operator.getResultColumns().keySet()));
+                throw err;
+            }
         }
     }
 

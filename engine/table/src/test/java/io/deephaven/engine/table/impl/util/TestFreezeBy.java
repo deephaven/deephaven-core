@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.by.AggregationOperatorException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -176,8 +177,9 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         try {
             FreezeBy.freezeBy(input);
             TestCase.fail("Expected exception.");
-        } catch (IllegalStateException ise) {
-            assertEquals("FreezeBy only allows one row per state!", ise.getMessage());
+        } catch (AggregationOperatorException aoe) {
+            assertTrue(aoe.getCause() instanceof IllegalStateException);
+            assertEquals("FreezeBy only allows one row per state!", aoe.getCause().getMessage());
         }
 
         final Table frozen = FreezeBy.freezeBy(input, "Key");
@@ -193,8 +195,8 @@ public class TestFreezeBy extends RefreshingTableTestCase {
                 return false;
             }
             final Throwable ex = exs.get(0);
-            if (ex instanceof IllegalStateException) {
-                return "FreezeBy only allows one row per state!".equals(ex.getMessage());
+            if (ex instanceof AggregationOperatorException && ex.getCause() instanceof IllegalStateException) {
+                return "FreezeBy only allows one row per state!".equals(ex.getCause().getMessage());
             }
             return false;
         });
@@ -202,8 +204,9 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         try {
             FreezeBy.freezeBy(input, "Key");
             TestCase.fail("Expected exception.");
-        } catch (IllegalStateException ise) {
-            assertEquals("FreezeBy only allows one row per state!", ise.getMessage());
+        } catch (AggregationOperatorException aoe) {
+            assertTrue(aoe.getCause() instanceof IllegalStateException);
+            assertEquals("FreezeBy only allows one row per state!", aoe.getCause().getMessage());
         }
     }
 }
