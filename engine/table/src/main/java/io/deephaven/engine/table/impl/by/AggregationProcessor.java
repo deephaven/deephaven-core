@@ -1297,18 +1297,17 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String sumOfWeightsName = resultName + ROLLUP_SUM_WEIGHTS_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 final ColumnSource<?> sumOfWeightsSource = table.getColumnSource(sumOfWeightsName);
 
-                final DoubleWeightRecordingInternalOperator doubleWeightOperator;
-                doubleWeightOperator = new DoubleWeightRecordingInternalOperator(sumOfWeightsSource.getChunkType());
-                addOperator(doubleWeightOperator, sumOfWeightsSource, sumOfWeightsName);
+                final DoubleWeightRecordingInternalOperator doubleWeightOperator =
+                        new DoubleWeightRecordingInternalOperator(sumOfWeightsSource.getChunkType());
+                addOperator(doubleWeightOperator, sumOfWeightsSource, resultName, sumOfWeightsName);
 
-                final String valueSourceName = pair.input().name();
-                final ColumnSource<?> valueSource = table.getColumnSource(valueSourceName);
+                final ColumnSource<?> weightedAveragesSource = table.getColumnSource(resultName);
 
                 // The sum of weights column is directly usable as the weights for the WAvg re-aggregation.
                 final IterativeChunkedAggregationOperator resultOperator = new ChunkedWeightedAverageOperator(
-                        sumOfWeightsSource.getChunkType(), doubleWeightOperator, resultName, true);
+                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true);
 
-                addOperator(resultOperator, valueSource, valueSourceName, sumOfWeightsName);
+                addOperator(resultOperator, weightedAveragesSource, resultName, sumOfWeightsName);
             }
         }
 

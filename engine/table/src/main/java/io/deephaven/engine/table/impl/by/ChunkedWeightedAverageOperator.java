@@ -24,10 +24,10 @@ import java.util.Map;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 
 class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOperator {
+    private final ChunkType chunkType;
     private final DoubleWeightRecordingInternalOperator weightOperator;
     private final String resultName;
     private final boolean exposeInternalColumns;
-    private final ChunkType chunkType;
 
     private long tableSize;
     private final LongArraySource normalCount;
@@ -425,7 +425,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
         if (exposeInternalColumns) {
-            final Map<String, ColumnSource<?>> results = new LinkedHashMap<>();
+            final Map<String, ColumnSource<?>> results = new LinkedHashMap<>(2);
             results.put(resultName, resultColumn);
             results.put(resultName + ROLLUP_SUM_WEIGHTS_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, sumOfWeights);
             return results;
@@ -439,7 +439,6 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         resultColumn.startTrackingPrevValues();
         if (exposeInternalColumns) {
             sumOfWeights.startTrackingPrevValues();
-            normalCount.startTrackingPrevValues();
         }
     }
 
