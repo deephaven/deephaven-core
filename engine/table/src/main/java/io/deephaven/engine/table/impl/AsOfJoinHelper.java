@@ -190,8 +190,7 @@ public class AsOfJoinHelper {
         }
 
         if (rightDataIndex != null) {
-            asOfJoinStateManager.populateRightRowSetsFromIndexTable(slots, slotCount,
-                    rightDataIndex.rowSetColumn());
+            asOfJoinStateManager.populateRightRowSetsFromIndexTable(slots, slotCount, rightDataIndex.rowSetColumn());
         } else {
             asOfJoinStateManager.convertRightBuildersToRowSet(slots, slotCount);
         }
@@ -222,7 +221,6 @@ public class AsOfJoinHelper {
                 if (leftDataIndexRowSetColumn != null) {
                     Assert.eq(leftRowSet.size(), "Indexed left row set size", 1);
                     leftRowSet = leftDataIndexRowSetColumn.get(leftRowSet.get(0));
-                    // TODO-RWC: We need to update the state manager to have a copy of this row set if left is ticking.
                 }
 
                 if (arrayValuesCache != null) {
@@ -512,7 +510,6 @@ public class AsOfJoinHelper {
         final int slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);
         asOfJoinStateManager.probeRightInitial(rightRowSetToUse, rightSourcesToUse);
 
-        // TODO-RWC: Does this populate code make sense?
         if (leftDataIndex != null) {
             asOfJoinStateManager.populateLeftRowSetsFromIndexTable(slots, slotCount, leftDataIndex.rowSetColumn());
         }
@@ -928,7 +925,6 @@ public class AsOfJoinHelper {
         int slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);
         slotCount = asOfJoinStateManager.buildFromRightSide(rightRowSetToUse, rightSourcesToUse, slots, slotCount);
 
-        // TODO-RWC: Does this populate code make sense?
         if (leftDataIndex != null) {
             asOfJoinStateManager.populateLeftRowSetsFromIndexTable(slots, slotCount, leftDataIndex.rowSetColumn());
         }
