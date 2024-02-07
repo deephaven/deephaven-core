@@ -80,6 +80,10 @@ public class SelectAndViewAnalyzerWrapper {
                 // be convenient for test authors by propagating the test source table attribute
                 queryTable.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
             }
+            if (sourceTable.isBlink()) {
+                // blink tables, although possibly not useful, can have shift columns
+                queryTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+            }
         }
 
         boolean isMultiStateSelect = shiftColumn != null || remainingCols != null;

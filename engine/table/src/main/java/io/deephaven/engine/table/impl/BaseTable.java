@@ -347,8 +347,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Preview,
-                CopyAttributeOperation.View, // and Select, if added
-                CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Join,
