@@ -133,7 +133,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(windowValues.size(), "byteWindowValues.size()", count);
+            Assert.geq(windowValues.size(), "windowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
                 windowValues.removeUnsafe();
