@@ -1818,6 +1818,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
+     * True if this table may receive updates from the server, including size changed events, updated events after
+     * initial snapshot.
+     *
+     * @return boolean
+     */
+    @JsProperty(name = "isRefreshing")
+    public boolean isRefreshing() {
+        return !state().isStatic();
+    }
+
+    /**
      * Read-only. True if this table is uncoalesced. Set a viewport or filter on the partition columns to coalesce the
      * table. Check the <b>isPartitionColumn</b> property on the table columns to retrieve the partition columns. Size
      * will be unavailable until table is coalesced.

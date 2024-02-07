@@ -17,19 +17,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for boolean data.
  */
-public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
+public class ResettableBooleanChunk<ATTR_UPPER extends Any>
         extends BooleanChunk<ATTR_UPPER>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeResettableBooleanChunk();
+            return MultiChunkPool.forThisThread().takeResettableBooleanChunk();
         }
         return new ResettableBooleanChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableBooleanChunk<>();
+        return new ResettableBooleanChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableBooleanChunk(this);
+            }
+        };
     }
 
     private ResettableBooleanChunk(boolean[] data, int offset, int capacity) {
@@ -84,8 +89,5 @@ public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
 
     @Override
     public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getBooleanChunkPool().giveResettableBooleanChunk(this);
-        }
     }
 }

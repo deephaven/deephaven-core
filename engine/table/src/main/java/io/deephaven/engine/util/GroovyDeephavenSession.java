@@ -7,7 +7,6 @@ import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
-import groovy.lang.MissingPropertyException;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.DeltaControl;
@@ -53,7 +52,6 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.tools.JavaFileObject;
@@ -74,6 +72,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -136,6 +135,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
 
     private final Set<String> dynamicClasses = new HashSet<>();
+    private final Map<String, Object> bindingBackingMap = Collections.synchronizedMap(new LinkedHashMap<>());
     private final GroovyShell groovyShell;
 
     private int counter;
@@ -178,8 +178,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         consoleConfig.getCompilationCustomizers().add(consoleImports);
         consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
 
-
-        groovyShell = new GroovyShell(scriptClassLoader, consoleConfig) {
+        Binding binding = new Binding(bindingBackingMap);
+        groovyShell = new GroovyShell(scriptClassLoader, binding, consoleConfig) {
             protected synchronized String generateScriptName() {
                 return GroovyDeephavenSession.this.generateScriptName();
             }
@@ -251,11 +251,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return script + "_" + (++counter) + ".groovy";
     }
 
-    @Override
-    public QueryScope newQueryScope() {
-        return new SynchronizedScriptSessionQueryScope(this);
-    }
-
     public static InputStream findScript(String relativePath) throws IOException {
         return new ScriptFinder(DEFAULT_SCRIPT_PATH).findScript(relativePath);
     }
@@ -284,23 +279,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         executedScripts.add(script);
     }
 
-    @NotNull
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        try {
-            return groovyShell.getContext().getVariable(name);
-        } catch (MissingPropertyException mpe) {
-            throw new QueryScope.MissingVariableException("No binding for: " + name, mpe);
-        }
-    }
-
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        try {
-            // noinspection unchecked
-            return (T) getVariable(name);
-        } catch (QueryScope.MissingVariableException e) {
-            return defaultValue;
+    protected <T> T getVariable(String name) {
+        synchronized (bindingBackingMap) {
+            if (bindingBackingMap.containsKey(name)) {
+                // noinspection unchecked
+                return (T) bindingBackingMap.get(name);
+            }
+            throw new QueryScope.MissingVariableException("Missing variable " + name);
         }
     }
 
@@ -571,7 +557,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private static boolean packageIsVisibleToClassGraph(String packageImport) {
-        try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
+        try (ScanResult scanResult =
+                new ClassGraph().enableClassInfo().enableSystemJarsAndModules().acceptPackages(packageImport).scan()) {
             final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
             // force load the class so that the jvm is aware of the package
             firstClassFound.ifPresent(ClassInfo::loadClass);
@@ -713,12 +700,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    public Map<String, Object> getVariables() {
-        // noinspection unchecked
-        return Collections.unmodifiableMap(groovyShell.getContext().getVariables());
-    }
-
-    @Override
     protected GroovySnapshot emptySnapshot() {
         return new GroovySnapshot(Collections.emptyMap());
     }
@@ -763,23 +744,35 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    public Set<String> getVariableNames() {
-        // noinspection unchecked
-        return Collections.unmodifiableSet(groovyShell.getContext().getVariables().keySet());
+    @Override
+    protected Set<String> getVariableNames(Predicate<String> allowName) {
+        synchronized (bindingBackingMap) {
+            return bindingBackingMap.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
+        }
     }
 
     @Override
-    public boolean hasVariableName(String name) {
-        return groovyShell.getContext().hasVariable(name);
+    protected boolean hasVariable(String name) {
+        return bindingBackingMap.containsKey(name);
     }
 
     @Override
-    public void setVariable(String name, @Nullable Object newValue) {
-        groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
+    protected Object setVariable(String name, @Nullable Object newValue) {
+        NameValidator.validateQueryParameterName(name);
+
+        Object oldValue = bindingBackingMap.put(name, newValue);
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
         // other threads)
         observeScopeChanges();
+        return oldValue;
+    }
+
+    @Override
+    protected Map<String, Object> getAllValues() {
+        synchronized (bindingBackingMap) {
+            return Map.copyOf(bindingBackingMap);
+        }
     }
 
     public Binding getBinding() {

@@ -17,19 +17,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableWritableChunk} implementation for byte data.
  */
-public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
+public class ResettableWritableByteChunk<ATTR_BASE extends Any>
         extends WritableByteChunk<ATTR_BASE>
         implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableByteChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getByteChunkPool().takeResettableWritableByteChunk();
+            return MultiChunkPool.forThisThread().takeResettableWritableByteChunk();
         }
         return new ResettableWritableByteChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableWritableByteChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableWritableByteChunk<>();
+        return new ResettableWritableByteChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableWritableByteChunk(this);
+            }
+        };
     }
 
     private ResettableWritableByteChunk(byte[] data, int offset, int capacity) {
@@ -80,12 +85,5 @@ public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
         this.size = capacity;
         //noinspection unchecked
         return (WritableByteChunk<ATTR>) this;
-    }
-
-    @Override
-    public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getByteChunkPool().giveResettableWritableByteChunk(this);
-        }
     }
 }

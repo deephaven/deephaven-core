@@ -3,12 +3,11 @@ package io.deephaven.engine.sql;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutput.ObjFormatter;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
-import io.deephaven.engine.util.AbstractScriptSession.ScriptSessionQueryScope;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -27,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * Experimental SQL execution. Subject to change.
@@ -80,19 +80,18 @@ public final class Sql {
     }
 
     private static Map<String, Table> currentScriptSessionNamedTables() {
-        final Map<String, Table> scope = new HashMap<>();
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)
-        for (Entry<String, Object> e : currentScriptSession().getVariables().entrySet()) {
-            if (e.getValue() instanceof Table) {
-                scope.put(e.getKey(), (Table) e.getValue());
-            }
-        }
-        return scope;
-    }
+        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Map<String, Table> scope = queryScope
+                .toMap()
+                .entrySet()
+                .stream()
+                .map(e -> Map.entry(e.getKey(), queryScope.unwrapObject(e.getValue())))
+                .filter(e -> e.getValue() instanceof Table)
+                .collect(Collectors.toMap(Entry::getKey, e -> (Table) e.getValue()));
 
-    private static ScriptSession currentScriptSession() {
-        return ((ScriptSessionQueryScope) ExecutionContext.getContext().getQueryScope()).scriptSession();
+        return scope;
     }
 
     private static TableHeader adapt(TableDefinition tableDef) {

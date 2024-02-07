@@ -15,20 +15,39 @@ import java.nio.channels.ReadableByteChannel;
 
 public class Helpers {
     public static void readBytes(ReadableByteChannel f, byte[] buffer) throws IOException {
-        int read = f.read(ByteBuffer.wrap(buffer));
-        if (read != buffer.length) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + buffer.length);
-        }
+        readExact(f, ByteBuffer.wrap(buffer));
     }
 
     public static BytesInput readBytes(ReadableByteChannel f, int expected) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(expected);
-        int read = f.read(buffer);
-        if (read != expected) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + expected);
-        }
+        readExact(f, buffer);
         buffer.flip();
         return BytesInput.from(buffer);
+    }
+
+    /**
+     * Reads exactly {@code dst.remaining()} bytes from the blocking {@code channel} into {@code dst}. It is required
+     * that {@code channel} is in blocking mode, and thus will always return a non-zero
+     * {@link ReadableByteChannel#read(ByteBuffer)}.
+     *
+     * @param channel the readable channel
+     * @param dst the destination buffer
+     * @throws IOException if an IO error occurs
+     */
+    public static void readExact(ReadableByteChannel channel, ByteBuffer dst) throws IOException {
+        final int expected = dst.remaining();
+        while (dst.hasRemaining()) {
+            final int read = channel.read(dst);
+            if (read == 0) {
+                throw new IllegalStateException(
+                        "ReadableByteChannel.read returned 0. Either the caller has broken the contract and passed in a non-blocking channel, or the blocking channel implementation is incorrectly returning 0.");
+            }
+            if (read == -1) {
+                throw new EOFException(
+                        String.format("Reached end-of-stream before completing, expected=%d, remaining=%d", expected,
+                                dst.remaining()));
+            }
+        }
     }
 
     static int readUnsignedVarInt(ByteBuffer in) {

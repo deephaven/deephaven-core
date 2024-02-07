@@ -302,7 +302,7 @@ public abstract class UpdateBy {
                 if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
                     jobScheduler = new OperationInitializerJobScheduler();
                 } else {
-                    jobScheduler = ImmediateJobScheduler.INSTANCE;
+                    jobScheduler = new ImmediateJobScheduler();
                 }
                 executionContext = ExecutionContext.newBuilder()
                         .markSystemic().build();
@@ -331,7 +331,7 @@ public abstract class UpdateBy {
                 if (source.getUpdateGraph().parallelismFactor() > 1) {
                     jobScheduler = new UpdateGraphJobScheduler(source.getUpdateGraph());
                 } else {
-                    jobScheduler = ImmediateJobScheduler.INSTANCE;
+                    jobScheduler = new ImmediateJobScheduler();
                 }
                 executionContext = ExecutionContext.newBuilder()
                         .setUpdateGraph(result().getUpdateGraph())
