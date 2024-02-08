@@ -2537,10 +2537,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private Optional<Class<?>> pyCallableReturnType(@NotNull MethodCallExpr n) {
         final PyCallableDetails pyCallableDetails = n.getData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS);
         final String pyMethodName = pyCallableDetails.pythonMethodName;
-        final Object paramValueRaw = possibleParams.getOrDefault(pyMethodName, null);
-        if (paramValueRaw == null) {
+        final QueryScopeParam<?> queryScopeParam = possibleParams.getOrDefault(pyMethodName, null);
+        if (queryScopeParam == null) {
             return Optional.empty();
         }
+        final Object paramValueRaw = queryScopeParam.getValue();
         if (!(paramValueRaw instanceof PyCallableWrapper)) {
             return Optional.empty();
         }
@@ -2632,11 +2633,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // Note: "paramValueRaw" needs to be the *actual PyCallableWrapper* corresponding to the method.
         // TODO: Support vectorization of instance methods of constant objects
         // ^^ i.e., create a constant for `new PyCallableWrapperImpl(pyScopeObj.getAttribute("pyMethodName"))`
-        final QueryScopeParam<?> paramValueParam = possibleParams.getOrDefault(pyMethodName, null);
-        if (paramValueParam == null) {
+        final QueryScopeParam<?> queryScopeParam = possibleParams.getOrDefault(pyMethodName, null);
+        if (queryScopeParam == null) {
             throw new IllegalStateException("Resolved Python function name " + pyMethodName + " not found");
         }
-        final Object paramValueRaw = paramValueParam.getValue();
+        final Object paramValueRaw = queryScopeParam.getValue();
         if (!(paramValueRaw instanceof PyCallableWrapper)) {
             throw new IllegalStateException("Resolved Python function name " + pyMethodName + " not callable");
         }

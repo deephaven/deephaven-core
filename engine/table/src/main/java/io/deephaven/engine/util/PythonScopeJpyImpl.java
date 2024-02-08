@@ -98,6 +98,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             return pyObject.asDict();
         } else if (pyObject.isCallable()) {
             return new PyCallableWrapperJpyImpl(pyObject);
+        } else if (pyObject.isNone()) {
+            return null;
         } else if (pyObject.isConvertible()) {
             try {
                 // these are java objects; avoid the overhead of the JNI round trip when possible
