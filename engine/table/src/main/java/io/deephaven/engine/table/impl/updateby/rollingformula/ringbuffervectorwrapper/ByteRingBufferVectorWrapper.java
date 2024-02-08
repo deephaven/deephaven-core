@@ -6,8 +6,10 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
+import io.deephaven.vector.ByteSubVector;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
+import io.deephaven.vector.ByteVectorSlice;
 
 public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper {
     private final ByteRingBuffer ringBuffer;
@@ -27,13 +29,12 @@ public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVector
     }
 
     @Override
-    public ByteVector subVector(long fromIndexInclusive, long toIndexExclusive) {
-        throw new UnsupportedOperationException("subVector not supported on ByteRingBufferVectorWrapper");
+    public ByteVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new ByteVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    @Override
-    public ByteVector subVectorByPositions(long[] positions) {
-        throw new UnsupportedOperationException("subVectorByPositions not supported on ByteRingBufferVectorWrapper");
+    public ByteVector subVectorByPositions(final long[] positions) {
+        return new ByteSubVector(this, positions);
     }
 
     @Override

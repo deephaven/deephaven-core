@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.ObjectRingBufferVectorWrapper;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +26,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
 
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
@@ -127,7 +127,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
 
             for (int ii = 0; ii < count; ii++) {
                 final byte val = influencerValuesChunk.get(pos + ii);
-                windowValues.addUnsafe(val == NULL_BYTE ? null : val != 0);
+                windowValues.addUnsafe(BooleanUtils.byteAsBoolean(val));
             }
         }
 

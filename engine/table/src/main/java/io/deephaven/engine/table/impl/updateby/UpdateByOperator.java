@@ -153,7 +153,7 @@ public abstract class UpdateByOperator {
      * Initialize this operator with a specific source table (and row redirection if needed). This will be called
      * exactly once per operator.
      */
-    public abstract void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection);
+    public abstract void initializeSources(@NotNull Table source, @Nullable RowRedirection rowRedirection);
 
     /**
      * Initialize the bucket context for a cumulative operator
@@ -255,6 +255,7 @@ public abstract class UpdateByOperator {
      *
      * @param context the context object
      */
+    @SuppressWarnings("unused")
     protected void finishUpdate(@NotNull final Context context) {}
 
     /**

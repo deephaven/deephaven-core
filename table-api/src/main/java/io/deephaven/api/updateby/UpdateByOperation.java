@@ -1946,7 +1946,16 @@ public interface UpdateByOperation {
      *
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param fwdTicks the look-ahead window size (in rows/ticks)
-     * @param pairs The input/output column name pairs
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the parameter name within the formula. If formula is <em>max(each)</em>, then <em>each</em> is
+     *        the formula_param.
+     * @param pairs the input/output column name pairs
      * @return The aggregation
      */
     static UpdateByOperation RollingFormula(long revTicks, long fwdTicks, String formula, String paramToken,
@@ -1968,6 +1977,15 @@ public interface UpdateByOperation {
      *
      * @param timestampCol the name of the timestamp column
      * @param revDuration the look-behind window size (in Duration)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the parameter name within the formula. If formula is <em>max(each)</em>, then <em>each</em> is
+     *        the formula_param.
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */

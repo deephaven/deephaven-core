@@ -292,12 +292,12 @@ public class TestRollingFormula extends BaseUpdateByTest {
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Boolean identity
+        // Boolean count vs. RollingCount
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "x", "x", "boolCol"));
-        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "boolCol"))
-                .update("boolCol=boolCol.getDirect()");
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(ifelse(x, (long)1, (long)0))",
+                "x", "boolCol"));
+        expected = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "boolCol"));
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
@@ -418,12 +418,12 @@ public class TestRollingFormula extends BaseUpdateByTest {
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Boolean identity
+        // Boolean count vs. RollingCount
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "x", "x", "boolCol"));
-        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "boolCol"))
-                .update("boolCol=boolCol.getDirect()");
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "count(ifelse(x, (long)1, (long)0))", "x", "boolCol"));
+        expected = t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "boolCol"));
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
@@ -631,6 +631,16 @@ public class TestRollingFormula extends BaseUpdateByTest {
                         "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Boolean count vs. RollingCount
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(ifelse(x, (long)1, (long)0))",
+                "x", "boolCol"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "boolCol"), "Sym");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
@@ -747,6 +757,16 @@ public class TestRollingFormula extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "bigDecimalCol", "bigIntCol"), "Sym")
                 .update("bigDecimalCol=(Object)(bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol)",
                         "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Boolean count vs. RollingCount
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "count(ifelse(x, (long)1, (long)0))", "x", "boolCol"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "boolCol"), "Sym");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
