@@ -299,13 +299,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.allOf(CopyAttributeOperation.class));
 
+        // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
-
+        // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(APPEND_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
@@ -339,6 +340,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.PartitionBy));
 
+        // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(BLINK_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Filter,
@@ -347,8 +349,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Preview,
-                CopyAttributeOperation.View, // and Select, if added
-                CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Join,
