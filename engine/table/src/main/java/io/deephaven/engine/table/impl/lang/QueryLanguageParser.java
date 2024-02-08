@@ -86,7 +86,6 @@ import groovy.lang.Closure;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
@@ -337,7 +336,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     // make sure the parser has no problem reparsing its own output and makes no changes to it.
                     final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(
                             printedSource, packageImports, classImports, staticImports, variables,
-                            variableTypeArguments, possibleParams, false, false, pyCallableWrapperImplName);
+                            variableTypeArguments, possibleParams, unboxArguments, false, pyCallableWrapperImplName);
 
                     final String reparsedSource = validationQueryLanguageParser.result.source;
                     Assert.equals(
@@ -2537,7 +2536,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private Optional<Class<?>> pyCallableReturnType(@NotNull MethodCallExpr n) {
         final PyCallableDetails pyCallableDetails = n.getData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS);
         final String pyMethodName = pyCallableDetails.pythonMethodName;
-        final QueryScopeParam<?> queryScopeParam = possibleParams.getOrDefault(pyMethodName, null);
+        final QueryScopeParam<?> queryScopeParam = possibleParams.get(pyMethodName);
         if (queryScopeParam == null) {
             return Optional.empty();
         }
@@ -2633,7 +2632,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // Note: "paramValueRaw" needs to be the *actual PyCallableWrapper* corresponding to the method.
         // TODO: Support vectorization of instance methods of constant objects
         // ^^ i.e., create a constant for `new PyCallableWrapperImpl(pyScopeObj.getAttribute("pyMethodName"))`
-        final QueryScopeParam<?> queryScopeParam = possibleParams.getOrDefault(pyMethodName, null);
+        final QueryScopeParam<?> queryScopeParam = possibleParams.get(pyMethodName);
         if (queryScopeParam == null) {
             throw new IllegalStateException("Resolved Python function name " + pyMethodName + " not found");
         }
