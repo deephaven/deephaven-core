@@ -148,12 +148,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             possibleVariables.putAll(timeConversionResult.getNewVariables());
 
-            final QueryLanguageParser.Result result =
-                    new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
-                            ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
-                            ExecutionContext.getContext().getQueryLibrary().getClassImports(),
-                            ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
-                            possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
+            final QueryLanguageParser.Result result = new QueryLanguageParser(
+                    timeConversionResult.getConvertedFormula(),
+                    ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
+                    ExecutionContext.getContext().getQueryLibrary().getClassImports(),
+                    ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
+                    possibleVariables, possibleVariableParameterizedTypes, possibleParams, unboxArguments)
+                    .getResult();
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {
                 log.debug("Formula (after shift conversion) : " + formulaShiftColPair.getFirst());
@@ -205,8 +206,8 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     usedColumns.add(variable);
                 } else if (arrayColumnToFind != null && tableDefinition.getColumn(arrayColumnToFind) != null) {
                     usedColumnArrays.add(arrayColumnOuterName);
-                } else if (possibleParams.containsKey(variable)) {
-                    paramsList.add(possibleParams.get(variable));
+                } else if (result.getPossibleParams().containsKey(variable)) {
+                    paramsList.add(result.getPossibleParams().get(variable));
                 }
             }
             params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);

@@ -94,10 +94,12 @@ public class FormulaAnalyzer {
             }
         }
 
+        final Map<String, QueryScopeParam<?>> possibleVariableValues = new HashMap<>();
         final ExecutionContext context = ExecutionContext.getContext();
         final QueryScope queryScope = context.getQueryScope();
         for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
+            possibleVariableValues.put(param.getName(), param);
 
             Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
             if (declaredType instanceof ParameterizedType) {
@@ -131,7 +133,7 @@ public class FormulaAnalyzer {
         return new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
                 context.getQueryLibrary().getPackageImports(),
                 classImports, context.getQueryLibrary().getStaticImports(), possibleVariables,
-                possibleVariableParameterizedTypes)
+                possibleVariableParameterizedTypes, possibleVariableValues)
                 .getResult();
     }
 

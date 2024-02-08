@@ -3177,7 +3177,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        variables, variableParameterizedTypes,
+                        variables, variableParameterizedTypes, null,
                         true,
                         verifyIdempotence,
                         PyCallableWrapperDummyImpl.class.getName()).getResult();

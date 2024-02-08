@@ -6,8 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -104,15 +102,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         }
     }
 
-    protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
+    protected void applyUsedVariables(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Set<String> variablesUsed,
+            @NotNull final Map<String, QueryScopeParam<?>> possibleParams) {
         // the column definition map passed in is being mutated by the caller, so we need to make a copy
         columnDefinitions = Map.copyOf(columnDefinitionMap);
-
-        final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            possibleParams.put(param.getName(), param);
-        }
 
         final List<QueryScopeParam<?>> paramsList = new ArrayList<>();
         usedColumns = new ArrayList<>();
