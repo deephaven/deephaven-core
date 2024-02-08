@@ -8,8 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.context.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -3175,9 +3174,17 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed,
             boolean verifyIdempotence)
             throws Exception {
-        QueryLanguageParser.Result result =
+        final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        if (!(queryScope instanceof PoisonedQueryScope)) {
+            for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
+                possibleParams.put(param.getName(), param);
+            }
+        }
+
+        final QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        variables, variableParameterizedTypes, null,
+                        variables, variableParameterizedTypes, possibleParams,
                         true,
                         verifyIdempotence,
                         PyCallableWrapperDummyImpl.class.getName()).getResult();
