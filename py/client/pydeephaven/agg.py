@@ -179,8 +179,8 @@ def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None
 
     Args:
         formula (str): the user defined formula to apply to each group.
-        formula_param (str): the parameter name within the formula. If formula is `max(each)`, then `each` is the
-            formula_param.
+        formula_param (str): the parameter name for the input column's vector within the formula. If formula is
+            `max(each)`, then `each` is the formula_param.
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 

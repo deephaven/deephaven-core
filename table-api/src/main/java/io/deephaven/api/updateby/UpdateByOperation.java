@@ -1953,8 +1953,8 @@ public interface UpdateByOperation {
      *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
      *        <li>User-defined functions</li>
      *        </ul>
-     * @param paramToken the parameter name within the formula. If formula is <em>max(each)</em>, then <em>each</em> is
-     *        the formula_param.
+     * @param paramToken the parameter name for the input column's vector within the formula. If formula is
+     *        <em>max(each)</em>, then <em>each</em> is the formula_param.
      * @param pairs the input/output column name pairs
      * @return The aggregation
      */
@@ -1977,15 +1977,15 @@ public interface UpdateByOperation {
      *
      * @param timestampCol the name of the timestamp column
      * @param revDuration the look-behind window size (in Duration)
-     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
-     *        following:
+     * @param formula the user-defined {@link RollingFormulaSpec#formula() formula} to apply to each group. This formula
+     *        can contain any combination of the following:
      *        <ul>
      *        <li>Built-in functions such as min, max, etc.</li>
      *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
      *        <li>User-defined functions</li>
      *        </ul>
-     * @param paramToken the parameter name within the formula. If formula is <em>max(each)</em>, then <em>each</em> is
-     *        the formula_param.
+     * @param paramToken the {@link RollingFormulaSpec#paramToken() parameter token} for the input column's vector
+     *        within the formula. If formula is <em>max(each)</em>, then <em>each</em> is the formula_param.
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -2019,6 +2019,15 @@ public interface UpdateByOperation {
      * @param timestampCol the name of the timestamp column
      * @param revDuration the look-behind window size (in Duration)
      * @param fwdDuration the look-ahead window size (in Duration)
+     * @param formula the user-defined {@link RollingFormulaSpec#formula() formula} to apply to each group. This formula
+     *        can contain any combination of the following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the {@link RollingFormulaSpec#paramToken() parameter token} for the input column's vector
+     *        within the formula. If formula is <em>max(each)</em>, then <em>each</em> is the formula_param.
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
