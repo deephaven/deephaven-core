@@ -1732,7 +1732,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
                                 this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet,
                                 getModifiedColumnSetForUpdates(),
-                                true, false, selectColumns);
+                                true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
                         final QueryTable result = new QueryTable(
