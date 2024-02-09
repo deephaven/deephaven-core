@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select.codegen;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -73,6 +74,11 @@ public class FormulaAnalyzer {
         possibleVariables.put("ii", long.class);
         possibleVariables.put("k", long.class);
 
+        final Set<String> columnVariables = new HashSet<>();
+        columnVariables.add("i");
+        columnVariables.add("ii");
+        columnVariables.add("k");
+
         final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
         for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
@@ -80,6 +86,7 @@ public class FormulaAnalyzer {
             final Class<?> vectorType = DhFormulaColumn.getVectorType(columnDefinition.getDataType());
 
             possibleVariables.put(columnDefinition.getName() + columnSuffix, vectorType);
+            columnVariables.add(columnDefinition.getName() + columnSuffix);
 
             if (vectorType == ObjectVector.class) {
                 possibleVariableParameterizedTypes.put(columnDefinition.getName() + columnSuffix,
@@ -88,8 +95,9 @@ public class FormulaAnalyzer {
         }
 
         final ExecutionContext context = ExecutionContext.getContext();
-        final Map<String, Object> possibleValues = context.getQueryScope().toMap();
-        for (Map.Entry<String, Object> param : possibleValues.entrySet()) {
+        final Map<String, Object> queryScopeVariables = context.getQueryScope().toMap(
+                NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+        for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
             possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
             Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
@@ -103,7 +111,9 @@ public class FormulaAnalyzer {
         }
 
         for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
-            possibleVariables.put(columnDefinition.getName(), columnDefinition.getDataType());
+            if (possibleVariables.put(columnDefinition.getName(), columnDefinition.getDataType()) != null) {
+                possibleVariableParameterizedTypes.remove(columnDefinition.getName());
+            }
             final Class<?> compType = columnDefinition.getComponentType();
             if (compType != null && !compType.isPrimitive()) {
                 possibleVariableParameterizedTypes.put(columnDefinition.getName(), new Class[] {compType});
@@ -124,7 +134,7 @@ public class FormulaAnalyzer {
         return new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
                 context.getQueryLibrary().getPackageImports(),
                 classImports, context.getQueryLibrary().getStaticImports(), possibleVariables,
-                possibleVariableParameterizedTypes, possibleValues)
+                possibleVariableParameterizedTypes, queryScopeVariables, columnVariables)
                 .getResult();
     }
 

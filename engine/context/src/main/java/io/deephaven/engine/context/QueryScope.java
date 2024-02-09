@@ -6,6 +6,7 @@ package io.deephaven.engine.context;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,6 +14,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Variable scope used to resolve parameter values during query execution and to expose named objects to users. Objects
@@ -137,7 +139,18 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      *
      * @return a caller-owned mutable map with all known variables and their values.
      */
-    Map<String, Object> toMap();
+    Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate);
+
+    /**
+     * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
+     *
+     * @return a caller-owned mutable map with all known variables and their values.
+     */
+    @FinalDefault
+    default Map<String, Object> toMap() {
+        return toMap(entry -> true);
+    }
 
     /**
      * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning

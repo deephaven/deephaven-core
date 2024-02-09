@@ -52,6 +52,7 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.tools.JavaFileObject;
@@ -769,9 +770,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected Map<String, Object> getAllValues() {
+    protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
         synchronized (bindingBackingMap) {
-            return new HashMap<>(bindingBackingMap);
+            return bindingBackingMap.entrySet().stream()
+                    .filter(predicate)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
     }
 

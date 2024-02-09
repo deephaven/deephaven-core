@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.lang;
 
 import groovy.lang.Closure;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.Assert;
@@ -3177,14 +3178,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         final Map<String, Object> possibleParams;
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         if (!(queryScope instanceof PoisonedQueryScope)) {
-            possibleParams = queryScope.toMap();
+            possibleParams = queryScope.toMap(NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
         } else {
             possibleParams = null;
         }
 
         final QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        variables, variableParameterizedTypes, possibleParams,
+                        variables, variableParameterizedTypes, possibleParams, null,
                         true,
                         verifyIdempotence,
                         PyCallableWrapperDummyImpl.class.getName()).getResult();

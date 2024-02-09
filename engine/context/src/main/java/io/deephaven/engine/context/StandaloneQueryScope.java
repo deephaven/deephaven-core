@@ -6,9 +6,11 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -77,9 +79,11 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
     }
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
         return valueRetrievers.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().value));
+                .map(e -> Map.entry(e.getKey(), (Object) e.getValue().value))
+                .filter(predicate)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static class ValueRetriever<T> {

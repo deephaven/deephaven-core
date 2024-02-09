@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -92,9 +93,11 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected Map<String, Object> getAllValues() {
+    protected Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate) {
         synchronized (variables) {
-            return new HashMap<>(variables);
+            return variables.entrySet().stream()
+                    .filter(predicate)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
     }
 

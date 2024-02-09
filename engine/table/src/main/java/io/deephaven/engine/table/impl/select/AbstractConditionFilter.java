@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -29,12 +30,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -98,8 +94,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
         try {
             final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-            final Map<String, Object> possibleParams = queryScope.toMap();
-            for (Map.Entry<String, Object> param : possibleParams.entrySet()) {
+            final Map<String, Object> queryScopeVariables = queryScope.toMap(
+                    NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+            for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
                 possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
                 Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
                 if (declaredType instanceof ParameterizedType) {
@@ -111,11 +108,22 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 }
             }
 
+            final Set<String> columnVariables = new HashSet<>();
+            columnVariables.add("i");
+            columnVariables.add("ii");
+            columnVariables.add("k");
+
             final BiConsumer<String, ColumnDefinition<?>> createColumnMappings = (columnName, column) -> {
                 final Class<?> vectorType = DhFormulaColumn.getVectorType(column.getDataType());
 
-                possibleVariables.put(columnName, column.getDataType());
-                possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType);
+                columnVariables.add(columnName);
+                if (possibleVariables.put(columnName, column.getDataType()) != null) {
+                    possibleVariableParameterizedTypes.remove(columnName);
+                }
+                columnVariables.add(columnName + COLUMN_SUFFIX);
+                if (possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType) != null) {
+                    possibleVariableParameterizedTypes.remove(columnName + COLUMN_SUFFIX);
+                }
 
                 final Class<?> compType = column.getComponentType();
                 if (compType != null && !compType.isPrimitive()) {
@@ -152,7 +160,8 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
                     ExecutionContext.getContext().getQueryLibrary().getClassImports(),
                     ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
-                    possibleVariables, possibleVariableParameterizedTypes, possibleParams, unboxArguments)
+                    possibleVariables, possibleVariableParameterizedTypes, queryScopeVariables, columnVariables,
+                    unboxArguments)
                     .getResult();
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {

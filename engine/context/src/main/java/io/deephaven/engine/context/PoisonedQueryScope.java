@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class PoisonedQueryScope implements QueryScope {
@@ -53,7 +54,7 @@ public class PoisonedQueryScope implements QueryScope {
     }
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate) {
         return fail();
     }
 

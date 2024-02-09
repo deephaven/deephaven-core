@@ -25,6 +25,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -293,10 +294,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * Returns a mutable map with all known variables and their values. It is owned by the caller.
      *
+     * @param predicate a predicate to decide if an entry should be included in the returned map
      * @return a mutable map with all known variables and their values. As with {@link #getVariable(String)}, values may
      *         need to be unwrapped.
      */
-    protected abstract Map<String, Object> getAllValues();
+    protected abstract Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
@@ -370,8 +372,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         @Override
-        public Map<String, Object> toMap() {
-            return AbstractScriptSession.this.getAllValues();
+        public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
+            return AbstractScriptSession.this.getAllValues(predicate);
         }
 
         @Override

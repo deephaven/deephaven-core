@@ -143,6 +143,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     private final Map<String, Class<?>> variables;
     private final Map<String, Class<?>[]> variableTypeArguments;
+    private final Set<String> columnVariables;
     private final Map<String, Object> queryScopeVariables;
 
     private final HashSet<String> variablesUsed = new HashSet<>();
@@ -198,7 +199,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Map<String, Class<?>> variables,
             Map<String, Class<?>[]> variableTypeArguments) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
-                variableTypeArguments, null, true);
+                variableTypeArguments, null, null, true);
     }
 
     /**
@@ -214,6 +215,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param variables A map of the names of scope variables to their types
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
      * @param queryScopeVariables A mutable map of the names of query scope variables to their values
+     * @param columnVariables A set of column variable names
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public QueryLanguageParser(
@@ -223,9 +225,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Collection<Class<?>> staticImports,
             Map<String, Class<?>> variables,
             Map<String, Class<?>[]> variableTypeArguments,
-            @Nullable Map<String, Object> queryScopeVariables) throws QueryLanguageParseException {
+            @Nullable Map<String, Object> queryScopeVariables,
+            @Nullable Set<String> columnVariables) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
-                variableTypeArguments, queryScopeVariables, true);
+                variableTypeArguments, queryScopeVariables, columnVariables, true);
     }
 
     /**
@@ -242,6 +245,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
      * @param unboxArguments If true it will unbox the query scope arguments
      * @param queryScopeVariables A mutable map of the names of query scope variables to their values
+     * @param columnVariables A set of column variable names
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public QueryLanguageParser(
@@ -252,6 +256,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Map<String, Class<?>> variables,
             Map<String, Class<?>[]> variableTypeArguments,
             @Nullable Map<String, Object> queryScopeVariables,
+            @Nullable Set<String> columnVariables,
             boolean unboxArguments)
             throws QueryLanguageParseException {
         this(
@@ -262,6 +267,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 variables,
                 variableTypeArguments,
                 queryScopeVariables,
+                columnVariables,
                 unboxArguments,
                 false,
                 PyCallableWrapperJpyImpl.class.getName());
@@ -275,6 +281,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final Map<String, Class<?>> variables,
             final Map<String, Class<?>[]> variableTypeArguments,
             @Nullable final Map<String, Object> queryScopeVariables,
+            @Nullable final Set<String> columnVariables,
             final boolean unboxArguments,
             final boolean verifyIdempotence,
             @NotNull final String pyCallableWrapperImplName) throws QueryLanguageParseException {
@@ -285,6 +292,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         this.variableTypeArguments =
                 variableTypeArguments == null ? Collections.emptyMap() : Map.copyOf(variableTypeArguments);
         this.queryScopeVariables = queryScopeVariables == null ? new HashMap<>() : queryScopeVariables;
+        this.columnVariables = columnVariables == null ? Collections.emptySet() : columnVariables;
         this.unboxArguments = unboxArguments;
 
         Assert.nonempty(pyCallableWrapperImplName, "pyCallableWrapperImplName");
@@ -337,7 +345,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     // make sure the parser has no problem reparsing its own output and makes no changes to it.
                     final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(
                             printedSource, packageImports, classImports, staticImports, variables,
-                            variableTypeArguments, queryScopeVariables, false, false, pyCallableWrapperImplName);
+                            variableTypeArguments, queryScopeVariables, columnVariables, false, false,
+                            pyCallableWrapperImplName);
 
                     final String reparsedSource = validationQueryLanguageParser.result.source;
                     Assert.equals(
@@ -2742,12 +2751,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 addLiteralArg(expressions[i], argTypes[i], pyCallableWrapper);
             } else if (expressions[i] instanceof NameExpr) {
                 String name = expressions[i].asNameExpr().getNameAsString();
-                if (!queryScopeVariables.containsKey(name)) {
+                if (columnVariables.contains(name)) {
                     // A column name or one of the special variables
                     pyCallableWrapper.addChunkArgument(new ColumnChunkArgument(name, argTypes[i]));
-                } else {
+                } else if (queryScopeVariables.containsKey(name)) {
                     pyCallableWrapper.addChunkArgument(
                             new ConstantChunkArgument(queryScopeVariables.get(name), argTypes[i]));
+                } else {
+                    throw new IllegalStateException("Vectorizability could not find variable by name: " + name);
                 }
             } else {
                 throw new IllegalStateException("Vectorizability check failed: " + n);
