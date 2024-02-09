@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private static volatile boolean cacheEnabled =
             Configuration.getInstance().getBooleanForClassWithDefault(PythonScopeJpyImpl.class, "cacheEnabled", false);
+
     public static void setCacheEnabled(boolean enabled) {
         cacheEnabled = enabled;
     }

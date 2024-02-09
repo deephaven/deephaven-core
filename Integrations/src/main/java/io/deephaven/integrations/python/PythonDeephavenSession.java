@@ -42,6 +42,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -303,10 +304,14 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate) {
-        return PyLib
-                .ensureGil(() -> scope.getEntries()
-                        .filter(predicate)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        final HashMap<String, Object> result = new HashMap<>();
+        // note: we can't use collect(Collectors.toMap()) because we allow null values
+        return PyLib.ensureGil(() -> {
+            scope.getEntries()
+                    .filter(predicate)
+                    .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+            return result;
+        });
     }
 
     @Override

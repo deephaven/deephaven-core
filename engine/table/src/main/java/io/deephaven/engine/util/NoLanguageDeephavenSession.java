@@ -94,11 +94,14 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
 
     @Override
     protected Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate) {
+        // note: we can't use collect(Collectors.toMap()) because we allow null values
+        final HashMap<String, Object> result = new HashMap<>();
         synchronized (variables) {
-            return variables.entrySet().stream()
+            variables.entrySet().stream()
                     .filter(predicate)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
         }
+        return result;
     }
 
     @Override
