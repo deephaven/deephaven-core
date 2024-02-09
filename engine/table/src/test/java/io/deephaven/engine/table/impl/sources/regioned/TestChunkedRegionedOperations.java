@@ -266,7 +266,8 @@ public class TestChunkedRegionedOperations {
                         "DT_R = epochNanos(DT)");
 
         actual = ParquetTools.readPartitionedTable(
-                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
+                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null,
+                        ParquetInstructions.EMPTY),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition).updateView(
                         List.of(

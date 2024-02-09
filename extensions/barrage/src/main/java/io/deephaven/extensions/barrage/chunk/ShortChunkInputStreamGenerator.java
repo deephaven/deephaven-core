@@ -8,7 +8,6 @@
  */
 package io.deephaven.extensions.barrage.chunk;
 
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -28,6 +27,7 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -165,7 +165,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             final int elementSize,
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
@@ -179,15 +179,15 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             final StreamReaderOptions options,
             final ShortConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long payloadBuffer = bufferInfoIter.nextLong();
 
         final WritableShortChunk<Values> chunk;
         if (outChunk != null) {

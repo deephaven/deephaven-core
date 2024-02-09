@@ -348,7 +348,8 @@ public class TestParquetTools {
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
         final Table result = ParquetTools.readPartitionedTableInferSchema(
-                new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
+                new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=100"),

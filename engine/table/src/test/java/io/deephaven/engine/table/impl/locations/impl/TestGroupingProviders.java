@@ -159,7 +159,8 @@ public class TestGroupingProviders {
                                                                                           // restore it here.
 
         final Table actual = ParquetTools.readPartitionedTable(
-                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
+                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP"),
+                        ParquetInstructions.EMPTY),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition).coalesce();
 

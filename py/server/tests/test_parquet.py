@@ -16,6 +16,7 @@ from deephaven.column import InputColumn, Column, ColumnType
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout
 from tests.testbase import BaseTestCase
+from deephaven.experimental import s3
 
 
 class ParquetTestCase(BaseTestCase):
@@ -551,6 +552,29 @@ class ParquetTestCase(BaseTestCase):
             self.assertIn(
                 "Must provide file_layout when table_definition is set", str(cm.exception)
             )
+
+    def test_read_parquet_from_s3(self):
+        """ Test that we can read parquet files from s3 """
+
+        # Fails since we have a negative read_ahead_count
+        with self.assertRaises(DHError):
+            s3.S3Instructions(region_name="us-east-1",
+                              read_ahead_count=-1,
+                              )
+
+        # Fails since we provide the key without the secret key
+        with self.assertRaises(DHError):
+            s3.S3Instructions(region_name="us-east-1",
+                              access_key_id="Some key without secret",
+                              )
+
+        s3_instructions = s3.S3Instructions(region_name="us-east-1",
+                                            read_ahead_count=1,
+                                            )
+        # Fails because we don't have the right credentials
+        with self.assertRaises(Exception):
+            read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
+        # TODO(deephaven-core#5064): Add support for local S3 testing
 
 
 if __name__ == '__main__':

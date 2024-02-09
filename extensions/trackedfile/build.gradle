@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Used to create a channel provider plugin for reading and writing local files.'
+
+dependencies {
+    api project(':util-channel')
+
+    implementation project(':Base')
+    implementation project(':Util')
+    implementation project(':engine-table')
+
+    compileOnly depAnnotations
+
+    Classpaths.inheritAutoService(project)
+}
