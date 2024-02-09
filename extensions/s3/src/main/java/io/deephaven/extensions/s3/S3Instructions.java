@@ -3,8 +3,8 @@
  */
 package io.deephaven.extensions.s3;
 
-import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.configuration.Configuration;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -19,7 +19,13 @@ import java.util.Optional;
  * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-@BuildableStyle
+// Almost the same as BuildableStyle, but has copy-ability to support withReadAheadCount
+@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE,
+        defaults = @Value.Immutable(copy = true),
+        strictBuilder = true,
+        weakInterning = true,
+        jdkOnly = true,
+        includeHashCode = "getClass().hashCode()")
 public abstract class S3Instructions {
 
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
@@ -116,6 +122,8 @@ public abstract class S3Instructions {
      * @see <a href="https://docs.aws.amazon.com/general/latest/gr/s3.html">Amazon Simple Storage Service endpoints</a>
      */
     public abstract Optional<URI> endpointOverride();
+
+    abstract S3Instructions withReadAheadCount(int readAheadCount);
 
     public interface Builder {
         Builder regionName(String regionName);

@@ -13,7 +13,12 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-public class LocalFSChannelProvider implements SeekableChannelsProvider {
+public class LocalFSChannelProvider extends SeekableChannelsProviderBase {
+
+    @Override
+    protected boolean readChannelIsBuffered() {
+        return false;
+    }
 
     @Override
     public SeekableChannelContext makeContext() {

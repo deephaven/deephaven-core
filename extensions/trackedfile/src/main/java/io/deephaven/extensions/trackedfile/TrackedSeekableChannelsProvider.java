@@ -10,6 +10,7 @@ import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,12 +26,19 @@ import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProvide
 /**
  * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven {@link TrackedFileHandleFactory}.
  */
-class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
+final class TrackedSeekableChannelsProvider extends SeekableChannelsProviderBase {
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
     TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
+    }
+
+    @Override
+    protected boolean readChannelIsBuffered() {
+        // io.deephaven.engine.util.file.TrackedSeekableByteChannel / io.deephaven.engine.util.file.FileHandle is not
+        // buffered
+        return false;
     }
 
     @Override

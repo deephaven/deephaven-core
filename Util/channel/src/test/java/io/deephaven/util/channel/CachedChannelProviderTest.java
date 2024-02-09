@@ -170,11 +170,16 @@ public class CachedChannelProviderTest {
     }
 
 
-    private class TestChannelProvider implements SeekableChannelsProvider {
+    private class TestChannelProvider extends SeekableChannelsProviderBase {
 
         AtomicInteger count = new AtomicInteger(0);
 
         private final class TestChannelContext implements SeekableChannelContext {
+        }
+
+        @Override
+        protected boolean readChannelIsBuffered() {
+            return true; // TestMockChannel always returns 0, might as well be "buffered"
         }
 
         @Override

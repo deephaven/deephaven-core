@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
@@ -38,9 +39,32 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     }
 
     /**
+     * Wraps {@link SeekableChannelsProvider#getInputStream(SeekableByteChannel)} in a position-safe manner. To remain
+     * valid, the caller must ensure that the resulting input stream isn't re-wrapped by any downstream code in a way
+     * that would adversely effect the position (such as re-wrapping the resulting input stream with buffering).
+     *
+     * <p>
+     * Equivalent to {@code PositionInputStream.of(ch, provider.getInputStream(ch))}.
+     *
+     * @param provider the provider
+     * @param ch the seekable channel
+     * @return the position-safe input stream
+     * @throws IOException if an IO exception occurs
+     * @see PositionInputStream#of(SeekableByteChannel, InputStream)
+     */
+    static InputStream positionInputStream(SeekableChannelsProvider provider, SeekableByteChannel ch)
+            throws IOException {
+        return PositionInputStream.of(ch, provider.getInputStream(ch));
+    }
+
+    /**
      * Create a new {@link SeekableChannelContext} object for creating read channels via this provider.
      */
     SeekableChannelContext makeContext();
+
+    default SeekableChannelContext makeSingleUseContext() {
+        return makeContext();
+    }
 
     /**
      * Check if the given context is compatible with this provider. Useful to test if we can use provided
@@ -55,6 +79,22 @@ public interface SeekableChannelsProvider extends SafeCloseable {
 
     SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri)
             throws IOException;
+
+    /**
+     * Creates an {@link InputStream} from the current position of {@code channel}; closing the resulting input stream
+     * does <i>not</i> close the {@code channel}. The {@link InputStream} will be buffered; either explicitly in the
+     * case where the implementation uses an unbuffered {@link #getReadChannel(SeekableChannelContext, URI)}, or
+     * implicitly when the implementation uses a buffered {@link #getReadChannel(SeekableChannelContext, URI)}.
+     * {@code channel} must have been created by {@code this} provider. The caller can't assume the position of
+     * {@code channel} after consuming the {@link InputStream}. For use-cases that require the channel's position to be
+     * incremented the exact amount the {@link InputStream} has been consumed, use
+     * {@link #positionInputStream(SeekableChannelsProvider, SeekableByteChannel)}.
+     *
+     * @param channel the channel
+     * @return the input stream
+     * @throws IOException if an IO exception occurs
+     */
+    InputStream getInputStream(SeekableByteChannel channel) throws IOException;
 
     default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
         return getWriteChannel(Paths.get(path), append);

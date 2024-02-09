@@ -7,10 +7,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
-import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
+import io.deephaven.util.channel.SeekableChannelContext.Provider;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -116,21 +117,23 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
                 if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
-                    // Use the latest context while reading the page
-                    final SeekableChannelContext channelContext = innerFillContext(fillContext);
-                    final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
-                    try {
-                        page = new PageCache.IntrusivePage<>(
-                                toPage(offsetIndex.getFirstRowIndex(pageNum), reader, channelContext));
-                    } catch (final IOException except) {
-                        throw new UncheckedIOException(except);
-                    }
+                    page = new IntrusivePage<>(getPageImpl(fillContext, pageNum));
                     pageState.pageRef = new WeakReference<>(page);
                 }
             }
         }
         pageCache.touch(page);
         return page.getPage();
+    }
+
+    private ChunkPage<ATTR> getPageImpl(@Nullable FillContext fillContext, int pageNum) {
+        final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
+        // Use the latest context while reading the page, or create (and close) new one
+        try (final Provider upgrade = upgrade(fillContext)) {
+            return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, upgrade.get());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
