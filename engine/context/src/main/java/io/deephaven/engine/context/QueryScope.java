@@ -7,6 +7,7 @@ import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -69,8 +70,8 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @return A newly-constructed array of newly-constructed Params.
      * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
-    default QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
-        final QueryScopeParam[] result = new QueryScopeParam[names.size()];
+    default QueryScopeParam<?>[] getParams(final Collection<String> names) throws MissingVariableException {
+        final QueryScopeParam<?>[] result = new QueryScopeParam[names.size()];
         int pi = 0;
         for (final String name : names) {
             result[pi++] = createParam(name);
@@ -131,10 +132,10 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     <T> void putParam(final String name, final T value);
 
     /**
-     * Returns an immutable map with all objects in the scope. Callers may want to unwrap language-specific values using
-     * {@link #unwrapObject(Object)} before using them.
+     * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
      *
-     * @return an immutable map with all known variables and their values.
+     * @return a caller-owned mutable map with all known variables and their values.
      */
     Map<String, Object> toMap();
 
@@ -145,7 +146,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    default Object unwrapObject(Object object) {
+    default Object unwrapObject(@Nullable Object object) {
         return object;
     }
 

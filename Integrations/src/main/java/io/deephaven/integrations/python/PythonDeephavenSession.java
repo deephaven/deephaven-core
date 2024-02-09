@@ -304,7 +304,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     protected Map<String, Object> getAllValues() {
         return PyLib
                 .ensureGil(() -> scope.getEntries()
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     @Override
@@ -315,7 +315,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     // TODO core#41 move this logic into the python console instance or scope like this - can go further and move
     // isWidget too
     @Override
-    public Object unwrapObject(Object object) {
+    public Object unwrapObject(@Nullable Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
             final Object unwrapped = module.javaify(pyObject);

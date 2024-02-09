@@ -3174,12 +3174,12 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed,
             boolean verifyIdempotence)
             throws Exception {
-        final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
+        final Map<String, Object> possibleParams;
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         if (!(queryScope instanceof PoisonedQueryScope)) {
-            for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-                possibleParams.put(param.getName(), param);
-            }
+            possibleParams = queryScope.toMap();
+        } else {
+            possibleParams = null;
         }
 
         final QueryLanguageParser.Result result =

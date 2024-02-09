@@ -92,23 +92,30 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
      * @return a Java object representing the underlying JPy object.
      */
     public static Object convert(PyObject pyObject) {
-        if (pyObject.isList()) {
-            return pyObject.asList();
-        } else if (pyObject.isDict()) {
-            return pyObject.asDict();
-        } else if (pyObject.isCallable()) {
-            return new PyCallableWrapperJpyImpl(pyObject);
-        } else if (pyObject.isNone()) {
-            return null;
-        } else if (pyObject.isConvertible()) {
-            try {
-                // these are java objects; avoid the overhead of the JNI round trip when possible
-                return conversionCache.get(pyObject.getPointer(), pyObject::getObjectValue);
-            } catch (ExecutionException err) {
-                throw new UncheckedDeephavenException("Error converting PyObject to Java object", err);
-            }
+        try {
+            final Object cached = conversionCache.get(pyObject.getPointer(), () -> convertInternal(pyObject));
+            return cached instanceof NULL_TOKEN ? null : cached;
+        } catch (ExecutionException err) {
+            throw new UncheckedDeephavenException("Error converting PyObject to Java object", err);
         }
-        return pyObject;
+    }
+
+    private static Object convertInternal(PyObject pyObject) {
+        Object ret = pyObject;
+        if (pyObject.isList()) {
+            ret = pyObject.asList();
+        } else if (pyObject.isDict()) {
+            ret = pyObject.asDict();
+        } else if (pyObject.isCallable()) {
+            ret = new PyCallableWrapperJpyImpl(pyObject);
+        } else if (pyObject.isConvertible()) {
+            ret = pyObject.getObjectValue();
+        }
+
+        if (ret == null) {
+            ret = new NULL_TOKEN();
+        }
+        return ret;
     }
 
     public PyDictWrapper mainGlobals() {
@@ -133,5 +140,12 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
         PyDictWrapper pydict = scopeStack.pop();
         pydict.close();
+    }
+
+    /**
+     * Guava caches are not allowed to hold on to null values. Additionally, we can't use a singleton pattern or else
+     * the weak-value map will never release null values.
+     */
+    private static class NULL_TOKEN {
     }
 }

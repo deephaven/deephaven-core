@@ -291,10 +291,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected abstract Object setVariable(String name, @Nullable Object value);
 
     /**
-     * Returns an immutable map with all known variables and their values.
+     * Returns a mutable map with all known variables and their values. It is owned by the caller.
      *
-     * @return an immutable map with all known variables and their values. As with {@link #getVariable(String)}, values
-     *         may need to be unwrapped.
+     * @return a mutable map with all known variables and their values. As with {@link #getVariable(String)}, values may
+     *         need to be unwrapped.
      */
     protected abstract Map<String, Object> getAllValues();
 
@@ -375,7 +375,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         @Override
-        public Object unwrapObject(Object object) {
+        public Object unwrapObject(@Nullable Object object) {
             return AbstractScriptSession.this.unwrapObject(object);
         }
     }

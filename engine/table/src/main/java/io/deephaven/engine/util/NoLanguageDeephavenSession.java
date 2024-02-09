@@ -8,10 +8,7 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -97,7 +94,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     @Override
     protected Map<String, Object> getAllValues() {
         synchronized (variables) {
-            return Map.copyOf(variables);
+            return new HashMap<>(variables);
         }
     }
 

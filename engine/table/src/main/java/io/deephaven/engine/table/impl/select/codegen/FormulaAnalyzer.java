@@ -8,10 +8,8 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil;
-import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -30,11 +28,6 @@ public class FormulaAnalyzer {
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
             final TimeLiteralReplacedExpression timeConversionResult,
             final QueryLanguageParser.Result queryLanguageResult) throws Exception {
-        final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            possibleParams.put(param.getName(), param);
-        }
 
         log.debug().append("Expression (after language conversion) : ")
                 .append(queryLanguageResult.getConvertedExpression())
@@ -55,7 +48,7 @@ public class FormulaAnalyzer {
                     null != columnDefinitionMap
                             .get(bareName = variable.substring(0, variable.length() - colSuffix.length()))) {
                 usedColumnArrays.add(bareName);
-            } else if (possibleParams.containsKey(variable)) {
+            } else if (queryLanguageResult.getPossibleParams().containsKey(variable)) {
                 userParams.add(variable);
             }
         }
@@ -94,12 +87,10 @@ public class FormulaAnalyzer {
             }
         }
 
-        final Map<String, QueryScopeParam<?>> possibleVariableValues = new HashMap<>();
         final ExecutionContext context = ExecutionContext.getContext();
-        final QueryScope queryScope = context.getQueryScope();
-        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
-            possibleVariableValues.put(param.getName(), param);
+        final Map<String, Object> possibleValues = context.getQueryScope().toMap();
+        for (Map.Entry<String, Object> param : possibleValues.entrySet()) {
+            possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
             Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
             if (declaredType instanceof ParameterizedType) {
@@ -107,7 +98,7 @@ public class FormulaAnalyzer {
                 Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
                         .map(QueryScopeParamTypeUtil::classFromType)
                         .toArray(Class<?>[]::new);
-                possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
+                possibleVariableParameterizedTypes.put(param.getKey(), paramTypes);
             }
         }
 
@@ -133,7 +124,7 @@ public class FormulaAnalyzer {
         return new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
                 context.getQueryLibrary().getPackageImports(),
                 classImports, context.getQueryLibrary().getStaticImports(), possibleVariables,
-                possibleVariableParameterizedTypes, possibleVariableValues)
+                possibleVariableParameterizedTypes, possibleValues)
                 .getResult();
     }
 

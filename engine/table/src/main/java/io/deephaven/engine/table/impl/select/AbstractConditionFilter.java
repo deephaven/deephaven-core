@@ -97,18 +97,17 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
         try {
-            final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
             final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-            for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-                possibleParams.put(param.getName(), param);
-                possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
+            final Map<String, Object> possibleParams = queryScope.toMap();
+            for (Map.Entry<String, Object> param : possibleParams.entrySet()) {
+                possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
                 Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
                 if (declaredType instanceof ParameterizedType) {
                     ParameterizedType pt = (ParameterizedType) declaredType;
                     Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
                             .map(QueryScopeParamTypeUtil::classFromType)
                             .toArray(Class<?>[]::new);
-                    possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
+                    possibleVariableParameterizedTypes.put(param.getKey(), paramTypes);
                 }
             }
 
@@ -207,10 +206,10 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 } else if (arrayColumnToFind != null && tableDefinition.getColumn(arrayColumnToFind) != null) {
                     usedColumnArrays.add(arrayColumnOuterName);
                 } else if (result.getPossibleParams().containsKey(variable)) {
-                    paramsList.add(result.getPossibleParams().get(variable));
+                    paramsList.add(new QueryScopeParam<>(variable, result.getPossibleParams().get(variable)));
                 }
             }
-            params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);
+            params = paramsList.toArray(QueryScopeParam[]::new);
 
             checkAndInitializeVectorization(result, paramsList);
             if (!initialized) {

@@ -118,7 +118,7 @@ public interface ScriptSession extends LivenessNode {
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    default Object unwrapObject(Object object) {
+    default Object unwrapObject(@Nullable Object object) {
         return object;
     }
 }

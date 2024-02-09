@@ -771,7 +771,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     protected Map<String, Object> getAllValues() {
         synchronized (bindingBackingMap) {
-            return Map.copyOf(bindingBackingMap);
+            return new HashMap<>(bindingBackingMap);
         }
     }
 
