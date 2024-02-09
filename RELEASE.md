@@ -161,6 +161,9 @@ If this step fails, the deephaven-server wheel from the "Upload Artifacts" step 
 The "Publish pydeephaven to PyPi" uploads the pydeephaven wheel to [PyPi](https://pypi.org/project/pydeephaven/).
 If this step fails, the pydeephaven wheel from the "Upload Artifacts" step can be uploaded manually.
 
+The "Publish @deephaven/jsapi-types to npmjs" uploads the TypeScript tarball to [NPM](https://www.npmjs.com/package/@deephaven/jsapi-types).
+If this step fails, the deephaven-jsapi-types tarball from the "Upload Artifacts" step can be uploaded manually.
+
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
 ### 5. Download artifacts
@@ -225,7 +228,7 @@ Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releas
 
 The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
-Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts. 
+Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, @deephaven/jsapi-types tarball, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts.
 (These are the artifacts downloaded in Step #5)
 
 Hit the GitHub "Publish release" button.
@@ -269,7 +272,6 @@ mention the version explicitly. These files are listed below:
 #
 gradle.properties
 R/rdeephaven/DESCRIPTION
-web/client-api/types/package.json
 ```
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from
