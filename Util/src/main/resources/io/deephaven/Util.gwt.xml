@@ -4,7 +4,7 @@
     <source path="util" includes="SafeCloseable.java,SimpleTypeMap.java,QueryConstants.java,MultiException.java,BooleanUtils.java" />
     <source path="util/type" includes="ArrayTypeUtils.java,TypeUtils.java" />
     <source path="util/codec" includes="ObjectDecoder.java,ObjectCodec.java" />
-    <source path="util/datastructures" includes="LongRangeAbortableConsumer.java,LongRangeIterator.java,LongRangeConsumer.java,LongSizedDataStructure.java,SizeException.java" />
+    <source path="util/datastructures" includes="LongRangeAbortableConsumer.java,LongRangeIterator.java,LongRangeConsumer.java,LongSizedDataStructure.java,SizeException.java,SegmentedSoftPool.java" />
     <source path="datastructures/util" includes="CollectionUtil.java" />
     <source path="" includes="UncheckedDeephavenException.java" />
 </module>

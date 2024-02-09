@@ -15,7 +15,7 @@ public abstract class Reference<T> {
     }
 
     public T get() {
-        return this.referent;
+        return this.jsWeakRef.deref();
     }
 
     public void clear() {
