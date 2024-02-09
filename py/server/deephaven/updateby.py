@@ -1367,6 +1367,11 @@ def rolling_formula_tick(formula: str, formula_param: str, cols: Union[str, List
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
     can be used to generate completely forward or completely reverse windows.
 
+    User-defined formula can contain a combination of any of the following:
+        |  Built-in functions such as `min`, `max`, etc.
+        |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
+        |  User-defined functions
+
     Here are some examples of window values:
         |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
         |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
@@ -1380,8 +1385,9 @@ def rolling_formula_tick(formula: str, formula_param: str, cols: Union[str, List
             current row (inclusive)
 
     Args:
-        formula (str): the user defined formula to apply to each window of data
-        formula_param (str): the parameter name within the formula
+        formula (str): the user defined formula to apply to each group.
+        formula_param (str): the parameter name for the input column's vector within the formula. If formula is
+            `max(each)`, then `each` is the formula_param.
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling formula operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
@@ -1408,6 +1414,11 @@ def rolling_formula_time(ts_col: str, formula: str, formula_param: str, cols: Un
     the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
     be null.
 
+    User-defined formula can contain a combination of any of the following:
+        |  Built-in functions such as `min`, `max`, etc.
+        |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
+        |  User-defined functions
+
     Here are some examples of window values:
         |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
         |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
@@ -1423,8 +1434,9 @@ def rolling_formula_time(ts_col: str, formula: str, formula_param: str, cols: Un
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        formula (str): the user defined formula to apply to each window of data
-        formula_param (str): the parameter name within the formula
+        formula (str): the user defined formula to apply to each group.
+        formula_param (str): the parameter name for the input column's vector within the formula. If formula is
+            `max(each)`, then `each` is the formula_param.
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling formula operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
