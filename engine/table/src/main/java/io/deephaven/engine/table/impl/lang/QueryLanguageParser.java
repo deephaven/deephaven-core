@@ -2758,7 +2758,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     pyCallableWrapper.addChunkArgument(
                             new ConstantChunkArgument(queryScopeVariables.get(name), argTypes[i]));
                 } else {
-                    throw new IllegalStateException("Vectorizability could not find variable by name: " + name);
+                    throw new IllegalStateException("Vectorizability check could not find variable by name: " + name);
                 }
             } else {
                 throw new IllegalStateException("Vectorizability check failed: " + n);
