@@ -3,7 +3,6 @@
  */
 package io.deephaven.integrations.python;
 
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -303,7 +302,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate) {
+    protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
         final HashMap<String, Object> result = new HashMap<>();
         // note: we can't use collect(Collectors.toMap()) because we allow null values
         return PyLib.ensureGil(() -> {

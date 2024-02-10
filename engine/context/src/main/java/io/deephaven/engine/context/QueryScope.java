@@ -137,6 +137,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
      * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
      *
+     * @param predicate a predicate to filter the map entries
      * @return a caller-owned mutable map with all known variables and their values.
      */
     Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate);
@@ -166,9 +167,9 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {
         logOutput.append('{');
-        for (final String paramName : getParamNames()) {
-            final Object paramValue = readParamValue(paramName);
-            logOutput.nl().append(paramName).append("=");
+        for (final Map.Entry<String, Object> param : toMap().entrySet()) {
+            logOutput.nl().append(param.getKey()).append("=");
+            Object paramValue = param.getValue();
             if (paramValue == this) {
                 logOutput.append("this QueryScope (" + paramValue.getClass().getName() + ':'
                         + System.identityHashCode(paramValue) + ')');

@@ -124,10 +124,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             ret = pyObject.getObjectValue();
         }
 
-        if (ret == null && fromCache) {
-            ret = new NULL_TOKEN();
-        }
-        return ret;
+        return ret == null && fromCache ? new NULL_TOKEN() : ret;
     }
 
     public PyDictWrapper mainGlobals() {

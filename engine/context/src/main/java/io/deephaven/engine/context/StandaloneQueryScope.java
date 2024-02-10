@@ -8,10 +8,10 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Map-based implementation, extending LivenessArtifact to manage the objects passed into it.
@@ -80,10 +80,12 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
 
     @Override
     public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-        return valueRetrievers.entrySet().stream()
+        final HashMap<String, Object> result = new HashMap<>();
+        valueRetrievers.entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), (Object) e.getValue().value))
                 .filter(predicate)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .forEach(e -> result.put(e.getKey(), e.getValue()));
+        return result;
     }
 
     private static class ValueRetriever<T> {

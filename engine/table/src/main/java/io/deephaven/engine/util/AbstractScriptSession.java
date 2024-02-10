@@ -298,7 +298,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
      * @return a mutable map with all known variables and their values. As with {@link #getVariable(String)}, values may
      *         need to be unwrapped.
      */
-    protected abstract Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate);
+    protected abstract Map<String, Object> getAllValues(@NotNull Predicate<Map.Entry<String, Object>> predicate);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
