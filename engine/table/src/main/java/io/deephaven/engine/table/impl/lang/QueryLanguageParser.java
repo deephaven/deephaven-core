@@ -143,8 +143,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     private final Map<String, Class<?>> variables;
     private final Map<String, Class<?>[]> variableTypeArguments;
-    private final Set<String> columnVariables;
     private final Map<String, Object> queryScopeVariables;
+    private final Set<String> columnVariables;
 
     private final HashSet<String> variablesUsed = new HashSet<>();
 
