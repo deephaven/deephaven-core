@@ -82,6 +82,7 @@ public class FormulaAnalyzer {
         final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
         for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
+            // add column-vectors
             final String columnSuffix = DhFormulaColumn.COLUMN_SUFFIX;
             final Class<?> vectorType = DhFormulaColumn.getVectorType(columnDefinition.getDataType());
 
@@ -92,12 +93,25 @@ public class FormulaAnalyzer {
                 possibleVariableParameterizedTypes.put(columnDefinition.getName() + columnSuffix,
                         new Class[] {columnDefinition.getDataType()});
             }
+
+            // add columns
+            columnVariables.add(columnDefinition.getName());
+            possibleVariables.put(columnDefinition.getName(), columnDefinition.getDataType());
+            final Class<?> compType = columnDefinition.getComponentType();
+            if (compType != null && !compType.isPrimitive()) {
+                possibleVariableParameterizedTypes.put(columnDefinition.getName(), new Class[] {compType});
+            }
         }
 
         final ExecutionContext context = ExecutionContext.getContext();
         final Map<String, Object> queryScopeVariables = context.getQueryScope().toMap(
                 NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
         for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
+            if (possibleVariables.containsKey(param.getKey())) {
+                // skip any existing matches
+                continue;
+            }
+
             possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
             Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
@@ -107,16 +121,6 @@ public class FormulaAnalyzer {
                         .map(QueryScopeParamTypeUtil::classFromType)
                         .toArray(Class<?>[]::new);
                 possibleVariableParameterizedTypes.put(param.getKey(), paramTypes);
-            }
-        }
-
-        for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
-            if (possibleVariables.put(columnDefinition.getName(), columnDefinition.getDataType()) != null) {
-                possibleVariableParameterizedTypes.remove(columnDefinition.getName());
-            }
-            final Class<?> compType = columnDefinition.getComponentType();
-            if (compType != null && !compType.isPrimitive()) {
-                possibleVariableParameterizedTypes.put(columnDefinition.getName(), new Class[] {compType});
             }
         }
 
