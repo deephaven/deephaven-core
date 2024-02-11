@@ -6,6 +6,7 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -82,7 +83,7 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
     public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
         final HashMap<String, Object> result = new HashMap<>();
         valueRetrievers.entrySet().stream()
-                .map(e -> Map.entry(e.getKey(), (Object) e.getValue().value))
+                .map(e -> ImmutablePair.of(e.getKey(), (Object) e.getValue().value))
                 .filter(predicate)
                 .forEach(e -> result.put(e.getKey(), e.getValue()));
         return result;
