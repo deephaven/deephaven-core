@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -29,12 +30,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -97,26 +93,37 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
         try {
-            final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
             final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-            for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
-                possibleParams.put(param.getName(), param);
-                possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
+            final Map<String, Object> queryScopeVariables = queryScope.toMap(
+                    NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+            for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
+                possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
                 Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
                 if (declaredType instanceof ParameterizedType) {
                     ParameterizedType pt = (ParameterizedType) declaredType;
                     Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
                             .map(QueryScopeParamTypeUtil::classFromType)
                             .toArray(Class<?>[]::new);
-                    possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
+                    possibleVariableParameterizedTypes.put(param.getKey(), paramTypes);
                 }
             }
+
+            final Set<String> columnVariables = new HashSet<>();
+            columnVariables.add("i");
+            columnVariables.add("ii");
+            columnVariables.add("k");
 
             final BiConsumer<String, ColumnDefinition<?>> createColumnMappings = (columnName, column) -> {
                 final Class<?> vectorType = DhFormulaColumn.getVectorType(column.getDataType());
 
-                possibleVariables.put(columnName, column.getDataType());
-                possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType);
+                columnVariables.add(columnName);
+                if (possibleVariables.put(columnName, column.getDataType()) != null) {
+                    possibleVariableParameterizedTypes.remove(columnName);
+                }
+                columnVariables.add(columnName + COLUMN_SUFFIX);
+                if (possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType) != null) {
+                    possibleVariableParameterizedTypes.remove(columnName + COLUMN_SUFFIX);
+                }
 
                 final Class<?> compType = column.getComponentType();
                 if (compType != null && !compType.isPrimitive()) {
@@ -148,12 +155,14 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             possibleVariables.putAll(timeConversionResult.getNewVariables());
 
-            final QueryLanguageParser.Result result =
-                    new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
-                            ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
-                            ExecutionContext.getContext().getQueryLibrary().getClassImports(),
-                            ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
-                            possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
+            final QueryLanguageParser.Result result = new QueryLanguageParser(
+                    timeConversionResult.getConvertedFormula(),
+                    ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
+                    ExecutionContext.getContext().getQueryLibrary().getClassImports(),
+                    ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
+                    possibleVariables, possibleVariableParameterizedTypes, queryScopeVariables, columnVariables,
+                    unboxArguments)
+                    .getResult();
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {
                 log.debug("Formula (after shift conversion) : " + formulaShiftColPair.getFirst());
@@ -205,11 +214,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     usedColumns.add(variable);
                 } else if (arrayColumnToFind != null && tableDefinition.getColumn(arrayColumnToFind) != null) {
                     usedColumnArrays.add(arrayColumnOuterName);
-                } else if (possibleParams.containsKey(variable)) {
-                    paramsList.add(possibleParams.get(variable));
+                } else if (result.getPossibleParams().containsKey(variable)) {
+                    paramsList.add(new QueryScopeParam<>(variable, result.getPossibleParams().get(variable)));
                 }
             }
-            params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);
+            params = paramsList.toArray(QueryScopeParam[]::new);
 
             checkAndInitializeVectorization(result, paramsList);
             if (!initialized) {

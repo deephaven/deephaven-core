@@ -14,6 +14,11 @@ public class PythonObjectWrapper {
     private static final PyModule PY_WRAPPER_MODULE = PyModule.importModule("deephaven._wrapper");
 
     /**
+     * Ensure that the class initializer runs.
+     */
+    public static void init() {}
+
+    /**
      * Unwrap a Python object to return the wrapped Java object.
      * 
      * @param t An instance of {@link PyObject}.

@@ -201,7 +201,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
 
-            applyUsedVariables(columnDefinitionMap, result.getVariablesUsed());
+            applyUsedVariables(columnDefinitionMap, result.getVariablesUsed(), result.getPossibleParams());
             returnedType = result.getType();
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;

@@ -6,12 +6,15 @@ package io.deephaven.engine.context;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Variable scope used to resolve parameter values during query execution and to expose named objects to users. Objects
@@ -69,8 +72,8 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @return A newly-constructed array of newly-constructed Params.
      * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
-    default QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
-        final QueryScopeParam[] result = new QueryScopeParam[names.size()];
+    default QueryScopeParam<?>[] getParams(final Collection<String> names) throws MissingVariableException {
+        final QueryScopeParam<?>[] result = new QueryScopeParam[names.size()];
         int pi = 0;
         for (final String name : names) {
             result[pi++] = createParam(name);
@@ -131,12 +134,24 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     <T> void putParam(final String name, final T value);
 
     /**
-     * Returns an immutable map with all objects in the scope. Callers may want to unwrap language-specific values using
-     * {@link #unwrapObject(Object)} before using them.
+     * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
      *
-     * @return an immutable map with all known variables and their values.
+     * @param predicate a predicate to filter the map entries
+     * @return a caller-owned mutable map with all known variables and their values.
      */
-    Map<String, Object> toMap();
+    Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate);
+
+    /**
+     * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
+     *
+     * @return a caller-owned mutable map with all known variables and their values.
+     */
+    @FinalDefault
+    default Map<String, Object> toMap() {
+        return toMap(entry -> true);
+    }
 
     /**
      * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning
@@ -145,16 +160,16 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    default Object unwrapObject(Object object) {
+    default Object unwrapObject(@Nullable Object object) {
         return object;
     }
 
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {
         logOutput.append('{');
-        for (final String paramName : getParamNames()) {
-            final Object paramValue = readParamValue(paramName);
-            logOutput.nl().append(paramName).append("=");
+        for (final Map.Entry<String, Object> param : toMap().entrySet()) {
+            logOutput.nl().append(param.getKey()).append("=");
+            Object paramValue = param.getValue();
             if (paramValue == this) {
                 logOutput.append("this QueryScope (" + paramValue.getClass().getName() + ':'
                         + System.identityHashCode(paramValue) + ')');
