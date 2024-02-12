@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class RowGroupWriterImpl implements RowGroupWriter {
+final class RowGroupWriterImpl implements RowGroupWriter {
     private final PositionedBufferedOutputStream bufferedOutput;
     private final MessageType type;
     private final int targetPageSize;

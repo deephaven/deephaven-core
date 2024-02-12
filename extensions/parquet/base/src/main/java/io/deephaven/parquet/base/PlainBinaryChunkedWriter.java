@@ -4,7 +4,6 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.base.ArrayUtil;
-import io.deephaven.parquet.base.util.Helpers;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
@@ -21,7 +20,7 @@ import java.nio.IntBuffer;
 /**
  * Plain encoding except for binary values
  */
-public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
+final class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
 
     private static final int MAXIMUM_TOTAL_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE;
 

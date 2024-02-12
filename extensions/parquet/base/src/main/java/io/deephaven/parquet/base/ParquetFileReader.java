@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.*;

@@ -39,23 +39,29 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
+      - name: Setup Node for deployment to npmjs
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'web/client-api/types/.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
+
       # TODO(deephaven-core#2614): Improve gradle/CI assemble and publishing of artifacts
 
-      - name: Publish to Maven Local
+      - name: Build all artifacts, publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: publish-local
-          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build publishToMavenLocal
+          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build web-client-api:types:build publishToMavenLocal
           gradle-version: wrapper
 
-      - name: Publish
+      - name: Build all artifacts, publish to Sonatype for staging to Maven Central
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: publish
           # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
-          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-client:build py-embedded-server:build publish
+          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-client:build py-embedded-server:build web-client-api:types:build publish
           gradle-version: wrapper
         env:
           ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
@@ -74,6 +80,7 @@ jobs:
             py/server/build/wheel/
             py/embedded-server/build/wheel/
             py/client/build/wheel/
+            web/client-api/types/build/*.tgz
 
       - name: Publish deephaven-core to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -98,3 +105,9 @@ jobs:
           user: __token__
           password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
           packages_dir: py/client/build/wheel/
+
+      - name: Publish @deephaven/jsapi-types to npmjs
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.DEEPHAVENBOT_NPM_TOKEN }}
+        run: npm publish --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz

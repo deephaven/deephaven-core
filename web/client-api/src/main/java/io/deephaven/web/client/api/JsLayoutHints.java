@@ -140,6 +140,7 @@ public class JsLayoutHints {
     }
 
     @JsProperty
+    @JsNullable
     public String[] getFrontColumns() {
         return frontColumns;
     }

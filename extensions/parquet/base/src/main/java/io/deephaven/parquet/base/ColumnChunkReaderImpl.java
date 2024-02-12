@@ -36,7 +36,7 @@ import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
-public class ColumnChunkReaderImpl implements ColumnChunkReader {
+final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
@@ -49,7 +49,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
-    private final PageMaterializer.Factory nullMaterializerFactory;
+    private final PageMaterializerFactory nullMaterializerFactory;
 
     private URI uri;
     /**

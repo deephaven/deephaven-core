@@ -8,7 +8,6 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
@@ -26,7 +25,7 @@ import java.nio.IntBuffer;
 /**
  * A writer for encoding doubles in the PLAIN format
  */
-public class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer> {
+final class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Double.BYTES;
     private final ByteBufferAllocator allocator;
 

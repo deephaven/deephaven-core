@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.parquet.base.util;
+package io.deephaven.parquet.base;
 
 
 import org.apache.parquet.Preconditions;
@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 /**
  * Decodes values written in the grammar described in {@link RunLengthBitPackingHybridEncoder}
  */
-public class RunLengthBitPackingHybridBufferDecoder {
+final class RunLengthBitPackingHybridBufferDecoder {
     private static final Logger LOG = LoggerFactory.getLogger(RunLengthBitPackingHybridBufferDecoder.class);
     private int rangeCount;
     private final int maxLevel;

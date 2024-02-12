@@ -5,12 +5,21 @@ plugins {
 
 configurations {
     dts
+    typedoc
+    npmModule
 }
 dependencies {
     dts project(path: ':web-client-api', configuration: 'dts')
 }
 
-Docker.registerDockerTask(project, 'typedoc') {
+// Apply our temporary convention until dhc hits 1.0.0
+def npmVersion = '1.0.0-dev' + project.property('deephavenBaseVersion').toString().trim()
+def preId = project.findProperty('npmPreid')// i.e. 'nightly'
+if (preId) {
+    npmVersion += preId + new Date().format("yyyyMMdd")
+}
+
+def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
     copyIn {
         from(configurations.dts) {
             into 'dist'
@@ -18,6 +27,7 @@ Docker.registerDockerTask(project, 'typedoc') {
         from 'tsconfig.json'
         from 'package.json'
         from 'package-lock.json'
+        from '.npmrc'
 
         from('src/main/docker') {
             include 'theme.css'
@@ -28,10 +38,12 @@ Docker.registerDockerTask(project, 'typedoc') {
         from 'deephaven/node:local-build'
 
         copyFile('.', '/project')
+        environmentVariable('VERSION', npmVersion)
 
         runCommand('''set -eux; \\
                       cd /project/; \\
                       mv dist/types.d.ts dist/index.d.ts; \\
+                      npm version $VERSION; \\
                       npm ci; \\
                       npm pack; \\
                       mkdir /out; \\
@@ -48,5 +60,14 @@ Docker.registerDockerTask(project, 'typedoc') {
     containerOutPath = '/out'
     copyOut {
         into "$buildDir/"
+    }
+}
+
+artifacts {
+    typedoc(layout.buildDirectory.dir('documentation')) {
+        builtBy typedocAndTarball
+    }
+    npmModule(layout.buildDirectory.files('deephaven-jsapi-types*.tgz').singleFile) {
+        builtBy typedocAndTarball
     }
 }
