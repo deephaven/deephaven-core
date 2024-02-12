@@ -5,8 +5,6 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.parquet.base.util.Helpers;
-import io.deephaven.parquet.base.util.RunLengthBitPackingHybridBufferDecoder;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
@@ -41,7 +39,7 @@ import java.util.function.Function;
 
 import static org.apache.parquet.column.ValuesType.VALUES;
 
-public class ColumnPageReaderImpl implements ColumnPageReader {
+final class ColumnPageReaderImpl implements ColumnPageReader {
 
     private static final int MAX_HEADER = 8192;
     private static final int START_HEADER = 128;
@@ -51,7 +49,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
-    private final PageMaterializer.Factory pageMaterializerFactory;
+    private final PageMaterializerFactory pageMaterializerFactory;
     private final ColumnDescriptor path;
     private final URI uri;
     private final List<Type> fieldTypes;
@@ -85,7 +83,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
             CompressorAdapter compressorAdapter,
             Function<SeekableChannelContext, Dictionary> dictionarySupplier,
-            PageMaterializer.Factory materializerFactory,
+            PageMaterializerFactory materializerFactory,
             ColumnDescriptor path,
             URI uri,
             List<Type> fieldTypes,
@@ -432,7 +430,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private Object materialize(PageMaterializer.Factory factory,
+    private Object materialize(PageMaterializerFactory factory,
             RunLengthBitPackingHybridBufferDecoder dlDecoder,
             RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
             throws IOException {
@@ -507,7 +505,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private static Object materializeWithNulls(PageMaterializer.Factory factory,
+    private static Object materializeWithNulls(PageMaterializerFactory factory,
             int numberOfValues,
             IntBuffer nullOffsets,
             ValuesReader dataReader, Object nullValue) {
@@ -553,7 +551,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         return result;
     }
 
-    private Object materializeWithNulls(PageMaterializer.Factory factory,
+    private Object materializeWithNulls(PageMaterializerFactory factory,
             RunLengthBitPackingHybridBufferDecoder dlDecoder,
             RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
             throws IOException {
@@ -594,7 +592,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         return new DataWithMultiLevelOffsets(offsetsWithNull.toArray(new IntBuffer[0]), values);
     }
 
-    private static Object materializeNonNull(PageMaterializer.Factory factory, int numberOfValues,
+    private static Object materializeNonNull(PageMaterializerFactory factory, int numberOfValues,
             ValuesReader dataReader) {
         return factory.makeMaterializerNonNull(dataReader, numberOfValues).fillAll();
     }

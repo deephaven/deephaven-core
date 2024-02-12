@@ -34,8 +34,9 @@ def webpackSources = Docker.registerDockerTask(project, 'webpackSources') {
             into 'raw-js-openapi/'
         }
         from ('Dockerfile')
-        from ('../package.json')
-        from ('../package-lock.json')
+        from ('package.json')
+        from ('package-lock.json')
+        from ('.npmrc')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ]
     imageName = 'deephaven/js-out:local-build'

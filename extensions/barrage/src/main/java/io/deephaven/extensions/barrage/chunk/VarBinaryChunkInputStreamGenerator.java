@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -26,6 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "ObjectChunkInputStream Serialization";
@@ -399,15 +399,15 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final Mapper<T> mapper,
             final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long offsetsBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long offsetsBuffer = bufferInfoIter.nextLong();
+        final long payloadBuffer = bufferInfoIter.nextLong();
 
         final int numElements = nodeInfo.numElements;
         final WritableObjectChunk<T, Values> chunk;

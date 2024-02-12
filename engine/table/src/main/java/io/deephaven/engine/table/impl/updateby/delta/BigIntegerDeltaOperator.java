@@ -8,7 +8,9 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -21,14 +23,13 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteger> {
     private final DeltaControl control;
-    private final ColumnSource<?> inputSource;
-    // region extra-fields
-    // endregion extra-fields
+    private ColumnSource<?> inputSource;
 
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
         public ObjectChunk<BigInteger, ? extends Values> objectValueChunk;
         private BigInteger lastVal = null;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
         }
@@ -61,25 +62,29 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
         }
     }
 
-    public BigIntegerDeltaOperator(@NotNull final MatchPair pair,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @NotNull final DeltaControl control,
-                                   @NotNull final ColumnSource<?> inputSource
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
-    ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection, BigInteger.class);
+    public BigIntegerDeltaOperator(@NotNull final MatchPair pair, @NotNull final DeltaControl control) {
+        super(pair, new String[] { pair.rightColumn }, BigInteger.class);
         this.control = control;
-        this.inputSource = inputSource;
-        // region constructor
-        // endregion constructor
     }
 
     @Override
-    public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
-                                     final long firstUnmodifiedKey,
-                                     final long firstUnmodifiedTimestamp,
-                                     @NotNull final RowSet bucketRowSet) {
+    public UpdateByOperator copy() {
+        return new BigIntegerDeltaOperator(pair, control);
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        inputSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(pair.rightColumn));
+    }
+
+    @Override
+    public void initializeCumulative(
+            @NotNull final UpdateByOperator.Context context,
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         Context ctx = (Context) context;
         ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
@@ -89,9 +94,6 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
             ctx.lastVal = null;
         }
     }
-
-    // region extra-methods
-    // endregion extra-methods
 
     @NotNull
     @Override

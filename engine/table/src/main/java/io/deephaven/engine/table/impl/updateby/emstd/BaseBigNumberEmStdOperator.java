@@ -28,7 +28,6 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
-    protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
     /** For EM operators, we can allow floating-point tick/time units. */
     protected final double reverseWindowScaleUnits;
@@ -39,8 +38,9 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
     protected final BigDecimal opAlpha;
     protected final BigDecimal opOneMinusAlpha;
 
-    protected final WritableColumnSource<BigDecimal> emaSource;
-    protected final WritableColumnSource<BigDecimal> maybeEmaInnerSource;
+    protected ColumnSource<?> valueSource;
+    protected WritableColumnSource<BigDecimal> emaSource;
+    protected WritableColumnSource<BigDecimal> maybeEmaInnerSource;
 
     public interface EmFunction {
         BigDecimal apply(BigDecimal prevVal, BigDecimal curVal, BigDecimal alpha, BigDecimal oneMinusAlpha);
@@ -117,46 +117,22 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the {@link RowRedirection} to use for dense output sources
      * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
      * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource a reference to the input column source for this operation
      */
     public BaseBigNumberEmStdOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,
-            @NotNull final ColumnSource<?> valueSource,
-            final boolean sourceRefreshing,
             @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, 0, 0, false,
-                BigDecimal.class);
+        super(pair, affectingColumns, timestampColumnName, 0, 0, false, BigDecimal.class);
 
         this.control = control;
-        this.valueSource = valueSource;
         this.mathContext = mathContext;
         this.reverseWindowScaleUnits = windowScaleUnits;
-
-        if (sourceRefreshing) {
-            if (rowRedirection != null) {
-                // region create-dense
-                this.maybeEmaInnerSource = new ObjectArraySource<>(BigDecimal.class);
-                // endregion create-dense
-                this.emaSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
-            } else {
-                this.maybeEmaInnerSource = null;
-                // region create-sparse
-                this.emaSource = new ObjectSparseArraySource<>(BigDecimal.class);
-                // endregion create-sparse
-            }
-        } else {
-            this.maybeEmaInnerSource = null;
-            this.emaSource = null;
-        }
 
         if (timestampColumnName == null) {
             // tick-based, pre-compute alpha and oneMinusAlpha
@@ -166,6 +142,30 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
             // time-based, must compute alpha and oneMinusAlpha for each time delta
             opAlpha = null;
             opOneMinusAlpha = null;
+        }
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        valueSource = source.getColumnSource(pair.rightColumn);
+
+        if (source.isRefreshing()) {
+            if (rowRedirection != null) {
+                // region create-dense
+                maybeEmaInnerSource = new ObjectArraySource<>(BigDecimal.class);
+                // endregion create-dense
+                emaSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
+            } else {
+                maybeEmaInnerSource = null;
+                // region create-sparse
+                emaSource = new ObjectSparseArraySource<>(BigDecimal.class);
+                // endregion create-sparse
+            }
+        } else {
+            maybeEmaInnerSource = null;
+            emaSource = null;
         }
     }
 

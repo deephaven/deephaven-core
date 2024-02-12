@@ -36,7 +36,7 @@ import java.util.Set;
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
 import static org.apache.parquet.format.Util.writePageHeader;
 
-public final class ColumnWriterImpl implements ColumnWriter {
+final class ColumnWriterImpl implements ColumnWriter {
 
     private static final int MIN_SLAB_SIZE = 64;
 

@@ -7,7 +7,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +22,7 @@ public final class BigDecimalRollingAvgOperator extends BaseObjectUpdateByOperat
         protected ObjectChunk<BigDecimal, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigDecimal> objectWindowValues;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
@@ -99,15 +99,27 @@ public final class BigDecimalRollingAvgOperator extends BaseObjectUpdateByOperat
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public BigDecimalRollingAvgOperator(@NotNull final MatchPair pair,
+    public BigDecimalRollingAvgOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
-                forwardWindowScaleUnits, true, BigDecimal.class);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                BigDecimal.class);
         this.mathContext = mathContext;
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                mathContext);
+
     }
 }

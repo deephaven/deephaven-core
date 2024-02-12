@@ -8,11 +8,12 @@ package io.deephaven.engine.table.impl.updateby.emstd;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -37,7 +38,7 @@ import static io.deephaven.util.QueryConstants.*;
  * NOTE: `alpha` as used in the paper has been replaced with `1 - alpha` per the convention adopted by Deephaven.
  */
 public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
-    public final ColumnSource<?> valueSource;
+    public ColumnSource<?> valueSource;
 
     protected class Context extends BasePrimitiveEmStdOperator.Context {
 
@@ -49,10 +50,11 @@ public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
         }
 
         @Override
-        public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+        public void accumulateCumulative(
+                @NotNull RowSequence inputKeys,
+                Chunk<? extends Values>[] valueChunkArr,
+                LongChunk<? extends Values> tsChunk,
+                int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -168,27 +170,29 @@ public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
-     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
      * @param control             defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource         a reference to the input column source for this operation
      */
-    public DoubleEmStdOperator(@NotNull final MatchPair pair,
-                              @NotNull final String[] affectingColumns,
-                              @Nullable final RowRedirection rowRedirection,
-                              @NotNull final OperationControl control,
-                              @Nullable final String timestampColumnName,
-                              final double windowScaleUnits,
-                              final ColumnSource<?> valueSource,
-                              final boolean sourceRefreshing
-                              // region extra-constructor-args
-                              // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, sourceRefreshing);
-        this.valueSource = valueSource;
-        // region constructor
-        // endregion constructor
+    public DoubleEmStdOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits) {
+        super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new DoubleEmStdOperator(pair, affectingColumns, control, timestampColumnName, reverseWindowScaleUnits);
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        valueSource = source.getColumnSource(pair.rightColumn);
     }
 
     @NotNull

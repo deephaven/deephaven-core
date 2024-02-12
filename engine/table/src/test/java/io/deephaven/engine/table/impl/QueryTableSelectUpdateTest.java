@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.TableOperations;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -1236,5 +1237,81 @@ public class QueryTableSelectUpdateTest {
         });
 
         Assert.assertEquals(numCalls.intValue(), 2 * size);
+    }
+
+    @FunctionalInterface
+    private interface TableOpInvoker {
+        Table invoke(Table source, String... args);
+    }
+
+    @Test
+    public void testPropagationOfAttributes() {
+        final TableOpInvoker[] tableOps = new TableOpInvoker[] {
+                TableOperations::select,
+                TableOperations::update,
+                TableOperations::view,
+                TableOperations::updateView,
+                TableOperations::lazyUpdate
+        };
+
+        // Add-only with no shift column; propagate
+        final BaseTable<?> addonly = testRefreshingTable(RowSetFactory.empty().toTracking());
+        addonly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(addonly, "I = ii");
+            Assert.assertTrue(result.isAddOnly());
+        }
+
+        // Add-only with positive shift column; don't propagate (generates modifies if adds between existing rows)
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(addonly, "I = ii", "J = I_[ii + 1]");
+            Assert.assertFalse(result.isAddOnly());
+        }
+
+        // Add-only with negative shift column; don't propagate (generates modifies if adds between existing rows)
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(addonly, "I = ii", "J = I_[ii - 1]");
+            Assert.assertFalse(result.isAddOnly());
+        }
+
+        // Append-only with no shift column; propagate
+        final BaseTable<?> appendOnly = testRefreshingTable(RowSetFactory.empty().toTracking());
+        appendOnly.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(appendOnly, "I = ii");
+            Assert.assertTrue(result.isAppendOnly());
+        }
+
+        // Append-only with positive shift column; don't propagate (shift depends on future rows thus generates mods)
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(appendOnly, "I = ii", "J = I_[ii + 1]");
+            Assert.assertFalse(result.isAppendOnly());
+        }
+
+        // Append-only with negative shift column; propagate (shift depends on rows that will never change)
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(appendOnly, "I = ii", "J = I_[ii - 1]");
+            Assert.assertTrue(result.isAppendOnly());
+        }
+
+        // Blink with no shift column; propagate
+        final BaseTable<?> blink = testRefreshingTable(RowSetFactory.empty().toTracking());
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, Boolean.TRUE);
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(blink, "I = ii");
+            Assert.assertTrue(result.isBlink());
+        }
+
+        // Blink with positive shift column; propagate (no rows are saved across cycles)
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(blink, "I = ii", "J = I_[ii + 1]");
+            Assert.assertTrue(result.isBlink());
+        }
+
+        // Blink with negative shift column; propagate (no rows are saved across cycles)
+        for (TableOpInvoker op : tableOps) {
+            final BaseTable<?> result = (BaseTable<?>) op.invoke(blink, "I = ii", "J = I_[ii - 1]");
+            Assert.assertTrue(result.isBlink());
+        }
     }
 }
