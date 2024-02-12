@@ -8,19 +8,17 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
         protected ObjectChunk<Object, ? extends Values> influencerValuesChunk;
         protected ByteRingBuffer buffer;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
@@ -85,17 +83,17 @@ public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public ObjectRollingCountOperator(@NotNull final MatchPair pair,
-                                      @NotNull final String[] affectingColumns,
-                                      @Nullable final RowRedirection rowRedirection,
-                                      @Nullable final String timestampColumnName,
-                                      final long reverseWindowScaleUnits,
-                                      final long forwardWindowScaleUnits
-                                      // region extra-constructor-args
-                                      // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
-        // region constructor
-        // endregion constructor
+    public ObjectRollingCountOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new ObjectRollingCountOperator(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits);
     }
 }

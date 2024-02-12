@@ -7,17 +7,17 @@ package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.ringbuffer.IntRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
@@ -28,6 +28,7 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
         protected IntChunk<? extends Values> influencerValuesChunk;
         protected IntRingBuffer intWindowValues;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             intWindowValues = new IntRingBuffer(BUFFER_INITIAL_CAPACITY, true);
@@ -108,17 +109,30 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public IntRollingAvgOperator(@NotNull final MatchPair pair,
-                                  @NotNull final String[] affectingColumns,
-                                  @Nullable final RowRedirection rowRedirection,
-                                  @Nullable final String timestampColumnName,
-                                  final long reverseWindowScaleUnits,
-                                  final long forwardWindowScaleUnits
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
+    public IntRollingAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new IntRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 }

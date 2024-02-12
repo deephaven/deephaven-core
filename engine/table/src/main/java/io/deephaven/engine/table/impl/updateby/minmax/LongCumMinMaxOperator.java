@@ -19,9 +19,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -61,19 +59,37 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
         }
     }
 
-    public LongCumMinMaxOperator(@NotNull final MatchPair pair,
-                                  final boolean isMax,
-                                  @Nullable final RowRedirection rowRedirection
-                                // region extra-constructor-args
-                              ,@NotNull final Class<?> type
-                                // endregion extra-constructor-args
+    public LongCumMinMaxOperator(
+            @NotNull final MatchPair pair,
+            final boolean isMax
+            // region extra-constructor-args
+            ,@NotNull final Class<?> type
+            // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] { pair.rightColumn });
         this.isMax = isMax;
         // region constructor
         this.type = type;
         // endregion constructor
     }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new LongCumMinMaxOperator(
+                pair,
+                isMax
+                // region extra-copy-args
+                , type
+                // endregion extra-copy-args
+        );
+    }
+
+    @NotNull
+    @Override
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
+    }
+
     // region extra-methods
     @NotNull
     @Override
@@ -87,10 +103,4 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
         return Collections.singletonMap(pair.leftColumn, actualOutput);
     }
     // endregion extra-methods
-
-    @NotNull
-    @Override
-    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
-        return new Context(affectedChunkSize);
-    }
 }

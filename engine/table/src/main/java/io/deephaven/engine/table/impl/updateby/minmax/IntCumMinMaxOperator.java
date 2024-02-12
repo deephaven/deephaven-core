@@ -12,9 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseIntUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -53,23 +51,34 @@ public class IntCumMinMaxOperator extends BaseIntUpdateByOperator {
         }
     }
 
-    public IntCumMinMaxOperator(@NotNull final MatchPair pair,
-                                  final boolean isMax,
-                                  @Nullable final RowRedirection rowRedirection
-                                // region extra-constructor-args
-                                // endregion extra-constructor-args
+    public IntCumMinMaxOperator(
+            @NotNull final MatchPair pair,
+            final boolean isMax
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] { pair.rightColumn });
         this.isMax = isMax;
         // region constructor
         // endregion constructor
     }
-    // region extra-methods
-    // endregion extra-methods
+
+    @Override
+    public UpdateByOperator copy() {
+        return new IntCumMinMaxOperator(
+                pair,
+                isMax
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
+    }
 
     @NotNull
     @Override
     public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
         return new Context(affectedChunkSize);
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }

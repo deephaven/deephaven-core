@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
@@ -599,7 +600,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
-        return basicTransform(ct -> ct.updateBy(control, operations, byColumns));
+        final UpdateBy.UpdateByOperatorCollection collection = UpdateBy.UpdateByOperatorCollection
+                .from(target.constituentDefinition(), control, operations, byColumns);
+        return basicTransform(ct -> UpdateBy.updateBy((QueryTable) ct, collection.copy(), control));
     }
 
     @Override

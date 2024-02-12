@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -17,7 +16,10 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -64,7 +66,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final QueryTable source,
             @NotNull final String[] preservedColumns,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @NotNull final Collection<? extends ColumnName> byColumns,
+            @NotNull final String[] byColumnNames,
             @Nullable final String timestampColumnName,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -72,8 +74,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
-
-        final String[] byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
 
         final Table transformedTable = LivenessScopeStack.computeEnclosed(() -> {
             final PartitionedTable partitioned = source.partitionedAggBy(List.of(), true, null, byColumnNames);

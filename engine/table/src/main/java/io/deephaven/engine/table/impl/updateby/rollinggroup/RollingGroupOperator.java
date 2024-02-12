@@ -29,15 +29,16 @@ public class RollingGroupOperator extends UpdateByOperator {
     /**
      * Store input/output column information for retrieval.
      */
+    private final MatchPair[] pairs;
     private final String[] inputColumnNames;
     private final String[] outputColumnNames;
-    private final ColumnSource<?>[] outputSources;
-    private final Map<String, ColumnSource<?>> outputSourceMap;
+    private ColumnSource<?>[] outputSources;
+    private Map<String, ColumnSource<?>> outputSourceMap;
 
 
     /** Store a mapping from row keys to bucket RowSets */
-    protected final WritableColumnSource<? extends RowSet> groupRowSetSource;
-    protected final ObjectArraySource<? extends RowSet> innerGroupRowSetSource;
+    protected WritableColumnSource<? extends RowSet> groupRowSetSource;
+    protected ObjectArraySource<? extends RowSet> innerGroupRowSetSource;
 
     /**
      * These sources will retain the position offsets from the current row position for the source and end of this
@@ -50,10 +51,10 @@ public class RollingGroupOperator extends UpdateByOperator {
      * beginning 5 rows earlier than this one and continuing through 3 rows earlier than this (inclusive). A range of
      * [0,0] contains exactly the current row.
      */
-    protected final WritableColumnSource<Long> startSource;
-    protected final LongArraySource innerStartSource;
-    protected final WritableColumnSource<Long> endSource;
-    protected final LongArraySource innerEndSource;
+    protected WritableColumnSource<Long> startSource;
+    protected LongArraySource innerStartSource;
+    protected WritableColumnSource<Long> endSource;
+    protected LongArraySource innerEndSource;
 
     private ModifiedColumnSet.Transformer inputOutputTransformer;
     private ModifiedColumnSet[] outputModifiedColumnSets;
@@ -100,19 +101,23 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys, Chunk<? extends Values>[] valueChunkArr,
-                LongChunk<? extends Values> tsChunk, int len) {
+        public void accumulateCumulative(
+                @NotNull RowSequence inputKeys,
+                final Chunk<? extends Values>[] valueChunkArr,
+                final LongChunk<? extends Values> tsChunk,
+                final int len) {
             throw new IllegalStateException("accumulateCumulative() is invalid for RollingGroupOperator");
         }
 
         @Override
-        public void accumulateRolling(RowSequence inputKeys,
-                Chunk<? extends Values>[] influencerValueChunkArr,
-                LongChunk<OrderedRowKeys> affectedPosChunk,
-                LongChunk<OrderedRowKeys> influencerPosChunk,
-                IntChunk<? extends Values> pushChunk,
-                IntChunk<? extends Values> popChunk,
-                int len) {
+        public void accumulateRolling(
+                @NotNull RowSequence inputKeys,
+                final Chunk<? extends Values>[] influencerValueChunkArr,
+                final LongChunk<OrderedRowKeys> affectedPosChunk,
+                final LongChunk<OrderedRowKeys> influencerPosChunk,
+                final IntChunk<? extends Values> pushChunk,
+                final IntChunk<? extends Values> popChunk,
+                final int len) {
 
             if (timestampColumnName == null) {
                 // The only work for ticks operators is to update the groupRowSetSource
@@ -219,22 +224,59 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
     }
 
-    public RollingGroupOperator(@NotNull final MatchPair[] pairs,
+    @SuppressWarnings("unused")
+    public RollingGroupOperator(
+            @NotNull final MatchPair[] pairs,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            @NotNull final ColumnSource<?>[] valueSources
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pairs[0], affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
-                forwardWindowScaleUnits, true);
+            @NotNull final TableDefinition tableDef) {
+        super(pairs[0], affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+
+        this.pairs = pairs;
 
         inputColumnNames = new String[pairs.length];
         outputColumnNames = new String[pairs.length];
-        outputSources = new ColumnSource[pairs.length];
+
+        for (int ii = 0; ii < pairs.length; ii++) {
+            inputColumnNames[ii] = pairs[ii].rightColumn;
+            outputColumnNames[ii] = pairs[ii].leftColumn;
+        }
+    }
+
+    protected RollingGroupOperator(
+            @NotNull final MatchPair[] pairs,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final String[] inputColumnNames,
+            @NotNull final String[] outputColumnNames) {
+        super(pairs[0], affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+
+        this.pairs = pairs;
+        this.inputColumnNames = inputColumnNames;
+        this.outputColumnNames = outputColumnNames;
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new RollingGroupOperator(
+                pairs,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                inputColumnNames,
+                outputColumnNames);
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        this.rowRedirection = rowRedirection;
+
+        outputSources = new ColumnSource<?>[outputColumnNames.length];
         outputSourceMap = new HashMap<>();
 
         // For the sake of rolling group operators, we need to map from every row to its bucket row set (or the
@@ -270,13 +312,8 @@ public class RollingGroupOperator extends UpdateByOperator {
             }
         }
 
-        for (int ii = 0; ii < pairs.length; ii++) {
-            final MatchPair pair = pairs[ii];
-            final Class<?> csType = valueSources[ii].getType();
-
-            inputColumnNames[ii] = pair.rightColumn;
-            outputColumnNames[ii] = pair.leftColumn;
-
+        for (int ii = 0; ii < inputColumnNames.length; ii++) {
+            final ColumnSource<?> valueSource = source.getColumnSource(inputColumnNames[ii]);
             // When timestampColumnName == null, we have a tick-based rolling window. RollingOpSpec accepts fwd/rev
             // tick parameters and applies the constraint that the current row belongs to the reverse window. This
             // implies that to create a group containing exactly the current row, you must provide a rev/fwd range of
@@ -288,12 +325,13 @@ public class RollingGroupOperator extends UpdateByOperator {
             //
             // The aggregated column source range is half-open, so we add one to the inclusive fwd units to convert.
             outputSources[ii] = timestampColumnName != null
-                    ? AggregateColumnSource.makeSliced((ColumnSource<Character>) valueSources[ii], groupRowSetSource,
+                    ? AggregateColumnSource.makeSliced((ColumnSource<?>) valueSource, groupRowSetSource,
                             startSource, endSource)
-                    : AggregateColumnSource.makeSliced((ColumnSource<Character>) valueSources[ii], groupRowSetSource,
+                    : AggregateColumnSource.makeSliced((ColumnSource<?>) valueSource, groupRowSetSource,
                             -reverseWindowScaleUnits + 1, forwardWindowScaleUnits + 1);
             outputSourceMap.put(outputColumnNames[ii], outputSources[ii]);
         }
+
     }
 
     @NotNull

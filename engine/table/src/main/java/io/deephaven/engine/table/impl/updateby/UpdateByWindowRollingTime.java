@@ -53,10 +53,24 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
         }
     }
 
-    UpdateByWindowRollingTime(UpdateByOperator[] operators, int[][] operatorSourceSlots,
-            @Nullable String timestampColumnName,
-            long prevUnits, long fwdUnits) {
+    UpdateByWindowRollingTime(
+            UpdateByOperator[] operators,
+            int[][] operatorSourceSlots,
+            @NotNull String timestampColumnName,
+            long prevUnits,
+            long fwdUnits) {
         super(operators, operatorSourceSlots, prevUnits, fwdUnits, timestampColumnName);
+    }
+
+    @Override
+    UpdateByWindow copy() {
+        final UpdateByOperator[] copiedOperators = new UpdateByOperator[this.operators.length];
+        for (int ii = 0; ii < copiedOperators.length; ii++) {
+            copiedOperators[ii] = this.operators[ii].copy();
+        }
+
+        return new UpdateByWindowRollingTime(copiedOperators, operatorInputSourceSlots, timestampColumnName, prevUnits,
+                fwdUnits);
     }
 
     @Override

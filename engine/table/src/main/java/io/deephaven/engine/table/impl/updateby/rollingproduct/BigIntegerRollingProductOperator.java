@@ -8,7 +8,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +23,7 @@ public final class BigIntegerRollingProductOperator extends BaseObjectUpdateByOp
 
         private int zeroCount;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             buffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_SIZE,
@@ -109,17 +109,22 @@ public final class BigIntegerRollingProductOperator extends BaseObjectUpdateByOp
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public BigIntegerRollingProductOperator(@NotNull final MatchPair pair,
-                                            @NotNull final String[] affectingColumns,
-                                            @Nullable final RowRedirection rowRedirection,
-                                            @Nullable final String timestampColumnName,
-                                            final long reverseWindowScaleUnits,
-                                            final long forwardWindowScaleUnits
-                                            // region extra-constructor-args
-                                            // endregion extra-constructor-args
-                                        ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigInteger.class);
-        // region constructor
-        // endregion constructor        
+    public BigIntegerRollingProductOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigInteger.class);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigIntegerRollingProductOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits);
     }
 }
