@@ -183,7 +183,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
         final int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
-        final BytesInput decompressedInput = compressorAdapter.decompress(in, compressedPageSize, uncompressedPageSize);
+        final BytesInput decompressedInput =
+                BytesInput.copy(compressorAdapter.decompress(in, compressedPageSize, uncompressedPageSize));
         final DataPageHeader header = pageHeader.getData_page_header();
         return new DataPageV1(
                 decompressedInput,
@@ -216,7 +217,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 BytesInput.copy(BytesInput.from(in, header.getRepetition_levels_byte_length()));
         final BytesInput definitionLevels =
                 BytesInput.copy(BytesInput.from(in, header.getDefinition_levels_byte_length()));
-        final BytesInput data = compressorAdapter.decompress(in, compressedSize, uncompressedSize);
+        final BytesInput data = BytesInput.copy(compressorAdapter.decompress(in, compressedSize, uncompressedSize));
         return new DataPageV2(
                 header.getNum_rows(),
                 header.getNum_nulls(),

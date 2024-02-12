@@ -217,7 +217,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             // Sometimes the size is explicitly empty, just use an empty payload
             payload = BytesInput.empty();
         } else {
-            payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size());
+            payload = BytesInput
+                    .copy(decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size()));
         }
         final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(),
                 Encoding.valueOf(dictHeader.getEncoding().name()));
