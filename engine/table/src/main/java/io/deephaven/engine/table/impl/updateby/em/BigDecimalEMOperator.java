@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -23,10 +24,11 @@ public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
-                Chunk<? extends Values>[] valueChunkArr,
-                LongChunk<? extends Values> tsChunk,
-                int len) {
+        public void accumulateCumulative(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                final LongChunk<? extends Values> tsChunk,
+                final int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -58,22 +60,25 @@ public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
                         handleBadData(this, isNull);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
+                    } else if (curVal == null) {
+                        // If the data looks good, and we have a null computed value, accept the current value
+                        curVal = input;
+                        lastStamp = timestamp;
                     } else {
-                        if (curVal == null) {
-                            curVal = input;
-                            lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
-                            if (dt != 0) {
-                                // alpha is dynamic based on time, but only recalculated when needed
-                                if (dt != lastDt) {
-                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                    oneMinusAlpha = computeOneMinusAlpha(alpha);
-                                    lastDt = dt;
-                                }
-                                curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
-                                lastStamp = timestamp;
+                        final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Time values in exponential operators must be non-descending");
+                        }
+                        if (dt != 0) {
+                            // alpha is dynamic based on time, but only recalculated when needed
+                            if (dt != lastDt) {
+                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                oneMinusAlpha = computeOneMinusAlpha(alpha);
+                                lastDt = dt;
                             }
+                            curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);

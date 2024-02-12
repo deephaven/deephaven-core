@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -87,31 +88,34 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
                         handleBadData(this, isNull);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
+                    } else if (curEma == null) {
+                        // If the data looks good, and we have a null computed value, accept the current value
+                        curEma = input;
+                        lastStamp = timestamp;
                     } else {
-                        if (curEma == null) {
-                            curEma = input;
-                            lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
-                            if (dt != 0) {
-                                // alpha is dynamic based on time, but only recalculated when needed
-                                if (dt != lastDt) {
-                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                    oneMinusAlpha = computeOneMinusAlpha(alpha);
-                                    lastDt = dt;
-                                }
-                                // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
-                                curVariance = alpha.multiply(
-                                        curVariance.add(
-                                                oneMinusAlpha.multiply(input.subtract(curEma).pow(2, mathContext)),
-                                                mathContext),
-                                        mathContext);
-
-                                final BigDecimal decayedEmaVal = curEma.multiply(alpha, mathContext);
-                                curEma = decayedEmaVal.add(oneMinusAlpha.multiply(input, mathContext));
-                                curVal = curVariance.sqrt(mathContext);
-                                lastStamp = timestamp;
+                        final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Time values in exponential operators must be non-descending");
+                        }
+                        if (dt != 0) {
+                            // alpha is dynamic based on time, but only recalculated when needed
+                            if (dt != lastDt) {
+                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                oneMinusAlpha = computeOneMinusAlpha(alpha);
+                                lastDt = dt;
                             }
+                            // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                            curVariance = alpha.multiply(
+                                    curVariance.add(
+                                            oneMinusAlpha.multiply(input.subtract(curEma).pow(2, mathContext)),
+                                            mathContext),
+                                    mathContext);
+
+                            final BigDecimal decayedEmaVal = curEma.multiply(alpha, mathContext);
+                            curEma = decayedEmaVal.add(oneMinusAlpha.multiply(input, mathContext));
+                            curVal = curVariance.sqrt(mathContext);
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);

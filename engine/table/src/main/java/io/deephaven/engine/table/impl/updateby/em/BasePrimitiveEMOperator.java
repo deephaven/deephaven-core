@@ -54,7 +54,8 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
      * @param windowScaleUnits the smoothing window for the EM operator. If no {@code timestampColumnName} is provided,
      *        this is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BasePrimitiveEMOperator(@NotNull final MatchPair pair,
+    public BasePrimitiveEMOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
@@ -72,7 +73,8 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
     }
 
     @Override
-    public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
+    public void initializeCumulative(
+            @NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {
@@ -83,7 +85,8 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
         ctx.lastStamp = firstUnmodifiedTimestamp;
     }
 
-    void handleBadData(@NotNull final Context ctx,
+    void handleBadData(
+            @NotNull final Context ctx,
             final boolean isNull,
             final boolean isNan) {
         boolean doReset = false;

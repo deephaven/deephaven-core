@@ -1,10 +1,5 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEmStdOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatEmStdOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
@@ -19,6 +14,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -29,15 +25,15 @@ import static io.deephaven.util.QueryConstants.*;
 /***
  * Compute an exponential moving standard deviation for a double column source.  The output is expressed as a double
  * value and is computed using the following formula:
- *
+ * <p>
  * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
- *
+ * <p>
  * This function is described in the following document:
- *
+ * <p>
  * "Incremental calculation of weighted mean and variance"
  * Tony Finch, University of Cambridge Computing Service (February 2009)
  * https://web.archive.org/web/20181222175223/http://people.ds.cam.ac.uk/fanf2/hermes/doc/antiforgery/stats.pdf
- *
+ * <p>
  * NOTE: `alpha` as used in the paper has been replaced with `1 - alpha` per the convention adopted by Deephaven.
  */
 public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
@@ -47,6 +43,7 @@ public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
 
         public DoubleChunk<? extends Values> doubleValueChunk;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
         }
@@ -111,6 +108,10 @@ public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Time values in exponential operators must be non-descending");
+                        }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
                             alpha = Math.exp(-dt / reverseWindowScaleUnits);

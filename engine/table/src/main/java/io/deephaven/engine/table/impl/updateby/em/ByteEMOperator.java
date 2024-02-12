@@ -13,6 +13,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +30,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
     protected class Context extends BasePrimitiveEMOperator.Context {
         public ByteChunk<? extends Values> byteValueChunk;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
         }
@@ -77,10 +79,15 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
+                        // If the data looks good, and we have a null computed value, accept the current value
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Time values in exponential operators must be non-descending");
+                        }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
                             alpha = Math.exp(-dt / reverseWindowScaleUnits);

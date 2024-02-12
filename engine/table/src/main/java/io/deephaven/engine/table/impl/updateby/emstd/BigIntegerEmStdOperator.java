@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -21,15 +22,15 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /***
  * Compute an exponential moving standard deviation for a BigInteger column source.  The output is expressed as a
  * BigDecimal value and is computed using the following formula:
- *
+ * <p>
  * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
- *
+ * <p>
  * This function is described in the following document:
- *
+ * <p>
  * "Incremental calculation of weighted mean and variance"
  * Tony Finch, University of Cambridge Computing Service (February 2009)
  * https://web.archive.org/web/20181222175223/http://people.ds.cam.ac.uk/fanf2/hermes/doc/antiforgery/stats.pdf
- *
+ * <p>
  * NOTE: `alpha` as used in the paper has been replaced with `1 - alpha` per the convention adopted by Deephaven.
  */public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteger> {
     public class Context extends BaseBigNumberEmStdOperator<BigInteger>.Context {
@@ -87,31 +88,34 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
                         handleBadData(this, isNull);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
+                    } else if (curEma == null) {
+                        // If the data looks good, and we have a null computed value, accept the current value
+                        curEma = new BigDecimal(input, mathContext);
+                        lastStamp = timestamp;
                     } else {
-                        final BigDecimal decInput = new BigDecimal(input);
-                        if (curEma == null) {
-                            curEma = decInput;
-                            lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
-                            if (dt != 0) {
-                                // alpha is dynamic based on time, but only recalculated when needed
-                                if (dt != lastDt) {
-                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                    oneMinusAlpha = computeOneMinusAlpha(alpha);
-                                    lastDt = dt;
-                                }
-                                //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
-                                curVariance = alpha.multiply(
-                                        curVariance.add(
-                                                oneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)), mathContext),
-                                        mathContext);
-
-                                final BigDecimal decayedEmaVal = curEma.multiply(alpha, mathContext);
-                                curEma = decayedEmaVal.add(oneMinusAlpha.multiply(decInput, mathContext));
-                                curVal = curVariance.sqrt(mathContext);
-                                lastStamp = timestamp;
+                        final BigDecimal decInput = new BigDecimal(input, mathContext);
+                        final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Time values in exponential operators must be non-descending");
+                        }
+                        if (dt != 0) {
+                            // alpha is dynamic based on time, but only recalculated when needed
+                            if (dt != lastDt) {
+                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                oneMinusAlpha = computeOneMinusAlpha(alpha);
+                                lastDt = dt;
                             }
+                            //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                            curVariance = alpha.multiply(
+                                    curVariance.add(
+                                            oneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)), mathContext),
+                                    mathContext);
+
+                            final BigDecimal decayedEmaVal = curEma.multiply(alpha, mathContext);
+                            curEma = decayedEmaVal.add(oneMinusAlpha.multiply(decInput, mathContext));
+                            curVal = curVariance.sqrt(mathContext);
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -138,15 +142,16 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
      *        measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource a reference to the input column source for this operation
      */
-    public BigIntegerEmStdOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @NotNull final OperationControl control,
-                                   @Nullable final String timestampColumnName,
-                                   final double windowScaleUnits,
-                                   final ColumnSource<?> valueSource,
-                                   final boolean sourceRefreshing,
-                                   @NotNull final MathContext mathContext) {
+    public BigIntegerEmStdOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits,
+            final ColumnSource<?> valueSource,
+            final boolean sourceRefreshing,
+            @NotNull final MathContext mathContext) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource,
                 sourceRefreshing, mathContext);
     }
