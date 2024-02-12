@@ -13,9 +13,10 @@ import org.jpy.PyObject;
 public class PythonObjectWrapper {
     private static final PyModule PY_WRAPPER_MODULE = PyModule.importModule("deephaven._wrapper");
 
-    public static void init() {
-        // ensured that the class initializer runs during Jpy initialization
-    }
+    /**
+     * Ensure that the class initializer runs.
+     */
+    public static void init() {}
 
     /**
      * Unwrap a Python object to return the wrapped Java object.

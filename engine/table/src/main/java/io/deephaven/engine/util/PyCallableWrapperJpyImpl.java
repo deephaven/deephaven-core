@@ -42,9 +42,10 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaClass.put('O', Object.class);
     }
 
-    public static void init() {
-        // ensured that the class initializer runs during Jpy initialization
-    }
+    /**
+     * Ensure that the class initializer runs.
+     */
+    public static void init() {}
 
     // TODO: support for vectorizing functions that return arrays
     // https://github.com/deephaven/deephaven-core/issues/4649

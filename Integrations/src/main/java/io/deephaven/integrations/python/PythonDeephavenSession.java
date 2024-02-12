@@ -300,8 +300,11 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-        final HashMap<String, Object> result = PyLib.ensureGil(() -> scope.getEntries()
-                .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll));
+        final HashMap<String, Object> result = PyLib.ensureGil(
+                () -> scope.getEntriesRaw().<Map.Entry<String, PyObject>>map(
+                        e -> new AbstractMap.SimpleImmutableEntry<>(scope.convertStringKey(e.getKey()), e.getValue()))
+                        .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+                                HashMap::putAll));
 
         final Iterator<Map.Entry<String, Object>> iter = result.entrySet().iterator();
         while (iter.hasNext()) {

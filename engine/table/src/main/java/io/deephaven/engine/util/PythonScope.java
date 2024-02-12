@@ -6,10 +6,7 @@ package io.deephaven.engine.util;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyObject;
 
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -134,16 +131,6 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via {@link #convertStringKey(Object)}
-     * but the values still need conversion via {@link #convertValue(Object)}.
-     *
-     * @return the string keys and original values
-     */
-    default Stream<Entry<String, PyObj>> getEntries() {
-        return getEntriesRaw().map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()), e.getValue()));
-    }
-
-    /**
      * Equivalent to {@link #getKeys()}.collect(someCollector)
      *
      * @return the string keys, as a collection
@@ -151,17 +138,6 @@ public interface PythonScope<PyObj> {
     default Collection<String> getKeysCollection() {
         return getKeys()
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Equivalent to {@link #getEntries()}.collect(someMapCollector)
-     *
-     * @return the string keys and converted values, as a map
-     */
-    default Map<String, Object> getEntriesMap() {
-        return getEntries()
-                .map(e -> new SimpleImmutableEntry<>(e.getKey(), convertValue(e.getValue())))
-                .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
     }
 
     /**
