@@ -17,7 +17,7 @@ import java.nio.IntBuffer;
  *
  * @param <BUFFER_TYPE>
  */
-public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
+abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
         implements BulkWriter<BUFFER_TYPE> {
     private static final int RL_FIRST_ELEM = 0;
     private static final int RL_CONSECUTIVE_ELEM = 1;

@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RowGroupReaderImpl implements RowGroupReader {
+final class RowGroupReaderImpl implements RowGroupReader {
 
     private static final int BUFFER_SIZE = 65536;
     private final RowGroup rowGroup;
