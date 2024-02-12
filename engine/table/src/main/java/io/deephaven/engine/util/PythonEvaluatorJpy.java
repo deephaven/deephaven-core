@@ -47,8 +47,6 @@ public class PythonEvaluatorJpy implements PythonEvaluator {
 
     private PythonEvaluatorJpy(PyDictWrapper globals) {
         this.globals = globals;
-        // forcefully load this helper class which imports python modules
-        PyCallableWrapperJpyImpl.init();
     }
 
     public PythonScopeJpyImpl getScope() {

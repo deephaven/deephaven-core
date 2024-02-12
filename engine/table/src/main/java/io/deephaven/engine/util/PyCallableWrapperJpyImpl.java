@@ -43,7 +43,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     }
 
     public static void init() {
-        // this is invoked to force the static initializer to run immediately after Jpy is initialized
+        // ensured that the class initializer runs during Jpy initialization
     }
 
     // TODO: support for vectorizing functions that return arrays
