@@ -39,7 +39,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         this.dict = dict;
     }
 
-    private PyDictWrapper currentScope() {
+    @Override
+    public PyDictWrapper currentScope() {
         Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
         if (scopeStack == null || scopeStack.isEmpty()) {
             return this.dict;

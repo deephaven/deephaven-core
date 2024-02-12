@@ -143,7 +143,12 @@ public interface PythonScope<PyObj> {
     /**
      * @return the Python's __main__ module namespace
      */
-    public PyDictWrapper mainGlobals();
+    PyDictWrapper mainGlobals();
+
+    /**
+     * @return the current scope or the main globals if no scope is set
+     */
+    PyDictWrapper currentScope();
 
     /**
      * Push the provided Python scope into the thread scope stack for subsequent operations on Tables

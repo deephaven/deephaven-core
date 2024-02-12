@@ -8,16 +8,13 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.CacheDir;
-import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.*;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.OperationInitializer;
@@ -31,10 +28,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
@@ -292,13 +287,19 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected abstract Object setVariable(String name, @Nullable Object value);
 
     /**
-     * Returns a mutable map with all known variables and their values. It is owned by the caller.
+     * Returns a mutable map with all known variables and their values.
+     * <p>
+     * Callers may want to pass in a valueMapper of {@link #unwrapObject(Object)} which would unwrap values before
+     * filtering. The returned map is owned by the caller.
      *
-     * @param predicate a predicate to decide if an entry should be included in the returned map
-     * @return a mutable map with all known variables and their values. As with {@link #getVariable(String)}, values may
-     *         need to be unwrapped.
+     * @param valueMapper a function to map the values
+     * @param filter a predicate to filter the map entries
+     * @return a caller-owned mutable map with all known variables and their mapped values. As with
+     *         {@link #getVariable(String)}, values may need to be unwrapped.
+     * @param <T> the type of the mapped values
      */
-    protected abstract Map<String, Object> getAllValues(@NotNull Predicate<Map.Entry<String, Object>> predicate);
+    protected abstract <T> Map<String, T> getAllValues(
+            @Nullable Function<Object, T> valueMapper, @NotNull QueryScope.ParamFilter<T> filter);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
@@ -325,30 +326,18 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         @Override
         public <T> QueryScopeParam<T> createParam(final String name)
                 throws QueryScope.MissingVariableException {
-            if (!NameValidator.isValidQueryParameterName(name)) {
-                throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
-            }
             return new QueryScopeParam<>(name, readParamValue(name));
         }
 
         @Override
         public <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
-            if (!NameValidator.isValidQueryParameterName(name)) {
-                throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
-            }
-            // noinspection unchecked
-            return (T) getVariable(name);
+            return getVariable(name);
         }
 
         @Override
         public <T> T readParamValue(final String name, final T defaultValue) {
-            if (!NameValidator.isValidQueryParameterName(name)) {
-                return defaultValue;
-            }
-
             try {
-                // noinspection unchecked
-                return (T) getVariable(name);
+                return getVariable(name);
             } catch (MissingVariableException e) {
                 return defaultValue;
             }
@@ -356,7 +345,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public <T> void putParam(final String name, final T value) {
-            NameValidator.validateQueryParameterName(name);
             if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
                 manage((LivenessReferent) value);
             }
@@ -372,8 +360,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         @Override
-        public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-            return AbstractScriptSession.this.getAllValues(predicate);
+        public <T> Map<String, T> toMap(
+                @Nullable final Function<Object, T> valueMapper,
+                @NotNull final ParamFilter<T> filter) {
+            return AbstractScriptSession.this.getAllValues(valueMapper, filter);
         }
 
         @Override

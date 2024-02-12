@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.OperationInitializer;
@@ -45,6 +46,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -255,7 +257,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected Set<String> getVariableNames(Predicate<String> allowName) {
-        return PyLib.ensureGil(() -> scope.getKeys().filter(allowName).collect(Collectors.toUnmodifiableSet()));
+        return scope.currentScope().copy().keySet().stream()
+                .map(scope::convertStringKey)
+                .filter(allowName)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -299,19 +304,22 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-        final HashMap<String, Object> result = PyLib.ensureGil(
-                () -> scope.getEntriesRaw().<Map.Entry<String, PyObject>>map(
-                        e -> new AbstractMap.SimpleImmutableEntry<>(scope.convertStringKey(e.getKey()), e.getValue()))
-                        .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
-                                HashMap::putAll));
+    protected <T> Map<String, T> getAllValues(
+            @Nullable final Function<Object, T> valueMapper,
+            @NotNull final QueryScope.ParamFilter<T> filter) {
+        final Map<String, T> result = new HashMap<>();
 
-        final Iterator<Map.Entry<String, Object>> iter = result.entrySet().iterator();
-        while (iter.hasNext()) {
-            final Map.Entry<String, Object> entry = iter.next();
-            entry.setValue(scope.convertValue((PyObject) entry.getValue()));
-            if (!predicate.test(entry)) {
-                iter.remove();
+        for (final Map.Entry<PyObject, PyObject> entry : scope.currentScope().copy().entrySet()) {
+            final String name = scope.convertStringKey(entry.getKey());
+            Object value = scope.convertValue(entry.getValue());
+            if (valueMapper != null) {
+                value = valueMapper.apply(value);
+            }
+
+            // noinspection unchecked
+            if (filter.accept(name, (T) value)) {
+                // noinspection unchecked
+                result.put(name, (T) value);
             }
         }
 

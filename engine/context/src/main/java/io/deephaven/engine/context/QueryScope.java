@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 /**
  * Variable scope used to resolve parameter values during query execution and to expose named objects to users. Objects
@@ -133,25 +133,35 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      */
     <T> void putParam(final String name, final T value);
 
-    /**
-     * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
-     * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
-     *
-     * @param predicate a predicate to filter the map entries
-     * @return a caller-owned mutable map with all known variables and their values.
-     */
-    Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate);
+    interface ParamFilter<T> {
+        boolean accept(String name, T value);
+    }
 
     /**
      * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
-     * {@link #unwrapObject(Object)} before using them. This map is owned by the caller and may be mutated.
+     * {@link #unwrapObject(Object)} before using them. This returned map is owned by the caller.
      *
+     * @param filter a predicate to filter the map entries
      * @return a caller-owned mutable map with all known variables and their values.
      */
     @FinalDefault
-    default Map<String, Object> toMap() {
-        return toMap(entry -> true);
+    default Map<String, Object> toMap(@NotNull ParamFilter<Object> filter) {
+        return toMap(null, filter);
     }
+
+    /**
+     * Returns a mutable map with all objects in the scope.
+     * <p>
+     * Callers may want to pass in a valueMapper of {@link #unwrapObject(Object)} which would unwrap values before
+     * filtering. The returned map is owned by the caller.
+     *
+     * @param valueMapper a function to map the values
+     * @param filter a predicate to filter the map entries
+     * @return a caller-owned mutable map with all known variables and their values.
+     * @param <T> the type of the mapped values
+     */
+    <T> Map<String, T> toMap(
+            @Nullable Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter);
 
     /**
      * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning
@@ -167,7 +177,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {
         logOutput.append('{');
-        for (final Map.Entry<String, Object> param : toMap().entrySet()) {
+        for (final Map.Entry<String, Object> param : toMap((name, value) -> true).entrySet()) {
             logOutput.nl().append(param.getKey()).append("=");
             Object paramValue = param.getValue();
             if (paramValue == this) {

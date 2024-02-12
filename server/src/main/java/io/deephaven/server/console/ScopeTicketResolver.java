@@ -71,14 +71,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        queryScope.toMap().forEach((varName, varObj) -> {
-            varObj = queryScope.unwrapObject(varObj);
-            if (varObj instanceof Table) {
-                visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName),
-                        flightTicketForName(varName)));
-            }
-        });
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        queryScope.toMap(wrapped -> {
+            final Object value = queryScope.unwrapObject(wrapped);
+            return value instanceof Table ? (Table) value : null;
+        }, (n, t) -> t != null).forEach((name, table) -> visitor
+                .accept(TicketRouter.getFlightInfo(table, descriptorForName(name), flightTicketForName(name))));
     }
 
     @Override

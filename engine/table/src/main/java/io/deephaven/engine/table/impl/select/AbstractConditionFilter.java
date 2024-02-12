@@ -95,7 +95,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         try {
             final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
             final Map<String, Object> queryScopeVariables = queryScope.toMap(
-                    NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+                    (name, value) -> NameValidator.isValidQueryParameterName(name));
             for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
                 possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
                 Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
