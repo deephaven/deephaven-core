@@ -613,7 +613,7 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -659,7 +659,7 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -711,7 +711,7 @@ def rolling_group_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
 
         Args:
             cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-                i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+                i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
             rev_ticks (int): the look-behind window size (in rows/ticks)
             fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -757,7 +757,7 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -809,7 +809,7 @@ def rolling_avg_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling average operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -855,7 +855,7 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -907,7 +907,7 @@ def rolling_min_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling minimum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -953,7 +953,7 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1005,7 +1005,7 @@ def rolling_max_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling maximum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1051,7 +1051,7 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1103,7 +1103,7 @@ def rolling_prod_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: in
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling product operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1149,7 +1149,7 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1201,7 +1201,7 @@ def rolling_count_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling count operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling count operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1247,7 +1247,7 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1302,7 +1302,7 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sample standard deviation operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sample standard deviation operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -1351,7 +1351,7 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
         fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
@@ -1403,7 +1403,7 @@ def rolling_wavg_tick(wcol: str, cols: Union[str, List[str]], rev_ticks: int, fw
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
         wcol (str):  the column containing the weight values
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1451,7 +1451,7 @@ def rolling_wavg_time(ts_col: str, wcol: str, cols: Union[str, List[str]], rev_t
     Args:
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
+            i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
         wcol (str):  the column containing the weight values
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
