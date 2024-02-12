@@ -109,7 +109,7 @@ class S3Instructions(JObjectWrapper):
                 raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
 
             if access_key_id is not None:
-                builder.credentials(_JCredentials.basicCredentials(access_key_id, secret_access_key))
+                builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)
