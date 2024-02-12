@@ -24,7 +24,7 @@ public abstract class TrustStore extends TrustBase {
     public abstract String path();
 
     /**
-     * The trust storce password.
+     * The trust store password.
      */
     public abstract String password();
 
