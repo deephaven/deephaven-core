@@ -41,10 +41,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -303,14 +300,19 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-        final HashMap<String, Object> result = new HashMap<>();
-        // note: we can't use collect(Collectors.toMap()) because we allow null values
-        return PyLib.ensureGil(() -> {
-            scope.getEntries()
-                    .filter(predicate)
-                    .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
-            return result;
-        });
+        final HashMap<String, Object> result = PyLib.ensureGil(() -> scope.getEntries()
+                .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll));
+
+        final Iterator<Map.Entry<String, Object>> iter = result.entrySet().iterator();
+        while (iter.hasNext()) {
+            final Map.Entry<String, Object> entry = iter.next();
+            entry.setValue(scope.convertValue((PyObject) entry.getValue()));
+            if (!predicate.test(entry)) {
+                iter.remove();
+            }
+        }
+
+        return result;
     }
 
     @Override

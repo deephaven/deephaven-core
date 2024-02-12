@@ -771,14 +771,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-        // note: we can't use collect(Collectors.toMap()) because we allow null values
-        final HashMap<String, Object> result = new HashMap<>();
         synchronized (bindingBackingMap) {
-            bindingBackingMap.entrySet().stream()
+            return bindingBackingMap.entrySet().stream()
                     .filter(predicate)
-                    .forEach(e -> result.put(e.getKey(), e.getValue()));
+                    .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
         }
-        return result;
     }
 
     public Binding getBinding() {

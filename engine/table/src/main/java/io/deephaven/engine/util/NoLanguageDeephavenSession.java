@@ -7,6 +7,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -93,15 +94,12 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected Map<String, Object> getAllValues(Predicate<Map.Entry<String, Object>> predicate) {
-        // note: we can't use collect(Collectors.toMap()) because we allow null values
-        final HashMap<String, Object> result = new HashMap<>();
+    protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
         synchronized (variables) {
-            variables.entrySet().stream()
+            return variables.entrySet().stream()
                     .filter(predicate)
-                    .forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+                    .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
         }
-        return result;
     }
 
     @Override

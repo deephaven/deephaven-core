@@ -8,6 +8,7 @@ import org.jpy.PyObject;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -134,13 +135,12 @@ public interface PythonScope<PyObj> {
 
     /**
      * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via {@link #convertStringKey(Object)}
-     * and the values via {@link #convertValue(Object)}.
+     * but the values still need conversion via {@link #convertValue(Object)}.
      *
-     * @return the string keys and converted values
+     * @return the string keys and original values
      */
-    default Stream<Entry<String, Object>> getEntries() {
-        return getEntriesRaw()
-                .map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()), convertValue(e.getValue())));
+    default Stream<Entry<String, PyObj>> getEntries() {
+        return getEntriesRaw().map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()), e.getValue()));
     }
 
     /**
@@ -160,14 +160,8 @@ public interface PythonScope<PyObj> {
      */
     default Map<String, Object> getEntriesMap() {
         return getEntries()
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
-        // we're currently making sure that we don't convert None to null...
-        /*
-         * // workaround since the collector doesn't work w/ null values //
-         * https://bugs.openjdk.java.net/browse/JDK-8148463 return getEntries() .collect( HashMap::new, (map, entry) ->
-         * map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
-         */
+                .map(e -> new SimpleImmutableEntry<>(e.getKey(), convertValue(e.getValue())))
+                .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
     }
 
     /**
