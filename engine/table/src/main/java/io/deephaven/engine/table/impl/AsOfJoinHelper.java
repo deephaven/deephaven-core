@@ -185,7 +185,7 @@ public class AsOfJoinHelper {
                 asOfJoinStateManager.probeLeft(leftRowSetToUse, leftSourcesToUse);
                 break;
             default:
-                //noinspection DataFlowIssue
+                // noinspection DataFlowIssue
                 throw Assert.statementNeverExecuted("Unknown build from " + buildParameters.firstBuildFrom());
         }
 

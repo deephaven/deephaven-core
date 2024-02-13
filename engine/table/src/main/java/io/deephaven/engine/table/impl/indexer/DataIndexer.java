@@ -181,9 +181,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Return a valid, live {@link DataIndex} for a strict subset of the given key columns, or {@code null} if no such index exists. Will
-     * choose the DataIndex that results in the largest index table, following the assumption that the largest index
-     * table will divide the source table into the most specific partitions.
+     * Return a valid, live {@link DataIndex} for a strict subset of the given key columns, or {@code null} if no such
+     * index exists. Will choose the DataIndex that results in the largest index table, following the assumption that
+     * the largest index table will divide the source table into the most specific partitions.
      *
      * @param table The indexed {@link Table}
      * @param keyColumnNames The key column names to include
@@ -204,13 +204,12 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         final Set<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
                 .map(table::getColumnSource)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return LivenessScopeStack.computeEnclosed(() ->
-                        Sets.powerSet(keyColumns).stream()
-                                .filter(subset -> !subset.isEmpty() && subset.size() < keyColumns.size())
-                                .map(indexer::getDataIndex)
-                                .filter(Objects::nonNull)
-                                .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
-                                .orElse(null),
+        return LivenessScopeStack.computeEnclosed(() -> Sets.powerSet(keyColumns).stream()
+                .filter(subset -> !subset.isEmpty() && subset.size() < keyColumns.size())
+                .map(indexer::getDataIndex)
+                .filter(Objects::nonNull)
+                .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
+                .orElse(null),
                 table::isRefreshing, DataIndex::isRefreshing);
     }
 
