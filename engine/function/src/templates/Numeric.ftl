@@ -1589,6 +1589,76 @@ public class Numeric {
     }
 
     /**
+     * Returns the difference between elements in the input vector.
+     * A stride of 2 returns v(i)=e(i+2)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -2 returns v(i)=e(i-2)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result is the same length as the input vector.
+     * Differences off the end of the input vector are null.
+     *
+     * @param stride number of elements to skip between consecutive elements.
+     *     Positive strides are forward differences, negative strides are backward differences.
+     * @param values input vector.
+     * @return difference between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.boxed}[] values) {
+        return diff(stride, unbox(values));
+    }
+
+    /**
+     * Returns the difference between elements in the input vector.
+     * A stride of 2 returns v(i)=e(i+2)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -2 returns v(i)=e(i-2)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result is the same length as the input vector.
+     * Differences off the end of the input vector are null.
+     *
+     * @param stride number of elements to skip between consecutive elements.
+     *     Positive strides are forward differences, negative strides are backward differences.
+     * @param values input vector.
+     * @return difference between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.primitive}... values) {
+        return diff(stride, new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the difference between elements in the input vector.
+     * A stride of 2 returns v(i)=e(i+2)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -2 returns v(i)=e(i-2)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result is the same length as the input vector.
+     * Differences off the end of the input vector are null.
+     *
+     * @param stride number of elements to skip between consecutive elements.
+     *     Positive strides are forward differences, negative strides are backward differences.
+     * @param values input vector.
+     * @return difference between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("diff");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        for(int i = 0; i < n; i++) {
+            ${pt.primitive} v1 = values.get(i);
+            ${pt.primitive} v2 = values.get(i+stride);
+
+            if (isNull(v1) || isNull(v2)) {
+                result[i] = ${pt.null};
+            } else {
+                result[i] = (${pt.primitive})(v2 - v1);
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the cumulative minimum.  Null values are excluded.
      *
      * @param values values.

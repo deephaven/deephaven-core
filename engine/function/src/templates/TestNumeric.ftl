@@ -680,6 +680,23 @@ public class TestNumeric extends BaseArrayTestCase {
 //        }
 //    }
 
+    public void test${pt.boxed}Diff() {
+        assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+        assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+
+        assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+        assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+
+        assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+        assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+    }
+
     public void test${pt.boxed}CumMinArray() {
         assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new ${pt.primitive}[]{5, 4, 3, 2, 1}, cummin(new ${pt.primitive}[]{5, 4, 3, 2, 1}));

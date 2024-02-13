@@ -2086,6 +2086,60 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumsum(io.deephaven.vector.ShortVector) */
     public static  short[] cumsum( io.deephaven.vector.ShortVector values ) {return Numeric.cumsum( values );}
 
+    /** @see io.deephaven.function.Numeric#diff(int,byte[]) */
+    public static  byte[] diff( int stride, byte... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,double[]) */
+    public static  double[] diff( int stride, double... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,float[]) */
+    public static  float[] diff( int stride, float... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,int[]) */
+    public static  int[] diff( int stride, int... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,long[]) */
+    public static  long[] diff( int stride, long... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Byte[]) */
+    public static  byte[] diff( int stride, java.lang.Byte[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Double[]) */
+    public static  double[] diff( int stride, java.lang.Double[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Float[]) */
+    public static  float[] diff( int stride, java.lang.Float[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Integer[]) */
+    public static  int[] diff( int stride, java.lang.Integer[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Long[]) */
+    public static  long[] diff( int stride, java.lang.Long[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Short[]) */
+    public static  short[] diff( int stride, java.lang.Short[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,short[]) */
+    public static  short[] diff( int stride, short... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.ByteVector) */
+    public static  byte[] diff( int stride, io.deephaven.vector.ByteVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.DoubleVector) */
+    public static  double[] diff( int stride, io.deephaven.vector.DoubleVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.FloatVector) */
+    public static  float[] diff( int stride, io.deephaven.vector.FloatVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.IntVector) */
+    public static  int[] diff( int stride, io.deephaven.vector.IntVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.LongVector) */
+    public static  long[] diff( int stride, io.deephaven.vector.LongVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.ShortVector) */
+    public static  short[] diff( int stride, io.deephaven.vector.ShortVector values ) {return Numeric.diff( stride, values );}
+
     /** @see io.deephaven.function.Basic#distinct(byte[]) */
     public static  byte[] distinct( byte... values ) {return Basic.distinct( values );}
 
