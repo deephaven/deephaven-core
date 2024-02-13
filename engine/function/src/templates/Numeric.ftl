@@ -1596,7 +1596,6 @@ public class Numeric {
      * Differences off the end of the input vector are null.
      *
      * @param stride number of elements to skip between consecutive elements.
-     *     Positive strides are forward differences, negative strides are backward differences.
      * @param values input vector.
      * @return difference between elements.
      */
@@ -1612,7 +1611,6 @@ public class Numeric {
      * Differences off the end of the input vector are null.
      *
      * @param stride number of elements to skip between consecutive elements.
-     *     Positive strides are forward differences, negative strides are backward differences.
      * @param values input vector.
      * @return difference between elements.
      */
@@ -1628,7 +1626,6 @@ public class Numeric {
      * Differences off the end of the input vector are null.
      *
      * @param stride number of elements to skip between consecutive elements.
-     *     Positive strides are forward differences, negative strides are backward differences.
      * @param values input vector.
      * @return difference between elements.
      */
