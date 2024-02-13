@@ -12,24 +12,29 @@ from deephaven import time, DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.dtypes import Duration
 
-_JAwsCredentials = jpy.get_type("io.deephaven.extensions.s3.AwsCredentials")
-_JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
+# If we move S3 to a permanent module, we should remove this try/except block and just import the types directly.
+try:
+    _JCredentials = jpy.get_type("io.deephaven.extensions.s3.Credentials")
+    _JS3Instructions = jpy.get_type("io.deephaven.extensions.s3.S3Instructions")
+except Exception:
+    _JCredentials = None
+    _JS3Instructions = None
 
 """
-    This module is useful for reading files stored in S3.
+    This module is useful for reading files stored in S3-compatible APIs.
     Importing this module requires the S3 specific deephaven extensions (artifact name deephaven-extensions-s3) to be
     included in the package. This is an opt-out functionality included by default. If not included, importing this
     module will fail to find the java types.
 """
 class S3Instructions(JObjectWrapper):
     """
-    S3Instructions provides specialized instructions for reading from AWS S3.
+    S3Instructions provides specialized instructions for reading from S3-compatible APIs.
     """
 
-    j_object_type = _JS3Instructions
+    j_object_type = _JS3Instructions or type(None)
 
     def __init__(self,
-                 aws_region_name: str,
+                 region_name: str,
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
@@ -38,22 +43,22 @@ class S3Instructions(JObjectWrapper):
                      Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
                  read_timeout: Union[
                      Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
-                 aws_access_key_id: Optional[str] = None,
-                 aws_secret_access_key: Optional[str] = None):
+                 access_key_id: Optional[str] = None,
+                 secret_access_key: Optional[str] = None,
+                 endpoint_override: Optional[str] = None):
 
         """
         Initializes the instructions.
 
         Args:
-            aws_region_name (str): the AWS region name for reading parquet files stored in AWS S3, mandatory parameter.
-            max_concurrent_requests (int): the maximum number of concurrent requests for reading parquet files stored in S3.
-                default is 50.
+            region_name (str): the region name for reading parquet files, mandatory parameter.
+            max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 50.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
                 fragment. Default to 1, which means fetch the next fragment in advance when reading the current fragment.
-            fragment_size (int): the maximum size of each fragment to read from S3, defaults to 5 MB. If there are fewer
-                bytes remaining in the file, the fetched fragment can be smaller.
+            fragment_size (int): the maximum size of each fragment to read, defaults to 5 MB. If there are fewer bytes
+                remaining in the file, the fetched fragment can be smaller.
             max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 32. This
-                caching is done at the deephaven layer for faster access to recently read fragments.
+                caching is done at the Deephaven layer for faster access to recently read fragments.
             connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
                 the amount of time to wait when initially establishing a connection before giving up and timing out, can
                 be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
@@ -62,20 +67,24 @@ class S3Instructions(JObjectWrapper):
                 the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
                 an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
                 duration types. Default to 2 seconds.
-            aws_access_key_id (str): the AWS access key for reading parquet files stored in AWS S3. Both access key and
-                secret key must be provided to use static credentials, else default credentials will be used from
-                software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
-            aws_secret_access_key (str): the AWS secret access key for reading parquet files stored in AWS S3. Both
-                access key and secret key must be provided to use static credentials, else default credentials will be
-                used from software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.
+            access_key_id (str): the access key for reading files. Both access key and secret access key must be provided
+                to use static credentials, else default credentials will be used.
+            secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
+                provided to use static credentials, else default credentials will be used.
+            endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
+                this; it is most useful when connecting to non-AWS, S3-compatible APIs.
 
         Raises:
             DHError: If unable to build the instructions object.
         """
 
+        if not _JS3Instructions or not _JCredentials:
+            raise DHError(message="S3Instructions requires the S3 specific deephaven extensions to be included in "
+                                  "the package")
+
         try:
             builder = self.j_object_type.builder()
-            builder.awsRegionName(aws_region_name)
+            builder.regionName(region_name)
 
             if max_concurrent_requests is not None:
                 builder.maxConcurrentRequests(max_concurrent_requests)
@@ -95,12 +104,15 @@ class S3Instructions(JObjectWrapper):
             if read_timeout is not None:
                 builder.readTimeout(time.to_j_duration(read_timeout))
 
-            if ((aws_access_key_id is not None and aws_secret_access_key is None) or
-                    (aws_access_key_id is None and aws_secret_access_key is not None)):
-                raise DHError("Either both aws_access_key_id and aws_secret_access_key must be provided or neither")
+            if ((access_key_id is not None and secret_access_key is None) or
+                    (access_key_id is None and secret_access_key is not None)):
+                raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
 
-            if aws_access_key_id is not None:
-                builder.credentials(_JAwsCredentials.basicCredentials(aws_access_key_id, aws_secret_access_key))
+            if access_key_id is not None:
+                builder.credentials(_JCredentials.basicCredentials(access_key_id, secret_access_key))
+
+            if endpoint_override is not None:
+                builder.endpointOverride(endpoint_override)
 
             self._j_object = builder.build()
         except Exception as e:

@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 
 
 /**
- * {@link SeekableByteChannel} class used to fetch objects from AWS S3 buckets using an async client with the ability to
+ * {@link SeekableByteChannel} class used to fetch objects from S3 buckets using an async client with the ability to
  * read ahead and cache fragments of the object.
  */
 final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelProvider.ContextHolder {
@@ -75,12 +75,18 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
             }
 
             private void cancelAndRelease() {
-                try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(
-                        future == null ? null : () -> future.cancel(true), bufferRelease)) {
+                try (
+                        final SafeCloseable ignored1 = cancelOnClose(future, true);
+                        final SafeCloseable ignored2 = bufferRelease) {
                     fragmentIndex = UNINITIALIZED_FRAGMENT_INDEX;
                     future = null;
                     bufferRelease = null;
                 }
+            }
+
+            // do not inline, needs to capture future at time of method call
+            private static SafeCloseable cancelOnClose(Future<?> future, boolean mayInterruptIfRunning) {
+                return future == null ? null : () -> future.cancel(mayInterruptIfRunning);
             }
 
             private void set(

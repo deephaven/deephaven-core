@@ -3,14 +3,14 @@
  */
 package io.deephaven.extensions.s3;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
+import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import static io.deephaven.extensions.s3.S3Instructions.MAX_FRAGMENT_SIZE;
 
 /**
- * {@link SeekableChannelsProvider} implementation that is used to fetch objects from AWS S3 instances.
+ * {@link SeekableChannelsProvider} implementation that is used to fetch objects from S3 instances.
  */
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
@@ -40,12 +40,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .build();
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
-        Assert.instanceOf(s3Instructions.credentials(), "credentials", AwsSdkV2Credentials.class);
-        this.s3AsyncClient = S3AsyncClient.builder()
-                .region(Region.of(s3Instructions.awsRegionName()))
+        final S3AsyncClientBuilder builder = S3AsyncClient.builder()
+                .region(Region.of(s3Instructions.regionName()))
                 .httpClient(asyncHttpClient)
-                .credentialsProvider(((AwsSdkV2Credentials) s3Instructions.credentials()).awsCredentialsProvider())
-                .build();
+                .credentialsProvider(s3Instructions.awsV2CredentialsProvider());
+        s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);
+        this.s3AsyncClient = builder.build();
         this.s3Instructions = s3Instructions;
     }
 

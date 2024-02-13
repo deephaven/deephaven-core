@@ -10,7 +10,7 @@ dependencies {
 
     api project(':engine-processor')
 
-    api 'org.apache.avro:avro:1.11.2'
+    api 'org.apache.avro:avro:1.11.3'
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central

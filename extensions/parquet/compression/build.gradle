@@ -24,7 +24,7 @@ dependencies {
         because 'Provides Lz4, LZO, Zstd compression support for parquet'
     }
 
-    implementation('org.xerial.snappy:snappy-java:1.1.8.4') {
+    implementation('org.xerial.snappy:snappy-java:1.1.10.5') {
         because 'Provides snappy compression for parquet, with native support for all platforms deephaven works on'
     }
 }
