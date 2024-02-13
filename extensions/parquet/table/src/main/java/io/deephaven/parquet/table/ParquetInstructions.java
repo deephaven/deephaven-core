@@ -115,6 +115,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultTargetPageSize;
     }
 
+    static final String DEFAULT_METADATA_ROOT_DIR = ""; // Empty = No metadata files written
+
     public ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
@@ -163,6 +165,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @return if the data source is refreshing
      */
     public abstract boolean isRefreshing();
+
+    /**
+     * @return the directory in which metadata files should be stored.
+     */
+    public abstract String getMetadataRootDir();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -238,6 +245,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public boolean isRefreshing() {
             return DEFAULT_IS_REFRESHING;
         }
+
+        @Override
+        public String getMetadataRootDir() {
+            return DEFAULT_METADATA_ROOT_DIR;
+        }
     };
 
     private static class ColumnInstructions {
@@ -306,6 +318,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final int targetPageSize;
         private final boolean isRefreshing;
         private final Object specialInstructions;
+        private final String metadataRootDir;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -316,7 +329,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final boolean isLegacyParquet,
                 final int targetPageSize,
                 final boolean isRefreshing,
-                final Object specialInstructions) {
+                final Object specialInstructions,
+                final String metadataRootDir) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -326,6 +340,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.targetPageSize = targetPageSize;
             this.isRefreshing = isRefreshing;
             this.specialInstructions = specialInstructions;
+            this.metadataRootDir = metadataRootDir;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -419,6 +434,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return specialInstructions;
         }
 
+        @Override
+        public String getMetadataRootDir() {
+            return metadataRootDir;
+        }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
             // noinspection unchecked
@@ -471,6 +490,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
         private Object specialInstructions;
+        private String metadataRootDir = DEFAULT_METADATA_ROOT_DIR;
 
         public Builder() {}
 
@@ -647,6 +667,17 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * Set the default metadata root directory.
+         *
+         * @param metadataRootDir the root directory to store metadata files in. All the parquet destinations should be
+         *        inside this directory.
+         */
+        public Builder setMetadataRootDir(final String metadataRootDir) {
+            this.metadataRootDir = metadataRootDir;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -655,7 +686,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
-                    specialInstructions);
+                    specialInstructions, metadataRootDir);
         }
     }
 

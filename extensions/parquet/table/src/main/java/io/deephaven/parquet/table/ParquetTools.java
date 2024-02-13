@@ -14,6 +14,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.parquet.base.MetadataFileWriter;
+import io.deephaven.parquet.base.MetadataFileWriterBase;
+import io.deephaven.parquet.base.NullMetadataFileWriter;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
@@ -44,6 +47,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +55,7 @@ import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
@@ -474,7 +479,7 @@ public class ParquetTools {
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
-            @NotNull final String[] groupingColumns) {
+            @Nullable final String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
@@ -488,20 +493,29 @@ public class ParquetTools {
         final File[] firstCreatedDirs =
                 Arrays.stream(shadowDestFiles).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
 
+        final MetadataFileWriterBase metadataFileWriter;
+        final String metadataRootDir = writeInstructions.getMetadataRootDir();
+        if (metadataRootDir != null && !metadataRootDir.equals(ParquetInstructions.DEFAULT_METADATA_ROOT_DIR)) {
+            metadataFileWriter = new MetadataFileWriter(metadataRootDir, destinations);
+        } else {
+            metadataFileWriter = NullMetadataFileWriter.INSTANCE;
+        }
+
         // List of shadow files, to clean up in case of exceptions
         final List<File> shadowFiles = new ArrayList<>();
         // List of all destination files (including grouping files), to roll back in case of exceptions
         final List<File> destFiles = new ArrayList<>();
         try {
             final List<Map<String, ParquetTableWriter.GroupingColumnWritingInfo>> groupingColumnWritingInfoMaps;
-            if (groupingColumns.length == 0) {
+            if (groupingColumns == null || groupingColumns.length == 0) {
                 // Write the tables without any grouping info
                 groupingColumnWritingInfoMaps = null;
                 for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                     shadowFiles.add(shadowDestFiles[tableIdx]);
                     final Table source = sources[tableIdx];
-                    ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
-                            Collections.emptyMap(), (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null);
+                    ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx],
+                            destinations[tableIdx], Collections.emptyMap(),
+                            (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null, metadataFileWriter);
                 }
             } else {
                 // Create grouping info for each table and write the table and grouping files to shadow path
@@ -522,11 +536,26 @@ public class ParquetTools {
                     groupingColumnWritingInfoMap.values().forEach(gcwi -> shadowFiles.add(gcwi.destFile));
 
                     final Table sourceTable = sources[tableIdx];
-                    ParquetTableWriter.write(sourceTable, definition, writeInstructions,
-                            shadowDestFiles[tableIdx].getPath(),
-                            Collections.emptyMap(), groupingColumnWritingInfoMap);
+                    ParquetTableWriter.write(sourceTable, definition, writeInstructions, shadowDestFiles[tableIdx],
+                            tableDestination, Collections.emptyMap(), groupingColumnWritingInfoMap, metadataFileWriter);
                 }
             }
+
+            // TODO (Discuss with Ryan) Note that we are directly combining the schema information from all the tables
+            // into a single metadata file. So say if we are writing a partitioned table data using this method, like
+            // writing "Date=1-1-2024/data.parquet" and "Date=1-2-2024/data.parquet" in the same call, then the metadata
+            // file with contain schema information from the tables and not the "Date" column.
+            //
+            // Another challenge is that based on the checks by the hadoop code, all the metadata files have to be
+            // written in the provided metadataRootDir path and the metadata file names are also fixed. Therefore, I
+            // cannot write these files to shadow paths. I will have to write them directly to the destination path
+            // which can lead to overwriting exiting files and deleting existing data in case of failure.
+            // One way I can think of is to make a copy of existing metadata files and then write the new metadata files
+            // and then delete the copies at the time of success.
+            // Other way is to copy the metadata file logic outside of hadoop code and then tweak it to use our shadow
+            // file writing logic. Note that the parquet-hadoop method is deprecated, so we don't expect the code to
+            // change in the future.
+            metadataFileWriter.writeMetadataFiles();
 
             // Write to shadow files was successful
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {

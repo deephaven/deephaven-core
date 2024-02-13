@@ -105,6 +105,7 @@ import static io.deephaven.parquet.table.ParquetTools.readFlatPartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.readKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
+import static io.deephaven.parquet.table.ParquetTools.writeParquetTables;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.*;
@@ -468,11 +469,43 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void basicWriteReadTest() {
+    public void basicParquetWithMetadataTest() {
         final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
-        final String filename = "basicWriteReadTest.parquet";
+        final String filename = "basicParquetWithMetadataTest.parquet";
         final File destFile = new File(rootFile, filename);
-        writeTable(table, destFile, EMPTY);
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(rootFile.getAbsolutePath())
+                .build();
+        writeTable(table, destFile, writeInstructions);
+
+        final File metadataFile = new File(rootFile, "_metadata");
+        assertTrue(metadataFile.exists());
+        assertTrue(new File(rootFile, "._metadata.crc").exists());
+        assertTrue(new File(rootFile, "_common_metadata").exists());
+        assertTrue(new File(rootFile, "._common_metadata.crc").exists());
+
+        final Table fromDisk = readTable(destFile);
+        assertTableEquals(table, fromDisk);
+
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(table, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void parquetWithGroupingDataAndMetadataTest() {
+        final Integer data[] = new Integer[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
+        final Table table = newTable(tableDefinition, TableTools.col("vvv", data));
+
+        final File destFile = new File(rootFile, "parquetWithGroupingDataAndMetadataTest.parquet");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(rootFile.getAbsolutePath())
+                .build();
+        writeTable(table, destFile, writeInstructions);
+
 
         final Table fromDisk = readTable(destFile);
         assertTableEquals(table, fromDisk);
@@ -480,6 +513,39 @@ public final class ParquetTableReadWriteTest {
         final File metadataFile = new File(rootFile, "_metadata");
         final Table fromDiskWithMetadata = readTable(metadataFile);
         assertTableEquals(table, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void flatPartitionedParquetWithMetadataTest() {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
+        final File firstDataFile = new File(parentDir, "data1.parquet");
+        final File secondDataFile = new File(parentDir, "data2.parquet");
+
+        // Write without any metadata files
+        writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), ParquetInstructions.EMPTY,
+                new File[] {firstDataFile, secondDataFile}, null);
+        final Table source = readTable(parentDir);
+
+        // Now write with metadata files
+        parentDir.delete();
+        parentDir.mkdir();
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(rootFile.getAbsolutePath())
+                .build();
+        writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), writeInstructions,
+                new File[] {firstDataFile, secondDataFile}, null);
+
+        final Table fromDisk = readTable(parentDir);
+        assertTableEquals(source, fromDisk);
+
+        final File metadataFile = new File(rootFile, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(source, fromDiskWithMetadata);
     }
 
     @Test
