@@ -69,7 +69,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                         final long dt = timestamp - lastStamp;
                         if (dt < 0) {
                             // negative time deltas are not allowed, throw an exception
-                            throw new TableDataException("Time values in exponential operators must be non-descending");
+                            throw new TableDataException("Timestamp values in exponential operators must not decrease");
                         }
                         // Alpha is dynamic based on time, but only recalculated when needed
                         if (dt != lastDt) {
