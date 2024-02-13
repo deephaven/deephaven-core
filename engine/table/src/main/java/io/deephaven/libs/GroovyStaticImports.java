@@ -3937,6 +3937,72 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#sortDescending(io.deephaven.vector.ShortVector) */
     public static  short[] sortDescending( io.deephaven.vector.ShortVector values ) {return Sort.sortDescending( values );}
 
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(byte[]) */
+    public static  int[] sortDescendingIndex( byte... values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(double[]) */
+    public static  int[] sortDescendingIndex( double... values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(float[]) */
+    public static  int[] sortDescendingIndex( float... values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(int[]) */
+    public static  int[] sortDescendingIndex( int... values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(long[]) */
+    public static  int[] sortDescendingIndex( long... values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(java.lang.Byte[]) */
+    public static  int[] sortDescendingIndex( java.lang.Byte[] values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(java.lang.Double[]) */
+    public static  int[] sortDescendingIndex( java.lang.Double[] values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(java.lang.Float[]) */
+    public static  int[] sortDescendingIndex( java.lang.Float[] values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(java.lang.Integer[]) */
+    public static  int[] sortDescendingIndex( java.lang.Integer[] values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(java.lang.Long[]) */
+    public static  int[] sortDescendingIndex( java.lang.Long[] values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(java.lang.Short[]) */
+    public static  int[] sortDescendingIndex( java.lang.Short[] values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(short[]) */
+    public static  int[] sortDescendingIndex( short... values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(io.deephaven.vector.ByteVector) */
+    public static  int[] sortDescendingIndex( io.deephaven.vector.ByteVector values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(io.deephaven.vector.DoubleVector) */
+    public static  int[] sortDescendingIndex( io.deephaven.vector.DoubleVector values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(io.deephaven.vector.FloatVector) */
+    public static  int[] sortDescendingIndex( io.deephaven.vector.FloatVector values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(io.deephaven.vector.IntVector) */
+    public static  int[] sortDescendingIndex( io.deephaven.vector.IntVector values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(io.deephaven.vector.LongVector) */
+    public static  int[] sortDescendingIndex( io.deephaven.vector.LongVector values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndex(io.deephaven.vector.ShortVector) */
+    public static  int[] sortDescendingIndex( io.deephaven.vector.ShortVector values ) {return Sort.sortDescendingIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndexObj(java.lang.Comparable[]) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortDescendingIndexObj( T... values ) {return Sort.sortDescendingIndexObj( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndexObj(io.deephaven.vector.ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortDescendingIndexObj( io.deephaven.vector.ObjectVector<T> values ) {return Sort.sortDescendingIndexObj( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndexObj(java.lang.Comparable[],java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortDescendingIndexObj( T[] values, java.util.Comparator<T> comparator ) {return Sort.sortDescendingIndexObj( values, comparator );}
+
+    /** @see io.deephaven.function.Sort#sortDescendingIndexObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortDescendingIndexObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.sortDescendingIndexObj( values, comparator );}
+
     /** @see io.deephaven.function.Sort#sortDescendingObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortDescendingObj( T... values ) {return Sort.sortDescendingObj( values );}
 
@@ -3948,6 +4014,72 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#sortDescendingObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortDescendingObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.sortDescendingObj( values, comparator );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(byte[]) */
+    public static  int[] sortIndex( byte... values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(double[]) */
+    public static  int[] sortIndex( double... values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(float[]) */
+    public static  int[] sortIndex( float... values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(int[]) */
+    public static  int[] sortIndex( int... values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(long[]) */
+    public static  int[] sortIndex( long... values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(java.lang.Byte[]) */
+    public static  int[] sortIndex( java.lang.Byte[] values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(java.lang.Double[]) */
+    public static  int[] sortIndex( java.lang.Double[] values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(java.lang.Float[]) */
+    public static  int[] sortIndex( java.lang.Float[] values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(java.lang.Integer[]) */
+    public static  int[] sortIndex( java.lang.Integer[] values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(java.lang.Long[]) */
+    public static  int[] sortIndex( java.lang.Long[] values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(java.lang.Short[]) */
+    public static  int[] sortIndex( java.lang.Short[] values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(short[]) */
+    public static  int[] sortIndex( short... values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(io.deephaven.vector.ByteVector) */
+    public static  int[] sortIndex( io.deephaven.vector.ByteVector values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(io.deephaven.vector.DoubleVector) */
+    public static  int[] sortIndex( io.deephaven.vector.DoubleVector values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(io.deephaven.vector.FloatVector) */
+    public static  int[] sortIndex( io.deephaven.vector.FloatVector values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(io.deephaven.vector.IntVector) */
+    public static  int[] sortIndex( io.deephaven.vector.IntVector values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(io.deephaven.vector.LongVector) */
+    public static  int[] sortIndex( io.deephaven.vector.LongVector values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndex(io.deephaven.vector.ShortVector) */
+    public static  int[] sortIndex( io.deephaven.vector.ShortVector values ) {return Sort.sortIndex( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndexObj(java.lang.Comparable[]) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortIndexObj( T... values ) {return Sort.sortIndexObj( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndexObj(io.deephaven.vector.ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortIndexObj( io.deephaven.vector.ObjectVector<T> values ) {return Sort.sortIndexObj( values );}
+
+    /** @see io.deephaven.function.Sort#sortIndexObj(java.lang.Comparable[],java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortIndexObj( T[] values, java.util.Comparator<T> comparator ) {return Sort.sortIndexObj( values, comparator );}
+
+    /** @see io.deephaven.function.Sort#sortIndexObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] sortIndexObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.sortIndexObj( values, comparator );}
 
     /** @see io.deephaven.function.Sort#sortObj(java.lang.Comparable[]) */
     public static <T extends java.lang.Comparable<? super T>> T[] sortObj( T... values ) {return Sort.sortObj( values );}

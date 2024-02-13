@@ -117,6 +117,25 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, sort(new ${pt.boxed}[]{}));
     }
 
+    public void test${pt.boxed}SortIndex() {
+        final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
+        final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+
+        final int[] sort = sortIndex(new ${pt.vectorDirect}(${pt.primitive}s));
+        final int[] expected = new int[]{7, 8, 1, 2, 3, 5, 0, 6, 4};
+        assertEquals(expected, sort);
+
+        assertEquals(expected, sortIndex(${pt.primitive}s));
+        assertEquals(expected, sortIndex(${pt.boxed}s));
+
+        assertNull(sortIndex((${pt.vector})null));
+        assertNull(sortIndex((${pt.primitive}[])null));
+        assertNull(sortIndex((${pt.boxed}[])null));
+        assertEquals(new int[]{}, sortIndex(new ${pt.vectorDirect}()));
+        assertEquals(new int[]{}, sortIndex(new ${pt.primitive}[]{}));
+        assertEquals(new int[]{}, sortIndex(new ${pt.boxed}[]{}));
+    }
+
     public void test${pt.boxed}SortDescending() {
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
@@ -136,7 +155,26 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.boxed}[]{}));
     }
 
-    public void test${pt.boxed}SortsExceptions() {
+    public void test${pt.boxed}SortDescendingIndex() {
+        final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
+        final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+
+        final int[] sort = sortDescendingIndex(new ${pt.vectorDirect}(${pt.primitive}s));
+        final int[] expected = new int[]{4, 6, 0, 5, 2, 3, 1, 7, 8};
+        assertEquals(expected, sort);
+
+        assertEquals(expected, sortDescendingIndex(${pt.primitive}s));
+        assertEquals(expected, sortDescendingIndex(${pt.boxed}s));
+
+        assertNull(sortDescendingIndex((${pt.vector})null));
+        assertNull(sortDescendingIndex((${pt.primitive}[])null));
+        assertNull(sortDescendingIndex((${pt.boxed}[])null));
+        assertEquals(new int[]{}, sortDescendingIndex(new ${pt.vectorDirect}()));
+        assertEquals(new int[]{}, sortDescendingIndex(new ${pt.primitive}[]{}));
+        assertEquals(new int[]{}, sortDescendingIndex(new ${pt.boxed}[]{}));
+    }
+
+    public void test${pt.boxed}SortExceptions() {
         ${pt.vector} db${pt.boxed}Array = null;
         ${pt.primitive}[] sort = sort(db${pt.boxed}Array);
         assertNull(sort);
@@ -150,6 +188,23 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[0], sort);
 
         sortArray = sort(${pt.primitive}s);
+        assertTrue(ArrayUtils.isEmpty(sortArray));
+    }
+
+    public void test${pt.boxed}SortIndexExceptions() {
+        ${pt.vector} db${pt.boxed}Array = null;
+        int[] sort = sortIndex(db${pt.boxed}Array);
+        assertNull(sort);
+
+        ${pt.primitive}[] ${pt.primitive}s = null;
+        int[] sortArray = sortIndex(${pt.primitive}s);
+        assertNull(sortArray);
+
+        ${pt.primitive}s = new ${pt.primitive}[]{};
+        sort = sortIndex(new ${pt.vectorDirect}(${pt.primitive}s));
+        assertEquals(new int[0], sort);
+
+        sortArray = sortIndex(${pt.primitive}s);
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
@@ -170,7 +225,23 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
-    
+    public void test${pt.boxed}SortDescendingIndexExceptions() {
+        ${pt.vector} db${pt.boxed}Array = null;
+        int[] sort = sortDescendingIndex(db${pt.boxed}Array);
+        assertNull(sort);
+
+        ${pt.primitive}[] ${pt.primitive}s = null;
+        int[] sortArray = sortDescendingIndex(${pt.primitive}s);
+        assertNull(sortArray);
+
+        ${pt.primitive}s = new ${pt.primitive}[]{};
+        sort = sortDescendingIndex(new ${pt.vectorDirect}(${pt.primitive}s));
+        assertEquals(new int[0], sort);
+
+        sortArray = sortDescendingIndex(${pt.primitive}s);
+        assertTrue(ArrayUtils.isEmpty(sortArray));
+    }
+
     </#if>
     </#list>
 }
