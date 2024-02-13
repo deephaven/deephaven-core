@@ -41,18 +41,13 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
-    /**
-     * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
-     */
-    private final URI rootURI;
     private final CompressorAdapter decompressor;
     private final ColumnDescriptor path;
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
     private final PageMaterializer.Factory nullMaterializerFactory;
-
-    private URI uri;
+    private final URI columnChunkURI;
     /**
      * Number of rows in the row group of this column chunk.
      */
@@ -62,12 +57,12 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
      */
     private final String version;
 
-    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, URI rootURI,
+    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, URI columnChunkURI,
             MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes, final long numRows,
             final String version) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
-        this.rootURI = rootURI;
+        this.columnChunkURI = columnChunkURI;
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
@@ -122,15 +117,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     private URI getURI() {
-        if (uri != null) {
-            return uri;
-        }
-        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
-            return uri = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
-        } else {
-            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
-            return uri = rootURI;
-        }
+        return columnChunkURI;
     }
 
     @Override

@@ -83,7 +83,6 @@ public final class ParquetFileWriter {
         // Flush any buffered data and close the channel
         bufferedOutput.close();
         compressorAdapter.close();
-
     }
 
     private void serializeFooter(final ParquetMetadata footer) throws IOException {

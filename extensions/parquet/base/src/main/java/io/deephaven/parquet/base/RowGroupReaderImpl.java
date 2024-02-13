@@ -82,7 +82,6 @@ public class RowGroupReaderImpl implements RowGroupReader {
             return null;
         }
 
-        // TODO Pass this to lower layers
         final URI columnChunkURI;
         if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
             columnChunkURI = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
@@ -102,7 +101,7 @@ public class RowGroupReaderImpl implements RowGroupReader {
                 throw new UncheckedIOException(e);
             }
         }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootURI, type, offsetIndex, fieldTypes,
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, columnChunkURI, type, offsetIndex, fieldTypes,
                 numRows(), version);
     }
 
