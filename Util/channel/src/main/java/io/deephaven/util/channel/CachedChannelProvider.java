@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -68,6 +69,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public SeekableChannelContext makeSingleUseContext() {
+        return wrappedProvider.makeSingleUseContext();
+    }
+
+    @Override
     public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
         return wrappedProvider.isCompatibleWith(channelContext);
     }
@@ -84,6 +90,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
                 : result.position(0);
         channel.setContext(channelContext);
         return channel;
+    }
+
+    @Override
+    public InputStream getInputStream(SeekableByteChannel channel) throws IOException {
+        return wrappedProvider.getInputStream(channel);
     }
 
     @Override

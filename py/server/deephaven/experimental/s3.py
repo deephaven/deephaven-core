@@ -45,6 +45,7 @@ class S3Instructions(JObjectWrapper):
                      Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
                  access_key_id: Optional[str] = None,
                  secret_access_key: Optional[str] = None,
+                 anonymous_access: bool = False,
                  endpoint_override: Optional[str] = None):
 
         """
@@ -71,6 +72,8 @@ class S3Instructions(JObjectWrapper):
                 to use static credentials, else default credentials will be used.
             secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
                 provided to use static credentials, else default credentials will be used.
+            anonymous_access (bool): use anonymous credentials, this is useful when the S3 policy has been set to allow
+                anonymous access. Can't be combined with other credentials. By default, is False.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
 
@@ -109,7 +112,11 @@ class S3Instructions(JObjectWrapper):
                 raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
 
             if access_key_id is not None:
-                builder.credentials(_JCredentials.basicCredentials(access_key_id, secret_access_key))
+                if anonymous_access:
+                    raise DHError("Only one set of credentials may be used, requested both key and anonymous")
+                builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
+            elif anonymous_access:
+                builder.credentials(_JCredentials.anonymous())
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)

@@ -9,6 +9,9 @@ dependencies {
     // Needed for SafeCloseable
     implementation project(':Util')
 
+    // For CountingInputStream
+    Classpaths.inheritGuava(project)
+
     compileOnly depAnnotations
 
     Classpaths.inheritJUnitPlatform(project)

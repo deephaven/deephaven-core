@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -191,6 +192,12 @@ public class CachedChannelProviderTest {
         public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext,
                 @NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path, channelContext);
+        }
+
+        @Override
+        public InputStream getInputStream(SeekableByteChannel channel) {
+            // TestMockChannel is always empty, so no need to buffer
+            return Channels.newInputStreamNoClose(channel);
         }
 
         @Override
