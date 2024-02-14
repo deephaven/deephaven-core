@@ -169,8 +169,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         }
         final List<Object> keyList = Js.<JsArray<Object>>uncheckedCast(key).asList();
         if (!knownKeys.contains(keyList)) {
-            // key doesn't even exist
-            return Promise.reject("Key not found");
+            // key doesn't even exist, just hand back a null table
+            return Promise.resolve((JsTable) null);
         }
         final String[] columnNames = descriptor.getKeyColumnNamesList().asArray(new String[0]);
         final String[] columnTypes = keyColumnTypes.toArray(new String[0]);
