@@ -115,7 +115,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         // blocking
         int filled = firstRequest.fill(position, dest);
         for (int i = 0; dest.hasRemaining(); ++i) {
-            final Request request = getRequest(firstFragmentIx + i + 1).orElse(null);
+            final Request request = getRequest(firstFragmentIx + i + 1);
             if (request == null || !request.isDone()) {
                 break;
             }
@@ -141,12 +141,10 @@ final class S3ChannelContext implements SeekableChannelContext {
 
     // --------------------------------------------------------------------------------------------------
 
-    private Optional<Request> getRequest(final long fragmentIndex) {
+    private Request getRequest(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
         final Request request = requests[cacheIdx];
-        return request == null || !request.isFragment(fragmentIndex)
-                ? Optional.empty()
-                : Optional.of(request);
+        return request == null || !request.isFragment(fragmentIndex) ? null : request;
     }
 
     private Request getOrCreateRequest(final long fragmentIndex) {
