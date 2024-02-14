@@ -96,6 +96,11 @@ jobs:
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh >> gradle.properties
+          cat gradle.properties
+
       - name: Run typedoc on JS API
         uses: burrunan/gradle-cache-action@v1
         with:
