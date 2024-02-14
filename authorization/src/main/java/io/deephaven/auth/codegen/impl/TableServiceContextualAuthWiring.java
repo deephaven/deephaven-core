@@ -10,41 +10,8 @@ package io.deephaven.auth.codegen.impl;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.engine.table.Table;
-import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
-import io.deephaven.proto.backplane.grpc.AggregateRequest;
-import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
-import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
-import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
-import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
-import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
-import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchTableRequest;
-import io.deephaven.proto.backplane.grpc.FilterTableRequest;
-import io.deephaven.proto.backplane.grpc.FlattenRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
-import io.deephaven.proto.backplane.grpc.MetaTableRequest;
-import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowRequest;
-import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
-import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
-import io.deephaven.proto.backplane.grpc.SortTableRequest;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.TimeTableRequest;
-import io.deephaven.proto.backplane.grpc.UngroupRequest;
-import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
-import io.deephaven.proto.backplane.grpc.WhereInRequest;
+import io.deephaven.proto.backplane.grpc.*;
+
 import java.lang.Override;
 import java.util.List;
 
@@ -372,6 +339,17 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to MultiJoinTables.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke NaturalJoinTables
+     */
+    void checkPermissionMultiJoinTables(AuthContext authContext, MultiJoinTablesRequest request,
+            List<Table> sourceTables);
+
+    /**
      * Authorize a request to RangeJoinTables.
      *
      * @param authContext the authentication context of the request
@@ -665,6 +643,11 @@ public interface TableServiceContextualAuthWiring {
             checkPermission(authContext, sourceTables);
         }
 
+        public void checkPermissionMultiJoinTables(AuthContext authContext, MultiJoinTablesRequest request,
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+
         public void checkPermissionRangeJoinTables(AuthContext authContext,
                 RangeJoinTablesRequest request, List<Table> sourceTables) {
             checkPermission(authContext, sourceTables);
@@ -952,6 +935,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionRajTables(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionMultiJoinTables(AuthContext authContext, MultiJoinTablesRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionMultiJoinTables(authContext, request, sourceTables);
             }
         }
 
