@@ -375,13 +375,17 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             @Override
             public synchronized void onComplete() {
-                buffer.flip();
-                if (buffer.limit() != requestLength()) {
+                if (buffer.position() != requestLength()) {
                     localProducer.completeExceptionally(new IllegalStateException(String.format(
-                            "Expected %d bytes, received %d, %s", requestLength(), buffer.limit(), requestStr())));
-                } else {
-                    localProducer.complete(buffer.slice().asReadOnlyBuffer());
+                            "Expected %d bytes, received %d, %s", requestLength(), buffer.position(), requestStr())));
+                    return;
                 }
+                ByteBuffer toComplete = buffer.asReadOnlyBuffer();
+                toComplete.flip();
+                if (toComplete.capacity() != toComplete.limit()) {
+                    toComplete = toComplete.slice();
+                }
+                localProducer.complete(toComplete);
             }
         }
     }
