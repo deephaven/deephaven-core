@@ -2961,9 +2961,8 @@ type RangeJoinTablesRequest struct {
 	RangeEndRule     RangeJoinTablesRequest_RangeEndRule   `protobuf:"varint,8,opt,name=range_end_rule,json=rangeEndRule,proto3,enum=io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest_RangeEndRule" json:"range_end_rule,omitempty"`
 	LeftEndColumn    string                                `protobuf:"bytes,9,opt,name=left_end_column,json=leftEndColumn,proto3" json:"left_end_column,omitempty"`
 	Aggregations     []*Aggregation                        `protobuf:"bytes,10,rep,name=aggregations,proto3" json:"aggregations,omitempty"`
-	// Specifies the range match criteria for determining the responsive rows from rightTable for each row from this
-	// Table, within the buckets created by matching on the exactMatches. Providing `range_match` in the GRPC call
-	// is the alternative to detailed range match parameters provided in the `range_start_column`, `range_start_rule`,
+	// Specifies the range match parameters as a parseable string. Providing `range_match` in the GRPC call is the
+	// alternative to detailed range match parameters provided in the `range_start_column`, `range_start_rule`,
 	// `right_range_column`, `range_end_rule`, and `left_end_column` fields.
 	RangeMatch string `protobuf:"bytes,11,opt,name=range_match,json=rangeMatch,proto3" json:"range_match,omitempty"`
 }
