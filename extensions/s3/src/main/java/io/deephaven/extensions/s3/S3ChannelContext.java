@@ -71,7 +71,7 @@ final class S3ChannelContext implements SeekableChannelContext {
             this.uri = Objects.requireNonNull(uri);
         } else if (!this.uri.equals(uri)) {
             throw new IllegalStateException(
-                    String.format("Inconsistent URIs. expected=%s, actual=%s", this.uri, uri));
+                    String.format("Inconsistent URIs. expected=%s, actual=%s, ctx=%s", this.uri, uri, ctxStr()));
         }
     }
 
@@ -80,7 +80,7 @@ final class S3ChannelContext implements SeekableChannelContext {
             setSize(size);
         } else if (this.size != size) {
             throw new IllegalStateException(
-                    String.format("Inconsistent size. expected=%d, actual=%d", size, this.size));
+                    String.format("Inconsistent size. expected=%d, actual=%d, ctx=%s", size, this.size, ctxStr()));
         }
     }
 

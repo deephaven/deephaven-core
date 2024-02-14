@@ -221,8 +221,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
         final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
         final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
-        // We are safe here because the Dictionary doesn't hold a reference to payload (and thus implicitly, doesn't
-        // hold a reference to the input stream).
+        // We are safe to not copy the payload because the Dictionary doesn't hold a reference to dictionaryPage or
+        // payload and thus doesn't hold a reference to the input stream.
         return encoding.initDictionary(path, dictionaryPage);
     }
 

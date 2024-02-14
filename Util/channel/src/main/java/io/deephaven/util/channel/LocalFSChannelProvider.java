@@ -10,7 +10,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -40,7 +39,7 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     @Override
     public InputStream getInputStream(SeekableByteChannel channel) {
         // FileChannel is not buffered, need to buffer
-        return new BufferedInputStream(Channels.newInputStream(ReadableByteChannelNoClose.of(channel)));
+        return new BufferedInputStream(Channels.newInputStreamNoClose(channel));
     }
 
     @Override

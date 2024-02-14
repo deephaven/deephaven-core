@@ -127,7 +127,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri)) {
             ensurePageHeader(channelsProvider, ch);
-            return readKeyFromDataPage(keyDest, nullPlaceholder, ch, holder.get());
+            return readKeysFromDataPage(keyDest, nullPlaceholder, ch, holder.get());
         }
     }
 
@@ -243,9 +243,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private IntBuffer readKeyFromDataPage(IntBuffer keyDest, int nullPlaceholder,
-            SeekableByteChannel ch, @NotNull final SeekableChannelContext channelContext)
-            throws IOException {
+    private IntBuffer readKeysFromDataPage(IntBuffer keyDest, int nullPlaceholder, SeekableByteChannel ch,
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {

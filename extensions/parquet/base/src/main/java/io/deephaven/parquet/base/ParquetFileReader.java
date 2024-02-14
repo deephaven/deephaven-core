@@ -79,9 +79,9 @@ public class ParquetFileReader {
         if (!Arrays.equals(MAGIC, 0, MAGIC.length, trailer, Integer.BYTES, trailer.length)) {
             throw new InvalidParquetFileException(
                     parquetFileURI + " is not a Parquet file. expected magic number at tail " + Arrays.toString(MAGIC)
-                            + " but found " + Arrays.toString(Arrays.copyOfRange(trailer, 4, 8)));
+                            + " but found "
+                            + Arrays.toString(Arrays.copyOfRange(trailer, Integer.BYTES, trailer.length)));
         }
-        // final int footerLength = ByteBuffer.wrap(trailer, 0, Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).getInt();
         final int footerLength = makeLittleEndianInt(trailer[0], trailer[1], trailer[2], trailer[3]);
         final long footerIndex = footerLengthIndex - footerLength;
         if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
@@ -89,7 +89,6 @@ public class ParquetFileReader {
                     "corrupted file: the footer index is not within the file: " + footerIndex);
         }
         readChannel.position(footerIndex);
-        // return footerLength;
     }
 
     private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {
