@@ -334,7 +334,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         final class Sub implements Subscriber<ByteBuffer> {
             private final CompletableFuture<ByteBuffer> localProducer;
             // Access to this view must be guarded by bufferReference.acquire
-            private final ByteBuffer bufferView;
+            private ByteBuffer bufferView;
             private Subscription subscription;
 
             Sub() {
@@ -346,7 +346,6 @@ final class S3ChannelContext implements SeekableChannelContext {
                     return;
                 }
                 try {
-                    // noinspection DataFlowIssue
                     bufferView = bufferReference.get().duplicate();
                 } finally {
                     bufferReference.release();
@@ -372,6 +371,7 @@ final class S3ChannelContext implements SeekableChannelContext {
             @Override
             public void onNext(ByteBuffer byteBuffer) {
                 if (!bufferReference.acquireIfAvailable()) {
+                    bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for data, %s", requestStr())));
                     return;
@@ -386,12 +386,14 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             @Override
             public void onError(Throwable t) {
+                bufferView = null;
                 localProducer.completeExceptionally(t);
             }
 
             @Override
             public void onComplete() {
                 if (!bufferReference.acquireIfAvailable()) {
+                    bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for completion, %s", requestStr())));
                     return;
@@ -409,6 +411,7 @@ final class S3ChannelContext implements SeekableChannelContext {
                         toComplete = toComplete.slice();
                     }
                     localProducer.complete(toComplete);
+                    bufferView = null;
                 } finally {
                     bufferReference.release();
                 }

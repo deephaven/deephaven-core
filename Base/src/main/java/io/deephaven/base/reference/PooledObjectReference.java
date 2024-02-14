@@ -3,7 +3,6 @@ package io.deephaven.base.reference;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -124,7 +123,6 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
      *         caller)
      */
     @Override
-    @Nullable
     public final REFERENT_TYPE get() {
         return referent;
     }
@@ -159,7 +157,7 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
 
     /**
      * Acquire an active use permit if this has not been {@link #clear() cleared}. This is useful in situations where
-     * callers want to fail-fast and don't need to guarantee re-entrancy. Callers should pair this with a corresponding
+     * callers want to fail-fast and don't need to guarantee reentrancy. Callers should pair this with a corresponding
      * {@link #release()}, ideally with a try-finally pattern:
      *
      * <pre>
@@ -206,15 +204,7 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
      */
     @Nullable
     public final REFERENT_TYPE acquireAndGet() {
-        if (!acquire()) {
-            return null;
-        }
-        final REFERENT_TYPE localReferent = referent;
-        if (localReferent == null) {
-            release();
-            throw new IllegalStateException(this + " acquired, but referent is null");
-        }
-        return localReferent;
+        return acquire() ? referent : null;
     }
 
     /**

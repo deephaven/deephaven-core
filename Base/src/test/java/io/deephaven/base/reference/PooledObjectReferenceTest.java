@@ -89,7 +89,7 @@ public class PooledObjectReferenceTest {
     }
 
     @Test
-    public void illegalGetClose() {
+    public void illegalGetClear() {
         // Even though illegal, no errors and eq obj
         assertEquals(obj, ref.get());
         ref.clear();
@@ -97,7 +97,7 @@ public class PooledObjectReferenceTest {
     }
 
     @Test
-    public void closeIllegalGet() {
+    public void clearIllegalGet() {
         ref.clear();
         assertReturned();
         // Even though illegal, no errors and eq null
@@ -105,7 +105,7 @@ public class PooledObjectReferenceTest {
     }
 
     @Test
-    public void closeWithErrorIllegalGet() {
+    public void clearWithErrorIllegalGet() {
         ref.throwOnReturnToPool();
         try {
             ref.clear();
