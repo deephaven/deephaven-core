@@ -43,6 +43,10 @@ public class MultiJoinGrpcImpl extends GrpcTableOperation<MultiJoinTablesRequest
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "If `multi_join_inputs` are provided, `source_ids` must remain empty.");
         }
+        if (!request.getColumnsToMatchList().isEmpty() && !request.getMultiJoinInputsList().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "If `multi_join_inputs` are provided, `columns_to_match` must remain empty.");
+        }
     }
 
     @Override

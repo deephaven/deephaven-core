@@ -74,6 +74,15 @@ public class MultiJoinGrpcTest extends GrpcTableOperationTestBase<MultiJoinTable
                 "If `multi_join_inputs` are provided, `source_ids` must remain empty.");
     }
 
+    @Test
+    public void columnsToMatchAndInputProvided() {
+        final MultiJoinTablesRequest request = MultiJoinTablesRequest.newBuilder(prototypeMultiJoinInputs())
+                .addColumnsToMatch("OutputKey=Key")
+                .build();
+        assertError(request, Code.INVALID_ARGUMENT,
+                "If `multi_join_inputs` are provided, `columns_to_match` must remain empty.");
+    }
+
     private MultiJoinTablesRequest prototype() {
         final TableReference t1 = ref(TableTools.emptyTable(1).view("Key=ii", "First=ii"));
         final TableReference t2 = ref(TableTools.emptyTable(1).view("Key=ii", "Second=ii*2"));
