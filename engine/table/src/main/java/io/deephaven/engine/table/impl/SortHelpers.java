@@ -41,8 +41,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.LongPredicate;
+import java.util.stream.Collectors;
 
 public class SortHelpers {
     public static boolean sortBySymbolTable =
@@ -233,7 +235,7 @@ public class SortHelpers {
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
             RowSet rowSetToSort, boolean usePrev, boolean allowSymbolTable) {
-        if (rowSetToSort.size() == 0) {
+        if (rowSetToSort.isEmpty()) {
             return EMPTY_SORT_MAPPING;
         }
 
@@ -300,7 +302,9 @@ public class SortHelpers {
             return lookupTable[region][id];
         }
 
-        private static SparseSymbolMapping createMapping(LongChunk originalSymbol, IntChunk mappedIndex) {
+        private static SparseSymbolMapping createMapping(
+                @NotNull final LongChunk<Values> originalSymbol,
+                @NotNull final LongChunk<Values> mappedIndex) {
             // figure out what the maximum region is, and determine how many bits of it there are
             int maxUpperPart = 0;
             int minTrailing = 32;
@@ -330,7 +334,7 @@ public class SortHelpers {
                 final long symTabId = originalSymbol.get(ii);
                 final int region = (int) (symTabId >> (32 + minTrailing));
                 final int id = (int) symTabId;
-                final int mappedId = mappedIndex.get(ii);
+                final int mappedId = LongSizedDataStructure.intSize("SortHelpers#createMapping", mappedIndex.get(ii));
                 maxMapping = Math.max(maxMapping, mappedId);
                 lookupTable[region][id] = mappedId;
             }
@@ -347,7 +351,7 @@ public class SortHelpers {
         final int sortSize = rowSet.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
-        final Table symbolTable = ((SymbolTableSource) columnSource).getStaticSymbolTable(rowSet, true);
+        final Table symbolTable = ((SymbolTableSource<?>) columnSource).getStaticSymbolTable(rowSet, true);
 
         if (symbolTable.size() >= sortSize) {
             // the very first thing we will do is sort the symbol table, using a regular sort; if it is larger than the
@@ -355,8 +359,11 @@ public class SortHelpers {
             return getSortMappingOne(order, columnSource, rowSet, usePrev);
         }
 
-        final Table idMapping = symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
-                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).update(SORTED_INDEX_COLUMN_UPDATE).ungroup()
+        final Table groupedSymbols = symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
+                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME);
+        final Table idMapping = groupedSymbols.withAdditionalColumns(Map.of(
+                SORTED_INDEX_COLUMN_NAME, new RowKeysColumnSource(groupedSymbols.getRowSet())))
+                .ungroup()
                 .view(SymbolTableSource.ID_COLUMN_NAME, SORTED_INDEX_COLUMN_NAME);
 
         final int symbolEntries = idMapping.intSize();
@@ -364,13 +371,13 @@ public class SortHelpers {
         final SparseSymbolMapping mapping;
 
         try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
-                final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
-            final ColumnSource idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
+                final WritableLongChunk<Values> mappedIndex = WritableLongChunk.makeWritableChunk(symbolEntries)) {
+            final ColumnSource<?> idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
             try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
                 idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
             }
 
-            final ColumnSource sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
+            final ColumnSource<?> sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
             try (final ColumnSource.FillContext sortedIndexContext =
                     sortedRowSetSource.makeFillContext(symbolEntries)) {
                 sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());

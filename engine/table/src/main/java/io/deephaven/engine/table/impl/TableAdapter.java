@@ -321,6 +321,11 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default Table withAdditionalColumns(Map<String, ColumnSource<?>> additionalSources) {
+        return throwUnsupported();
+    }
+
+    @Override
     default Table flatten() {
         return throwUnsupported();
     }

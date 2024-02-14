@@ -131,7 +131,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @NotNull
-    private Result<QueryTable> streamSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
+    private Result<QueryTable> blinkTableSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
         final LongChunkColumnSource initialInnerRedirectionSource = new LongChunkColumnSource();
         if (initialSortedKeys.size() > 0) {
             initialInnerRedirectionSource
@@ -173,7 +173,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
 
                         final SortHelpers.SortMapping updateSortedKeys =
-                                SortHelpers.getSortedKeys(sortOrder, sortColumns, upstream.added(), false);
+                                SortHelpers.getSortedKeys(sortOrder, sortColumns, upstream.added(), false, false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
                         final LongChunkColumnSource updateInnerRedirectSource =
@@ -220,7 +220,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 final RowSet indexToUse = usePrev ? prevIndex : parent.getRowSet();
                 final SortHelpers.SortMapping sortedKeys =
                         SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
-                return streamSort(sortedKeys);
+                return blinkTableSort(sortedKeys);
             }
         }
 

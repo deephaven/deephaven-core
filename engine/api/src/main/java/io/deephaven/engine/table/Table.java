@@ -675,7 +675,7 @@ public interface Table extends
     /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own. The caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
      *
@@ -683,6 +683,18 @@ public interface Table extends
      * @return A new sub-table
      */
     Table getSubTable(TrackingRowSet rowSet);
+
+    /**
+     * Get a {@link Table} that adds, or overwrites, columns from {@code this}. The result will share the same
+     * {@link #getRowSet() row set} as this table.
+     * <p>
+     * The result will not update on its own. The caller must also establish an appropriate listener to update the
+     * provided column sources and propagate {@link TableUpdate updates}.
+     *
+     * @param additionalSources The additional columns to add or overwrite
+     * @return A new table with the additional columns
+     */
+    Table withAdditionalColumns(Map<String, ColumnSource<?>> additionalSources);
 
     /**
      * Applies a function to this table.

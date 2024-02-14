@@ -3235,10 +3235,10 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own, the caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
-     *
+     * <p>
      * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
      * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
      * the enclosing operation.
@@ -3255,15 +3255,36 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
+     * Get a {@link Table} that adds, or overwrites, columns from {@code this}. The result will share the same
+     * {@link #getRowSet() row set} as this table.
+     * <p>
+     * The result will not update on its own. The caller must also establish an appropriate listener to update the
+     * provided column sources and propagate {@link TableUpdate updates}.
+     *
+     * @param additionalSources The additional columns to add or overwrite
+     * @return A new table with the additional columns
+     */
+    @Override
+    public QueryTable withAdditionalColumns(@NotNull final Map<String, ColumnSource<?>> additionalSources) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(this.columns);
+            columns.putAll(additionalSources);
+            final TableDefinition definition = TableDefinition.inferFrom(columns);
+            return new QueryTable(definition, rowSet, columns, null, null);
+        }
+    }
+
+    /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own, the caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
-     *
+     * <p>
      * This method is intended to be used for composing alternative engine operations, in particular
      * {@link #partitionBy(boolean, String...)}.
-     *
+     * <p>
      * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
      * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
      * the enclosing operation.

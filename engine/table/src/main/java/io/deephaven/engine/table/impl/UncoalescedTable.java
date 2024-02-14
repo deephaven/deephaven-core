@@ -437,6 +437,11 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
+    public Table withAdditionalColumns(Map<String, ColumnSource<?>> additionalSources) {
+        return coalesce().withAdditionalColumns(additionalSources);
+    }
+
+    @Override
     public <R> R apply(Function<Table, R> function) {
         return coalesce().apply(function);
     }
