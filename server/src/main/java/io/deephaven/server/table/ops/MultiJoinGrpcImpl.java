@@ -28,10 +28,10 @@ public class MultiJoinGrpcImpl extends GrpcTableOperation<MultiJoinTablesRequest
         super(authWiring::checkPermissionMultiJoinTables,
                 BatchTableRequest.Operation::getMultiJoin,
                 MultiJoinTablesRequest::getResultId,
-                (MultiDependencyFunction<MultiJoinTablesRequest>) request -> request.getMultiJoinInputsCount() > 0
-                        ? request.getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId)
-                                .collect(Collectors.toList())
-                        : request.getSourceIdsList());
+                (MultiDependencyFunction<MultiJoinTablesRequest>) request -> request.getMultiJoinInputsList().isEmpty()
+                        ? request.getSourceIdsList()
+                        : request.getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId)
+                                .collect(Collectors.toList()));
     }
 
     @Override
