@@ -339,15 +339,15 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             Sub() {
                 localProducer = producerFuture;
-                final ByteBuffer get;
-                if ((get = bufferReference.acquireAndGet()) == null) {
+                if (!bufferReference.acquireIfAvailable()) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for new subscriber, %s", requestStr())));
                     return;
                 }
                 try {
-                    bufferView = get.duplicate();
+                    // noinspection DataFlowIssue
+                    bufferView = bufferReference.get().duplicate();
                 } finally {
                     bufferReference.release();
                 }
