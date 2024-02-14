@@ -39,22 +39,23 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     }
 
     /**
-     * Wraps {@link SeekableChannelsProvider#getInputStream(SeekableByteChannel)} in a position-safe manner. To remain
-     * valid, the caller must ensure that the resulting input stream isn't re-wrapped by any downstream code in a way
-     * that would adversely effect the position (such as re-wrapping the resulting input stream with buffering).
+     * Wraps {@link SeekableChannelsProvider#getInputStream(SeekableByteChannel)} to ensure the channel's position is
+     * incremented the exact amount that has been consumed from the resulting input stream. To remain valid, the caller
+     * must ensure that the resulting input stream isn't re-wrapped by any downstream code in a way that would adversely
+     * effect the position (such as re-wrapping the resulting input stream with buffering).
      *
      * <p>
-     * Equivalent to {@code PositionInputStream.of(ch, provider.getInputStream(ch))}.
+     * Equivalent to {@code ChannelPositionInputStream.of(ch, provider.getInputStream(ch))}.
      *
      * @param provider the provider
      * @param ch the seekable channel
      * @return the position-safe input stream
      * @throws IOException if an IO exception occurs
-     * @see PositionInputStream#of(SeekableByteChannel, InputStream)
+     * @see ChannelPositionInputStream#of(SeekableByteChannel, InputStream)
      */
-    static InputStream positionInputStream(SeekableChannelsProvider provider, SeekableByteChannel ch)
+    static InputStream channelPositionInputStream(SeekableChannelsProvider provider, SeekableByteChannel ch)
             throws IOException {
-        return PositionInputStream.of(ch, provider.getInputStream(ch));
+        return ChannelPositionInputStream.of(ch, provider.getInputStream(ch));
     }
 
     /**
@@ -62,6 +63,10 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     SeekableChannelContext makeContext();
 
+    /**
+     * Create a new "single-use" {@link SeekableChannelContext} object for creating read channels via this provider.
+     * This is meant for contexts that have a short lifecycle and expect to read a small amount from a read channel.
+     */
     default SeekableChannelContext makeSingleUseContext() {
         return makeContext();
     }
@@ -88,7 +93,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * {@code channel} must have been created by {@code this} provider. The caller can't assume the position of
      * {@code channel} after consuming the {@link InputStream}. For use-cases that require the channel's position to be
      * incremented the exact amount the {@link InputStream} has been consumed, use
-     * {@link #positionInputStream(SeekableChannelsProvider, SeekableByteChannel)}.
+     * {@link #channelPositionInputStream(SeekableChannelsProvider, SeekableByteChannel)}.
      *
      * @param channel the channel
      * @return the input stream

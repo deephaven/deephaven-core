@@ -13,8 +13,6 @@ import org.apache.parquet.schema.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -57,9 +55,9 @@ public class ParquetFileReader {
             rootURI = parquetFileURI;
         }
         try (
-                final SeekableChannelContext context = channelsProvider.makeSingleUseContext();
+                final SeekableChannelContext context = channelsProvider.makeContext();
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(context, parquetFileURI)) {
-            final int footerLength = prepareFooter(parquetFileURI, ch);
+            positionToFileMetadata(parquetFileURI, ch);
             try (final InputStream in = channelsProvider.getInputStream(ch)) {
                 fileMetaData = Util.readFileMetaData(in);
             }
@@ -67,30 +65,35 @@ public class ParquetFileReader {
         type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
-    private static int prepareFooter(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
+    private static void positionToFileMetadata(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
         final long fileLen = readChannel.size();
         if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
             // footerIndex + MAGIC
             throw new InvalidParquetFileException(
                     parquetFileURI + " is not a Parquet file (too small length: " + fileLen + ")");
         }
-        final byte[] last8 = new byte[8];
+        final byte[] trailer = new byte[Integer.BYTES + MAGIC.length];
         final long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
         readChannel.position(footerLengthIndex);
-        Helpers.readBytes(readChannel, last8);
-        if (!Arrays.equals(MAGIC, 0, MAGIC.length, last8, 4, 8)) {
+        Helpers.readBytes(readChannel, trailer);
+        if (!Arrays.equals(MAGIC, 0, MAGIC.length, trailer, Integer.BYTES, trailer.length)) {
             throw new InvalidParquetFileException(
                     parquetFileURI + " is not a Parquet file. expected magic number at tail " + Arrays.toString(MAGIC)
-                            + " but found " + Arrays.toString(Arrays.copyOfRange(last8, 4, 8)));
+                            + " but found " + Arrays.toString(Arrays.copyOfRange(trailer, 4, 8)));
         }
-        final int footerLength = ByteBuffer.wrap(last8, 0, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        // final int footerLength = ByteBuffer.wrap(trailer, 0, Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        final int footerLength = makeLittleEndianInt(trailer[0], trailer[1], trailer[2], trailer[3]);
         final long footerIndex = footerLengthIndex - footerLength;
         if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
             throw new InvalidParquetFileException(
                     "corrupted file: the footer index is not within the file: " + footerIndex);
         }
         readChannel.position(footerIndex);
-        return footerLength;
+        // return footerLength;
+    }
+
+    private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {
+        return (b0 & 0xff) | ((b1 & 0xff) << 8) | ((b2 & 0xff) << 16) | ((b3 & 0xff) << 24);
     }
 
     /**
@@ -179,14 +182,6 @@ public class ParquetFileReader {
             }
         }
         return result;
-    }
-
-    private static int readIntLittleEndian(SeekableByteChannel f) throws IOException {
-        ByteBuffer tempBuf = ByteBuffer.allocate(Integer.BYTES);
-        tempBuf.order(ByteOrder.LITTLE_ENDIAN);
-        Helpers.readExact(f, tempBuf);
-        tempBuf.flip();
-        return tempBuf.getInt();
     }
 
     /**

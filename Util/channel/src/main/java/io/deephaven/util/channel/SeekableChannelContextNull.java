@@ -4,5 +4,5 @@
 package io.deephaven.util.channel;
 
 enum SeekableChannelContextNull implements SeekableChannelContext {
-    NULL
+    NULL_CONTEXT_INSTANCE
 }

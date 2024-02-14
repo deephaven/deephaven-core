@@ -8,14 +8,16 @@ import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
+import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -26,19 +28,12 @@ import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProvide
 /**
  * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven {@link TrackedFileHandleFactory}.
  */
-final class TrackedSeekableChannelsProvider extends SeekableChannelsProviderBase {
+final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
     TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
-    }
-
-    @Override
-    protected boolean readChannelIsBuffered() {
-        // io.deephaven.engine.util.file.TrackedSeekableByteChannel / io.deephaven.engine.util.file.FileHandle is not
-        // buffered
-        return false;
     }
 
     @Override
@@ -54,7 +49,7 @@ final class TrackedSeekableChannelsProvider extends SeekableChannelsProviderBase
     }
 
     @Override
-    public final SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
+    public SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
             @NotNull final URI uri)
             throws IOException {
         // context is unused here
@@ -63,7 +58,13 @@ final class TrackedSeekableChannelsProvider extends SeekableChannelsProviderBase
     }
 
     @Override
-    public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
+    public InputStream getInputStream(SeekableByteChannel channel) {
+        // TrackedSeekableByteChannel is not buffered, need to buffer
+        return new BufferedInputStream(Channels.newInputStreamNoClose(channel));
+    }
+
+    @Override
+    public SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
             throws IOException {
         // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator

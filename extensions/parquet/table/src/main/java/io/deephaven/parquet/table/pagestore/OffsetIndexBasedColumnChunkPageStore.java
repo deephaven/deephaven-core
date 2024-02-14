@@ -11,7 +11,7 @@ import io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
-import io.deephaven.util.channel.SeekableChannelContext.Provider;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -129,8 +129,8 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
     private ChunkPage<ATTR> getPageImpl(@Nullable FillContext fillContext, int pageNum) {
         final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
         // Use the latest context while reading the page, or create (and close) new one
-        try (final Provider upgrade = upgrade(fillContext)) {
-            return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, upgrade.get());
+        try (final ContextHolder holder = ensureContext(fillContext)) {
+            return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, holder.get());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

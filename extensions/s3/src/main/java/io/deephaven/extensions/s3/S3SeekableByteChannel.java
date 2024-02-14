@@ -56,29 +56,29 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         }
         this.context = (S3ChannelContext) channelContext;
         if (this.context != null) {
-            this.context.assume(uri);
+            this.context.verifyOrSetUri(uri);
             if (size != UNINITIALIZED_SIZE) {
-                this.context.hackSize(size);
+                context.verifyOrSetSize(size);
             }
         }
     }
 
-    private long hackSize() throws IOException {
-        if (size != UNINITIALIZED_SIZE) {
-            return size;
+    private void prepareRead() throws IOException {
+        checkClosed(position);
+        Assert.neqNull(context, "channelContext");
+        if (size == UNINITIALIZED_SIZE) {
+            size = context.size();
         }
-        return (size = context.size(uri));
     }
 
     @Override
     public int read(@NotNull final ByteBuffer destination) throws IOException {
-        Assert.neqNull(context, "channelContext");
-        checkClosed(position);
-        if (position >= hackSize()) {
+        prepareRead();
+        if (position >= size) {
             // We are finished reading
             return -1;
         }
-        final int filled = context.fill(uri, position, destination);
+        final int filled = context.fill(position, destination);
         position += filled;
         return filled;
     }
@@ -90,26 +90,24 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
 
     @Override
     public long position() throws ClosedChannelException {
-        final long localPosition = position;
-        checkClosed(localPosition);
-        return localPosition;
+        checkClosed(position);
+        return position;
     }
 
     @Override
     public SeekableByteChannel position(final long newPosition) throws ClosedChannelException {
+        checkClosed(position);
         if (newPosition < 0) {
             throw new IllegalArgumentException("newPosition cannot be < 0, provided newPosition=" + newPosition);
         }
-        checkClosed(position);
         position = newPosition;
         return this;
     }
 
     @Override
     public long size() throws IOException {
-        checkClosed(position);
-        Assert.neqNull(context, "channelContext");
-        return context.size(uri);
+        prepareRead();
+        return size;
     }
 
     @Override

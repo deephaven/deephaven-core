@@ -8,7 +8,7 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
-import io.deephaven.util.channel.SeekableChannelContext.Provider;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import io.deephaven.util.datastructures.LazyCachingFunction;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -178,8 +178,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
         // Use the context object provided by the caller, or create (and close) a new one
         try (
-                final Provider upgrade = SeekableChannelContext.upgrade(channelsProvider, channelContext);
-                final SeekableByteChannel ch = channelsProvider.getReadChannel(upgrade.get(), getURI());
+                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
+                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), getURI());
                 final InputStream in = channelsProvider.getInputStream(ch.position(dictionaryPageOffset))) {
             return readDictionary(in);
         } catch (IOException e) {
@@ -217,12 +217,13 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             // Sometimes the size is explicitly empty, just use an empty payload
             payload = BytesInput.empty();
         } else {
-            payload = BytesInput
-                    .copy(decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size()));
+            payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size());
         }
-        final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(),
-                Encoding.valueOf(dictHeader.getEncoding().name()));
-        return dictionaryPage.getEncoding().initDictionary(path, dictionaryPage);
+        final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
+        final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
+        // We are safe here because the Dictionary doesn't hold a reference to payload (and thus implicitly, doesn't
+        // hold a reference to the input stream).
+        return encoding.initDictionary(path, dictionaryPage);
     }
 
     private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
@@ -247,11 +248,11 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             // NB: The channels provider typically caches channels; this avoids maintaining a handle per column chunk
             final long headerOffset = nextHeaderOffset;
             try (
-                    final Provider upgrade = SeekableChannelContext.upgrade(channelsProvider, channelContext);
-                    final SeekableByteChannel ch = channelsProvider.getReadChannel(upgrade.get(), getURI())) {
+                    final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
+                    final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), getURI())) {
                 ch.position(headerOffset);
                 final PageHeader pageHeader;
-                try (final InputStream in = SeekableChannelsProvider.positionInputStream(channelsProvider, ch)) {
+                try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch)) {
                     pageHeader = Util.readPageHeader(in);
                 }
                 // relying on exact position of ch
@@ -259,7 +260,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 nextHeaderOffset = dataOffset + pageHeader.getCompressed_page_size();
                 if (pageHeader.isSetDictionary_page_header()) {
                     // Dictionary page; skip it
-                    return next(upgrade.get());
+                    return next(holder.get());
                 }
                 if (!pageHeader.isSetData_page_header() && !pageHeader.isSetData_page_header_v2()) {
                     throw new IllegalStateException(

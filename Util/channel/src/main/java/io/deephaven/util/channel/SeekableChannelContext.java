@@ -2,7 +2,6 @@ package io.deephaven.util.channel;
 
 import io.deephaven.util.SafeCloseable;
 
-import java.io.Closeable;
 import java.util.function.Supplier;
 
 /**
@@ -10,13 +9,25 @@ import java.util.function.Supplier;
  */
 public interface SeekableChannelContext extends SafeCloseable {
 
-    SeekableChannelContext NULL = SeekableChannelContextNull.NULL;
+    SeekableChannelContext NULL = SeekableChannelContextNull.NULL_CONTEXT_INSTANCE;
 
-    static Provider upgrade(SeekableChannelsProvider provider, SeekableChannelContext context) {
-        if (context != NULL) {
-            return () -> context;
+    /**
+     * A pattern that allows callers to ensure a valid context has been created for {@code provider}. In the case where
+     * the given {@code context} {@link SeekableChannelsProvider#isCompatibleWith(SeekableChannelContext) is compatible
+     * with} {@code provider}, a no-op holder around that {@code context} will be returned. Otherwise, a holder with a
+     * new {@link SeekableChannelsProvider#makeSingleUseContext()} will be returned. The returned holder should ideally
+     * be used in a try-with-resources construction.
+     *
+     * @param provider the provider
+     * @param context the context
+     * @return the context holder
+     */
+    static ContextHolder ensureContext(SeekableChannelsProvider provider, SeekableChannelContext context) {
+        if (!provider.isCompatibleWith(context)) {
+            return new ContextHolderImpl(provider.makeSingleUseContext());
         }
-        return new ProviderImpl(provider.makeSingleUseContext());
+        // An impl that does not close the context
+        return () -> context;
     }
 
     /**
@@ -24,7 +35,7 @@ public interface SeekableChannelContext extends SafeCloseable {
      */
     default void close() {}
 
-    interface Provider extends Closeable, Supplier<SeekableChannelContext> {
+    interface ContextHolder extends AutoCloseable, Supplier<SeekableChannelContext> {
 
         @Override
         SeekableChannelContext get();

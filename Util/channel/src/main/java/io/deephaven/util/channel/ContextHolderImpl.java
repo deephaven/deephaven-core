@@ -3,14 +3,14 @@
  */
 package io.deephaven.util.channel;
 
-import io.deephaven.util.channel.SeekableChannelContext.Provider;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 
 import java.util.Objects;
 
-final class ProviderImpl implements Provider {
+final class ContextHolderImpl implements ContextHolder {
     private final SeekableChannelContext context;
 
-    public ProviderImpl(SeekableChannelContext context) {
+    public ContextHolderImpl(SeekableChannelContext context) {
         this.context = Objects.requireNonNull(context);
     }
 
