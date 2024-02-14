@@ -301,6 +301,19 @@ class UpdateByBuilder {
                     .setRollingWavg(builder.build())
                     .build();
         }
+
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingFormulaSpec rs) {
+            final UpdateByRollingFormula.Builder builder =
+                    UpdateByRollingFormula.newBuilder()
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()))
+                            .setFormula(rs.formula())
+                            .setParamToken(rs.paramToken());
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setRollingFormula(builder.build())
+                    .build();
+        }
     }
 
     static UpdateByColumn.UpdateBySpec adapt(UpdateBySpec spec) {

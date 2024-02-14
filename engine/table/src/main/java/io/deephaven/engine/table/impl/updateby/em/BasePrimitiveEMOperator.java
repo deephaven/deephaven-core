@@ -3,8 +3,11 @@ package io.deephaven.engine.table.impl.updateby.em;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -18,6 +21,8 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
     /** For EM operators, we can allow floating-point tick/time units. */
     protected final double reverseWindowScaleUnits;
     protected final double opAlpha;
+
+    protected ColumnSource<?> valueSource;
     protected double opOneMinusAlpha;
     final EmFunction aggFunction;
 
@@ -47,32 +52,38 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the row redirection to use for the EM operator output columns
      * @param control the control parameters for EM operator
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
      * @param windowScaleUnits the smoothing window for the EM operator. If no {@code timestampColumnName} is provided,
      *        this is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BasePrimitiveEMOperator(@NotNull final MatchPair pair,
+    public BasePrimitiveEMOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,
             @NotNull final EmFunction aggFunction) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, 0, 0, false);
+        super(pair, affectingColumns, timestampColumnName, 0, 0, false);
         this.control = control;
         this.aggFunction = aggFunction;
         this.reverseWindowScaleUnits = windowScaleUnits;
 
         opAlpha = Math.exp(-1.0 / reverseWindowScaleUnits);
         opOneMinusAlpha = 1 - opAlpha;
-
     }
 
     @Override
-    public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        valueSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(pair.rightColumn));
+    }
+
+    @Override
+    public void initializeCumulative(
+            @NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {

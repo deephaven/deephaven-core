@@ -17,6 +17,7 @@ import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
@@ -1186,4 +1187,55 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     // endregion
+
+    @Test
+    public void testNegativeDatasets() {
+        final Table t = TableTools.emptyTable(100)
+                .update("double_x=-100.0",
+                        "int_x=-100")
+                .update("float_x=(float)double_x",
+                        "long_x=(long)int_x",
+                        "short_x=(short)int_x",
+                        "byte_x=(byte)int_x",
+                        "char_x=(char)int_x");
+
+        final Table expected = t.updateBy(UpdateByOperation.RollingMax(3));
+
+        // We can assert equality to the input table because the data values are constant.
+        TstUtils.assertTableEquals(t, expected, TableDiff.DiffItems.DoublesExact);
+    }
+
+    @Test
+    public void testPositiveDatasets() {
+        final Table t = TableTools.emptyTable(100)
+                .update("double_x=100.0",
+                        "int_x=100")
+                .update("float_x=(float)double_x",
+                        "long_x=(long)int_x",
+                        "short_x=(short)int_x",
+                        "byte_x=(byte)int_x",
+                        "char_x=(char)int_x");
+
+        final Table expected = t.updateBy(UpdateByOperation.RollingMax(3));
+
+        // We can assert equality to the input table because the data values are constant.
+        TstUtils.assertTableEquals(t, expected, TableDiff.DiffItems.DoublesExact);
+    }
+
+    @Test
+    public void testZeroDatasets() {
+        final Table t = TableTools.emptyTable(100)
+                .update("double_x=0.0",
+                        "int_x=0")
+                .update("float_x=(float)double_x",
+                        "long_x=(long)int_x",
+                        "short_x=(short)int_x",
+                        "byte_x=(byte)int_x",
+                        "char_x=(char)int_x");
+
+        final Table expected = t.updateBy(UpdateByOperation.RollingMax(3));
+
+        // We can assert equality to the input table because the data values are constant.
+        TstUtils.assertTableEquals(t, expected, TableDiff.DiffItems.DoublesExact);
+    }
 }

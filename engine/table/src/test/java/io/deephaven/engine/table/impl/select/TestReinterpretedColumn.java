@@ -5,7 +5,9 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
@@ -14,6 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InstantArraySource;
 import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -23,6 +26,7 @@ import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeArraySource;
 import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
 import io.deephaven.engine.table.impl.util.TableTimeConversions;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -424,5 +428,50 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         final int minute = (startIter + 30) % 60;
 
         return LocalTime.of(hour + hourOff, minute, 0);
+    }
+
+    @Test
+    public void testFillPrevOnInstantColumn() {
+        final InstantArraySource source = new InstantArraySource();
+        source.startTrackingPrevValues();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        try (final RowSet latticeRows = RowSetFactory.flat(1024);
+                final RowSet unchangedRows = RowSetFactory.flat(1024).shift(ArrayBackedColumnSource.BLOCK_SIZE)) {
+            source.ensureCapacity(unchangedRows.lastRowKey() + 1);
+            updateGraph.runWithinUnitTestCycle(() -> {
+                latticeRows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row));
+                });
+
+                // create rows that won't change in a separate block for code coverage
+                unchangedRows.forAllRowKeys(row -> {
+                    source.set(row, Instant.ofEpochMilli(row));
+                });
+            });
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                // change only some rows; for coverage
+                latticeRows.forAllRowKeys(row -> {
+                    if (row % 2 == 0) {
+                        source.set(row, Instant.ofEpochMilli(row + latticeRows.size()));
+                    }
+                });
+
+                try (final RowSet allRows = latticeRows.union(unchangedRows);
+                        final ChunkSource.FillContext context = source.makeFillContext(allRows.intSize());
+                        final WritableObjectChunk<Instant, Values> chunk =
+                                WritableObjectChunk.makeWritableChunk(allRows.intSize())) {
+                    source.fillPrevChunk(context, chunk, allRows);
+                    allRows.forAllRowKeys(row -> {
+                        final long chunkOffset = row + (row < ArrayBackedColumnSource.BLOCK_SIZE
+                                ? 0
+                                : (latticeRows.size() - ArrayBackedColumnSource.BLOCK_SIZE));
+                        assertEquals(Instant.ofEpochMilli(row), chunk.get((int) chunkOffset));
+                    });
+                }
+            });
+        }
     }
 }

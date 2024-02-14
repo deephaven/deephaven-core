@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkPool and regenerate
@@ -8,135 +5,28 @@
  */
 package io.deephaven.chunk.util.pools;
 
-import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.chunk.ResettableByteChunk;
+import io.deephaven.chunk.ResettableReadOnlyChunk;
+import io.deephaven.chunk.ResettableWritableByteChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.*;
-import io.deephaven.util.datastructures.SegmentedSoftPool;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
+public interface ByteChunkPool {
 
-/**
- * {@link ChunkPool} implementation for chunks of bytes.
- */
-@SuppressWarnings("rawtypes")
-public final class ByteChunkPool implements ChunkPool {
+    ChunkPool asChunkPool();
 
-    private final WritableByteChunk<Any> EMPTY = WritableByteChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_BYTE_ARRAY);
+    <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(int capacity);
 
-    /**
-     * Sub-pools by power-of-two sizes for {@link WritableByteChunk}s.
-     */
-    private final SegmentedSoftPool<WritableByteChunk>[] writableByteChunks;
+    void giveWritableByteChunk(@NotNull WritableByteChunk<?> writableByteChunk);
 
-    /**
-     * Sub-pool of {@link ResettableByteChunk}s.
-     */
-    private final SegmentedSoftPool<ResettableByteChunk> resettableByteChunks;
+    <ATTR extends Any> ResettableByteChunk<ATTR> takeResettableByteChunk();
 
-    /**
-     * Sub-pool of {@link ResettableWritableByteChunk}s.
-     */
-    private final SegmentedSoftPool<ResettableWritableByteChunk> resettableWritableByteChunks;
+    void giveResettableByteChunk(@NotNull ResettableByteChunk<?> resettableByteChunk);
 
-    ByteChunkPool() {
-        //noinspection unchecked
-        writableByteChunks = new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
-        for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
-            final int chunkLog2Capacity = pcci + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
-            final int chunkCapacity = 1 << chunkLog2Capacity;
-            writableByteChunks[pcci] = new SegmentedSoftPool<>(
-                    SUB_POOL_SEGMENT_CAPACITY,
-                    () -> ChunkPoolInstrumentation.getAndRecord(() -> WritableByteChunk.makeWritableChunkForPool(chunkCapacity)),
-                    (final WritableByteChunk chunk) -> chunk.setSize(chunkCapacity)
-            );
-        }
-        resettableByteChunks = new SegmentedSoftPool<>(
-                SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableByteChunk::makeResettableChunkForPool),
-                ResettableByteChunk::clear
-        );
-        resettableWritableByteChunks = new SegmentedSoftPool<>(
-                SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableWritableByteChunk::makeResettableChunkForPool),
-                ResettableWritableByteChunk::clear
-        );
-    }
+    <ATTR extends Any> ResettableWritableByteChunk<ATTR> takeResettableWritableByteChunk();
 
-    @Override
-    public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
-        return takeWritableByteChunk(capacity);
-    }
-
-    @Override
-    public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-        giveWritableByteChunk(writableChunk.asWritableByteChunk());
-    }
-
-    @Override
-    public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
-        return takeResettableByteChunk();
-    }
-
-    @Override
-    public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-        giveResettableByteChunk(resettableChunk.asResettableByteChunk());
-    }
-
-    @Override
-    public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
-        return takeResettableWritableByteChunk();
-    }
-
-    @Override
-    public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-        giveResettableWritableByteChunk(resettableWritableChunk.asResettableWritableByteChunk());
-    }
-
-    public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(final int capacity) {
-        if (capacity == 0) {
-            //noinspection unchecked
-            return (WritableByteChunk<ATTR>) EMPTY;
-        }
-        final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
-        if (poolIndexForTake >= 0) {
-            //noinspection resource
-            final WritableByteChunk result = writableByteChunks[poolIndexForTake].take();
-            result.setSize(capacity);
-            //noinspection unchecked
-            return ChunkPoolReleaseTracking.onTake(result);
-        }
-        //noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(WritableByteChunk.makeWritableChunkForPool(capacity));
-    }
-
-    public void giveWritableByteChunk(@NotNull final WritableByteChunk<?> writableByteChunk) {
-        if (writableByteChunk == EMPTY || writableByteChunk.isAlias(EMPTY)) {
-            return;
-        }
-        ChunkPoolReleaseTracking.onGive(writableByteChunk);
-        final int capacity = writableByteChunk.capacity();
-        final int poolIndexForGive = getPoolIndexForGive(checkCapacityBounds(capacity));
-        if (poolIndexForGive >= 0) {
-            writableByteChunks[poolIndexForGive].give(writableByteChunk);
-        }
-    }
-
-    public <ATTR extends Any> ResettableByteChunk<ATTR> takeResettableByteChunk() {
-        //noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableByteChunks.take());
-    }
-
-    public void giveResettableByteChunk(@NotNull final ResettableByteChunk resettableByteChunk) {
-        resettableByteChunks.give(ChunkPoolReleaseTracking.onGive(resettableByteChunk));
-    }
-
-    public <ATTR extends Any> ResettableWritableByteChunk<ATTR> takeResettableWritableByteChunk() {
-        //noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableWritableByteChunks.take());
-    }
-
-    public void giveResettableWritableByteChunk(@NotNull final ResettableWritableByteChunk resettableWritableByteChunk) {
-        resettableWritableByteChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableByteChunk));
-    }
+    void giveResettableWritableByteChunk(@NotNull ResettableWritableByteChunk<?> resettableWritableByteChunk);
 }

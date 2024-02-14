@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import org.jetbrains.annotations.NotNull;
@@ -62,15 +61,6 @@ public interface SelectColumn extends Selectable {
     SelectColumn[] ZERO_LENGTH_SELECT_COLUMN_ARRAY = new SelectColumn[0];
 
     /**
-     * Initialize the SelectColumn using the input table and return a list of underlying columns that this SelectColumn
-     * is dependent upon.
-     *
-     * @param table the table to initialize internals from
-     * @return a list containing all columns from 'table' that the result depends on
-     */
-    List<String> initInputs(Table table);
-
-    /**
      * Initialize the column from the provided set of underlying columns and row set.
      *
      * @param rowSet the base row set
@@ -83,11 +73,12 @@ public interface SelectColumn extends Selectable {
     /**
      * Initialize any internal column definitions from the provided initial.
      *
-     * @param columnDefinitionMap the starting set of column definitions
+     * @param columnDefinitionMap the starting set of column definitions; valid for this call only
      *
      * @return a list of columns on which the result of this is dependent
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within initDef. Implementations must be idempotent.
+     *          Implementations that want to hold on to the {@code columnDefinitionMap} must make a defensive copy.
      */
     List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap);
 

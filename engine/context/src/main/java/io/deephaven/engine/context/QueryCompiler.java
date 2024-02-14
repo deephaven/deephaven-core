@@ -113,7 +113,7 @@ public class QueryCompiler {
         try {
             urls[0] = (classDestination.toURI().toURL());
         } catch (MalformedURLException e) {
-            throw new RuntimeException("", e);
+            throw new UncheckedDeephavenException(e);
         }
         this.ucl = new WritableURLClassLoader(urls, parentClassLoaderToUse);
 
@@ -183,7 +183,8 @@ public class QueryCompiler {
         ensureDirectories(parentDir,
                 () -> "Unable to create missing destination directory " + parentDir.getAbsolutePath());
         if (!destinationFile.createNewFile()) {
-            throw new RuntimeException("Unable to create destination file " + destinationFile.getAbsolutePath());
+            throw new UncheckedDeephavenException(
+                    "Unable to create destination file " + destinationFile.getAbsolutePath());
         }
         final ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream(data.length);
         byteOutStream.write(data, 0, data.length);
@@ -274,7 +275,7 @@ public class QueryCompiler {
         // (and therefore mkdirs() would return false), but still get the directory we need (and therefore exists()
         // would return true)
         if (!file.mkdirs() && !file.isDirectory()) {
-            throw new RuntimeException(runtimeErrMsg.get());
+            throw new UncheckedDeephavenException(runtimeErrMsg.get());
         }
     }
 
@@ -396,7 +397,7 @@ public class QueryCompiler {
         try {
             ucl.addURL(classSourceDirectory.toURI().toURL());
         } catch (MalformedURLException e) {
-            throw new RuntimeException("", e);
+            throw new UncheckedDeephavenException(e);
         }
     }
 
@@ -425,7 +426,7 @@ public class QueryCompiler {
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unable to create SHA-256 hashing digest", e);
+            throw new UncheckedDeephavenException("Unable to create SHA-256 hashing digest", e);
         }
         final String basicHashText =
                 ByteUtils.byteArrToHex(digest.digest(classBody.getBytes(StandardCharsets.UTF_8)));
@@ -645,7 +646,8 @@ public class QueryCompiler {
 
         final String[] splitPackageName = packageName.split("\\.");
         if (splitPackageName.length == 0) {
-            throw new RuntimeException(String.format("packageName %s expected to have at least one .", packageName));
+            throw new UncheckedDeephavenException(String.format(
+                    "packageName %s expected to have at least one .", packageName));
         }
         final String[] truncatedSplitPackageName = Arrays.copyOf(splitPackageName, splitPackageName.length - 1);
 
@@ -689,25 +691,41 @@ public class QueryCompiler {
 
         final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
-            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
 
         final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
         final List<String> compilerOptions = Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString);
 
-        final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
+        final JavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
 
-        final boolean result = compiler.getTask(compilerOutput,
-                fileManager,
-                null,
-                compilerOptions,
-                null,
-                Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
-                .call();
-        if (!result) {
-            throw new RuntimeException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
+        boolean result = false;
+        boolean exceptionThrown = false;
+        try {
+            result = compiler.getTask(compilerOutput,
+                    fileManager,
+                    null,
+                    compilerOptions,
+                    null,
+                    Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
+                    .call();
+        } catch (final Throwable err) {
+            exceptionThrown = true;
+            throw err;
+        } finally {
+            try {
+                fileManager.close();
+            } catch (final IOException ioe) {
+                if (!exceptionThrown) {
+                    // noinspection ThrowFromFinallyBlock
+                    throw new UncheckedIOException("Could not close JavaFileManager", ioe);
+                }
+            }
         }
-        // The above has compiled into into e.g.
+        if (!result) {
+            throw new UncheckedDeephavenException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
+        }
+        // The above has compiled into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
         // class files}
         // We want to atomically move it to e.g.
@@ -737,7 +755,7 @@ public class QueryCompiler {
     private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
         final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
-            throw new RuntimeException("No Java compiler provided - are you using a JRE instead of a JDK?");
+            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
 
         final File outputDirectory = Files.createTempDirectory("temporaryCompilationDirectory").toFile();
@@ -828,7 +846,7 @@ public class QueryCompiler {
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Error extract manifest file from " + javaClasspath + ".\n", e);
+                throw new UncheckedIOException("Error extract manifest file from " + javaClasspath + ".\n", e);
             }
         }
         return javaClasspath;

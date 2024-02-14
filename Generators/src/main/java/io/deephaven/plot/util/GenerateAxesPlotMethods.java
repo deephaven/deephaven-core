@@ -4,6 +4,7 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.gen.GenUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,6 +21,7 @@ import java.util.stream.IntStream;
 public class GenerateAxesPlotMethods {
 
     private static final Logger log = Logger.getLogger(GenerateAxesPlotMethods.class.toString());
+    private static final String GRADLE_TASK = ":Generators:generateAxesPlotMethods";
 
     private static final String PLOT_INFO_ID = "new PlotInfo(this, seriesName)";
 
@@ -863,17 +865,14 @@ public class GenerateAxesPlotMethods {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
-            if (!newcode.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GenerateAxesPlotMethods or \"./gradlew :Generators:generateAxesPlotMethods\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GenerateAxesPlotMethods.class, GRADLE_TASK, oldCode, newcode);
         } else {
 
             PrintWriter out = new PrintWriter(file);
             out.print(newcode);
             out.close();
 
-            log.warning(file + " written");
+            log.info(file + " written");
         }
     }
 
@@ -892,7 +891,7 @@ public class GenerateAxesPlotMethods {
         }
 
         log.setLevel(Level.WARNING);
-        log.warning("Running GenerateAxesPlotMethods assertNoChange=" + assertNoChange);
+        log.info("Running GenerateAxesPlotMethods assertNoChange=" + assertNoChange);
 
         final String fileIface = devroot + "/Plot/src/main/java/io/deephaven/plot/Axes.java";
         final String fileImpl = devroot + "/Plot/src/main/java/io/deephaven/plot/AxesImpl.java";

@@ -29,6 +29,11 @@ public class TstColumnRegionFloat {
     static class Identity implements ColumnRegionFloat<Values>, Page.WithDefaults<Values> {
 
         @Override
+        public void invalidate() {
+            // NOTHNG TO DO
+        }
+
+        @Override
         public long mask() {
             return Long.MAX_VALUE;
         }

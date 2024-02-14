@@ -21,6 +21,8 @@ import jpy
 _di_wrapper_classes: Set[JObjectWrapper] = set()
 _has_all_wrappers_imported = False
 
+JLivePyObjectWrapper = jpy.get_type('io.deephaven.server.plugin.python.LivePyObjectWrapper')
+
 
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
@@ -115,6 +117,49 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
             return wc
 
     return None
+
+
+def javaify(obj: Any) -> Optional[jpy.JType]:
+    """
+    Returns an object that is safe to pass to Java. Callers should take care to ensure that this happens
+    in a liveness scope that reflects the lifetime of the reference to be passed to Java.
+
+    The implementation will return a Java object that can be passed over jpy as a java.lang.Object. An
+    existing java.lang.Object passed in to this method will be returned as-is, a JObjectWrapper will be
+    unwrapped to return its underlying Java object, and anything else will be wrapped in a LivePyObjectWrapper.
+
+    https://github.com/deephaven/deephaven-core/issues/1775
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, JObjectWrapper):
+        return obj.j_object
+    if isinstance(obj, jpy.JType):
+        return obj
+    # We must return a java object, so wrap in a PyObjectLivenessNode so that the server's liveness tracking
+    # will correctly notify python that the object was released
+    return JLivePyObjectWrapper(obj)
+
+
+def pythonify(j_obj: Any) -> Optional[Any]:
+    """
+    Reciprocal of javaify, returns an object that is safe to be used in Python after being passed
+    from Java.
+
+    The implementation will return a Python object both when a Python object is passed in, or if a
+    LivePyObjectWrapper was passed in. Otherwise, delegates to wrap_j_object to attempt to wrap the
+    Java object, and if no wrapper is known, returns the Java object itself.
+
+    Where possible, when passing a python object or wrapper from Java, unwrap from LivePyObjectWrapper
+    to PyObject to avoid excess JNI/GIL overhead.
+    """
+    if not isinstance(j_obj, jpy.JType):
+        return j_obj
+    # Definitely a JType, check if it is a LivePyObjectWrapper
+    if j_obj.jclass == JLivePyObjectWrapper.jclass:
+        return j_obj.getPythonObject()
+    # Vanilla Java object, see if we have explicit wrapping for it
+    return wrap_j_object(j_obj)
 
 
 def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:

@@ -1,0 +1,18 @@
+:root {
+    --dark-color-background: #040427;
+    --dark-color-background-secondary: #0d1b37;
+    --dark-color-background-warning: #fffbef;
+    --dark-color-warning-text: #463b19;
+    --dark-color-accent: #24405a;
+    --dark-color-active-menu-item: #2f546c;
+    --dark-color-text: #f0f9fb;
+    --dark-color-text-aside: #d3d3d3;
+    --dark-color-link: #65c6da;
+    --dark-color-ts-project: #b7a9f6;
+    --dark-color-ts-enum: #f4d93e;
+    --dark-color-ts-variable: #b2e3ed;
+    --dark-color-ts-function: #d5cdfa;
+    --dark-color-ts-class: #93d7e5;
+    --dark-color-ts-interface: #afd685;
+    --dark-color-ts-type-alias: #f27596;
+}

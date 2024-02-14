@@ -23,7 +23,7 @@ public class HistogramStateTest extends TestCase {
         // This should print 10 invocations every time
 
         Stats.update(new ItemUpdateListener() {
-            public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex, long intervalMillis,
+            public void handleItemUpdated(Item<?> item, long now, long appNow, int intervalIndex, long intervalMillis,
                     String intervalName) {
                 Value v = item.getValue();
                 History history = v.getHistory();

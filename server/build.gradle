@@ -14,7 +14,6 @@ dependencies {
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
-    implementation project(':FishUtil')
     implementation depCommonsLang3
     Classpaths.inheritCommonsText(project, 'implementation')
 
@@ -91,14 +90,18 @@ dependencies {
     implementation 'dev.dirs:directories:26'
 
     testImplementation 'io.grpc:grpc-testing'
+    testImplementation('io.grpc:grpc-inprocess')
 
     testImplementation project(':proto:proto-backplane-grpc')
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-context')
-    testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation TestTools.projectDependency(project, 'Util')
+
+    testImplementation project(':server-test')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritAssertJ(project)
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)

@@ -7,6 +7,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -20,13 +21,14 @@ import java.math.BigDecimal;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
-    protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
 
     /** For EM operators, we can allow floating-point tick/time units. */
     protected final double reverseWindowScaleUnits;
     protected final BigDecimal opAlpha;
     protected final BigDecimal opOneMinusAlpha;
+
+    protected ColumnSource<?> valueSource;
 
     final EmFunction aggFunction;
 
@@ -71,26 +73,21 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the {@link RowRedirection} to use for dense output sources
      * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
      * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource a reference to the input column source for this operation
      */
-    public BaseBigNumberEMOperator(@NotNull final MatchPair pair,
+    public BaseBigNumberEMOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,
-            @NotNull final ColumnSource<?> valueSource,
             @NotNull final EmFunction aggFunction) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, 0, 0, false,
-                BigDecimal.class);
+        super(pair, affectingColumns, timestampColumnName, 0, 0, false, BigDecimal.class);
 
         this.control = control;
-        this.valueSource = valueSource;
         this.aggFunction = aggFunction;
         this.reverseWindowScaleUnits = windowScaleUnits;
 
@@ -106,12 +103,20 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
     }
 
     @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        valueSource = source.getColumnSource(pair.rightColumn);
+    }
+
+    @Override
     public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {
         super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp, bucketRowSet);
 
+        // noinspection unchecked
         final Context ctx = (Context) updateContext;
         // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
         ctx.lastStamp = firstUnmodifiedTimestamp;

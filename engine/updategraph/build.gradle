@@ -6,14 +6,10 @@ plugins {
 description 'Engine Update Graph: Core utilities for maintaining a DAG for update processing'
 
 dependencies {
-    api project(':qst')
-
     implementation project(':engine-chunk')
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation project(':Net')
-    implementation project(':FishUtil')
     implementation depCommonsLang3
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'

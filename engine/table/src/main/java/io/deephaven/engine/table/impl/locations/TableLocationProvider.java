@@ -34,6 +34,13 @@ public interface TableLocationProvider extends NamedImplementation {
          * @param tableLocationKey The new table location key
          */
         void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+
+        /**
+         * Notify the listener of a {@link TableLocationKey} that has been removed.
+         *
+         * @param tableLocationKey The table location key that was removed
+         */
+        void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
     }
 
     /**
@@ -70,7 +77,7 @@ public interface TableLocationProvider extends NamedImplementation {
     void unsubscribe(@NotNull Listener listener);
 
     /**
-     * Initialize or run state information about the list of existing locations.
+     * Initialize or refresh state information about the list of existing locations.
      */
     void refresh();
 

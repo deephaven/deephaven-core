@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
@@ -61,10 +62,10 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         final TotalsTableBuilder builder = new TotalsTableBuilder();
         final Table totals = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> TotalsTableBuilder.makeTotalsTable(builder.applyToTable(queryTable)));
-        final Map<String, ? extends ColumnSource<?>> resultColumns = totals.getColumnSourceMap();
+        final Set<String> resultColumns = totals.getDefinition().getColumnNameSet();
         assertEquals(1, totals.size());
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
-                "floatCol", "byteCol", "shortCol")), resultColumns.keySet());
+                "floatCol", "byteCol", "shortCol")), resultColumns);
 
         assertEquals((long) Numeric.sum((int[]) DataAccessHelpers.getColumn(queryTable, "intCol").getDirect()),
                 DataAccessHelpers.getColumn(totals, "intCol").get(0));
@@ -85,7 +86,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         final Table totals2 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
         assertEquals(new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "byteCol")),
-                totals2.getColumnSourceMap().keySet());
+                totals2.getDefinition().getColumnNameSet());
         assertEquals(Numeric.min((byte[]) DataAccessHelpers.getColumn(queryTable, "byteCol").getDirect()),
                 DataAccessHelpers.getColumn(totals2, "byteCol").get(0));
         assertEquals(DataAccessHelpers.getColumn(queryTable, "Sym").get(0),
@@ -107,7 +108,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
             assertEquals(
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
                             "doubleNullCol__Count", "doubleCol2", "byteCol", "shortCol")),
-                    totals3.getColumnSourceMap().keySet());
+                    totals3.getDefinition().getColumnNameSet());
             assertEquals(
                     Numeric.max((byte[]) DataAccessHelpers.getColumn(queryTable, "byteCol").getDirect()),
                     DataAccessHelpers.getColumn(totals3, "byteCol").getByte(0));

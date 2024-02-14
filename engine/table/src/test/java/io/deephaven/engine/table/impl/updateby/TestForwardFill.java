@@ -313,7 +313,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         }
     }
 
-    final void assertWithForwardFill(final @NotNull Object expected, final @NotNull Object actual) {
+    final void assertWithForwardFill(@NotNull final Object expected, @NotNull final Object actual) {
         if (expected instanceof char[]) {
             assertArrayEquals(Basic.forwardFill((char[]) expected), (char[]) actual);
         } else if (expected instanceof byte[]) {

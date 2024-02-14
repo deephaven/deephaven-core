@@ -4,6 +4,7 @@
 package io.deephaven.server.util;
 
 import io.deephaven.base.clock.Clock;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -67,6 +68,18 @@ public interface Scheduler extends Clock {
             this.clock = Objects.requireNonNull(clock);
         }
 
+        @VisibleForTesting
+        public void shutdown() throws InterruptedException {
+            concurrentDelegate.shutdownNow();
+            serialDelegate.shutdownNow();
+            if (!concurrentDelegate.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new RuntimeException("concurrentDelegate not shutdown within 5 seconds");
+            }
+            if (!serialDelegate.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new RuntimeException("serialDelegate not shutdown within 5 seconds");
+            }
+        }
+
         @Override
         public long currentTimeMillis() {
             return clock.currentTimeMillis();
@@ -98,17 +111,17 @@ public interface Scheduler extends Clock {
         }
 
         @Override
-        public void runImmediately(final @NotNull Runnable command) {
+        public void runImmediately(@NotNull final Runnable command) {
             runAfterDelay(0, command);
         }
 
         @Override
-        public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
+        public void runAfterDelay(final long delayMs, @NotNull final Runnable command) {
             concurrentDelegate.schedule(command, delayMs, TimeUnit.MILLISECONDS);
         }
 
         @Override
-        public void runSerially(final @NotNull Runnable command) {
+        public void runSerially(@NotNull final Runnable command) {
             serialDelegate.submit(command);
         }
     }

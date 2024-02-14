@@ -29,13 +29,13 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
-    public static <T extends TableOperations<T, T>> T i32768(TableCreator<T> c) {
-        return c.emptyTable(32768).view("I=i");
+    public static <T extends TableOperations<T, T>> T i132768(TableCreator<T> c) {
+        return c.emptyTable(132768).view("I=i");
     }
 
     @Test
     public void getSchema() throws Exception {
-        final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
+        final TableSpec table = i132768(TableCreatorImpl.INSTANCE);
         try (final TableHandle handle = flightSession.session().execute(table)) {
             final Schema schema = flightSession.schema(handle.export());
             final Schema expected = new Schema(Collections.singletonList(
@@ -46,14 +46,17 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
 
     @Test
     public void getStream() throws Exception {
-        final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
+        final TableSpec table = i132768(TableCreatorImpl.INSTANCE);
         try (final TableHandle handle = flightSession.session().execute(table);
                 final FlightStream stream = flightSession.stream(handle)) {
             int numRows = 0;
+            int flightCount = 0;
             while (stream.next()) {
+                ++flightCount;
                 numRows += stream.getRoot().getRowCount();
             }
-            Assert.assertEquals(32768, numRows);
+            Assert.assertEquals(1, flightCount);
+            Assert.assertEquals(132768, numRows);
         }
     }
 
@@ -127,13 +130,14 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                 ColumnHeader.ofFloat("Float"),
                 ColumnHeader.ofDouble("Double"),
                 ColumnHeader.ofString("String"),
-                ColumnHeader.ofInstant("Instant"))
+                ColumnHeader.ofInstant("Instant"),
+                ColumnHeader.of("ByteVector", byte[].class))
                 .start(3)
                 .row(true, (byte) 42, 'a', (short) 32_000, 1234567, 1234567890123L, 3.14f, 3.14d, "Hello, World",
-                        Instant.now())
-                .row(null, null, null, null, null, null, null, null, null, (Instant) null)
+                        Instant.now(), "abc".getBytes())
+                .row(null, null, null, null, null, null, null, null, null, (Instant) null, (byte[]) null)
                 .row(false, (byte) -42, 'b', (short) -32_000, -1234567, -1234567890123L, -3.14f, -3.14d, "Goodbye.",
-                        Instant.ofEpochMilli(0))
+                        Instant.ofEpochMilli(0), new byte[] {0x32, 0x02, 0x17, 0x42})
                 .newTable();
     }
 }

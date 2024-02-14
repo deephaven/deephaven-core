@@ -3,21 +3,27 @@
 #
 
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
-from typing import Dict, Tuple, List, Callable, Union
+import jpy
+from typing import Dict, Tuple, List, Callable, Union, Optional
 from warnings import warn
 
-import jpy
-
 from deephaven import dtypes
-from deephaven.jcompat import j_hashmap, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
+from deephaven.jcompat import j_hashmap, j_properties, j_array_list
 from deephaven.table import Table, PartitionedTable
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
+_JProtobufConsumeOptions = jpy.get_type("io.deephaven.kafka.protobuf.ProtobufConsumeOptions")
+_JProtobufDescriptorParserOptions = jpy.get_type("io.deephaven.protobuf.ProtobufDescriptorParserOptions")
+_JDescriptorSchemaRegistry = jpy.get_type("io.deephaven.kafka.protobuf.DescriptorSchemaRegistry")
+_JDescriptorMessageClass = jpy.get_type("io.deephaven.kafka.protobuf.DescriptorMessageClass")
+_JProtocol = jpy.get_type("io.deephaven.kafka.protobuf.Protocol")
+_JFieldOptions = jpy.get_type("io.deephaven.protobuf.FieldOptions")
+_JFieldPath = jpy.get_type("io.deephaven.protobuf.FieldPath")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
@@ -119,14 +125,6 @@ def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], st
     if not mapped_only:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
     return _JPythonTools.functionFromMapWithDefault(java_map, None)
-
-
-def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
-    """Converts a list of two-element tuples in the form of (name, DType) to a list of Columns."""
-    cols = []
-    for t in ts:
-        cols.append(Column(*t))
-    return cols
 
 
 def consume(
@@ -280,6 +278,99 @@ def _consume(
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
 
+class ProtobufProtocol(JObjectWrapper):
+    """The protobuf serialization / deserialization protocol."""
+
+    j_object_type = jpy.get_type("io.deephaven.kafka.protobuf.Protocol")
+
+    @staticmethod
+    def serdes() -> 'ProtobufProtocol':
+        """The Kafka Protobuf serdes protocol. The payload's first byte is the serdes magic byte, the next 4-bytes are
+        the schema ID, the next variable-sized bytes are the message indexes, followed by the normal binary encoding of
+        the Protobuf data."""
+        return ProtobufProtocol(ProtobufProtocol.j_object_type.serdes())
+
+    @staticmethod
+    def raw() -> 'ProtobufProtocol':
+        """The raw Protobuf protocol. The full payload is the normal binary encoding of the Protobuf data."""
+        return ProtobufProtocol(ProtobufProtocol.j_object_type.raw())
+
+    def __init__(self, j_protocol: jpy.JType):
+        self._j_protocol = j_protocol
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_protocol
+
+
+def protobuf_spec(
+        schema: Optional[str] = None,
+        schema_version: Optional[int] = None,
+        schema_message_name: Optional[str] = None,
+        message_class: Optional[str] = None,
+        include: Optional[List[str]] = None,
+        protocol: Optional[ProtobufProtocol] = None,
+) -> KeyValueSpec:
+    """Creates a spec for parsing a Kafka protobuf stream into a Deephaven table. Uses the schema, schema_version, and
+    schema_message_name to fetch the schema from the schema registry; or uses message_class to to get the schema from
+    the classpath.
+
+    Args:
+        schema (Optional[str]): the schema subject name. When set, this will fetch the protobuf message descriptor from
+            the schema registry. Either this, or message_class, must be set.
+        schema_version (Optional[int]): the schema version, or None for latest, default is None. For purposes of
+            reproducibility across restarts where schema changes may occur, it is advisable for callers to set this.
+            This will ensure the resulting table definition will not change across restarts. This gives the caller an
+            explicit opportunity to update any downstream consumers when updating schema_version if necessary.
+        schema_message_name (Optional[str]): the fully-qualified protobuf message name, for example
+            "com.example.MyMessage". This message's descriptor will be used as the basis for the resulting table's
+            definition. If None, the first message descriptor in the protobuf schema will be used. The default is None.
+            It is advisable for callers to explicitly set this.
+        message_class (Optional[str]): the fully-qualified Java class name for the protobuf message on the current
+            classpath, for example "com.example.MyMessage" or "com.example.OuterClass$MyMessage". When this is set, the
+            schema registry will not be used. Either this, or schema, must be set.
+        include (Optional[List[str]]): the '/' separated paths to include. The final path may be a '*' to additionally
+            match everything that starts with path. For example, include=["/foo/bar"] will include the field path
+            name paths [], ["foo"], and ["foo", "bar"]. include=["/foo/bar/*"] will additionally include any field path
+            name paths that start with ["foo", "bar"]:  ["foo", "bar", "baz"],  ["foo", "bar", "baz", "zap"], etc. When
+            multiple includes are specified, the fields will be included when any of the components matches. Default is
+            None, which includes all paths.
+        protocol (Optional[ProtobufProtocol]): the wire protocol for this payload. When schema is set,
+            ProtobufProtocol.serdes() will be used by default. When message_class is set, ProtobufProtocol.raw() will
+            be used by default.
+    Returns:
+        a KeyValueSpec
+    """
+    parser_options_builder = _JProtobufDescriptorParserOptions.builder()
+    if include is not None:
+        parser_options_builder.fieldOptions(
+            _JFieldOptions.includeIf(
+                _JFieldPath.anyMatches(j_array_list(include))
+            )
+        )
+    pb_consume_builder = (
+        _JProtobufConsumeOptions.builder()
+        .parserOptions(parser_options_builder.build())
+    )
+    if message_class:
+        if schema or schema_version or schema_message_name:
+            raise DHError("Must only set schema information, or message_class, but not both.")
+        pb_consume_builder.descriptorProvider(_JDescriptorMessageClass.of(jpy.get_type(message_class).jclass))
+    elif schema:
+        dsr = _JDescriptorSchemaRegistry.builder().subject(schema)
+        if schema_version:
+            dsr.version(schema_version)
+        if schema_message_name:
+            dsr.messageName(schema_message_name)
+        pb_consume_builder.descriptorProvider(dsr.build())
+    else:
+        raise DHError("Must set schema or message_class")
+    if protocol:
+        pb_consume_builder.protocol(protocol.j_object)
+    return KeyValueSpec(
+        j_spec=_JKafkaTools_Consume.protobufSpec(pb_consume_builder.build())
+    )
+
 
 def avro_spec(
         schema: str,
@@ -292,7 +383,7 @@ def avro_spec(
     Args:
         schema (str): Either a JSON encoded Avro schema definition string, or
             the name for a schema registered in a Confluent compatible Schema Server.
-             If the name for a schema in Schema Server, the associated
+            If the name for a schema in Schema Server, the associated
             'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
@@ -336,19 +427,19 @@ def avro_spec(
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
+def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mapping: Dict = None) -> KeyValueSpec:
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        col_defs (List[Tuple[str, DType]]):  a list of tuples specifying names and types for columns to be
-            created on the resulting Deephaven table.  Tuples contain two elements, a string for column name
-            and a Deephaven type for column data type.
-        mapping (Dict):  a dict mapping JSON fields to column names defined in the col_defs
+        col_defs (Union[Dict[str, DType], List[Tuple[str, DType]]): the column definitions, either a map of column
+            names and Deephaven types, or a list of tuples with two elements, a string for column name and a Deephaven
+            type for column data type.
+        mapping (Dict): a dict mapping JSON fields to column names defined in the col_defs
             argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
             Fields not starting with a '/' character are interpreted as toplevel field names.
             If the mapping argument is not present or None, a 1:1 mapping between JSON fields and Deephaven
-           table column names is assumed.
+            table column names is assumed.
 
     Returns:
         a KeyValueSpec
@@ -357,7 +448,11 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
         DHError
     """
     try:
-        col_defs = [c.j_column_definition for c in _build_column_definitions(col_defs)]
+        if isinstance(col_defs, dict):
+            col_defs = [Column(k, v).j_column_definition for k, v in col_defs.items()]
+        else:
+            col_defs = [Column(*t).j_column_definition for t in col_defs]
+
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))
         mapping = j_hashmap(mapping)

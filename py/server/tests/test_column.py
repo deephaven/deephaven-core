@@ -1,18 +1,20 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
+import datetime
 import time
 import unittest
 from dataclasses import dataclass
 
-from deephaven import DHError, dtypes, new_table
+import numpy as np
+import pandas as pd
+
+from deephaven import DHError, dtypes, new_table, time as dhtime
 from deephaven import empty_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, jobj_col, ColumnType
 from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
 from deephaven.jcompat import j_array_list
-from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
@@ -53,8 +55,8 @@ class ColumnTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             _ = string_col(name="String", data=[1, -1.01])
 
-        with self.assertRaises(DHError) as cm:
-            _ = datetime_col(name="Datetime", data=[epoch_nanos_to_instant(round(time.time())), False])
+        with self.assertRaises(TypeError) as cm:
+            _ = datetime_col(name="Datetime", data=[round(time.time()), False])
 
         with self.assertRaises(DHError) as cm:
             _ = jobj_col(name="JObj", data=[jobj, CustomClass(-1, "-1")])
@@ -130,6 +132,29 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(t_list_integers.columns[5].data_type, dtypes.float32)
         self.assertEqual(t_list_integers.columns[6].data_type, dtypes.float64)
 
+    def test_datetime_col(self):
+        inst = dhtime.to_j_instant(round(time.time()))
+        dt = datetime.datetime.now()
+        _ = datetime_col(name="Datetime", data=[inst, dt, None])
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        ts = pd.Timestamp(dt)
+        np_dt = np.datetime64(dt)
+        data = [ts, np_dt, dt]
+        # test if we can convert to numpy datetime64 array
+        np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        data = np.array(['1970-01-01T00:00:00.000-07:00', '2020-01-01T01:00:00.000+07:00'])
+        np.array([pd.Timestamp(str(dt)).to_numpy() for dt in data], dtype=np.datetime64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
+
+        data = np.array([1, -1])
+        data = data.astype(np.int64)
+        _ = datetime_col(name="Datetime", data=data)
+        self.assertEqual(_.data_type, dtypes.Instant)
 
 @dataclass
 class CustomClass:

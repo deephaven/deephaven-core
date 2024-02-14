@@ -52,15 +52,6 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Table table) {
-        this.sourceColumn = table.getColumnSource(sourceName);
-        if (sourceColumn == null) {
-            throw new NoSuchColumnException(table.getDefinition().getColumnNames(), sourceName);
-        }
-        return Collections.singletonList(sourceName);
-    }
-
-    @Override
     public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         this.sourceColumn = columnsOfInterest.get(sourceName);
         if (sourceColumn == null) {

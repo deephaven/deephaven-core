@@ -8,10 +8,14 @@ Each data type is represented by a DType class which supports creating arrays of
 """
 from __future__ import annotations
 
-from typing import Any, Sequence, Callable, Dict, Type, Union
+import datetime
+import sys
+import typing
+from typing import Any, Sequence, Callable, Dict, Type, Union, _GenericAlias, Optional
 
 import jpy
 import numpy as np
+import numpy._typing as npt
 import pandas as pd
 
 from deephaven import DHError
@@ -98,6 +102,8 @@ float_ = float64
 """Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
 """String type"""
+Character = DType(j_name="java.lang.Character")
+"""Character type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
@@ -116,10 +122,14 @@ Period = DType(j_name="java.time.Period")
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
 TimeZone = DType(j_name="java.time.ZoneId")
 """Time zone type."""
+BusinessCalendar = DType(j_name='io.deephaven.time.calendar.BusinessCalendar')
+"""Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
 """Java Object type"""
+bool_array = DType(j_name='[Z')
+"""boolean array type"""
 byte_array = DType(j_name='[B')
 """Byte array type"""
 int8_array = byte_array
@@ -128,6 +138,8 @@ short_array = DType(j_name='[S')
 """Short array type"""
 int16_array = short_array
 """Short array type"""
+char_array = DType(j_name='[C')
+"""char array type"""
 int32_array = DType(j_name='[I')
 """32bit integer array type"""
 long_array = DType(j_name='[J')
@@ -136,7 +148,7 @@ int64_array = long_array
 """64bit integer array type"""
 int_array = long_array
 """64bit integer array type"""
-single_array = DType(j_name='[S')
+single_array = DType(j_name='[F')
 """Single-precision floating-point array type"""
 float32_array = single_array
 """Single-precision floating-point array type"""
@@ -148,6 +160,8 @@ float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
+boolean_array = DType(j_name='[Ljava.lang.Boolean;')
+"""Java Boolean array type"""
 instant_array = DType(j_name='[Ljava.time.Instant;')
 """Java Instant array type"""
 zdt_array = DType(j_name='[Ljava.time.ZonedDateTime;')
@@ -162,6 +176,33 @@ _PRIMITIVE_DTYPE_NULL_MAP = {
     int64: NULL_LONG,
     float32: NULL_FLOAT,
     float64: NULL_DOUBLE,
+}
+
+_BUILDABLE_ARRAY_DTYPE_MAP = {
+    bool_: bool_array,
+    byte: int8_array,
+    char: char_array,
+    int16: int16_array,
+    int32: int32_array,
+    int64: int64_array,
+    float32: float32_array,
+    float64: float64_array,
+    string: string_array,
+    Instant: instant_array,
+}
+
+
+_J_ARRAY_NP_TYPE_MAP = {
+    boolean_array.j_type: np.dtype("?"),
+    byte_array.j_type: np.dtype("b"),
+    char_array.j_type: np.dtype("uint16"),
+    short_array.j_type: np.dtype("h"),
+    int32_array.j_type: np.dtype("i"),
+    long_array.j_type: np.dtype("l"),
+    float32_array.j_type: np.dtype("f"),
+    double_array.j_type: np.dtype("d"),
+    string_array.j_type: np.dtype("U"),
+    instant_array.j_type: np.dtype("datetime64[ns]"),
 }
 
 
@@ -184,7 +225,35 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
     return lambda v: null_value if v is None else v
 
 
-def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
+def _instant_array(data: Sequence) -> jpy.JType:
+    """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
+    or integers in nanoseconds, to a Java array of Instant values. """
+    # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
+    # it to reduce the number of round trips to the JVM
+    if not isinstance(data, np.ndarray):
+        try:
+            data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
+        except Exception as e:
+            ...
+
+    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i', 'U'):
+        if data.dtype.kind == 'M':
+            longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
+        elif data.dtype.kind == 'i':
+            longs = jpy.array('long', data.astype('int64'))
+        else:  # data.dtype.kind == 'U'
+            longs = jpy.array('long', [pd.Timestamp(str(dt)).to_numpy().astype('int64') for dt in data])
+        data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
+        return data
+
+    if not isinstance(data, instant_array.j_type):
+        from deephaven.time import to_j_instant
+        data = [to_j_instant(d) for d in data]
+
+    return jpy.array(Instant.j_type, data)
+
+
+def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = None) -> Optional[jpy.JType]:
     """ Creates a Java array of the specified data type populated with values from a sequence.
 
     Note:
@@ -202,6 +271,12 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     Raises:
         DHError
     """
+    if seq is None:
+        return None
+
+    if isinstance(seq, np.ndarray) and seq.ndim > 1:
+        raise ValueError("array() does not support multi-dimensional arrays")
+
     if not isinstance(dtype, DType):
         raise TypeError(f"array() expects a DType for the first argument but given a {type(dtype).__name__}")
 
@@ -215,14 +290,14 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
 
+        if dtype == Instant:
+            return _instant_array(seq)
+
         if isinstance(seq, np.ndarray):
             if dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-            elif dtype == Instant:
-                longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
-                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:
@@ -266,3 +341,112 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
             return dtype
 
     return PyObject
+
+
+_NUMPY_INT_TYPE_CODES = {"b", "h", "H", "i", "l"}
+_NUMPY_FLOATING_TYPE_CODES = {"f", "d"}
+
+
+def _is_py_null(x: Any) -> bool:
+    """Checks if the value is a Python null value, i.e. None or NaN, or Pandas.NA."""
+    if x is None:
+        return True
+
+    try:
+        return bool(pd.isna(x))
+    except (TypeError, ValueError):
+        return False
+
+
+def _scalar(x: Any, dtype: DType) -> Any:
+    """Converts a Python value to a Java scalar value. It converts the numpy primitive types, string to
+    their Python equivalents so that JPY can handle them. For datetime values, it converts them to Java Instant.
+    Otherwise, it returns the value as is."""
+
+    # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
+    # and the engine has casting logic to handle it.
+    if (dt := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) and _is_py_null(x) and dtype not in (bool_, char):
+        return dt
+
+    try:
+        if hasattr(x, "dtype"):
+            if x.dtype.char == 'H':  # np.uint16 maps to Java char
+                return Character(int(x))
+            elif x.dtype.char in _NUMPY_INT_TYPE_CODES:
+                return int(x)
+            elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
+                return float(x)
+            elif x.dtype.char == '?':
+                return bool(x)
+            elif x.dtype.char == 'U':
+                return str(x)
+            elif x.dtype.char == 'O':
+                return x
+            elif x.dtype.char == 'M':
+                from deephaven.time import to_j_instant
+                return to_j_instant(x)
+        elif isinstance(x, (datetime.datetime, pd.Timestamp)):
+                from deephaven.time import to_j_instant
+                return to_j_instant(x)
+        return x
+    except:
+        return x
+
+
+def _np_dtype_char(t: Union[type, str]) -> str:
+    """Returns the numpy dtype character code for the given type."""
+    try:
+        np_dtype = np.dtype(t if t else "object")
+        if np_dtype.kind == "O":
+            if t in (datetime.datetime, pd.Timestamp):
+                return "M"
+    except TypeError:
+        np_dtype = np.dtype("object")
+
+    return np_dtype.char
+
+
+def _component_np_dtype_char(t: type) -> Optional[str]:
+    """Returns the numpy dtype character code for the given type's component type if the type is a Sequence type or
+    numpy ndarray, otherwise return None. """
+    component_type = None
+    if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
+        component_type = t.__args__[0]
+
+    if not component_type:
+        component_type = _np_ndarray_component_type(t)
+
+    if component_type:
+        return _np_dtype_char(component_type)
+    else:
+        return None
+
+
+def _np_ndarray_component_type(t: type) -> Optional[type]:
+    """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
+
+    # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
+    # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
+    # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
+    # component type
+    component_type = None
+    if sys.version_info.major == 3 and sys.version_info.minor == 8:
+        if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
+            component_type = t.__args__[1].__args__[0]
+    # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
+    # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
+    # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
+    # the 1st argument is the component type
+    # when np.ndarray is used, the 1st argument is the component type
+    if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
+        import types
+        if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
+            nargs = len(t.__args__)
+            if nargs == 1:
+                component_type = t.__args__[0]
+            elif nargs == 2:  # for npt.NDArray[np.int64], etc.
+                a0 = t.__args__[0]
+                a1 = t.__args__[1]
+                if a0 == typing.Any and isinstance(a1, types.GenericAlias):
+                    component_type = a1.__args__[0]
+    return component_type

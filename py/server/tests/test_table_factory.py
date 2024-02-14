@@ -8,18 +8,20 @@ from dataclasses import dataclass
 import jpy
 import numpy as np
 
-from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, input_table
+from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, \
+    input_table, time
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
 from deephaven.table_factory import DynamicTableWriter, ring_table
-from deephaven.time import epoch_nanos_to_instant, format_datetime, time_zone
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
 from deephaven.stream import blink_to_append_only, stream_to_append_only
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+
 
 @dataclass
 class CustomClass:
@@ -55,7 +57,9 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET",
+                         _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
+                                                        time.to_j_time_zone('ET')))
 
         t = time_table(1000_000_000)
         self.assertEqual(1, len(t.columns))
@@ -64,12 +68,27 @@ class TableFactoryTestCase(BaseTestCase):
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET",
+                         _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
+                                                        time.to_j_time_zone('ET')))
+
+        p = time.to_timedelta(time.to_j_duration("PT1s"))
+        t = time_table(p)
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.is_refreshing)
+
+        st = time.to_datetime(time.to_j_instant("2021-11-06T13:21:00 ET"))
+        t = time_table(p, start_time=st)
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.is_refreshing)
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET",
+                         _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
+                                                        time.to_j_time_zone('ET')))
 
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
         self.assertEqual(1, len(t.columns))
-        self.assertTrue(_JBlinkTableTools.isBlink(t.j_table))
+        self.assertTrue(t.is_blink)
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
@@ -110,15 +129,75 @@ class TableFactoryTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
+            datetime_col(name="Datetime", data=[1, -1]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
             jobj_col(name="JObj", data=[jobj1, jobj2]),
         ]
 
-        t = new_table(cols=cols)
-        self.assertEqual(t.size, 2)
+    def test_new_table_dict(self):
+        jobj1 = JArrayList()
+        jobj1.add(1)
+        jobj1.add(-1)
+        jobj2 = JArrayList()
+        jobj2.add(2)
+        jobj2.add(-2)
+        bool_cols = {
+            "Boolean": [True, False],
+        }
+        integer_cols = {
+            "Byte": (1, -1),
+            "Short": [1, -1],
+            "Int": [1, -1],
+            "Long": [1, -1],
+        }
+        float_cols = {
+            "Float": [1.01, -1.01],
+            "Double": [1.01, -1.01],
+        }
+        string_cols = {
+            "String": np.array(["foo", "bar"]),
+        }
+        datetime_cols = {
+            "Datetime": np.array([1, -1], dtype=np.dtype("datetime64[ns]"))
+        }
+
+        obj_cols = {
+            "PyObj": [CustomClass(1, "1"), CustomClass(-1, "-1")],
+            "PyObj1": [[1, 2, 3], CustomClass(-1, "-1")],
+            "PyObj2": [False, 'False'],
+            "JObj": [jobj1, jobj2],
+        }
+
+        dtype_cols_map = {
+            dtypes.bool_: bool_cols,
+            dtypes.int64: integer_cols,
+            dtypes.float64: float_cols,
+            dtypes.string: string_cols,
+            dtypes.Instant: datetime_cols,
+            dtypes.PyObject: obj_cols
+        }
+
+        for dtype, cols in dtype_cols_map.items():
+            with self.subTest(f"Testing {dtype}"):
+                t = new_table(cols=cols)
+                self.assertEqual(t.size, 2)
+                for c in t.columns:
+                    self.assertEqual(c.data_type, dtype)
+
+        dtype_np_cols_map = {
+            dtypes.int8: np.array([1, -1], dtype=np.int8),
+            dtypes.int16: np.array([1, -1], dtype=np.int16),
+            dtypes.int32: np.array([1, -1], dtype=np.int32),
+            dtypes.int64: np.array([1, -1], dtype=np.int64),
+            dtypes.float32: np.array([1.01, -1.01], dtype=np.float32),
+            dtypes.float64: np.array([1.01, -1.01], dtype=np.float64),
+        }
+        d_cols = {dtype.j_name.capitalize(): cols for dtype, cols in dtype_np_cols_map.items()}
+        t = new_table(cols=d_cols)
+        for tc, dtype in zip(t.columns, dtype_np_cols_map.keys()):
+            self.assertEqual(tc.data_type, dtype)
 
     def test_new_table_nulls(self):
         null_cols = [
@@ -135,6 +214,7 @@ class TableFactoryTestCase(BaseTestCase):
         ]
         t = new_table(cols=null_cols)
         self.assertEqual(t.to_string().count("null"), len(null_cols))
+
 
     def test_input_column_error(self):
         j_al = JArrayList()
@@ -321,6 +401,24 @@ class TableFactoryTestCase(BaseTestCase):
         st = stream_to_append_only(tt)
         self.assertTrue(st.is_refreshing)
         self.assertFalse(jpy.cast(st.j_table, _JBaseTable).isBlink())
+
+    def test_instant_array(self):
+        from deephaven import DynamicTableWriter
+        from deephaven import dtypes as dht
+        from deephaven import time as dhtu
+
+        col_defs_5 = \
+            { \
+                "InstantArray": dht.instant_array \
+                }
+
+        dtw5 = DynamicTableWriter(col_defs_5)
+        t5 = dtw5.table
+        dtw5.write_row(dht.array(dht.Instant, [dhtu.to_j_instant("2021-01-01T00:00:00 ET"),
+                                               dhtu.to_j_instant("2022-01-01T00:00:00 ET")]))
+        self.wait_ticking_table_update(t5, row_count=1, timeout=5)
+        self.assertEqual(t5.size, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,201 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+evaluationDependsOn(':cpp-client')
+
+configurations {
+    cpp {}
+}
+
+dependencies {
+  cpp project(':cpp-client')
+}
+
+def prefix = '/opt/deephaven'
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-r-${randomSuffix}"
+    networkName.set "r-test-network-${randomSuffix}"
+}
+
+def buildRClient = Docker.registerDockerTask(project, 'rClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-build.sh'
+            include 'rdeephaven/DESCRIPTION'
+            include 'rdeephaven/LICENSE'
+            include 'rdeephaven/NAMESPACE'
+            include 'rdeephaven/README.md'
+            include 'rdeephaven/inst/**'
+            include 'rdeephaven/etc/**'
+            include 'rdeephaven/R/**'
+            include 'rdeephaven/src/*.cpp'
+            include 'rdeephaven/src/Makevars'
+            include 'rdeephaven/vignettes/*.Rmd'
+        }
+    }
+    dockerfile {
+        from('deephaven/cpp-client:local-build')
+        //
+        // Build and install client.
+        //
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix}/log \\
+                        ${prefix}/bin/rdeephaven \\
+                        ${prefix}/src/rdeephaven/{inst,etc,src,R,bin}
+                   """)
+        copyFile('rdeephaven/DESCRIPTION',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
+        copyFile('rdeephaven/etc/', "${prefix}/src/rdeephaven/etc/")
+        copyFile('rdeephaven/R/', "${prefix}/src/rdeephaven/R/")
+        copyFile('rdeephaven/src/*.cpp', "${prefix}/src/rdeephaven/src/")
+        copyFile('rdeephaven/src/Makevars', "${prefix}/src/rdeephaven/src/")
+        copyFile('rdeephaven/vignettes/*.Rmd', "${prefix}/src/rdeephaven/vignettes/")
+        copyFile('r-build.sh', "${prefix}/bin/rdeephaven")
+        runCommand("PREFIX=${prefix}; " +
+                  '''set -eux ; \
+                     cd "${PREFIX}/src/rdeephaven"; \
+                     . "${PREFIX}/env.sh"; \
+                     ${PREFIX}/bin/rdeephaven/r-build.sh
+                   ''')
+    }
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+}
+
+def testRClient = Docker.registerDockerTask(project, 'testRClient') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-tests.sh'
+            include 'rdeephaven/inst/**'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile {
+        from('deephaven/r-client:local-build')
+        copyFile('r-tests.sh', "${prefix}/bin/rdeephaven")
+        //
+        // Setup for test run; we should be inheriting other env vars
+        // like LD_LIBRARY_PATH from the cpp-client image.
+        //
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '10000'
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ project.tasks.getByName('rClient') ]
+    entrypoint = ["${prefix}/bin/rdeephaven/r-tests.sh", '/out/r-test.xml', '/out/r-test.log']
+}
+
+def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-doc.sh'
+        }
+    }
+    copyOut {
+        into layout.projectDirectory.dir('rdeephaven/man')
+    }
+    dockerfile {
+        from('deephaven/r-client:local-build')
+        runCommand('''set -eux; \
+                      rm -fr /out; \
+                      mkdir -p /out; \
+                      apt-get -qq update; \
+                      apt-get -qq -y --no-install-recommends install \
+                        libcurl4-openssl-dev \
+                        libfontconfig1-dev \
+                        libxml2-dev \
+                        libharfbuzz-dev \
+                        libfribidi-dev \
+                        libfreetype6-dev \
+                        libpng-dev \
+                        libtiff5-dev \
+                        libjpeg-dev \
+                        ; \
+                      rm -rf /var/lib/apt/lists/*
+                   ''')
+        runCommand('''echo "status = tryCatch(" \
+                           "   {" \
+                           "      install.packages('roxygen2', repos='http://cran.us.r-project.org'); " \
+                           "      0" \
+                           "   }," \
+                           "  error=function(e) 1," \
+                           "  warning=function(w) 2" \
+                           ");" \
+                           "print(paste0('status=', status));" \
+                           "quit(save='no', status=status)" | \
+                        MAKE="make -j`getconf _NPROCESSORS_ONLN`" R --no-save --no-restore
+                   ''')
+        // Keep this after the package installs above;
+        // it is likely it changes more frequently.
+        copyFile('r-doc.sh', "${prefix}/bin/rdeephaven")
+    }
+    parentContainers = [ project.tasks.getByName('rClient') ]
+    entrypoint = ["${prefix}/bin/rdeephaven/r-doc.sh"]
+    containerOutPath = "${prefix}/src/rdeephaven/man"
+}
+
+def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
+    // Only tested on x86-64, and we only build dependencies for x86-64
+    platform = 'linux/amd64'
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'r-site.sh'
+            include 'rdeephaven/man/**'
+            include 'rdeephaven/pkgdown/**'
+        }
+    }
+    copyOut {
+        into layout.projectDirectory.dir('rdeephaven/docs')
+    }
+    dockerfile {
+        from('deephaven/r-client-doc:local-build')
+        // We need the contents of 'man' to build the docsite
+        copyFile('rdeephaven/man/**', "${prefix}/src/rdeephaven/man/")
+        copyFile('rdeephaven/pkgdown/**', "${prefix}/src/rdeephaven/pkgdown/")
+        runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
+        runCommand('''echo "status = tryCatch(" \
+                           "   {" \
+                           "      install.packages('pkgdown', repos='http://cran.us.r-project.org'); " \
+                           "      0" \
+                           "   }," \
+                           "  error=function(e) 1," \
+                           "  warning=function(w) 2" \
+                           ");" \
+                           "print(paste0('status=', status));" \
+                           "quit(save='no', status=status)" | \
+                        MAKE="make -j`getconf _NPROCESSORS_ONLN`" R --no-save --no-restore
+                   ''')
+        // Keep this after the package installs above;
+        // it is likely it changes more frequently.
+        copyFile('r-site.sh', "${prefix}/bin/rdeephaven")
+    }
+    parentContainers = [ project.tasks.getByName('rClientDoc') ]
+    entrypoint = ["${prefix}/bin/rdeephaven/r-site.sh"]
+    containerOutPath = "${prefix}/src/rdeephaven/docs"
+}
+
+deephavenDocker.shouldLogIfTaskFails testRClient
+tasks.check.dependsOn(testRClient)

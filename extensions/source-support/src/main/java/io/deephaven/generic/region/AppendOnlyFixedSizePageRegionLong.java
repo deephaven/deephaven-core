@@ -6,7 +6,6 @@
 package io.deephaven.generic.region;
 
 import io.deephaven.base.MathUtil;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.PageStore;
@@ -15,6 +14,7 @@ import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong;
 import io.deephaven.engine.table.impl.sources.regioned.GenericColumnRegionBase;
 import io.deephaven.generic.page.ChunkHolderPageLong;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
@@ -44,11 +44,6 @@ public class AppendOnlyFixedSizePageRegionLong<ATTR extends Any>
     }
 
     @Override
-    public final ChunkType getChunkType() {
-        return ChunkType.Long;
-    }
-
-    @Override
     public long getLong(final long rowKey) {
         final ChunkHolderPageLong<ATTR> page = getPageContaining(rowKey);
         try {
@@ -63,12 +58,15 @@ public class AppendOnlyFixedSizePageRegionLong<ATTR extends Any>
 
     @Override
     @NotNull
-    public final ChunkHolderPageLong<ATTR> getPageContaining(final FillContext fillContext, final long rowKey) {
+    public final ChunkHolderPageLong<ATTR> getPageContaining(
+            @Nullable final FillContext fillContext,
+            final long rowKey) {
         return getPageContaining(rowKey);
     }
 
     @NotNull
     private ChunkHolderPageLong<ATTR> getPageContaining(final long rowKey) {
+        throwIfInvalidated();
         final long firstRowPosition = rowKey & mask();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {

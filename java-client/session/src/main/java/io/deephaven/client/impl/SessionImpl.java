@@ -3,7 +3,6 @@
  */
 package io.deephaven.client.impl;
 
-import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
@@ -12,19 +11,21 @@ import io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
+import io.deephaven.proto.backplane.grpc.ConnectRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
-import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
+import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.PublishRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
+import io.deephaven.proto.backplane.grpc.StreamRequest;
+import io.deephaven.proto.backplane.grpc.StreamResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
-import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
@@ -47,7 +48,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
@@ -108,9 +109,6 @@ public final class SessionImpl extends SessionBase {
     // Needed for downstream flight workarounds
     private final BearerHandler bearerHandler;
     private final ExportTicketCreator exportTicketCreator;
-    private final ExportStates states;
-    private final TableHandleManagerSerial serialManager;
-    private final TableHandleManagerBatch batchManager;
     private final ScheduledFuture<?> pingJob;
 
     private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
@@ -119,30 +117,61 @@ public final class SessionImpl extends SessionBase {
         this.bearerChannel = Objects.requireNonNull(bearerChannel);
         this.bearerHandler = Objects.requireNonNull(bearerHandler);
         this.exportTicketCreator = new ExportTicketCreator();
-        this.states = new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
-        this.serialManager = TableHandleManagerSerial.of(this);
-        this.batchManager = TableHandleManagerBatch.of(this, config.mixinStacktrace());
         this.pingJob = config.executor().scheduleAtFixedRate(
                 () -> bearerChannel.config().getConfigurationConstants(
                         ConfigurationConstantsRequest.getDefaultInstance(), PingObserverNoOp.INSTANCE),
                 pingFrequency.toNanos(), pingFrequency.toNanos(), TimeUnit.NANOSECONDS);
     }
 
-    // exposed for Flight
-    BearerHandler _hackBearerHandler() {
+    // exposed for Flight and testing
+    public BearerHandler _hackBearerHandler() {
         return bearerHandler;
     }
 
+    private ExportStates newExportStates() {
+        return new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
+    }
+
     @Override
-    public List<Export> export(ExportsRequest request) {
-        return states.export(request);
+    public TableService newStatefulTableService() {
+        return new TableServiceImpl(newExportStates());
+    }
+
+    @Override
+    public TableHandleManager batch() {
+        return batch(config.mixinStacktrace());
+    }
+
+    @Override
+    public TableHandleManager batch(boolean mixinStacktraces) {
+        return new TableHandleManagerBatch(mixinStacktraces) {
+            @Override
+            protected ExportService exportService() {
+                return newExportStates();
+            }
+        };
+    }
+
+    @Override
+    public TableHandleManager serial() {
+        return new TableHandleManagerSerial() {
+            @Override
+            protected ExportService exportService() {
+                return newExportStates();
+            }
+
+            @Override
+            protected TableHandle handle(TableSpec table) {
+                return io.deephaven.client.impl.TableServiceImpl.executeUnchecked(exportService(), table, null);
+            }
+        };
     }
 
     @Override
     public CompletableFuture<? extends ConsoleSession> console(String type) {
         final ExportId consoleId = new ExportId("Console", exportTicketCreator.createExportId());
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
-                .setResultId(consoleId.ticketId().ticket()).build();
+                .setResultId(consoleId.ticketId().proto()).build();
         return UnaryGrpcFuture.of(request, channel().console()::startConsole,
                 response -> new ConsoleSessionImpl(request));
     }
@@ -154,7 +183,7 @@ public final class SessionImpl extends SessionBase {
         }
         BindTableToVariableRequest request = BindTableToVariableRequest.newBuilder()
                 .setVariableName(name)
-                .setTableId(ticketId.ticketId().ticket())
+                .setTableId(ticketId.ticketId().proto())
                 .build();
         return UnaryGrpcFuture.ignoreResponse(request, channel().console()::bindTableToVariable);
     }
@@ -162,39 +191,102 @@ public final class SessionImpl extends SessionBase {
     @Override
     public CompletableFuture<Void> publish(HasTicketId resultId, HasTicketId sourceId) {
         final PublishRequest request = PublishRequest.newBuilder()
-                .setSourceId(sourceId.ticketId().ticket())
-                .setResultId(resultId.ticketId().ticket())
+                .setSourceId(sourceId.ticketId().proto())
+                .setResultId(resultId.ticketId().proto())
                 .build();
         return UnaryGrpcFuture.ignoreResponse(request, channel().session()::publishFromTicket);
     }
 
     @Override
-    public CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticketId) {
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(TypedTicket.newBuilder()
-                        .setType(type)
-                        .setTicket(ticketId.ticketId().ticket())
+    public CompletableFuture<ServerData> fetch(HasTypedTicket typedTicket) {
+        final TypedTicket tt = typedTicket.typedTicket();
+        if (!tt.type().isPresent()) {
+            throw new IllegalArgumentException("Type must be present to fetch an object");
+        }
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder().setSourceId(tt.proto()))
+                .build();
+        return UnaryGrpcFuture.of(connectRequest, this::messageStreamConnectOnly, this::toDataAndExports);
+    }
+
+    private void messageStreamConnectOnly(
+            io.deephaven.proto.backplane.grpc.StreamRequest request,
+            io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.StreamResponse> responseObserver) {
+        final StreamObserver<StreamRequest> observer = channel().object().messageStream(responseObserver);
+        observer.onNext(request);
+        observer.onCompleted();
+    }
+
+    private ServerData toDataAndExports(StreamResponse value) {
+        // noinspection SwitchStatementWithTooFewBranches
+        switch (value.getMessageCase()) {
+            case DATA:
+                return ServerData.of(this, value.getData());
+            default:
+                throw new IllegalStateException(
+                        String.format("Unexpected stream response message type, %s", value.getMessageCase()));
+        }
+    }
+
+    @Override
+    public MessageStream<ClientData> connect(HasTypedTicket typedTicket,
+            MessageStream<ServerData> receiveStream) {
+        final TypedTicket tt = typedTicket.typedTicket();
+        if (!tt.type().isPresent()) {
+            throw new IllegalArgumentException("Type must be present to open messageStream with an object");
+        }
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder()
+                        .setSourceId(tt.proto())
                         .build())
                 .build();
+        final StreamObserver<StreamRequest> serverObserver =
+                channel().object().messageStream(new MessageStreamObserver(receiveStream));
+        serverObserver.onNext(connectRequest);
+        return new MessageStreamImpl(serverObserver);
+    }
 
-        return UnaryGrpcFuture.of(request, channel().object()::fetchObject,
-                response -> {
-                    final String responseType = response.getType();
-                    final ByteString data = response.getData();
-                    final List<ExportId> exportIds = response.getTypedExportIdList().stream()
-                            .map(t -> {
-                                final String ticketType;
-                                if (t.getType().isEmpty()) {
-                                    ticketType = null;
-                                } else {
-                                    ticketType = t.getType();
-                                }
-                                final int exportId = ExportTicketHelper.ticketToExportId(t.getTicket(), "exportId");
-                                return new ExportId(ticketType, exportId);
-                            })
-                            .collect(Collectors.toList());
-                    return new FetchedObject(responseType, data, exportIds);
-                });
+    @Override
+    public CompletableFuture<? extends ServerObject> export(HasTypedTicket typedTicket) {
+        return export(typedTicket, this::toServerObject);
+    }
+
+    @Override
+    public CompletableFuture<? extends Fetchable> fetchable(HasTypedTicket typedTicket) {
+        return export(typedTicket, this::toFetchableObject);
+    }
+
+    @Override
+    public CompletableFuture<? extends Bidirectional> bidirectional(HasTypedTicket typedTicket) {
+        return export(typedTicket, this::toBidirectionalObject);
+    }
+
+    private <T extends ServerObject> CompletableFuture<T> export(HasTypedTicket typedTicket, Function<ExportId, T> f) {
+        final TypedTicket tt = typedTicket.typedTicket();
+        final ExportId exportId = newExportId(tt.type().orElse(null));
+        // Doesn't need to be closed unless it makes it back to the user
+        // noinspection resource
+        final T serverObject = f.apply(exportId);
+        final ExportRequest exportRequest = ExportRequest.newBuilder()
+                .setSourceId(tt.ticketId().proto())
+                .setResultId(exportId.ticketId().proto())
+                .build();
+        return UnaryGrpcFuture.ignoreResponse(exportRequest, channel().session()::exportFromTicket)
+                .thenApply(x -> serverObject);
+    }
+
+    private ServerObject toServerObject(ExportId exportId) {
+        return exportId.toServerObject(this);
+    }
+
+    private Fetchable toFetchableObject(ExportId exportId) {
+        // all fetchable objects are custom objects atm
+        return new CustomObject(this, exportId);
+    }
+
+    private Bidirectional toBidirectionalObject(ExportId exportId) {
+        // all bidirectional objects are custom objects atm
+        return new CustomObject(this, exportId);
     }
 
     @Override
@@ -219,37 +311,26 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    protected TableHandleManager delegate() {
-        return config.delegateToBatch() ? batchManager : serialManager;
-    }
-
-    @Override
-    public TableHandleManager batch() {
-        return batchManager;
-    }
-
-    @Override
-    public TableHandleManager batch(boolean mixinStacktrace) {
-        if (this.config.mixinStacktrace() == mixinStacktrace) {
-            return batchManager;
-        }
-        return TableHandleManagerBatch.of(this, mixinStacktrace);
-    }
-
-    @Override
-    public TableHandleManager serial() {
-        return serialManager;
+    protected TableService delegate() {
+        // This allows Session to implement an un-cached TableService.
+        // Each respective execution (Session.execute(), Session.executeAsync(), Session.serial().execute(), etc)
+        // will create new states for that specific execution.
+        return newStatefulTableService();
     }
 
     @Override
     public ExportId newExportId() {
-        return new ExportId("Table", exportTicketCreator.createExportId());
+        return newExportId(TableObject.TYPE);
+    }
+
+    private ExportId newExportId(String type) {
+        return new ExportId(type, exportTicketCreator.createExportId());
     }
 
     @Override
     public CompletableFuture<Void> release(ExportId exportId) {
         ReleaseRequest request = ReleaseRequest.newBuilder()
-                .setId(exportId.ticketId().ticket())
+                .setId(exportId.ticketId().proto())
                 .build();
         return UnaryGrpcFuture.ignoreResponse(request, channel().session()::release);
     }
@@ -262,8 +343,8 @@ public final class SessionImpl extends SessionBase {
     @Override
     public CompletableFuture<Void> addToInputTable(HasTicketId destination, HasTicketId source) {
         final AddTableRequest request = AddTableRequest.newBuilder()
-                .setInputTable(destination.ticketId().ticket())
-                .setTableToAdd(source.ticketId().ticket())
+                .setInputTable(destination.ticketId().proto())
+                .setTableToAdd(source.ticketId().proto())
                 .build();
         return UnaryGrpcFuture.ignoreResponse(request, channel().inputTable()::addTableToInputTable);
     }
@@ -271,8 +352,8 @@ public final class SessionImpl extends SessionBase {
     @Override
     public CompletableFuture<Void> deleteFromInputTable(HasTicketId destination, HasTicketId source) {
         final DeleteTableRequest request = DeleteTableRequest.newBuilder()
-                .setInputTable(destination.ticketId().ticket())
-                .setTableToRemove(source.ticketId().ticket())
+                .setInputTable(destination.ticketId().proto())
+                .setTableToRemove(source.ticketId().proto())
                 .build();
         return UnaryGrpcFuture.ignoreResponse(request,
                 channel().inputTable()::deleteTableFromInputTable);
@@ -286,16 +367,8 @@ public final class SessionImpl extends SessionBase {
         return observer;
     }
 
-    public ScheduledExecutorService executor() {
+    ScheduledExecutorService executor() {
         return config.executor();
-    }
-
-    public long batchCount() {
-        return states.batchCount();
-    }
-
-    public long releaseCount() {
-        return states.releaseCount();
     }
 
     @Override
@@ -434,6 +507,105 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onCompleted() {
 
+        }
+    }
+
+    private class MessageStreamObserver implements StreamObserver<StreamResponse> {
+        private final MessageStream<ServerData> clientStream;
+
+        public MessageStreamObserver(MessageStream<ServerData> clientStream) {
+            this.clientStream = Objects.requireNonNull(clientStream);
+        }
+
+        @Override
+        public void onNext(StreamResponse value) {
+            clientStream.onData(toDataAndExports(value));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            clientStream.onClose();
+        }
+
+        @Override
+        public void onCompleted() {
+            clientStream.onClose();
+        }
+    }
+
+    private static class MessageStreamImpl implements MessageStream<ClientData> {
+        private final StreamObserver<StreamRequest> serverObserver;
+
+        public MessageStreamImpl(StreamObserver<StreamRequest> serverObserver) {
+            this.serverObserver = Objects.requireNonNull(serverObserver);
+        }
+
+        @Override
+        public void onData(ClientData message) {
+            serverObserver.onNext(StreamRequest.newBuilder().setData(message.proto()).build());
+        }
+
+        @Override
+        public void onClose() {
+            serverObserver.onCompleted();
+        }
+    }
+
+    private class TableServiceImpl extends TableHandleManagerDelegate implements TableService {
+
+        private final ExportStates exportStates;
+
+        TableServiceImpl(ExportStates exportStates) {
+            this.exportStates = Objects.requireNonNull(exportStates);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        public TableHandleFuture executeAsync(TableSpec table) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, table);
+        }
+
+        @Override
+        public List<? extends TableHandleFuture> executeAsync(Iterable<? extends TableSpec> tables) {
+            return TableServiceAsyncImpl.executeAsync(exportStates, tables);
+        }
+
+        // ---------------------------------------------------
+
+        @Override
+        protected TableHandleManager delegate() {
+            return config.delegateToBatch() ? batch() : serial();
+        }
+
+        @Override
+        public TableHandleManager batch() {
+            return batch(config.mixinStacktrace());
+        }
+
+        @Override
+        public TableHandleManager batch(boolean mixinStacktrace) {
+            return new TableHandleManagerBatch(mixinStacktrace) {
+                @Override
+                protected ExportService exportService() {
+                    return exportStates;
+                }
+            };
+        }
+
+        @Override
+        public TableHandleManager serial() {
+            return new TableHandleManagerSerial() {
+                @Override
+                protected ExportService exportService() {
+                    return exportStates;
+                }
+
+                @Override
+                protected TableHandle handle(TableSpec table) {
+                    return io.deephaven.client.impl.TableServiceImpl.executeUnchecked(exportService(), table, null);
+                }
+            };
         }
     }
 }

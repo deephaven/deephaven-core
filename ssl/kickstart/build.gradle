@@ -11,7 +11,7 @@ dependencies {
     Classpaths.inheritSSLContext(project, 'sslcontext-kickstart', 'api')
 
     Classpaths.inheritGrpcPlatform(project)
-    compileOnly('io.grpc:grpc-core') {
+    compileOnly('io.grpc:grpc-util') {
         because 'we need access to CertificateUtils'
     }
 }

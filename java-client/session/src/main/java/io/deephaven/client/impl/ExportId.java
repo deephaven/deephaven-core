@@ -5,7 +5,6 @@ package io.deephaven.client.impl;
 
 import io.deephaven.proto.util.ExportTicketHelper;
 
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -17,6 +16,9 @@ public final class ExportId implements HasExportId {
     private final int exportId;
 
     ExportId(String type, int exportId) {
+        if (type != null && type.isEmpty()) {
+            throw new IllegalArgumentException("Must use null instead of empty string to represent no type");
+        }
         this.type = type;
         this.exportId = exportId;
     }
@@ -32,7 +34,12 @@ public final class ExportId implements HasExportId {
 
     @Override
     public TicketId ticketId() {
-        return new TicketId(ExportTicketHelper.exportIdToBytes(exportId));
+        return new TicketId(ticket());
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        return new TypedTicket(type, this);
     }
 
     @Override
@@ -47,5 +54,22 @@ public final class ExportId implements HasExportId {
 
     int id() {
         return exportId;
+    }
+
+    byte[] ticket() {
+        return ExportTicketHelper.exportIdToBytes(exportId);
+    }
+
+    ServerObject toServerObject(Session session) {
+        if (type == null) {
+            return new UnknownObject(session, this);
+        }
+        // noinspection SwitchStatementWithTooFewBranches
+        switch (type) {
+            case TableObject.TYPE:
+                return new TableObject(session, this);
+            default:
+                return new CustomObject(session, this);
+        }
     }
 }

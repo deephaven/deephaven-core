@@ -17,6 +17,27 @@ import java.util.Map;
 import java.util.function.IntFunction;
 
 public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
+
+    public static int[] chunkOffsets(
+            final TableDefinition definition,
+            final Map<String, String> fieldNamesToColumnNames) {
+        final String[] columnNames = definition.getColumnNamesArray();
+        final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>(columnNames.length, 0.5f, -1);
+        for (int ii = 0; ii < columnNames.length; ++ii) {
+            deephavenColumnNameToIndex.put(columnNames[ii], ii);
+        }
+        final int[] chunkOffsets = new int[fieldNamesToColumnNames.size()];
+        int col = 0;
+        for (String columnName : fieldNamesToColumnNames.values()) {
+            final int deephavenColumnIndex = deephavenColumnNameToIndex.get(columnName);
+            if (deephavenColumnIndex == deephavenColumnNameToIndex.getNoEntryValue()) {
+                throw new IllegalArgumentException("Column not found in Deephaven table: " + deephavenColumnIndex);
+            }
+            chunkOffsets[col++] = deephavenColumnIndex;
+        }
+        return chunkOffsets;
+    }
+
     private final boolean allowNulls;
 
     private final int[] chunkOffsets;

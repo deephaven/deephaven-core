@@ -5,11 +5,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -777,6 +780,110 @@ public final class TestJobScheduler {
                 // rethrow the error
                 throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
             }
+        }
+    }
+
+    @Test
+    public void testParallelErrorError() {
+        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+        final AtomicInteger openCount = new AtomicInteger(0);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+
+        try {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final boolean[] completed = new boolean[50];
+
+                class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                    TestJobThreadContext() {
+                        openCount.incrementAndGet();
+                    }
+
+                    @Override
+                    public void close() {
+                        openCount.decrementAndGet();
+                    }
+                }
+
+                final JobScheduler scheduler = new ImmediateJobScheduler();
+                scheduler.iterateParallel(
+                        ExecutionContext.getContext(),
+                        null,
+                        TestJobThreadContext::new,
+                        0,
+                        50,
+                        (context, idx, nec) -> {
+                            // verify the type is correct
+                            Assert.instanceOf(context, "context", TestJobThreadContext.class);
+
+                            // throw before "doing work" to make verification easy
+                            if (idx == 10) {
+                                throw new IndexOutOfBoundsException("Test error");
+                            }
+
+                            completed[idx] = true;
+                        },
+                        () -> {
+                            // if this is called, we failed the test
+                            waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
+                        },
+                        exception -> {
+                            throw new IllegalStateException("Intentional error failure");
+                        });
+            });
+            TestCase.fail("Expected exception");
+        } catch (FakeProcessEnvironment.FakeFatalException expected) {
+            TestCase.assertEquals("Intentional error failure", expected.getCause().getCause().getMessage());
+        }
+    }
+
+    @Test
+    public void testParallelCompleteErrorError() {
+        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+        final AtomicInteger openCount = new AtomicInteger(0);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+
+        try {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final boolean[] completed = new boolean[50];
+
+                class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                    TestJobThreadContext() {
+                        openCount.incrementAndGet();
+                    }
+
+                    @Override
+                    public void close() {
+                        openCount.decrementAndGet();
+                    }
+                }
+
+                final JobScheduler scheduler = new ImmediateJobScheduler();
+                scheduler.iterateParallel(
+                        ExecutionContext.getContext(),
+                        null,
+                        TestJobThreadContext::new,
+                        0,
+                        50,
+                        (context, idx, nec) -> {
+                            // verify the type is correct
+                            Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                            completed[idx] = true;
+                        },
+                        () -> {
+                            throw new IllegalStateException("Intentional completion failure");
+                        },
+                        exception -> {
+                            throw new IllegalStateException("Intentional error failure");
+                        });
+            });
+            TestCase.fail("Expected exception");
+        } catch (FakeProcessEnvironment.FakeFatalException expected) {
+            // This actually goes through the FakeFatalErrorReporter twice; that's an artifact of the test design
+            TestCase.assertEquals("Intentional error failure", expected.getCause().getCause().getCause().getMessage());
         }
     }
 }

@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':plugin')
+    Classpaths.inheritAutoService(project)
+}

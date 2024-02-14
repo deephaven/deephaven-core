@@ -6,16 +6,20 @@ package io.deephaven.server.object;
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.plugin.type.Exporter;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
-import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.ConnectRequest;
+import io.deephaven.proto.backplane.grpc.ServerData;
+import io.deephaven.proto.backplane.grpc.StreamRequest;
+import io.deephaven.proto.backplane.grpc.StreamResponse;
+import io.deephaven.proto.backplane.grpc.StreamResponse.MessageCase;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.server.session.SessionState.ExportObject;
-import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 
@@ -27,7 +31,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -47,7 +54,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     @Test
-    public void myObject() throws IOException {
+    public void myObject() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         ExportObject<MyObject> export = authenticatedSessionState()
                 .<MyObject>newExport(1)
                 .submit(ObjectServiceTest::createMyObject);
@@ -55,41 +62,84 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     @Test
-    public void myUnregisteredObject() {
+    public void myUnregisteredObject() throws InterruptedException, TimeoutException {
         ExportObject<MyUnregisteredObject> export = authenticatedSessionState()
                 .<MyUnregisteredObject>newExport(1)
                 .submit(MyUnregisteredObject::new);
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(TypedTicket.newBuilder()
-                        .setTicket(export.getExportId())
-                        .build())
+        final CompletableFuture<Object> cf = new CompletableFuture<>();
+        final StreamObserver<StreamRequest> observer = channel().object().messageStream(new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse value) {
+                cf.complete(value);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                cf.completeExceptionally(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                if (!cf.isDone()) {
+                    cf.complete(new Object());
+                }
+            }
+        });
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder()
+                        .setSourceId(TypedTicket.newBuilder().setTicket(export.getExportId())))
                 .build();
+        observer.onNext(connectRequest);
+
         try {
-            // noinspection ResultOfMethodCallIgnored
-            channel().objectBlocking().fetchObject(request);
-            failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
-        } catch (StatusRuntimeException e) {
+            cf.get(5, TimeUnit.SECONDS);
+            failBecauseExceptionWasNotThrown(ExecutionException.class);
+        } catch (ExecutionException e) {
             // expected
         }
     }
 
-    private void fetchMyObject(Ticket ticket, String expectedSomeString, int expectedSomeInt) throws IOException {
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(TypedTicket.newBuilder()
-                        .setType(MY_OBJECT_TYPE_NAME)
-                        .setTicket(ticket)
-                        .build())
+    private void fetchMyObject(Ticket ticket, String expectedSomeString, int expectedSomeInt)
+            throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        final StreamRequest connectRequest = StreamRequest.newBuilder()
+                .setConnect(ConnectRequest.newBuilder()
+                        .setSourceId(TypedTicket.newBuilder()
+                                .setType(MY_OBJECT_TYPE_NAME)
+                                .setTicket(ticket)))
                 .build();
-        final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
+        final CompletableFuture<StreamResponse> cf = new CompletableFuture<>();
+        final StreamObserver<StreamRequest> observer = channel().object().messageStream(new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse value) {
+                cf.complete(value);
+            }
 
-        assertThat(response.getType()).isEqualTo(MY_OBJECT_TYPE_NAME);
-        assertThat(response.getTypedExportIdCount()).isEqualTo(4);
-        assertThat(response.getTypedExportId(0).getType()).isEqualTo("Table");
-        assertThat(response.getTypedExportId(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
-        assertThat(response.getTypedExportId(2).getType()).isEmpty();
-        assertThat(response.getTypedExportId(3).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+            @Override
+            public void onError(Throwable t) {
+                cf.completeExceptionally(t);
+            }
 
-        final DataInputStream dis = new DataInputStream(response.getData().newInput());
+            @Override
+            public void onCompleted() {
+                if (!cf.isDone()) {
+                    cf.completeExceptionally(new RuntimeException("Expected future to complete"));
+                }
+            }
+        });
+        observer.onNext(connectRequest);
+        observer.onCompleted();
+        final StreamResponse rr = cf.get(5, TimeUnit.SECONDS);
+        final ServerData response = rr.getData();
+
+        assertThat(rr.getMessageCase()).isEqualTo(MessageCase.DATA);
+        assertThat(response.getExportedReferencesCount()).isEqualTo(5);
+        assertThat(response.getExportedReferences(0).getType()).isEqualTo("Table");
+        assertThat(response.getExportedReferences(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getExportedReferences(2).getType()).isEmpty();
+        assertThat(response.getExportedReferences(3).getType()).isEqualTo("Table");
+        assertThat(response.getExportedReferences(4).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
+
+        final DataInputStream dis = new DataInputStream(response.getPayload().newInput());
 
         // the original, out of order
         readRef(dis, 2);
@@ -97,8 +147,8 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         readRef(dis, 0);
 
         // the extras
-        readRef(dis, 0); // our extra ref to table
-        readRef(dis, 3); // our new extra ref
+        readRef(dis, 3); // our extra ref to table, now an additional export
+        readRef(dis, 4); // our new extra ref
 
         readString(dis, expectedSomeString);
         readInt(dis, expectedSomeInt);
@@ -141,30 +191,27 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     @AutoService(ObjectType.class)
-    public static class MyObjectType extends ObjectTypeClassBase<MyObject> {
+    public static class MyObjectType extends ObjectTypeClassBase.FetchOnly<MyObject> {
         public MyObjectType() {
             super(MY_OBJECT_TYPE_NAME, MyObject.class);
         }
 
         @Override
         public void writeToImpl(Exporter exporter, MyObject object, OutputStream out) throws IOException {
-            final Reference tableRef = exporter.reference(object.someTable, false, false).orElseThrow();
-            final Reference objRef = exporter.reference(object.someObj, false, false).orElseThrow();
-            final Reference unknownRef = exporter.reference(object.someUnknown, true, false).orElseThrow();
+            final Reference tableRef = exporter.reference(object.someTable);
+            final Reference objRef = exporter.reference(object.someObj);
+            final Reference unknownRef = exporter.reference(object.someUnknown);
 
-            final Reference extraTableRef = exporter.reference(object.someTable, false, false).orElseThrow();
-            final Reference extraNewObjRef = exporter.reference(object.someObj, false, true).orElseThrow();
+            final Reference extraTableRef = exporter.reference(object.someTable);
+            final Reference extraNewObjRef = exporter.reference(object.someObj);
 
-            final Optional<Reference> dontAllowUnknown = exporter.reference(new Object(), false, false);
-
-            assertThat(tableRef.type()).contains("Table");
-            assertThat(objRef.type()).contains(MY_REF_OBJECT_TYPE_NAME);
+            assertThat(tableRef.type()).isEmpty();
+            assertThat(objRef.type()).isEmpty();
             assertThat(unknownRef.type()).isEmpty();
-            assertThat(extraTableRef.type()).contains("Table");
-            assertThat(extraNewObjRef.type()).contains(MY_REF_OBJECT_TYPE_NAME);
-            assertThat(dontAllowUnknown).isEmpty();
+            assertThat(extraTableRef.type()).isEmpty();
+            assertThat(extraNewObjRef.type()).isEmpty();
 
-            assertThat(tableRef.index()).isEqualTo(extraTableRef.index());
+            assertThat(tableRef.index()).isNotEqualTo(extraTableRef.index());
             assertThat(objRef.index()).isNotEqualTo(extraNewObjRef.index());
 
             final DataOutputStream doas = new DataOutputStream(out);
@@ -188,7 +235,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     @AutoService(ObjectType.class)
-    public static class MyRefObjectType extends ObjectTypeClassBase<MyRefObject> {
+    public static class MyRefObjectType extends ObjectTypeClassBase.FetchOnly<MyRefObject> {
         public MyRefObjectType() {
             super(MY_REF_OBJECT_TYPE_NAME, MyRefObject.class);
         }

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <ostream>
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore {
 struct ElementTypeId {
@@ -68,8 +69,7 @@ void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
       break;
     }
     default: {
-      auto message = deephaven::dhcore::utility::Stringf("Unrecognized ElementTypeId %o",
-          static_cast<int>(type_id));
+      auto message = fmt::format("Unrecognized ElementTypeId {}", static_cast<int>(type_id));
       throw std::runtime_error(message);
     }
   }
@@ -203,7 +203,7 @@ public:
    * The special reserved null value constant for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
    */
-  static constexpr const int32_t kNulLInt = std::numeric_limits<int32_t>::min();
+  static constexpr const int32_t kNullInt = std::numeric_limits<int32_t>::min();
   /**
    * The minimum valid value for the Deephaven int type
    * (which is represented as a signed 32 bit integer).
@@ -272,7 +272,7 @@ struct DeephavenTraits<int32_t> {
   /**
    * The Deephaven reserved null value constant for this type.
    */
-  static constexpr const int32_t kNullValue = DeephavenConstants::kNulLInt;
+  static constexpr const int32_t kNullValue = DeephavenConstants::kNullInt;
   static constexpr bool kIsNumeric = true;
 };
 
@@ -333,6 +333,13 @@ public:
   }
 
   /**
+   * Parses a string in ISO 8601 format into a DateTime.
+   * @param iso_8601_timestamp The timestamp, in ISO 8601 format.
+   * @return The corresponding DateTime.
+   */
+  static DateTime Parse(std::string_view iso_8601_timestamp);
+
+  /**
    * Default constructor. Sets the DateTime equal to the epoch.
    */
   DateTime() = default;
@@ -371,7 +378,7 @@ public:
    * @param second Second.
    * @param nanos Nanoseconds.
    */
-  DateTime(int year, int month, int day, int hour, int minute, int second, long nanos);
+  DateTime(int year, int month, int day, int hour, int minute, int second, int64_t nanos);
 
   /**
    * The DateTime as expressed in nanoseconds since the epoch. Can be negative.
@@ -379,17 +386,11 @@ public:
   [[nodiscard]]
   int64_t Nanos() const { return nanos_; }
 
-  /**
-   * Used internally to serialize this object to Deephaven.
-   */
-  void StreamIrisRepresentation(std::ostream &result) const;
-
 private:
   int64_t nanos_ = 0;
 
-  friend std::ostream &operator<<(std::ostream &s, const DateTime &o) {
-    o.StreamIrisRepresentation(s);
-    return s;
-  }
+  friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
 };
 }  // namespace deephaven::dhcore
+
+template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};

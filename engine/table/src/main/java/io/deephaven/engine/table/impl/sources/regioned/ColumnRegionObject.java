@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
@@ -35,7 +36,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
     /**
      * Get a single object from this region.
      *
-     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
+     * @param context      A {@link PagingContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element row key in the table's address space
      * @return The object value at the specified element row key
@@ -226,6 +227,13 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
+        public void invalidate() {
+            for(int ii = 0; ii < getRegionCount(); ii++) {
+                getRegion(ii).invalidate();
+            }
+        }
+
+        @Override
         public DATA_TYPE getObject(final long elementIndex) {
             return lookupRegion(elementIndex).getObject(elementIndex);
         }
@@ -304,6 +312,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         private DictionaryKeysWrapper(final long prefixBits, @NotNull final ColumnRegionLong<DictionaryKeys> wrapped) {
             this.prefixBits = prefixBits;
             this.wrapped = wrapped;
+        }
+
+        @Override
+        public void invalidate() {
+            wrapped.invalidate();
         }
 
         @Override

@@ -7,17 +7,16 @@ package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
 import io.deephaven.base.ringbuffer.AggregatingFloatRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
     private final boolean isMax;
@@ -30,10 +29,11 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
         protected AggregatingFloatRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             if (isMax) {
-                aggMinMax = new AggregatingFloatRingBuffer(BUFFER_INITIAL_CAPACITY, Float.MIN_VALUE, (a, b) -> {
+                aggMinMax = new AggregatingFloatRingBuffer(BUFFER_INITIAL_CAPACITY, NULL_FLOAT, (a, b) -> {
                     if (a == NULL_FLOAT) {
                         return b;
                     } else if (b == NULL_FLOAT) {
@@ -51,7 +51,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
                     return (float)Math.min(a, b);
                 });
             }
-            curVal = isMax ? Float.MIN_VALUE : Float.MAX_VALUE;
+            curVal = isMax ? NULL_FLOAT : Float.MAX_VALUE;
             evaluationNeeded = false;
         }
 
@@ -126,7 +126,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
         public void reset() {
             super.reset();
             aggMinMax.clear();
-            curVal = isMax ? Float.MIN_VALUE : Float.MAX_VALUE;
+            curVal = isMax ? NULL_FLOAT : Float.MAX_VALUE;
             evaluationNeeded = false;
         }
     }
@@ -137,19 +137,33 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public FloatRollingMinMaxOperator(@NotNull final MatchPair pair,
-                                     @NotNull final String[] affectingColumns,
-                                     @Nullable final RowRedirection rowRedirection,
-                                     @Nullable final String timestampColumnName,
-                                     final long reverseWindowScaleUnits,
-                                     final long forwardWindowScaleUnits,
-                                     final boolean isMax
-                                     // region extra-constructor-args
-                                     // endregion extra-constructor-args
+    public FloatRollingMinMaxOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final boolean isMax
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.isMax = isMax;
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new FloatRollingMinMaxOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                isMax
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 }

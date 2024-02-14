@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select.python;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.Context;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
-import io.deephaven.engine.util.PyCallableWrapper;
 import org.jpy.PyObject;
 
 import java.util.Arrays;

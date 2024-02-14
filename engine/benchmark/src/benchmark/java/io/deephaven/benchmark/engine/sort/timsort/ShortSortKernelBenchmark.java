@@ -77,7 +77,8 @@ public class ShortSortKernelBenchmark {
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestShortTimSortKernel.ShortSortKernelStuff sortStuff = new BaseTestShortTimSortKernel.ShortSortKernelStuff(stuffToSort);
+                final BaseTestShortTimSortKernel.ShortLongSortKernelStuff sortStuff
+                        = new BaseTestShortTimSortKernel.ShortLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":

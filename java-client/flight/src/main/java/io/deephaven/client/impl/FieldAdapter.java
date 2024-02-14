@@ -81,6 +81,10 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
         return field(name, MinorType.VARCHAR.getType(), "java.lang.String");
     }
 
+    public static Field byteVectorField(String name) {
+        return field(name, MinorType.VARBINARY.getType(), "byte[]");
+    }
+
     public static Field instantField(String name) {
         return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"), "java.time.Instant");
     }
@@ -125,7 +129,11 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
             @Override
             public Field visit(ArrayType<?, ?> arrayType) {
-                throw new UnsupportedOperationException();
+                if (arrayType.componentType().equals(Type.find(byte.class))) {
+                    return byteVectorField(name);
+                } else {
+                    throw new UnsupportedOperationException();
+                }
             }
 
             @Override

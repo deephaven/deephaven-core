@@ -7,9 +7,9 @@ Description
 :cpp:class:`Chunk <deephaven::dhcore::chunk::Chunk>`
 is the abstract base class representing a simple typed data buffer.
 These buffers are used to pass data to and from the library, e.g. as arguments to
-:cpp:func:`fillChunk <deephaven::dhcore::column::ColumnSource::fillChunk>`
+:cpp:func:`FillChunk <deephaven::dhcore::column::ColumnSource::FillChunk>`
 or
-:cpp:func:`fillFromChunk <deephaven::dhcore::column::MutableColumnSource::fillFromChunk>`.
+:cpp:func:`FillFromChunk <deephaven::dhcore::column::MutableColumnSource::FillFromChunk>`.
 
 The concrete implementing classes are defined by the templated class
 :cpp:class:`GenericChunk <deephaven::dhcore::chunk::GenericChunk>`.
@@ -28,8 +28,8 @@ on all the Deephaven types:
 
 :cpp:class:`GenericChunk <deephaven::dhcore::chunk::GenericChunk>`
 also supports the methods
-:cpp:func:`take <deephaven::dhcore::chunk::GenericChunk::take>` and
-:cpp:func:`drop <deephaven::dhcore::chunk::GenericChunk::drop>` to take slices of the
+:cpp:func:`Take <deephaven::dhcore::chunk::GenericChunk::Take>` and
+:cpp:func:`Drop <deephaven::dhcore::chunk::GenericChunk::Drop>` to take slices of the
 :cpp:class:`GenericChunk <deephaven::dhcore::chunk::GenericChunk>`.
 
 AnyChunk
@@ -49,7 +49,7 @@ heap-allocated object approach is for the sake of simplicity and efficiency when
 small objects. One example method that returns an
 :cpp:class:`AnyChunk <deephaven::dhcore::chunk::AnyChunk>`
 is
-:cpp:func:`createChunkFor <deephaven::dhcore::chunk::ChunkMaker::createChunkFor>`,
+:cpp:func:`CreateChunkFor <deephaven::dhcore::chunk::ChunkMaker::CreateChunkFor>`,
 which creates a
 :cpp:class:`Chunk <deephaven::dhcore::chunk::Chunk>`
 with a type appropriate to the passed-in

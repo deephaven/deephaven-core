@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.object;
 
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -12,11 +13,7 @@ import io.grpc.BindableService;
 
 @Module
 public interface ObjectServiceModule {
-    @Provides
+    @Binds
     @IntoSet
-    static BindableService bindObjectServiceGrpcImpl(
-            AuthorizationProvider authProvider, ObjectServiceGrpcImpl objectService) {
-        return new AuthorizationWrappedGrpcBinding<>(
-                authProvider.getObjectServiceAuthWiring(), objectService);
-    }
+    BindableService bindObjectServiceGrpcImpl(ObjectServiceGrpcBinding objectService);
 }

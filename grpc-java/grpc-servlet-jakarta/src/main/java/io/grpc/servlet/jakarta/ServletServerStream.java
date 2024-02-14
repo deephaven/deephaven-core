@@ -233,7 +233,7 @@ final class ServletServerStream extends AbstractServerStream {
             }
             try {
                 writer.flush();
-            } catch (IOException e) {
+            } catch (IllegalStateException | IOException e) {
                 logger.log(WARNING, String.format("[{%s}] Exception when flushBuffer", logId), e);
                 cancel(Status.fromThrowable(e));
             }

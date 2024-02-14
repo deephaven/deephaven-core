@@ -105,13 +105,13 @@ public class FetchObjectResponse {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TypedExportIdListFieldType {
+        public interface TypedExportIdsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType of(
+                    static FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -138,46 +138,46 @@ public class FetchObjectResponse {
                 }
 
                 @JsOverlay
-                static FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType create() {
+                static FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType create() {
+            static FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType getTicket();
+            FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
             void setTicket(
-                    FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType.TicketFieldType ticket);
+                    FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
@@ -195,7 +195,7 @@ public class FetchObjectResponse {
         String getType();
 
         @JsProperty
-        JsArray<FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType> getTypedExportIdList();
+        JsArray<FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType> getTypedExportIdsList();
 
         @JsProperty
         void setData(FetchObjectResponse.ToObjectReturnType.GetDataUnionType data);
@@ -214,15 +214,15 @@ public class FetchObjectResponse {
         void setType(String type);
 
         @JsProperty
-        void setTypedExportIdList(
-                JsArray<FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType> typedExportIdList);
+        void setTypedExportIdsList(
+                JsArray<FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType> typedExportIdsList);
 
         @JsOverlay
-        default void setTypedExportIdList(
-                FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType[] typedExportIdList) {
-            setTypedExportIdList(
-                    Js.<JsArray<FetchObjectResponse.ToObjectReturnType.TypedExportIdListFieldType>>uncheckedCast(
-                            typedExportIdList));
+        default void setTypedExportIdsList(
+                FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType[] typedExportIdsList) {
+            setTypedExportIdsList(
+                    Js.<JsArray<FetchObjectResponse.ToObjectReturnType.TypedExportIdsListFieldType>>uncheckedCast(
+                            typedExportIdsList));
         }
     }
 
@@ -257,13 +257,13 @@ public class FetchObjectResponse {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TypedExportIdListFieldType {
+        public interface TypedExportIdsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType of(
+                    static FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -290,46 +290,46 @@ public class FetchObjectResponse {
                 }
 
                 @JsOverlay
-                static FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType create() {
+                static FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType create() {
+            static FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType getTicket();
+            FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType getTicket();
 
             @JsProperty
             String getType();
 
             @JsProperty
             void setTicket(
-                    FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType.TicketFieldType ticket);
+                    FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType.TicketFieldType ticket);
 
             @JsProperty
             void setType(String type);
@@ -347,7 +347,7 @@ public class FetchObjectResponse {
         String getType();
 
         @JsProperty
-        JsArray<FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType> getTypedExportIdList();
+        JsArray<FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType> getTypedExportIdsList();
 
         @JsProperty
         void setData(FetchObjectResponse.ToObjectReturnType0.GetDataUnionType data);
@@ -366,15 +366,15 @@ public class FetchObjectResponse {
         void setType(String type);
 
         @JsProperty
-        void setTypedExportIdList(
-                JsArray<FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType> typedExportIdList);
+        void setTypedExportIdsList(
+                JsArray<FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType> typedExportIdsList);
 
         @JsOverlay
-        default void setTypedExportIdList(
-                FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType[] typedExportIdList) {
-            setTypedExportIdList(
-                    Js.<JsArray<FetchObjectResponse.ToObjectReturnType0.TypedExportIdListFieldType>>uncheckedCast(
-                            typedExportIdList));
+        default void setTypedExportIdsList(
+                FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType[] typedExportIdsList) {
+            setTypedExportIdsList(
+                    Js.<JsArray<FetchObjectResponse.ToObjectReturnType0.TypedExportIdsListFieldType>>uncheckedCast(
+                            typedExportIdsList));
         }
     }
 
@@ -388,13 +388,13 @@ public class FetchObjectResponse {
     public static native FetchObjectResponse.ToObjectReturnType toObject(
             boolean includeInstance, FetchObjectResponse msg);
 
-    public native TypedTicket addTypedExportId();
+    public native TypedTicket addTypedExportIds();
 
-    public native TypedTicket addTypedExportId(TypedTicket value, double index);
+    public native TypedTicket addTypedExportIds(TypedTicket value, double index);
 
-    public native TypedTicket addTypedExportId(TypedTicket value);
+    public native TypedTicket addTypedExportIds(TypedTicket value);
 
-    public native void clearTypedExportIdList();
+    public native void clearTypedExportIdsList();
 
     public native FetchObjectResponse.GetDataUnionType getData();
 
@@ -404,7 +404,7 @@ public class FetchObjectResponse {
 
     public native String getType();
 
-    public native JsArray<TypedTicket> getTypedExportIdList();
+    public native JsArray<TypedTicket> getTypedExportIdsList();
 
     public native Uint8Array serializeBinary();
 
@@ -422,11 +422,11 @@ public class FetchObjectResponse {
 
     public native void setType(String value);
 
-    public native void setTypedExportIdList(JsArray<TypedTicket> value);
+    public native void setTypedExportIdsList(JsArray<TypedTicket> value);
 
     @JsOverlay
-    public final void setTypedExportIdList(TypedTicket[] value) {
-        setTypedExportIdList(Js.<JsArray<TypedTicket>>uncheckedCast(value));
+    public final void setTypedExportIdsList(TypedTicket[] value) {
+        setTypedExportIdsList(Js.<JsArray<TypedTicket>>uncheckedCast(value));
     }
 
     public native FetchObjectResponse.ToObjectReturnType0 toObject();

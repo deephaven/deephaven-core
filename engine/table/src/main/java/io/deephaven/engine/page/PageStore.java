@@ -12,23 +12,27 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * PageStores are a collection of non-overlapping pages, which provides a single {@link ChunkSource} interface across
- * all the pages.
+ * PageStores are a collection of non-overlapping {@link Page Pages}, providing a single {@link PagingChunkSource}
+ * across all the pages. PageStores are responsible for mapping row keys to pages. PageStores may themselves be Pages
+ * nested within other PageStores.
  */
 public interface PageStore<ATTR extends Any, INNER_ATTR extends ATTR, PAGE extends Page<INNER_ATTR>>
         extends PagingChunkSource<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     /**
-     * @return The page containing row, after applying {@link #mask()}.
+     * @param fillContext The fill context to use; may be {@code null} if the calling code does not have a fill context
+     * @param rowKey The row key to get the page for
+     * @return The page containing {@code rowKey}, after applying {@link #mask()}.
      */
     @NotNull
-    PAGE getPageContaining(FillContext fillContext, long row);
+    PAGE getPageContaining(@Nullable FillContext fillContext, long rowKey);
 
     @Override
     default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return getChunkType().getEmptyChunk();
         }
 
@@ -65,9 +69,11 @@ public interface PageStore<ATTR extends Any, INNER_ATTR extends ATTR, PAGE exten
     }
 
     @Override
-    default void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
+    default void fillChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
             @NotNull final RowSequence rowSequence) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return;
         }
 

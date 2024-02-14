@@ -14,6 +14,7 @@ import io.deephaven.time.DateTimeUtils;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Date;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -400,6 +401,20 @@ public class ColumnHandlerFactory implements Serializable {
                 }
 
             };
+        } else if (type.equals(ZonedDateTime.class)) {
+            return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
+                @Override
+                public TypeClassification typeClassification() {
+                    return TypeClassification.TIME;
+                }
+
+                @Override
+                public double getDouble(int i) {
+                    final ZonedDateTime value = (ZonedDateTime) getDataColumn().get(i);
+                    return value == null ? Double.NaN : DateTimeUtils.epochNanos(value);
+                }
+
+            };
         } else if (Paint.class.isAssignableFrom(type)) {
             return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
                 @Override
@@ -613,6 +628,20 @@ public class ColumnHandlerFactory implements Serializable {
                 @Override
                 public double getDouble(int i) {
                     final Instant value = (Instant) getDataColumn().get(i);
+                    return value == null ? Double.NaN : DateTimeUtils.epochNanos(value);
+                }
+
+            };
+        } else if (type.equals(ZonedDateTime.class)) {
+            return new ColumnHandlerTable(table, columnName, type, plotInfo) {
+                @Override
+                public TypeClassification typeClassification() {
+                    return TypeClassification.TIME;
+                }
+
+                @Override
+                public double getDouble(int i) {
+                    final ZonedDateTime value = (ZonedDateTime) getDataColumn().get(i);
                     return value == null ? Double.NaN : DateTimeUtils.epochNanos(value);
                 }
 

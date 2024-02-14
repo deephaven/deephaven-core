@@ -77,7 +77,8 @@ public class ObjectSortKernelBenchmark {
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestObjectTimSortKernel.ObjectSortKernelStuff sortStuff = new BaseTestObjectTimSortKernel.ObjectSortKernelStuff(stuffToSort);
+                final BaseTestObjectTimSortKernel.ObjectLongSortKernelStuff sortStuff
+                        = new BaseTestObjectTimSortKernel.ObjectLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":

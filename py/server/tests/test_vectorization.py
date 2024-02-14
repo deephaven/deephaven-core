@@ -4,26 +4,29 @@
 import random
 import unittest
 
+from typing import Optional, Union
 import numpy as np
 
-import deephaven
 from deephaven import DHError, empty_table, dtypes
 from deephaven import new_table
 from deephaven.column import int_col
 from deephaven.filters import Filter, and_
-from deephaven.table import dh_vectorize
+import deephaven._udf as _udf
+from deephaven._udf import _dh_vectorize as dh_vectorize
 from tests.testbase import BaseTestCase
+
+from tests.test_udf_numpy_args import _J_TYPE_NULL_MAP, _J_TYPE_NP_DTYPE_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
 
 
 class VectorizationTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
-        deephaven.table._test_vectorization = True
-        deephaven.table._vectorized_count = 0
+        _udf.test_vectorization = True
+        _udf.vectorized_count = 0
 
     def tearDown(self) -> None:
-        deephaven.table._test_vectorization = False
-        deephaven.table._vectorized_count = 0
+        _udf.test_vectorization = False
+        _udf.vectorized_count = 0
         super().tearDown()
 
     def test_vectorization_exceptions(self):
@@ -65,7 +68,7 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(1).update("X = py_plus(ii, ii)")
 
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
 
     def test_vectorized_no_arg(self):
         def py_random() -> int:
@@ -73,7 +76,7 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(1).update("X = py_random()")
 
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
 
     def test_vectorized_const_arg(self):
         def py_const(seed) -> int:
@@ -83,27 +86,27 @@ class VectorizationTestCase(BaseTestCase):
         expected_count = 0
         t = empty_table(10).update("X = py_const(3)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         seed = 10
         t = empty_table(10).update("X = py_const(seed)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(30*1024*1024*1024)")
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(30000000000L)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(100.01)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const(100.01f)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(1).update("X = py_const(NULL_INT)")
@@ -114,26 +117,26 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(10).update("X = py_const_str(`Deephaven`)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const_str(null)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = empty_table(10).update("X = py_const_str(true)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
         t = t.update("Y = py_const_str(X)")
         expected_count += 1
-        self.assertEqual(deephaven.table._vectorized_count, expected_count)
+        self.assertEqual(_udf.vectorized_count, expected_count)
 
     def test_multiple_formulas(self):
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
         t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
-        self.assertEqual(deephaven.table._vectorized_count, 2)
+        self.assertEqual(_udf.vectorized_count, 2)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
 
@@ -143,7 +146,7 @@ class VectorizationTestCase(BaseTestCase):
             return p1 + p2 + p3
 
         t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
-        self.assertEqual(deephaven.table._vectorized_count, 3)
+        self.assertEqual(_udf.vectorized_count, 1)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
 
@@ -156,11 +159,11 @@ class VectorizationTestCase(BaseTestCase):
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_int(I, 3, J)")
-        self.assertEqual(deephaven.table._vectorized_count, 0)
+        self.assertEqual(_udf.vectorized_count, 0)
         self.assertIn("boolean required", str(cm.exception))
 
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_bool(I, 3, J)")
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
         self.assertGreater(t.size, 1)
 
     def test_multiple_filters(self):
@@ -170,11 +173,11 @@ class VectorizationTestCase(BaseTestCase):
         conditions = ["pyfunc_bool(I, 3, J)", "pyfunc_bool(i, 10, ii)"]
         filters = Filter.from_(conditions)
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filters)
-        self.assertEqual(2, deephaven.table._vectorized_count)
+        self.assertEqual(2, _udf.vectorized_count)
 
         filter_and = and_(filters)
         t1 = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filter_and)
-        self.assertEqual(4, deephaven.table._vectorized_count)
+        self.assertEqual(4, _udf.vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
 
@@ -186,11 +189,11 @@ class VectorizationTestCase(BaseTestCase):
         conditions = ["pyfunc_bool(I, 3, J)", "pyfunc_bool(i, 10, ii)"]
         filters = Filter.from_(conditions)
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filters)
-        self.assertEqual(3, deephaven.table._vectorized_count)
+        self.assertEqual(1, _udf.vectorized_count)
 
         filter_and = and_(filters)
         t1 = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where(filter_and)
-        self.assertEqual(5, deephaven.table._vectorized_count)
+        self.assertEqual(1, _udf.vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
 
@@ -257,7 +260,7 @@ class VectorizationTestCase(BaseTestCase):
 
         t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc(X)))"])
         self.assertEqual(t.columns[1].data_type, dtypes.double)
-        self.assertEqual(deephaven.table._vectorized_count, 1)
+        self.assertEqual(_udf.vectorized_count, 1)
 
         def sinc2(x):
             return np.sinc(x)
@@ -265,6 +268,105 @@ class VectorizationTestCase(BaseTestCase):
         t = empty_table(100).update(["X = 0.1 * i", "SincXS=((sinc2(X)))"])
         self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
 
+    def test_optional_annotations(self):
+        def pyfunc(p1: np.int32, p2: np.int32, p3: Optional[np.int32]) -> Optional[int]:
+            total = p1 + p2 + p3
+            return None if total % 3 == 0 else total
+
+        t = empty_table(10).update("X = i").update(["Y = pyfunc(X, i, 13)", "Z = pyfunc(X, ii, 66)"])
+        self.assertEqual(_udf.vectorized_count, 2)
+        self.assertIn("13", t.to_string(cols=["Y"]))
+        self.assertIn("null", t.to_string())
+        self.assertEqual(t.columns[1].data_type, dtypes.long)
+        self.assertEqual(t.columns[2].data_type, dtypes.long)
+
+    def test_1d_array_args_no_null(self):
+            col1_formula = "Col1 = i % 3"
+            for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
+                col2_formula = f"Col2 = ({j_dtype})i"
+                with self.subTest(j_dtype):
+                    tbl = empty_table(10).update([col1_formula, col2_formula]).group_by("Col1").update(
+                        "Col2 = Col2.toArray()")
+
+                    func_str = f"""
+def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]:
+    return col2 + 5
+                            """
+                    exec(func_str, globals())
+
+                    res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                    self.assertEqual(res.columns[0].data_type, dtypes.int32)
+                    self.assertEqual(res.columns[1].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
+                    self.assertEqual(res.columns[2].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
+
+                    self.assertEqual(_udf.vectorized_count, 1)
+                    _udf.vectorized_count = 0
+
+    def test_1d_array_args_null(self):
+        col1_formula = "Col1 = i % 3"
+        for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
+            col2_formula = f"Col2 = i % 3 == 0? {null_name} : ({j_dtype})i"
+            with self.subTest(j_dtype):
+                tbl = empty_table(10).update([col1_formula, col2_formula]).group_by("Col1").update("Col2 = Col2.toArray()")
+
+                func_str = f"""
+def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]:
+    return col2 + 5
+                        """
+                exec(func_str, globals())
+
+                # for floating point types, DH nulls are auto converted to np.nan
+                # for integer types, DH nulls in the array raise exceptions
+                if j_dtype in ("float", "double"):
+                    res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                    self.assertEqual(res.columns[0].data_type, dtypes.int32)
+                    self.assertEqual(res.columns[1].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
+                    self.assertEqual(res.columns[2].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
+                else:
+                    with self.assertRaises(DHError) as cm:
+                        tbl.update("Col3 = test_udf(Col1, Col2)")
+
+                self.assertEqual(_udf.vectorized_count, 1)
+                _udf.vectorized_count = 0
+
+    def test_1d_str_bool_datetime_array(self):
+        with self.subTest("str"):
+            def f1(p1: np.ndarray[str]) -> bool:
+                return (p1 == 'None').any()
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"]).group_by("X").update("Y = Y.toArray()")
+            t1 = t.update(["X1 = f1(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(3, t1.to_string().count("true"))
+            self.assertEqual(_udf.vectorized_count, 1)
+            _udf.vectorized_count = 0
+
+        with self.subTest("datetime"):
+            def f2(p1: np.ndarray[np.datetime64]) -> bool:
+                return np.isnat(p1).any()
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"]).group_by("X").update("Y = Y.toArray()")
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(3, t1.to_string().count("true"))
+            self.assertEqual(_udf.vectorized_count, 1)
+            _udf.vectorized_count = 0
+
+        with self.subTest("boolean"):
+            def f3(p1: np.ndarray[np.bool_]) -> np.ndarray[np.bool_]:
+                return np.invert(p1)
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"]).group_by("X").update("Y = Y.toArray()")
+            t1 = t.update(["X1 = f3(Y)"])
+            self.assertEqual(_udf.vectorized_count, 1)
+            _udf.vectorized_count = 0
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X").update("Y = Y.toArray()")
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f3(Y)"])
+            self.assertIn("Java java.lang.Boolean array contains Deephaven null values, but numpy int8 array does not support null values", str(cm.exception))
+            self.assertEqual(_udf.vectorized_count, 1)
+            _udf.vectorized_count = 0
 
 if __name__ == "__main__":
     unittest.main()

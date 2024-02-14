@@ -168,7 +168,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                         node.putNull(childNodeFieldName);
                     }
                 } else {
-                    node.put(childNodeFieldName, raw);
+                    // No signature matches ObjectNode#put(String, byte).
+                    // #set w/ ContainerNode#numberNode(byte) is the most appropriately typed call.
+                    node.set(childNodeFieldName, node.numberNode(raw));
                 }
             }
         };
@@ -184,7 +186,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                         node.putNull(childNodeFieldName);
                     }
                 } else {
-                    node.put(childNodeFieldName, raw);
+                    // No native support for char type; we'll treat as String.
+                    node.put(childNodeFieldName, String.valueOf(raw));
                 }
             }
         };

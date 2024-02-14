@@ -3,7 +3,7 @@
 #
 
 """ The kafka.producer module supports publishing Deephaven tables to Kafka streams. """
-from typing import Dict, Callable, List
+from typing import Dict, Callable, List, Optional
 
 import jpy
 
@@ -11,10 +11,13 @@ from deephaven import DHError
 from deephaven.jcompat import j_hashmap, j_hashset, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
+from deephaven.update_graph import auto_locking_ctx
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
 _JKafkaTools_Produce = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
+_JKafkaPublishOptions = jpy.get_type("io.deephaven.kafka.KafkaPublishOptions")
+_JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 
 
 class KeyValueSpec(JObjectWrapper):
@@ -34,19 +37,24 @@ KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)
 def produce(
     table: Table,
     kafka_config: Dict,
-    topic: str,
+    topic: Optional[str],
     key_spec: KeyValueSpec,
     value_spec: KeyValueSpec,
     last_by_key_columns: bool = False,
+    publish_initial: bool = True,
+    partition: Optional[int] = None,
+    topic_col: Optional[str] = None,
+    partition_col: Optional[str] = None,
+    timestamp_col: Optional[str] = None,
 ) -> Callable[[], None]:
     """Produce to Kafka from a Deephaven table.
 
     Args:
         table (Table): the source table to publish to Kafka
-        kafka_config (Dict): configuration for the associated kafka producer.
+        kafka_config (Dict): configuration for the associated Kafka producer.
             This is used to call the constructor of org.apache.kafka.clients.producer.KafkaProducer;
             pass any KafkaProducer specific desired configuration here
-        topic (str): the topic name
+        topic (Optional[str]): the default topic name. When None, topic_col must be set. See topic_col for behavior.
         key_spec (KeyValueSpec): specifies how to map table column(s) to the Key field in produced Kafka messages.
             This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this
             module, or the constant KeyValueSpec.IGNORE
@@ -56,6 +64,24 @@ def produce(
         last_by_key_columns (bool): whether to publish only the last record for each unique key, Ignored if key_spec is
             KeyValueSpec.IGNORE. Otherwise, if last_by_key_columns is true this method will internally perform a last_by
             aggregation on table grouped by the input columns of key_spec and publish to Kafka from the result.
+        publish_initial (bool): whether the initial data in table should be published. When False, table.is_refreshing
+            must be True. By default, is True.
+        partition (Optional[int]): the default partition, None by default. See partition_col for partition behavior.
+        topic_col (Optional[str]): the topic column, None by default. When set, uses the the given string column from
+            table as the first source for setting the Kafka record topic. When None, or if the column value is null, topic
+            will be used.
+        partition_col (Optional[str]): the partition column, None by default. When set, uses the the given int column
+            from table as the first source for setting the Kafka record partition. When None, or if the column value is null,
+            partition will be used if present. If a valid partition number is specified, that partition will be used
+            when sending the record. Otherwise, Kafka will choose a partition using a hash of the key if the key is present,
+            or will assign a partition in a round-robin fashion if the key is not present.
+        timestamp_col (Optional[str]): the timestamp column, None by default. When set, uses the the given timestamp
+            column from table as the first source for setting the Kafka record timestamp. When None, or if the column value
+            is null, the producer will stamp the record with its current time. The timestamp eventually used by Kafka
+            depends on the timestamp type configured for the topic. If the topic is configured to use CreateTime, the
+            timestamp in the producer record will be used by the broker. If the topic is configured to use LogAppendTime,
+            the timestamp in the producer record will be overwritten by the broker with the broker local time when it
+            appends the message to its log.
 
     Returns:
         a callback that, when invoked, stops publishing and cleans up subscriptions and resources.
@@ -70,16 +96,30 @@ def produce(
             raise ValueError(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE"
             )
-
-        kafka_config = j_properties(kafka_config)
-        runnable = _JKafkaTools.produceFromTable(
-            table.j_table,
-            kafka_config,
-            topic,
-            key_spec.j_object,
-            value_spec.j_object,
-            last_by_key_columns,
+        if not publish_initial and not table.is_refreshing:
+            raise ValueError("publish_initial == False and table.is_refreshing == False")
+        options_builder = (
+            _JKafkaPublishOptions.builder()
+            .table(table.j_table)
+            .config(j_properties(kafka_config))
+            .keySpec(key_spec.j_object)
+            .valueSpec(value_spec.j_object)
+            .lastBy(last_by_key_columns and key_spec is not KeyValueSpec.IGNORE)
+            .publishInitial(publish_initial)
         )
+        if topic:
+            options_builder.topic(topic)
+        if partition:
+            options_builder.partition(partition)
+        if topic_col:
+            options_builder.topicColumn(_JColumnName.of(topic_col))
+        if partition_col:
+            options_builder.partitionColumn(_JColumnName.of(partition_col))
+        if timestamp_col:
+            options_builder.timestampColumn(_JColumnName.of(timestamp_col))
+
+        with auto_locking_ctx(table):
+            runnable = _JKafkaTools.produceFromTable(options_builder.build())
 
         def cleanup():
             try:

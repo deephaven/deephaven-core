@@ -19,6 +19,8 @@ import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
 
@@ -162,15 +164,19 @@ public class MatchFilter extends WhereFilterImpl {
         initialized = true;
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        final ColumnSource columnSource = table.getColumnSource(columnName);
+    public WritableRowSet filter(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        final ColumnSource columnSource = table.getColumnSource(columnName);
+    public WritableRowSet filterInverse(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
@@ -277,6 +283,22 @@ public class MatchFilter extends WhereFilterImpl {
                             }
                         }
                         return str.charAt(0);
+                    }
+                };
+            }
+            if (cls == BigDecimal.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        return new BigDecimal(str);
+                    }
+                };
+            }
+            if (cls == BigInteger.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        return new BigInteger(str);
                     }
                 };
             }

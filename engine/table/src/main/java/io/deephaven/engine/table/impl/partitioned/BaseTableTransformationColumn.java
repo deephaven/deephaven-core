@@ -14,22 +14,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
- * Base {@link SelectColumn} implementation to wrap transformer functions for
- * {@link PartitionedTable#transform(Function)} and
- * {@link PartitionedTable#partitionedTransform(PartitionedTable, BiFunction)}.
+ * Base {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#transform} and
+ * {@link PartitionedTable#partitionedTransform}.
  */
 abstract class BaseTableTransformationColumn implements SelectColumn {
 
     BaseTableTransformationColumn() {}
-
-    @Override
-    public final List<String> initInputs(@NotNull final Table table) {
-        return initInputs(table.getRowSet(), table.getColumnSourceMap());
-    }
 
     @Override
     public final Class<?> getReturnedType() {

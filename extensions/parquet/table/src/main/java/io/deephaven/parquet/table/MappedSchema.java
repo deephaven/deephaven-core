@@ -22,7 +22,7 @@ import static io.deephaven.parquet.table.TypeInfos.getTypeInfo;
 class MappedSchema {
 
     static MappedSchema create(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             final TableDefinition definition,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,

@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -14,6 +13,7 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,11 +39,11 @@ public abstract class TableInfo {
         OBJECT_MAPPER = objectMapper;
     }
 
-    public final String serializeToJSON() throws JsonProcessingException {
+    public final String serializeToJSON() throws IOException {
         return OBJECT_MAPPER.writeValueAsString(this);
     }
 
-    public static TableInfo deserializeFromJSON(@NotNull final String tableInfoRaw) throws JsonProcessingException {
+    public static TableInfo deserializeFromJSON(@NotNull final String tableInfoRaw) throws IOException {
         return OBJECT_MAPPER.readValue(tableInfoRaw, ImmutableTableInfo.class);
     }
 
@@ -61,11 +61,16 @@ public abstract class TableInfo {
     }
 
     /**
-     * @return The Deephaven release version when this metadata format was defined
+     * @return The Deephaven release version used to write the parquet file
      */
     @Value.Default
     public String version() {
-        return "0.4.0";
+        final String version = TableInfo.class.getPackage().getImplementationVersion();
+        if (version == null) {
+            // When the code is run from class files as opposed to jars, like in unit tests
+            return "unknown";
+        }
+        return version;
     }
 
     /**

@@ -8,12 +8,12 @@ A
 :cpp:class:`RowSequence <deephaven::dhcore::container::RowSequence>`
 is an abstract class representing a monotonically-increasing sequence of row numbers that can be
 used to reference elements in a
-:cpp:class:`Table <deephaven::client::table::Table>` or
-:cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>`.
+:cpp:class:`ClientTable <deephaven::dhcore::clienttable::ClientTable>` or
+:cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`.
 
 It is used as a parameter to methods like
-:cpp:func:`stream <deephaven::client::table::Table::stream>` and
-:cpp:func:`fillChunk <deephaven::client::column::ColumnSource::fillChunk>`.
+:cpp:func:`Stream <deephaven::dhcore::clienttable::ClientTable::Stream>` and
+:cpp:func:`fillChunk <deephaven::dhcore::column::ColumnSource::FillChunk>`.
 
 The row numbers inside a
 :cpp:class:`RowSequence <deephaven::dhcore::container::RowSequence>`
@@ -25,21 +25,21 @@ assume they are in position space.
 
 :cpp:class:`RowSequence <deephaven::dhcore::container::RowSequence>`
 objects are immutable. They can be sliced via the
-:cpp:func:`take <deephaven::dhcore::container::RowSequence::take>`
+:cpp:func:`Take <deephaven::dhcore::container::RowSequence::Take>`
 and
-:cpp:func:`drop <deephaven::dhcore::container::RowSequence::drop>`
+:cpp:func:`Drop <deephaven::dhcore::container::RowSequence::Drop>`
 methods, which return new
 :cpp:class:`RowSequence <deephaven::dhcore::container::RowSequence>` shared_ptrs.
 
 You can interrogate their size via
-:cpp:func:`size <deephaven::dhcore::container::RowSequence::size>` or
-:cpp:func:`empty <deephaven::dhcore::container::RowSequence::empty>`.
+:cpp:func:`size <deephaven::dhcore::container::RowSequence::Size>` or
+:cpp:func:`empty <deephaven::dhcore::container::RowSequence::Empty>`.
 You can iterate over them with
-:cpp:func:`forEachInterval <deephaven::dhcore::container::RowSequence::forEachInterval>`
+:cpp:func:`forEachInterval <deephaven::dhcore::container::RowSequence::ForEachInterval>`
 or by obtaining a
 :cpp:class:`RowSequenceIterator <deephaven::dhcore::container::RowSequenceIterator>`
 via
-:cpp:func:`getRowSequenceIterator <deephaven::dhcore::container::RowSequence::getRowSequenceIterator>`
+:cpp:func:`getRowSequenceIterator <deephaven::dhcore::container::RowSequence::GetRowSequenceIterator>`
 
 Declarations
 ------------

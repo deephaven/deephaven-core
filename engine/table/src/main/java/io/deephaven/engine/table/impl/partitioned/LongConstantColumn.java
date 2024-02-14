@@ -12,8 +12,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -71,13 +70,8 @@ class LongConstantColumn implements SelectColumn {
     }
 
     @Override
-    public final List<String> initInputs(@NotNull final Table table) {
-        return initInputs(table.getRowSet(), table.getColumnSourceMap());
-    }
-
-    @Override
     public final Class<?> getReturnedType() {
-        return Table.class;
+        return long.class;
     }
 
     @Override
@@ -98,12 +92,12 @@ class LongConstantColumn implements SelectColumn {
 
     @Override
     public final WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
+        return new LongSingleValueSource();
     }
 
     @Override
     public final WritableColumnSource<?> newFlatDestInstance(final long size) {
-        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, Table.class, null);
+        return new LongSingleValueSource();
     }
 
     @Override

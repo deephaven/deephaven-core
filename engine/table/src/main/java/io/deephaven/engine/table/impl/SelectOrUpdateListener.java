@@ -88,7 +88,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         if (enableParallelUpdate) {
             jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
         } else {
-            jobScheduler = ImmediateJobScheduler.INSTANCE;
+            jobScheduler = new ImmediateJobScheduler();
         }
 
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
@@ -134,11 +134,9 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 getUpdateGraph().addNotification(new TerminalNotification() {
                     @Override
                     public void run() {
-                        synchronized (accumulated) {
-                            final PerformanceEntry entry = getEntry();
-                            if (entry != null) {
-                                entry.accumulate(accumulated);
-                            }
+                        final PerformanceEntry entry = getEntry();
+                        if (entry != null) {
+                            entry.accumulate(accumulated);
                         }
                     }
                 });

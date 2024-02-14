@@ -20,7 +20,7 @@ public class ImmutableConstantInstantSource extends ImmutableConstantNanosBasedT
         super(Instant.class, new ImmutableConstantLongSource(nanos));
     }
 
-    public ImmutableConstantInstantSource(final @NotNull ImmutableConstantLongSource nanoSource) {
+    public ImmutableConstantInstantSource(@NotNull final ImmutableConstantLongSource nanoSource) {
         super(Instant.class, nanoSource);
     }
 

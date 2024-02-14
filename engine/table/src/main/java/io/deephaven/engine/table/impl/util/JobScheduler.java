@@ -180,13 +180,23 @@ public interface JobScheduler {
         protected void onReferenceCountAtZero() {
             final Exception localException = exception.get();
             if (localException != null) {
-                onError.accept(localException);
+                try {
+                    onError.accept(localException);
+                } catch (Exception e) {
+                    e.addSuppressed(localException);
+                    onUnexpectedJobError(e);
+                }
                 return;
             }
             try {
                 onComplete.run();
             } catch (Exception e) {
-                onError.accept(e);
+                try {
+                    onError.accept(e);
+                } catch (Exception e2) {
+                    e2.addSuppressed(e);
+                    onUnexpectedJobError(e2);
+                }
             }
         }
 
@@ -199,11 +209,6 @@ public interface JobScheduler {
                     .append(",remainingTaskCount=").append(remainingTaskCount.get())
                     .append(",exceptionSet=").append(exception.get() != null)
                     .append(']');
-        }
-
-        @Override
-        public String toString() {
-            return new LogOutputStringImpl().append(this).toString();
         }
 
         private class TaskInvoker implements LogOutputAppendable {
@@ -253,7 +258,15 @@ public interface JobScheduler {
                                 this::reportError,
                                 this::reportTaskCompleteAndResumeIteration);
                     } catch (Exception e) {
-                        reportError(e);
+                        if (closed) {
+                            // The task threw an error while trying to deliver another error or complete the iteration.
+                            // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
+                            // we report it to the global error reporter.
+                            onUnexpectedJobError(e);
+                        } else {
+                            // Something went wrong, but no completion or error was delivered yet. Report the error.
+                            reportError(e);
+                        }
                         return;
                     } finally {
                         running = false;

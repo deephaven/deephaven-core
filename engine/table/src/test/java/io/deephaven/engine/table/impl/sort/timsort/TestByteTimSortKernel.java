@@ -40,21 +40,7 @@ public class TestByteTimSortKernel extends BaseTestByteTimSortKernel {
     @Test
     public void byteRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), ByteSortKernelStuff::new);
-        }
-    }
-
-    @Test
-    public void byteRandomPartitionCorrectness() {
-        for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_PARTTITION_CHUNK_SIZE; size *= 2) {
-            int partitions = 2;
-            while (partitions < (int)Math.sqrt(size)) {
-                partitionCorrectnessTest(size, size, partitions, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), BytePartitionKernelStuff::new);
-                if (size < 1000) {
-                    break;
-                }
-                partitions *= 3;
-            }
+            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), ByteLongSortKernelStuff::new);
         }
     }
 
@@ -78,6 +64,49 @@ public class TestByteTimSortKernel extends BaseTestByteTimSortKernel {
             correctnessTest(size, TestByteTimSortKernel::generateByteRuns, getJavaComparator(), ByteSortKernelStuff::new);
         }
     }
+
+    @Test
+    public void byteLongRandomCorrectness() {
+        for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
+            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), ByteLongSortKernelStuff::new);
+        }
+    }
+
+    @Test
+    public void byteLongAscendingRunCorrectness() {
+        for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
+            correctnessTest(size, TestByteTimSortKernel::generateAscendingByteRuns, getJavaComparator(), ByteLongSortKernelStuff::new);
+        }
+    }
+
+    @Test
+    public void byteLongDescendingRunCorrectness() {
+        for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
+            correctnessTest(size, TestByteTimSortKernel::generateDescendingByteRuns, getJavaComparator(), ByteLongSortKernelStuff::new);
+        }
+    }
+
+    @Test
+    public void byteLongRunCorrectness() {
+        for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
+            correctnessTest(size, TestByteTimSortKernel::generateByteRuns, getJavaComparator(), ByteLongSortKernelStuff::new);
+        }
+    }
+
+    @Test
+    public void byteRandomPartitionCorrectness() {
+        for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_PARTTITION_CHUNK_SIZE; size *= 2) {
+            int partitions = 2;
+            while (partitions < (int)Math.sqrt(size)) {
+                partitionCorrectnessTest(size, size, partitions, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), BytePartitionKernelStuff::new);
+                if (size < 1000) {
+                    break;
+                }
+                partitions *= 3;
+            }
+        }
+    }
+
 
     @Test
     public void byteMultiRandomCorrectness() {

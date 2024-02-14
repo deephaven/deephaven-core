@@ -39,7 +39,7 @@ cdef extern from *:
 cdef extern from "deephaven/dhcore/chunk/chunk.h" namespace "deephaven::dhcore::chunk":
     cdef cppclass CChunk "deephaven::dhcore::chunk::Chunk":
         CChunk()
-        CChunk(CChunk &&other)
+        CChunk(CChunk other)
 
     cdef cppclass CGenericChunk "deephaven::dhcore::chunk::GenericChunk" [T] (CChunk):
         @staticmethod
@@ -53,7 +53,7 @@ cdef extern from "deephaven/dhcore/chunk/chunk.h" namespace "deephaven::dhcore::
 cdef extern from "deephaven/dhcore/container/row_sequence.h" namespace "deephaven::dhcore::container":
     cdef cppclass CRowSequence "deephaven::dhcore::container::RowSequence":
         CRowSequence()
-        CRowSequence(CRowSequence &&other)
+        CRowSequence(CRowSequence other)
 
         shared_ptr[CRowSequence] Take(size_t size)
         shared_ptr[CRowSequence] Drop(size_t size)
@@ -90,7 +90,7 @@ cdef extern from "deephaven/dhcore/clienttable/schema.h" namespace "deephaven::d
 cdef extern from "deephaven/dhcore/ticking/ticking.h" namespace "deephaven::dhcore::ticking":
     cdef cppclass CTickingUpdate "deephaven::dhcore::ticking::TickingUpdate":
         CTickingUpdate()
-        CTickingUpdate(CTickingUpdate &&other)
+        CTickingUpdate(CTickingUpdate other)
 
         shared_ptr[CClientTable] Prev()
         shared_ptr[CClientTable] BeforeRemoves()

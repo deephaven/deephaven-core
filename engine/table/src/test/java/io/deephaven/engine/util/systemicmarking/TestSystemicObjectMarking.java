@@ -4,6 +4,7 @@
 package io.deephaven.engine.util.systemicmarking;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.ErrorListener;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -60,8 +61,8 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         try {
             updated2.addUpdateListener(new ErrorListener(updated2));
             TestCase.fail("Should not be allowed to listen to failed table");
-        } catch (IllegalStateException ise) {
-            assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
+        } catch (TableAlreadyFailedException tafe) {
+            assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
 
         final ErrorListener errorListener = new ErrorListener(updated);

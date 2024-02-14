@@ -99,7 +99,7 @@ class Color(JObjectWrapper):
     @staticmethod
     def of_hsl(h: float, s: float, l: float, alpha: float = 1.0) -> Color:
         """ Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
-         transparent the color.
+        transparent the color.
 
         Args:
             h (float): the hue component, as a degree on the color wheel in the range (0.0 - 360.0)

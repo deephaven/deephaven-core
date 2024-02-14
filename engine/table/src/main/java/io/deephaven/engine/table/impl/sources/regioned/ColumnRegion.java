@@ -18,6 +18,11 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
         return 0;
     }
 
+    /**
+     * Invalidate the region -- any further reads that cannot be completed consistently and correctly will fail.
+     */
+    void invalidate();
+
     abstract class Null<ATTR extends Any>
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {

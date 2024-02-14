@@ -52,10 +52,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    class FailureListener extends InstrumentedTableUpdateListener {
-        FailureListener() {
-            super("Failure Listener");
-        }
+    class FailureListener extends ValidationFailureListener {
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
@@ -63,6 +60,17 @@ public abstract class EvalNugget implements EvalNuggetInterface {
                 System.out.println("Incremental Table Update:");
                 System.out.println(upstream);
             }
+        }
+    }
+
+    class ValidationFailureListener extends InstrumentedTableUpdateListener {
+        ValidationFailureListener() {
+            super("Failure Listener");
+        }
+
+        @Override
+        public void onUpdate(TableUpdate upstream) {
+            // do nothing
         }
 
         @Override
@@ -88,12 +96,15 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     private final TableUpdateValidator validator;
+    private final TableUpdateListener validationFailureListener;
     {
         if (originalValue instanceof QueryTable && ((QueryTable) originalValue).isRefreshing()) {
             validator = TableUpdateValidator.make((QueryTable) originalValue);
-            validator.getResultTable().addUpdateListener(failureListener);
+            validationFailureListener = new ValidationFailureListener();
+            validator.getResultTable().addUpdateListener(validationFailureListener);
         } else {
             validator = null;
+            validationFailureListener = null;
         }
     }
 

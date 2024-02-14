@@ -6,6 +6,7 @@ import io.deephaven.api.JoinMatch;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -103,6 +104,24 @@ public abstract class MultiJoinInput {
     public static MultiJoinInput[] from(@NotNull final String[] keys, @NotNull final Table[] inputTables) {
         return Arrays.stream(inputTables)
                 .map(t -> MultiJoinInput.of(t, keys))
+                .toArray(MultiJoinInput[]::new);
+    }
+
+    /**
+     * Create an array of {@link MultiJoinInput} with common keys; includes all non-key columns as output columns.
+     *
+     * @param columnsToMatch A comma separated list of key columns, in string format (e.g. "ResultKey=SourceKey" or
+     *        "KeyInBoth").
+     * @param inputTables An array of tables to include in the output
+     */
+    @NotNull
+    public static MultiJoinInput[] from(@Nullable final String columnsToMatch, @NotNull final Table... inputTables) {
+        return Arrays.stream(inputTables)
+                .map(t -> MultiJoinInput.of(t,
+                        columnsToMatch == null || columnsToMatch.isEmpty()
+                                ? Collections.emptyList()
+                                : JoinMatch.from(columnsToMatch.split(",")),
+                        Collections.emptyList()))
                 .toArray(MultiJoinInput[]::new);
     }
 

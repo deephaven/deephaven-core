@@ -3,14 +3,20 @@
  */
 package io.deephaven.base.cache;
 
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "UnnecessaryBoxing"})
-public class TestOpenAddressedCanonicalizationCache extends TestCase {
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotSame;
+import static junit.framework.TestCase.assertSame;
+import static junit.framework.TestCase.assertTrue;
 
-    @Test
+@SuppressWarnings({"UnnecessaryBoxing"})
+public class TestOpenAddressedCanonicalizationCache {
+
+    private static final int MAX_SPIN_CLEANUP_COUNT = 100_000_000;
+
+    @Test(timeout = 10_000)
     public void testDefaultAdapter() {
         final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
 
@@ -69,11 +75,12 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         assertTrue(3 * cachedIntegers.length / 2 <= SUT.getOccupiedSlots());
         assertTrue(3 * cachedIntegers.length >= SUT.getOccupiedSlots());
         System.gc();
-        while (SUT.getOccupiedSlots() != 3 * cachedIntegers.length / 2) {
+        for (int i = 0; i < MAX_SPIN_CLEANUP_COUNT && SUT.getOccupiedSlots() != 3 * cachedIntegers.length / 2; ++i) {
             assertSame(cachedIntegers[0], SUT.getCachedItem(cachedIntegers[0])); // Force cleanup
+            Thread.onSpinWait();
         }
-        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
         assertEquals(3 * cachedIntegers.length / 2, SUT.getOccupiedSlots());
+        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
 
         for (int ii = 0; ii < cachedIntegers.length; ++ii) {
             if ((ii & 1) == 1) {
@@ -138,11 +145,14 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
 
                 @Override
                 public String makeCacheableItem(@NotNull Object inputItem) {
-                    return inputItem.toString();
+                    // Explicitly make our own copy of the input.toString(), so we can be sure there are no uncontrolled
+                    // referrers to cached items.
+                    // noinspection StringOperationCanBeSimplified
+                    return new String(inputItem.toString());
                 }
             };
 
-    @Test
+    @Test(timeout = 10_000)
     public void testSpecialAdapters() {
         final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
 
@@ -183,11 +193,12 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
         assertTrue(cachedStrings.length / 2 <= SUT.getOccupiedSlots());
         assertTrue(cachedStrings.length >= SUT.getOccupiedSlots());
         System.gc();
-        while (SUT.getOccupiedSlots() != cachedStrings.length / 2) {
+        for (int i = 0; i < MAX_SPIN_CLEANUP_COUNT && SUT.getOccupiedSlots() != cachedStrings.length / 2; ++i) {
             assertSame(cachedStrings[0], SUT.getCachedItem(cachedStrings[0])); // Force cleanup
+            Thread.onSpinWait();
         }
-        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
         assertEquals(cachedStrings.length / 2, SUT.getOccupiedSlots());
+        assertEquals(savedOccupancyThreshold, SUT.getOccupancyThreshold());
 
         for (int ii = 0; ii < cachedStrings.length; ii += 2) {
             final String intString = SUT.getCachedItem(ii, OSA);

@@ -14,7 +14,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder;
@@ -27,11 +26,12 @@ import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
@@ -201,7 +201,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
 
-            applyUsedVariables(columnDefinitionMap, result.getVariablesUsed());
+            applyUsedVariables(columnDefinitionMap, result.getVariablesUsed(), result.getPossibleParams());
             returnedType = result.getType();
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;
@@ -221,12 +221,15 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private void checkAndInitializeVectorization(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        PyCallableWrapper[] cws = Arrays.stream(params).filter(p -> p.getValue() instanceof PyCallableWrapper)
-                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        // noinspection SuspiciousToArrayCall
+        final PyCallableWrapperJpyImpl[] cws = Arrays.stream(params)
+                .filter(p -> p.getValue() instanceof PyCallableWrapperJpyImpl)
+                .map(QueryScopeParam::getValue)
+                .toArray(PyCallableWrapperJpyImpl[]::new);
         if (cws.length != 1) {
             return;
         }
-        PyCallableWrapper pyCallableWrapper = cws[0];
+        final PyCallableWrapperJpyImpl pyCallableWrapper = cws[0];
 
         // could be already vectorized or to-be-vectorized,
         if (pyCallableWrapper.isVectorizable()) {
@@ -769,8 +772,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @SuppressWarnings("SameParameterValue")
     private Class<?> compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: what is %s. Code is...%n%s%n", what, classBody);
-        try (final QueryPerformanceNugget ignored =
-                QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
 
             final List<Class<?>> paramClasses = new ArrayList<>();

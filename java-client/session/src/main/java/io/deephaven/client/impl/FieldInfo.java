@@ -22,7 +22,7 @@ public final class FieldInfo {
     }
 
     public TicketId ticket() {
-        return new TicketId(fieldInfo.getTypedTicket().getTicket());
+        return TicketId.from(fieldInfo.getTypedTicket().getTicket());
     }
 
     public String name() {

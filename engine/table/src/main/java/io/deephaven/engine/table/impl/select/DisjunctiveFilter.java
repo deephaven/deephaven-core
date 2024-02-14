@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -70,13 +71,17 @@ public class DisjunctiveFilter extends ComposedFilter {
         return matched == null ? selection.copy() : matched.copy();
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         return orImpl(selection, fullSet, table, usePrev, false, componentFilters);
     }
 
+    @NotNull
     @Override
-    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filterInverse(
+            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         return andImpl(selection, fullSet, table, usePrev, true, componentFilters);
     }
 

@@ -37,7 +37,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             final RspArray arr,
             final int startIdx, final long startOffset, final long cardBeforeStartIdx,
             final int endIdx, final long endOffset, final long cardBeforeEndIdx) {
-        if (RspBitmap.debug) {
+        if (RspArray.debug) {
             if (endIdx < startIdx ||
                     (endIdx == startIdx && endOffset < startOffset)) {
                 throw new IllegalArgumentException("Empty " + RspRowSequence.class.getSimpleName() + " :" +

@@ -84,15 +84,8 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         if (columnNames == null || columnNames.length == 0) {
             return this;
         }
-
         final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
-        final Set<String> existingColumns = new HashSet<>(definition.getColumnNames());
-        if (!existingColumns.containsAll(columnNamesToDrop)) {
-            columnNamesToDrop.removeAll(existingColumns);
-            throw new RuntimeException("Unknown columns: " + columnNamesToDrop.toString() + ", available columns = "
-                    + getColumnSourceMap().keySet());
-        }
-
+        definition.checkHasColumns(columnNamesToDrop);
         List<ColumnDefinition<?>> resultColumns = new ArrayList<>();
         for (ColumnDefinition<?> cDef : definition.getColumns()) {
             if (!columnNamesToDrop.contains(cDef.getName())) {

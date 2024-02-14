@@ -1,23 +1,21 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumSumOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharCumSumOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ByteCumSumOperator extends BaseLongUpdateByOperator {
     // region extra-fields
@@ -51,16 +49,24 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
         }
     }
 
-    public ByteCumSumOperator(@NotNull final MatchPair pair,
-                               @Nullable final RowRedirection rowRedirection
-                               // region extra-constructor-args
-                               ,final byte nullValue
-                               // endregion extra-constructor-args
+    public ByteCumSumOperator(@NotNull final MatchPair pair
+                              // region extra-constructor-args
+            ,final byte nullValue
+                              // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] { pair.rightColumn });
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new ByteCumSumOperator(pair
+              // region extra-copy-args
+                , nullValue
+              // endregion extra-copy-args
+        );
     }
 
     @NotNull

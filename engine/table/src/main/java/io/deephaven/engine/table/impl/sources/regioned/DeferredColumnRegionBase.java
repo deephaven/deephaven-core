@@ -30,6 +30,16 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     }
 
     @Override
+    public void invalidate() {
+        super.invalidate();
+        synchronized (this) {
+            if (resultRegion != null) {
+                resultRegion.invalidate();
+            }
+        }
+    }
+
+    @Override
     public final REGION_TYPE getResultRegion() {
         if (resultRegion == null) {
             synchronized (this) {
@@ -88,15 +98,5 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     @Override
     public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getResultRegion().getChunk(context, firstKey, lastKey);
-    }
-
-    @Override
-    public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-        return getResultRegion().makeFillContext(chunkCapacity, sharedContext);
-    }
-
-    @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
-        return getResultRegion().makeGetContext(chunkCapacity, sharedContext);
     }
 }

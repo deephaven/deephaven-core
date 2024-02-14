@@ -77,7 +77,8 @@ public class DoubleSortKernelBenchmark {
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestDoubleTimSortKernel.DoubleSortKernelStuff sortStuff = new BaseTestDoubleTimSortKernel.DoubleSortKernelStuff(stuffToSort);
+                final BaseTestDoubleTimSortKernel.DoubleLongSortKernelStuff sortStuff
+                        = new BaseTestDoubleTimSortKernel.DoubleLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":

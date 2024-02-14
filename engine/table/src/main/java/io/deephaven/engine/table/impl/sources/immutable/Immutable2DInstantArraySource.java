@@ -20,7 +20,7 @@ public class Immutable2DInstantArraySource extends Immutable2DNanosBasedTimeArra
         super(Instant.class);
     }
 
-    public Immutable2DInstantArraySource(final @NotNull Immutable2DLongArraySource nanoSource) {
+    public Immutable2DInstantArraySource(@NotNull final Immutable2DLongArraySource nanoSource) {
         super(Instant.class, nanoSource);
     }
 

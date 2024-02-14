@@ -20,7 +20,6 @@ Table of Contents
    row_sequences
    column_sources
    chunks
-   fluent
    types
    utility
 

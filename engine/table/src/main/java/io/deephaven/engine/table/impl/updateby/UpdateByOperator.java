@@ -7,7 +7,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -35,13 +38,13 @@ import java.util.Map;
 public abstract class UpdateByOperator {
     protected final MatchPair pair;
     protected final String[] affectingColumns;
-    protected final RowRedirection rowRedirection;
 
     protected final long reverseWindowScaleUnits;
     protected final long forwardWindowScaleUnits;
     protected final String timestampColumnName;
+    protected final boolean isWindowed;
 
-    final boolean isWindowed;
+    protected RowRedirection rowRedirection;
 
     /**
      * The input modifiedColumnSet for this operator
@@ -126,19 +129,31 @@ public abstract class UpdateByOperator {
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isWindowed) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.rowRedirection = rowRedirection;
         this.timestampColumnName = timestampColumnName;
         this.reverseWindowScaleUnits = reverseWindowScaleUnits;
         this.forwardWindowScaleUnits = forwardWindowScaleUnits;
         this.isWindowed = isWindowed;
     }
+
+    /**
+     * Create an uninitialized copy of this operator. {@link #initializeSources(Table, RowRedirection)} must be called
+     * before this operator can be used.
+     *
+     * @return a copy of this operator
+     */
+    public abstract UpdateByOperator copy();
+
+    /**
+     * Initialize this operator with a specific source table (and row redirection if needed). This will be called
+     * exactly once per operator.
+     */
+    public abstract void initializeSources(@NotNull Table source, @Nullable RowRedirection rowRedirection);
 
     /**
      * Initialize the bucket context for a cumulative operator
@@ -240,6 +255,7 @@ public abstract class UpdateByOperator {
      *
      * @param context the context object
      */
+    @SuppressWarnings("unused")
     protected void finishUpdate(@NotNull final Context context) {}
 
     /**

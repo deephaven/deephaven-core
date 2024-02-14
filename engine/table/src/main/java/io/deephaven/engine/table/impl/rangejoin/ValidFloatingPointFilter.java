@@ -60,6 +60,7 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         }
     }
 
+    @NotNull
     @Override
     public WritableRowSet filter(
             @NotNull final RowSet selection,

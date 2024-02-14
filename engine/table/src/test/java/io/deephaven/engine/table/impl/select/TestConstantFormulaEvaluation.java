@@ -7,12 +7,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.JavaExpressionParser;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -190,8 +190,7 @@ public class TestConstantFormulaEvaluation {
 
     private <T> void singleColumnConstantValueFormulaTest(final String formula, final Class<T> columnType,
             final T columnRowValue, final int tableLength, final String description) {
-        final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget(description);
-        try {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(description)) {
             final Table source = TableTools.emptyTable(tableLength).update(formula);
             String[] columns = source.getDefinition().getColumnNamesArray();
             Assert.assertEquals("length of columns = 1", 1, columns.length);
@@ -202,8 +201,6 @@ public class TestConstantFormulaEvaluation {
                 Assert.assertEquals(columnType, source.getColumnSource(columns[0]).getType());
                 Assert.assertEquals(columnRowValue, source.getColumnSource(columns[0]).get(key));
             });
-        } finally {
-            nugget.done();
         }
     }
 
@@ -230,8 +227,7 @@ public class TestConstantFormulaEvaluation {
     private <T> void threeColumnConstantValueFormulaTest(final String[] formulas, final Class<T> calculatedColType,
             final T expectedConstValue, final ColumnFormula<T> columnFormula, final int tableLength,
             final String description) {
-        final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget(description);
-        try {
+        try (final SafeCloseable nugget = QueryPerformanceRecorder.getInstance().getNugget(description)) {
             final Table source = TableTools.emptyTable(tableLength).update(formulas);
             String[] columns = source.getDefinition().getColumnNamesArray();
             boolean constantValueColFound = false;
@@ -262,16 +258,12 @@ public class TestConstantFormulaEvaluation {
                         (T) source.getColumnSource(columns[1]).get(key));
                 Assert.assertEquals(expected, source.getColumnSource(columns[2]).get(key));
             });
-        } finally {
-            nugget.done();
         }
     }
 
     @Test
     public void queryScopeForAtomicIntPlusConstantFormulaTest() {
-        final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
-                .getNugget("queryScopeForAtomicInt");
-        try {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("queryScopeForAtomicInt")) {
             final AtomicInteger atomicValue = new AtomicInteger(1);
             QueryScope.addParam("atomicValue", atomicValue);
             String[] formulas = new String[] {
@@ -309,8 +301,6 @@ public class TestConstantFormulaEvaluation {
                 Assert.assertEquals("Calculate Col verification", expectedCalculatedColValue,
                         source.getColumnSource(columns[2]).get(key));
             });
-        } finally {
-            nugget.done();
         }
     }
 
@@ -379,9 +369,7 @@ public class TestConstantFormulaEvaluation {
     @SuppressWarnings("SameParameterValue")
     private <T> void checkConstantFormula(final Table source, final Set<String> expectedConstValueColumns,
             final T[] expectedConstValues, final Class<T> calculatedColType) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("queryScopeForAtomicInt");
-        try {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("queryScopeForAtomicInt")) {
             int count = 0;
             int[] constantColIndex = new int[expectedConstValues.length];
             String[] columns = source.getDefinition().getColumnNamesArray();
@@ -412,8 +400,6 @@ public class TestConstantFormulaEvaluation {
                             source.getColumnSource(columns[constantColIndex[i]]).get(key));
                 }
             });
-        } finally {
-            nugget.done();
         }
     }
 }

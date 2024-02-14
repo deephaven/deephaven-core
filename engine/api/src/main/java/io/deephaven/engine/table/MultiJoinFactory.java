@@ -85,6 +85,19 @@ public class MultiJoinFactory {
     }
 
     /**
+     * Join tables that have common key column names; include all columns from the input tables.
+     * <p>
+     *
+     * @param columnsToMatch A comma separated list of key columns, in string format (e.g. "ResultKey=SourceKey" or
+     *        "KeyInBoth").
+     * @param inputTables the tables to join together
+     * @return a MultiJoinTable with one row for each key and the corresponding row in each input table
+     */
+    public static MultiJoinTable of(@NotNull final String columnsToMatch, @NotNull final Table... inputTables) {
+        return multiJoinTableCreator().of(MultiJoinInput.from(columnsToMatch, inputTables));
+    }
+
+    /**
      * Perform a multiJoin for one or more tables; allows renaming of key column names and specifying individual input
      * table columns to include in the final output table.
      *

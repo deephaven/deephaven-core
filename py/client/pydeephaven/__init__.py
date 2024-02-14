@@ -23,10 +23,13 @@ Examples:
     >>> session.close()
 """
 
+import importlib.metadata
+
 from .session import Session
 from .dherror import DHError
 from ._table_interface import SortDirection
 from .query import Query
+from .table import Table
 
 try:
     from pydeephaven_ticking.table_listener import TableListener, TableListenerHandle, TableUpdate, listen
@@ -34,4 +37,8 @@ except ImportError:
     pass
 
 __all__ = ["Session", "DHError", "SortDirection"]
-__version__ = "0.27.0"
+
+# Note: this is the _distribution_ name, not the _package_ name. Until 3.10, there is not an easy way to get the
+# distribution name from the package name.
+# https://docs.python.org/3/library/importlib.metadata.html#package-distributions
+__version__ = importlib.metadata.version('pydeephaven')

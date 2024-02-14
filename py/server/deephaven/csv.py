@@ -45,7 +45,7 @@ def read(
         skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse
             data in chunks. Defaults to 0
         num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks.
-            Defaults to {@link Long#MAX_VALUE}
+            Defaults to the maximum 64bit integer value
         ignore_empty_lines (bool): whether to ignore empty lines, default is False
         allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is
             set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if

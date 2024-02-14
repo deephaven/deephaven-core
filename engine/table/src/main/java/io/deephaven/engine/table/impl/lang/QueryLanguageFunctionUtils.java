@@ -19278,6 +19278,8 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static int intCast(Object a) {
+        // TODO: #3262 this change is not included in QueryLanguageFunctionGenerator.
+        // TODO: #3264 change 8900c427 causes `intCast(NULL_DOUBLE)` provides an incorrect value instead of throwing.
         return a == null ? QueryConstants.NULL_INT : ((Number) a).intValue();
     }
 

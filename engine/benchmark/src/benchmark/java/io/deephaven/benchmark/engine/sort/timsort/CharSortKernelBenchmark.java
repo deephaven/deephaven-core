@@ -72,7 +72,8 @@ public class CharSortKernelBenchmark {
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestCharTimSortKernel.CharSortKernelStuff sortStuff = new BaseTestCharTimSortKernel.CharSortKernelStuff(stuffToSort);
+                final BaseTestCharTimSortKernel.CharLongSortKernelStuff sortStuff
+                        = new BaseTestCharTimSortKernel.CharLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":

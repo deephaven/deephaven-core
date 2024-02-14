@@ -40,7 +40,6 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
-import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -75,7 +74,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -97,7 +96,7 @@ public class QueryTableAggregationTest {
     private static AggregationContextFactory makeGroupByACF(
             @NotNull final Table table, @NotNull final String... groupByColumns) {
         return AggregationProcessor.forAggregation(List.of(
-                AggregateAllTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
+                QueryTable.singleAggregation(AggSpec.group(), ColumnName.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                                 .map(ColumnName::of).collect(Collectors.toList()))
                         .orElseThrow()));
@@ -117,12 +116,12 @@ public class QueryTableAggregationTest {
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
 
             if (keyColumns.length == 0) {
-                expectedKeys = TableTools.emptyTable(adjustedInput.size() > 0 ? 1 : 0);
+                expectedKeys = TableTools.emptyTable(!adjustedInput.isEmpty() ? 1 : 0);
                 expected = adjustedInput;
             } else {
                 final Set<String> retainedColumns =
-                        new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameMap().keySet());
-                retainedColumns.removeAll(Arrays.stream(keyNames).collect(Collectors.toSet()));
+                        new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameSet());
+                Arrays.asList(keyNames).forEach(retainedColumns::remove);
                 final List<SelectColumn> allSelectColumns =
                         Stream.concat(Arrays.stream(keySelectColumns), retainedColumns.stream().map(SourceColumn::new))
                                 .collect(Collectors.toList());
@@ -888,7 +887,7 @@ public class QueryTableAggregationTest {
                         new BigDecimalGenerator(),
                         new IntGenerator()));
 
-        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getColumnSourceMap().keySet());
+        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
         keyColumnSet.remove("NonKey");
         final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
@@ -2792,7 +2791,7 @@ public class QueryTableAggregationTest {
         final QueryTable queryTable = getTable(size, random,
                 columnInfos = initColumnInfos(new String[] {"Sym", "doubleCol", "longCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
-                        new DoubleGenerator(-10000, 10000, 0.05, 0.05),
+                        new DoubleGenerator(10.1, 20.1, 0.05, 0.05),
                         new LongGenerator(0, 1_000_000_000L)));
 
         final Collection<? extends Aggregation> aggregations = List.of(
@@ -3836,6 +3835,22 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testKeyColumnMissing() {
+        final Table data = testTable(col("S", "A", "B", "C", "D"), col("I", 10, 20, 30, 40));
+        try {
+            final Table agg = data.selectDistinct("NonExistentCol");
+            fail("Should have thrown an exception");
+        } catch (Exception ex) {
+            io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
+            io.deephaven.base.verify.Assert.assertion(
+                    ex.getMessage().contains("Missing columns: [NonExistentCol]"),
+                    "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",
+                    ex.getMessage(),
+                    "ex.getMessage()");
+        }
+    }
+
+    @Test
     public void testMultiPartitionSymbolTableBy() throws IOException {
         final File testRootFile = Files.createTempDirectory(QueryTableAggregationTest.class.getName()).toFile();
         try {
@@ -3881,7 +3896,8 @@ public class QueryTableAggregationTest {
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readPartitionedTableInferSchema(
-                    new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
+                    new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
+                    ParquetInstructions.EMPTY);
 
             // verify the sources are identical
             assertTableEquals(merged, loaded);

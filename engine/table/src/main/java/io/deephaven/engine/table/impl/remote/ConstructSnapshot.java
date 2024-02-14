@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
@@ -380,7 +381,7 @@ public class ConstructSnapshot {
          * Acquire a shared update graph lock if necessary.
          */
         private void maybeAcquireLock() {
-            if (locked(updateGraph)) {
+            if (updateGraph.currentThreadProcessesUpdates() || locked(updateGraph)) {
                 return;
             }
             updateGraph.sharedLock().lock();
@@ -597,12 +598,9 @@ public class ConstructSnapshot {
             final RowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
-            } else if (usePrev) {
-                try (final RowSet prevIndex = table.getRowSet().copyPrev()) {
-                    keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
-                }
             } else {
-                keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
+                keysToSnapshot = (usePrev ? table.getRowSet().prev() : table.getRowSet())
+                        .subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -681,22 +679,19 @@ public class ConstructSnapshot {
                 if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
                     keysToSnapshot = null;
                 } else {
-                    final RowSet rowSetToUse = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
-                    try (final SafeCloseable ignored = usePrev ? rowSetToUse : null) {
-                        final WritableRowSet forwardKeys =
-                                positionsToSnapshot == null ? null
-                                        : rowSetToUse.subSetForPositions(positionsToSnapshot);
-                        final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
-                                : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
-                        if (forwardKeys != null) {
-                            if (reverseKeys != null) {
-                                forwardKeys.insert(reverseKeys);
-                                reverseKeys.close();
-                            }
-                            keysToSnapshot = forwardKeys;
-                        } else {
-                            keysToSnapshot = reverseKeys;
+                    final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+                    final WritableRowSet forwardKeys =
+                            positionsToSnapshot == null ? null : rowSetToUse.subSetForPositions(positionsToSnapshot);
+                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
+                            : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
+                    if (forwardKeys != null) {
+                        if (reverseKeys != null) {
+                            forwardKeys.insert(reverseKeys);
+                            reverseKeys.close();
                         }
+                        keysToSnapshot = forwardKeys;
+                    } else {
+                        keysToSnapshot = reverseKeys;
                     }
                 }
                 try (final RowSet ignored = keysToSnapshot) {
@@ -1178,6 +1173,18 @@ public class ConstructSnapshot {
      * Invokes the snapshot function in a loop until it succeeds with provably consistent results, or until
      * {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS} are exceeded. Falls back to
      * acquiring a shared update graph lock for a final attempt.
+     * <p>
+     * The supplied {@link SnapshotControl}'s {@link SnapshotControl#usePreviousValues usePreviousValues} will be
+     * invoked at the start of any snapshot attempt, and its {@link SnapshotControl#snapshotCompletedConsistently
+     * snapshotCompletedConsistently} will be invoked at the end of any snapshot attempt that is not provably
+     * inconsistent.
+     * <p>
+     * If the supplied {@link SnapshotControl} provides a null {@link SnapshotControl#getUpdateGraph UpdateGraph}, then
+     * this method will perform a static snapshot without locks or retrying. In this case, the {@link SnapshotControl}'s
+     * {@link SnapshotControl#usePreviousValues usePreviousValues} must return {@code false},
+     * {@link SnapshotControl#snapshotCompletedConsistently snapshotCompletedConsistently} must return {@code true}, and
+     * the {@link LogicalClock#NULL_CLOCK_VALUE NULL_CLOCK_VALUE} will be supplied to {@code usePreviousValues} and
+     * {@code snapshotCompletedConsistently}.
      *
      * @param logPrefix A prefix for our log messages
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
@@ -1195,15 +1202,32 @@ public class ConstructSnapshot {
 
         if (updateGraph == null) {
             // This is a snapshot of static data. Just call the function with no frippery.
+            final boolean controlUsePrev = control.usePreviousValues(LogicalClock.NULL_CLOCK_VALUE);
+            if (controlUsePrev) {
+                throw new SnapshotUnsuccessfulException("Static snapshot requested previous values");
+            }
+
             final boolean functionSuccessful = function.call(false, LogicalClock.NULL_CLOCK_VALUE);
-            Assert.assertion(functionSuccessful, "functionSuccessful");
+            if (!functionSuccessful) {
+                throw new SnapshotUnsuccessfulException("Static snapshot failed to execute snapshot function");
+            }
             if (log.isDebugEnabled()) {
                 final long duration = System.currentTimeMillis() - overallStart;
                 log.debug().append(logPrefix)
                         .append(" Static snapshot function elapsed time ").append(duration).append(" ms").endl();
             }
+
+            // notify control of successful snapshot
+            final boolean controlSuccessful =
+                    control.snapshotCompletedConsistently(LogicalClock.NULL_CLOCK_VALUE, false);
+            if (!controlSuccessful) {
+                throw new SnapshotUnsuccessfulException("Static snapshot function succeeded but control failed");
+            }
             return LogicalClock.NULL_CLOCK_VALUE;
         }
+
+        final boolean onUpdateThread = updateGraph.currentThreadProcessesUpdates();
+        final boolean alreadyLocked = StateImpl.locked(updateGraph);
 
         boolean snapshotSuccessful = false;
         boolean functionSuccessful = false;
@@ -1213,7 +1237,7 @@ public class ConstructSnapshot {
         int numConcurrentAttempts = 0;
 
         final LivenessManager initialLivenessManager = LivenessScopeStack.peek();
-        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !StateImpl.locked(updateGraph)) {
+        while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !alreadyLocked && !onUpdateThread) {
             ++numConcurrentAttempts;
             final long beforeClockValue = updateGraph.clock().currentValue();
             final long attemptStart = System.currentTimeMillis();
@@ -1228,10 +1252,6 @@ public class ConstructSnapshot {
             if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Idle && usePrev) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
-            }
-            if (updateGraph.currentThreadProcessesUpdates() && usePrev) {
-                // noinspection ThrowableNotThrown
-                Assert.statementNeverExecuted("Previous values requested from a run thread: " + beforeClockValue);
             }
 
             final long attemptDurationMillis;
@@ -1305,7 +1325,6 @@ public class ConstructSnapshot {
                 break;
             } else {
                 try {
-                    // noinspection BusyWait
                     Thread.sleep(delay);
                     delay *= 2;
                 } catch (InterruptedException interruptIsCancel) {
@@ -1317,11 +1336,11 @@ public class ConstructSnapshot {
         if (snapshotSuccessful) {
             state.maybeReleaseLock();
             if (!functionSuccessful) {
+                final String message = "Failed to execute function concurrently despite consistent state";
                 if (caughtException != null) {
-                    throw new UncheckedDeephavenException("Failure to execute snapshot function with unchanged clock",
-                            caughtException);
+                    throw new SnapshotUnsuccessfulException(message, caughtException);
                 } else {
-                    throw new UncheckedDeephavenException("Failure to execute snapshot function with unchanged clock");
+                    throw new SnapshotUnsuccessfulException(message);
                 }
             }
         } else {
@@ -1339,9 +1358,10 @@ public class ConstructSnapshot {
 
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
                 if (!Boolean.FALSE.equals(previousValuesRequested)) {
-                    Assert.statementNeverExecuted(
-                            "Previous values requested or inconsistent while blocking run processing: beforeClockValue="
-                                    + beforeClockValue + ", previousValuesRequested=" + previousValuesRequested);
+                    Assert.statementNeverExecuted(String.format(
+                            "Previous values requested or inconsistent %s: beforeClockValue=%d, previousValuesRequested=%s",
+                            onUpdateThread ? "from update-processing thread" : "while locked",
+                            beforeClockValue, previousValuesRequested));
                 }
 
                 final long attemptStart = System.currentTimeMillis();
@@ -1354,8 +1374,9 @@ public class ConstructSnapshot {
 
                 final boolean consistent = control.snapshotCompletedConsistently(afterClockValue, false);
                 if (!consistent) {
-                    Assert.statementNeverExecuted(
-                            "Consistent snapshot not generated despite blocking run processing!");
+                    Assert.statementNeverExecuted(String.format(
+                            "Consistent execution not achieved %s",
+                            onUpdateThread ? "from update-processing thread" : "while locked"));
                 }
 
                 if (log.isDebugEnabled()) {
@@ -1399,8 +1420,7 @@ public class ConstructSnapshot {
             @NotNull final Object logIdentityObject,
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet keysToSnapshot) {
-        // noinspection resource
-        snapshot.rowSet = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
+        snapshot.rowSet = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
 
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
@@ -1409,9 +1429,7 @@ public class ConstructSnapshot {
         }
 
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
-
-        final Map<String, ? extends ColumnSource<?>> sourceMap = table.getColumnSourceMap();
-        final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSources = table.getDefinition().getColumnNamesArray();
 
         snapshot.dataColumns = new Object[columnSources.length];
         try (final SharedContext sharedContext =
@@ -1473,7 +1491,7 @@ public class ConstructSnapshot {
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet keysToSnapshot) {
 
-        snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
+        snapshot.rowsAdded = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 
@@ -1486,8 +1504,7 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        final Map<String, ? extends ColumnSource<?>> sourceMap = table.getColumnSourceMap();
-        final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSources = table.getDefinition().getColumnNamesArray();
 
         try (final SharedContext sharedContext =
                 (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {

@@ -31,6 +31,8 @@ public class ReplicateRegionsAndRegionedSources {
 
     private static final String GENERIC_REGION_CHAR_PATH =
             "extensions/source-support/src/main/java/io/deephaven/generic/region/AppendOnlyFixedSizePageRegionChar.java";
+    private static final String GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH =
+            "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharRegionBinarySearchKernel.java";
 
     public static void main(String... args) throws IOException {
         // Note that Byte and Object regions are not replicated!
@@ -39,9 +41,13 @@ public class ReplicateRegionsAndRegionedSources {
         charToAllButBooleanAndByte(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/DeferredColumnRegionChar.java");
 
+
         // Note that Object regions are not replicated!
-        charToAllButBooleanAndByte(PARQUET_REGION_CHAR_PATH);
+        fixupParquetColumnRegions(charToAllButBooleanAndByte(PARQUET_REGION_CHAR_PATH));
         fixupChunkColumnRegionByte(charToByte(PARQUET_REGION_CHAR_PATH));
+
+        charToAllButBoolean(GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH);
+        fixupBinSearchObject(charToObject(GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
 
         charToAllButBooleanAndByte(GENERIC_REGION_CHAR_PATH);
         fixupChunkColumnRegionByte(charToByte(GENERIC_REGION_CHAR_PATH));
@@ -179,5 +185,36 @@ public class ReplicateRegionsAndRegionedSources {
                 "    }"));
 
         FileUtils.writeLines(new File(path), lines);
+    }
+
+    private static void fixupParquetColumnRegions(List<String> files) throws IOException {
+        for (String file : files) {
+            if (file.contains("Double")) {
+                replaceStatistics(file, "Double");
+            } else if (file.contains("Float")) {
+                replaceStatistics(file, "Float");
+            } else if (file.contains("Long")) {
+                replaceStatistics(file, "Long");
+            }
+        }
+    }
+
+    private static void replaceStatistics(final String f, final String statsReplacement) throws IOException {
+        final File file = new File(f);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = globalReplacements(lines, "IntStatistics", statsReplacement + "Statistics",
+                "intValue\\(\\)", statsReplacement.toLowerCase() + "Value()");
+        FileUtils.writeLines(new File(f), lines);
+    }
+
+    private static void fixupBinSearchObject(String charToObject) throws IOException {
+        final File file = new File(charToObject);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = removeImport(lines, "import io\\.deephaven\\.util\\.type\\.ArrayTypeUtils;");
+        lines = globalReplacements(lines,
+                "<\\?>", "<?, ?>",
+                "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);", "",
+                "unboxed", "searchValues");
+        FileUtils.writeLines(new File(charToObject), lines);
     }
 }

@@ -22,9 +22,6 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
 
 /**
  * Each instance of this type represents a single active websocket, which maps to a single gRPC stream.
- *
- * JSR356 websockets always handle their incoming messages in a serial manner, so we don't need to worry here about
- * runOnTransportThread while in onMessage, as we're already in the transport thread.
  */
 public class WebSocketServerStream extends AbstractWebSocketServerStream {
     private static final Logger logger = Logger.getLogger(WebSocketServerStream.class.getName());

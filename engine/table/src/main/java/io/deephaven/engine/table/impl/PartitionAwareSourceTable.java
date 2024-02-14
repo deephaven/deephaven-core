@@ -202,25 +202,21 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 description + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
-        final DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-retainColumns",
+        return new DeferredViewTable(newDefinition, description + "-retainColumns",
                 new PartitionAwareQueryTableReference(redefined),
                 droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
                 null, null);
-        deferredViewTable.setRefreshing(isRefreshing());
-        return deferredViewTable;
     }
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        BaseTable redefined = redefine(newDefinitionInternal);
+        BaseTable<?> redefined = redefine(newDefinitionInternal);
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
                 ? new PartitionAwareQueryTableReference((PartitionAwareSourceTable) redefined)
                 : new DeferredViewTable.SimpleTableReference(redefined);
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 reference, null, viewColumns, null);
-        deferredViewTable.setRefreshing(isRefreshing());
-        return deferredViewTable;
     }
 
     private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
@@ -301,11 +297,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         // if there was nothing that actually required the partition, defer the result.
         if (partitionFilters.isEmpty()) {
-            DeferredViewTable deferredViewTable =
-                    new DeferredViewTable(definition, description + "-withDeferredFilters",
-                            new PartitionAwareQueryTableReference(this), null, null, whereFilters);
-            deferredViewTable.setRefreshing(isRefreshing());
-            return deferredViewTable;
+            return new DeferredViewTable(definition, description + "-withDeferredFilters",
+                    new PartitionAwareQueryTableReference(this), null, null, whereFilters);
         }
 
         WhereFilter[] partitionFilterArray = partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);

@@ -8,6 +8,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.chunk.*;
@@ -84,11 +86,6 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @Override
     public String toString() {
         return "function(" + sourceName + ',' + destName + ')';
-    }
-
-    @Override
-    public List<String> initInputs(Table table) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -207,13 +204,13 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public WritableColumnSource<?> newDestInstance(long size) {
-        throw new UnsupportedOperationException();
+    public final WritableColumnSource<?> newDestInstance(final long size) {
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, destDataType);
     }
 
     @Override
-    public WritableColumnSource<?> newFlatDestInstance(long size) {
-        throw new UnsupportedOperationException();
+    public final WritableColumnSource<?> newFlatDestInstance(final long size) {
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, destDataType, componentType);
     }
 
     @Override

@@ -28,7 +28,8 @@ public class TestTimeZoneAliases extends BaseArrayTestCase {
     }
 
     public void testAllZones() {
-        final @NotNull Map<String, ZoneId> all = TimeZoneAliases.getAllZones();
+        @NotNull
+        final Map<String, ZoneId> all = TimeZoneAliases.getAllZones();
 
         for (final String[] v : values) {
             final ZoneId target = ZoneId.of(v[1]);

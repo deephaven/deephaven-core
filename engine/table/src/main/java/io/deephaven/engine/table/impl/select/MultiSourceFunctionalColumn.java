@@ -9,6 +9,8 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.chunk.attributes.Values;
@@ -39,8 +41,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     private final Class<?> componentType;
 
-    boolean usesPython;
-
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
@@ -70,11 +70,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Table table) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         final List<ColumnSource<?>> localSources = new ArrayList<>(sourceNames.size());
         final List<ColumnSource<?>> localPrev = new ArrayList<>(sourceNames.size());
@@ -100,22 +95,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        final MutableObject<List<String>> missingColumnsHolder = new MutableObject<>();
-        sourceNames.forEach(name -> {
-            final ColumnDefinition<?> sourceColumnDefinition = columnDefinitionMap.get(name);
-            if (sourceColumnDefinition == null) {
-                List<String> missingColumnsList;
-                if ((missingColumnsList = missingColumnsHolder.getValue()) == null) {
-                    missingColumnsHolder.setValue(missingColumnsList = new ArrayList<>());
-                }
-                missingColumnsList.add(name);
-            }
-        });
-
-        if (missingColumnsHolder.getValue() != null) {
-            throw new NoSuchColumnException(columnDefinitionMap.keySet(), missingColumnsHolder.getValue());
-        }
-
+        NoSuchColumnException.throwIf(columnDefinitionMap.keySet(), sourceNames);
         return getColumns();
     }
 
@@ -203,13 +183,13 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public WritableColumnSource<?> newDestInstance(long size) {
-        throw new UnsupportedOperationException();
+    public final WritableColumnSource<?> newDestInstance(final long size) {
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, destDataType);
     }
 
     @Override
-    public WritableColumnSource<?> newFlatDestInstance(long size) {
-        throw new UnsupportedOperationException();
+    public final WritableColumnSource<?> newFlatDestInstance(final long size) {
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, destDataType, componentType);
     }
 
     @Override

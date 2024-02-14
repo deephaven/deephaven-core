@@ -24,6 +24,11 @@ public class TstColumnRegionChar {
     static class Identity implements ColumnRegionChar<Values>, Page.WithDefaults<Values> {
 
         @Override
+        public void invalidate() {
+            // NOTHNG TO DO
+        }
+
+        @Override
         public long mask() {
             return Long.MAX_VALUE;
         }

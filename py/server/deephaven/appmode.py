@@ -8,7 +8,7 @@ from typing import Dict
 import jpy
 
 from deephaven import DHError
-from deephaven._wrapper import JObjectWrapper, wrap_j_object, unwrap
+from deephaven._wrapper import JObjectWrapper, pythonify, javaify
 
 _JApplicationContext = jpy.get_type("io.deephaven.appmode.ApplicationContext")
 _JApplicationState = jpy.get_type("io.deephaven.appmode.ApplicationState")
@@ -36,11 +36,11 @@ class ApplicationState(JObjectWrapper):
         j_field = self.j_app_state.getField(item)
         if not j_field:
             raise KeyError(item)
-        return wrap_j_object(j_field.value())
+        return pythonify(j_field.value())
 
     def __setitem__(self, key, value):
         key = str(key)
-        self.j_app_state.setField(key, unwrap(value))
+        self.j_app_state.setField(key, javaify(value))
 
     def __delitem__(self, key):
         key = str(key)
@@ -54,7 +54,7 @@ class ApplicationState(JObjectWrapper):
         j_fields = self.j_app_state.listFields()
         for i in range(j_fields.size()):
             j_field = j_fields.get(i)
-            fields[j_field.name()] = wrap_j_object(j_field.value())
+            fields[j_field.name()] = pythonify(j_field.value())
 
         return fields
 

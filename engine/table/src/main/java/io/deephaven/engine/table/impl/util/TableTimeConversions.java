@@ -68,7 +68,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link ZonedDateTime}.
      */
     @ScriptApi
-    public static Table asZonedDateTime(final @NotNull Table source, @NotNull final String column,
+    public static Table asZonedDateTime(
+            @NotNull final Table source,
+            @NotNull final String column,
             @NotNull final String zone) {
         return asZonedDateTime(source,
                 MatchPairFactory.getExpression(Require.neqNull(column, "column")),
@@ -85,7 +87,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link ZonedDateTime}.
      */
     @ScriptApi
-    public static Table asZonedDateTime(final @NotNull Table source, @NotNull final MatchPair matchPair,
+    public static Table asZonedDateTime(
+            @NotNull final Table source,
+            @NotNull final MatchPair matchPair,
             @NotNull final String zone) {
         return asZonedDateTime(source, matchPair, ZoneId.of(Require.neqNull(zone, "zone")));
     }
@@ -99,7 +103,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link ZonedDateTime}.
      */
     @ScriptApi
-    public static Table asZonedDateTime(final @NotNull Table source, @NotNull final String column,
+    public static Table asZonedDateTime(
+            @NotNull final Table source,
+            @NotNull final String column,
             @NotNull final ZoneId zone) {
         return asZonedDateTime(source, MatchPairFactory.getExpression(Require.neqNull(column, "column")), zone);
     }
@@ -113,7 +119,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link ZonedDateTime}.
      */
     @ScriptApi
-    public static Table asZonedDateTime(final @NotNull Table source, @NotNull final MatchPair matchPair,
+    public static Table asZonedDateTime(
+            @NotNull final Table source,
+            @NotNull final MatchPair matchPair,
             @NotNull final ZoneId zone) {
         return convertTimeColumn(source, matchPair, ZonedDateTime.class, zone);
     }
@@ -131,7 +139,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalTime}.
      */
     @ScriptApi
-    public static Table asLocalTime(final @NotNull Table source, @NotNull final String column,
+    public static Table asLocalTime(
+            @NotNull final Table source,
+            @NotNull final String column,
             @NotNull final String zone) {
         return asLocalTime(source,
                 MatchPairFactory.getExpression(Require.neqNull(column, "column")),
@@ -148,7 +158,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalTime}.
      */
     @ScriptApi
-    public static Table asLocalTime(final @NotNull Table source, @NotNull final String column,
+    public static Table asLocalTime(
+            @NotNull final Table source,
+            @NotNull final String column,
             @NotNull final ZoneId zone) {
         return asLocalTime(source, MatchPairFactory.getExpression(Require.neqNull(column, "column")), zone);
     }
@@ -162,7 +174,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalTime}.
      */
     @ScriptApi
-    public static Table asLocalTime(final @NotNull Table source, @NotNull final MatchPair matchPair,
+    public static Table asLocalTime(
+            @NotNull final Table source,
+            @NotNull final MatchPair matchPair,
             @NotNull final String zone) {
         return asLocalTime(source, matchPair, ZoneId.of(Require.neqNull(zone, "zone")));
     }
@@ -176,7 +190,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalTime}.
      */
     @ScriptApi
-    public static Table asLocalTime(final @NotNull Table source, @NotNull final MatchPair matchPair,
+    public static Table asLocalTime(
+            @NotNull final Table source,
+            @NotNull final MatchPair matchPair,
             @NotNull final ZoneId zone) {
         return convertTimeColumn(source, matchPair, LocalTime.class, zone);
     }
@@ -193,7 +209,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalDate}.
      */
     @ScriptApi
-    public static Table asLocalDate(final @NotNull Table source, @NotNull final String column,
+    public static Table asLocalDate(
+            @NotNull final Table source,
+            @NotNull final String column,
             @NotNull final String zone) {
         return asLocalDate(source,
                 MatchPairFactory.getExpression(Require.neqNull(column, "column")),
@@ -210,7 +228,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalDate}.
      */
     @ScriptApi
-    public static Table asLocalDate(final @NotNull Table source, @NotNull final String column,
+    public static Table asLocalDate(
+            @NotNull final Table source,
+            @NotNull final String column,
             @NotNull final ZoneId zone) {
         return asLocalDate(source, MatchPairFactory.getExpression(Require.neqNull(column, "column")), zone);
     }
@@ -224,7 +244,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalDate}.
      */
     @ScriptApi
-    public static Table asLocalDate(final @NotNull Table source, @NotNull final MatchPair matchPair,
+    public static Table asLocalDate(
+            @NotNull final Table source,
+            @NotNull final MatchPair matchPair,
             @NotNull final String zone) {
         return asLocalDate(source, matchPair, ZoneId.of(Require.neqNull(zone, "zone")));
     }
@@ -238,7 +260,9 @@ public class TableTimeConversions {
      * @return the {@link Table} with the specified column converted to {@link LocalDate}.
      */
     @ScriptApi
-    public static Table asLocalDate(final @NotNull Table source, @NotNull final MatchPair matchPair,
+    public static Table asLocalDate(
+            @NotNull final Table source,
+            @NotNull final MatchPair matchPair,
             @NotNull final ZoneId zone) {
         return convertTimeColumn(source, matchPair, LocalDate.class, zone);
     }
@@ -253,7 +277,7 @@ public class TableTimeConversions {
      * @param column The column to convert, in {@link MatchPair} format
      * @return the {@link Table} with the specified column converted to {@link Instant}.
      */
-    public static Table asInstant(final @NotNull Table source, @NotNull final String column) {
+    public static Table asInstant(@NotNull final Table source, @NotNull final String column) {
         return asInstant(source, MatchPairFactory.getExpression(Require.neqNull(column, "column")));
     }
 
@@ -264,7 +288,7 @@ public class TableTimeConversions {
      * @param matchPair The {@link MatchPair} of columns
      * @return the {@link Table} with the specified column converted to {@link Instant}.
      */
-    public static Table asInstant(final @NotNull Table source, @NotNull final MatchPair matchPair) {
+    public static Table asInstant(@NotNull final Table source, @NotNull final MatchPair matchPair) {
         return convertTimeColumn(source, matchPair, Instant.class);
     }
     // endregion
@@ -278,7 +302,7 @@ public class TableTimeConversions {
      * @param column The column to convert, in {@link MatchPair} format
      * @return the {@link Table} with the specified column converted to {@code long}.
      */
-    public static Table asEpochNanos(final @NotNull Table source, @NotNull final String column) {
+    public static Table asEpochNanos(@NotNull final Table source, @NotNull final String column) {
         return asEpochNanos(source, MatchPairFactory.getExpression(Require.neqNull(column, "column")));
     }
 
@@ -289,7 +313,7 @@ public class TableTimeConversions {
      * @param matchPair The {@link MatchPair} of columns
      * @return the {@link Table} with the specified column converted to {@code long}.
      */
-    public static Table asEpochNanos(final @NotNull Table source, @NotNull final MatchPair matchPair) {
+    public static Table asEpochNanos(@NotNull final Table source, @NotNull final MatchPair matchPair) {
         return convertTimeColumn(source, matchPair, long.class);
     }
     // endregion
@@ -300,7 +324,7 @@ public class TableTimeConversions {
      * @param type the type
      * @return true if the type is one of the useable time types
      */
-    public static boolean isTimeType(final @NotNull Class<?> type) {
+    public static boolean isTimeType(@NotNull final Class<?> type) {
         return type == Instant.class
                 || type == ZonedDateTime.class
                 || type == LocalDate.class
@@ -313,7 +337,7 @@ public class TableTimeConversions {
      * @param type the type
      * @return true if the type requires a timezone
      */
-    public static boolean requiresZone(final @NotNull Class<?> type) {
+    public static boolean requiresZone(@NotNull final Class<?> type) {
         return type == ZonedDateTime.class || type == LocalDate.class || type == LocalTime.class;
     }
 }

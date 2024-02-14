@@ -11,10 +11,11 @@ using deephaven::dhcore::container::RowSequenceBuilder;
 TickingCallback::~TickingCallback() = default;
 
 TickingUpdate::TickingUpdate() = default;
-TickingUpdate::TickingUpdate(std::shared_ptr<Table> prev, std::shared_ptr<RowSequence> removed_rows,
-    std::shared_ptr<Table> after_removes, std::shared_ptr<RowSequence> added_rows,
-    std::shared_ptr<Table> after_adds, std::vector<std::shared_ptr<RowSequence>> modified_rows,
-    std::shared_ptr<Table> after_modifies) : prev_(std::move(prev)),
+TickingUpdate::TickingUpdate(std::shared_ptr<ClientTable> prev,
+    std::shared_ptr<RowSequence> removed_rows,
+    std::shared_ptr<ClientTable> after_removes, std::shared_ptr<RowSequence> added_rows,
+    std::shared_ptr<ClientTable> after_adds, std::vector<std::shared_ptr<RowSequence>> modified_rows,
+    std::shared_ptr<ClientTable> after_modifies) : prev_(std::move(prev)),
     removedRows_(std::move(removed_rows)), afterRemoves_(std::move(after_removes)),
     addedRows_(std::move(added_rows)), afterAdds_(std::move(after_adds)),
     modifiedRows_(std::move(modified_rows)), afterModifies_(std::move(after_modifies)),

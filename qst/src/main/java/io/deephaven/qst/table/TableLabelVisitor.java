@@ -156,6 +156,11 @@ public class TableLabelVisitor extends TableVisitorGeneric<String> {
             public String visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
                 return "InMemoryKeyBackedInputTable(...)";
             }
+
+            @Override
+            public String visit(BlinkInputTable blinkInputTable) {
+                return "BlinkInputTable(...)";
+            }
         });
     }
 

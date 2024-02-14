@@ -42,28 +42,6 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to execute a command in the console.") from e
 
-    def open_table(self, name: str) -> Table:
-        """Opens a table by name."""
-        self.start_console()
-
-        try:
-            result_id = self.session.make_ticket()
-            response = self._grpc_console_stub.FetchTable(
-                console_pb2.FetchTableRequest(console_id=self.console_id,
-                                              table_id=result_id,
-                                              table_name=name),
-                metadata=self.session.grpc_metadata)
-
-            if response.success:
-                return Table(self.session, ticket=response.result_id.ticket,
-                             schema_header=response.schema_header,
-                             size=response.size,
-                             is_static=response.is_static)
-            else:
-                raise DHError("error open a table: " + response.error_info)
-        except Exception as e:
-            raise DHError("failed to open a table.") from e
-
     def bind_table(self, table: Table, variable_name: str):
         """Binds a name to an opened Table."""
         if not table or not variable_name:

@@ -778,7 +778,7 @@ public final class DynamicTableWriter implements TableWriter {
         public PermissiveRowSetter<?> getSetter(final String name) {
             final PermissiveRowSetter<?> rowSetter = columnToSetter.get(name);
             if (rowSetter == null) {
-                if (table.getColumnSourceMap().containsKey(name)) {
+                if (table.hasColumns(name)) {
                     throw new RuntimeException("Column has a constant value, can not get setter " + name);
                 } else {
                     throw new RuntimeException("Unknown column name " + name);

@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.parquet.format.RowGroup;
@@ -94,7 +94,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         if (!metadataFile.exists()) {
             throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFile));
         }
-        final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile);
+        final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile, inputInstructions);
 
         final ParquetMetadataConverter converter = new ParquetMetadataConverter();
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
@@ -104,7 +104,8 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 inputInstructions);
 
         if (commonMetadataFile != null && commonMetadataFile.exists()) {
-            final ParquetFileReader commonMetadataFileReader = ParquetTools.getParquetFileReader(commonMetadataFile);
+            final ParquetFileReader commonMetadataFileReader =
+                    ParquetTools.getParquetFileReader(commonMetadataFile, inputInstructions);
             final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
                     commonMetadataFileReader.getSchema(),
                     convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
@@ -196,7 +197,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 }
             }
             final ParquetTableLocationKey tlk = new ParquetTableLocationKey(new File(directory, filePathString),
-                    partitionOrder.getAndIncrement(), partitions);
+                    partitionOrder.getAndIncrement(), partitions, inputInstructions);
             tlk.setFileReader(metadataFileReader);
             tlk.setMetadata(metadataFileMetadata);
             tlk.setRowGroupIndices(rowGroupIndices);

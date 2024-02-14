@@ -12,11 +12,9 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -100,7 +98,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         if (columnNames == null) {
             throw new IllegalArgumentException("columnNames cannot be null!");
         }
-        return getDefinition().getColumnNameMap().keySet().containsAll(columnNames);
+        return getDefinition().getColumnNameSet().containsAll(columnNames);
     }
 
     @Override

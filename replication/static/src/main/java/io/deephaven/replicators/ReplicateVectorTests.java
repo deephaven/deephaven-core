@@ -33,7 +33,7 @@ public class ReplicateVectorTests {
                 "import io.deephaven.engine.primitive.iterator.CloseableIterator;"));
         lines = ReplicationUtils.removeRegion(lines, "NullConstantImport");
         lines = ReplicationUtils.replaceRegion(lines, "TestType", List.of(
-                "        assertEquals(ObjectVector.type(io.deephaven.qst.type.StringType.instance()).clazz(), ObjectVector.class);"));
+                "        assertEquals(ObjectVector.type(io.deephaven.qst.type.StringType.of()).clazz(), ObjectVector.class);"));
         lines = ReplicationUtils.globalReplacements(lines,
                 "new ObjectVectorDirect", "new ObjectVectorDirect<>",
                 "ObjectVector ", "ObjectVector<Object> ",

@@ -49,7 +49,6 @@ public class TestFormulaColumnGeneration {
                 .newQueryLibrary("DEFAULT")
                 .captureQueryCompiler()
                 .captureQueryScope()
-                .captureUpdateGraph()
                 .build().open();
     }
 
@@ -74,7 +73,7 @@ public class TestFormulaColumnGeneration {
         // final DhFormulaColumn fc = new DhFormulaColumn("Value", "k * i * ii");
         // final DhFormulaColumn fc = new DhFormulaColumn("Value", "'2019-04-11T09:30 NY'");
         final FormulaColumn fc = FormulaColumn.createFormulaColumn("Value", "I * II + q * ii + II_[i - 1]");
-        fc.initInputs(table);
+        fc.initInputs(table.getRowSet(), table.getColumnSourceMap());
         return fc;
     }
 }

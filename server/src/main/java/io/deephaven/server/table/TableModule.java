@@ -231,6 +231,11 @@ public interface TableModule {
 
     @Binds
     @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.COLUMN_STATISTICS)
+    GrpcTableOperation<?> bindColumnStats(ColumnStatisticsGrpcImpl op);
+
+    @Binds
+    @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.META_TABLE)
     GrpcTableOperation<?> bindMeta(MetaTableGrpcImpl op);
 

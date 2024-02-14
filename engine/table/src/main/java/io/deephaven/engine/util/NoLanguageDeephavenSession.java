@@ -3,16 +3,16 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
@@ -24,39 +24,30 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     private final String scriptType;
     private final Map<String, Object> variables;
 
-    public NoLanguageDeephavenSession(final UpdateGraph updateGraph) {
-        this(updateGraph, SCRIPT_TYPE);
+    public NoLanguageDeephavenSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer) {
+        this(updateGraph, operationInitializer, SCRIPT_TYPE);
     }
 
-    public NoLanguageDeephavenSession(final UpdateGraph updateGraph, final String scriptType) {
-        super(updateGraph, null, null);
+    public NoLanguageDeephavenSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final String scriptType) {
+        super(updateGraph, operationInitializer, null, null);
 
         this.scriptType = scriptType;
-        variables = new LinkedHashMap<>();
+        variables = Collections.synchronizedMap(new LinkedHashMap<>());
     }
 
     @Override
-    public QueryScope newQueryScope() {
-        return new SynchronizedScriptSessionQueryScope(this);
-    }
-
-    @NotNull
-    @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        final Object var = variables.get(name);
-        if (var != null) {
-            return var;
-        }
-        throw new QueryScope.MissingVariableException("No global variable for: " + name);
-    }
-
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        try {
+    protected <T> T getVariable(String name) {
+        synchronized (variables) {
+            if (!variables.containsKey(name)) {
+                throw new QueryScope.MissingVariableException("Missing variable " + name);
+            }
             // noinspection unchecked
-            return (T) getVariable(name);
-        } catch (QueryScope.MissingVariableException e) {
-            return defaultValue;
+            return (T) variables.get(name);
         }
     }
 
@@ -84,25 +75,31 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    public Map<String, Object> getVariables() {
-        return Collections.unmodifiableMap(variables);
+    protected Set<String> getVariableNames(Predicate<String> allowName) {
+        synchronized (variables) {
+            return variables.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
+        }
     }
 
     @Override
-    public Set<String> getVariableNames() {
-        return Collections.unmodifiableSet(variables.keySet());
-    }
-
-    @Override
-    public boolean hasVariableName(String name) {
+    protected boolean hasVariable(String name) {
         return variables.containsKey(name);
     }
 
     @Override
-    public void setVariable(String name, @Nullable Object newValue) {
-        variables.put(name, newValue);
+    protected Object setVariable(String name, @Nullable Object newValue) {
+        return variables.put(name, newValue);
         // changeListener is always null for NoLanguageDeephavenSession; we have no mechanism for reporting scope
         // changes
+    }
+
+    @Override
+    protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
+        synchronized (variables) {
+            return variables.entrySet().stream()
+                    .filter(predicate)
+                    .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+        }
     }
 
     @Override

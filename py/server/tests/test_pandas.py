@@ -10,16 +10,14 @@ import pandas
 import pandas as pd
 import pyarrow as pa
 
-from deephaven import dtypes, new_table, DHError
+from deephaven import dtypes, new_table, DHError, time
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR, NULL_FLOAT, NULL_DOUBLE, \
     NULL_BOOLEAN
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
-from deephaven.time import parse_instant, epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
-
 
 @dataclass
 class CustomClass:
@@ -43,7 +41,7 @@ class PandasTestCase(BaseTestCase):
             float_col(name="Float_", data=[1.01, -1.01]),
             double_col(name="Double_", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
+            datetime_col(name="Datetime", data=[1,-1]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
@@ -56,7 +54,7 @@ class PandasTestCase(BaseTestCase):
         super().tearDown()
 
     def test_to_pandas_no_conv_null(self):
-        df = to_pandas(self.test_table, conv_null=False)
+        df = to_pandas(self.test_table, dtype_backend=None, conv_null=False)
         self.assertEqual(len(df.columns), len(self.test_table.columns))
         self.assertEqual(df.size, 2 * len(self.test_table.columns))
         df_series = [df[col] for col in list(df.columns)]
@@ -72,7 +70,7 @@ class PandasTestCase(BaseTestCase):
         prepared_table = self.test_table.update(
             formulas=["Long = isNull(Long_) ? Double.NaN : Long_"])
 
-        df = to_pandas(prepared_table, cols=["Boolean", "Long"], conv_null=False)
+        df = to_pandas(prepared_table, cols=["Boolean", "Long"], dtype_backend=None, conv_null=False)
         self.assertEqual(df['Long'].dtype, np.float64)
         self.assertEqual(df['Boolean'].values.dtype, np.bool_)
 
@@ -90,12 +88,12 @@ class PandasTestCase(BaseTestCase):
 
         test_table = test_table.group_by(["String"])
         df = to_pandas(test_table, cols=["String", "Doubles"])
-        self.assertEqual(df['String'].dtype, np.object_)
+        self.assertEqual(df['String'].dtype, pd.StringDtype())
         self.assertEqual(df['Doubles'].dtype, np.object_)
 
         double_series = df['Doubles']
-        self.assertEqual([1.0, 2.0], list(double_series[0].toArray()))
-        self.assertEqual([4.0, 8.0, 16.0], list(double_series[1].toArray()))
+        self.assertEqual([1.0, 2.0], list(double_series[0]))
+        self.assertEqual([4.0, 8.0, 16.0], list(double_series[1]))
 
     def test_invalid_col_name(self):
         with self.assertRaises(DHError) as cm:
@@ -116,7 +114,7 @@ class PandasTestCase(BaseTestCase):
             double_col(name="Double", data=[1.01, -1.01]),
         ]
         test_table = new_table(cols=input_cols)
-        df = to_pandas(test_table, conv_null=False)
+        df = to_pandas(test_table, dtype_backend=None, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, test_table)
 
@@ -125,18 +123,18 @@ class PandasTestCase(BaseTestCase):
         table_with_null_bool = new_table(cols=input_cols)
         prepared_table = table_with_null_bool.update(
             formulas=["Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"])
-        df = to_pandas(prepared_table, conv_null=False)
+        df = to_pandas(prepared_table, dtype_backend=None, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, prepared_table)
 
     def test_to_table_datetime_with_none(self):
         datetime_str = "2021-12-10T23:59:59 ET"
-        dt = parse_instant(datetime_str)
+        dt = time.to_j_instant(datetime_str)
 
         datetime_str = "2021-12-10T23:59:59 US/Hawaii"
-        dt1 = parse_instant(datetime_str)
+        dt1 = time.to_j_instant(datetime_str)
 
-        input_cols = [datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None, dt, dt1])]
+        input_cols = [datetime_col(name="Datetime", data=[1, None, dt, dt1])]
         table_with_null_dt = new_table(cols=input_cols)
 
         df = to_pandas(table_with_null_dt)
@@ -157,11 +155,11 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),
         ]
         test_table = new_table(cols=input_cols)
-        df = to_pandas(test_table)
+        df = to_pandas(test_table, dtype_backend=None)
         self.assertEqual(len(df.columns), len(test_table.columns))
         self.assertEqual(df.size, 2 * len(test_table.columns))
         test_table2 = to_table(df)
@@ -253,7 +251,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
             string_col(name="String", data=["text1", None])
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]), #DH arrow export it as strings
         ]
@@ -272,7 +270,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
             string_col(name="String", data=["text1", None]),
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),  # DH arrow export it as strings
         ]
@@ -321,7 +319,7 @@ class PandasTestCase(BaseTestCase):
             long_col(name="Long_", data=[1, NULL_LONG]),
             float_col(name="Float_", data=[np.nan, NULL_FLOAT]),
             double_col(name="Double_", data=[np.nan, NULL_DOUBLE]),
-            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), None]),
+            datetime_col(name="Datetime", data=[1, None]),
         ]
         t = new_table(cols=input_cols)
         df = to_pandas(t, conv_null=True)

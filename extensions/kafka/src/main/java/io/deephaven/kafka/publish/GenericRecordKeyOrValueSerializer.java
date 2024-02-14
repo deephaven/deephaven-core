@@ -295,8 +295,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((Instant) inputChunk.get(ii))
-                        .toEpochMilli());
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> {
+                    Instant val = (Instant) inputChunk.get(ii);
+                    return val == null ? null : val.toEpochMilli();
+                });
     }
 
     private static GenericRecordFieldProcessor makeInstantToMicrosFieldProcessor(
@@ -305,8 +307,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ObjectChunk<?, Values> inputChunk) -> DateTimeUtils
-                        .epochMicros((Instant) inputChunk.get(ii)));
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> {
+                    Instant val = (Instant) inputChunk.get(ii);
+                    return val == null ? null : DateTimeUtils.epochMicros(val);
+                });
     }
 
     private static BigInteger toBigIntegerAtPrecisionAndScale(

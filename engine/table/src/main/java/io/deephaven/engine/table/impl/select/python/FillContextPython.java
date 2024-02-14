@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.table.impl.select.Formula.FillContext;
-import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.PyCallableWrapper.ChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -46,8 +46,8 @@ public class FillContextPython implements FillContext {
 
         int argIndex = forNumba ? 0 : 2;
         for (ChunkArgument arg : chunkArguments) {
-            if (arg instanceof PyCallableWrapper.ColumnChunkArgument) {
-                final int sourceChunkIndex = ((PyCallableWrapper.ColumnChunkArgument) arg).getSourceChunkIndex();
+            if (arg instanceof PyCallableWrapperJpyImpl.ColumnChunkArgument) {
+                final int sourceChunkIndex = ((PyCallableWrapperJpyImpl.ColumnChunkArgument) arg).getSourceChunkIndex();
                 sourceChunks[sourceChunkIndex].copyToArray(0, chunkedArgs[argIndex], 0, chunkSize);
             }
             argIndex++;

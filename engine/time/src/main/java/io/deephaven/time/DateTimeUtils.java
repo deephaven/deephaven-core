@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static java.time.format.DateTimeFormatter.*;
 
@@ -383,8 +384,9 @@ public class DateTimeUtils {
     private abstract static class CachedDate {
 
         final ZoneId timeZone;
-        String value;
-        long valueExpirationTimeMillis;
+        volatile LocalDate date;
+        volatile String str;
+        volatile long valueExpirationTimeMillis;
 
         private CachedDate(@NotNull final ZoneId timeZone) {
             this.timeZone = timeZone;
@@ -395,17 +397,29 @@ public class DateTimeUtils {
             return timeZone;
         }
 
-        public String get() {
-            return get(currentClock().currentTimeMillis());
+        public LocalDate getLocalDate() {
+            return getLocalDate(currentClock().currentTimeMillis());
         }
 
-        public synchronized String get(final long currentTimeMillis) {
+        public LocalDate getLocalDate(final long currentTimeMillis) {
             if (currentTimeMillis >= valueExpirationTimeMillis) {
                 update(currentTimeMillis);
             }
-            return value;
+            return date;
         }
 
+        public String getStr() {
+            return getStr(currentClock().currentTimeMillis());
+        }
+
+        public synchronized String getStr(final long currentTimeMillis) {
+            if (currentTimeMillis >= valueExpirationTimeMillis) {
+                update(currentTimeMillis);
+            }
+            return str;
+        }
+
+        // Update methods should be synchronized!
         abstract void update(long currentTimeMillis);
     }
 
@@ -416,10 +430,10 @@ public class DateTimeUtils {
         }
 
         @Override
-        void update(final long currentTimeMillis) {
-            value = formatDate(epochMillisToInstant(currentTimeMillis), timeZone);
-            valueExpirationTimeMillis =
-                    epochMillis(atMidnight(epochNanosToInstant(millisToNanos(currentTimeMillis) + DAY), timeZone));
+        synchronized void update(final long currentTimeMillis) {
+            date = toLocalDate(epochMillisToInstant(currentTimeMillis), timeZone);
+            str = formatDate(date);
+            valueExpirationTimeMillis = epochMillis(date.plusDays(1).atStartOfDay(timeZone));
         }
     }
 
@@ -435,20 +449,29 @@ public class DateTimeUtils {
     private static final KeyedObjectHashMap<ZoneId, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
+    private static CachedCurrentDate getCachedCurrentDate(@NotNull final ZoneId timeZone) {
+        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new);
+    }
+
     /**
      * Provides the current date string according to the {@link #currentClock() current clock}. Under most
      * circumstances, this method will return the date according to current system time, but during replay simulations,
      * this method can return the date according to replay time.
      *
      * @param timeZone the time zone
-     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd". {@code null} if
+     *         the input is {@code null}.
      * @see #currentClock()
      * @see #setClock(Clock)
      */
     @ScriptApi
-    @NotNull
-    public static String today(@NotNull final ZoneId timeZone) {
-        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
+    @Nullable
+    public static String today(@Nullable final ZoneId timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
+        return getCachedCurrentDate(timeZone).getStr();
     }
 
     /**
@@ -465,7 +488,47 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
+        // noinspection ConstantConditions
         return today(DateTimeUtils.timeZone());
+    }
+
+    /**
+     * Provides the current date according to the {@link #currentClock() current clock}. Under most circumstances, this
+     * method will return the date according to current system time, but during replay simulations, this method can
+     * return the date according to replay time.
+     *
+     * @param timeZone the time zone
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd". {@code null} if
+     *         the input is {@code null}.
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate todayLocalDate(@Nullable final ZoneId timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
+        return getCachedCurrentDate(timeZone).getLocalDate();
+    }
+
+    /**
+     * Provides the current date according to the {@link #currentClock() current clock} and the
+     * {@link ZoneId#systemDefault() default time zone}. Under most circumstances, this method will return the date
+     * according to current system time, but during replay simulations, this method can return the date according to
+     * replay time.
+     *
+     * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd"
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     * @see ZoneId#systemDefault()
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDate todayLocalDate() {
+        // noinspection ConstantConditions
+        return todayLocalDate(DateTimeUtils.timeZone());
     }
 
     // endregion
@@ -476,12 +539,16 @@ public class DateTimeUtils {
      * Gets the time zone for a time zone name.
      *
      * @param timeZone the time zone name
-     * @return the corresponding time zone
-     * @throws NullPointerException if {@code timeZone} is {@code null}
+     * @return the corresponding time zone. {@code null} if the input is {@code null}.
      * @throws DateTimeException if {@code timeZone} has an invalid format
      * @throws ZoneRulesException if {@code timeZone} cannot be found
      */
-    public static ZoneId timeZone(@NotNull String timeZone) {
+    @Nullable
+    public static ZoneId timeZone(@Nullable String timeZone) {
+        if (timeZone == null) {
+            return null;
+        }
+
         return TimeZoneAliases.zoneId(timeZone);
     }
 
@@ -876,6 +943,45 @@ public class DateTimeUtils {
     }
 
     /**
+     * Converts the number of milliseconds from midnight to a {@link LocalTime}
+     *
+     * @param millis milliseconds from midnight
+     * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_INT NULL_INT}
+     */
+    public static @Nullable LocalTime millisOfDayToLocalTime(final int millis) {
+        if (millis == NULL_INT) {
+            return null;
+        }
+        return LocalTime.ofNanoOfDay(millis * MILLI);
+    }
+
+    /**
+     * Converts the number of microseconds from midnight to a {@link LocalTime}
+     *
+     * @param micros microseconds from midnight
+     * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
+     */
+    public static @Nullable LocalTime microsOfDayToLocalTime(final long micros) {
+        if (micros == NULL_LONG) {
+            return null;
+        }
+        return LocalTime.ofNanoOfDay(micros * MICRO);
+    }
+
+    /**
+     * Converts the number of nanoseconds from midnight to a {@link LocalTime}
+     *
+     * @param nanos nanoseconds from midnight
+     * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
+     */
+    public static @Nullable LocalTime nanosOfDayToLocalTime(final long nanos) {
+        if (nanos == NULL_LONG) {
+            return null;
+        }
+        return LocalTime.ofNanoOfDay(nanos);
+    }
+
+    /**
      * Converts an {@link Instant} to a {@link Date}. {@code instant} will be truncated to millisecond resolution.
      *
      * @param instant the instant to convert
@@ -1034,6 +1140,32 @@ public class DateTimeUtils {
         }
 
         return dateTime.toEpochSecond();
+    }
+
+    /**
+     * Returns number of days from the Epoch for a {@link LocalDate} value.
+     *
+     * @param date date to compute the Epoch offset for
+     * @return days since Epoch, or a {@link QueryConstants#NULL_LONG NULL_LONG} value if the instant is {@code null}
+     */
+    public static long epochDays(@Nullable final LocalDate date) {
+        if (date == null) {
+            return NULL_LONG;
+        }
+        return date.toEpochDay();
+    }
+
+    /**
+     * Returns number of days (as an {@code int}) from the Epoch for a {@link LocalDate} value.
+     *
+     * @param date date to compute the Epoch offset for
+     * @return days since Epoch, or a {@link QueryConstants#NULL_INT NULL_INT} value if the instant is {@code null}
+     */
+    public static int epochDaysAsInt(@Nullable final LocalDate date) {
+        if (date == null) {
+            return NULL_INT;
+        }
+        return Math.toIntExact(date.toEpochDay());
     }
 
     /**
@@ -1225,6 +1357,28 @@ public class DateTimeUtils {
         return epochNanosToZonedDateTime(epochAutoToEpochNanos(epochOffset), timeZone);
     }
 
+    /**
+     * Converts days from the Epoch to a {@link LocalDate}.
+     *
+     * @param days days since Epoch
+     * @return {@code null} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input days from the Epoch
+     *         converted to a {@link LocalDate}
+     */
+    public static @Nullable LocalDate epochDaysToLocalDate(final long days) {
+        return days == NULL_LONG ? null : LocalDate.ofEpochDay(days);
+    }
+
+    /**
+     * Converts days from the Epoch (stored as {@code int}) to a {@link LocalDate}.
+     *
+     * @param days days since Epoch
+     * @return {@code null} if the input is {@link QueryConstants#NULL_INT}; otherwise the input days from the Epoch
+     *         converted to a {@link LocalDate}
+     */
+    public static @Nullable LocalDate epochDaysAsIntToLocalDate(final int days) {
+        return days == NULL_INT ? null : LocalDate.ofEpochDay(days);
+    }
+
     // endregion
 
     // region Conversions: Excel
@@ -1314,6 +1468,51 @@ public class DateTimeUtils {
     // endregion
 
     // region Arithmetic
+
+    /**
+     * Adds days to a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param days number of days to add
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plusDays(@Nullable final LocalDate date, final long days) {
+        if (date == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return date.plusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds a time period to a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting date plus the specified time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plus(@Nullable final LocalDate date, final Period period) {
+        if (date == null || period == null) {
+            return null;
+        }
+
+        try {
+            return date.plus(period);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
 
     /**
      * Adds nanoseconds to an {@link Instant}.
@@ -1448,6 +1647,51 @@ public class DateTimeUtils {
 
         try {
             return dateTime.plus(period);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts days from a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param days number of days to subtract
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minusDays(@Nullable final LocalDate date, final long days) {
+        if (date == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return date.minusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period from a {@link LocalDate}.
+     *
+     * @param date starting date
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting date minus the specified time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minus(@Nullable final LocalDate date, final Period period) {
+        if (date == null || period == null) {
+            return null;
+        }
+
+        try {
+            return date.minus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -2071,7 +2315,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int nanosOfMilli(@Nullable final Instant instant) {
         if (instant == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) (epochNanos(instant) % 1000000);
@@ -2087,7 +2331,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int nanosOfMilli(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return nanosOfMilli(toInstant(dateTime));
@@ -2104,7 +2348,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int microsOfMilli(@Nullable final Instant instant) {
         if (instant == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) Math.round((epochNanos(instant) % 1000000) / 1000d);
@@ -2121,7 +2365,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int microsOfMilli(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return microsOfMilli(toInstant(dateTime));
@@ -2204,7 +2448,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int millisOfSecond(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) nanosToMillis(nanosOfSecond(instant, timeZone));
@@ -2220,7 +2464,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int millisOfSecond(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) nanosToMillis(nanosOfSecond(dateTime));
@@ -2237,7 +2481,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int secondOfMinute(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return toZonedDateTime(instant, timeZone).getSecond();
@@ -2253,7 +2497,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int secondOfMinute(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dateTime.getSecond();
@@ -2270,7 +2514,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int minuteOfHour(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return toZonedDateTime(instant, timeZone).getMinute();
@@ -2286,7 +2530,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int minuteOfHour(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dateTime.getMinute();
@@ -2301,7 +2545,7 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of nanoseconds that
+     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
      */
     @ScriptApi
@@ -2321,7 +2565,7 @@ public class DateTimeUtils {
      * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of nanoseconds that
+     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
      */
     @ScriptApi
@@ -2331,6 +2575,21 @@ public class DateTimeUtils {
         }
 
         return epochNanos(dateTime) - epochNanos(atMidnight(dateTime));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param localTime time
+     * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have
+     *         elapsed since the top of the day
+     */
+    public static long nanosOfDay(@Nullable final LocalTime localTime) {
+        if (localTime == null) {
+            return NULL_LONG;
+        }
+
+        return localTime.toNanoOfDay();
     }
 
     /**
@@ -2348,7 +2607,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) nanosToMillis(nanosOfDay(instant, timeZone));
@@ -2368,7 +2627,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) nanosToMillis(nanosOfDay(dateTime));
@@ -2389,7 +2648,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) nanosToSeconds(nanosOfDay(instant, timeZone));
@@ -2409,7 +2668,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return (int) nanosToSeconds(nanosOfDay(dateTime));
@@ -2430,7 +2689,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return secondOfDay(instant, timeZone) / 60;
@@ -2450,7 +2709,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return secondOfDay(dateTime) / 60;
@@ -2471,7 +2730,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return hourOfDay(toZonedDateTime(instant, timeZone));
@@ -2491,43 +2750,121 @@ public class DateTimeUtils {
     @ScriptApi
     public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return minuteOfDay(dateTime) / 60;
     }
 
     /**
-     * Returns a 1-based int value of the day of the week for an {@link Instant} in the specified time zone, with 1
-     * being Monday and 7 being Sunday.
+     * Returns athe day of the week for a {@link ZonedDateTime} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     * @param date date to find the day of the week of
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static DayOfWeek dayOfWeek(@Nullable final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return date.getDayOfWeek();
+    }
+
+    /**
+     * Returns the day of the week for an {@link Instant} in the specified time zone.
+     *
+     * @param instant time to find the day of the week of
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return null;
         }
 
         return dayOfWeek(toZonedDateTime(instant, timeZone));
     }
 
     /**
+     * Returns the day of the week for a {@link ZonedDateTime} in the specified time zone.
+     *
+     * @param dateTime time to find the day of the week of
+     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.getDayOfWeek();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
      * being Monday and 7 being Sunday.
      *
-     * @param dateTime time to find the day of the month of
+     * @param date date to find the day of the week of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final ZonedDateTime dateTime) {
-        if (dateTime == null) {
+    public static int dayOfWeekValue(@Nullable final LocalDate date) {
+        if (date == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
+        return date.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for an {@link Instant} in the specified time zone, with 1
+     * being Monday and 7 being Sunday.
+     *
+     * @param instant time to find the day of the week of
+     * @param timeZone time zone
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static int dayOfWeekValue(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        if (instant == null || timeZone == null) {
+            return NULL_INT;
+        }
+
+        return dayOfWeekValue(toZonedDateTime(instant, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
+     * being Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the week of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static int dayOfWeekValue(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_INT;
+        }
+
         return dateTime.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a {@link ZonedDateTime} and specified time zone. The
+     * first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param date date to find the day of the month of
+     * @return A {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the month
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfMonth();
     }
 
     /**
@@ -2541,7 +2878,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int dayOfMonth(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dayOfMonth(toZonedDateTime(instant, timeZone));
@@ -2557,24 +2894,40 @@ public class DateTimeUtils {
     @ScriptApi
     public static int dayOfMonth(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dateTime.getDayOfMonth();
     }
 
     /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
+     * time zone. The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param date date to find the day of the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getDayOfYear();
+    }
+
+    /**
      * Returns a 1-based int value of the day of the year (Julian date) for an {@link Instant} in the specified time
      * zone. The first day of the year returns 1, the second day returns 2, etc.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the day of the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
      */
     @ScriptApi
     public static int dayOfYear(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dayOfYear(toZonedDateTime(instant, timeZone));
@@ -2584,30 +2937,46 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
      * time zone. The first day of the year returns 1, the second day returns 2, etc.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the day of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
      */
     @ScriptApi
     public static int dayOfYear(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dateTime.getDayOfYear();
     }
 
     /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}. January is 1,
+     * February is 2, etc.
+     *
+     * @param date date to find the month of the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getMonthValue();
+    }
+
+    /**
      * Returns a 1-based int value of the month of the year (Julian date) for an {@link Instant} in the specified time
      * zone. January is 1, February is 2, etc.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the month of the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
      */
     @ScriptApi
     public static int monthOfYear(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return monthOfYear(toZonedDateTime(instant, timeZone));
@@ -2617,29 +2986,44 @@ public class DateTimeUtils {
      * Returns a 1-based int value of the month of the year (Julian date) for a {@link ZonedDateTime} in the specified
      * time zone. January is 1, February is 2, etc.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the month of the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
      */
     @ScriptApi
     public static int monthOfYear(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dateTime.getMonthValue();
     }
 
     /**
+     * Returns the year for a {@link LocalDate}.
+     *
+     * @param date date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
+     */
+    @ScriptApi
+    public static int year(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return date.getYear();
+    }
+
+    /**
      * Returns the year for an {@link Instant} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
      */
     @ScriptApi
     public static int year(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return year(toZonedDateTime(instant, timeZone));
@@ -2648,22 +3032,38 @@ public class DateTimeUtils {
     /**
      * Returns the year for a {@link ZonedDateTime} in the specified time zone.
      *
-     * @param dateTime time to find the day of the month of
+     * @param dateTime time to find the year of
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
      */
     @ScriptApi
     public static int year(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return dateTime.getYear();
     }
 
     /**
+     * Returns the year of the century (two-digit year) for a {@link LocalDate} in the specified time zone.
+     *
+     * @param date date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
+     *         (two-digit year)
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final LocalDate date) {
+        if (date == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(date) % 100;
+    }
+
+    /**
      * Returns the year of the century (two-digit year) for an {@link Instant} in the specified time zone.
      *
-     * @param instant time to find the day of the month of
+     * @param instant time to find the year of
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
      *         (two-digit year)
@@ -2671,7 +3071,7 @@ public class DateTimeUtils {
     @ScriptApi
     public static int yearOfCentury(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return year(instant, timeZone) % 100;
@@ -2687,10 +3087,28 @@ public class DateTimeUtils {
     @ScriptApi
     public static int yearOfCentury(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
+            return NULL_INT;
         }
 
         return year(dateTime) % 100;
+    }
+
+    /**
+     * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
+     *
+     * @param date date to compute the prior midnight for
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
+     *         midnight in the specified time zone
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime atMidnight(@Nullable final LocalDate date, @Nullable ZoneId timeZone) {
+        if (date == null || timeZone == null) {
+            return null;
+        }
+
+        return date.atStartOfDay(timeZone);
     }
 
     /**
@@ -2800,8 +3218,9 @@ public class DateTimeUtils {
      * start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
      *         of the window
      */
@@ -2822,8 +3241,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @return {@code null} if either input is {@code null};
-     *        otherwise, an {@link Instant} representing the end of the window
+     * @param intervalNanos size of the window in nanoseconds
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     *         window
      */
     @ScriptApi
     @Nullable
@@ -2841,8 +3261,9 @@ public class DateTimeUtils {
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @return {@code null} if either input is {@code null};
-     *        otherwise, a {@link ZonedDateTime} representing the end of the window
+     * @param intervalNanos size of the window in nanoseconds
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
+     *         the window
      */
     @ScriptApi
     @Nullable
@@ -2860,8 +3281,9 @@ public class DateTimeUtils {
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
      */
@@ -2882,8 +3304,9 @@ public class DateTimeUtils {
      * the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
-     * @param intervalNanos size of the window in nanoseconds * @param offset The window start offset in nanoseconds.
-     *        For example, a value of MINUTE would offset all windows by one minute.
+     * @param intervalNanos size of the window in nanoseconds
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
      */
@@ -3044,6 +3467,22 @@ public class DateTimeUtils {
         return ISO_LOCAL_DATE.format(dateTime);
     }
 
+    /**
+     * Returns a {@link LocalDate} formatted as a "yyyy-MM-dd" string.
+     *
+     * @param date date to format as a string
+     * @return {@code null} if either input is {@code null}; otherwise, the time formatted as a "yyyy-MM-dd" string
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(date);
+    }
+
     // endregion
 
     // region Parse
@@ -3127,61 +3566,6 @@ public class DateTimeUtils {
         }
 
         try {
-
-            final Matcher tdMatcher = TIME_DURATION_PATTERN.matcher(s);
-            if (tdMatcher.matches()) {
-
-                final String sign1Str = tdMatcher.group("sign1");
-                final String sign2Str = tdMatcher.group("sign2");
-                final String hourStr = tdMatcher.group("hour");
-                final String minuteStr = tdMatcher.group("minute");
-                final String secondStr = tdMatcher.group("second");
-                final String nanosStr = tdMatcher.group("nanos");
-
-                long sign1 = 0;
-
-                if (sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
-                    sign1 = 1;
-                } else if (sign1Str.equals("-")) {
-                    sign1 = -1;
-                } else {
-                    throw new RuntimeException("Unsupported sign: '" + sign1 + "'");
-                }
-
-                long sign2 = 0;
-
-                if (sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
-                    sign2 = 1;
-                } else if (sign2Str.equals("-")) {
-                    sign2 = -1;
-                } else {
-                    throw new RuntimeException("Unsupported sign: '" + sign2 + "'");
-                }
-
-                if (hourStr == null) {
-                    throw new RuntimeException("Missing hour value");
-                }
-
-                long rst = Long.parseLong(hourStr) * HOUR;
-
-                if (minuteStr == null) {
-                    throw new RuntimeException("Missing minute value");
-                }
-
-                rst += Long.parseLong(minuteStr) * MINUTE;
-
-                if (secondStr != null) {
-                    rst += Long.parseLong(secondStr.substring(1)) * SECOND;
-                }
-
-                if (nanosStr != null) {
-                    final String sn = nanosStr.substring(1) + "0".repeat(10 - nanosStr.length());
-                    rst += Long.parseLong(sn);
-                }
-
-                return sign1 * sign2 * rst;
-            }
-
             return parseDuration(s).toNanos();
         } catch (Exception e) {
             throw new DateTimeParseException("Cannot parse time: " + s, e);
@@ -3328,6 +3712,61 @@ public class DateTimeUtils {
         }
 
         try {
+
+            final Matcher tdMatcher = TIME_DURATION_PATTERN.matcher(s);
+            if (tdMatcher.matches()) {
+
+                final String sign1Str = tdMatcher.group("sign1");
+                final String sign2Str = tdMatcher.group("sign2");
+                final String hourStr = tdMatcher.group("hour");
+                final String minuteStr = tdMatcher.group("minute");
+                final String secondStr = tdMatcher.group("second");
+                final String nanosStr = tdMatcher.group("nanos");
+
+                long sign1 = 0;
+
+                if (sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
+                    sign1 = 1;
+                } else if (sign1Str.equals("-")) {
+                    sign1 = -1;
+                } else {
+                    throw new RuntimeException("Unsupported sign: '" + sign1 + "'");
+                }
+
+                long sign2 = 0;
+
+                if (sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
+                    sign2 = 1;
+                } else if (sign2Str.equals("-")) {
+                    sign2 = -1;
+                } else {
+                    throw new RuntimeException("Unsupported sign: '" + sign2 + "'");
+                }
+
+                if (hourStr == null) {
+                    throw new RuntimeException("Missing hour value");
+                }
+
+                long rst = Long.parseLong(hourStr) * HOUR;
+
+                if (minuteStr == null) {
+                    throw new RuntimeException("Missing minute value");
+                }
+
+                rst += Long.parseLong(minuteStr) * MINUTE;
+
+                if (secondStr != null) {
+                    rst += Long.parseLong(secondStr.substring(1)) * SECOND;
+                }
+
+                if (nanosStr != null) {
+                    final String sn = nanosStr.substring(1) + "0".repeat(10 - nanosStr.length());
+                    rst += Long.parseLong(sn);
+                }
+
+                return Duration.ofNanos(sign1 * sign2 * rst);
+            }
+
             return Duration.parse(s);
         } catch (Exception ex) {
             throw new DateTimeParseException("Cannot parse duration: " + s, ex);
@@ -3708,7 +4147,7 @@ public class DateTimeUtils {
         try {
             return LocalTime.parse(s, FORMATTER_ISO_LOCAL_TIME);
         } catch (java.time.format.DateTimeParseException e) {
-            throw new DateTimeParseException("Cannot parse local date: " + s, e);
+            throw new DateTimeParseException("Cannot parse local time: " + s, e);
         }
     }
 

@@ -15,44 +15,14 @@ import io.deephaven.qst.array.LongArray;
 import io.deephaven.qst.array.PrimitiveArray;
 import io.deephaven.qst.array.ShortArray;
 import io.deephaven.qst.column.Column;
-import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
-import io.deephaven.qst.type.BoxedBooleanType;
-import io.deephaven.qst.type.BoxedByteType;
-import io.deephaven.qst.type.BoxedCharType;
-import io.deephaven.qst.type.BoxedDoubleType;
-import io.deephaven.qst.type.BoxedFloatType;
-import io.deephaven.qst.type.BoxedIntType;
-import io.deephaven.qst.type.BoxedLongType;
-import io.deephaven.qst.type.BoxedShortType;
-import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
+import io.deephaven.qst.type.*;
 import io.deephaven.qst.type.GenericType.Visitor;
-import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.ShortType;
-import io.deephaven.qst.type.StringType;
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.BigIntVector;
-import org.apache.arrow.vector.BitVector;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.Float8Vector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeStampNanoTZVector;
-import org.apache.arrow.vector.TinyIntVector;
-import org.apache.arrow.vector.UInt2Vector;
-import org.apache.arrow.vector.VarCharVector;
+import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.Field;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -156,7 +126,11 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
             @Override
             public FieldVector visit(ArrayType<?, ?> arrayType) {
-                throw new UnsupportedOperationException();
+                if (arrayType.componentType().equals(Type.find(byte.class))) {
+                    return visitByteVectorArray(generic.cast(arrayType));
+                } else {
+                    throw new UnsupportedOperationException();
+                }
             }
 
             @Override
@@ -290,6 +264,13 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         Field field = FieldAdapter.stringField(name);
         VarCharVector vector = new VarCharVector(field, allocator);
         VectorHelper.fill(vector, stringArray.values());
+        return vector;
+    }
+
+    FieldVector visitByteVectorArray(GenericArray<?> byteVectorArray) {
+        Field field = FieldAdapter.byteVectorField(name);
+        VarBinaryVector vector = new VarBinaryVector(field, allocator);
+        VectorHelper.fill(vector, (List<byte[]>) byteVectorArray.values());
         return vector;
     }
 

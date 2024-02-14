@@ -26,7 +26,7 @@ class Input:
         """  Initializes an Input object with the given arguments.
 
         Args:
-            col_names (str|list) : column name or list of column names from which to gather input.
+            col_names (Union[str, List[str]]) : column name or list of column names from which to gather input.
             gather_func (Callable): function that determines how input gets transformed into an object.
         """
         self.input = _JLearnInput(col_names, gather_func)

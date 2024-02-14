@@ -59,9 +59,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
+        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
-        deferredViewTable.setRefreshing(isRefreshing());
-        return deferredViewTable;
     }
 }

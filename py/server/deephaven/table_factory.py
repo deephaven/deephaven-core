@@ -4,14 +4,19 @@
 
 """ This module provides various ways to make a Deephaven table. """
 
-from typing import List, Dict, Any, Union, Sequence
+import datetime
+from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping
 
 import jpy
+import numpy as np
+import pandas as pd
 
-from deephaven import DHError
+from deephaven import execution_context, DHError, time
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn, Column
-from deephaven.dtypes import DType
+from deephaven.dtypes import DType, Duration, Instant
+from deephaven.execution_context import ExecutionContext
+from deephaven.jcompat import j_lambda
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.update_graph import auto_locking_ctx
@@ -19,14 +24,15 @@ from deephaven.update_graph import auto_locking_ctx
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
-_JMutableInputTable = jpy.get_type("io.deephaven.engine.util.config.MutableInputTable")
-_JAppendOnlyArrayBackedMutableTable = jpy.get_type(
-    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable")
-_JKeyedArrayBackedMutableTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable")
+_JAppendOnlyArrayBackedInputTable = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
+_JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
+_JSupplier = jpy.get_type('java.util.function.Supplier')
+_JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
 
 
 def empty_table(size: int) -> Table:
@@ -47,14 +53,18 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: Union[str, int], start_time: str = None, blink_table: bool = False) -> Table:
+def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
+               start_time: Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp] = None,
+               blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
-        period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
-            nanoseconds or a time interval string, e.g. "PT00:00:00.001" or "PT1s"
-        start_time (str, optional): start time for adding new rows, defaults to None which means use the current time
-            as the start time
+        period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+            time interval between new row additions, can be expressed as an integer in nanoseconds,
+            a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
+        start_time (Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp], optional):
+            start time for adding new rows, defaults to None which means use the current time
+            as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
 
     Returns:
@@ -65,21 +75,35 @@ def time_table(period: Union[str, int], start_time: str = None, blink_table: boo
     """
     try:
         builder = _JTableTools.timeTableBuilder()
+
+        if not isinstance(period, str) and not isinstance(period, int):
+            period = time.to_j_duration(period)
+
         builder.period(period)
+
         if start_time:
+            start_time = time.to_j_instant(start_time)
             builder.startTime(start_time)
+
         if blink_table:
             builder.blinkTable(blink_table)
+
         return Table(j_table=builder.build())
     except Exception as e:
         raise DHError(e, "failed to create a time table.") from e
 
 
-def new_table(cols: List[InputColumn]) -> Table:
-    """Creates an in-memory table from a list of input columns. Each column must have an equal number of elements.
+def new_table(cols: Union[List[InputColumn], Mapping[str, Sequence]]) -> Table:
+    """Creates an in-memory table from a list of input columns or a Dict (mapping) of column names and column data.
+    Each column must have an equal number of elements.
+
+    When the input is a mapping, an intermediary Pandas DataFrame is created from the mapping, which then is converted
+    to an in-memory table. In this case, as opposed to when the input is a list of InputColumns, the column types are
+    determined by Pandas' type inference logic.
 
     Args:
-        cols (List[InputColumn]): a list of InputColumn
+        cols (Union[List[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
+            names and column data.
 
     Returns:
         a Table
@@ -88,7 +112,12 @@ def new_table(cols: List[InputColumn]) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
+        if isinstance(cols, list):
+            return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
+        else:
+            from deephaven.pandas import to_table
+            df = pd.DataFrame(cols).convert_dtypes()
+            return to_table(df)
     except Exception as e:
         raise DHError(e, "failed to create a new time table.") from e
 
@@ -238,9 +267,9 @@ class InputTable(Table):
 
             key_cols = to_sequence(key_cols)
             if key_cols:
-                super().__init__(_JKeyedArrayBackedMutableTable.make(j_arg_1, key_cols))
+                super().__init__(_JKeyedArrayBackedInputTable.make(j_arg_1, key_cols))
             else:
-                super().__init__(_JAppendOnlyArrayBackedMutableTable.make(j_arg_1))
+                super().__init__(_JAppendOnlyArrayBackedInputTable.make(j_arg_1))
             self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
             self.key_columns = key_cols
         except Exception as e:
@@ -320,3 +349,96 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
         return Table(j_table=_JRingTableTools.of(parent.j_table, capacity, initialize))
     except Exception as e:
         raise DHError(e, "failed to create a ring table.") from e
+
+
+def function_generated_table(table_generator: Callable[..., Table],
+           source_tables: Union[Table, List[Table]] = None,
+           refresh_interval_ms: int = None,
+           exec_ctx: ExecutionContext = None,
+           args: Tuple = (),
+           kwargs: Dict = {}) -> Table:
+    """Creates an abstract table that is generated by running the table_generator() function. The function will first be
+    run to generate the table when this method is called, then subsequently either (a) whenever one of the
+    'source_tables' ticks or (b) after refresh_interval_ms have elapsed. Either 'refresh_interval_ms' or
+    'source_tables' must be set (but not both).
+
+    Function-generated tables can be used to produce dynamic tables from sources outside Deephaven. For example,
+    function-generated tables can create tables that are produced by arbitrary Python logic (including using Pandas or
+    numpy). They can also be used to retrieve data from external sources (such as files or websites).
+
+    The table definition must not change between invocations of the 'table_generator' function, or an exception will be raised.
+
+    Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
+    on them without careful handling. Table operations may be memoized, and it is possible that a table operation will
+    return a table created by a previous invocation of the same operation. Since that result will not have been included
+    in the 'source_table', it's not automatically treated as a dependency for purposes of determining when it's safe to
+    invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own update
+    processing. It's best to include all dependencies directly in 'source_table', or only compute on-demand inputs under
+    a LivenessScope.
+
+    Args:
+        table_generator (Callable[..., Table]): The table generator function. This function must return a Table.
+        source_tables (Union[Table, List[Table]]): Source tables used by the 'table_generator' function. The
+            'table_generator' is rerun when any of these tables tick.
+        refresh_interval_ms (int): Interval (in milliseconds) at which the 'table_generator' function is rerun.
+        exec_ctx (ExecutionContext): A custom execution context. If 'None', the current
+            execution context is used. If there is no current execution context, a ValueError is raised.
+        args (Tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
+        kwargs (Dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
+
+    Returns:
+        a new table
+
+    Raises:
+        DHError
+    """
+    if refresh_interval_ms is None and source_tables is None:
+        raise DHError("Either refresh_interval_ms or source_tables must be provided!")
+
+    if refresh_interval_ms is not None and source_tables is not None:
+        raise DHError("Only one of refresh_interval_ms and source_tables must be provided!")
+
+    # If no execution context is provided, assume we want to use the current one.
+    if exec_ctx is None:
+        exec_ctx = execution_context.get_exec_ctx()
+        if exec_ctx is None:
+            raise ValueError("No execution context is available and exec_ctx was not provided! ")
+
+    def table_generator_function():
+        with exec_ctx:
+            result = table_generator(*args, **kwargs)
+
+        if result is None:
+            raise DHError("table_generator did not return a result")
+
+        if isinstance(result, Table) is False:
+            raise DHError("table_generator did not return a Table")
+
+        return result.j_table
+
+    # Treat the table_generator_function as a Java lambda (i.e., wrap it in a Java Supplier):
+    table_generator_j_function = j_lambda(table_generator_function, _JSupplier)
+
+    if refresh_interval_ms is not None:
+        j_function_generated_table = _JFunctionGeneratedTableFactory.create(
+            table_generator_j_function,
+            refresh_interval_ms
+        )
+    else:
+        # Make sure we have a list of Tables
+        if isinstance(source_tables, Table):
+            source_tables = [source_tables]
+
+        # Extract the underlying Java tables of any source_tables:
+        source_j_tables = []
+        for tbl in source_tables:
+            source_j_tables.append(tbl.j_table)
+
+        # Create the function-generated table:
+        with auto_locking_ctx(*source_tables):
+            j_function_generated_table = _JFunctionGeneratedTableFactory.create(
+                table_generator_j_function,
+                source_j_tables
+        )
+
+    return Table(j_function_generated_table)

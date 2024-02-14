@@ -21,6 +21,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -45,10 +46,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -80,6 +78,18 @@ public class ChunkedOperatorAggregationHelper {
                 aggregationContextFactory, input, preserveEmpty, initialKeys, groupByColumns);
     }
 
+    private static void checkGroupByColumns(String context, TableDefinition tableDefinition, String[] keyNames) {
+        NoSuchColumnException.throwIf(
+                tableDefinition.getColumnNameSet(),
+                Arrays.asList(keyNames),
+                String.format(
+                        "aggregation: not all group-by columns [%%s] are present in %s with columns [%%s]. Missing columns: [%%s]",
+                        context),
+                Type.REQUESTED,
+                Type.AVAILABLE,
+                Type.MISSING);
+    }
+
     @VisibleForTesting
     public static QueryTable aggregation(
             @NotNull final AggregationControl control,
@@ -89,38 +99,32 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
-        if (!input.hasColumns(keyNames)) {
-            throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
-                    + " are present in input table with columns "
-                    + Arrays.toString(input.getDefinition().getColumnNamesArray()));
-        }
+        checkGroupByColumns("input table", input.getDefinition(), keyNames);
         if (initialKeys != null) {
             if (keyNames.length == 0) {
                 throw new IllegalArgumentException(
                         "aggregation: initial groups must not be specified if no group-by columns are specified");
             }
-            if (!initialKeys.hasColumns(keyNames)) {
-                throw new IllegalArgumentException("aggregation: not all group-by columns " + Arrays.toString(keyNames)
-                        + " are present in initial groups table with columns "
-                        + Arrays.toString(initialKeys.getDefinition().getColumnNamesArray()));
-            }
+            checkGroupByColumns("initial groups", initialKeys.getDefinition(), keyNames);
             for (final String keyName : keyNames) {
                 final ColumnDefinition<?> inputDef = input.getDefinition().getColumn(keyName);
                 final ColumnDefinition<?> initialKeysDef = initialKeys.getDefinition().getColumn(keyName);
                 if (!inputDef.isCompatible(initialKeysDef)) {
-                    throw new IllegalArgumentException(
-                            "aggregation: column definition mismatch between input table and initial groups table for "
-                                    + keyName + " input has " + inputDef.describeForCompatibility()
-                                    + ", initial groups has " + initialKeysDef.describeForCompatibility());
+                    throw new IllegalArgumentException(String.format(
+                            "aggregation: column definition mismatch between input table and initial groups table for %s; input has %s, initial groups has %s",
+                            keyName,
+                            inputDef.describeForCompatibility(),
+                            initialKeysDef.describeForCompatibility()));
                 }
             }
         }
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final SwapListener swapListener = input.createSwapListenerIfRefreshing(SwapListener::new);
+        final OperationSnapshotControl snapshotControl =
+                input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
         BaseTable.initializeWithSnapshot(
-                "by(" + aggregationContextFactory + ", " + groupByColumns + ")", swapListener,
+                "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                 (usePrev, beforeClockValue) -> {
-                    resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory,
+                    resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
                             input, preserveEmpty, initialKeys, keyNames, usePrev));
                     return true;
                 });
@@ -129,7 +133,7 @@ public class ChunkedOperatorAggregationHelper {
 
     private static QueryTable aggregation(
             @NotNull final AggregationControl control,
-            @Nullable final SwapListener swapListener,
+            @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
@@ -140,7 +144,7 @@ public class ChunkedOperatorAggregationHelper {
             // This should be checked before this method is called, but let's verify here in case an additional
             // entry point is added incautiously.
             Assert.eqNull(initialKeys, "initialKeys");
-            return noKeyAggregation(swapListener, aggregationContextFactory, input, preserveEmpty, usePrev);
+            return noKeyAggregation(snapshotControl, aggregationContextFactory, input, preserveEmpty, usePrev);
         }
 
         final ColumnSource<?>[] keySources =
@@ -250,7 +254,7 @@ public class ChunkedOperatorAggregationHelper {
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", input, result) {
                         @ReferentialIntegrity
-                        final SwapListener swapListenerHardReference = swapListener;
+                        final OperationSnapshotControl swapListenerHardReference = snapshotControl;
 
                         final ModifiedColumnSet keysUpstreamModifiedColumnSet = input.newModifiedColumnSet(keyNames);
                         final ModifiedColumnSet[] operatorInputModifiedColumnSets =
@@ -296,7 +300,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
                     };
 
-            swapListener.setListenerAndResult(listener, result);
+            snapshotControl.setListenerAndResult(listener, result);
         }
 
         return ac.transformResult(result);
@@ -1694,6 +1698,10 @@ public class ChunkedOperatorAggregationHelper {
         outputPosition.setValue(0);
         final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
 
+        if (initialKeys.isEmpty()) {
+            return stateManager;
+        }
+
         final ColumnSource<?>[] keyColumnsToInsert;
         final boolean closeRowsToInsert;
         final RowSequence rowsToInsert;
@@ -1909,7 +1917,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static QueryTable noKeyAggregation(
-            @Nullable final SwapListener swapListener,
+            @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable table,
             final boolean preserveEmpty,
@@ -2102,7 +2110,7 @@ public class ChunkedOperatorAggregationHelper {
                             super.onFailureInternal(originalException, sourceEntry);
                         }
                     };
-            swapListener.setListenerAndResult(listener, result);
+            snapshotControl.setListenerAndResult(listener, result);
         }
 
         ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);

@@ -16,6 +16,9 @@
 #include "deephaven/dhcore/ticking/immer_table_state.h"
 #include "deephaven/dhcore/ticking/index_decoder.h"
 #include "deephaven/flatbuf/Barrage_generated.h"
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
+#include "deephaven/third_party/fmt/ranges.h"
 
 using deephaven::dhcore::chunk::AnyChunk;
 using deephaven::dhcore::chunk::ChunkMaker;
@@ -29,8 +32,6 @@ using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 using io::deephaven::barrage::flatbuf::BarrageMessageType;
 using io::deephaven::barrage::flatbuf::BarrageMessageWrapper;
@@ -234,8 +235,8 @@ BarrageProcessorImpl::ProcessNextChunk(const std::vector<std::shared_ptr<ColumnS
     case State::kBuildingResult:
       return buildingResult_.ProcessNextChunk(this, sources, begins, ends, metadata, metadata_size);
     default: {
-      auto message = Stringf("Unknown state %o", static_cast<int>(state_));
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      auto message = fmt::format("Unknown state {}", static_cast<int>(state_));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 }
@@ -251,23 +252,24 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
     const std::vector<size_t> &ends, const void *metadata, size_t /*metadata_size*/) {
   if (metadata == nullptr) {
     const char *message = "Metadata was required here, but none was received";
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   // This metadata buffer comes from code like flightStreamChunk_->app_metadata->data()
   const auto *barrage_wrapper = flatbuffers::GetRoot<BarrageMessageWrapper>(metadata);
 
   if (barrage_wrapper->magic() != BarrageProcessor::kDeephavenMagicNumber) {
-    auto message = Stringf("Expected magic number %o, got %o",
+    auto message = fmt::format("Expected magic number {}, got {}",
         BarrageProcessor::kDeephavenMagicNumber,
         barrage_wrapper->magic());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   if (barrage_wrapper->msg_type() !=
       BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata) {
-    auto message = Stringf("Expected Barrage Message Type %o, got %o",
-        BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata, barrage_wrapper->msg_type());
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    auto message = fmt::format("Expected Barrage Message Type {}, got {}",
+        static_cast<int>(BarrageMessageType::BarrageMessageType_BarrageUpdateMetadata),
+        static_cast<int>(barrage_wrapper->msg_type()));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   const auto *bmw_raw = barrage_wrapper->msg_payload()->data();
@@ -283,8 +285,11 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
   auto shift_dest_index = IndexDecoder::ReadExternalCompressedDelta(&di_three_shift_indices);
   auto added_rows = IndexDecoder::ReadExternalCompressedDelta(&di_added);
 
-//  streamf(std::cout, "adds=%o, removes=%o, ss=%o, %se=%o, sd=%o\n", *addedRows, *removedRows,
-//      *shiftStartIndex, *shiftEndIndex, *shiftDestIndex);
+  // Disabled because it's too verbose
+  if (false) {
+    fmt::print(std::cout, "adds={}, removes={}, ss={}, %se={}, sd={}\n", *added_rows, *removed_rows,
+        *shift_start_index, *shift_end_index, *shift_dest_index);
+  }
 
   const auto &mod_column_nodes = *bmd->mod_column_nodes();
 
@@ -368,7 +373,7 @@ std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl
     }
 
     if (owner->awaitingMetadata_.num_cols_ == 0) {
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("!AddedRows.Empty() but numCols == 0"));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("!AddedRows.Empty() but numCols == 0"));
     }
 
     // Working copy that is consumed in the iterations of the loop.
@@ -380,7 +385,7 @@ std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl
   auto num_sources = sources.size();
 
   if (added_rows_remaining_->Empty()) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: addedRowsRemaining is Empty"));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Impossible: addedRowsRemaining is Empty"));
   }
 
   if (begins == ends) {
@@ -392,14 +397,14 @@ std::optional<TickingUpdate> AwaitingAdds::ProcessNextChunk(BarrageProcessorImpl
   for (size_t i = 1; i != num_sources; ++i) {
     auto this_size = ends[i] - begins[i];
     if (this_size != chunk_size) {
-      auto message = Stringf("Chunks have inconsistent sizes: %o vs %o", this_size, chunk_size);
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      auto message = fmt::format("Chunks have inconsistent sizes: {} vs {}", this_size, chunk_size);
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
 
   if (added_rows_remaining_->Size() < chunk_size) {
     const char *message = "There is excess data in the chunk";
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 
   auto index_rows_this_time = added_rows_remaining_->Take(chunk_size);
@@ -464,7 +469,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
   }
 
   if (AllEmpty(modified_rows_remaining_)) {
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG("Impossible: modifiedRowsRemaining is empty"));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Impossible: modifiedRowsRemaining is empty"));
   }
   auto &begins = *beginsp;
 
@@ -475,7 +480,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
 
   auto num_sources = sources.size();
   if (num_sources > modified_rows_remaining_.size()) {
-    auto message = Stringf("Number of sources (%o) greater than expected (%o)", num_sources,
+    auto message = fmt::format("Number of sources ({}) greater than expected ({})", num_sources,
                            modified_rows_remaining_.size());
     throw std::runtime_error(message);
   }
@@ -485,9 +490,9 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
     auto num_rows_available = ends[i] - begins[i];
 
     if (num_rows_available > num_rows_remaining) {
-      auto message = Stringf("col %o: numRowsAvailable > numRowsRemaining (%o > %o)",
+      auto message = fmt::format("col {}: numRowsAvailable > numRowsRemaining ({} > {})",
                              i, num_rows_available, num_rows_remaining);
-      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
 
     if (num_rows_available == 0) {
@@ -534,10 +539,10 @@ std::optional<TickingUpdate> BuildingResult::ProcessNextChunk(BarrageProcessorIm
     const std::vector<std::shared_ptr<ColumnSource>> &/*sources*/,
     std::vector<size_t> *beginsp, const std::vector<size_t> &ends, const void */*metadata*/, size_t /*metadataSize*/) {
   if (*beginsp != ends) {
-    auto message = Stringf(
-        "Barrage logic is done processing but there is leftover caller-provided data. begins = [%o]. ends=[%o]",
-        separatedList(beginsp->begin(), beginsp->end()), separatedList(ends.begin(), ends.end()));
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    auto message = fmt::format(
+        "Barrage logic is done processing but there is leftover caller-provided data. begins = [{}]. ends=[{}]",
+        *beginsp, ends);
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   auto *aa = &owner->awaitingAdds_;
   auto *am = &owner->awaitingModifies_;
@@ -558,8 +563,8 @@ bool AllEmpty(const std::vector<std::shared_ptr<RowSequence>> &row_sequences) {
 
 void AssertAllSame(size_t val0, size_t val1, size_t val2) {
   if (val0 != val1 || val0 != val2) {
-    auto message = Stringf("Sizes differ: %o vs %o vs %o", val0, val1, val2);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+    auto message = fmt::format("Sizes differ: {} vs {} vs {}", val0, val1, val2);
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 }
 }  // namespace

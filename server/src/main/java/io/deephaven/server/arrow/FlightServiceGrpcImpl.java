@@ -10,6 +10,9 @@ import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -22,6 +25,8 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.util.SafeCloseable;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
@@ -170,30 +175,43 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             @NotNull final StreamObserver<Flight.FlightInfo> responseObserver) {
         final SessionState session = sessionService.getOptionalSession();
 
-        final SessionState.ExportObject<Flight.FlightInfo> export =
-                ticketRouter.flightInfoFor(session, request, "request");
+        final String description = "FlightService#getFlightInfo(request=" + request + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session == null ? null : session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        if (session != null) {
-            session.nonExport()
-                    .require(export)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        responseObserver.onNext(export.get());
-                        responseObserver.onCompleted();
-                    });
-        } else {
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Flight.FlightInfo> export =
+                    ticketRouter.flightInfoFor(session, request, "request");
+
+            if (session != null) {
+                session.nonExport()
+                        .queryPerformanceRecorder(queryPerformanceRecorder)
+                        .require(export)
+                        .onError(responseObserver)
+                        .submit(() -> {
+                            responseObserver.onNext(export.get());
+                            responseObserver.onCompleted();
+                        });
+                return;
+            }
+
+            StatusRuntimeException exception = null;
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
-                        responseObserver.onNext(export.get());
-                        responseObserver.onCompleted();
+                        GrpcUtil.safelyOnNext(responseObserver, export.get());
+                        GrpcUtil.safelyComplete(responseObserver);
                     }
                 } finally {
                     export.dropReference();
                 }
             } else {
-                responseObserver.onError(
-                        Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
+                GrpcUtil.safelyError(responseObserver, exception);
+            }
+
+            if (queryPerformanceRecorder.endQuery() || exception != null) {
+                EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, exception);
             }
         }
     }
@@ -204,33 +222,48 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             @NotNull final StreamObserver<Flight.SchemaResult> responseObserver) {
         final SessionState session = sessionService.getOptionalSession();
 
-        final SessionState.ExportObject<Flight.FlightInfo> export =
-                ticketRouter.flightInfoFor(session, request, "request");
+        final String description = "FlightService#getSchema(request=" + request + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session == null ? null : session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        if (session != null) {
-            session.nonExport()
-                    .require(export)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        responseObserver.onNext(Flight.SchemaResult.newBuilder()
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<Flight.FlightInfo> export =
+                    ticketRouter.flightInfoFor(session, request, "request");
+
+            if (session != null) {
+                session.nonExport()
+                        .queryPerformanceRecorder(queryPerformanceRecorder)
+                        .require(export)
+                        .onError(responseObserver)
+                        .submit(() -> {
+                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                                    .setSchema(export.get().getSchema())
+                                    .build());
+                            responseObserver.onCompleted();
+                        });
+                return;
+            }
+
+            StatusRuntimeException exception = null;
+            if (export.tryRetainReference()) {
+                try {
+                    if (export.getState() == ExportNotification.State.EXPORTED) {
+                        GrpcUtil.safelyOnNext(responseObserver, Flight.SchemaResult.newBuilder()
                                 .setSchema(export.get().getSchema())
                                 .build());
-                        responseObserver.onCompleted();
-                    });
-        } else if (export.tryRetainReference()) {
-            try {
-                if (export.getState() == ExportNotification.State.EXPORTED) {
-                    responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                            .setSchema(export.get().getSchema())
-                            .build());
-                    responseObserver.onCompleted();
+                        GrpcUtil.safelyComplete(responseObserver);
+                    }
+                } finally {
+                    export.dropReference();
                 }
-            } finally {
-                export.dropReference();
+            } else {
+                exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
+                responseObserver.onError(exception);
             }
-        } else {
-            responseObserver.onError(
-                    Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+
+            if (queryPerformanceRecorder.endQuery() || exception != null) {
+                EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, exception);
+            }
         }
     }
 

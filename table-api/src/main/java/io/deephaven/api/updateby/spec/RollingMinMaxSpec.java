@@ -1,7 +1,6 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
@@ -50,7 +49,6 @@ public abstract class RollingMinMaxSpec extends RollingOpSpec {
                 .revWindowScale(revWindowScale).fwdWindowScale(fwdWindowScale).build();
     }
 
-    @Value.Parameter
     public abstract boolean isMax();
 
     @Override

@@ -32,7 +32,9 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'server')
     testImplementation project(':java-client-flight')
     testImplementation project(':proto:proto-backplane-grpc-flight')
+    testImplementation project(':plugin-echo')
     testImplementation project(':log-to-slf4j')
+    Classpaths.inheritAutoService(project, true)
 }
 
 test {

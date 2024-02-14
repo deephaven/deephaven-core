@@ -21,13 +21,15 @@ final class RegionedColumnSourceBoolean
         this(new RegionedColumnSourceByte.AsValues());
     }
 
-    public RegionedColumnSourceBoolean(final @NotNull RegionedColumnSourceByte<Values> inner) {
+    public RegionedColumnSourceBoolean(@NotNull final RegionedColumnSourceByte<Values> inner) {
         super(ColumnRegionByte.createNull(PARAMETERS.regionMask), Boolean.class, inner);
     }
 
     @Override
-    public void convertRegion(WritableChunk<? super Values> destination,
-                              Chunk<? extends Values> source, RowSequence rowSequence) {
+    public void convertRegion(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final Chunk<? extends Values> source,
+            @NotNull final RowSequence rowSequence) {
         WritableObjectChunk<Boolean, ? super Values> objectChunk = destination.asWritableObjectChunk();
         ByteChunk<? extends Values> byteChunk = source.asByteChunk();
 

@@ -11,7 +11,7 @@ from pydeephaven.updateby import BadDataBehavior, MathContext, OperationControl,
     cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
     rolling_group_tick, rolling_group_time, rolling_avg_tick, rolling_avg_time, rolling_min_tick, rolling_min_time, \
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
-    rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time
+    rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time, rolling_formula_tick, rolling_formula_time
 from tests.testbase import BaseTestCase
 
 
@@ -156,11 +156,20 @@ class UpdateByTestCase(BaseTestCase):
             rolling_std_time(ts_col="Timestamp", cols=["rstd_b = b", "rstd_e = e"], rev_time="PT30S",
                              fwd_time="-PT00:00:20"),
             # rolling weighted average (using "b" as the weight column)
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:10"),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
-            rolling_wavg_time(ts_col="Timestamp", weight_col="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT00:00:10"),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_wavg_time(ts_col="Timestamp", wcol="b", cols=["rwavg_b = b", "rwavg_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
+            # rolling formula
+            rolling_formula_tick(formula="sum(x)", formula_param="x", cols=["formula_a = a", "formula_d = d"], rev_ticks=10),
+            rolling_formula_tick(formula="avg(x)", formula_param="x", cols=["formula_a = a", "formula_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT00:00:10"),
+            rolling_formula_time(formula="avg(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT30S",
+                             fwd_time="-PT00:00:20"),
+
         ]
 
 
@@ -199,7 +208,7 @@ class UpdateByTestCase(BaseTestCase):
             cum_max(["max_a=a", "max_d=d"]),
             ema_tick(10, ["ema_d=d", "ema_e=e"]),
             ema_time("Timestamp", "PT00:00:00.1", ["ema_time_d=d", "ema_time_e=e"]),
-            rolling_wavg_tick(weight_col="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
+            rolling_wavg_tick(wcol="b", cols=["rwavg_a = a", "rwavg_d = d"], rev_ticks=10),
         ]
         for t in (self.static_table, self.ticking_table):
             rt = t.update_by(ops=multiple_ops, by="c")

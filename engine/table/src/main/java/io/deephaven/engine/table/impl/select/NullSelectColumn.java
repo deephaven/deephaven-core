@@ -26,11 +26,6 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(final Table table) {
-        return Collections.emptyList();
-    }
-
-    @Override
     public List<String> initInputs(final TrackingRowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         return Collections.emptyList();
@@ -80,12 +75,12 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, nvcs.getType(), nvcs.getComponentType());
+        return nvcs;
     }
 
     @Override
     public WritableColumnSource<?> newFlatDestInstance(final long size) {
-        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, nvcs.getType(), nvcs.getComponentType());
+        return nvcs;
     }
 
     @Override

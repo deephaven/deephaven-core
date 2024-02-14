@@ -188,6 +188,18 @@ public interface Filter extends Expression {
     }
 
     /**
+     * Performs a non-recursive "and-extraction" against {@code filter}. If {@code filter} is a {@link FilterAnd},
+     * {@link FilterAnd#filters()} will be returned. If {@code filter} is {@link Filter#ofTrue()}, an empty list will be
+     * returned. Otherwise, a singleton list of {@code filter} will be returned.
+     *
+     * @param filter the filter
+     * @return the and-extracted filter
+     */
+    static Collection<Filter> extractAnds(Filter filter) {
+        return ExtractAnds.of(filter);
+    }
+
+    /**
      * The logical inversion of {@code this}. While logically equivalent to {@code Filter.not(this)}, implementations of
      * this method will return more specifically typed inversions where applicable.
      *

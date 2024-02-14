@@ -454,7 +454,9 @@ func (op timeTableOp) childQueries() []QueryNode {
 
 func (op timeTableOp) makeBatchOp(resultId *ticketpb2.Ticket, children []*tablepb2.TableReference) tablepb2.BatchTableRequest_Operation {
 	assert(len(children) == 0, "wrong number of children for TimeTable")
-	req := &tablepb2.TimeTableRequest{ResultId: resultId, PeriodNanos: op.period.Nanoseconds(), StartTimeNanos: op.startTime.UnixNano()}
+	req := &tablepb2.TimeTableRequest{ResultId: resultId,
+		Period:    &tablepb2.TimeTableRequest_PeriodNanos{PeriodNanos: op.period.Nanoseconds()},
+		StartTime: &tablepb2.TimeTableRequest_StartTimeNanos{StartTimeNanos: op.startTime.UnixNano()}}
 	return tablepb2.BatchTableRequest_Operation{Op: &tablepb2.BatchTableRequest_Operation_TimeTable{TimeTable: req}}
 }
 
@@ -1013,14 +1015,20 @@ func (qb QueryNode) AvgBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_AVG})
 }
 
-// StdBy returns the standard deviation for each group. Null values are ignored.
+// StdBy returns the sample standard deviation for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
+//
+// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (qb QueryNode) StdBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_STD})
 }
 
-// VarBy returns the variance for each group. Null values are ignored.
+// VarBy returns the sample variance for each group. Null values are ignored.
 // Columns not used in the grouping must be numeric.
+//
+// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (qb QueryNode) VarBy(by ...string) QueryNode {
 	return qb.addOp(dedicatedAggOp{child: qb, colNames: by, kind: tablepb2.ComboAggregateRequest_VAR})
 }
@@ -1156,15 +1164,21 @@ func (b *AggBuilder) Percentile(percentile float64, cols ...string) *AggBuilder 
 	return b
 }
 
-// Std returns an aggregator that computes the standard deviation of values, within an aggregation group, for each input column.
+// Std returns an aggregator that computes the sample standard deviation of values, within an aggregation group, for each input column.
 // The source columns are specified by cols.
+//
+// Sample standard deviation is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (b *AggBuilder) StdDev(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_STD})
 	return b
 }
 
-// Var returns an aggregator that computes the variance of values, within an aggregation group, for each input column.
+// Var returns an aggregator that computes the sample variance of values, within an aggregation group, for each input column.
 // The source columns are specified by cols.
+//
+// Sample variance is calculated using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+// which ensures that the sample variance will be an unbiased estimator of population variance.
 func (b *AggBuilder) Variance(cols ...string) *AggBuilder {
 	b.addAgg(aggPart{matchPairs: cols, kind: tablepb2.ComboAggregateRequest_VAR})
 	return b

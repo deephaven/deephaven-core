@@ -26,11 +26,11 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
 
     protected final LongArraySource nanoSource;
 
-    public NanosBasedTimeArraySource(final @NotNull Class<TIME_TYPE> type) {
+    public NanosBasedTimeArraySource(@NotNull final Class<TIME_TYPE> type) {
         this(type, new LongArraySource());
     }
 
-    public NanosBasedTimeArraySource(final @NotNull Class<TIME_TYPE> type, final @NotNull LongArraySource nanoSource) {
+    public NanosBasedTimeArraySource(@NotNull final Class<TIME_TYPE> type, @NotNull final LongArraySource nanoSource) {
         super(type);
         this.nanoSource = nanoSource;
     }
@@ -200,17 +200,17 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         return new ZonedDateTimeArraySource(Require.neqNull(zone, "zone"), nanoSource);
     }
 
     @Override
-    public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
+    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {
         return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
-    public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
+    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {
         return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 

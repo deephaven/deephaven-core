@@ -6,23 +6,6 @@ plugins {
 
 description 'Engine Table: Implementation and closely-coupled utilities'
 
-sourceSets {
-    main {
-        resources {
-            srcDir 'groovy'
-            include 'core/*.groovy'
-        }
-        resources {
-            srcDir 'python'
-            include 'core/*.py'
-        }
-        resources {
-            srcDir 'src/main/resources'
-            include '**'
-        }
-    }
-}
-
 configurations {
     // Ensure jmh picks up the same dependencies as tests
     jmhImplementation.extendsFrom testImplementation
@@ -45,14 +28,12 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':Stats')
-    implementation project(':Net')
-    implementation project(':FishUtil')
 
     implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation 'com.tdunning:t-digest:3.2'
     implementation 'com.squareup:javapoet:1.13.0'
-    implementation 'io.github.classgraph:classgraph:4.8.154'
+    implementation 'io.github.classgraph:classgraph:4.8.165'
 
     implementation project(':plugin')
     implementation depCommonsLang3
@@ -76,6 +57,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
     testImplementation TestTools.projectDependency(project, 'engine-context')
+    testImplementation TestTools.projectDependency(project, 'engine-time')
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-rowset-test-utils')
     testImplementation project(':engine-test-utils')
@@ -83,7 +65,9 @@ dependencies {
     testImplementation project(':BenchmarkSupport')
     testImplementation project(':extensions-csv')
     testImplementation project(':extensions-parquet-table')
+    testImplementation project(':extensions-source-support')
     testImplementation project(':Numerics')
+    testImplementation project(':extensions-suanshu')
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 

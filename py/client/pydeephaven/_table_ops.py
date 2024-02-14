@@ -53,13 +53,14 @@ class NoneOp(TableOp):
 
 
 class TimeTableOp(TableOp):
-    def __init__(self, start_time: Union[int, str], period: Union[int, str]):
+    def __init__(self, start_time: Union[int, str], period: Union[int, str], blink_table: bool = False):
         if start_time is None:
             # Force this to zero to trigger `now()` behavior.
             self.start_time = 0
         else:
             self.start_time = start_time
         self.period = period
+        self.blink_table = blink_table
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
@@ -67,10 +68,13 @@ class TimeTableOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         return table_pb2.TimeTableRequest(result_id=result_id,
-            start_time_nanos=self.start_time if not isinstance(self.start_time, str) else None,
-            start_time_string=self.start_time if isinstance(self.start_time, str) else None,
-            period_nanos=self.period if not isinstance(self.period, str) else None,
-            period_string=self.period if isinstance(self.period, str) else None)
+                                          start_time_nanos=self.start_time if not isinstance(self.start_time,
+                                                                                             str) else None,
+                                          start_time_string=self.start_time if isinstance(self.start_time,
+                                                                                          str) else None,
+                                          period_nanos=self.period if not isinstance(self.period, str) else None,
+                                          period_string=self.period if isinstance(self.period, str) else None,
+                                          blink_table=self.blink_table)
 
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -425,6 +429,7 @@ class CrossJoinOp(TableOp):
         return table_pb2.BatchTableRequest.Operation(
             cross_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
+
 class AjOp(TableOp):
     def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = []):
         self.table = table
@@ -439,15 +444,16 @@ class AjOp(TableOp):
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.ticket)
         return table_pb2.AjRajTablesRequest(result_id=result_id,
-                                               left_id=left_id,
-                                               right_id=right_id,
-                                               exact_match_columns=self.keys[:-1],
-                                               as_of_column=self.keys[-1],
-                                               columns_to_add=self.columns_to_add)
+                                            left_id=left_id,
+                                            right_id=right_id,
+                                            exact_match_columns=self.keys[:-1],
+                                            as_of_column=self.keys[-1],
+                                            columns_to_add=self.columns_to_add)
 
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(
             aj=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
 
 class RajOp(TableOp):
     def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = []):
@@ -472,6 +478,7 @@ class RajOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(
             raj=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
 
 class FlattenOp(TableOp):
     @classmethod

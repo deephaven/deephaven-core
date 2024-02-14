@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
@@ -8,11 +10,11 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class ZeroKeyUpdateByManager extends UpdateBy {
 
@@ -41,7 +43,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param rowRedirection the row redirection for dense output sources
      * @param control the control object.
      */
-    protected ZeroKeyUpdateByManager(
+    ZeroKeyUpdateByManager(
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
@@ -55,12 +57,6 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
         if (source.isRefreshing()) {
             result = new QueryTable(source.getRowSet(), resultSources);
-
-            // this is a refreshing source, we will need a listener
-            sourceListener = newUpdateByListener();
-            source.addUpdateListener(sourceListener);
-            // result will depend on listener
-            result.addParentReference(sourceListener);
 
             // create input and output modified column sets
             forAllOperators(op -> {
@@ -78,6 +74,12 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);
+
+            // this is a refreshing source, we will need a listener
+            sourceListener = newUpdateByListener();
+            source.addUpdateListener(sourceListener);
+            // result will depend on listener
+            result.addParentReference(sourceListener);
         } else {
             zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
                     timestampColumnName, control, (oe, se) -> {
@@ -99,7 +101,20 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
         // do the actual computations
         final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(fakeUpdate, true);
-        sm.processUpdate();
+
+        try {
+            // need to wait until this future is complete
+            sm.processUpdate().get();
+        } catch (InterruptedException e) {
+            throw new CancellationException("Interrupted while initializing zero-key updateBy");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                // rethrow the error
+                throw new UncheckedDeephavenException("Failure while initializing zero-key updateBy", e.getCause());
+            }
+        }
     }
 
     @Override

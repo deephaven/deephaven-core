@@ -120,7 +120,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
      * @param entry An entry for the listener to be added
      * @return Whether this operation caused the set to become <b>non-empty</b>
      */
-    public final boolean add(final @NotNull LISTENER_TYPE listener, final @NotNull Entry entry) {
+    public final boolean add(@NotNull final LISTENER_TYPE listener, @NotNull final Entry entry) {
         Require.eq(listener, "listener", entry.getListener(), "entry.getListener()");
 
         final int initialSize = size;

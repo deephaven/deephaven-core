@@ -1425,7 +1425,7 @@ public class QueryTableAjTest {
      * Reproduction of the error from DHC issue #3080.
      */
     @Test
-    public void testIds3080() {
+    public void testDHC3080() {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final int seed = 0;
             final Random random = new Random(seed);
@@ -1453,6 +1453,55 @@ public class QueryTableAjTest {
 
             // force compare results of the bucketed output, we cannot compare static to incremental as in other tests
             // because static will experience the same error when performing `rehashInternalFull()`
+            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
+                    rightTable.partitionBy("Bucket"),
+                    true, true);
+        }
+    }
+
+    /**
+     * Reproduction of the error from DHC issue #4700. The root cause is that the cookies were not being migrated
+     * properly during a partial rehash. This repro creates small initial tables, then generates large updates that
+     * force a partial rehash and migration.
+     */
+    @Test
+    public void testDHC4700() {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final int seed = 0;
+            final Random random = new Random(seed);
+
+            final ColumnInfo<?, ?>[] leftColumnInfo;
+            final ColumnInfo<?, ?>[] rightColumnInfo;
+
+            // Small initial tables.
+            final int leftSize = 2;
+            final int rightSize = 2;
+            final QueryTable leftTable = getTable(true, leftSize, random,
+                    leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                            new StringGenerator(100_000),
+                            new IntGenerator(0, 100_000),
+                            new IntGenerator(10_000_000, 10_010_000)));
+            final QueryTable rightTable = getTable(true, rightSize, random,
+                    rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                            new StringGenerator(100_000),
+                            new SortedIntGenerator(0, 100_000),
+                            new IntGenerator(20_000_000, 20_010_000)));
+
+            final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
+                    (QueryTable) rightTable.reverse(),
+                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                    MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                // Large updates to force a partial rehash.
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 100_000,
+                        random, leftTable, leftColumnInfo);
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 100_000,
+                        random, rightTable, rightColumnInfo);
+            });
+
+            // Compare results of the bucketed output.
             checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
                     rightTable.partitionBy("Bucket"),
                     true, true);

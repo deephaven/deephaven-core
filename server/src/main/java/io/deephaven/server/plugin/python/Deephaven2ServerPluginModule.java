@@ -8,7 +8,7 @@ import org.jpy.PyModule;
 
 interface Deephaven2ServerPluginModule extends AutoCloseable {
 
-    String MODULE = "deephaven.server.plugin";
+    String MODULE = "deephaven_internal.plugin";
 
     static Deephaven2ServerPluginModule of() {
         final PyModule module = PyModule.importModule(MODULE);

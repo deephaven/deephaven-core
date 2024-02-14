@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -11,7 +10,7 @@ import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -26,6 +25,9 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -96,7 +98,8 @@ public class ParquetSchemaReader {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
-        final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReaderChecked(new File(filePath));
+        final ParquetFileReader parquetFileReader =
+                ParquetTools.getParquetFileReaderChecked(new File(filePath), readInstructions);
         final ParquetMetadata parquetMetadata =
                 new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
         return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
@@ -110,7 +113,7 @@ public class ParquetSchemaReader {
         }
         try {
             return Optional.of(TableInfo.deserializeFromJSON(tableInfoRaw));
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new TableDataException("Failed to parse " + ParquetTableWriter.METADATA_KEY + " metadata", e);
         }
     }
@@ -338,29 +341,24 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-                return Optional.of(int.class);
+                return Optional.of(LocalDate.class);
             }
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-                if (timeLogicalType.getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
-                    return Optional.of(int.class);
-                }
-                return Optional.of(long.class);
+                return Optional.of(LocalTime.class);
             }
 
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-                // TODO(deephaven-core#3588): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
-                // to UTC
-                if (timestampLogicalType.isAdjustedToUTC()) {
-                    switch (timestampLogicalType.getUnit()) {
-                        case MILLIS:
-                        case MICROS:
-                        case NANOS:
-                            return Optional.of(Instant.class);
-                    }
+                switch (timestampLogicalType.getUnit()) {
+                    case MILLIS:
+                    case MICROS:
+                    case NANOS:
+                        // TIMESTAMP fields if adjusted to UTC are read as Instants, else as LocalDatetimes.
+                        return timestampLogicalType.isAdjustedToUTC() ? Optional.of(Instant.class)
+                                : Optional.of(LocalDateTime.class);
                 }
                 errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC()
                         + ", unit=" + timestampLogicalType.getUnit());

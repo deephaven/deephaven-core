@@ -9,40 +9,36 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
 class UpdatePerformanceStreamPublisher implements StreamPublisher {
     private static final TableDefinition DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("ProcessUniqueId"),
-            ColumnDefinition.ofInt("EntryId"),
-            ColumnDefinition.ofInt("EvaluationNumber"),
+            ColumnDefinition.ofLong("EntryId"),
+            ColumnDefinition.ofLong("EvaluationNumber"),
             ColumnDefinition.ofInt("OperationNumber"),
             ColumnDefinition.ofString("EntryDescription"),
             ColumnDefinition.ofString("EntryCallerLine"),
             ColumnDefinition.ofTime("IntervalStartTime"),
             ColumnDefinition.ofTime("IntervalEndTime"),
-            ColumnDefinition.ofLong("IntervalDurationNanos"),
-            ColumnDefinition.ofLong("EntryIntervalUsage"),
-            ColumnDefinition.ofLong("EntryIntervalCpuNanos"),
-            ColumnDefinition.ofLong("EntryIntervalUserCpuNanos"),
-            ColumnDefinition.ofLong("EntryIntervalAdded"),
-            ColumnDefinition.ofLong("EntryIntervalRemoved"),
-            ColumnDefinition.ofLong("EntryIntervalModified"),
-            ColumnDefinition.ofLong("EntryIntervalShifted"),
-            ColumnDefinition.ofLong("EntryIntervalInvocationCount"),
+            ColumnDefinition.ofLong("UsageNanos"),
+            ColumnDefinition.ofLong("CpuNanos"),
+            ColumnDefinition.ofLong("UserCpuNanos"),
+            ColumnDefinition.ofLong("RowsAdded"),
+            ColumnDefinition.ofLong("RowsRemoved"),
+            ColumnDefinition.ofLong("RowsModified"),
+            ColumnDefinition.ofLong("RowsShifted"),
+            ColumnDefinition.ofLong("InvocationCount"),
             ColumnDefinition.ofLong("MinFreeMemory"),
             ColumnDefinition.ofLong("MaxTotalMemory"),
             ColumnDefinition.ofLong("Collections"),
             ColumnDefinition.ofLong("CollectionTimeNanos"),
-            ColumnDefinition.ofLong("EntryIntervalAllocatedBytes"),
-            ColumnDefinition.ofLong("EntryIntervalPoolAllocatedBytes"),
+            ColumnDefinition.ofLong("AllocatedBytes"),
+            ColumnDefinition.ofLong("PoolAllocatedBytes"),
             ColumnDefinition.ofString("AuthContext"),
             ColumnDefinition.ofString("UpdateGraph"));
 
@@ -68,33 +64,53 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
     }
 
     public synchronized void add(IntervalLevelDetails intervalLevelDetails, PerformanceEntry performanceEntry) {
-        chunks[0].<String>asWritableObjectChunk().add(EngineMetrics.getProcessInfo().getId().value());
-        chunks[1].asWritableIntChunk().add(performanceEntry.getId());
-        chunks[2].asWritableIntChunk().add(performanceEntry.getEvaluationNumber());
-        chunks[3].asWritableIntChunk().add(performanceEntry.getOperationNumber());
-        chunks[4].<String>asWritableObjectChunk().add(performanceEntry.getDescription());
-        chunks[5].<String>asWritableObjectChunk().add(performanceEntry.getCallerLine());
-        chunks[6].asWritableLongChunk()
-                .add(DateTimeUtils.millisToNanos(intervalLevelDetails.getIntervalStartTimeMillis()));
-        chunks[7].asWritableLongChunk()
-                .add(DateTimeUtils.millisToNanos(intervalLevelDetails.getIntervalEndTimeMillis()));
-        chunks[8].asWritableLongChunk().add(intervalLevelDetails.getIntervalDurationNanos());
-        chunks[9].asWritableLongChunk().add(performanceEntry.getIntervalUsageNanos());
-        chunks[10].asWritableLongChunk().add(performanceEntry.getIntervalCpuNanos());
-        chunks[11].asWritableLongChunk().add(performanceEntry.getIntervalUserCpuNanos());
-        chunks[12].asWritableLongChunk().add(performanceEntry.getIntervalAdded());
-        chunks[13].asWritableLongChunk().add(performanceEntry.getIntervalRemoved());
-        chunks[14].asWritableLongChunk().add(performanceEntry.getIntervalModified());
-        chunks[15].asWritableLongChunk().add(performanceEntry.getIntervalShifted());
-        chunks[16].asWritableLongChunk().add(performanceEntry.getIntervalInvocationCount());
-        chunks[17].asWritableLongChunk().add(performanceEntry.getMinFreeMemory());
-        chunks[18].asWritableLongChunk().add(performanceEntry.getMaxTotalMemory());
-        chunks[19].asWritableLongChunk().add(performanceEntry.getCollections());
-        chunks[20].asWritableLongChunk().add(performanceEntry.getCollectionTimeNanos());
-        chunks[21].asWritableLongChunk().add(performanceEntry.getIntervalAllocatedBytes());
-        chunks[22].asWritableLongChunk().add(performanceEntry.getIntervalPoolAllocatedBytes());
-        chunks[23].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
-        chunks[24].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
+        // ColumnDefinition.ofInt("EntryId"),
+        chunks[0].asWritableLongChunk().add(performanceEntry.getId());
+        // ColumnDefinition.ofLong("EvaluationNumber"),
+        chunks[1].asWritableLongChunk().add(performanceEntry.getEvaluationNumber());
+        // ColumnDefinition.ofInt("OperationNumber"),
+        chunks[2].asWritableIntChunk().add(performanceEntry.getOperationNumber());
+        // ColumnDefinition.ofString("EntryDescription"),
+        chunks[3].<String>asWritableObjectChunk().add(performanceEntry.getDescription());
+        // ColumnDefinition.ofString("EntryCallerLine"),
+        chunks[4].<String>asWritableObjectChunk().add(performanceEntry.getCallerLine());
+        // ColumnDefinition.ofTime("IntervalStartTime"),
+        chunks[5].asWritableLongChunk().add(intervalLevelDetails.getIntervalStartTimeEpochNanos());
+        // ColumnDefinition.ofTime("IntervalEndTime"),
+        chunks[6].asWritableLongChunk().add(intervalLevelDetails.getIntervalEndTimeEpochNanos());
+        // ColumnDefinition.ofLong("UsageNanos"),
+        chunks[7].asWritableLongChunk().add(performanceEntry.getUsageNanos());
+        // ColumnDefinition.ofLong("CpuNanos"),
+        chunks[8].asWritableLongChunk().add(performanceEntry.getCpuNanos());
+        // ColumnDefinition.ofLong("UserCpuNanos"),
+        chunks[9].asWritableLongChunk().add(performanceEntry.getUserCpuNanos());
+        // ColumnDefinition.ofLong("RowsAdded"),
+        chunks[10].asWritableLongChunk().add(performanceEntry.getRowsAdded());
+        // ColumnDefinition.ofLong("RowsRemoved"),
+        chunks[11].asWritableLongChunk().add(performanceEntry.getRowsRemoved());
+        // ColumnDefinition.ofLong("RowsModified"),
+        chunks[12].asWritableLongChunk().add(performanceEntry.getRowsModified());
+        // ColumnDefinition.ofLong("RowsShifted"),
+        chunks[13].asWritableLongChunk().add(performanceEntry.getRowsShifted());
+        // ColumnDefinition.ofLong("InvocationCount"),
+        chunks[14].asWritableLongChunk().add(performanceEntry.getInvocationCount());
+        // ColumnDefinition.ofLong("MinFreeMemory"),
+        chunks[15].asWritableLongChunk().add(performanceEntry.getMinFreeMemory());
+        // ColumnDefinition.ofLong("MaxTotalMemory"),
+        chunks[16].asWritableLongChunk().add(performanceEntry.getMaxTotalMemory());
+        // ColumnDefinition.ofLong("Collections"),
+        chunks[17].asWritableLongChunk().add(performanceEntry.getCollections());
+        // ColumnDefinition.ofLong("CollectionTimeNanos"),
+        chunks[18].asWritableLongChunk().add(performanceEntry.getCollectionTimeNanos());
+        // ColumnDefinition.ofLong("AllocatedBytes"),
+        chunks[19].asWritableLongChunk().add(performanceEntry.getAllocatedBytes());
+        // ColumnDefinition.ofLong("PoolAllocatedBytes"),
+        chunks[20].asWritableLongChunk().add(performanceEntry.getPoolAllocatedBytes());
+        // ColumnDefinition.ofString("AuthContext"),
+        chunks[21].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
+        // ColumnDefinition.ofString("UpdateGraph"));
+        chunks[22].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
+
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
         }

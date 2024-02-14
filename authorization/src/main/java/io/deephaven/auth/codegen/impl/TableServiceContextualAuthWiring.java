@@ -493,6 +493,17 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to ComputeColumnStatistics.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke ComputeColumnStatistics
+     */
+    void checkPermissionComputeColumnStatistics(AuthContext authContext,
+            ColumnStatisticsRequest request, List<Table> sourceTables);
+
+    /**
      * A default implementation that funnels all requests to invoke {@code checkPermission}.
      */
     abstract class DelegateAll implements TableServiceContextualAuthWiring {
@@ -710,6 +721,11 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
                 List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+
+        public void checkPermissionComputeColumnStatistics(AuthContext authContext,
+                ColumnStatisticsRequest request, List<Table> sourceTables) {
             checkPermission(authContext, sourceTables);
         }
     }
@@ -1033,6 +1049,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionMetaTable(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionComputeColumnStatistics(AuthContext authContext,
+                ColumnStatisticsRequest request, List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionComputeColumnStatistics(authContext, request, sourceTables);
             }
         }
     }

@@ -17,8 +17,10 @@ from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
 from pydeephaven.updateby import UpdateByOperation
 
+from pydeephaven.experimental.server_object import ServerObject
 
-class Table(TableInterface):
+
+class Table(TableInterface, ServerObject):
     """A Table object represents a reference to a table on the server. It is the core data structure of
     Deephaven and supports a rich set of operations such as filtering, sorting, aggregating, joining, snapshotting etc.
 
@@ -34,6 +36,7 @@ class Table(TableInterface):
         return self.session.table_service.grpc_table_op(self, table_op)
 
     def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
+        ServerObject.__init__(self, type_="Table", ticket=ticket)
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
@@ -526,8 +529,11 @@ class Table(TableInterface):
         return super(Table, self).avg_by(by)
 
     def std_by(self, by: Union[str, List[str]] = None) -> Table:
-        """The std_by method creates a new table containing the standard deviation for each group. Columns not used
-        in the grouping must be of numeric types.
+        """The std_by method creates a new table containing the sample standard deviation for each group. Columns not
+        used in the grouping must be of numeric types.
+
+        Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, List[str]]): the group-by column names(s), default is None, meaning grouping
@@ -542,8 +548,11 @@ class Table(TableInterface):
         return super(Table, self).std_by(by)
 
     def var_by(self, by: Union[str, List[str]] = None) -> Table:
-        """The var_by method creates a new table containing the variance for each group. Columns not used in the
+        """The var_by method creates a new table containing the sample variance for each group. Columns not used in the
         grouping must be of numeric types.
+
+        Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping

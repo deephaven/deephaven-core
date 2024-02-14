@@ -1,0 +1,133 @@
+---
+title: "Moving Operations with update_by"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{update_by}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Deephaven's `update_by()` table method and suite of `uby` functions enable
+cumulative and moving calculations on static _and_ streaming tables. Complex
+operations like cumulative minima and maxima, exponential moving averages, and
+rolling standard deviations are all possible and effortless to execute. As
+always in Deephaven, the results of these calculations will continue to update
+as their parent tables are updated. Additionally, it's easy to group data by one
+or more columns, enabling complex group-wise calculations with a single line of
+code.
+
+## Applying UpdateBy operations to a table
+
+The table method `update_by()` is the entry point for UpdateBy operations. It
+takes two arguments: the first is an `UpdateByOp` or a list of
+`UpdateByOp`s denoting the calculations to perform on specific columns of the
+table. Then, it takes a column name or a list of column names that define the
+groups on which to perform the calculations. If you don't want grouped
+calculations, omit this argument.
+
+To learn more about UpdateByOps, see the reference documentation with
+`?UpdateByOp`.
+
+The `update_by()` method itself does not know anything about the columns on
+which you want to perform calculations. Rather, the desired columns are passed
+to individual `uby` functions, enabling a massive amount of flexibility.
+
+## `uby` functions
+
+`uby` functions are the workers that actually execute the complex UpdateBy
+calculations. These functions are _generators_, meaning they return _functions_
+that the Deephaven engine knows how to interpret. We call the functions they
+return `UpdateByOp`s. See `?UpdateByOp` for more information. These UpdateByOps
+are not R-level functions, but Deephaven-specific data types that perform all of
+the intensive calculations. Here is a list of all `uby` functions available in
+Deephaven:
+
+- `uby_cum_min()`
+- `uby_cum_max()`
+- `uby_cum_sum()`
+- `uby_cum_prod()`
+- `uby_forward_fill()`
+- `uby_delta()`
+- `uby_emmin_tick()`
+- `uby_emmin_time()`
+- `uby_emmax_tick()`
+- `uby_emmax_time()`
+- `uby_ems_tick()`
+- `uby_ems_time()`
+- `uby_ema_tick()`
+- `uby_ema_time()`
+- `uby_emstd_tick()`
+- `uby_emstd_time()`
+- `uby_rolling_count_tick()`
+- `uby_rolling_count_time()`
+- `uby_rolling_group_tick()`
+- `uby_rolling_group_time()`
+- `uby_rolling_min_tick()`
+- `uby_rolling_min_time()`
+- `uby_rolling_max_tick()`
+- `uby_rolling_max_time()`
+- `uby_rolling_sum_tick()`
+- `uby_rolling_sum_time()`
+- `uby_rolling_prod_tick()`
+- `uby_rolling_prod_time()`
+- `uby_rolling_avg_tick()`
+- `uby_rolling_avg_time()`
+- `uby_rolling_wavg_tick()`
+- `uby_rolling_wavg_time()`
+- `uby_rolling_std_tick()`
+- `uby_rolling_std_time()`
+
+For more details on each aggregation function, see the reference documentation
+by running `?uby_cum_min`, `?uby_delta`, etc.
+
+## An Example
+```{r, eval=FALSE}
+library(rdeephaven)
+
+# connecting to Deephaven server
+client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
+
+# create data frame, push to server, retrieve TableHandle
+df <- data.frame(
+  timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
+  boolCol = sample(c(TRUE, FALSE), 500, TRUE),
+  col1 = sample(10000, size = 500, replace = TRUE),
+  col2 = sample(10000, size = 500, replace = TRUE),
+  col3 = 1:500
+)
+th <- client$import_table(df)
+
+# compute 10-row exponential weighted moving average of col1 and col2, grouped by boolCol
+th1 <- th$
+  update_by(uby_ema_tick(decay_ticks = 10, cols = c("col1Ema = col1", "col2Ema = col2")), by = "boolCol")
+
+# compute rolling 10-second weighted average and standard deviation of col1 and col2, weighted by col3
+th2 <- th$
+  update_by(
+  c(
+    uby_rolling_wavg_time(ts_col = "timeCol", wcol = "col3", cols = c("col1WAvg = col1", "col2WAvg = col2"), rev_time = "PT10s"),
+    uby_rolling_std_time(ts_col = "timeCol", cols = c("col1Std = col1", "col2Std = col2"), rev_time = "PT10s")
+  )
+)
+
+# compute cumulative minimum and maximum of col1 and col2 respectively, and the rolling 20-row sum of col3, grouped by boolCol
+th3 <- th$
+  update_by(
+  c(
+    uby_cum_min(cols = "col1"),
+    uby_cum_max(cols = "col2"),
+    uby_rolling_sum_tick(cols = "col3", rev_ticks = 20)
+  ),
+  by = "boolCol"
+)
+
+client$close()
+}
+```

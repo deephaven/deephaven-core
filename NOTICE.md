@@ -17,6 +17,4 @@ Deephaven Community License.  See the `LICENSE` and `NOTICE` files in
 these directories for more information.
 
 * [Container](Container): Apache-2.0
-* [py/jpy](py/jpy): Apache-2.0
 * [style](style): Apache-2.0
-* [ParquetHadoop](ParquetHadoop): Apache-2.0

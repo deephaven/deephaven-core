@@ -16,6 +16,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -26,6 +28,7 @@ public class TestColumnHandlerFactory {
     @Rule
     final public EngineCleanup framework = new EngineCleanup();
 
+    private final ZoneId tz = DateTimeUtils.timeZone();
     private final int[] ints = {NULL_INT, 2, 3};
     private final float[] floats = {NULL_FLOAT, 2, 3};
     private final long[] longs = {NULL_LONG, 2, 3};
@@ -40,6 +43,8 @@ public class TestColumnHandlerFactory {
     private final Date[] dates = {null, new Date(1), new Date(2)};
     private final Instant[] instants = {
             null, DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2)};
+    private final ZonedDateTime[] zdts = {
+            null, DateTimeUtils.epochNanosToZonedDateTime(1, tz), DateTimeUtils.epochNanosToZonedDateTime(2, tz)};
     private final Paint[] paints = {null, new Color(100, 0, 0), new Color(0, 100, 0)};
     private final String[] strings = {"A", "B", "C"};
 
@@ -416,6 +421,9 @@ public class TestColumnHandlerFactory {
             } else if (clazz.equals(Instant.class)) {
                 assertEquals(instants[i], handler.get(i));
                 assertEquals((double) DateTimeUtils.epochNanos(instants[i]), handler.getDouble(i));
+            } else if (clazz.equals(ZonedDateTime.class)) {
+                assertEquals(zdts[i], handler.get(i));
+                assertEquals((double) DateTimeUtils.epochNanos(zdts[i]), handler.getDouble(i));
             } else {
                 assertEquals(doubles[i], handler.getDouble(i));
                 if (Number.class.isAssignableFrom(handler.get(i).getClass())) {

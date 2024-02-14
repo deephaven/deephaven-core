@@ -14,12 +14,12 @@ import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.TreeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ColumnStatisticsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
@@ -36,15 +36,16 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Snap
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
+import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
@@ -71,6 +72,8 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
+import javaemul.internal.annotations.DoNotAutobox;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -89,15 +92,12 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
- * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
- * handle/viewport.
- *
  * Provides access to data in a table. Note that several methods present their response through Promises. This allows
  * the client to both avoid actually connecting to the server until necessary, and also will permit some changes not to
  * inform the UI right away that they have taken place.
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
     @JsProperty(namespace = "dh.Table")
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
@@ -230,6 +230,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public Promise<JsTable> refetch() {
         // TODO(deephaven-core#3604) consider supporting this method when new session reconnects are supported
         return Promise.reject("Cannot reconnect a Table with refetch(), see deephaven-core#3604");
+    }
+
+    @Override
+    public TypedTicket typedTicket() {
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(state().getHandle().makeTicket());
+        typedTicket.setType(JsVariableType.TABLE);
+        return typedTicket;
     }
 
     @JsMethod
@@ -381,9 +389,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * null if no property exists, a string if it is an easily serializable property, or a <b>Promise
-     * <Table>
-     * </b> that will either resolve with a table or error out if the object can't be passed to JS.
+     * null if no property exists, a string if it is an easily serializable property, or a {@code Promise
+     * &lt;Table&gt;} that will either resolve with a table or error out if the object can't be passed to JS.
      * 
      * @param attributeName
      * @return Object
@@ -591,6 +598,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     public interface CustomColumnArgUnionType {
         @JsOverlay
+        static CustomColumnArgUnionType of(@DoNotAutobox Object value) {
+            return Js.cast(value);
+        }
+
+        @JsOverlay
         default boolean isString() {
             return (Object) this instanceof String;
         }
@@ -736,10 +748,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Gets the currently visible viewport. If the current set of operations has not yet resulted in data, it will not
-     * resolve until that data is ready.
+     * resolve until that data is ready. If this table is closed before the promise resolves, it will be rejected - to
+     * separate the lifespan of this promise from the table itself, call
+     * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
      * 
      * @return Promise of {@link TableData}
-     *
      */
     @JsMethod
     public Promise<TableData> getViewportData() {
@@ -747,7 +760,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         if (subscription == null) {
             return Promise.reject("No viewport currently set");
         }
-        return subscription.getViewportData();
+        return subscription.getInternalViewportData();
     }
 
     public Promise<TableData> getInternalViewportData() {
@@ -755,7 +768,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         final ClientTableState active = state();
         active.onRunning(state -> {
             if (currentViewportData == null) {
-                // no viewport data received yet; let's setup a one-shot UPDATED event listener
+                // no viewport data received yet; let's set up a one-shot UPDATED event listener
                 addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(currentViewportData));
             } else {
                 promise.succeed(currentViewportData);
@@ -871,7 +884,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * 
      * @return dh.TotalsTableConfig
      */
-    @JsMethod
+    @JsProperty
     public JsTotalsTableConfig getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a
@@ -1085,16 +1098,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
         });
 
-        JsWidget widget = new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
-            partitionedTableRequest.getSourceId().setTicket(rollupTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                    workerConnection.metadata(), (fail, success) -> {
-                        c.handleResponse(fail, success, rollupTicket);
-                    });
-        });
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
+        typedTicket.setTicket(rollupTicket);
+
+        JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
         return Promise.all(widget.refetch(), rollupPromise)
                 .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
@@ -1131,16 +1139,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     c::apply);
         });
 
-        JsWidget widget = new JsWidget(workerConnection, c -> {
-            FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-            partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
-            partitionedTableRequest.getSourceId().setTicket(treeTicket);
-            workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                    workerConnection.metadata(), (fail, success) -> {
-                        c.handleResponse(fail, success, treeTicket);
-                    });
-        });
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
+        typedTicket.setTicket(treeTicket);
+
+        JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
         return Promise.all(widget.refetch(), treePromise)
                 .then(ignore -> Promise.resolve(new JsTreeTable(workerConnection, widget)));
@@ -1420,17 +1423,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     c::apply);
         });
         // construct the partitioned table around the ticket created above
-        Promise<JsPartitionedTable> fetchPromise =
-                new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
-                    FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
-                    partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableType.PARTITIONEDTABLE);
-                    partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
-                    workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
-                            workerConnection.metadata(), (fail, success) -> {
-                                c.handleResponse(fail, success, partitionedTableTicket);
-                            });
-                })).refetch();
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setType(JsVariableType.PARTITIONEDTABLE);
+        typedTicket.setTicket(partitionedTableTicket);
+        Promise<JsPartitionedTable> fetchPromise = new JsWidget(workerConnection, typedTicket).refetch().then(
+                widget -> Promise.resolve(new JsPartitionedTable(workerConnection, widget)));
 
         // Ensure that the partition failure propagates first, but the result of the fetch will be returned - both
         // are running concurrently.
@@ -1443,14 +1440,55 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param column
      * @return Promise of dh.ColumnStatistics
      */
-    // TODO: #697: Column statistic support
-    // @JsMethod
+    @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
-        return Callbacks.<ColumnStatistics, String>promise(null, c -> {
-            // workerConnection.getServer().getColumnStatisticsForTable(state().getHandle(), column.getName(), c);
-            throw new UnsupportedOperationException("getColumnStatistics");
-        }).then(
-                tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
+        if (column.getDescription() != null && column.getDescription().startsWith("Preview of type")) {
+            // TODO (deephaven-core#188) Remove this workaround when we don't preview columns until just before
+            // subscription
+            return Promise.reject("Can't produce column statistics for preview column");
+        }
+        List<Runnable> toRelease = new ArrayList<>();
+        return workerConnection.newState((c, state, metadata) -> {
+            ColumnStatisticsRequest req = new ColumnStatisticsRequest();
+            req.setColumnName(column.getName());
+            req.setSourceId(state().getHandle().makeTableReference());
+            req.setResultId(state.getHandle().makeTicket());
+            workerConnection.tableServiceClient().computeColumnStatistics(req, metadata, c::apply);
+        }, "get column statistics")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> {
+                    // TODO (deephaven-core#188) don't drop these columns once we can decode them
+                    JsArray<String> dropCols = new JsArray<>();
+                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_KEYS"))) {
+                        dropCols.push("UNIQUE_KEYS");
+                    }
+                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_COUNTS"))) {
+                        dropCols.push("UNIQUE_COUNTS");
+                    }
+
+                    if (dropCols.length > 0) {
+                        toRelease.add(() -> workerConnection.releaseHandle(state.getHandle()));
+                        return workerConnection.newState((c2, state2, metadata2) -> {
+                            DropColumnsRequest drop = new DropColumnsRequest();
+                            drop.setColumnNamesList(dropCols);
+                            drop.setSourceId(state.getHandle().makeTableReference());
+                            drop.setResultId(state2.getHandle().makeTicket());
+                            workerConnection.tableServiceClient().dropColumns(drop, metadata2, c2::apply);
+                        }, "drop unreadable stats columns")
+                                .refetch(this, workerConnection.metadata())
+                                .then(state2 -> {
+                                    JsTable table = new JsTable(workerConnection, state2);
+                                    toRelease.add(table::close);
+                                    table.setViewport(0, 0);
+                                    return table.getViewportData();
+                                });
+                    }
+                    JsTable table = new JsTable(workerConnection, state);
+                    toRelease.add(table::close);
+                    table.setViewport(0, 0);
+                    return table.getViewportData();
+                })
+                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)));
     }
 
     private Literal objectToLiteral(String valueType, Object value) {
@@ -1732,8 +1770,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 viewportRows.size());
     }
 
-
-    protected void processSnapshot() {
+    @JsIgnore
+    public void processSnapshot() {
         try {
             if (debounce == null) {
                 JsLog.debug("Skipping snapshot b/c debounce is null");
@@ -1777,6 +1815,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsProperty(name = "isClosed")
     public boolean isClosed() {
         return currentState == null;
+    }
+
+    /**
+     * True if this table may receive updates from the server, including size changed events, updated events after
+     * initial snapshot.
+     *
+     * @return boolean
+     */
+    @JsProperty(name = "isRefreshing")
+    public boolean isRefreshing() {
+        return !state().isStatic();
     }
 
     /**
@@ -1972,8 +2021,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                             && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
                         JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
-                        // something
-                        // external retained it)
+                        // something external retained it)
                         existingSubscription.internalClose();
                     }
                 }

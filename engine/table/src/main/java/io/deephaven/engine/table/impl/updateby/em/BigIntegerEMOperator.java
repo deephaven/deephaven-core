@@ -5,10 +5,8 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +22,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
+        public void accumulateCumulative(@NotNull RowSequence inputKeys,
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
@@ -96,21 +94,23 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
-     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
      * @param control             defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource         a reference to the input column source for this operation
      */
-    public BigIntegerEMOperator(@NotNull final MatchPair pair,
-                                @NotNull final String[] affectingColumns,
-                                @Nullable final RowRedirection rowRedirection,
-                                @NotNull final OperationControl control,
-                                @Nullable final String timestampColumnName,
-                                final double windowScaleUnits,
-                                final ColumnSource<?> valueSource,
-                                @NotNull final EmFunction aggFunction) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource, aggFunction);
+    public BigIntegerEMOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits,
+            @NotNull final EmFunction aggFunction) {
+        super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, aggFunction);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigIntegerEMOperator(pair, affectingColumns, control, timestampColumnName, reverseWindowScaleUnits, aggFunction);
     }
 
     @NotNull

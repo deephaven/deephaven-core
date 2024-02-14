@@ -172,8 +172,10 @@ public final class ServletAdapter {
                 getAuthority(req),
                 logId);
 
-        transportListener.streamCreated(stream, method, headers);
-        stream.transportState().runOnTransportThread(stream.transportState()::onStreamAllocated);
+        stream.transportState().runOnTransportThread(() -> {
+            transportListener.streamCreated(stream, method, headers);
+            stream.transportState().onStreamAllocated();
+        });
 
         asyncCtx.getRequest().getInputStream()
                 .setReadListener(new GrpcReadListener(stream, asyncCtx, logId));

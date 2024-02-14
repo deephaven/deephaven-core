@@ -7,7 +7,7 @@ import unittest
 from deephaven import empty_table
 from deephaven.perfmon import process_info_log, process_metrics_log, server_state_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
-    metrics_reset_counters
+    metrics_reset_counters, query_performance_tree_table, query_operation_performance_tree_table
 from deephaven.perfmon import query_update_performance, query_performance, query_operation_performance, server_state
 from tests.testbase import BaseTestCase
 
@@ -19,6 +19,15 @@ def create_some_counters():
 
 
 class PerfmonTestCase(BaseTestCase):
+    # global performance log tables are supposed to be persistent, and in the production environment they are created
+    # in the system default liveness scope during server initialization. The current test environment skips that as it
+    # only partially initialize the server. So here we need to disable calling the super setUP to skip opening a user
+    # liveness scope which would result in the destroying of these tables.
+    def setUp(self) -> None:
+        ...
+
+    def tearDown(self) -> None:
+        ...
 
     def test_metrics_get_counters(self):
         metrics_reset_counters()
@@ -53,6 +62,8 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(log_table.to_string())
         log_table = update_performance_log()
         self.assertTrue(log_table.to_string())
+        log_table = query_performance_tree_table()
+        self.assertIsNotNone(log_table)
 
     def test_performance_queries(self):
         q = query_performance(1)
@@ -63,6 +74,8 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(q.to_string())
         q = query_update_performance(1)
         self.assertTrue(q.to_string())
+        q = query_operation_performance_tree_table()
+        self.assertIsNotNone(q)
 
 
 if __name__ == '__main__':

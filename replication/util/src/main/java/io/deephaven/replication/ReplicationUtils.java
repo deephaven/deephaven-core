@@ -368,4 +368,60 @@ public class ReplicationUtils {
         final String spaceString = new String(value);
         return lines.stream().map(l -> spaceString + l).collect(Collectors.toList());
     }
+
+    public static Map<String, List<String>> findNoLocateRegions(final String replicateDest) throws IOException {
+        final File repDest = new File(replicateDest);
+        if (!repDest.exists()) {
+            return Collections.emptyMap();
+        }
+
+        final List<String> lines = FileUtils.readLines(repDest, Charset.defaultCharset());
+        final Pattern startPattern = Pattern.compile("//\\s*region\\s+@NoReplicate\\s+([a-zA-Z0-9]+)");
+        final Pattern endPattern = Pattern.compile("//\\s*endregion\\s+@NoReplicate\\s+([a-zA-Z0-9]+)");
+
+        final Map<String, List<String>> noReplaceRegions = new HashMap<>();
+
+        String curRegionName = null;
+        List<String> linesForRegion = null;
+        boolean inRegion = false;
+        for (String line : lines) {
+            final Matcher matcher = startPattern.matcher(line);
+            if (matcher.find()) {
+                if (inRegion) {
+                    throw new IllegalStateException();
+                }
+
+                curRegionName = matcher.group(1);
+                linesForRegion = new ArrayList<>();
+                inRegion = true;
+                continue;
+            }
+
+            final Matcher endMatcher = endPattern.matcher(line);
+            if (endMatcher.find()) {
+                if (!inRegion) {
+                    throw new IllegalStateException();
+                }
+
+                if (!curRegionName.equals(endMatcher.group(1))) {
+                    throw new IllegalStateException("End region clause does not match regin name");
+                }
+
+                inRegion = false;
+                noReplaceRegions.put(curRegionName, linesForRegion);
+                curRegionName = null;
+                linesForRegion = null;
+            }
+
+            if (inRegion) {
+                linesForRegion.add(line);
+            }
+        }
+
+        if (inRegion) {
+            throw new IllegalStateException("Region " + curRegionName + " never ended!");
+        }
+
+        return noReplaceRegions;
+    }
 }

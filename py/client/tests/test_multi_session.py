@@ -3,11 +3,11 @@
 #
 import unittest
 
-from pydeephaven import Session
-from tests.testbase import BaseTestCase
 import timeout_decorator
 
-import time
+from pydeephaven import Session
+from tests.testbase import BaseTestCase
+
 
 class MultiSessionTestCase(BaseTestCase):
     def test_persistent_tables(self):

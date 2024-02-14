@@ -14,15 +14,15 @@ which provides a writable interface.
 You can access the data in a
 :cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`
 via its
-:cpp:func:`fillChunk <deephaven::dhcore::column::ColumnSource::fillChunk>`
+:cpp:func:`FillChunk <deephaven::dhcore::column::ColumnSource::FillChunk>`
 and
-:cpp:func:`fillChunkUnordered <deephaven::dhcore::column::ColumnSource::fillChunkUnordered>`
+:cpp:func:`FillChunkUnordered <deephaven::dhcore::column::ColumnSource::FillChunkUnordered>`
 methods. Likewise, you can store data into a
 :cpp:class:`MutableColumnSource <deephaven::dhcore::column::MutableColumnSource>`
 via its
-:cpp:func:`fillFromChunk <deephaven::dhcore::column::MutableColumnSource::fillFromChunk>`
+:cpp:func:`FillFromChunk <deephaven::dhcore::column::MutableColumnSource::FillFromChunk>`
 and
-:cpp:func:`fillFromChunkUnordered <deephaven::dhcore::column::MutableColumnSource::fillFromChunkUnordered>`
+:cpp:func:`FillFromChunkUnordered <deephaven::dhcore::column::MutableColumnSource::FillFromChunkUnordered>`
 methods. These methods provide "bulk transfer" of data into and out of a
 :cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`.
 We do not provide any methods to access single elements of a
@@ -47,7 +47,7 @@ columns containing the numeric Deephaven types (``int8_t``, ``int16_t``, ``int32
 :cpp:class:`ColumnSource <deephaven::dhcore::column::GenericColumnSource>`
 is for representing
 the remaining Deephaven types (``bool``, ``std::string``, and
-:cpp:class:`DateTime <deephaven::client::DateTime>`).
+:cpp:class:`DateTime <deephaven::dhcore::DateTime>`).
 
 For these types we have a set of convenience typedefs:
 

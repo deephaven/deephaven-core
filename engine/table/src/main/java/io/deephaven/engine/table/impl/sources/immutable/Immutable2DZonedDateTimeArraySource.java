@@ -20,14 +20,14 @@ public class Immutable2DZonedDateTimeArraySource extends Immutable2DNanosBasedTi
     private final ZoneId zone;
 
     public Immutable2DZonedDateTimeArraySource(
-            final @NotNull ZoneId zone) {
+            @NotNull final ZoneId zone) {
         super(ZonedDateTime.class);
         this.zone = zone;
     }
 
     public Immutable2DZonedDateTimeArraySource(
-            final @NotNull ZoneId zone,
-            final @NotNull Immutable2DLongArraySource nanoSource) {
+            @NotNull final ZoneId zone,
+            @NotNull final Immutable2DLongArraySource nanoSource) {
         super(ZonedDateTime.class, nanoSource);
         this.zone = zone;
     }
@@ -43,7 +43,7 @@ public class Immutable2DZonedDateTimeArraySource extends Immutable2DNanosBasedTi
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         if (this.zone.equals(zone)) {
             return this;
         }

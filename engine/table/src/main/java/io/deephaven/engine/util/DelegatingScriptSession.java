@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -63,20 +62,9 @@ public class DelegatingScriptSession implements ScriptSession {
         delegate.observeScopeChanges();
     }
 
-    @NotNull
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        return delegate.getVariable(name);
-    }
-
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        return delegate.getVariable(name, defaultValue);
-    }
-
-    @Override
-    public VariableProvider getVariableProvider() {
-        return delegate.getVariableProvider();
+    public QueryScope getQueryScope() {
+        return delegate.getQueryScope();
     }
 
     @Override
@@ -87,26 +75,6 @@ public class DelegatingScriptSession implements ScriptSession {
     @Override
     public Changes evaluateScript(Path scriptPath) {
         return contextualizeChanges(delegate.evaluateScript(scriptPath));
-    }
-
-    @Override
-    public Map<String, Object> getVariables() {
-        return delegate.getVariables();
-    }
-
-    @Override
-    public Set<String> getVariableNames() {
-        return delegate.getVariableNames();
-    }
-
-    @Override
-    public boolean hasVariableName(String name) {
-        return delegate.hasVariableName(name);
-    }
-
-    @Override
-    public void setVariable(String name, Object value) {
-        delegate.setVariable(name, value);
     }
 
     @Override
@@ -142,10 +110,5 @@ public class DelegatingScriptSession implements ScriptSession {
     @Override
     public WeakReference<? extends LivenessReferent> getWeakReference() {
         return delegate.getWeakReference();
-    }
-
-    @Override
-    public void release() {
-        delegate.release();
     }
 }

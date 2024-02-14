@@ -3,11 +3,17 @@
  */
 package io.deephaven.engine.context;
 
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.util.ExecutionContextRegistrationException;
+import org.jetbrains.annotations.NotNull;
 
+import java.lang.ref.WeakReference;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
-public class PoisonedQueryScope extends QueryScope {
+public class PoisonedQueryScope implements QueryScope {
 
     public static final PoisonedQueryScope INSTANCE = new PoisonedQueryScope();
 
@@ -28,7 +34,7 @@ public class PoisonedQueryScope extends QueryScope {
     }
 
     @Override
-    protected <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
+    public <T> QueryScopeParam<T> createParam(String name) throws MissingVariableException {
         return fail();
     }
 
@@ -48,7 +54,37 @@ public class PoisonedQueryScope extends QueryScope {
     }
 
     @Override
-    public void putObjectFields(Object object) {
+    public Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate) {
+        return fail();
+    }
+
+    @Override
+    public boolean tryManage(@NotNull LivenessReferent referent) {
+        return fail();
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull LivenessReferent referent) {
+        return fail();
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        return fail();
+    }
+
+    @Override
+    public boolean tryRetainReference() {
+        return fail();
+    }
+
+    @Override
+    public void dropReference() {
         fail();
+    }
+
+    @Override
+    public WeakReference<? extends LivenessReferent> getWeakReference() {
+        return fail();
     }
 }

@@ -19,7 +19,7 @@ public class InstantArraySource extends NanosBasedTimeArraySource<Instant>
         super(Instant.class);
     }
 
-    public InstantArraySource(final @NotNull LongArraySource nanoSource) {
+    public InstantArraySource(@NotNull final LongArraySource nanoSource) {
         super(Instant.class, nanoSource);
     }
 

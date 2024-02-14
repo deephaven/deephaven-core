@@ -19,6 +19,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -53,9 +55,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
 
@@ -72,37 +73,44 @@ public class ArrowFlightUtil {
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final SessionState.ExportObject<BaseTable<?>> export =
-                ticketRouter.resolve(session, request, "request");
+        final String description = "FlightService#DoGet(table=" + ticketRouter.getLogNameFor(request, "table") + ")";
+        final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
-        final BarragePerformanceLog.SnapshotMetricsHelper metrics =
-                new BarragePerformanceLog.SnapshotMetricsHelper();
+        try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+            final SessionState.ExportObject<BaseTable<?>> tableExport =
+                    ticketRouter.resolve(session, request, "table");
 
-        final long queueStartTm = System.nanoTime();
-        session.nonExport()
-                .require(export)
-                .onError(observer)
-                .submit(() -> {
-                    metrics.queueNanos = System.nanoTime() - queueStartTm;
-                    final BaseTable<?> table = export.get();
-                    metrics.tableId = Integer.toHexString(System.identityHashCode(table));
-                    metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
+            final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                    new BarragePerformanceLog.SnapshotMetricsHelper();
 
-                    // create an adapter for the response observer
-                    final StreamObserver<BarrageStreamGeneratorImpl.View> listener =
-                            ArrowModule.provideListenerAdapter().adapt(observer);
+            final long queueStartTm = System.nanoTime();
+            session.nonExport()
+                    .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .require(tableExport)
+                    .onError(observer)
+                    .submit(() -> {
+                        metrics.queueNanos = System.nanoTime() - queueStartTm;
+                        final BaseTable<?> table = tableExport.get();
+                        metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                        metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
-                    // push the schema to the listener
-                    listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
-                                    table.getDefinition(), table.getAttributes())));
+                        // create an adapter for the response observer
+                        final StreamObserver<BarrageStreamGeneratorImpl.View> listener =
+                                ArrowModule.provideListenerAdapter().adapt(observer);
 
-                    // shared code between `DoGet` and `BarrageSnapshotRequest`
-                    BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                            DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
+                        // push the schema to the listener
+                        listener.onNext(streamGeneratorFactory.getSchemaView(
+                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
+                                        table.getDefinition(), table.getAttributes(), table.isFlat())));
 
-                    listener.onCompleted();
-                });
+                        // shared code between `DoGet` and `BarrageSnapshotRequest`
+                        BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
+                                DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
+
+                        listener.onCompleted();
+                    });
+        }
     }
 
     /**
@@ -252,14 +260,11 @@ public class ArrowFlightUtil {
             }
             localResultTable.dropReference();
 
-            // no more changes allowed; this is officially static content
-            localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
+            // let's finally export the table to our listener
+            localExportBuilder.submit(() -> {
                 GrpcUtil.safelyComplete(observer);
                 session.removeOnCloseCallback(this);
                 return localResultTable;
-            }), () -> {
-                GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
-                session.removeOnCloseCallback(this);
             });
         }
 
@@ -268,6 +273,31 @@ public class ArrowFlightUtil {
             // close() is intended to be invoked only though session expiration
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
         }
+    }
+
+    /**
+     * Represents states for a DoExchange stream where the server must not close until the client has half closed.
+     */
+    enum HalfClosedState {
+        /**
+         * Client has not half-closed, server should not half close until the client has done so.
+         */
+        DONT_CLOSE,
+        /**
+         * Indicates that the client has half-closed, and the server should half close immediately after finishing
+         * sending data.
+         */
+        CLIENT_HALF_CLOSED,
+
+        /**
+         * The server has no more data to send, but client hasn't half-closed.
+         */
+        FINISHED_SENDING,
+
+        /**
+         * Streaming finished and client half-closed.
+         */
+        CLOSED
     }
 
     /**
@@ -439,6 +469,8 @@ public class ArrowFlightUtil {
          */
         private class SnapshotRequestHandler
                 implements Handler {
+            private final AtomicReference<HalfClosedState> halfClosedState =
+                    new AtomicReference<>(HalfClosedState.DONT_CLOSE);
 
             public SnapshotRequestHandler() {}
 
@@ -455,52 +487,103 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final SessionState.ExportObject<BaseTable<?>> parent =
-                            ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
+                    final String description = "FlightService#DoExchange(snapshot, table="
+                            + ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table") + ")";
+                    final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                            description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
-                    final BarragePerformanceLog.SnapshotMetricsHelper metrics =
-                            new BarragePerformanceLog.SnapshotMetricsHelper();
+                    try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+                        final SessionState.ExportObject<BaseTable<?>> tableExport =
+                                ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
 
-                    final long queueStartTm = System.nanoTime();
-                    session.nonExport()
-                            .require(parent)
-                            .onError(listener)
-                            .submit(() -> {
-                                metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                final BaseTable<?> table = parent.get();
-                                metrics.tableId = Integer.toHexString(System.identityHashCode(table));
-                                metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
+                        final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                                new BarragePerformanceLog.SnapshotMetricsHelper();
 
-                                // push the schema to the listener
-                                listener.onNext(streamGeneratorFactory.getSchemaView(
-                                        fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
-                                                snapshotOptAdapter.adapt(snapshotRequest),
-                                                table.getDefinition(), table.getAttributes())));
+                        final long queueStartTm = System.nanoTime();
+                        session.nonExport()
+                                .queryPerformanceRecorder(queryPerformanceRecorder)
+                                .require(tableExport)
+                                .onError(listener)
+                                .submit(() -> {
+                                    metrics.queueNanos = System.nanoTime() - queueStartTm;
+                                    final BaseTable<?> table = tableExport.get();
+                                    metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                                    metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
-                                // collect the viewport and columnsets (if provided)
-                                final boolean hasColumns = snapshotRequest.columnsVector() != null;
-                                final BitSet columns =
-                                        hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
+                                    if (table.isFailed()) {
+                                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                                "Table is already failed");
+                                    }
 
-                                final boolean hasViewport = snapshotRequest.viewportVector() != null;
-                                RowSet viewport =
-                                        hasViewport
-                                                ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
-                                                : null;
+                                    // push the schema to the listener
+                                    listener.onNext(streamGeneratorFactory.getSchemaView(
+                                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
+                                                    snapshotOptAdapter.adapt(snapshotRequest),
+                                                    table.getDefinition(), table.getAttributes(), table.isFlat())));
 
-                                final boolean reverseViewport = snapshotRequest.reverseViewport();
+                                    // collect the viewport and columnsets (if provided)
+                                    final boolean hasColumns = snapshotRequest.columnsVector() != null;
+                                    final BitSet columns =
+                                            hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
 
-                                // leverage common code for `DoGet` and `BarrageSnapshotOptions`
-                                BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
-                                        reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
-                                listener.onCompleted();
-                            });
+                                    final boolean hasViewport = snapshotRequest.viewportVector() != null;
+                                    RowSet viewport =
+                                            hasViewport
+                                                    ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
+                                                    : null;
+
+                                    final boolean reverseViewport = snapshotRequest.reverseViewport();
+
+                                    // leverage common code for `DoGet` and `BarrageSnapshotOptions`
+                                    BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
+                                            reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener,
+                                            metrics);
+                                    HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                                        switch (current) {
+                                            case DONT_CLOSE:
+                                                // record that we have finished sending
+                                                return HalfClosedState.FINISHED_SENDING;
+                                            case CLIENT_HALF_CLOSED:
+                                                // since streaming has now finished, and client already half-closed,
+                                                // time to half close from server
+                                                return HalfClosedState.CLOSED;
+                                            case FINISHED_SENDING:
+                                            case CLOSED:
+                                                throw new IllegalStateException("Can't finish streaming twice");
+                                            default:
+                                                throw new IllegalStateException("Unknown state " + current);
+                                        }
+                                    });
+                                    if (newState == HalfClosedState.CLOSED) {
+                                        listener.onCompleted();
+                                    }
+                                });
+                    }
                 }
             }
 
             @Override
             public void close() {
                 // no work to do for DoGetRequest close
+                // possibly safely complete if finished sending data
+                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                    switch (current) {
+                        case DONT_CLOSE:
+                            // record that we have half closed
+                            return HalfClosedState.CLIENT_HALF_CLOSED;
+                        case FINISHED_SENDING:
+                            // since client has now half closed, and we're done sending, time to half-close from server
+                            return HalfClosedState.CLOSED;
+                        case CLIENT_HALF_CLOSED:
+                        case CLOSED:
+                            throw new IllegalStateException("Can't close twice");
+                        default:
+                            throw new IllegalStateException("Unknown state " + current);
+                    }
+                });
+                if (newState == HalfClosedState.CLOSED) {
+                    listener.onCompleted();
+                }
             }
         }
 
@@ -558,14 +641,23 @@ public class ArrowFlightUtil {
 
                     preExportSubscriptions = new ArrayDeque<>();
                     preExportSubscriptions.add(subscriptionRequest);
-                    final SessionState.ExportObject<Object> parent =
-                            ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
 
-                    synchronized (this) {
-                        onExportResolvedContinuation = session.nonExport()
-                                .require(parent)
-                                .onErrorHandler(DoExchangeMarshaller.this::onError)
-                                .submit(() -> onExportResolved(parent));
+                    final String description = "FlightService#DoExchange(subscription, table="
+                            + ticketRouter.getLogNameFor(subscriptionRequest.ticketAsByteBuffer(), "table") + ")";
+                    final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
+                            description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+
+                    try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
+                        final SessionState.ExportObject<Object> table =
+                                ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "table");
+
+                        synchronized (this) {
+                            onExportResolvedContinuation = session.nonExport()
+                                    .queryPerformanceRecorder(queryPerformanceRecorder)
+                                    .require(table)
+                                    .onErrorHandler(DoExchangeMarshaller.this::onError)
+                                    .submit(() -> onExportResolved(table));
+                        }
                     }
                 }
             }
@@ -593,6 +685,12 @@ public class ArrowFlightUtil {
                 final Object export = parent.get();
                 if (export instanceof QueryTable) {
                     final QueryTable table = (QueryTable) export;
+
+                    if (table.isFailed()) {
+                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                "Table is already failed");
+                    }
+
                     final UpdateGraph ug = table.getUpdateGraph();
                     try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
                         bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));

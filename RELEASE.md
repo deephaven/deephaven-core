@@ -54,6 +54,22 @@ The Deephaven python client is released as the `pydeephaven` wheel at [PyPi](htt
 ### Deephaven go client
 The Deephaven go client is released as a [Go package](https://pkg.go.dev/github.com/deephaven/deephaven-core/go).
 
+### Deephaven API docs
+API documentation is generated for Java, Python and C++ implemetations for Deephaven integration.
+The artifacts are released to [GitHub releases](https://github.com/deephaven/deephaven-core/releases)
+and are published as the following:
+* [Java Client/Server API](https://deephaven.io/core/javadoc/)
+* [Python Integration API](https://deephaven.io/core/pydoc/)
+* [Python Client API](https://deephaven.io/core/client-api/python/)
+* [C++ Client API](https://deephaven.io/core/client-api/cpp/)
+* [C++ Examples](https://deephaven.io/core/client-api/cpp-examples/)
+* [R Client API](https://deephaven.io/core/client-api/r/)
+* [JavaScript/TypeScript Client API](https://deephaven.io/core/client-api/javascript/)
+
+### Deephaven JS API types
+The npm package `@deephaven/jsapi-types` allow TypeScript clients to use their IDE's autocomplete and compiler's typechecks.
+It is released to [npm](https://www.npmjs.com/package/@deephaven/jsapi-types).
+
 ## Release process
 
 The majority of the release procedure is controlled through the [publish-ci.yml workflow](./.github/workflows/publish-ci.yml).
@@ -84,7 +100,7 @@ We also separate out the release branch from `upstream/main` with an empty commi
 ```shell
 $ git fetch upstream
 $ git checkout upstream/main
-$ ./gradlew printVersion -q
+$ ./gradlew printVersion -PdeephavenBaseQualifier= -q
 $ git checkout -b release/vX.Y.Z
 $ git commit --allow-empty -m "Cut for X.Y.Z"
 ```
@@ -92,7 +108,8 @@ $ git commit --allow-empty -m "Cut for X.Y.Z"
 #### Procedure for patch releases
 
 For patch releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary patch fixes can be cherry-picked from the `upstream/main` branch.
-The patch release manager is also responsible for bumping the patch version numbers as appropriate.
+The patch release manager is also responsible for bumping the patch version numbers as appropriate (note comment block on the list of commands
+below).
 
 Here is an example going from `X.Y.0` to `X.Y.1`:
 
@@ -101,10 +118,18 @@ $ git fetch upstream
 $ git checkout vX.Y.0
 $ git checkout -b release/vX.Y.1
 $ git cherry-pick <...>
-# Edit files, updating from `X.Y.0` to `X.Y.1`, and git add them.
+#
+# Edit files, updating from X.Y.0 to X.Y.1, and git add them.
+#
+# Look in the last section "Version bump in preparation of next release" for a list of
+# files to update to the right version you are producing.
+#
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
 $ git commit -m "Bump to X.Y.1"
+$ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
+#
+# Compare output to expected PR list for missing or extraneous PRs
 ```
 
 ### 3. Push to upstream
@@ -136,12 +161,16 @@ If this step fails, the deephaven-server wheel from the "Upload Artifacts" step 
 The "Publish pydeephaven to PyPi" uploads the pydeephaven wheel to [PyPi](https://pypi.org/project/pydeephaven/).
 If this step fails, the pydeephaven wheel from the "Upload Artifacts" step can be uploaded manually.
 
+The "Publish @deephaven/jsapi-types to npmjs" uploads the TypeScript tarball to [NPM](https://www.npmjs.com/package/@deephaven/jsapi-types).
+If this step fails, the deephaven-jsapi-types tarball from the "Upload Artifacts" step can be uploaded manually.
+
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
 ### 5. Download artifacts
 
 Once the full publish-ci.yml worflow is done, the release artifacts can be downloaded from the GitHub Artifacts (located in the "Summary" tab of the action).
-These are currently manual steps taken from the browser.
+Similarly, release artifacts can be downloaded from the docs-ci.yml workflow.
+These are currently manual steps taken from the browser. (The artifacts will be uploaded in Step #9)
 
 There is potential in the future for QA-ing these artifacts above and beyond the integration testing that CI provides, as the release is not set in stone yet.
 
@@ -199,7 +228,8 @@ Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releas
 
 The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
-Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts.
+Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, @deephaven/jsapi-types tarball, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts.
+(These are the artifacts downloaded in Step #5)
 
 Hit the GitHub "Publish release" button.
 
@@ -230,6 +260,24 @@ Ping team, ping community, ping friends - the latest Deephaven has been released
 
 The release branches serve a purpose for kicking off CI jobs, but aren't special in other ways.
 Sometime after a release, old release branches can be safely deleted.
+
+### 15. Version bump in preparation of the next release.
+
+Say we just did release `0.31.0`. The next expected release is `0.32.0`  We update the repository with a bump to all files that
+mention the version explicitly. These files are listed below:
+
+```
+#
+# Edit files for version change
+#
+gradle.properties
+R/rdeephaven/DESCRIPTION
+```
+
+This leaves the files "ready" for the next regular release, and also ensures any build done from
+a developer for testing of latest is not confused with the code just released.
+
+In the case of a patch release these would need to be updated to a different version, like from `0.31.0` to `0.31.1`.
 
 ## External dependencies
 

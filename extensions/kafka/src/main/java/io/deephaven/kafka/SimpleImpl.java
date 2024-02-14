@@ -84,7 +84,7 @@ class SimpleImpl {
         }
 
         @Override
-        Deserializer<?> getDeserializer(
+        protected Deserializer<?> getDeserializer(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
@@ -99,7 +99,7 @@ class SimpleImpl {
         }
 
         @Override
-        KeyOrValueIngestData getIngestData(
+        protected KeyOrValueIngestData getIngestData(
                 KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
                 List<ColumnDefinition<?>> columnDefinitionsOut) {
@@ -113,7 +113,7 @@ class SimpleImpl {
         }
 
         @Override
-        KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
+        protected KeyOrValueProcessor getProcessor(TableDefinition tableDef, KeyOrValueIngestData data) {
             return null;
         }
 

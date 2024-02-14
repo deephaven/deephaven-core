@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -48,8 +49,8 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         try {
             updated.addUpdateListener(new ErrorListener(updated));
             TestCase.fail("Should not be allowed to listen to failed table");
-        } catch (IllegalStateException ise) {
-            assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
+        } catch (TableAlreadyFailedException tafe) {
+            assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
 
         try {
@@ -59,8 +60,8 @@ public class TestListenerFailure extends RefreshingTableTestCase {
                         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
                     }, false);
             TestCase.fail("Should not be allowed to listen to failed table");
-        } catch (IllegalStateException ise) {
-            assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
+        } catch (TableAlreadyFailedException tafe) {
+            assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
     }
 
@@ -97,13 +98,10 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         final Table filteredAgain = viewed.where("UC=`A`");
         assertSame(filtered, filteredAgain);
 
-        allowingError(() -> {
-            updateGraph.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
-                source.notifyListeners(i(4, 5), i(), i());
-            });
-            return null;
-        }, TestListenerFailure::isFilterNpe);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
+            source.notifyListeners(i(4, 5), i(), i());
+        });
 
         assertTrue(filtered.isFailed());
         assertTrue(filteredAgain.isFailed());
@@ -117,18 +115,5 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertNotSame(filtered, filteredYetAgain);
         assertFalse(filteredYetAgain.isFailed());
         assertTableEquals(TableTools.newTable(col("Str", "A"), col("UC", "A")), filteredYetAgain);
-    }
-
-    private static boolean isFilterNpe(List<Throwable> throwables) {
-        if (1 != throwables.size()) {
-            return false;
-        }
-        if (!throwables.get(0).getClass().equals(FormulaEvaluationException.class)) {
-            return false;
-        }
-        if (!throwables.get(0).getMessage().equals("In formula: UC = Str.toUpperCase()")) {
-            return false;
-        }
-        return throwables.get(0).getCause().getClass().equals(NullPointerException.class);
     }
 }

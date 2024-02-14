@@ -4,6 +4,7 @@
 package io.deephaven.kafka.ingest;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -185,7 +186,7 @@ public class KafkaIngester {
      * @param partitionFilter A predicate indicating which partitions we should replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(List)} or
+     *        resource allocation until first call to {@link KafkaRecordConsumer#consume(long, List)} or
      *        {@link KafkaRecordConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
@@ -350,9 +351,11 @@ public class KafkaIngester {
      */
     private boolean pollOnce(final Duration timeout) {
         final ConsumerRecords<?, ?> records;
+        final long receiveTime;
         try {
             ++pollCalls;
             records = kafkaConsumer.poll(timeout);
+            receiveTime = Clock.system().currentTimeNanos();
         } catch (WakeupException we) {
             // we interpret a wakeup as a signal to stop /this/ poll.
             return true;
@@ -380,7 +383,7 @@ public class KafkaIngester {
             }
 
             try {
-                bytesProcessed += streamConsumer.consume(partitionRecords);
+                bytesProcessed += streamConsumer.consume(receiveTime, partitionRecords);
             } catch (Throwable ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex).endl();

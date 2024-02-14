@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -15,7 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 
@@ -29,8 +28,8 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
         NONE, FROM_PREVIOUS, FROM_CURRENT
     }
 
-    static Table of(SwapListener swapListener, Table parent, int capacity, Init init) {
-        if (swapListener == null && init == Init.NONE) {
+    static Table of(OperationSnapshotControl snapshotControl, Table parent, int capacity, Init init) {
+        if (snapshotControl == null && init == Init.NONE) {
             throw new IllegalArgumentException(String.format(
                     "Trying to initialize %s against a static table, but init=NONE; no data will be filled in this case.",
                     AddsToRingsListener.class.getName()));
@@ -72,15 +71,11 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
 
         final WritableRowSet initialRowSet = init(init, parent, sources, sourceHasUnboundedFillContexts, rings);
         final QueryTable result = new QueryTable(initialRowSet.toTracking(), resultMap);
-        if (swapListener == null) {
-            result.setRefreshing(false);
-        } else {
+        if (snapshotControl != null) {
             result.setRefreshing(true);
-        }
-        final AddsToRingsListener listener = new AddsToRingsListener(
-                "AddsToRingsListener", parent, result, sources, sourceHasUnboundedFillContexts, rings);
-        if (swapListener != null) {
-            swapListener.setListenerAndResult(listener, result);
+            final AddsToRingsListener listener = new AddsToRingsListener(
+                    "AddsToRingsListener", parent, result, sources, sourceHasUnboundedFillContexts, rings);
+            snapshotControl.setListenerAndResult(listener, result);
         }
         return result;
     }
@@ -143,8 +138,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
                 throw new IllegalArgumentException();
             }
         }
-        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                AddsToRingsListener::bringPreviousUpToDate);
+        prevFlusher = new UpdateCommitter<>(this, getUpdateGraph(), AddsToRingsListener::bringPreviousUpToDate);
     }
 
     private WritableRowSet resultRowSet() {

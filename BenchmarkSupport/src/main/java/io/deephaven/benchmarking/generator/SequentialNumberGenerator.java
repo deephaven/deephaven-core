@@ -29,7 +29,7 @@ public class SequentialNumberGenerator implements NumberGenerator {
             final double start,
             final double step,
             final double max,
-            final @NotNull Mode mode) {
+            @NotNull final Mode mode) {
         this.start = start;
         this.current = start;
         this.step = step;
@@ -38,7 +38,7 @@ public class SequentialNumberGenerator implements NumberGenerator {
     }
 
     @Override
-    public void init(final @NotNull ExtendedRandom random) {
+    public void init(@NotNull final ExtendedRandom random) {
         current = start;
         direction = 1;
     }

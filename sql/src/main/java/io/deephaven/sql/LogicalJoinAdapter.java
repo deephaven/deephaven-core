@@ -42,7 +42,7 @@ final class LogicalJoinAdapter {
         // Ideally, calcite optimizations would do expression pushdown for us (and it _might_ if configured correctly),
         // and hopefully filter pushdown where applicable.
 
-        for (Filter filter : ExtractAnds.of(FilterSimplifier.of(condition))) {
+        for (Filter filter : Filter.extractAnds(FilterSimplifier.of(condition))) {
             if (!(filter instanceof FilterComparison)) {
                 postFilterConditions.add(filter);
                 continue;

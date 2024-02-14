@@ -8,7 +8,6 @@
 #include <mutex>
 #include <optional>
 #include <set>
-#include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/clienttable/client_table.h"
 
@@ -71,7 +70,7 @@ public:
   /**
    * Alias.
    */
-  using Table = deephaven::dhcore::clienttable::ClientTable;
+  using ClientTable = deephaven::dhcore::clienttable::ClientTable;
 
   /**
    * Default constructor.
@@ -81,10 +80,10 @@ public:
   /**
    * Constructor. Used internally.
    */
-  TickingUpdate(std::shared_ptr<Table> prev,
-      std::shared_ptr<RowSequence> removed_rows, std::shared_ptr<Table> after_removes,
-      std::shared_ptr<RowSequence> added_rows, std::shared_ptr<Table> after_adds,
-      std::vector<std::shared_ptr<RowSequence>> modified_rows, std::shared_ptr<Table> after_modifies);
+  TickingUpdate(std::shared_ptr<ClientTable> prev,
+      std::shared_ptr<RowSequence> removed_rows, std::shared_ptr<ClientTable> after_removes,
+      std::shared_ptr<RowSequence> added_rows, std::shared_ptr<ClientTable> after_adds,
+      std::vector<std::shared_ptr<RowSequence>> modified_rows, std::shared_ptr<ClientTable> after_modifies);
   /**
    * Copy constructor.
    */
@@ -110,13 +109,13 @@ public:
    * A snapshot of the table before any of the changes in this cycle were applied.
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &Prev() const { return prev_; }
+  const std::shared_ptr<ClientTable> &Prev() const { return prev_; }
 
   /**
    * A snapshot of the table before any rows were removed in this cycle.
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &BeforeRemoves() const {
+  const std::shared_ptr<ClientTable> &BeforeRemoves() const {
     // Implementation detail: 'beforeRemoves' and 'prev' happen to refer to the same snapshot.
     return prev_;
   }
@@ -130,13 +129,13 @@ public:
    * If no rows were removed, then this pointer will compare equal to BeforeRemoves().
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &AfterRemoves() const { return afterRemoves_; }
+  const std::shared_ptr<ClientTable> &AfterRemoves() const { return afterRemoves_; }
 
   /**
    * A snapshot of the table before any rows were added in this cycle.
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &BeforeAdds() const {
+  const std::shared_ptr<ClientTable> &BeforeAdds() const {
     // Implementation detail: 'afterRemoves' and 'beforeAdds' happen to refer to the same snapshot.
     return afterRemoves_;
   }
@@ -150,13 +149,13 @@ public:
    * If no rows were added, then this pointer will compare equal to BeforeAdds().
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &AfterAdds() const { return afterAdds_; }
+  const std::shared_ptr<ClientTable> &AfterAdds() const { return afterAdds_; }
 
   /**
    * A snapshot of the table before cells were modified in this cycle.
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &BeforeModifies() const {
+  const std::shared_ptr<ClientTable> &BeforeModifies() const {
     // Implementation detail: 'afterAdds' and 'beforeModifies' happen to refer to the same snapshot.
     return afterAdds_;
   }
@@ -177,25 +176,25 @@ public:
    * A snapshot of the table after cells (if any) were modified in this cycle.
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &AfterModifies() const { return afterModifies_; }
+  const std::shared_ptr<ClientTable> &AfterModifies() const { return afterModifies_; }
 
   /**
    * A snapshot of the table after all of the changes in this cycle were applied.
    */
   [[nodiscard]]
-  const std::shared_ptr<Table> &Current() const {
+  const std::shared_ptr<ClientTable> &Current() const {
     // Implementation detail: 'afterModifies' and 'current' happen to refer to the same snapshot.
     return afterModifies_;
   }
 
 private:
-  std::shared_ptr<Table> prev_;
+  std::shared_ptr<ClientTable> prev_;
   std::shared_ptr<RowSequence> removedRows_;
-  std::shared_ptr<Table> afterRemoves_;
+  std::shared_ptr<ClientTable> afterRemoves_;
   std::shared_ptr<RowSequence> addedRows_;
-  std::shared_ptr<Table> afterAdds_;
+  std::shared_ptr<ClientTable> afterAdds_;
   std::vector<std::shared_ptr<RowSequence>> modifiedRows_;
-  std::shared_ptr<Table> afterModifies_;
+  std::shared_ptr<ClientTable> afterModifies_;
   std::shared_ptr<internal::OnDemandState> onDemandState_;
 };
 }  // namespace deephaven::dhcore::ticking

@@ -4,10 +4,11 @@
 package io.deephaven.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Descriptors.Descriptor;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientFactory;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -30,8 +31,8 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.table.impl.ConstituentDependency;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
@@ -39,6 +40,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.AvroImpl.AvroConsume;
@@ -47,12 +49,14 @@ import io.deephaven.kafka.IgnoreImpl.IgnoreConsume;
 import io.deephaven.kafka.IgnoreImpl.IgnoreProduce;
 import io.deephaven.kafka.JsonImpl.JsonConsume;
 import io.deephaven.kafka.JsonImpl.JsonProduce;
+import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
+import io.deephaven.kafka.ProtobufImpl.ProtobufConsumeImpl;
 import io.deephaven.kafka.RawImpl.RawConsume;
 import io.deephaven.kafka.RawImpl.RawProduce;
 import io.deephaven.kafka.SimpleImpl.SimpleConsume;
@@ -62,9 +66,12 @@ import io.deephaven.kafka.ingest.KafkaIngester;
 import io.deephaven.kafka.ingest.KafkaRecordConsumer;
 import io.deephaven.kafka.ingest.KafkaStreamPublisher;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
+import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.processor.ObjectProcessor;
+import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
@@ -133,6 +140,12 @@ public class KafkaTools {
     public static final String OFFSET_COLUMN_NAME_DEFAULT = "KafkaOffset";
     public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "deephaven.timestamp.column.name";
     public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "KafkaTimestamp";
+    public static final String RECEIVE_TIME_COLUMN_NAME_PROPERTY = "deephaven.receivetime.column.name";
+    public static final String RECEIVE_TIME_COLUMN_NAME_DEFAULT = null;
+    public static final String KEY_BYTES_COLUMN_NAME_PROPERTY = "deephaven.keybytes.column.name";
+    public static final String KEY_BYTES_COLUMN_NAME_DEFAULT = null;
+    public static final String VALUE_BYTES_COLUMN_NAME_PROPERTY = "deephaven.valuebytes.column.name";
+    public static final String VALUE_BYTES_COLUMN_NAME_DEFAULT = null;
     public static final String KEY_COLUMN_NAME_PROPERTY = "deephaven.key.column.name";
     public static final String KEY_COLUMN_NAME_DEFAULT = "KafkaKey";
     public static final String VALUE_COLUMN_NAME_PROPERTY = "deephaven.value.column.name";
@@ -193,8 +206,18 @@ public class KafkaTools {
             final Map<String, String> fieldPathToColumnNameOut,
             final Schema schema,
             final Function<String, String> requestedFieldPathToColumnName) {
+        avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema, requestedFieldPathToColumnName,
+                false);
+    }
+
+    public static void avroSchemaToColumnDefinitions(
+            final List<ColumnDefinition<?>> columnsOut,
+            final Map<String, String> fieldPathToColumnNameOut,
+            final Schema schema,
+            final Function<String, String> requestedFieldPathToColumnName,
+            final boolean useUTF8Strings) {
         AvroImpl.avroSchemaToColumnDefinitions(columnsOut, fieldPathToColumnNameOut, schema,
-                requestedFieldPathToColumnName);
+                requestedFieldPathToColumnName, useUTF8Strings);
     }
 
     /**
@@ -227,7 +250,7 @@ public class KafkaTools {
     /**
      * Enum to specify operations that may apply to either of Kafka KEY or VALUE fields.
      */
-    enum KeyOrValue {
+    public enum KeyOrValue {
         KEY, VALUE
     }
 
@@ -296,19 +319,19 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-            abstract Deserializer<?> getDeserializer(
+            protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs);
 
-            abstract KeyOrValueIngestData getIngestData(
+            protected abstract KeyOrValueIngestData getIngestData(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut);
 
-            abstract KeyOrValueProcessor getProcessor(
+            protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
         }
@@ -443,6 +466,26 @@ public class KafkaTools {
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
          * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
+         * property.
+         *
+         * @param schemaName The registered name for the schema on Schema Server
+         * @param schemaVersion The version to fetch
+         * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
+         *        for them; fields mapped to null are excluded.
+         * @param useUTF8Strings If true, String fields will be not be converted to Java Strings.
+         * @return A spec corresponding to the schema provided.
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec avroSpec(final String schemaName,
+                final String schemaVersion,
+                final Function<String, String> fieldNameToColumnName,
+                final boolean useUTF8Strings) {
+            return new AvroConsume(schemaName, schemaVersion, fieldNameToColumnName, useUTF8Strings);
+        }
+
+        /**
+         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
+         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
          * property. The version fetched would be latest.
          *
          * @param schemaName The registered name for the schema on Schema Server
@@ -484,6 +527,22 @@ public class KafkaTools {
         }
 
         /**
+         * The kafka protobuf specs. This will fetch the {@link com.google.protobuf.Descriptors.Descriptor protobuf
+         * descriptor} based on the {@link ProtobufConsumeOptions#descriptorProvider()} and create the
+         * {@link com.google.protobuf.Message message} parsing functions according to
+         * {@link io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)}.
+         * These functions will be adapted to handle schema changes.
+         *
+         * @param options the options
+         * @return the key or value spec
+         * @see io.deephaven.protobuf.ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)
+         *      parsing
+         */
+        public static KeyOrValueSpec protobufSpec(ProtobufConsumeOptions options) {
+            return new ProtobufConsumeImpl(options);
+        }
+
+        /**
          * If {@code columnName} is set, that column name will be used. Otherwise, the names for the key or value
          * columns can be provided in the properties as {@value KEY_COLUMN_NAME_PROPERTY} or
          * {@value VALUE_COLUMN_NAME_PROPERTY}, and otherwise default to {@value KEY_COLUMN_NAME_DEFAULT} or
@@ -516,6 +575,42 @@ public class KafkaTools {
         public static KeyOrValueSpec rawSpec(ColumnHeader<?> header, Class<? extends Deserializer<?>> deserializer) {
             return new RawConsume(ColumnDefinition.from(header), deserializer);
         }
+
+        /**
+         * Creates a kafka key or value spec implementation from an {@link ObjectProcessor}.
+         *
+         * <p>
+         * The respective column definitions are derived from the combination of {@code columnNames} and
+         * {@link ObjectProcessor#outputTypes()}.
+         *
+         * @param deserializer the deserializer
+         * @param processor the object processor
+         * @param columnNames the column names
+         * @return the Kafka key or value spec
+         * @param <T> the object type
+         */
+        public static <T> KeyOrValueSpec objectProcessorSpec(
+                Deserializer<? extends T> deserializer,
+                ObjectProcessor<? super T> processor,
+                List<String> columnNames) {
+            return new KeyOrValueSpecObjectProcessorImpl<>(deserializer, processor, columnNames);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from a byte-array {@link ObjectProcessor}.
+         *
+         * <p>
+         * Equivalent to {@code objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames)}.
+         *
+         * @param processor the byte-array object processor
+         * @param columnNames the column names
+         * @return the Kafka key or value spec
+         */
+        @SuppressWarnings("unused")
+        public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
+                List<String> columnNames) {
+            return objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames);
+        }
     }
 
     public static class Produce {
@@ -541,7 +636,7 @@ public class KafkaTools {
             return IGNORE;
         }
 
-        private static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
+        static boolean isIgnore(KeyOrValueSpec keyOrValueSpec) {
             return keyOrValueSpec == IGNORE;
         }
 
@@ -906,7 +1001,7 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType tableType) {
-        final AtomicReference<StreamPartitionedTable> resultHolder = new AtomicReference<>();
+        final AtomicReference<StreamPartitionedQueryTable> resultHolder = new AtomicReference<>();
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
 
@@ -915,12 +1010,12 @@ public class KafkaTools {
                         final StreamPublisher streamPublisher) -> {
                     try (final SafeCloseable ignored1 = enclosingExecutionContext.open();
                             final SafeCloseable ignored2 = LivenessScopeStack.open()) {
-                        StreamPartitionedTable result = resultHolder.get();
+                        StreamPartitionedQueryTable result = resultHolder.get();
                         if (result == null) {
                             synchronized (resultHolder) {
                                 result = resultHolder.get();
                                 if (result == null) {
-                                    result = new StreamPartitionedTable(tableDefinition);
+                                    result = new StreamPartitionedQueryTable(tableDefinition);
                                     enclosingLivenessManager.manage(result);
                                     resultHolder.set(result);
                                 }
@@ -931,7 +1026,7 @@ public class KafkaTools {
                         final StreamToBlinkTableAdapter streamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
                                 tableDefinition,
                                 streamPublisher,
-                                result.refreshCombiner,
+                                result.getRegistrar(),
                                 "Kafka-" + topic + '-' + topicPartition.partition());
                         final Table blinkTable = streamToBlinkTableAdapter.table();
                         final Table derivedTable = tableType.walk(new BlinkTableOperation(blinkTable));
@@ -942,7 +1037,7 @@ public class KafkaTools {
         consume(kafkaProperties, topic, partitionFilter,
                 InitialOffsetLookup.adapt(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.perPartition(registrar), null);
-        return resultHolder.get();
+        return resultHolder.get().toPartitionedTable();
     }
 
     @FunctionalInterface
@@ -1133,19 +1228,7 @@ public class KafkaTools {
                         return;
                     }
                     columnDefinitions.add(commonColumnDefinition);
-                    switch (cc) {
-                        case KafkaPartition:
-                            publisherParametersBuilder.setKafkaPartitionColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Offset:
-                            publisherParametersBuilder.setOffsetColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        case Timestamp:
-                            publisherParametersBuilder.setTimestampColumnIndex(nextColumnIndex.getAndIncrement());
-                            break;
-                        default:
-                            throw new UnsupportedOperationException("Unexpected common column " + cc);
-                    }
+                    cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
         final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
@@ -1206,11 +1289,14 @@ public class KafkaTools {
     }
 
     static SchemaRegistryClient newSchemaRegistryClient(Map<String, ?> configs, List<SchemaProvider> providers) {
+        // Note: choosing to not use the constructor with doLog which is a newer API; this is in support of downstream
+        // users _potentially_ being able to replace kafka jars with previous versions.
         final AbstractKafkaSchemaSerDeConfig config = new AbstractKafkaSchemaSerDeConfig(
                 AbstractKafkaSchemaSerDeConfig.baseConfigDef(),
-                configs,
-                false);
-        return SchemaRegistryClientFactory.newClient(
+                configs);
+        // Note: choosing to not use SchemaRegistryClientFactory.newClient which is a newer API; this is in support of
+        // downstream users _potentially_ being able to replace kafka jars with previous versions.
+        return new CachedSchemaRegistryClient(
                 config.getSchemaRegistryUrls(),
                 config.getMaxSchemasPerSubject(),
                 List.copyOf(providers),
@@ -1274,6 +1360,7 @@ public class KafkaTools {
      *        {@code keySpec} and publish to Kafka from the result.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
+     * @see #produceFromTable(KafkaPublishOptions)
      */
     @SuppressWarnings("unused")
     public static Runnable produceFromTable(
@@ -1283,24 +1370,62 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (table.isRefreshing()
-                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
-                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-            throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
-        }
-        if (Produce.isIgnore(keySpec) && Produce.isIgnore(valueSpec)) {
-            throw new IllegalArgumentException(
-                    "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
-        }
+        return produceFromTable(KafkaPublishOptions.builder()
+                .table(table)
+                .topic(topic)
+                .config(kafkaProperties)
+                .keySpec(keySpec)
+                .valueSpec(valueSpec)
+                .lastBy(lastByKeyColumns && !Produce.isIgnore(keySpec))
+                .publishInitial(true)
+                .build());
+    }
 
-        final Map<String, ?> config = asStringMap(kafkaProperties);
+    /**
+     * Produce a Kafka stream from a Deephaven table.
+     *
+     * <p>
+     * Note that {@code table} must only change in ways that are meaningful when turned into a stream of events over
+     * Kafka.
+     * <p>
+     * Two primary use cases are considered:
+     * <ol>
+     * <li><b>A stream of changes (puts and removes) to a key-value data set.</b> In order to handle this efficiently
+     * and allow for correct reconstruction of the state at a consumer, it is assumed that the input data is the result
+     * of a Deephaven aggregation, e.g. {@link Table#aggAllBy}, {@link Table#aggBy}, or {@link Table#lastBy}. This means
+     * that key columns (as specified by {@code keySpec}) must not be modified, and no rows should be shifted if there
+     * are any key columns. Note that specifying {@code lastByKeyColumns=true} can make it easy to satisfy this
+     * constraint if the input data is not already aggregated.</li>
+     * <li><b>A stream of independent log records.</b> In this case, the input table should either be a
+     * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} or should only ever add rows (regardless of whether the
+     * {@link Table#ADD_ONLY_TABLE_ATTRIBUTE attribute} is specified).</li>
+     * </ol>
+     * <p>
+     * If other use cases are identified, a publication mode or extensible listener framework may be introduced at a
+     * later date.
+     *
+     * @param options the options
+     * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
+     *         reference to this return value to ensure liveliness.
+     */
+    public static Runnable produceFromTable(KafkaPublishOptions options) {
+        final Table table = options.table();
+        try {
+            QueryTable.checkInitiateOperation(table);
+        } catch (IllegalStateException e) {
+            throw new KafkaPublisherException(
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources", e);
+        }
+        final Map<String, ?> config = asStringMap(options.config());
+        final KeyOrValueSpec keySpec = options.keySpec();
+        final KeyOrValueSpec valueSpec = options.valueSpec();
         final SchemaRegistryClient schemaRegistryClient = schemaRegistryClient(keySpec, valueSpec, config).orElse(null);
 
-        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, table.getDefinition());
+        final TableDefinition tableDefinition = table.getDefinition();
+        final Serializer<?> keySpecSerializer = keySpec.getSerializer(schemaRegistryClient, tableDefinition);
         keySpecSerializer.configure(config, true);
 
-        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, table.getDefinition());
+        final Serializer<?> valueSpecSerializer = valueSpec.getSerializer(schemaRegistryClient, tableDefinition);
         valueSpecSerializer.configure(config, false);
 
         final String[] keyColumns = keySpec.getColumnNames(table, schemaRegistryClient);
@@ -1308,66 +1433,100 @@ public class KafkaTools {
 
         final LivenessScope publisherScope = new LivenessScope(true);
         try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
-            final Table effectiveTable = (!Produce.isIgnore(keySpec) && lastByKeyColumns)
+            final Table effectiveTable = options.lastBy()
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
             final KeyOrValueSerializer<?> keySerializer = keySpec.getKeyOrValueSerializer(effectiveTable, keyColumns);
             final KeyOrValueSerializer<?> valueSerializer =
                     valueSpec.getKeyOrValueSerializer(effectiveTable, valueColumns);
-            final PublishToKafka producer = new PublishToKafka(
-                    kafkaProperties,
+            // PublishToKafka is a LivenessArtifact; it will be kept reachable and alive by the publisherScope, since
+            // it is constructed with enforceStrongReachability=true.
+            new PublishToKafka(
+                    options.config(),
                     effectiveTable,
-                    topic,
+                    options.topic(),
+                    options.partition().isEmpty() ? null : options.partition().getAsInt(),
                     keyColumns,
                     keySpecSerializer,
                     keySerializer,
                     valueColumns,
                     valueSpecSerializer,
-                    valueSerializer);
+                    valueSerializer,
+                    options.topicColumn().orElse(null),
+                    options.partitionColumn().orElse(null),
+                    options.timestampColumn().orElse(null),
+                    options.publishInitial());
         }
         return publisherScope::release;
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} (indirectly) to the {@link UpdateGraph} and cannot be
+     *           subclassed.
      */
-    private static final class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
+    private static final class StreamPartitionedQueryTable extends QueryTable implements Runnable {
 
         private static final String PARTITION_COLUMN_NAME = "Partition";
         private static final String CONSTITUENT_COLUMN_NAME = "Table";
 
-        @ReferentialIntegrity // We also access the combiner externally, but it must be referenced regardless
-        private final UpdateSourceCombiner refreshCombiner;
+        private final TableDefinition constituentDefinition;
 
         private final WritableColumnSource<Integer> partitionColumn;
         private final WritableColumnSource<Table> constituentColumn;
 
+        @ReferentialIntegrity
+        private final UpdateSourceCombiner refreshCombiner;
+
         private volatile long lastAddedPartitionRowKey = -1L; // NULL_ROW_KEY
 
-        private StreamPartitionedTable(@NotNull final TableDefinition constituentDefinition) {
-            super(makeResultTable(), Set.of(PARTITION_COLUMN_NAME), true, CONSTITUENT_COLUMN_NAME,
-                    constituentDefinition, true, false);
-            partitionColumn = (WritableColumnSource<Integer>) table().getColumnSource(PARTITION_COLUMN_NAME, int.class);
-            constituentColumn =
-                    (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
-            UpdateGraph updateGraph = table().getUpdateGraph();
-            refreshCombiner = new UpdateSourceCombiner(updateGraph);
-            manage(refreshCombiner);
-            refreshCombiner.addSource(this);
-            updateGraph.addSource(refreshCombiner);
+        private StreamPartitionedQueryTable(@NotNull final TableDefinition constituentDefinition) {
+            super(RowSetFactory.empty().toTracking(), makeSources());
+
+            setFlat();
+            setRefreshing(true);
+
+            this.constituentDefinition = constituentDefinition;
+
+            partitionColumn = (WritableColumnSource<Integer>) getColumnSource(PARTITION_COLUMN_NAME, int.class);
+            constituentColumn = (WritableColumnSource<Table>) getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
+
             /*
-             * Note: We do not need to use a ConstituentDependency here, because using the combiner effectively prevents
-             * delivery of the partitioned table's notification until its constituents have also had their chance to
-             * complete their update for the cycle. We could remove the combiner and use the "raw" UpdateGraph plus a
+             * We use an UpdateSourceCombiner to drive both the StreamPartitionedQueryTable and its constituents, with
+             * the StreamPartitionedQueryTable added first. This to ensure that newly-added constituents cannot process
+             * their initial update until after they have been added to the StreamPartitionedQueryTable. The
+             * StreamPartitionedQueryTable creates the combiner, and constituent-building code is responsible for using
+             * it, accessed via getRegistrar(). We could remove the combiner and use the "raw" UpdateGraph plus a
              * ConstituentDependency if we demanded a guarantee that new constituents would only be constructed in such
              * a way that they were unable to fire before being added to the partitioned table. Without that guarantee,
-             * we risk data loss for blink or ring tables.
+             * we would risk data loss for blink or ring tables.
              */
+            refreshCombiner = new UpdateSourceCombiner(getUpdateGraph());
+            manage(refreshCombiner);
+            refreshCombiner.addSource(this);
+
+            /*
+             * We use a ConstituentDependency to ensure that our notification is not delivered before all of our
+             * constituents have become satisfied on this cycle. For "raw" (blink) constituents, the
+             * UpdateSourceCombiner trivially guarantees this. However, since constituents may be transformed to ring or
+             * append-only tables before they are added to the StreamPartitionedQueryTable, we must test constituent
+             * satisfaction before allowing the table to become satisfied on a given cycle.
+             */
+            ConstituentDependency.install(this, refreshCombiner);
+
+            // Begin update processing
+            refreshCombiner.install();
+        }
+
+        /**
+         * @return The {@link UpdateSourceRegistrar} to be used for all constituent roots.
+         */
+        public UpdateSourceRegistrar getRegistrar() {
+            return refreshCombiner;
         }
 
         @Override
         public void run() {
-            final WritableRowSet rowSet = table().getRowSet().writableCast();
+            final WritableRowSet rowSet = getRowSet().writableCast();
 
             final long newLastRowKey = lastAddedPartitionRowKey;
             final long oldLastRowKey = rowSet.lastRowKey();
@@ -1375,12 +1534,12 @@ public class KafkaTools {
             if (newLastRowKey != oldLastRowKey) {
                 final RowSet added = RowSetFactory.fromRange(oldLastRowKey + 1, newLastRowKey);
                 rowSet.insert(added);
-                ((BaseTable<?>) table()).notifyListeners(new TableUpdateImpl(added,
+                notifyListeners(new TableUpdateImpl(added,
                         RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             }
         }
 
-        public synchronized void enqueueAdd(final int partition, @NotNull final Table partitionTable) {
+        private synchronized void enqueueAdd(final int partition, @NotNull final Table partitionTable) {
             manage(partitionTable);
 
             final long partitionRowKey = lastAddedPartitionRowKey + 1;
@@ -1394,27 +1553,33 @@ public class KafkaTools {
             lastAddedPartitionRowKey = partitionRowKey;
         }
 
-        private static Table makeResultTable() {
-            final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(2);
-            resultSources.put(PARTITION_COLUMN_NAME,
-                    ArrayBackedColumnSource.getMemoryColumnSource(int.class, null));
-            resultSources.put(CONSTITUENT_COLUMN_NAME,
-                    ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null));
-            // noinspection resource
-            return new QueryTable(RowSetFactory.empty().toTracking(), resultSources) {
-                {
-                    setFlat();
-                    setRefreshing(true);
-                }
-            };
+        private PartitionedTable toPartitionedTable() {
+            return new PartitionedTableImpl(this,
+                    Set.of(PARTITION_COLUMN_NAME),
+                    true, // keys are unique
+                    CONSTITUENT_COLUMN_NAME,
+                    constituentDefinition,
+                    true, // constituent changes are permitted
+                    false); // validation not needed
+        }
+
+        private static Map<String, ColumnSource<?>> makeSources() {
+            final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>(2);
+            sources.put(PARTITION_COLUMN_NAME, ArrayBackedColumnSource.getMemoryColumnSource(int.class, null));
+            sources.put(CONSTITUENT_COLUMN_NAME, ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null));
+            return sources;
         }
     }
 
-    static class KeyOrValueIngestData {
+    public static class KeyOrValueIngestData {
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
+    }
+
+    private interface SetColumnIndex {
+        void setColumnIndex(KafkaStreamPublisher.Parameters.Builder builder, int columnIndex);
     }
 
     private enum CommonColumn {
@@ -1422,39 +1587,64 @@ public class KafkaTools {
         KafkaPartition(
                 KAFKA_PARTITION_COLUMN_NAME_PROPERTY,
                 KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofInt),
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKafkaPartitionColumnIndex),
         Offset(
                 OFFSET_COLUMN_NAME_PROPERTY,
                 OFFSET_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofLong),
+                ColumnDefinition::ofLong,
+                KafkaStreamPublisher.Parameters.Builder::setOffsetColumnIndex),
         Timestamp(
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                ColumnDefinition::ofTime);
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setTimestampColumnIndex),
+
+        ReceiveTime(
+                RECEIVE_TIME_COLUMN_NAME_PROPERTY,
+                RECEIVE_TIME_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofTime,
+                KafkaStreamPublisher.Parameters.Builder::setReceiveTimeColumnIndex),
+
+        KeyBytes(
+                KEY_BYTES_COLUMN_NAME_PROPERTY,
+                KEY_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setKeyBytesColumnIndex),
+
+        ValueBytes(
+                VALUE_BYTES_COLUMN_NAME_PROPERTY,
+                VALUE_BYTES_COLUMN_NAME_DEFAULT,
+                ColumnDefinition::ofInt,
+                KafkaStreamPublisher.Parameters.Builder::setValueBytesColumnIndex);
         // @formatter:on
 
         private final String nameProperty;
         private final String nameDefault;
         private final Function<String, ColumnDefinition<?>> definitionFactory;
+        private final SetColumnIndex setColumnIndex;
 
         CommonColumn(@NotNull final String nameProperty,
-                @NotNull final String nameDefault,
-                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory) {
+                @Nullable final String nameDefault,
+                @NotNull final Function<String, ColumnDefinition<?>> definitionFactory,
+                @NotNull final SetColumnIndex setColumnIndex) {
             this.nameProperty = nameProperty;
             this.nameDefault = nameDefault;
             this.definitionFactory = definitionFactory;
+            this.setColumnIndex = setColumnIndex;
         }
 
         private ColumnDefinition<?> getDefinition(@NotNull final Properties consumerProperties) {
             final ColumnDefinition<?> result;
             if (consumerProperties.containsKey(nameProperty)) {
-                final String partitionColumnName = consumerProperties.getProperty(nameProperty);
-                if (partitionColumnName == null || partitionColumnName.equals("")) {
+                final String commonColumnName = consumerProperties.getProperty(nameProperty);
+                if (commonColumnName == null || commonColumnName.equals("")) {
                     result = null;
                 } else {
-                    result = definitionFactory.apply(partitionColumnName);
+                    result = definitionFactory.apply(commonColumnName);
                 }
-                consumerProperties.remove(nameProperty);
+            } else if (nameDefault == null) {
+                result = null;
             } else {
                 result = definitionFactory.apply(nameDefault);
             }
@@ -1529,9 +1719,10 @@ public class KafkaTools {
         }
 
         @Override
-        public long consume(@NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(final long receiveTime,
+                @NotNull final List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
-                return adapter.consumeRecords(consumerRecords);
+                return adapter.consumeRecords(receiveTime, consumerRecords);
             } catch (Exception e) {
                 acceptFailure(e);
                 return 0;

@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl.singlerange;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
@@ -13,7 +14,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -22,6 +22,10 @@ import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
 public abstract class SingleRange implements OrderedLongSet {
+
+    private static final boolean debug =
+            Configuration.getInstance().getBooleanForClassWithDefault(SingleRange.class, "debug", false);
+
     public abstract long rangeStart();
 
     public abstract long rangeEnd();
@@ -129,7 +133,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @SuppressWarnings("unused")
     private void ifDebugValidate() {
-        if (RspArray.debug) {
+        if (debug) {
             ixValidate();
         }
     }

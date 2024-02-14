@@ -5,11 +5,11 @@ package io.deephaven.engine.util;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.io.PrintStream;
@@ -28,8 +28,7 @@ class TableShowTools {
 
     static void showInternal(Table source, long firstRow, long lastRowExclusive, ZoneId timeZone, String delimiter,
             PrintStream out, boolean showRowSet, String[] columns) {
-        final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
-        try {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()")) {
             if (columns.length == 0) {
                 final List<String> columnNames = source.getDefinition().getColumnNames();
                 columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -107,8 +106,6 @@ class TableShowTools {
             }
             out.println();
             out.flush();
-        } finally {
-            nugget.done();
         }
     }
 

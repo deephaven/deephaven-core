@@ -82,11 +82,13 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @Override
-    public SwapListener newSwapListener(QueryTable queryTable) {
-        return new SwapListener(queryTable) {
+    public OperationSnapshotControl newSnapshotControl(QueryTable queryTable) {
+        return new OperationSnapshotControl(queryTable) {
             @Override
-            public synchronized boolean end(long clockCycle) {
-                final boolean success = super.end(clockCycle);
+            public synchronized boolean snapshotCompletedConsistently(
+                    final long afterClockValue,
+                    final boolean usedPreviousValues) {
+                final boolean success = super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
                 if (success) {
                     QueryTable.startTrackingPrev(resultTable.getColumnSources());
                     if (sortMapping.isWritable()) {

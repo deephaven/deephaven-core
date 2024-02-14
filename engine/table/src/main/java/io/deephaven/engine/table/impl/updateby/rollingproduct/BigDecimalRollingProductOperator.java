@@ -8,7 +8,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -113,20 +112,26 @@ public final class BigDecimalRollingProductOperator extends BaseObjectUpdateByOp
         return new Context(affectedChunkSize);
     }
 
-    public BigDecimalRollingProductOperator(@NotNull final MatchPair pair,
+    public BigDecimalRollingProductOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            @NotNull final MathContext mathContext
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+            @NotNull final MathContext mathContext) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
-        // region constructor
-        // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalRollingProductOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                mathContext);
     }
 }

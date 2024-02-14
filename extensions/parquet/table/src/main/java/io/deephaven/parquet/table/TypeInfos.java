@@ -24,6 +24,9 @@ import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -34,7 +37,7 @@ import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
  * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
  * and the data translation.
  */
-class TypeInfos {
+public class TypeInfos {
     private static final TypeInfo[] TYPE_INFOS = new TypeInfo[] {
             IntType.INSTANCE,
             LongType.INSTANCE,
@@ -46,7 +49,10 @@ class TypeInfos {
             ByteType.INSTANCE,
             StringType.INSTANCE,
             InstantType.INSTANCE,
-            BigIntegerType.INSTANCE
+            BigIntegerType.INSTANCE,
+            LocalDateType.INSTANCE,
+            LocalTimeType.INSTANCE,
+            LocalDateTimeType.INSTANCE,
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
@@ -105,14 +111,14 @@ class TypeInfos {
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
-    static PrecisionAndScale getPrecisionAndScale(
-            @NotNull final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+    public static PrecisionAndScale getPrecisionAndScale(
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
             @NotNull final RowSet rowSet,
             @NotNull Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
-                .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
+                .computeIfAbsent(ParquetCacheTags.DECIMAL_ARGS,
                         uct -> parquetCompatible(computePrecisionAndScale(rowSet, columnSourceSupplier.get())));
     }
 
@@ -130,7 +136,7 @@ class TypeInfos {
     }
 
     static TypeInfo bigDecimalTypeInfo(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap) {
@@ -146,10 +152,7 @@ class TypeInfos {
             }
 
             @Override
-            public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
-                if (!isValidFor(dataType)) {
-                    throw new IllegalArgumentException("Invalid data type " + dataType);
-                }
+            public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class dataType) {
                 return type(PrimitiveTypeName.BINARY, required, repeating)
                         .as(LogicalTypeAnnotation.decimalType(precisionAndScale.scale, precisionAndScale.precision));
             }
@@ -157,7 +160,7 @@ class TypeInfos {
     }
 
     static TypeInfo getTypeInfo(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
@@ -189,10 +192,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(32, true));
         }
     }
@@ -209,10 +209,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT64, required, repeating);
         }
     }
@@ -229,10 +226,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, true));
         }
     }
@@ -249,10 +243,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BOOLEAN, required, repeating);
         }
     }
@@ -269,10 +260,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.FLOAT, required, repeating);
         }
     }
@@ -289,10 +277,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.DOUBLE, required, repeating);
         }
     }
@@ -309,10 +294,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, false));
         }
     }
@@ -329,10 +311,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(8, true));
         }
     }
@@ -348,18 +327,12 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BINARY, required, repeating)
                     .as(LogicalTypeAnnotation.stringType());
         }
     }
 
-    /**
-     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support MICROS
-     */
     private enum InstantType implements TypeInfo {
         INSTANCE;
 
@@ -371,14 +344,66 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            if (!isValidFor(dataType)) {
-                throw new IllegalArgumentException("Invalid data type " + dataType);
-            }
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
+            // Write instants as Parquet TIMESTAMP(isAdjustedToUTC = true, unit = NANOS)
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
+
+    private enum LocalDateTimeType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDateTime.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
+            // Write LocalDateTime as Parquet TIMESTAMP(isAdjustedToUTC = false, unit = NANOS)
+            return type(PrimitiveTypeName.INT64, required, repeating)
+                    .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
+    private enum LocalDateType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDate.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
+            return type(PrimitiveTypeName.INT32, required, repeating)
+                    .as(LogicalTypeAnnotation.dateType());
+        }
+    }
+
+    private enum LocalTimeType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(LocalTime.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
+            // Always write in (isAdjustedToUTC = true, unit = NANOS) format
+            return type(PrimitiveTypeName.INT64, required, repeating)
+                    .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
 
     /**
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
@@ -396,7 +421,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             return type(PrimitiveTypeName.BINARY, required, repeating)
                     .as(LogicalTypeAnnotation.decimalType(0, 1));
         }
@@ -409,6 +434,17 @@ class TypeInfos {
         @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         default boolean isValidFor(Class<?> clazz) {
             return getTypes().contains(clazz);
+        }
+
+        default PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
+            throw new UnsupportedOperationException("Implement this method if using the default getBuilder()");
+        }
+
+        default PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            if (!isValidFor(dataType)) {
+                throw new IllegalArgumentException("Invalid data type " + dataType);
+            }
+            return getBuilderImpl(required, repeating, dataType);
         }
 
         default Type createSchemaType(
@@ -443,8 +479,6 @@ class TypeInfos {
                             builder.named("item")).named(parquetColumnName))
                     .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
         }
-
-        PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType);
     }
 
     private static class CodecType<T> implements TypeInfo {

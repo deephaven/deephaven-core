@@ -22,7 +22,7 @@ def vectorized_func_wrong_return_type(x, y):
     return x % 2 > y % 5
 
 
-class TestNumbaVectorizedFilterClass(BaseTestCase):
+class NumbaVectorizedFilterTestCase(BaseTestCase):
 
     def test_wrong_return_type(self):
         with self.assertRaises(Exception):

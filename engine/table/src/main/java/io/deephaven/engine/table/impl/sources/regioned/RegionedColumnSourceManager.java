@@ -3,21 +3,21 @@
  */
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.ColumnToCodecMappings;
-import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
+import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -125,12 +125,30 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
+    public boolean removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
+        final IncludedTableLocationEntry includedLocation = includedTableLocations.remove(locationKey);
+        final EmptyTableLocationEntry emptyLocation = emptyTableLocations.remove(locationKey);
+
+        if (emptyLocation != null) {
+            if (log.isDebugEnabled()) {
+                log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
+            }
+        } else if (includedLocation != null) {
+            includedLocation.invalidate();
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
     public synchronized WritableRowSet refresh() {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
-        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
-                                                                                       // using a sequential builder.
+        // Ordering matters, since we're using a sequential builder.
+        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {
             entry.pollUpdates(addedRowSetBuilder);
         }
+
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
         for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
             final EmptyTableLocationEntry nonexistentEntry = iterator.next();
@@ -310,23 +328,33 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
         private void pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
-            if (!subscriptionBuffer.processPending()) {
-                return;
+            try {
+                if (!subscriptionBuffer.processPending()) {
+                    return;
+                }
+            } catch (Exception ex) {
+                invalidate();
+                throw ex;
             }
+
             final RowSet updateRowSet = location.getRowSet();
             try {
                 if (updateRowSet == null) {
                     // This should be impossible - the subscription buffer transforms a transition to null into a
                     // pending exception
+                    invalidate();
                     throw new TableDataException(
                             "Location " + location + " is no longer available, data has been removed");
                 }
+
                 if (!rowSetAtLastUpdate.subsetOf(updateRowSet)) { // Bad change
+                    invalidate();
                     // noinspection ThrowableNotThrown
                     Assert.statementNeverExecuted(
                             "Row keys removed at location " + location + ": "
                                     + rowSetAtLastUpdate.minus(updateRowSet));
                 }
+
                 if (rowSetAtLastUpdate.size() == updateRowSet.size()) {
                     // Nothing to do
                     return;
@@ -352,7 +380,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                         for (final ColumnLocationState state : columnLocationStates) {
                             if (state.needToUpdateGrouping()) {
                                 state.updateGrouping(
-                                        addRowSetInTable == null ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
+                                        addRowSetInTable == null
+                                                ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
                                                 : addRowSetInTable);
                             }
                         }
@@ -366,6 +395,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 rowSetAtLastUpdate.close();
                 rowSetAtLastUpdate = updateRowSet;
             }
+        }
+
+        private void invalidate() {
+            columnLocationStates.forEach(cls -> cls.source.invalidateRegion(regionIndex));
         }
 
         @Override
