@@ -41,7 +41,7 @@ public final class ParquetFileWriter {
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
     private final File metadataFilePath;
-    private final MetadataFileWriterBase metadataFileWriter;
+    private final ParquetMetadataFileWriter metadataFileWriter;
 
     public ParquetFileWriter(
             final File destFile,
@@ -52,7 +52,7 @@ public final class ParquetFileWriter {
             final MessageType type,
             final String codecName,
             final Map<String, String> extraMetaData,
-            @NotNull final MetadataFileWriterBase metadataFileWriter) throws IOException {
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws IOException {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);

@@ -18,8 +18,8 @@ import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.parquet.base.ColumnWriter;
-import io.deephaven.parquet.base.MetadataFileWriterBase;
-import io.deephaven.parquet.base.NullMetadataFileWriter;
+import io.deephaven.parquet.base.ParquetMetadataFileWriter;
+import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
@@ -44,7 +44,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
@@ -110,7 +109,7 @@ public class ParquetTableWriter {
             @NotNull final File metadataFilePath,
             @NotNull final Map<String, String> incomingMeta,
             final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap,
-            @NotNull final MetadataFileWriterBase metadataFileWriter)
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter)
             throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
         List<File> cleanupFiles = null;
@@ -140,7 +139,7 @@ public class ParquetTableWriter {
                     // grouping file.
                     write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions, groupingDestFile,
                             metadataGroupingFilePath, Collections.emptyMap(), TableInfo.builder(),
-                            NullMetadataFileWriter.INSTANCE);
+                            NullParquetMetadataFileWriter.INSTANCE);
                 }
             }
             write(t, definition, writeInstructions, destFile, metadataFilePath, incomingMeta, tableInfoBuilder,
@@ -183,7 +182,7 @@ public class ParquetTableWriter {
             @NotNull final File metadataFilePath,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
-            @NotNull final MetadataFileWriterBase metadataFileWriter) throws SchemaMappingException, IOException {
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws SchemaMappingException, IOException {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
@@ -303,7 +302,7 @@ public class ParquetTableWriter {
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
-            @NotNull final MetadataFileWriterBase metadataFileWriter) throws IOException {
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws IOException {
 
         // First, map the TableDefinition to a parquet Schema
         final MappedSchema mappedSchema =

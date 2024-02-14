@@ -7,7 +7,7 @@ import java.io.File;
 /**
  * Used to write _metadata and _common_metadata files for Parquet.
  */
-public interface MetadataFileWriterBase {
+public interface ParquetMetadataFileWriter {
 
     /**
      * Add the parquet metadata for the provided parquet file to the list of metadata to be written to combined metadata

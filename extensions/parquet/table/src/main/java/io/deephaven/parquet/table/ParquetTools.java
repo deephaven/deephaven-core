@@ -14,9 +14,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.parquet.base.MetadataFileWriter;
-import io.deephaven.parquet.base.MetadataFileWriterBase;
-import io.deephaven.parquet.base.NullMetadataFileWriter;
+import io.deephaven.parquet.base.ParquetMetadataFileWriterImpl;
+import io.deephaven.parquet.base.ParquetMetadataFileWriter;
+import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
@@ -55,7 +55,6 @@ import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
@@ -493,12 +492,12 @@ public class ParquetTools {
         final File[] firstCreatedDirs =
                 Arrays.stream(shadowDestFiles).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
 
-        final MetadataFileWriterBase metadataFileWriter;
+        final ParquetMetadataFileWriter metadataFileWriter;
         final String metadataRootDir = writeInstructions.getMetadataRootDir();
         if (metadataRootDir != null && !metadataRootDir.equals(ParquetInstructions.DEFAULT_METADATA_ROOT_DIR)) {
-            metadataFileWriter = new MetadataFileWriter(metadataRootDir, destinations);
+            metadataFileWriter = new ParquetMetadataFileWriterImpl(metadataRootDir, destinations);
         } else {
-            metadataFileWriter = NullMetadataFileWriter.INSTANCE;
+            metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }
 
         // List of shadow files, to clean up in case of exceptions

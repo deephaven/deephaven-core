@@ -17,16 +17,12 @@ import static org.apache.parquet.hadoop.ParquetFileWriter.writeMetadataFile;
  * Uses the hadoop implementation of {@link org.apache.parquet.hadoop.ParquetFileWriter} to generate metadata files for
  * provided Parquet files.
  */
-public final class MetadataFileWriter implements MetadataFileWriterBase {
-    // TODO Please suggest a better name for this class and the interface
+public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
 
     private final String metadataRootDir;
     private final List<Footer> footers;
 
-    public MetadataFileWriter(final String metadataRootDir, final File[] destinations) {
-        // TODO Discuss with Ryan about this check
-        // This check exists inside the hadoop code but is done at the time of writing the metadata files
-        // I added this here so that we can do this check upfront to catch errors early.
+    public ParquetMetadataFileWriterImpl(final String metadataRootDir, final File[] destinations) {
         for (final File destination : destinations) {
             if (!destination.getAbsolutePath().startsWith(metadataRootDir)) {
                 throw new UncheckedDeephavenException("All destinations must be contained in the provided metadata root"

@@ -11,11 +11,6 @@ dependencies {
     Classpaths.inheritParquetHadoop(project)
     Classpaths.inheritParquetHadoopConfiguration(project)
 
-// TODO These are the additional dependencies that are required for the "fs.file.impl.disable.cache", check
-//  MetadataFileWriter code for more details.
-//    implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.0'
-//    implementation group: 'org.apache.hadoop', name: 'hadoop-auth', version: '3.3.3'
-
     implementation project(':extensions-parquet-compression')
     implementation project(':Base')
     implementation project(':Util')
