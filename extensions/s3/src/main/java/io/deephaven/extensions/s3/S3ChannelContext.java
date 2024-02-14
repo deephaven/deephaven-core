@@ -1,5 +1,6 @@
 package io.deephaven.extensions.s3;
 
+import io.deephaven.base.reference.PooledObjectReference;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -191,7 +192,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         private final long from;
         private final long to;
         private final Instant createdAt;
-        private final CompletableFuture<Void> released;
+        private final PooledObjectReference<ByteBuffer> bufferReference;
         private CompletableFuture<ByteBuffer> consumerFuture;
         private volatile CompletableFuture<ByteBuffer> producerFuture;
         private int fillCount;
@@ -202,7 +203,7 @@ final class S3ChannelContext implements SeekableChannelContext {
             this.fragmentIndex = fragmentIndex;
             from = fragmentIndex * instructions.fragmentSize();
             to = Math.min(from + instructions.fragmentSize(), size) - 1;
-            released = new CompletableFuture<>();
+            bufferReference = bufferPool.take(requestLength());
         }
 
         void init() {
@@ -218,35 +219,40 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         public int fill(long localPosition, ByteBuffer dest) throws IOException {
+            if (!bufferReference.acquire()) {
+                throw new IllegalStateException(String.format("Trying to get data after release, %s", requestStr()));
+            }
             final int resultOffset = (int) (localPosition - from);
             final int resultLength = Math.min((int) (to - localPosition + 1), dest.remaining());
-            final ByteBuffer fullFragment;
-            try {
-                fullFragment = getFullFragment();
-            } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()));
+            try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+                final ByteBuffer fullFragment;
+                try {
+                    fullFragment = getFullFragment();
+                } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+                    throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()));
+                }
+                // fullFragment has limit == capacity. This lets us have safety around math and ability to simply
+                // clear to reset.
+                fullFragment.limit(resultOffset + resultLength);
+                fullFragment.position(resultOffset);
+                try {
+                    dest.put(fullFragment);
+                } finally {
+                    fullFragment.clear();
+                }
+                ++fillCount;
+                fillBytes += resultLength;
             }
-            // fullFragment is a slice. Lets us have safety around math and ability to simply clear to reset.
-            fullFragment.limit(resultOffset + resultLength);
-            fullFragment.position(resultOffset);
-            try {
-                dest.put(fullFragment);
-            } finally {
-                fullFragment.clear();
-            }
-            ++fillCount;
-            fillBytes += resultLength;
             return resultLength;
         }
 
         public void release() {
+            bufferReference.clear();
             final boolean didCancel = consumerFuture.cancel(true);
             if (log.isDebugEnabled()) {
                 final String cancelType = didCancel ? "fast" : (fillCount == 0 ? "unused" : "normal");
                 log.debug("cancel {}: {} fillCount={}, fillBytes={}", cancelType, requestStr(), fillCount, fillBytes);
             }
-            // Finishing via exception to ensure downstream subscribers can cleanup if SDK didn't complete them
-            released.cancel(true);
         }
 
         // --------------------------------------------------------------------------------------------------
@@ -290,9 +296,6 @@ final class S3ChannelContext implements SeekableChannelContext {
         // --------------------------------------------------------------------------------------------------
 
         private ByteBuffer getFullFragment() throws ExecutionException, InterruptedException, TimeoutException {
-            if (released.isDone()) {
-                throw new IllegalStateException(String.format("Trying to get data after release, %s", requestStr()));
-            }
             // Giving our own get() a bit of overhead - the clients should already be constructed with appropriate
             // apiCallTimeout.
             final long readNanos = instructions.readTimeout().plusMillis(100).toNanos();
@@ -328,32 +331,26 @@ final class S3ChannelContext implements SeekableChannelContext {
 
         // --------------------------------------------------------------------------------------------------
 
-        final class Sub implements Subscriber<ByteBuffer>, BiConsumer<Void, Throwable> {
+        final class Sub implements Subscriber<ByteBuffer> {
             private final CompletableFuture<ByteBuffer> localProducer;
-            private ByteBuffer buffer;
+            private ByteBuffer bufferView;
             private Subscription subscription;
 
             Sub() {
                 localProducer = producerFuture;
-                buffer = bufferPool.take(requestLength());
-                // 1. localProducer succeeds: whenComplete will be executed when released
-                // 2. localProducer fails: whenComplete will be executed asap
-                // 3. localProducer limbo (not expected): whenComplete will be executed when released
-                CompletableFuture.allOf(localProducer, released).whenComplete(this);
+                if (!bufferReference.acquire()) {
+                    localProducer.completeExceptionally(new IllegalStateException(
+                            String.format("Failed to acquire buffer for new subscriber, %s", requestStr())));
+                }
+                try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+                    bufferView = bufferReference.get().duplicate();
+                }
             }
 
             // -----------------------------------------------------------------------------
 
             @Override
-            public synchronized void accept(Void unused, Throwable throwable) {
-                bufferPool.give(buffer);
-                buffer = null;
-            }
-
-            // -----------------------------------------------------------------------------
-
-            @Override
-            public synchronized void onSubscribe(Subscription s) {
+            public void onSubscribe(Subscription s) {
                 if (subscription != null) {
                     s.cancel();
                     return;
@@ -363,24 +360,41 @@ final class S3ChannelContext implements SeekableChannelContext {
             }
 
             @Override
-            public synchronized void onNext(ByteBuffer byteBuffer) {
-                buffer.put(byteBuffer);
+            public void onNext(ByteBuffer byteBuffer) {
+                if (!bufferReference.acquire()) {
+                    localProducer.completeExceptionally(new IllegalStateException(
+                            String.format("Failed to acquire buffer for data, %s", requestStr())));
+                }
+                try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+                    bufferView.put(byteBuffer);
+                }
                 subscription.request(1);
             }
 
             @Override
-            public synchronized void onError(Throwable t) {
+            public void onError(Throwable t) {
                 localProducer.completeExceptionally(t);
             }
 
             @Override
-            public synchronized void onComplete() {
-                buffer.flip();
-                if (buffer.limit() != requestLength()) {
-                    localProducer.completeExceptionally(new IllegalStateException(String.format(
-                            "Expected %d bytes, received %d, %s", requestLength(), buffer.limit(), requestStr())));
-                } else {
-                    localProducer.complete(buffer.slice().asReadOnlyBuffer());
+            public void onComplete() {
+                if (!bufferReference.acquire()) {
+                    localProducer.completeExceptionally(new IllegalStateException(
+                            String.format("Failed to acquire buffer for completion, %s", requestStr())));
+                    return;
+                }
+                try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+                    bufferView.flip();
+                    if (bufferView.limit() != requestLength()) {
+                        localProducer.completeExceptionally(new IllegalStateException(String.format(
+                                "Expected %d bytes, received %d, %s",
+                                requestLength(), bufferView.limit(), requestStr())));
+                    } else {
+                        if (bufferView.limit() != bufferView.capacity()) {
+                            bufferView = bufferView.slice();
+                        }
+                        localProducer.complete(bufferView.asReadOnlyBuffer());
+                    }
                 }
             }
         }

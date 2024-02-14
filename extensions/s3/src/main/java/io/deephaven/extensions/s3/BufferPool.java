@@ -1,6 +1,10 @@
 package io.deephaven.extensions.s3;
 
+import io.deephaven.base.reference.PooledObjectReference;
+import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
+import io.deephaven.util.referencecounting.ReferenceCounted;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
@@ -21,14 +25,28 @@ final class BufferPool {
                 ByteBuffer::clear);
     }
 
-    public ByteBuffer take(final int size) {
+    public PooledObjectReference<ByteBuffer> take(final int size) {
         if (size > bufferSize) {
             throw new IllegalArgumentException("Buffer size " + size + " is larger than pool size " + bufferSize);
         }
-        return pool.take();
+        return new BufferReference(pool.take());
     }
 
-    public void give(ByteBuffer buffer) {
+    private void give(ByteBuffer buffer) {
         pool.give(buffer);
+    }
+
+    final class BufferReference extends PooledObjectReference<ByteBuffer> {
+
+        private volatile ByteBuffer buffer;
+
+        BufferReference(@NotNull final ByteBuffer buffer) {
+            super(buffer);
+        }
+
+        @Override
+        protected void returnReferentToPool(@NotNull ByteBuffer referent) {
+            give(referent);
+        }
     }
 }
