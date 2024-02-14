@@ -38,8 +38,6 @@ final class BufferPool {
 
     final class BufferReference extends PooledObjectReference<ByteBuffer> {
 
-        private volatile ByteBuffer buffer;
-
         BufferReference(@NotNull final ByteBuffer buffer) {
             super(buffer);
         }

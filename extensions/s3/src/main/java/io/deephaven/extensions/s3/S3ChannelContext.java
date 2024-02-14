@@ -217,12 +217,12 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         public int fill(long localPosition, ByteBuffer dest) throws IOException {
-            if (!bufferReference.acquire()) {
-                throw new IllegalStateException(String.format("Trying to get data after release, %s", requestStr()));
-            }
             final int resultOffset = (int) (localPosition - from);
             final int resultLength = Math.min((int) (to - localPosition + 1), dest.remaining());
-            try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+            if (!bufferReference.acquireIfAvailable()) {
+                throw new IllegalStateException(String.format("Trying to get data after release, %s", requestStr()));
+            }
+            try {
                 final ByteBuffer fullFragment;
                 try {
                     fullFragment = getFullFragment();
@@ -240,13 +240,15 @@ final class S3ChannelContext implements SeekableChannelContext {
                 }
                 ++fillCount;
                 fillBytes += resultLength;
+            } finally {
+                bufferReference.release();
             }
             return resultLength;
         }
 
         public void release() {
-            bufferReference.clear();
             final boolean didCancel = consumerFuture.cancel(true);
+            bufferReference.clear();
             if (log.isDebugEnabled()) {
                 final String cancelType = didCancel ? "fast" : (fillCount == 0 ? "unused" : "normal");
                 log.debug("cancel {}: {} fillCount={}, fillBytes={}", cancelType, requestStr(), fillCount, fillBytes);
@@ -331,24 +333,34 @@ final class S3ChannelContext implements SeekableChannelContext {
 
         final class Sub implements Subscriber<ByteBuffer> {
             private final CompletableFuture<ByteBuffer> localProducer;
-            private ByteBuffer bufferView;
+            // Access to this view must be guarded by bufferReference.acquire
+            private final ByteBuffer bufferView;
             private Subscription subscription;
 
             Sub() {
                 localProducer = producerFuture;
-                if (!bufferReference.acquire()) {
+                final ByteBuffer get;
+                if ((get = bufferReference.acquireAndGet()) == null) {
+                    bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for new subscriber, %s", requestStr())));
+                    return;
                 }
-                try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
-                    bufferView = bufferReference.get().duplicate();
+                try {
+                    bufferView = get.duplicate();
+                } finally {
+                    bufferReference.release();
                 }
             }
 
-            // -----------------------------------------------------------------------------
+            // ---------------------------------------------------- -------------------------
 
             @Override
             public void onSubscribe(Subscription s) {
+                if (bufferView == null) {
+                    s.cancel();
+                    return;
+                }
                 if (subscription != null) {
                     s.cancel();
                     return;
@@ -359,12 +371,15 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             @Override
             public void onNext(ByteBuffer byteBuffer) {
-                if (!bufferReference.acquire()) {
+                if (!bufferReference.acquireIfAvailable()) {
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for data, %s", requestStr())));
+                    return;
                 }
-                try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+                try {
                     bufferView.put(byteBuffer);
+                } finally {
+                    bufferReference.release();
                 }
                 subscription.request(1);
             }
@@ -376,12 +391,12 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             @Override
             public void onComplete() {
-                if (!bufferReference.acquire()) {
+                if (!bufferReference.acquireIfAvailable()) {
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for completion, %s", requestStr())));
                     return;
                 }
-                try (final PooledObjectReference<ByteBuffer> ignored = bufferReference) {
+                try {
                     if (bufferView.position() != requestLength()) {
                         localProducer.completeExceptionally(new IllegalStateException(String.format(
                                 "Expected %d bytes, received %d, %s", requestLength(), bufferView.position(),
@@ -394,8 +409,9 @@ final class S3ChannelContext implements SeekableChannelContext {
                         toComplete = toComplete.slice();
                     }
                     localProducer.complete(toComplete);
+                } finally {
+                    bufferReference.release();
                 }
-
             }
         }
     }

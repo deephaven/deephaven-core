@@ -3,13 +3,14 @@ package io.deephaven.base.reference;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * {@link SimpleReference} implementation with built-in reference-counting and pooling support.
  */
-public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleReference<REFERENT_TYPE>, AutoCloseable {
+public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleReference<REFERENT_TYPE> {
 
     /**
      * Field updater for {@code state}.
@@ -44,7 +45,7 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
     private static final int STATE_PERMIT_RELEASE_QUANTITY = -STATE_PERMIT_ACQUIRE_QUANTITY;
 
     private static boolean stateAllowsAcquire(final int currentState) {
-        return currentState != CLEARED_ZERO_PERMITS;
+        return currentState > CLEARED_ZERO_PERMITS;
     }
 
     private static boolean stateIsAvailable(final int currentState) {
@@ -105,24 +106,43 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
     }
 
     /**
-     * Get the referent. It is an error to call this method if the caller does not have any outstanding permits.
+     * Get the referent. It is an error to call this method if the caller does not have any outstanding permits. Callers
+     * are encouraged to use this in the try block of a try-finally pattern:
+     *
+     * <pre>
+     * if (!ref.acquire()) {
+     *     return;
+     * }
+     * try {
+     *     doSomethingWith(ref.get());
+     * } finally {
+     *     ref.release();
+     * }
+     * </pre>
      *
      * @return The referent if this reference has not been cleared, null otherwise (which implies an error by the
      *         caller)
      */
     @Override
+    @Nullable
     public final REFERENT_TYPE get() {
-        onReferentAccessed();
         return referent;
     }
 
     /**
-     * Callback for accounting purposes, e.g. in support of a LRU policy for pooled item reclamation.
-     */
-    protected void onReferentAccessed() {}
-
-    /**
-     * Acquire an active use permit.
+     * Acquire an active use permit. Callers should pair this with a corresponding {@link #release()}, ideally with a
+     * try-finally pattern:
+     *
+     * <pre>
+     * if (!ref.acquire()) {
+     *     return;
+     * }
+     * try {
+     *     doSomethingWith(ref.get());
+     * } finally {
+     *     ref.release();
+     * }
+     * </pre>
      *
      * @return Whether a permit was acquired
      */
@@ -138,30 +158,86 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
     }
 
     /**
-     * Acquire an active use permit and return the referent, if possible.
+     * Acquire an active use permit if this has not been {@link #clear() cleared}. This is useful in situations where
+     * callers want to fail-fast and don't need to guarantee re-entrancy. Callers should pair this with a corresponding
+     * {@link #release()}, ideally with a try-finally pattern:
+     *
+     * <pre>
+     * if (!ref.acquireIfAvailable()) {
+     *     return;
+     * }
+     * try {
+     *     doSomethingWith(ref.get());
+     * } finally {
+     *     ref.release();
+     * }
+     * </pre>
+     *
+     * @return Whether a permit was acquired
+     */
+    public final boolean acquireIfAvailable() {
+        int currentState;
+        while (stateAllowsAcquire(currentState = state) && stateIsAvailable(currentState)) {
+            final int newState = calculateNewStateForAcquire(currentState);
+            if (tryUpdateState(currentState, newState)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Acquire an active use permit and return the referent, if possible. Callers should pair this with a corresponding
+     * {@link #release()}, ideally with a try-finally pattern:
+     *
+     * <pre>
+     * final Object obj;
+     * if ((obj = ref.acquireAndGet()) == null) {
+     *     return;
+     * }
+     * try {
+     *     doSomethingWith(obj);
+     * } finally {
+     *     ref.release();
+     * }
+     * </pre>
      *
      * @return The referent, or null if no permit could be acquired
      */
     @Nullable
     public final REFERENT_TYPE acquireAndGet() {
-        if (acquire()) {
-            return get();
+        if (!acquire()) {
+            return null;
         }
-        return null;
+        final REFERENT_TYPE localReferent = referent;
+        if (localReferent == null) {
+            release();
+            throw new IllegalStateException(this + " acquired, but referent is null");
+        }
+        return localReferent;
     }
 
     /**
-     * Release an active use permit. It is a serious error to release more permits than acquired.
+     * Release a single active use permit. It is a serious error to release more permits than acquired. Callers are
+     * encouraged to use this in the finally block of a try-finally pattern:
+     *
+     * <pre>
+     * if (!ref.acquire()) {
+     *     return;
+     * }
+     * try {
+     *     doSomethingWith(ref.get());
+     * } finally {
+     *     ref.release();
+     * }
+     * </pre>
      */
     public final void release() {
         final int newState = decrementOutstandingPermits();
         if (newState < 0) {
             throw new IllegalStateException(this + " released more than acquired");
         }
-        if (!stateAllowsAcquire(newState)) {
-            returnReferentToPool(referent);
-            referent = null;
-        }
+        maybeReturnReferentToPool(newState);
     }
 
     /**
@@ -175,10 +251,7 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
         while (stateIsAvailable(currentState = state)) {
             final int newState = calculateNewStateForClear(currentState);
             if (tryUpdateState(currentState, newState)) {
-                if (!stateAllowsAcquire(newState)) {
-                    returnReferentToPool(referent);
-                    referent = null;
-                }
+                maybeReturnReferentToPool(newState);
                 return;
             }
         }
@@ -191,11 +264,12 @@ public abstract class PooledObjectReference<REFERENT_TYPE> implements SimpleRefe
      */
     protected abstract void returnReferentToPool(@NotNull REFERENT_TYPE referent);
 
-    /**
-     * Synonym for {@link #release()}, intended for use as an {@link AutoCloseable} in a try-with-resources block.
-     */
-    @Override
-    public final void close() {
-        release();
+    private void maybeReturnReferentToPool(int newState) {
+        if (stateAllowsAcquire(newState)) {
+            return;
+        }
+        final REFERENT_TYPE localReferent = referent;
+        referent = null;
+        returnReferentToPool(localReferent);
     }
 }
