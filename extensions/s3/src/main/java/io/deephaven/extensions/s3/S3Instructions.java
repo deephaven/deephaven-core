@@ -100,7 +100,9 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds
+     * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds. The
+     * implementation may choose to internally retry the request multiple times, so long as the total time does not
+     * exceed this timeout.
      */
     @Default
     public Duration readTimeout() {
