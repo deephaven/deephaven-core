@@ -4,7 +4,9 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.locations.TableLocationState;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -19,7 +21,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -28,6 +30,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.*;
 import java.util.stream.IntStream;
+
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
@@ -42,6 +46,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final Map<String, String[]> parquetColumnNameToPath;
     private final Map<String, GroupingColumnInfo> groupingColumns;
     private final Map<String, ColumnTypeInfo> columnTypes;
+    private final String version;
 
     private volatile RowGroupReader[] rowGroupReaders;
 
@@ -84,8 +89,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
         groupingColumns = tableInfo.map(TableInfo::groupingColumnMap).orElse(Collections.emptyMap());
         columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+        version = tableInfo.map(TableInfo::version).orElse(null);
 
-        handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
+        if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
+            // We do not have the last modified time for non-file URIs
+            handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
+        } else {
+            handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
+        }
     }
 
     @Override
@@ -96,8 +107,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public void refresh() {}
 
-    File getParquetFile() {
-        return ((ParquetTableLocationKey) getKey()).getFile();
+    ParquetTableLocationKey getParquetKey() {
+        return (ParquetTableLocationKey) getKey();
     }
 
     ParquetInstructions getReadInstructions() {
@@ -130,7 +141,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 return local;
             }
             return rowGroupReaders = IntStream.of(rowGroupIndices)
-                    .mapToObj(parquetFileReader::getRowGroup)
+                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, version))
                     .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
                     .toArray(RowGroupReader[]::new);
         }
@@ -143,8 +154,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList =
                 columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+        final ColumnChunkReader[] columnChunkReaders;
+        try (final SeekableChannelContext channelContext = getChannelProvider().makeSingleUseContext()) {
+            columnChunkReaders = Arrays.stream(getRowGroupReaders())
+                    .map(rgr -> rgr.getColumnChunk(nameList, channelContext)).toArray(ColumnChunkReader[]::new);
+        }
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,

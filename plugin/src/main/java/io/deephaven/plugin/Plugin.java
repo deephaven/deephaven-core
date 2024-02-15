@@ -10,6 +10,7 @@ import io.deephaven.plugin.type.ObjectType;
  * A plugin is a structured extension point for user-definable behavior.
  *
  * @see ObjectType
+ * @see JsPlugin
  */
 public interface Plugin extends Registration {
 

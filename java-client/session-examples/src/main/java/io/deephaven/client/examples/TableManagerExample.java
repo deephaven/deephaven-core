@@ -6,7 +6,6 @@ package io.deephaven.client.examples;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.client.impl.Session;
-import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandleManager;
@@ -105,16 +104,16 @@ class TableManagerExample extends SingleSessionExampleBase {
     /**
      * batch: 4 messages, serial: 22 messages
      */
-    void executeFourStages(Session session, TableHandleManager manager)
+    void executeFourStages(TableHandleManager manager)
             throws TableHandleException, InterruptedException {
+
         // batch or serial, based on manager
         //
         // batch: 1 message
         // serial: 7 messages
         final TableHandle t1 =
                 manager.executeLogic((TableCreationLogic) TableManagerExample::timeStuff1);
-        System.out.printf("Stage 1 (%d)%nt1=%s%n%n", ((SessionImpl) session).batchCount(),
-                t1.export().toReadableString());
+        System.out.printf("Stage 1 %nt1=%s%n%n", t1.export().toReadableString());
 
         // batch or serial, based on manager
         //
@@ -122,24 +121,21 @@ class TableManagerExample extends SingleSessionExampleBase {
         // serial: 8 messages
         final TableHandle t2 =
                 manager.executeLogic((TableCreationLogic) TableManagerExample::timeStuff2);
-        System.out.printf("Stage 2 (%d)%nt2=%s%n%n", ((SessionImpl) session).batchCount(),
-                t2.export().toReadableString());
+        System.out.printf("Stage 2 %nt2=%s%n%n", t2.export().toReadableString());
 
         // batch or serial, based on manager
         //
         // batch: 1 message
         // serial: 4 messages
         final TableHandle t3 = manager.executeInputs(this::joinStuff, t1, t2);
-        System.out.printf("Stage 3 (%d)%nt3=%s%n%n", ((SessionImpl) session).batchCount(),
-                t3.export().toReadableString());
+        System.out.printf("Stage 3 %nt3=%s%n%n", t3.export().toReadableString());
 
         // batch or serial, based on manager
         //
         // batch: 1 message
         // serial: 3 messages
         final TableHandle t4 = manager.executeInputs(TableManagerExample::modifyStuff, t3);
-        System.out.printf("Stage 4 (%d)%nt4=%s%n%n", ((SessionImpl) session).batchCount(),
-                t4.export().toReadableString());
+        System.out.printf("Stage 4 %nt4=%s%n%n", t4.export().toReadableString());
     }
 
 
@@ -150,9 +146,8 @@ class TableManagerExample extends SingleSessionExampleBase {
         if (oneStage) {
             executeOneStage(manager);
         } else {
-            executeFourStages(session, manager);
+            executeFourStages(manager);
         }
-        System.out.printf("Sent %d messages%n", ((SessionImpl) session).batchCount());
     }
 
     /**

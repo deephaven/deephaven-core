@@ -15,7 +15,7 @@ dependencies {
 
 def webpackSourcesLocation = layout.buildDirectory.dir("${buildDir}/dhapi")
 
-Docker.registerDockerTask(project, 'webpackSources') {
+def webpackSources = Docker.registerDockerTask(project, 'webpackSources') {
     copyIn {
         from(configurations.js) {
             // note: we are only copying the JS and not TS files.
@@ -34,8 +34,9 @@ Docker.registerDockerTask(project, 'webpackSources') {
             into 'raw-js-openapi/'
         }
         from ('Dockerfile')
-        from ('../package.json')
-        from ('../package-lock.json')
+        from ('package.json')
+        from ('package-lock.json')
+        from ('.npmrc')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ]
     imageName = 'deephaven/js-out:local-build'

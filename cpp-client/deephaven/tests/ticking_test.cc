@@ -13,8 +13,6 @@ using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::chunk::Int64Chunk;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 class CommonBase : public deephaven::dhcore::ticking::TickingCallback {

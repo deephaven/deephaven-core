@@ -18,9 +18,9 @@ import java.nio.DoubleBuffer;
 
 final class DoubleVectorTransfer extends PrimitiveVectorTransfer<DoubleVector, DoubleBuffer> {
     DoubleVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Double.BYTES, targetPageSize,
-                DoubleBuffer.allocate(targetPageSize / Double.BYTES), Double.BYTES);
+                      final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Double.BYTES, targetPageSizeInBytes,
+                DoubleBuffer.allocate(targetPageSizeInBytes / Double.BYTES), Double.BYTES);
     }
 
     @Override

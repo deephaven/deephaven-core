@@ -115,15 +115,15 @@ public class TableToolsMergeHelper {
         if (!table.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE)) {
             return false;
         }
-        Map<String, ColumnSource<?>> columnSourceMap = queryTable.getColumnSourceMap();
-        if (columnSourceMap.isEmpty()) {
+        final Collection<? extends ColumnSource<?>> columnSources = queryTable.getColumnSources();
+        if (columnSources.isEmpty()) {
             return false;
         }
-        if (!columnSourceMap.values().stream().allMatch(cs -> cs instanceof UnionColumnSource)) {
+        if (!columnSources.stream().allMatch(cs -> cs instanceof UnionColumnSource)) {
             return false;
         }
 
-        final UnionColumnSource<?> columnSource = (UnionColumnSource<?>) columnSourceMap.values().iterator().next();
+        final UnionColumnSource<?> columnSource = (UnionColumnSource<?>) columnSources.iterator().next();
         return columnSource.getUnionSourceManager().isUsingComponentsSafe();
     }
 }

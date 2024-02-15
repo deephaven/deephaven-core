@@ -16,9 +16,9 @@ import java.nio.LongBuffer;
 
 final class LongArrayTransfer extends PrimitiveArrayAndVectorTransfer<long[], long[], LongBuffer> {
     LongArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                     final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Long.BYTES, targetPageSize,
-                LongBuffer.allocate(targetPageSize / Long.BYTES), Long.BYTES);
+                     final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Long.BYTES, targetPageSizeInBytes,
+                LongBuffer.allocate(targetPageSizeInBytes / Long.BYTES), Long.BYTES);
     }
 
     @Override

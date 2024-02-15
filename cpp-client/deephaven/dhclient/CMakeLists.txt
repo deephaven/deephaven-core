@@ -19,14 +19,12 @@ set(ALL_FILES
 
     src/impl/aggregate_impl.cc
     src/impl/client_impl.cc
-    src/impl/escape_utils.cc
     src/impl/table_handle_impl.cc
     src/impl/table_handle_manager_impl.cc
     src/impl/update_by_operation_impl.cc
 
     include/private/deephaven/client/impl/aggregate_impl.h
     include/private/deephaven/client/impl/client_impl.h
-    include/private/deephaven/client/impl/escape_utils.h
     include/private/deephaven/client/impl/table_handle_impl.h
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/update_by_operation_impl.h
@@ -51,11 +49,12 @@ set(ALL_FILES
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
 
-    src/utility/arrow_util.cc
     src/utility/executor.cc
     include/private/deephaven/client/utility/executor.h
 
+    src/utility/arrow_util.cc
     src/utility/table_maker.cc
+
     include/public/deephaven/client/utility/arrow_util.h
     include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h

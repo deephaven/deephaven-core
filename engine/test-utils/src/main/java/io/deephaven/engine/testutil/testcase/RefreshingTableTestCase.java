@@ -136,7 +136,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         } finally {
             setExpectError(original);
         }
-        if (!errorsAcceptable.test(errors)) {
+        if (errors != null && !errorsAcceptable.test(errors)) {
             TestCase.fail("Unacceptable errors: " + errors);
         }
         return retval;

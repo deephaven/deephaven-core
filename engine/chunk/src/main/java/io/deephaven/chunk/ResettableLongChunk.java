@@ -17,19 +17,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for long data.
  */
-public final class ResettableLongChunk<ATTR_UPPER extends Any>
+public class ResettableLongChunk<ATTR_UPPER extends Any>
         extends LongChunk<ATTR_UPPER>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableLongChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getLongChunkPool().takeResettableLongChunk();
+            return MultiChunkPool.forThisThread().takeResettableLongChunk();
         }
         return new ResettableLongChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableLongChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableLongChunk<>();
+        return new ResettableLongChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableLongChunk(this);
+            }
+        };
     }
 
     private ResettableLongChunk(long[] data, int offset, int capacity) {
@@ -84,8 +89,5 @@ public final class ResettableLongChunk<ATTR_UPPER extends Any>
 
     @Override
     public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getLongChunkPool().giveResettableLongChunk(this);
-        }
     }
 }

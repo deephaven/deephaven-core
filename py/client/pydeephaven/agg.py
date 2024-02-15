@@ -172,11 +172,15 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
 
 
 def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a user defined formula aggregation.
+    """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
+        |  Built-in functions such as `min`, `max`, etc.
+        |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
+        |  User-defined functions
 
     Args:
-        formula (str): the user defined formula to apply to each group
-        formula_param (str): the parameter name within the formula
+        formula (str): the user defined formula to apply to each group.
+        formula_param (str): the parameter name for the input column's vector within the formula. If formula is
+            `max(each)`, then `each` is the formula_param.
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
@@ -300,7 +304,10 @@ def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregatio
 
 
 def std(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a Std (standard deviation) aggregation.
+    """Creates a Std (sample standard deviation) aggregation.
+
+    Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+    which ensures that the sample variance will be an unbiased estimator of population variance.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
@@ -366,7 +373,10 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
 
 
 def var(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a Variance aggregation.
+    """Creates a sample Variance aggregation.
+
+    Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+    which ensures that the sample variance will be an unbiased estimator of population variance.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";

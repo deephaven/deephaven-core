@@ -8,7 +8,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,14 +17,13 @@ import java.math.MathContext;
 public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     private final MathContext mathContext;
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         protected ObjectChunk<BigDecimal, ? extends Values> influencerValuesChunk;
         protected AggregatingObjectRingBuffer<BigDecimal> valueBuffer;
         protected AggregatingObjectRingBuffer<BigDecimal> valueSquareBuffer;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             valueBuffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
@@ -144,20 +142,26 @@ public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<Big
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public BigDecimalRollingStdOperator(@NotNull final MatchPair pair,
+    public BigDecimalRollingStdOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            final MathContext mathContext
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+            final MathContext mathContext) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
-        // region constructor
-        // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalRollingStdOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                mathContext);
     }
 }

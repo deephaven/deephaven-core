@@ -4,15 +4,13 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
+import io.deephaven.client.impl.TableServiceImpl.Lifecycle;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpecAdapter;
 
 import java.io.Closeable;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -33,99 +31,6 @@ import java.util.concurrent.TimeUnit;
  */
 public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle> implements HasExportId, Closeable {
 
-    public interface Lifecycle {
-        void onInit(TableHandle handle);
-
-        void onRelease(TableHandle handle);
-    }
-
-    /**
-     * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
-     * on return.
-     *
-     * @param session the session
-     * @param table the table
-     * @return the successful table handle
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     * @throws TableHandleException if there is a table creation exception
-     */
-    public static TableHandle of(Session session, TableSpec table)
-            throws InterruptedException, TableHandleException {
-        return of(session, Collections.singletonList(table), null).get(0);
-    }
-
-    /**
-     * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
-     * on return. The given {@code lifecycle} will be called on initialization and on release. Derived table handles
-     * will inherit the same {@code lifecycle}.
-     *
-     * @param session the session
-     * @param table the table
-     * @param lifecycle the lifecycle
-     * @return the successful table handle
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     * @throws TableHandleException if there is a table creation exception
-     */
-    public static TableHandle of(Session session, TableSpec table, Lifecycle lifecycle)
-            throws InterruptedException, TableHandleException {
-        return of(session, Collections.singletonList(table), lifecycle).get(0);
-    }
-
-    /**
-     * Create the table handles, exporting {@code tables}. The table handles will be {@linkplain #isSuccessful()
-     * successful} on return. The given {@code lifecycle} will be called on initialization and on release. Derived table
-     * handles will inherit the same {@code lifecycle}.
-     *
-     * @param session the session
-     * @param tables the tables
-     * @param lifecycle the lifecycle
-     * @return the successful table handles
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     * @throws TableHandleException if there is a table creation exception
-     */
-    public static List<TableHandle> of(Session session, Iterable<TableSpec> tables,
-            Lifecycle lifecycle) throws InterruptedException, TableHandleException {
-        List<TableHandle> handles = impl(session, tables, lifecycle);
-        for (TableHandle handle : handles) {
-            handle.await();
-            handle.throwOnError();
-        }
-        return handles;
-    }
-
-    static TableHandle ofUnchecked(Session session, TableSpec table, Lifecycle lifecycle) {
-        final TableHandle handle = new TableHandle(table, lifecycle);
-        List<Export> exports = session.export(ExportsRequest.of(handle.exportRequest()));
-        if (exports.size() != 1) {
-            throw new IllegalStateException();
-        }
-        handle.init(exports.get(0));
-        handle.awaitUnchecked();
-        handle.throwOnErrorUnchecked();
-        return handle;
-    }
-
-    private static List<TableHandle> impl(Session session, Iterable<TableSpec> specs,
-            Lifecycle lifecycle) {
-        ExportsRequest.Builder exportBuilder = ExportsRequest.builder();
-        List<TableHandle> handles = new ArrayList<>();
-        for (TableSpec spec : specs) {
-            TableHandle handle = new TableHandle(spec, lifecycle);
-            handles.add(handle);
-            exportBuilder.addRequests(handle.exportRequest());
-        }
-        ExportsRequest request = exportBuilder.build();
-        List<Export> exports = session.export(request);
-        if (exports.size() != handles.size()) {
-            throw new IllegalStateException();
-        }
-        final int L = exports.size();
-        for (int i = 0; i < L; ++i) {
-            handles.get(i).init(exports.get(i));
-        }
-        return handles;
-    }
-
     private final Lifecycle lifecycle;
     private Export export;
 
@@ -133,7 +38,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     private ExportedTableCreationResponse response;
     private Throwable error;
 
-    private TableHandle(TableSpec table, Lifecycle lifecycle) {
+    TableHandle(TableSpec table, Lifecycle lifecycle) {
         super(table);
         this.lifecycle = lifecycle;
         this.doneLatch = new CountDownLatch(1);
@@ -264,15 +169,15 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         }
     }
 
-    private ExportRequest exportRequest() {
+    ExportRequest exportRequest() {
         return ExportRequest.of(table(), responseAdapter());
     }
 
     /**
      * Must be called after construction, before {@code this} is returned to the user.
      */
-    private void init(Export export) {
-        this.export = export;
+    void init(Export export) {
+        this.export = Objects.requireNonNull(export);
         if (lifecycle != null) {
             lifecycle.onInit(this);
         }
@@ -280,13 +185,13 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
 
     @Override
     protected TableHandle adapt(TableSpec table) {
-        return ofUnchecked(export.session(), table, lifecycle);
+        return TableServiceImpl.executeUnchecked(export.exportStates(), table, lifecycle);
     }
 
     @Override
     protected TableSpec adapt(TableHandle rhs) {
-        if (export.session() != rhs.export.session()) {
-            throw new IllegalArgumentException("Can't mix multiple Sessions with TableHandle");
+        if (export.exportStates() != rhs.export.exportStates()) {
+            throw new IllegalArgumentException("Can't mix multiple exportStates() with TableHandle");
         }
         return rhs.export.table();
     }
@@ -307,11 +212,11 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         }
     }
 
-    private ResponseAdapter responseAdapter() {
+    ResponseAdapter responseAdapter() {
         return new ResponseAdapter();
     }
 
-    private class ResponseAdapter implements Listener {
+    class ResponseAdapter implements Listener {
 
         @Override
         public void onNext(ExportedTableCreationResponse response) {

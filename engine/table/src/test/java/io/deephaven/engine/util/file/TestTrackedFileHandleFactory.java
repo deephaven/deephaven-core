@@ -5,8 +5,6 @@ package io.deephaven.engine.util.file;
 
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.io.sched.Scheduler;
-import io.deephaven.io.sched.TimedJob;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -15,6 +13,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
@@ -23,7 +23,7 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
     private static final double TARGET_USAGE_RATIO = 0.9;
     private static final int TARGET_USAGE_THRESHOLD = 90;
 
-    private Scheduler scheduler;
+    private ScheduledExecutorService scheduler;
 
     private TrackedFileHandleFactory FHCUT;
 
@@ -33,13 +33,15 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
         FILE = Files.createTempFile(TestTrackedFileHandleFactory.class.getName(), ".dat").toFile();
 
-        scheduler = mock(Scheduler.class);
+        scheduler = mock(ScheduledExecutorService.class);
 
         checking(new Expectations() {
             {
-                one(scheduler).currentTimeMillis();
-                will(returnValue(0L));
-                one(scheduler).installJob(with(any(TimedJob.class)), with(equal(60000L)));
+                one(scheduler).scheduleAtFixedRate(
+                        with(any(Runnable.class)),
+                        with(equal(60000L)),
+                        with(equal(60000L)),
+                        with(equal(TimeUnit.MILLISECONDS)));
             }
         });
 

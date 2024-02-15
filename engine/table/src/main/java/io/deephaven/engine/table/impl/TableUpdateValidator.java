@@ -61,11 +61,13 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         this.description = description == null ? tableToValidate.getDescription() : description;
         this.tableToValidate = tableToValidate;
         this.validationMCS = tableToValidate.newModifiedColumnSet(
-                tableToValidate.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                tableToValidate.getDefinition().getColumnNamesArray());
         Assert.neq(validationMCS, "validationMCS", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
         Assert.neq(validationMCS, "validationMCS", ModifiedColumnSet.EMPTY, "ModifiedColumnSet.EMPTY");
 
-        columnInfos = tableToValidate.getColumnSourceMap().keySet().stream()
+        columnInfos = tableToValidate.getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
                 .map((name) -> new ColumnInfo(tableToValidate, name))
                 .toArray(ColumnInfo[]::new);
     }

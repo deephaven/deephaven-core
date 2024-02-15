@@ -10,7 +10,7 @@
 Default is to aggregate all non-grouping columns, which is only valid in the \code{agg_all_by()} operation.}
 }
 \value{
-\code{AggOp} to be used in a call to \code{agg_by()} or \code{agg_all_by()}.
+\code{\link{AggOp}} to be used in a call to \code{agg_by()} or \code{agg_all_by()}.
 }
 \description{
 Creates a Weighted Average aggregation that computes the weighted average of each column in \code{cols} for each aggregation group.
@@ -25,13 +25,16 @@ This function, like other Deephaven \code{agg} functions, is a generator functio
 function called an \code{\link{AggOp}} intended to be used in a call to \code{agg_by()} or \code{agg_all_by()}. This detail is
 typically hidden from the user. However, it is important to understand this detail for debugging purposes,
 as the output of an \code{agg} function can otherwise seem unexpected.
+
+For more information, see the vignette on \code{agg} functions by running
+\code{vignette("agg_by")}.
 }
 \examples{
 \dontrun{
 library(rdeephaven)
 
 # connecting to Deephaven server
-client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 
 # create data frame, push to server, retrieve TableHandle
 df <- data.frame(
@@ -44,15 +47,15 @@ th <- client$import_table(df)
 
 # compute weighted average of Number1, weighted by Number2
 th1 <- th$
-  agg_by(agg_w_avg(wcol="Number2", cols="Number1"))
+  agg_by(agg_w_avg(wcol = "Number2", cols = "Number1"))
 
 # compute weighted average of Number1, weighted by Number2, grouped by X
 th2 <- th$
-  agg_by(agg_w_avg(wcol="Number2", cols="Number1", by="X"))
+  agg_by(agg_w_avg(wcol = "Number2", cols = "Number1", by = "X"))
 
 # compute weighted average of Number1, weighted by Number2, grouped by X and Y
 th3 <- th$
-  agg_by(agg_w_avg(wcol="Number2", cols="Number1", by=c("X", "Y")))
+  agg_by(agg_w_avg(wcol = "Number2", cols = "Number1", by = c("X", "Y")))
 
 client$close()
 }

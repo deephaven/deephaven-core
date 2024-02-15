@@ -1,0 +1,73 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    dts
+    typedoc
+    npmModule
+}
+dependencies {
+    dts project(path: ':web-client-api', configuration: 'dts')
+}
+
+// Apply our temporary convention until dhc hits 1.0.0
+def npmVersion = '1.0.0-dev' + project.property('deephavenBaseVersion').toString().trim()
+def preId = project.findProperty('npmPreid')// i.e. 'nightly'
+if (preId) {
+    npmVersion += preId + new Date().format("yyyyMMdd")
+}
+
+def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
+    copyIn {
+        from(configurations.dts) {
+            into 'dist'
+        }
+        from 'tsconfig.json'
+        from 'package.json'
+        from 'package-lock.json'
+        from '.npmrc'
+
+        from('src/main/docker') {
+            include 'theme.css'
+        }
+    }
+    dockerfile {
+        // share the common base image to keep it simple
+        from 'deephaven/node:local-build'
+
+        copyFile('.', '/project')
+        environmentVariable('VERSION', npmVersion)
+
+        runCommand('''set -eux; \\
+                      cd /project/; \\
+                      mv dist/types.d.ts dist/index.d.ts; \\
+                      npm version $VERSION; \\
+                      npm ci; \\
+                      npm pack; \\
+                      mkdir /out; \\
+                      mv deephaven-jsapi-types*.tgz /out/; \\
+                      node_modules/.bin/typedoc dist/index.d.ts \\
+                           --out /out/documentation \\
+                           --skipErrorChecking \\
+                           --hideGenerator \\
+                           --disableSources \\
+                           --customCss theme.css; \\
+                      ''')
+    }
+    parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
+    containerOutPath = '/out'
+    copyOut {
+        into "$buildDir/"
+    }
+}
+
+artifacts {
+    typedoc(layout.buildDirectory.dir('documentation')) {
+        builtBy typedocAndTarball
+    }
+    npmModule(layout.buildDirectory.files('deephaven-jsapi-types*.tgz').singleFile) {
+        builtBy typedocAndTarball
+    }
+}

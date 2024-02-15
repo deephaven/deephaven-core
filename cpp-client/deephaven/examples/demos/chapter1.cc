@@ -135,15 +135,15 @@ void PrintTable(const TableHandle &table, bool null_aware) {
   auto fsr = table.GetFlightStreamReader();
 
   while (true) {
-    arrow::flight::FlightStreamChunk chunk;
-    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->Next(&chunk)));
-    if (chunk.data == nullptr) {
+    auto chunk = fsr->Next();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(chunk));
+    if (chunk->data == nullptr) {
       break;
     }
 
-    auto int64_data = chunk.data->GetColumnByName("Int64Value");
+    auto int64_data = chunk->data->GetColumnByName("Int64Value");
     CheckNotNull(int64_data.get(), DEEPHAVEN_LOCATION_STR("Int64Value column not found"));
-    auto double_data = chunk.data->GetColumnByName("DoubleValue");
+    auto double_data = chunk->data->GetColumnByName("DoubleValue");
     CheckNotNull(double_data.get(), DEEPHAVEN_LOCATION_STR("DoubleValue column not found"));
 
     auto int64_array = std::dynamic_pointer_cast<arrow::Int64Array>(int64_data);

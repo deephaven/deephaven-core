@@ -3,6 +3,7 @@ package io.deephaven.engine.tablelogger;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.Row.Flags;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -13,18 +14,18 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
  * queries.
  */
 public interface QueryOperationPerformanceLogLogger {
-    default void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
-        log(DEFAULT_INTRADAY_LOGGER_FLAGS, operationNumber, nugget);
+    default void log(@NotNull final QueryPerformanceNugget nugget) throws IOException {
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, nugget);
     }
 
-    void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget) throws IOException;
+    void log(@NotNull Row.Flags flags, @NotNull QueryPerformanceNugget nugget) throws IOException;
 
     enum Noop implements QueryOperationPerformanceLogLogger {
         INSTANCE;
 
         @Override
-        public void log(Flags flags, int operationNumber, QueryPerformanceNugget nugget) throws IOException {
-
-        }
+        public void log(
+                @NotNull final Flags flags,
+                @NotNull final QueryPerformanceNugget nugget) throws IOException {}
     }
 }

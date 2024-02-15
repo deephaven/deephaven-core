@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.Map;
 
@@ -30,11 +31,11 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
-    protected final WritableColumnSource<T> outputSource;
-    protected final WritableColumnSource<T> maybeInnerSource;
+    protected WritableColumnSource<T> outputSource;
+    protected WritableColumnSource<T> maybeInnerSource;
 
     // region extra-fields
-    private final Class<T> colType;
+    protected final Class<T> colType;
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
@@ -44,8 +45,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
         public T curVal = null;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
         }
 
         @Override
@@ -145,16 +146,15 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
      */
-    public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection
-                                    // region extra-constructor-args
-                                      , final Class<T> colType
-                                    // endregion extra-constructor-args
-    ) {
-        this(pair, affectingColumns, rowRedirection, null, 0, 0, false, colType);
+    public BaseObjectUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns
+            // region extra-constructor-args
+            , final Class<T> colType
+            // endregion extra-constructor-args
+            ) {
+        this(pair, affectingColumns, null, 0, 0, false, colType);
     }
 
     /**
@@ -163,7 +163,6 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
      * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
@@ -171,33 +170,38 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
      * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
      *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @Nullable final String timestampColumnName,
-                                    final long reverseWindowScaleUnits,
-                                    final long forwardWindowScaleUnits,
-                                    final boolean isWindowed
-                                    // region extra-constructor-args
-                                      , final Class<T> colType
-                                    // endregion extra-constructor-args
-                                    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
-        if(rowRedirection != null) {
-            // region create-dense
-            this.maybeInnerSource = new ObjectArraySource<>(colType);
-            // endregion create-dense
-            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
-        } else {
-            this.maybeInnerSource = null;
-            // region create-sparse
-            this.outputSource = new ObjectSparseArraySource<>(colType);
-            // endregion create-sparse
-        }
-
+    public BaseObjectUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final boolean isWindowed
+            // region extra-constructor-args
+            , final Class<T> colType
+            // endregion extra-constructor-args
+            ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
         // region constructor
         this.colType = colType;
         // endregion constructor
+    }
+
+    @Override
+    @OverridingMethodsMustInvokeSuper
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        this.rowRedirection = rowRedirection;
+        if(rowRedirection != null) {
+            // region create-dense
+            maybeInnerSource = new ObjectArraySource<>(colType);
+            // endregion create-dense
+            outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
+        } else {
+            maybeInnerSource = null;
+            // region create-sparse
+            outputSource = new ObjectSparseArraySource<>(colType);
+            // endregion create-sparse
+        }
     }
 
 

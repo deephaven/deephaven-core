@@ -51,7 +51,7 @@ cd ${DHROOT}/py/client-ticking
 ```
 # Ensure the DHCPP environment variable is set per the instructions above
 rm -rf build  # Ensure we clean the remnants of any pre-existing build.
-CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python setup.py build_ext -i
+CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i
 ```
 
 ### Install pydeephaven-ticking
@@ -66,7 +66,7 @@ Then install the package.
 Note the actual name of the `.whl` file may be different depending on system details.
 
 ```
-pip3 install --force --no-deps dist/pydeephaven_ticking-0.30.0-cp310-cp310-linux_x86_64.whl
+pip3 install --force --no-deps dist/pydeephaven_ticking-<x.y.z>-cp310-cp310-linux_x86_64.whl
 ```
 
 The reason for the "--force" flag is to overwrite any previously-built version of the package that

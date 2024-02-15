@@ -22,7 +22,7 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
@@ -44,7 +44,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: quick-ci-jvm-err

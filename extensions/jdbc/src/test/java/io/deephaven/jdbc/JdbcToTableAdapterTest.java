@@ -87,7 +87,7 @@ public class JdbcToTableAdapterTest {
         // check no-casing column names
         final Set<String> expectedNames = Set.of("Bool_Type", "TinyIntType", "SmallIntType", "Int_Type",
                 "Big_Int_Type", "Decimal_Type", "String_Type", "DateTime_Type");
-        Assert.assertEquals(expectedNames, result.getColumnSourceMap().keySet());
+        Assert.assertEquals(expectedNames, result.getDefinition().getColumnNameSet());
 
         // should be an empty table
         Assert.assertEquals(0, result.size());
@@ -103,7 +103,7 @@ public class JdbcToTableAdapterTest {
         // check no-casing column names
         final Set<String> expectedNames = Set.of("boolType", "tinyIntType", "smallIntType", "intType",
                 "bigIntType", "decimalType", "stringType", "datetimeType");
-        Assert.assertEquals(expectedNames, result.getColumnSourceMap().keySet());
+        Assert.assertEquals(expectedNames, result.getDefinition().getColumnNameSet());
 
         // should be an empty table
         Assert.assertEquals(0, result.size());
@@ -119,7 +119,7 @@ public class JdbcToTableAdapterTest {
         // check no-casing column names
         final Set<String> expectedNames = Set.of("bool_type", "tiny_int_type", "small_int_type", "int_type",
                 "big_int_type", "decimal_type", "string_type", "datetime_type");
-        Assert.assertEquals(expectedNames, result.getColumnSourceMap().keySet());
+        Assert.assertEquals(expectedNames, result.getDefinition().getColumnNameSet());
 
         // should be an empty table
         Assert.assertEquals(0, result.size());
@@ -135,7 +135,7 @@ public class JdbcToTableAdapterTest {
         // check no-casing column names
         final Set<String> expectedNames = Set.of("BoolType", "TinyIntType", "SmallIntType", "IntType",
                 "BigIntType", "DecimalType", "StringType", "DatetimeType");
-        Assert.assertEquals(expectedNames, result.getColumnSourceMap().keySet());
+        Assert.assertEquals(expectedNames, result.getDefinition().getColumnNameSet());
 
         // should be an empty table
         Assert.assertEquals(0, result.size());
@@ -151,7 +151,7 @@ public class JdbcToTableAdapterTest {
         // check no-casing column names
         final Set<String> expectedNames = Set.of("BOOL_TYPE", "TINY_INT_TYPE", "SMALL_INT_TYPE", "INT_TYPE",
                 "BIG_INT_TYPE", "DECIMAL_TYPE", "STRING_TYPE", "DATETIME_TYPE");
-        Assert.assertEquals(expectedNames, result.getColumnSourceMap().keySet());
+        Assert.assertEquals(expectedNames, result.getDefinition().getColumnNameSet());
 
         // should be an empty table
         Assert.assertEquals(0, result.size());
@@ -167,7 +167,7 @@ public class JdbcToTableAdapterTest {
         // check no-casing column names
         final Set<String> expectedNames = Set.of("BOOL_Z_TYPE", "TINY_Z_INT_Z_TYPE", "SMALL_Z_INT_Z_TYPE", "INT_Z_TYPE",
                 "BIG_Z_INT_Z_TYPE", "DECIMAL_Z_TYPE", "STRING_Z_TYPE", "DATETIME_Z_TYPE");
-        Assert.assertEquals(expectedNames, result.getColumnSourceMap().keySet());
+        Assert.assertEquals(expectedNames, result.getDefinition().getColumnNameSet());
 
         // should be an empty table
         Assert.assertEquals(0, result.size());

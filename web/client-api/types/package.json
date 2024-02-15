@@ -1,0 +1,25 @@
+{
+  "name": "@deephaven/jsapi-types",
+  "version": "0.0.0-dummy",
+  "description": "Deephaven JSAPI Types",
+  "author": "Deephaven Data Labs LLC",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deephaven/deephaven-core.git",
+    "directory": "web/client-api/types"
+  },
+  "devDependencies": {
+    "typedoc": "^0.24.8",
+    "typescript": "^5.1.6"
+  },
+  "files": [
+    "dist"
+  ],
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -23,18 +23,21 @@ This function, like other Deephaven \code{uby} functions, is a generator functio
 function called an \code{\link{UpdateByOp}} intended to be used in a call to \code{update_by()}. This detail is typically
 hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 a \code{uby} function can otherwise seem unexpected.
+
+For more information, see the vignette on \code{uby} functions by running
+\code{vignette("update_by")}.
 }
 \examples{
 \dontrun{
 library(rdeephaven)
 
 # connecting to Deephaven server
-client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 
 # create data frame, push to server, retrieve TableHandle
 df <- data.frame(
   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-  boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+  boolCol = sample(c(TRUE, FALSE), 500, TRUE),
   col1 = sample(10000, size = 500, replace = TRUE),
   col2 = sample(10000, size = 500, replace = TRUE),
   col3 = 1:500
@@ -47,12 +50,12 @@ th1 <- th$
 
 # compute cumulative product of col1 and col2, grouped by boolCol
 th2 <- th$
-  update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by="boolCol")
+  update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by = "boolCol")
 
 # compute cumulative product of col1 and col2, grouped by boolCol and parity of col3
 th3 <- th$
   update("col3Parity = col3 \% 2")$
-  update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by=c("boolCol", "col3Parity"))
+  update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by = c("boolCol", "col3Parity"))
 
 client$close()
 }

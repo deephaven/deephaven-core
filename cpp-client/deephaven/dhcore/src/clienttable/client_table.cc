@@ -20,11 +20,10 @@ using deephaven::dhcore::container::RowSequenceIterator;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SimpleOstringstream;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::clienttable {
 namespace {
-void printTableData(std::ostream &stream, const ClientTable &table,
+void PrintTableData(std::ostream &stream, const ClientTable &table,
     const std::vector<size_t> &which_cols,
     const std::vector<std::shared_ptr<RowSequence>> &row_sequences,
     bool want_headers, bool want_row_numbers, bool highlight_cells);
@@ -86,7 +85,7 @@ std::ostream &operator<<(std::ostream &s, const TableStreamAdaptor &o) {
   for (size_t i = 0; i < num_cols; ++i) {
     which_cols.push_back(i);
   }
-  printTableData(s, t, which_cols, o.row_sequences_, o.want_headers_, o.want_row_numbers_, o.highlight_cells_);
+  PrintTableData(s, t, which_cols, o.row_sequences_, o.want_headers_, o.want_row_numbers_, o.highlight_cells_);
   return s;
 }
 }  // namespace internal
@@ -187,7 +186,7 @@ private:
   std::shared_ptr<uint64_t[]> build_;
 };
 
-void printTableData(std::ostream &stream, const ClientTable &table,
+void PrintTableData(std::ostream &stream, const ClientTable &table,
     const std::vector<size_t> &which_cols,
     const std::vector<std::shared_ptr<RowSequence>> &row_sequences,
     bool want_headers, bool want_row_numbers, bool highlight_cells) {

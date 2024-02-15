@@ -7,7 +7,7 @@ import unittest
 from deephaven import empty_table
 from deephaven.perfmon import process_info_log, process_metrics_log, server_state_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
-    metrics_reset_counters
+    metrics_reset_counters, query_performance_tree_table, query_operation_performance_tree_table
 from deephaven.perfmon import query_update_performance, query_performance, query_operation_performance, server_state
 from tests.testbase import BaseTestCase
 
@@ -62,6 +62,8 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(log_table.to_string())
         log_table = update_performance_log()
         self.assertTrue(log_table.to_string())
+        log_table = query_performance_tree_table()
+        self.assertIsNotNone(log_table)
 
     def test_performance_queries(self):
         q = query_performance(1)
@@ -72,6 +74,8 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(q.to_string())
         q = query_update_performance(1)
         self.assertTrue(q.to_string())
+        q = query_operation_performance_tree_table()
+        self.assertIsNotNone(q)
 
 
 if __name__ == '__main__':

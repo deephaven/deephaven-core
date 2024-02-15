@@ -18,6 +18,9 @@ import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 /**
  * Utility class to concentrate {@link ObjectCodec} lookups.
@@ -72,6 +75,9 @@ public class CodecLookup {
     private static boolean noCodecRequired(@NotNull final Class<?> dataType) {
         return dataType == Boolean.class ||
                 dataType == Instant.class ||
+                dataType == LocalDate.class ||
+                dataType == LocalTime.class ||
+                dataType == LocalDateTime.class ||
                 dataType == String.class ||
                 // A BigDecimal column maps to a logical type of decimal, with
                 // appropriate precision and scale calculated from column data,

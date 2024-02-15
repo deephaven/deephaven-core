@@ -4,9 +4,9 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
+import io.deephaven.client.impl.ExportStates.State;
 import io.deephaven.qst.table.TableSpec;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -56,6 +56,14 @@ public final class Export implements AutoCloseable, HasExportId {
      */
     public Session session() {
         return state.session();
+    }
+
+    ExportStates exportStates() {
+        return state.exportStates();
+    }
+
+    State state() {
+        return state;
     }
 
     /**

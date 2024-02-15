@@ -38,7 +38,7 @@ class FilterTable extends SingleSessionExampleBase {
     protected void execute(Session session) throws Exception {
         final Filter filter = type == Type.AND ? Filter.and(Filter.from(filters)) : Filter.or(Filter.from(filters));
         final TableSpec filtered = ticket.ticketId().table().where(filter);
-        try (final TableHandle handle = session.execute(filtered)) {
+        try (final TableHandle handle = session.executeAsync(filtered).getOrCancel()) {
             session.publish("filter_table_results", handle).get();
         }
     }

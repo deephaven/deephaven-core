@@ -3,14 +3,13 @@
  */
 #include "deephaven/dhcore/ticking/index_decoder.h"
 
-#include <cstdlib>
 #include <memory>
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/format.h"
 
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::dhcore::ticking {
 namespace {
@@ -94,7 +93,7 @@ std::shared_ptr<RowSequence> IndexDecoder::ReadExternalCompressedDelta(DataInput
       }
 
       default: {
-        auto message = Stringf("Bad command: %o", command);
+        auto message = fmt::format("Bad command: {}", command);
         throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
       }
     }
@@ -116,7 +115,7 @@ int64_t DataInput::ReadValue(int command) {
       return ReadByte();
     }
     default: {
-      auto message = Stringf("Bad command: %o", command);
+      auto message = fmt::format("Bad command: {}", command);
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }

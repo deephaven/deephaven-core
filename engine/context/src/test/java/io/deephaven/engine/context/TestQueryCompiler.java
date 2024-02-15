@@ -66,7 +66,6 @@ public class TestQueryCompiler {
     @Before
     public void setUp() throws IOException {
         executionContextClosable = ExecutionContext.newBuilder()
-                .captureUpdateGraph()
                 .captureQueryLibrary()
                 .captureQueryScope()
                 .setQueryCompiler(QueryCompiler.create(folder.newFolder(), TestQueryCompiler.class.getClassLoader()))

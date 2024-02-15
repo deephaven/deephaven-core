@@ -960,14 +960,20 @@ test_that("agg_count behaves as expected", {
 test_that("agg_by behaves nicely when given bad input", {
   data <- setup()
 
-  expect_error(data$th1$agg_by(agg_first()),
-    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_first' at index 1 with an empty 'cols' argument.")
+  expect_error(
+    data$th1$agg_by(agg_first()),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_first' at index 1 with an empty 'cols' argument."
+  )
 
-  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last())),
-    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_last' at index 2 with an empty 'cols' argument.")
+  expect_error(
+    data$th1$agg_by(c(agg_first("int_col"), agg_last())),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_last' at index 2 with an empty 'cols' argument."
+  )
 
-  expect_error(data$th1$agg_by(c(agg_first("int_col"), agg_last("int_col"), agg_count("n"), agg_avg())),
-    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_avg' at index 4 with an empty 'cols' argument.")
+  expect_error(
+    data$th1$agg_by(c(agg_first("int_col"), agg_last("int_col"), agg_count("n"), agg_avg())),
+    "Aggregations with no columns cannot be used in 'agg_by'. Got 'agg_avg' at index 4 with an empty 'cols' argument."
+  )
 
   data$client$close()
 })

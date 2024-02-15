@@ -13,13 +13,14 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Entry class for tracking the performance characteristics of a single recurring update event.
  */
 public class PerformanceEntry extends BasePerformanceEntry implements TableListener.Entry {
-    private final int id;
-    private final int evaluationNumber;
+    private final long id;
+    private final long evaluationNumber;
     private final int operationNumber;
     private final String description;
     private final String callerLine;
@@ -27,12 +28,12 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final AuthContext authContext;
     private final String updateGraphName;
 
-    private long intervalInvocationCount;
+    private long invocationCount;
 
-    private long intervalAdded;
-    private long intervalRemoved;
-    private long intervalModified;
-    private long intervalShifted;
+    private long rowsAdded;
+    private long rowsRemoved;
+    private long rowsModified;
+    private long rowsShifted;
 
     private long maxTotalMemory;
     private long minFreeMemory;
@@ -42,7 +43,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private final RuntimeMemory.Sample startSample;
     private final RuntimeMemory.Sample endSample;
 
-    PerformanceEntry(final int id, final int evaluationNumber, final int operationNumber,
+    PerformanceEntry(final long id, final long evaluationNumber, final int operationNumber,
             final String description, final String callerLine, final String updateGraphName) {
         this.id = id;
         this.evaluationNumber = evaluationNumber;
@@ -66,19 +67,19 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
 
     public final void onUpdateStart(final RowSet added, final RowSet removed, final RowSet modified,
             final RowSetShiftData shifted) {
-        intervalAdded += added.size();
-        intervalRemoved += removed.size();
-        intervalModified += modified.size();
-        intervalShifted += shifted.getEffectiveSize();
+        rowsAdded += added.size();
+        rowsRemoved += removed.size();
+        rowsModified += modified.size();
+        rowsShifted += shifted.getEffectiveSize();
 
         onUpdateStart();
     }
 
     public final void onUpdateStart(long added, long removed, long modified, long shifted) {
-        intervalAdded += added;
-        intervalRemoved += removed;
-        intervalModified += modified;
-        intervalShifted += shifted;
+        rowsAdded += added;
+        rowsRemoved += removed;
+        rowsModified += modified;
+        rowsShifted += shifted;
 
         onUpdateStart();
     }
@@ -90,17 +91,17 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
         collections += endSample.totalCollections - startSample.totalCollections;
         collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
-        ++intervalInvocationCount;
+        ++invocationCount;
     }
 
     void reset() {
         baseEntryReset();
-        intervalInvocationCount = 0;
+        invocationCount = 0;
 
-        intervalAdded = 0;
-        intervalRemoved = 0;
-        intervalModified = 0;
-        intervalShifted = 0;
+        rowsAdded = 0;
+        rowsRemoved = 0;
+        rowsModified = 0;
+        rowsShifted = 0;
 
         maxTotalMemory = 0;
         minFreeMemory = Long.MAX_VALUE;
@@ -114,7 +115,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     @Override
-    public LogOutput append(final LogOutput logOutput) {
+    public LogOutput append(@NotNull final LogOutput logOutput) {
         final LogOutput beginning = logOutput.append("PerformanceEntry{")
                 .append(", id=").append(id)
                 .append(", evaluationNumber=").append(evaluationNumber)
@@ -122,16 +123,16 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append(", description='").append(description).append('\'')
                 .append(", callerLine='").append(callerLine).append('\'')
                 .append(", authContext=").append(authContext)
-                .append(", intervalUsageNanos=").append(getIntervalUsageNanos())
-                .append(", intervalCpuNanos=").append(getIntervalCpuNanos())
-                .append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos())
-                .append(", intervalInvocationCount=").append(intervalInvocationCount)
-                .append(", intervalAdded=").append(intervalAdded)
-                .append(", intervalRemoved=").append(intervalRemoved)
-                .append(", intervalModified=").append(intervalModified)
-                .append(", intervalShifted=").append(intervalShifted)
-                .append(", intervalAllocatedBytes=").append(getIntervalAllocatedBytes())
-                .append(", intervalPoolAllocatedBytes=").append(getIntervalPoolAllocatedBytes())
+                .append(", usageNanos=").append(getUsageNanos())
+                .append(", cpuNanos=").append(getCpuNanos())
+                .append(", userCpuNanos=").append(getUserCpuNanos())
+                .append(", invocationCount=").append(invocationCount)
+                .append(", rowsAdded=").append(rowsAdded)
+                .append(", rowsRemoved=").append(rowsRemoved)
+                .append(", rowsModified=").append(rowsModified)
+                .append(", rowsShifted=").append(rowsShifted)
+                .append(", allocatedBytes=").append(getAllocatedBytes())
+                .append(", poolAllocatedBytes=").append(getPoolAllocatedBytes())
                 .append(", maxTotalMemory=").append(maxTotalMemory)
                 .append(", minFreeMemory=").append(minFreeMemory)
                 .append(", collections=").append(collections)
@@ -140,11 +141,11 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
                 .append('}');
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public int getEvaluationNumber() {
+    public long getEvaluationNumber() {
         return evaluationNumber;
     }
 
@@ -174,20 +175,20 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         return updateGraphName;
     }
 
-    public long getIntervalAdded() {
-        return intervalAdded;
+    public long getRowsAdded() {
+        return rowsAdded;
     }
 
-    public long getIntervalRemoved() {
-        return intervalRemoved;
+    public long getRowsRemoved() {
+        return rowsRemoved;
     }
 
-    public long getIntervalModified() {
-        return intervalModified;
+    public long getRowsModified() {
+        return rowsModified;
     }
 
-    public long getIntervalShifted() {
-        return intervalShifted;
+    public long getRowsShifted() {
+        return rowsShifted;
     }
 
     public long getMinFreeMemory() {
@@ -206,8 +207,8 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         return DateTimeUtils.millisToNanos(collectionTimeMs);
     }
 
-    public long getIntervalInvocationCount() {
-        return intervalInvocationCount;
+    public long getInvocationCount() {
+        return invocationCount;
     }
 
     /**
@@ -216,8 +217,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
      * @return if this nugget is significant enough to be logged, otherwise it is aggregated into the small update entry
      */
     boolean shouldLogEntryInterval() {
-        return intervalInvocationCount > 0 &&
-                UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getIntervalUsageNanos());
+        return invocationCount > 0 && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos());
     }
 
     public void accumulate(PerformanceEntry entry) {
@@ -230,12 +230,12 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
 
         collections += entry.getCollections();
         collectionTimeMs += entry.collectionTimeMs;
-        intervalInvocationCount += entry.getIntervalInvocationCount();
+        invocationCount += entry.getInvocationCount();
 
-        intervalAdded += entry.getIntervalAdded();
-        intervalRemoved += entry.getIntervalRemoved();
-        intervalModified += entry.getIntervalModified();
-        intervalShifted += entry.getIntervalShifted();
+        rowsAdded += entry.getRowsAdded();
+        rowsRemoved += entry.getRowsRemoved();
+        rowsModified += entry.getRowsModified();
+        rowsShifted += entry.getRowsShifted();
 
         super.accumulate(entry);
     }

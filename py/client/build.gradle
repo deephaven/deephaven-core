@@ -111,6 +111,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
                       pip3 install --upgrade pip; \\
                       pip3 install -r requirements-dev.txt'''
 
+        environmentVariable 'DEEPHAVEN_VERSION', project.version
         runCommand 'pip install .'
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'

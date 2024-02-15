@@ -20,7 +20,7 @@ public class BigIntegerGenerator extends AbstractGenerator<BigInteger> {
 
     public BigIntegerGenerator(double nullFraction) {
         this(BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2)),
-                BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2)), 0);
+                BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2)), nullFraction);
     }
 
     public BigIntegerGenerator(BigInteger from, BigInteger to) {

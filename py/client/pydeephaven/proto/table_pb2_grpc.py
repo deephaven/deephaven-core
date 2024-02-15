@@ -230,6 +230,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.MetaTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.ComputeColumnStatistics = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/ComputeColumnStatistics',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.ColumnStatisticsRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
 
 
 class TableServiceServicer(object):
@@ -602,6 +607,16 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ComputeColumnStatistics(self, request, context):
+        """*
+        Returns a new table representing statistics about a single column of the provided table. This
+        result table will be static - use Aggregation() instead for updating results. Presently, the
+        primary use case for this is the Deephaven Web UI.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -818,6 +833,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'MetaTable': grpc.unary_unary_rpc_method_handler(
                     servicer.MetaTable,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.MetaTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'ComputeColumnStatistics': grpc.unary_unary_rpc_method_handler(
+                    servicer.ComputeColumnStatistics,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.ColumnStatisticsRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
     }
@@ -1557,6 +1577,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/MetaTable',
             deephaven_dot_proto_dot_table__pb2.MetaTableRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ComputeColumnStatistics(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ComputeColumnStatistics',
+            deephaven_dot_proto_dot_table__pb2.ColumnStatisticsRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

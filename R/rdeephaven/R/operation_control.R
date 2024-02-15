@@ -94,8 +94,7 @@ OperationControl <- R6Class("OperationControl",
 #' print("hello!")
 #'
 #' @export
-op_control <- function(on_null="skip", on_nan="skip", big_value_context="decimal128") {
-
+op_control <- function(on_null = "skip", on_nan = "skip", big_value_context = "decimal128") {
   if (!(on_null %in% c("poison", "reset", "skip", "throw"))) {
     stop(paste0("'on_null' must be one of 'poison', 'reset', 'skip', or 'throw'. Got '", on_null, "'."))
   }

@@ -5,7 +5,7 @@
 """ This module provides various ways to make a Deephaven table. """
 
 import datetime
-from typing import Callable, List, Dict, Any, Union, Sequence, Tuple
+from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping
 
 import jpy
 import numpy as np
@@ -24,17 +24,15 @@ from deephaven.update_graph import auto_locking_ctx
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
-_JMutableInputTable = jpy.get_type("io.deephaven.engine.util.config.MutableInputTable")
-_JAppendOnlyArrayBackedMutableTable = jpy.get_type(
-    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable")
-_JKeyedArrayBackedMutableTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable")
+_JAppendOnlyArrayBackedInputTable = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
+_JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
-
 
 
 def empty_table(size: int) -> Table:
@@ -64,7 +62,7 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
         period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
             time interval between new row additions, can be expressed as an integer in nanoseconds,
             a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
-        start_time (Union[None, str, datetime.datetime, np.datetime64], optional):
+        start_time (Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp], optional):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
@@ -95,11 +93,17 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
         raise DHError(e, "failed to create a time table.") from e
 
 
-def new_table(cols: List[InputColumn]) -> Table:
-    """Creates an in-memory table from a list of input columns. Each column must have an equal number of elements.
+def new_table(cols: Union[List[InputColumn], Mapping[str, Sequence]]) -> Table:
+    """Creates an in-memory table from a list of input columns or a Dict (mapping) of column names and column data.
+    Each column must have an equal number of elements.
+
+    When the input is a mapping, an intermediary Pandas DataFrame is created from the mapping, which then is converted
+    to an in-memory table. In this case, as opposed to when the input is a list of InputColumns, the column types are
+    determined by Pandas' type inference logic.
 
     Args:
-        cols (List[InputColumn]): a list of InputColumn
+        cols (Union[List[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
+            names and column data.
 
     Returns:
         a Table
@@ -108,7 +112,12 @@ def new_table(cols: List[InputColumn]) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
+        if isinstance(cols, list):
+            return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
+        else:
+            from deephaven.pandas import to_table
+            df = pd.DataFrame(cols).convert_dtypes()
+            return to_table(df)
     except Exception as e:
         raise DHError(e, "failed to create a new time table.") from e
 
@@ -258,9 +267,9 @@ class InputTable(Table):
 
             key_cols = to_sequence(key_cols)
             if key_cols:
-                super().__init__(_JKeyedArrayBackedMutableTable.make(j_arg_1, key_cols))
+                super().__init__(_JKeyedArrayBackedInputTable.make(j_arg_1, key_cols))
             else:
-                super().__init__(_JAppendOnlyArrayBackedMutableTable.make(j_arg_1))
+                super().__init__(_JAppendOnlyArrayBackedInputTable.make(j_arg_1))
             self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
             self.key_columns = key_cols
         except Exception as e:
@@ -394,7 +403,6 @@ def function_generated_table(table_generator: Callable[..., Table],
         exec_ctx = execution_context.get_exec_ctx()
         if exec_ctx is None:
             raise ValueError("No execution context is available and exec_ctx was not provided! ")
-
 
     def table_generator_function():
         with exec_ctx:

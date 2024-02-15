@@ -48,3 +48,4 @@ time.sleep(15)
 print("Waking up and stopping the listener")
 
 listener_handle.stop()
+session.close()

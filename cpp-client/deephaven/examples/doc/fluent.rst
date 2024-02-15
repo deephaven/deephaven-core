@@ -343,7 +343,7 @@ are created as the result of relational operators on other expressions. For exam
   TableMaker tm;
   tm.addColumn("A", aValues);
   tm.addColumn("S", sValues);
-  auto temp = tm.makeTable(manager);
+  auto temp = tm.MakeTable(manager);
   auto a = temp.getNumCol("A");
   auto result = temp.where(a > 15);
 

@@ -195,7 +195,7 @@ public class CrossJoinHelper {
                 jsm.startTrackingPrevValues();
                 final ModifiedColumnSet.Transformer leftTransformer = leftTable.newModifiedColumnSetTransformer(
                         resultTable,
-                        leftTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        leftTable.getDefinition().getColumnNamesArray());
 
                 leftTable.addUpdateListener(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
                         leftTable, resultTable) {

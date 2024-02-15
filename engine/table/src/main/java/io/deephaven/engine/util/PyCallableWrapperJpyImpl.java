@@ -24,27 +24,45 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
     private static final PyObject NUMBA_GUVECTORIZED_FUNC_TYPE = getNumbaGUVectorizedFuncType();
 
-    private static final PyModule dh_table_module = PyModule.importModule("deephaven.table");
+    private static final PyModule dh_udf_module = PyModule.importModule("deephaven._udf");
 
     private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
 
     static {
+        numpyType2JavaClass.put('b', byte.class);
+        numpyType2JavaClass.put('h', short.class);
+        numpyType2JavaClass.put('H', char.class);
         numpyType2JavaClass.put('i', int.class);
         numpyType2JavaClass.put('l', long.class);
-        numpyType2JavaClass.put('h', short.class);
         numpyType2JavaClass.put('f', float.class);
         numpyType2JavaClass.put('d', double.class);
-        numpyType2JavaClass.put('b', byte.class);
         numpyType2JavaClass.put('?', boolean.class);
         numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('M', Instant.class);
         numpyType2JavaClass.put('O', Object.class);
     }
 
+    /**
+     * Ensure that the class initializer runs.
+     */
+    public static void init() {}
+
     // TODO: support for vectorizing functions that return arrays
     // https://github.com/deephaven/deephaven-core/issues/4649
-    private static final Set<Class<?>> vectorizableReturnTypes = Set.of(int.class, long.class, short.class, float.class,
-            double.class, byte.class, Boolean.class, String.class, Instant.class, PyObject.class);
+    private static final Set<Class<?>> vectorizableReturnTypes = Set.of(
+            boolean.class, boolean[].class,
+            Boolean.class, Boolean[].class,
+            byte.class, byte[].class,
+            short.class, short[].class,
+            char.class, char[].class,
+            int.class, int[].class,
+            long.class, long[].class,
+            float.class, float[].class,
+            double.class, double[].class,
+            String.class, String[].class,
+            Instant.class, Instant[].class,
+            PyObject.class, PyObject[].class,
+            Object.class, Object[].class);
 
     @Override
     public boolean isVectorizableReturnType() {
@@ -133,23 +151,21 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         pyCallable
                                 + " has multiple signatures; this is not currently supported for numba vectorized/guvectorized functions");
             }
-            signature = params.get(0).getStringValue();
             unwrapped = pyCallable;
             // since vectorization doesn't support array type parameters, don't flag numba guvectorized as vectorized
             numbaVectorized = isNumbaVectorized;
             vectorized = isNumbaVectorized;
         } else if (pyCallable.hasAttribute("dh_vectorized")) {
-            signature = pyCallable.getAttribute("signature").toString();
             unwrapped = pyCallable.getAttribute("callable");
             numbaVectorized = false;
             vectorized = true;
         } else {
-            signature = dh_table_module.call("_encode_signature", pyCallable).toString();
             unwrapped = pyCallable;
             numbaVectorized = false;
             vectorized = false;
         }
-        pyUdfDecoratedCallable = dh_table_module.call("_py_udf", unwrapped);
+        pyUdfDecoratedCallable = dh_udf_module.call("_py_udf", unwrapped);
+        signature = pyUdfDecoratedCallable.getAttribute("signature").toString();
     }
 
     @Override
@@ -199,7 +215,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         if (numbaVectorized || vectorized) {
             return pyCallable;
         } else {
-            return dh_table_module.call("dh_vectorize", unwrapped);
+            return dh_udf_module.call("_dh_vectorize", unwrapped);
         }
     }
 

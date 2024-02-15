@@ -73,7 +73,7 @@ class InputColumn(Column):
                 else:
                     self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
         except Exception as e:
-            raise DHError(e, "failed to create an InputColumn.") from e
+            raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:
@@ -209,10 +209,10 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
 
 def pyobj_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing complex, non-primitive-like Python objects.
+    """Creates an input column containing complex, non-primitive-like Python objects.
 
-        name (str): the column name
     Args:
+        name (str): the column name
         data (Any): a sequence of Python objects
 
     Returns:

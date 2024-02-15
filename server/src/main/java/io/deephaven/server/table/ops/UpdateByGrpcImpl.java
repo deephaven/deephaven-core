@@ -170,6 +170,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptRollingStd(spec.getRollingStd());
             case ROLLING_WAVG:
                 return adaptRollingWAvg(spec.getRollingWavg());
+            case ROLLING_FORMULA:
+                return adaptRollingFormula(spec.getRollingFormula());
 
             case TYPE_NOT_SET:
             default:
@@ -315,6 +317,13 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 wavg.getWeightColumn());
     }
 
+    private static RollingFormulaSpec adaptRollingFormula(UpdateByRollingFormula formula) {
+        return RollingFormulaSpec.of(
+                adaptWindowScale(formula.getReverseWindowScale()),
+                adaptWindowScale(formula.getForwardWindowScale()),
+                formula.getFormula(),
+                formula.getParamToken());
+    }
 
     private static MathContext adaptMathContext(io.deephaven.proto.backplane.grpc.MathContext bigValueContext) {
         return new MathContext(bigValueContext.getPrecision(), adaptRoundingMode(bigValueContext.getRoundingMode()));

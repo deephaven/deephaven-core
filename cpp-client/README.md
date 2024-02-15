@@ -34,16 +34,11 @@ on them anymore so we do notguarantee they are current for those platforms.
 
 6. Build and install dependencies for Deephaven C++ client.
 
-   Get the `build-dependencies.sh` script from Deephaven's base images repository
-   at the correct version.
-   You can download it directly from the link
-   https://github.com/deephaven/deephaven-base-images/raw/fcef110f22e69849cbcac00b09128809a1d0786b/cpp-client/build-dependencies.sh
-   (this script is also used from our automated tools, to generate a docker image to
-   support tests runs; that's why it lives in a separate repo).
-   The script downloads, builds and installs the dependent libraries
+   The `build-dependencies.sh` script in this directory downloads,
+   builds and installs the dependent libraries
    (Protobuf, re2, gflags, absl, flatbuffers, c-ares, zlib, gRPC, and Arrow).
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
-   Create that directory and save the script there.
+   Create that directory and copy the script there.
 
    The three main build types of a standard cmake build are supported,
    `Release`, `Debug` and `RelWithDebInfo`.  By default. `build-dependencies.sh`
@@ -63,9 +58,8 @@ on them anymore so we do notguarantee they are current for those platforms.
    export DHCPP=$HOME/dhcpp
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
+   cp build-dependencies.sh $DHCPP
    cd $DHCPP
-   wget https://github.com/deephaven/deephaven-base-images/raw/fcef110f22e69849cbcac00b09128809a1d0786b/cpp-client/build-dependencies.sh
-   chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
    # any deviation from defaults may require changing other files later.

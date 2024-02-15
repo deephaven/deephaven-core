@@ -21,10 +21,31 @@ import java.util.List;
  */
 public interface TableHandleManager extends TableCreator<TableHandle> {
 
+    /**
+     * Executes the given {@code table}, waiting for the export to complete successfully before returning. If
+     * applicable, the request will build off of the existing exports.
+     *
+     * @param table the table spec
+     * @return the table handle
+     * @throws TableHandleException if there was an exception on the exported table creation response or an RPC
+     *         exception
+     * @throws InterruptedException if the thread was interrupted while waiting
+     * @see TableService#executeAsync(TableSpec)
+     */
     TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException;
 
-    List<TableHandle> execute(Iterable<TableSpec> tables)
-            throws TableHandleException, InterruptedException;
+    /**
+     * Executes the given {@code tables}, waiting for all of the exports to complete successfully before returning. If
+     * applicable, the request will build off of the existing exports.
+     *
+     * @param tables the table spec
+     * @return the table handles
+     * @throws TableHandleException if there was an exception in any of the exported table creation response or an RPC
+     *         exception
+     * @throws InterruptedException if the thread was interrupted while waiting
+     * @see TableService#executeAsync(Iterable)
+     */
+    List<TableHandle> execute(Iterable<TableSpec> tables) throws TableHandleException, InterruptedException;
 
     LabeledValues<TableHandle> execute(LabeledTables tables)
             throws TableHandleException, InterruptedException;

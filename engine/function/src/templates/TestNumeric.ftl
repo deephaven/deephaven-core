@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 
 package io.deephaven.function;
@@ -8,9 +8,6 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.count;
@@ -367,6 +364,118 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(tstat(v), tstat((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0));
     }
 
+<#if pt.valueType.isFloat >
+    public void test${pt.boxed}NaNAndInfHandling() {
+        double result;
+
+        final ${pt.primitive}[] normal = new ${pt.primitive}[]{1, 2, 3, 4, 5, 6};
+
+        final ${pt.primitive}[] normalWithNaN = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.NaN, 4, 5};
+        assertTrue(Double.isNaN(avg(normalWithNaN)));
+        assertTrue(Double.isNaN(absAvg(normalWithNaN)));
+        assertTrue(Double.isNaN(var(normalWithNaN)));
+        assertTrue(Double.isNaN(std(normalWithNaN)));
+        assertTrue(Double.isNaN(ste(normalWithNaN)));
+        assertTrue(Double.isNaN(tstat(normalWithNaN)));
+
+        assertTrue(Double.isNaN(cov(normalWithNaN, normal)));
+        assertTrue(Double.isNaN(cor(normalWithNaN, normal)));
+        assertTrue(Double.isNaN(wavg(normalWithNaN, normal)));
+        assertTrue(Double.isNaN(wvar(normalWithNaN, normal)));
+        assertTrue(Double.isNaN(wstd(normalWithNaN, normal)));
+        assertTrue(Double.isNaN(wste(normalWithNaN, normal)));
+        assertTrue(Double.isNaN(wtstat(normalWithNaN, normal)));
+
+        assertTrue(Double.isNaN(cov(normal, normalWithNaN)));
+        assertTrue(Double.isNaN(cor(normal, normalWithNaN)));
+        assertTrue(Double.isNaN(wavg(normal, normalWithNaN)));
+        assertTrue(Double.isNaN(wvar(normal, normalWithNaN)));
+        assertTrue(Double.isNaN(wstd(normal, normalWithNaN)));
+        assertTrue(Double.isNaN(wste(normal, normalWithNaN)));
+        assertTrue(Double.isNaN(wtstat(normal, normalWithNaN)));
+
+        final ${pt.primitive}[] normalWithInf = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.POSITIVE_INFINITY, 4, 5};
+        result = avg(normalWithInf);
+        assertTrue(Double.isInfinite(result) && result > 0); // positive infinity
+        result = absAvg(normalWithInf);
+        assertTrue(Double.isInfinite(result) && result > 0); // positive infinity
+
+        assertTrue(Double.isNaN(var(normalWithInf)));
+        assertTrue(Double.isNaN(std(normalWithInf)));
+        assertTrue(Double.isNaN(ste(normalWithInf)));
+        assertTrue(Double.isNaN(tstat(normalWithInf)));
+
+        assertTrue(Double.isNaN(cov(normalWithInf, normal)));
+        assertTrue(Double.isNaN(cor(normalWithInf, normal)));
+        result = wavg(normalWithInf, normal);
+        assertTrue(Double.isInfinite(result) && result > 0); // positive infinity
+        assertTrue(Double.isNaN(wvar(normalWithInf, normal)));
+        assertTrue(Double.isNaN(wstd(normalWithInf, normal)));
+        assertTrue(Double.isNaN(wste(normalWithInf, normal)));
+        assertTrue(Double.isNaN(wtstat(normalWithInf, normal)));
+
+        assertTrue(Double.isNaN(cov(normal, normalWithInf)));
+        assertTrue(Double.isNaN(cor(normal, normalWithInf)));
+        assertTrue(Double.isNaN(wavg(normal, normalWithInf))); // is NaN because of inf/inf division
+        assertTrue(Double.isNaN(wvar(normal, normalWithInf)));
+        assertTrue(Double.isNaN(wstd(normal, normalWithInf)));
+        assertTrue(Double.isNaN(wste(normal, normalWithInf)));
+        assertTrue(Double.isNaN(wtstat(normal, normalWithInf)));
+
+        final ${pt.primitive}[] normalWithNegInf = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.NEGATIVE_INFINITY, 4, 5};
+        result = avg(normalWithNegInf);
+        assertTrue(Double.isInfinite(result) && result < 0); // negative infinity
+        result = absAvg(normalWithNegInf);
+        assertTrue(Double.isInfinite(result) && result > 0); // positive infinity
+
+        assertTrue(Double.isNaN(var(normalWithNegInf)));
+        assertTrue(Double.isNaN(std(normalWithNegInf)));
+        assertTrue(Double.isNaN(ste(normalWithNegInf)));
+        assertTrue(Double.isNaN(tstat(normalWithNegInf)));
+
+        assertTrue(Double.isNaN(cov(normalWithNegInf, normal)));
+        assertTrue(Double.isNaN(cor(normalWithNegInf, normal)));
+        result = wavg(normalWithNegInf, normal);
+        assertTrue(Double.isInfinite(result) && result < 0); // negative infinity
+        assertTrue(Double.isNaN(wvar(normalWithNegInf, normal)));
+        assertTrue(Double.isNaN(wstd(normalWithNegInf, normal)));
+        assertTrue(Double.isNaN(wste(normalWithNegInf, normal)));
+        assertTrue(Double.isNaN(wtstat(normalWithNegInf, normal)));
+
+        assertTrue(Double.isNaN(cov(normal, normalWithNegInf)));
+        assertTrue(Double.isNaN(cor(normal, normalWithNegInf)));
+        assertTrue(Double.isNaN(wavg(normal, normalWithNegInf))); // is NaN because of -inf/-inf division
+        assertTrue(Double.isNaN(wvar(normal, normalWithNegInf)));
+        assertTrue(Double.isNaN(wstd(normal, normalWithNegInf)));
+        assertTrue(Double.isNaN(wste(normal, normalWithNegInf)));
+        assertTrue(Double.isNaN(wtstat(normal, normalWithNegInf)));
+
+    <#if pt.primitive == "double" >
+        // testing normal value overflow. NOTE: this is testing for doubles only, since overflowing a double using
+        // smaller types is quite difficult
+        final double LARGE_VALUE = Math.nextDown(Double.MAX_VALUE);
+
+        final double[] overflow = new double[]{1, LARGE_VALUE, LARGE_VALUE};
+        assertTrue(Double.isInfinite(avg(overflow)));
+
+        assertTrue(Double.isNaN(var(overflow)));
+        assertTrue(Double.isNaN(std(overflow)));
+        assertTrue(Double.isNaN(ste(overflow)));
+        assertTrue(Double.isNaN(tstat(overflow)));
+
+        final double[] negOverflow = new double[]{1, LARGE_VALUE, -LARGE_VALUE};
+        assertTrue(Double.isNaN(var(negOverflow)));
+        assertTrue(Double.isNaN(std(negOverflow)));
+        assertTrue(Double.isNaN(ste(negOverflow)));
+        assertTrue(Double.isNaN(tstat(negOverflow)));
+
+        final double[] negAdditionOverflow = new double[]{1, -LARGE_VALUE, -LARGE_VALUE};
+        result = avg(negAdditionOverflow);
+        assertTrue(Double.isInfinite(result) && result < 0); // negative infinity
+    </#if>
+    }
+</#if>
+
     <#list primitiveTypes as pt2>
     <#if pt2.valueType.isNumber >
 
@@ -511,6 +620,39 @@ public class TestNumeric extends BaseArrayTestCase {
         assertTrue(Math.abs(75 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
         assertEquals(${pt.null}, product((${pt.vector}) null));
     }
+
+<#if pt.valueType.isFloat >
+    public void test${pt.boxed}ProductOverflowAndNaN() {
+        final ${pt.primitive} LARGE_VALUE = Math.nextDown(${pt.boxed}.MAX_VALUE);
+
+        final ${pt.primitive}[] overflow = new ${pt.primitive}[]{1, LARGE_VALUE, LARGE_VALUE};
+        final ${pt.primitive} overflowProduct = product(overflow);
+        assertTrue(${pt.boxed}.isInfinite(overflowProduct) && overflowProduct > 0);
+
+        final ${pt.primitive}[] negOverflow = new ${pt.primitive}[]{1, LARGE_VALUE, -LARGE_VALUE};
+        final ${pt.primitive} negOverflowProduct = product(negOverflow);
+        assertTrue(${pt.boxed}.isInfinite(negOverflowProduct) && negOverflowProduct < 0);
+
+        final ${pt.primitive}[] overflowWithZero = new ${pt.primitive}[]{1, LARGE_VALUE, LARGE_VALUE, 0};
+        assertTrue(Math.abs(product(overflowWithZero)) == 0.0);
+
+        final ${pt.primitive}[] normalWithNaN = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.NaN, 4, 5};
+        assertTrue(${pt.boxed}.isNaN(product(normalWithNaN)));
+
+        final ${pt.primitive}[] posInfAndZero = new ${pt.primitive}[]{1, ${pt.boxed}.POSITIVE_INFINITY, 0};
+        assertTrue(${pt.boxed}.isNaN(product(posInfAndZero)));
+
+        final ${pt.primitive}[] negInfAndZero = new ${pt.primitive}[]{1, ${pt.boxed}.NEGATIVE_INFINITY, 0};
+        assertTrue(${pt.boxed}.isNaN(product(negInfAndZero)));
+
+        final ${pt.primitive}[] zeroAndPosInf = new ${pt.primitive}[]{1, 0, ${pt.boxed}.POSITIVE_INFINITY};
+        assertTrue(${pt.boxed}.isNaN(product(zeroAndPosInf)));
+
+        final ${pt.primitive}[] zeroAndNegInf = new ${pt.primitive}[]{1, 0, ${pt.boxed}.NEGATIVE_INFINITY};
+        assertTrue(${pt.boxed}.isNaN(product(zeroAndNegInf)));
+
+    }
+</#if>
 
 //    public void test${pt.boxed}ProdObjectVector() {
 //        assertEquals(new ${pt.primitive}[]{-30, 120}, product(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5, 4}, {-3, 5}, {2, 6}})));

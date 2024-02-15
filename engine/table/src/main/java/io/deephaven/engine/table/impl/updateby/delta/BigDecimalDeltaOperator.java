@@ -8,6 +8,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
@@ -21,14 +22,13 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 public class BigDecimalDeltaOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     private final DeltaControl control;
-    private final ColumnSource<?> inputSource;
-    // region extra-fields
-    // endregion extra-fields
+    private ColumnSource<?> inputSource;
 
     protected class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         public ObjectChunk<BigDecimal, ? extends Values> objectValueChunk;
         private BigDecimal lastVal = null;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
         }
@@ -61,22 +61,26 @@ public class BigDecimalDeltaOperator extends BaseObjectUpdateByOperator<BigDecim
         }
     }
 
-    public BigDecimalDeltaOperator(@NotNull final MatchPair pair,
-            @Nullable final RowRedirection rowRedirection,
-            @NotNull final DeltaControl control,
-            @NotNull final ColumnSource<?> inputSource
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pair, new String[] {pair.rightColumn}, rowRedirection, BigDecimal.class);
+    public BigDecimalDeltaOperator(@NotNull final MatchPair pair, @NotNull final DeltaControl control) {
+        super(pair, new String[] {pair.rightColumn}, BigDecimal.class);
         this.control = control;
-        this.inputSource = inputSource;
-        // region constructor
-        // endregion constructor
     }
 
     @Override
-    public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
+    public UpdateByOperator copy() {
+        return new BigDecimalDeltaOperator(pair, control);
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        inputSource = source.getColumnSource(pair.rightColumn);
+    }
+
+    @Override
+    public void initializeCumulative(
+            @NotNull final UpdateByOperator.Context context,
             final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {
@@ -89,9 +93,6 @@ public class BigDecimalDeltaOperator extends BaseObjectUpdateByOperator<BigDecim
             ctx.lastVal = null;
         }
     }
-
-    // region extra-methods
-    // endregion extra-methods
 
     @NotNull
     @Override

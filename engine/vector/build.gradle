@@ -7,7 +7,7 @@ description 'Engine Vectors: Array-like data structures for in-place data access
 
 dependencies {
     api project(':Util')
-    api project(':qst')
+    api project(':qst-type')
     api project(':engine-primitive')
 
     implementation project(':Base')

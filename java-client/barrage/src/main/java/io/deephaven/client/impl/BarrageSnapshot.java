@@ -5,17 +5,35 @@ package io.deephaven.client.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.qst.table.TableSpec;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A {@code BarrageSnapshot} represents a snapshot of a table that may or may not be filtered to a viewport of the
  * remote source table.
  */
 public interface BarrageSnapshot {
+    /**
+     * Create a {@code BarrageSnapshot} from a {@link TableHandle}.
+     *
+     * @param session the Deephaven session that this export belongs to
+     * @param executorService an executor service used to flush metrics when enabled
+     * @param tableHandle the tableHandle to snapshot (ownership is transferred to the snapshot)
+     * @param options the transport level options for this snapshot
+     * @return a {@code BarrageSnapshot}
+     */
+    static BarrageSnapshot make(
+            final BarrageSession session, @Nullable final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSnapshotOptions options) {
+        return new BarrageSnapshotImpl(session, executorService, tableHandle, options);
+    }
+
     interface Factory {
         /**
          * Sources a barrage snapshot from a {@link TableSpec}.

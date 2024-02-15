@@ -7,15 +7,11 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatCumSumOperator extends BaseFloatUpdateByOperator {
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseFloatUpdateByOperator.Context {
         public FloatChunk<? extends Values> floatValueChunk;
@@ -44,14 +40,13 @@ public class FloatCumSumOperator extends BaseFloatUpdateByOperator {
         }
     }
 
-    public FloatCumSumOperator(@NotNull final MatchPair pair,
-                               @Nullable final RowRedirection rowRedirection
-                               // region extra-constructor-args
-                               // endregion extra-constructor-args
-    ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
-        // region constructor
-        // endregion constructor
+    public FloatCumSumOperator(@NotNull final MatchPair pair) {
+        super(pair, new String[] { pair.rightColumn });
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new FloatCumSumOperator(pair);
     }
 
     @NotNull

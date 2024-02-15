@@ -16,6 +16,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.function.Sort;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Assert;
@@ -26,6 +27,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -47,8 +49,9 @@ public class TestGroovyDeephavenSession {
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
+        final ExecutionContext context = ExecutionContext.getContext();
         session = new GroovyDeephavenSession(
-                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
+                context.getUpdateGraph(), context.getOperationInitializer(), NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         executionContext = session.getExecutionContext().open();
     }
@@ -63,7 +66,7 @@ public class TestGroovyDeephavenSession {
 
     public <T> T fetch(final String name, final Class<T> clazz) {
         // note var is guaranteed to be non-null
-        final Object var = session.getVariable(name);
+        final Object var = session.getQueryScope().readParamValue(name);
         if (clazz.isAssignableFrom(var.getClass())) {
             // noinspection unchecked
             return (T) var;
@@ -128,13 +131,14 @@ public class TestGroovyDeephavenSession {
 
     @Test
     public void testUnloadedWildcardPackageImport() {
-        // it's unlikely we have loaded anything from this groovy package
-        final String packageString = "groovy.time";
-
-        if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
-            Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
+        // Pick three packages we won't have loaded directly - a JRE package, a third party package (from a jar), and a
+        // package in the current source set
+        for (String packageString : Set.of("java.util", "groovy.time", "io.deephaven.engine.util.scripts.wontbeused")) {
+            if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
+                Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
+            }
+            session.evaluateScript("import " + packageString + ".*").throwIfError();
         }
-        session.evaluateScript("import " + packageString + ".*").throwIfError();
     }
 
     /**
@@ -147,14 +151,14 @@ public class TestGroovyDeephavenSession {
         session.evaluateScript(
                 "public class MyClass1 { public static int getMyVar() { return 42 ; } };\n ExecutionContext.getContext().getQueryLibrary().importClass(MyClass1);\nt = emptyTable(1).update(\"Var=MyClass1.getMyVar()\");\n",
                 "Script1").throwIfError();
-        final Table t = (Table) session.getVariable("t");
+        final Table t = session.getQueryScope().readParamValue("t");
         final int var1 = t.getColumnSource("Var").getInt(0);
         assertEquals(42, var1);
 
         session.evaluateScript(
                 "public class MyClass1 { public static int getMyVar() { return 43 ; } };\n ExecutionContext.getContext().getQueryLibrary().importClass(MyClass1);\n t2 = emptyTable(1).update(\"Var=MyClass1.getMyVar()\");\n",
                 "Script2").throwIfError();
-        final Table t2 = (Table) session.getVariable("t2");
+        final Table t2 = session.getQueryScope().readParamValue("t2");
         final int var2 = t2.getColumnSource("Var").getInt(0);
         assertEquals(43, var2);
 
@@ -164,7 +168,7 @@ public class TestGroovyDeephavenSession {
         session.evaluateScript("ExecutionContext.getContext().getQueryLibrary().importClass("
                 + getClass().getCanonicalName() + ".class);\n t3 = emptyTable(1).update(\"Var="
                 + getClass().getCanonicalName() + ".VALUE_FOR_IMPORT\");\n", "Script3").throwIfError();
-        final Table t3 = (Table) session.getVariable("t3");
+        final Table t3 = session.getQueryScope().readParamValue("t3");
         final int var3 = t3.getColumnSource("Var").getInt(0);
         assertEquals(VALUE_FOR_IMPORT, var3);
     }
@@ -452,7 +456,7 @@ public class TestGroovyDeephavenSession {
         try {
             c = "primMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ");\n";
             session.evaluateScript(c).throwIfError();
-            Integer primMin = (Integer) session.getVariable("primMin");
+            Integer primMin = session.getQueryScope().readParamValue("primMin");
             assertEquals(Numeric.min(a), primMin.intValue());
         } catch (Exception e) {
             e.printStackTrace();
@@ -464,7 +468,7 @@ public class TestGroovyDeephavenSession {
             c = "z = " + z + "; \n" + "d = " + d + "; \n" +
                     "wrapMin = min(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z);\n";
             session.evaluateScript(c).throwIfError();
-            Integer wrapperMin = (Integer) session.getVariable("wrapMin");
+            Integer wrapperMin = session.getQueryScope().readParamValue("wrapMin");
             assertEquals(Math.min(Numeric.min(a), z), wrapperMin.intValue());
         } catch (Exception e) {
             e.printStackTrace();
@@ -475,7 +479,7 @@ public class TestGroovyDeephavenSession {
             c = "z = " + z + "; \n" + "d = " + d + "; \n" +
                     "m2 = max(" + Arrays.toString(a).substring(1, Arrays.toString(a).length() - 1) + ", z, d);\n";
             session.evaluateScript(c).throwIfError();
-            Double wrapperMax = (Double) session.getVariable("m2");
+            Double wrapperMax = session.getQueryScope().readParamValue("m2");
             assertEquals(5.0d, wrapperMax, 0.0d);
         } catch (Exception e) {
             e.printStackTrace();
@@ -486,7 +490,7 @@ public class TestGroovyDeephavenSession {
         try {
             QueryScope.addParam("z", z);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final int var2 = t.getColumnSource("Z").getInt(0);
             assertEquals(Numeric.min(Y, z), var2);
         } catch (Exception e) {
@@ -498,7 +502,7 @@ public class TestGroovyDeephavenSession {
         try {
             QueryScope.addParam("z", z);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final double var2 = t.getColumnSource("Z").getDouble(0);
             assertEquals(Numeric.min(Y, 5d), var2, 1e-10);
         } catch (Exception e) {
@@ -511,7 +515,7 @@ public class TestGroovyDeephavenSession {
             QueryScope.addParam("z", z);
             QueryScope.addParam("d", d);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final double var2 = t.getColumnSource("Z").getDouble(0);
             assertEquals(Numeric.min(Y, d), var2, 1e-10);
         } catch (Exception e) {
@@ -523,7 +527,7 @@ public class TestGroovyDeephavenSession {
         try {
             QueryScope.addParam("z", z);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final int var2 = t.getColumnSource("Z").getInt(0);
             assertEquals(Numeric.max(Y, z), var2);
         } catch (Exception e) {
@@ -536,7 +540,7 @@ public class TestGroovyDeephavenSession {
         try {
             QueryScope.addParam("z", z);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final double var2 = t.getColumnSource("Z").getDouble(0);
             assertEquals(Numeric.max(Y, 5d), var2, 1e-10);
         } catch (Exception e) {
@@ -549,7 +553,7 @@ public class TestGroovyDeephavenSession {
             QueryScope.addParam("z", z);
             QueryScope.addParam("d", d);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final double var2 = t.getColumnSource("Z").getDouble(0);
             assertEquals(Numeric.max(Y, d), var2, 1e-10);
         } catch (Exception e) {
@@ -561,7 +565,7 @@ public class TestGroovyDeephavenSession {
         try {
             QueryScope.addParam("z", z);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
             assertArrayEquals(Sort.sort(Y, z), var2);
         } catch (Exception e) {
@@ -576,7 +580,7 @@ public class TestGroovyDeephavenSession {
         // QueryScope.addParam("z", z);
         // QueryScope.addParam("d", d);
         // session.evaluateScript(c).throwIfError();
-        // final Table t = (Table) session.getVariable("t");
+        // final Table t = session.getQueryScope().readParamValue("t");
         // final Comparable[] var2 = t.getColumnSource("Z", Comparable[].class).get(0);
         // // noinspection unchecked
         // assertArrayEquals(Sort.<Comparable>sortObj(Y, d), var2);
@@ -589,7 +593,7 @@ public class TestGroovyDeephavenSession {
         try {
             QueryScope.addParam("z", z);
             session.evaluateScript(c).throwIfError();
-            final Table t = (Table) session.getVariable("t");
+            final Table t = session.getQueryScope().readParamValue("t");
             final int[] var2 = t.getColumnSource("Z", int[].class).get(0);
             assertArrayEquals(Sort.sortDescending(Y, z), var2);
         } catch (Exception e) {
@@ -626,7 +630,7 @@ public class TestGroovyDeephavenSession {
     public void testMinInFormula() {
         QueryScope.addParam("d", 5d);
         session.evaluateScript("t = emptyTable(1).updateView(\"Y=1\", \"Z=min(Y,d)\")\n").throwIfError();
-        final Table t = (Table) session.getVariable("t");
+        final Table t = session.getQueryScope().readParamValue("t");
     }
 }
 

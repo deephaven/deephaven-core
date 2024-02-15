@@ -12,17 +12,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.IntBuffer;
 
-final class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
+final class IntTransfer extends FillingPrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
     static IntTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSize) {
-        final int maxValuesPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSize / Integer.BYTES));
-        final int[] backingArray = new int[maxValuesPerPage];
+                              final int targetPageSizeInBytes) {
+        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));
+        final int[] backingArray = new int[targetElementsPerPage];
         return new IntTransfer(
                 columnSource,
                 tableRowSet,
                 WritableIntChunk.writableChunkWrap(backingArray),
                 IntBuffer.wrap(backingArray),
-                maxValuesPerPage);
+                targetElementsPerPage);
     }
 
     private IntTransfer(
@@ -30,7 +30,7 @@ final class IntTransfer extends PrimitiveTransfer<WritableIntChunk<Values>, IntB
             @NotNull final RowSequence tableRowSet,
             @NotNull final WritableIntChunk<Values> chunk,
             @NotNull final IntBuffer buffer,
-            final int maxValuesPerPage) {
-        super(columnSource, tableRowSet, chunk, buffer, maxValuesPerPage);
+            final int targetElementsPerPage) {
+        super(columnSource, tableRowSet, chunk, buffer, targetElementsPerPage);
     }
 }

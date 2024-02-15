@@ -30,9 +30,7 @@ setup <- function() {
 ##### TESTING GOOD INPUTS #####
 
 test_that("client dhConnection works in the simple case of anonymous authentication", {
-
   expect_no_error(client <- Client$new(target = target))
-  
 })
 
 test_that("import_table does not fail with data frame inputs of simple column types", {
@@ -150,7 +148,6 @@ int_col("Name_Int_Col", [44, 55, 66])
 ##### TESTING BAD INPUTS #####
 
 test_that("client constructor fails nicely with bad inputs", {
-  
   expect_error(
     Client$new(target = target, auth_type = "basic"),
     "Basic authentication was requested, but 'auth_token' was not provided, and at most one of 'username' or 'password' was provided. Please provide either 'username' and 'password', or 'auth_token'."
@@ -239,7 +236,6 @@ test_that("client constructor fails nicely with bad inputs", {
     Client$new(target = target, extra_headers = list(a = 123)),
     "'value' must be a single string. Got an object of class numeric."
   )
-  
 })
 
 test_that("import_table fails nicely with bad inputs", {
@@ -298,8 +294,10 @@ test_that("run_script fails nicely with bad input types", {
 })
 
 test_that("Running Client$new with wrong argument types gives good errors", {
-  expect_error(Client$new(12345),
-    "Client initialize first argument must be either a string or an Rcpp::XPtr object.")
+  expect_error(
+    Client$new(12345),
+    "Client initialize first argument must be either a string or an Rcpp::XPtr object."
+  )
 })
 
 test_that("A Client created from an Rcpp::XPtr is functional.", {
@@ -309,7 +307,7 @@ test_that("A Client created from an Rcpp::XPtr is functional.", {
   client2 <- Client$new(client_xptr)
   t <- client2$open_table("t")
   df <- t$as_data_frame()
-  expect_true(df[1,1] == 42)
+  expect_true(df[1, 1] == 42)
   client$close()
 })
 
@@ -318,7 +316,7 @@ test_that("ticket_to_table works.", {
   client$empty_table(1)$update("A = 43")$bind_to_variable("t")
   t <- client$ticket_to_table("s/t")
   df <- t$as_data_frame()
-  expect_true(df[1,1] == 43)
+  expect_true(df[1, 1] == 43)
   client$close()
 })
 

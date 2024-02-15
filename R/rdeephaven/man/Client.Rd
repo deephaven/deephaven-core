@@ -13,7 +13,7 @@ import data to and export data from the server, and run queries on the server.
 library(rdeephaven)
 
 # connecting to Deephaven server
-client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 
 # create a data frame and push it to the server, retrieve a reference to it as a TableHandle
 df <- data.frame(

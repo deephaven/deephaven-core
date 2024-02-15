@@ -6,6 +6,8 @@ package io.deephaven.engine.util;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.EnumValue;
 import io.deephaven.util.type.TypeUtils;
@@ -46,11 +48,11 @@ public class TotalsTableBuilder {
         Sum,
         /** Return the sum of absolute values in each group. */
         AbsSum,
-        /** Return the variance of values in each group. */
+        /** Return the sample variance of values in each group. */
         Var,
         /** Return the average of values in each group. */
         Avg,
-        /** Return the standard deviation of each group. */
+        /** Return the sample standard deviation of each group. */
         Std,
         /** Return the first value of each group. */
         First,
@@ -546,12 +548,12 @@ public class TotalsTableBuilder {
     }
 
     private static void ensureColumnsExist(Table source, Set<String> columns) {
-        if (!source.getColumnSourceMap().keySet().containsAll(columns)) {
-            final Set<String> missing = new LinkedHashSet<>(columns);
-            missing.removeAll(source.getColumnSourceMap().keySet());
-            throw new IllegalArgumentException("Missing columns for totals table " + missing + ", available columns "
-                    + source.getColumnSourceMap().keySet());
-        }
+        NoSuchColumnException.throwIf(
+                source.getDefinition().getColumnNameSet(),
+                columns,
+                "Missing columns for totals table [%s], available columns [%s]",
+                Type.MISSING,
+                Type.AVAILABLE);
     }
 
     private static String[] makeColumnFormats(Table source, TotalsTableBuilder builder) {

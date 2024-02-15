@@ -13,9 +13,9 @@ import java.nio.IntBuffer;
 
 final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVector, IntBuffer> {
     IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Integer.BYTES, targetPageSize,
-                IntBuffer.allocate(targetPageSize / Integer.BYTES), Integer.BYTES);
+                      final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Integer.BYTES, targetPageSizeInBytes,
+                IntBuffer.allocate(targetPageSizeInBytes / Integer.BYTES), Integer.BYTES);
     }
 
     @Override

@@ -44,7 +44,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
             validateColumnDefinition(columnDefinitionMap);
         } else {
             returnedType = dcf.getReturnedType();
-            applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()));
+            applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()), Map.of());
             formulaFactory = createKernelFormulaFactory(this);
         }
 

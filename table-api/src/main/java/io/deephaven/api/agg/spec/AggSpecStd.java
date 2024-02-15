@@ -8,8 +8,12 @@ import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
 /**
- * Specifies an aggregation that outputs the standard deviation of the input column values for each group. Only works
- * for numeric input types.
+ * Specifies an aggregation that outputs the sample standard deviation of the input column values for each group. Only
+ * works for numeric input types.
+ *
+ * Sample standard deviation is computed using Bessel's correction
+ * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+ * estimator of population variance.
  *
  * @see TableOperations#stdBy
  */

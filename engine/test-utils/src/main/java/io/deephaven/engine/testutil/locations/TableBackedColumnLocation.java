@@ -26,7 +26,7 @@ public final class TableBackedColumnLocation
             @NotNull final TableBackedTableLocation tableLocation,
             @NotNull final String name) {
         super(tableLocation, name);
-        columnSource = tableLocation.table().getDefinition().getColumnNameMap().containsKey(name)
+        columnSource = tableLocation.table().getDefinition().getColumnNameSet().contains(name)
                 ? ReinterpretUtils.maybeConvertToPrimitive(tableLocation.table().getColumnSource(name))
                 : null;
     }

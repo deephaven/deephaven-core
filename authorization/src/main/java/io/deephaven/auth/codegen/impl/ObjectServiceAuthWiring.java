@@ -92,11 +92,9 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
 
         public void onMessageReceivedMessageStream(AuthContext authContext, StreamRequest request) {}
 
-        public void onMessageReceivedOpenMessageStream(AuthContext authContext,
-                StreamRequest request) {}
+        public void onMessageReceivedOpenMessageStream(AuthContext authContext, StreamRequest request) {}
 
-        public void onMessageReceivedNextMessageStream(AuthContext authContext,
-                StreamRequest request) {}
+        public void onMessageReceivedNextMessageStream(AuthContext authContext, StreamRequest request) {}
     }
 
     class DenyAll implements ObjectServiceAuthWiring {
@@ -112,13 +110,11 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
             ServiceAuthWiring.operationNotAllowed();
         }
 
-        public void onMessageReceivedOpenMessageStream(AuthContext authContext,
-                StreamRequest request) {
+        public void onMessageReceivedOpenMessageStream(AuthContext authContext, StreamRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
-        public void onMessageReceivedNextMessageStream(AuthContext authContext,
-                StreamRequest request) {
+        public void onMessageReceivedNextMessageStream(AuthContext authContext, StreamRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
     }
@@ -144,15 +140,13 @@ public interface ObjectServiceAuthWiring extends ServiceAuthWiring<ObjectService
             }
         }
 
-        public void onMessageReceivedOpenMessageStream(AuthContext authContext,
-                StreamRequest request) {
+        public void onMessageReceivedOpenMessageStream(AuthContext authContext, StreamRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedOpenMessageStream(authContext, request);
             }
         }
 
-        public void onMessageReceivedNextMessageStream(AuthContext authContext,
-                StreamRequest request) {
+        public void onMessageReceivedNextMessageStream(AuthContext authContext, StreamRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedNextMessageStream(authContext, request);
             }

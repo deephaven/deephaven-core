@@ -7,50 +7,23 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Interface for interactive console script sessions.
  */
-public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
+public interface ScriptSession extends LivenessNode {
 
     /**
-     * Retrieve a variable from the script session's bindings.
-     * <p/>
-     * Please use {@link ScriptSession#getVariable(String, Object)} if you expect the variable may not exist.
+     * Provides access to the query scope defined by the state in this script session.
      *
-     * @param name the variable to retrieve
-     * @return the variable
-     * @throws QueryScope.MissingVariableException if the variable does not exist
+     * @return an implementation defined QueryScope, allowing access to state in the script session
      */
-    @NotNull
-    Object getVariable(String name) throws QueryScope.MissingVariableException;
-
-    /**
-     * Retrieve a variable from the script session's bindings. If the variable is not present, return defaultValue.
-     *
-     * If the variable is present, but is not of type (T), a ClassCastException may result.
-     *
-     * @param name the variable to retrieve
-     * @param defaultValue the value to use when no value is present in the session's scope
-     * @param <T> the type of the variable
-     * @return the value of the variable, or defaultValue if not present
-     */
-    <T> T getVariable(String name, T defaultValue);
-
-    /**
-     * A {@link VariableProvider} instance, for services like autocomplete which may want a limited "just the variables"
-     * view of our session state.
-     *
-     * @return a VariableProvider instance backed by the global/binding context of this script session.
-     */
-    VariableProvider getVariableProvider();
+    QueryScope getQueryScope();
 
     /**
      * Obtain an {@link ExecutionContext} instance for the current script session. This is the execution context that is
@@ -123,36 +96,6 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     Changes evaluateScript(Path scriptPath);
 
     /**
-     * Retrieves all of the variables present in the session's scope (e.g., Groovy binding, Python globals()).
-     *
-     * @return an unmodifiable map with variable names as the keys, and the Objects as the result
-     */
-    Map<String, Object> getVariables();
-
-    /**
-     * Retrieves all of the variable names present in the session's scope
-     *
-     * @return an unmodifiable set of variable names
-     */
-    Set<String> getVariableNames();
-
-    /**
-     * Check if the scope has the given variable name
-     *
-     * @param name the variable name
-     * @return True iff the scope has the given variable name
-     */
-    boolean hasVariableName(String name);
-
-    /**
-     * Inserts a value into the script's scope.
-     *
-     * @param name the variable name to set
-     * @param value the new value of the variable
-     */
-    void setVariable(String name, @Nullable Object value);
-
-    /**
      * @return a textual description of this script session's language for use in messages.
      */
     String scriptType();
@@ -175,7 +118,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    default Object unwrapObject(Object object) {
+    default Object unwrapObject(@Nullable Object object) {
         return object;
     }
 }

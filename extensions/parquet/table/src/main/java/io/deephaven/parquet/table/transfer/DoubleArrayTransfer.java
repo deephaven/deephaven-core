@@ -16,9 +16,9 @@ import java.nio.DoubleBuffer;
 
 final class DoubleArrayTransfer extends PrimitiveArrayAndVectorTransfer<double[], double[], DoubleBuffer> {
     DoubleArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                     final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize / Double.BYTES, targetPageSize,
-                DoubleBuffer.allocate(targetPageSize / Double.BYTES), Double.BYTES);
+                     final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes / Double.BYTES, targetPageSizeInBytes,
+                DoubleBuffer.allocate(targetPageSizeInBytes / Double.BYTES), Double.BYTES);
     }
 
     @Override

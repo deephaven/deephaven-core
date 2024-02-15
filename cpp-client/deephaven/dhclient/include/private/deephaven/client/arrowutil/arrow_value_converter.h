@@ -4,8 +4,8 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <arrow/type.h>
-#include <arrow/util/string_view.h>
 #include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::arrowutil {
@@ -22,7 +22,7 @@ public:
   /**
    * The "Convert" function for string_view is std::string
    */
-  static void Convert(arrow::util::string_view sv, std::string *dest) {
+  static void Convert(std::string_view sv, std::string *dest) {
     dest->clear();
     dest->append(sv.data(), sv.size());
   }

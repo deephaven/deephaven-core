@@ -3,126 +3,14 @@
 # C++ UpdateByOpWrapper, which is finally a wrapper around a C++ UpdateByOperation. See rdeephaven/src/client.cpp for details.
 # Note that UpdateByOps should not be instantiated directly by user code, but rather by provided uby functions.
 
-
-#' @name
-#' UpdateBy
-#' @title
-#' Deephaven's UpdateBy Operations
-#' @md
-#' @usage NULL
-#' @format NULL
-#' @docType class
-#'
-#' @description
-#' Deephaven's `update_by()` table method and suite of `uby` functions enable cumulative and moving calculations
-#' on static _and_ streaming tables. Complex operations like cumulative minima and maxima, exponential moving averages,
-#' and rolling standard deviations are all possible and effortless to execute. As always in Deephaven,
-#' the results of these calculations will continue to update as their parent tables are updated. Additionally, it's easy
-#' to group data by one or more columns, enabling complex group-wise calculations with a single line of code.
-#'
-#' @section
-#' Applying UpdateBy operations to a table:
-#' The table method `update_by()` is the entry point for UpdateBy operations. It takes two arguments: the first is an
-#' [`UpdateByOp`][UpdateByOp] or a list of `UpdateByOp`s denoting the calculations to perform on specific columns of the
-#' table. Then, it takes a column name or a list of column names that define the groups on which to perform the calculations.
-#' If you don't want grouped calculations, omit this argument.
-#'
-#' The `update_by()` method itself does not know anything about the columns on which you want to perform calculations.
-#' Rather, the desired columns are passed to individual `uby` functions, enabling a massive amount of flexibility.
-#'
-#' @section
-#' `uby` functions:
-#' `uby` functions are the workers that actually execute the complex UpdateBy calculations. These functions are
-#' _generators_, meaning they return _functions_ that the Deephaven engine knows how to interpret. We call the functions
-#' that they return [`UpdateByOp`][UpdateByOp]s. These `UpdateByOp`s are not R-level functions, but Deephaven-specific
-#' data types that perform all of the intensive calculations. Here is a list of all `uby` functions available in Deephaven:
-#'
-#' - [`uby_cum_min()`][uby_cum_min]
-#' - [`uby_cum_max()`][uby_cum_max]
-#' - [`uby_cum_sum()`][uby_cum_sum]
-#' - [`uby_cum_prod()`][uby_cum_prod]
-#' - [`uby_forward_fill()`][uby_forward_fill]
-#' - [`uby_delta()`][uby_delta]
-#' - [`uby_emmin_tick()`][uby_emmin_tick]
-#' - [`uby_emmin_time()`][uby_emmin_time]
-#' - [`uby_emmax_tick()`][uby_emmax_tick]
-#' - [`uby_emmax_time()`][uby_emmax_time]
-#' - [`uby_ems_tick()`][uby_ems_tick]
-#' - [`uby_ems_time()`][uby_ems_time]
-#' - [`uby_ema_tick()`][uby_ema_tick]
-#' - [`uby_ema_time()`][uby_ema_time]
-#' - [`uby_emstd_tick()`][uby_emstd_tick]
-#' - [`uby_emstd_time()`][uby_emstd_time]
-#' - [`uby_rolling_count_tick()`][uby_rolling_count_tick]
-#' - [`uby_rolling_count_time()`][uby_rolling_count_time]
-#' - [`uby_rolling_group_tick()`][uby_rolling_group_tick]
-#' - [`uby_rolling_group_time()`][uby_rolling_group_time]
-#' - [`uby_rolling_min_tick()`][uby_rolling_min_tick]
-#' - [`uby_rolling_min_time()`][uby_rolling_min_time]
-#' - [`uby_rolling_max_tick()`][uby_rolling_max_tick]
-#' - [`uby_rolling_max_time()`][uby_rolling_max_time]
-#' - [`uby_rolling_sum_tick()`][uby_rolling_sum_tick]
-#' - [`uby_rolling_sum_time()`][uby_rolling_sum_time]
-#' - [`uby_rolling_prod_tick()`][uby_rolling_prod_tick]
-#' - [`uby_rolling_prod_time()`][uby_rolling_prod_time]
-#' - [`uby_rolling_avg_tick()`][uby_rolling_avg_tick]
-#' - [`uby_rolling_avg_time()`][uby_rolling_avg_time]
-#' - [`uby_rolling_wavg_tick()`][uby_rolling_wavg_tick]
-#' - [`uby_rolling_wavg_time()`][uby_rolling_wavg_time]
-#' - [`uby_rolling_std_tick()`][uby_rolling_std_tick]
-#' - [`uby_rolling_std_time()`][uby_rolling_std_time]
-#'
-#' For more details on each aggregation function, click on one of the methods above or see the reference documentation
-#' by running `?uby_cum_min`, `?uby_delta`, etc.
-#'
-#' @examples
-#' \dontrun{
-#' library(rdeephaven)
-#'
-#' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
-#'
-#' # create data frame, push to server, retrieve TableHandle
-#' df <- data.frame(
-#'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
-#'   col1 = sample(10000, size = 500, replace = TRUE),
-#'   col2 = sample(10000, size = 500, replace = TRUE),
-#'   col3 = 1:500
-#' )
-#' th <- client$import_table(df)
-#'
-#' # compute 10-row exponential weighted moving average of col1 and col2, grouped by boolCol
-#' th1 <- th$
-#'   update_by(uby_ema_tick(decay_ticks=10, cols=c("col1Ema = col1", "col2Ema = col2")), by="boolCol")
-#'
-#' # compute rolling 10-second weighted average and standard deviation of col1 and col2, weighted by col3
-#' th2 <- th$
-#'   update_by(
-#'     c(uby_rolling_wavg_time(ts_col="timeCol", wcol="col3", cols=c("col1WAvg = col1", "col2WAvg = col2"), rev_time="PT10s"),
-#'       uby_rolling_std_time(ts_col="timeCol", cols=c("col1Std = col1", "col2Std = col2"), rev_time="PT10s")))
-#'
-#' # compute cumulative minimum and maximum of col1 and col2 respectively, and the rolling 20-row sum of col3, grouped by boolCol
-#' th3 <- th$
-#'   update_by(
-#'     c(uby_cum_min(cols="col1"),
-#'       uby_cum_max(cols="col2"),
-#'       uby_rolling_sum_tick(cols="col3", rev_ticks=20)),
-#'     by="boolCol")
-#'
-#' client$close()
-#' }
-#'
-NULL
-
-
 #' @name UpdateByOp
 #' @title Deephaven UpdateByOps
 #' @md
 #' @description
 #' An `UpdateByOp` is the return type of one of Deephaven's [`uby`][UpdateBy] functions. It is a function that performs
 #' the computation specified by the `uby` function. These are intended to be passed directly to `update_by()`,
-#' and should never be instantiated directly be user code.
+#' and should never be instantiated directly be user code. For more information, see the vignette on
+#' `uby` functions with `vignette("update_by")`.
 #'
 #' If multiple tables have the same schema and the same UpdateBy operations need to be applied to each table, saving
 #' these objects directly in a variable may be useful to avoid having to re-create them each time:
@@ -172,6 +60,9 @@ UpdateByOp <- R6Class("UpdateByOp",
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative sum for all non-grouping columns.
@@ -182,12 +73,12 @@ UpdateByOp <- R6Class("UpdateByOp",
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -200,12 +91,12 @@ UpdateByOp <- R6Class("UpdateByOp",
 #'
 #' # compute cumulative sum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_cum_sum(c("col1CumSum = col1", "col2CumSum = col2")), by="boolCol")
+#'   update_by(uby_cum_sum(c("col1CumSum = col1", "col2CumSum = col2")), by = "boolCol")
 #'
 #' # compute cumulative sum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_cum_sum(c("col1CumSum = col1", "col2CumSum = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_cum_sum(c("col1CumSum = col1", "col2CumSum = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -235,6 +126,9 @@ uby_cum_sum <- function(cols = character()) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative product for all non-grouping columns.
@@ -245,12 +139,12 @@ uby_cum_sum <- function(cols = character()) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -263,12 +157,12 @@ uby_cum_sum <- function(cols = character()) {
 #'
 #' # compute cumulative product of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by="boolCol")
+#'   update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by = "boolCol")
 #'
 #' # compute cumulative product of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_cum_prod(c("col1CumProd = col1", "col2CumProd = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -298,6 +192,9 @@ uby_cum_prod <- function(cols = character()) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative minimum for all non-grouping columns.
@@ -308,12 +205,12 @@ uby_cum_prod <- function(cols = character()) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -326,12 +223,12 @@ uby_cum_prod <- function(cols = character()) {
 #'
 #' # compute cumulative minimum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_cum_min(c("col1CumMin = col1", "col2CumMin = col2")), by="boolCol")
+#'   update_by(uby_cum_min(c("col1CumMin = col1", "col2CumMin = col2")), by = "boolCol")
 #'
 #' # compute cumulative minimum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_cum_min(c("col1CumMin = col1", "col2CumMin = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_cum_min(c("col1CumMin = col1", "col2CumMin = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -361,6 +258,9 @@ uby_cum_min <- function(cols = character()) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the cumulative maximum for all non-grouping columns.
@@ -371,12 +271,12 @@ uby_cum_min <- function(cols = character()) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -389,12 +289,12 @@ uby_cum_min <- function(cols = character()) {
 #'
 #' # compute cumulative maximum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_cum_max(c("col1CumMax = col1", "col2CumMax = col2")), by="boolCol")
+#'   update_by(uby_cum_max(c("col1CumMax = col1", "col2CumMax = col2")), by = "boolCol")
 #'
 #' # compute cumulative maximum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_cum_max(c("col1CumMax = col1", "col2CumMax = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_cum_max(c("col1CumMax = col1", "col2CumMax = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -425,6 +325,9 @@ uby_cum_max <- function(cols = character()) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to perform a forward fill on all non-grouping columns.
@@ -435,12 +338,12 @@ uby_cum_max <- function(cols = character()) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = replace(sample(10000, size = 500, replace = TRUE), sample(500, 100), NA),
 #'   col2 = replace(sample(10000, size = 500, replace = TRUE), sample(500, 100), NA),
 #'   col3 = replace(1:500, sample(500, 100), NA)
@@ -453,13 +356,13 @@ uby_cum_max <- function(cols = character()) {
 #'
 #' # forward fill col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'  update_by(uby_forward_fill(c("col1", "col2")), by="boolCol")
+#'   update_by(uby_forward_fill(c("col1", "col2")), by = "boolCol")
 #'
 #' # forward fill col3, compute parity of col3, and forward fill col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update_by(uby_forward_fill("col3"))$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_forward_fill(c("col1", "col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_forward_fill(c("col1", "col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -497,6 +400,9 @@ uby_forward_fill <- function(cols = character()) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to apply the delta operation to all non-grouping columns.
@@ -508,12 +414,12 @@ uby_forward_fill <- function(cols = character()) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -526,12 +432,12 @@ uby_forward_fill <- function(cols = character()) {
 #'
 #' # compute consecutive differences of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")), by="boolCol")
+#'   update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")), by = "boolCol")
 #'
 #' # compute consecutive differences of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_delta(c("col1Delta = col1", "col2Delta = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -575,6 +481,9 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -587,12 +496,12 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -601,16 +510,16 @@ uby_delta <- function(cols = character(), delta_control = "null_dominates") {
 #'
 #' # compute 10-row exponential moving average of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_ema_tick(decay_ticks=10, cols=c("col1Ema = col1", "col2Ema = col2")))
+#'   update_by(uby_ema_tick(decay_ticks = 10, cols = c("col1Ema = col1", "col2Ema = col2")))
 #'
 #' # compute 5-row exponential moving average of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_ema_tick(decay_ticks=5, cols=c("col1Ema = col1", "col2Ema = col2")), by="boolCol")
+#'   update_by(uby_ema_tick(decay_ticks = 5, cols = c("col1Ema = col1", "col2Ema = col2")), by = "boolCol")
 #'
 #' # compute 20-row exponential moving average of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_ema_tick(decay_ticks=20, cols=c("col1Ema = col1", "col2Ema = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_ema_tick(decay_ticks = 20, cols = c("col1Ema = col1", "col2Ema = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -654,6 +563,9 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
@@ -667,12 +579,12 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -681,16 +593,16 @@ uby_ema_tick <- function(decay_ticks, cols = character(), operation_control = op
 #'
 #' # compute 10-second exponential moving average of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_ema_time(ts_col="timeCol", decay_time="PT10s", cols=c("col1Ema = col1", "col2Ema = col2")))
+#'   update_by(uby_ema_time(ts_col = "timeCol", decay_time = "PT10s", cols = c("col1Ema = col1", "col2Ema = col2")))
 #'
 #' # compute 5-second exponential moving average of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_ema_time(ts_col="timeCol", decay_time="PT5s", cols=c("col1Ema = col1", "col2Ema = col2")), by="boolCol")
+#'   update_by(uby_ema_time(ts_col = "timeCol", decay_time = "PT5s", cols = c("col1Ema = col1", "col2Ema = col2")), by = "boolCol")
 #'
 #' # compute 20-second exponential moving average of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_ema_time(ts_col="timeCol", decay_time="PT20s", cols=c("col1Ema = col1", "col2Ema = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_ema_time(ts_col = "timeCol", decay_time = "PT20s", cols = c("col1Ema = col1", "col2Ema = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -734,6 +646,9 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -746,12 +661,12 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -760,16 +675,16 @@ uby_ema_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #'
 #' # compute 10-row exponential moving sum of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_ems_tick(decay_ticks=10, cols=c("col1Ems = col1", "col2Ems = col2")))
+#'   update_by(uby_ems_tick(decay_ticks = 10, cols = c("col1Ems = col1", "col2Ems = col2")))
 #'
 #' # compute 5-row exponential moving sum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_ems_tick(decay_ticks=5, cols=c("col1Ems = col1", "col2Ems = col2")), by="boolCol")
+#'   update_by(uby_ems_tick(decay_ticks = 5, cols = c("col1Ems = col1", "col2Ems = col2")), by = "boolCol")
 #'
 #' # compute 20-row exponential moving sum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_ems_tick(decay_ticks=20, cols=c("col1Ems = col1", "col2Ems = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_ems_tick(decay_ticks = 20, cols = c("col1Ems = col1", "col2Ems = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -813,6 +728,9 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -825,12 +743,12 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -839,16 +757,16 @@ uby_ems_tick <- function(decay_ticks, cols = character(), operation_control = op
 #'
 #' # compute 10-second exponential moving sum of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_ems_time(ts_col="timeCol", decay_time="PT10s", cols=c("col1Ems = col1", "col2Ems = col2")))
+#'   update_by(uby_ems_time(ts_col = "timeCol", decay_time = "PT10s", cols = c("col1Ems = col1", "col2Ems = col2")))
 #'
 #' # compute 5-second exponential moving sum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_ems_time(ts_col="timeCol", decay_time="PT5s", cols=c("col1Ems = col1", "col2Ems = col2")), by="boolCol")
+#'   update_by(uby_ems_time(ts_col = "timeCol", decay_time = "PT5s", cols = c("col1Ems = col1", "col2Ems = col2")), by = "boolCol")
 #'
 #' # compute 20-second exponential moving sum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_ems_time(ts_col="timeCol", decay_time="PT20s", cols=c("col1Ems = col1", "col2Ems = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_ems_time(ts_col = "timeCol", decay_time = "PT20s", cols = c("col1Ems = col1", "col2Ems = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -892,6 +810,9 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -904,12 +825,12 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -918,16 +839,16 @@ uby_ems_time <- function(ts_col, decay_time, cols = character(), operation_contr
 #'
 #' # compute 10-row exponential moving minimum of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_emmin_tick(decay_ticks=10, cols=c("col1Emmin = col1", "col2Emmin = col2")))
+#'   update_by(uby_emmin_tick(decay_ticks = 10, cols = c("col1Emmin = col1", "col2Emmin = col2")))
 #'
 #' # compute 5-row exponential moving minimum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_emmin_tick(decay_ticks=5, cols=c("col1Emmin = col1", "col2Emmin = col2")), by="boolCol")
+#'   update_by(uby_emmin_tick(decay_ticks = 5, cols = c("col1Emmin = col1", "col2Emmin = col2")), by = "boolCol")
 #'
 #' # compute 20-row exponential moving minimum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_emmin_tick(decay_ticks=20, cols=c("col1Emmin = col1", "col2Emmin = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_emmin_tick(decay_ticks = 20, cols = c("col1Emmin = col1", "col2Emmin = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -971,6 +892,9 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -983,12 +907,12 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -997,16 +921,16 @@ uby_emmin_tick <- function(decay_ticks, cols = character(), operation_control = 
 #'
 #' # compute 10-second exponential moving minimum of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_emmin_time(ts_col="timeCol", decay_time="PT10s", cols=c("col1Emmin = col1", "col2Emmin = col2")))
+#'   update_by(uby_emmin_time(ts_col = "timeCol", decay_time = "PT10s", cols = c("col1Emmin = col1", "col2Emmin = col2")))
 #'
 #' # compute 5-second exponential moving minimum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_emmin_time(ts_col="timeCol", decay_time="PT5s", cols=c("col1Emmin = col1", "col2Emmin = col2")), by="boolCol")
+#'   update_by(uby_emmin_time(ts_col = "timeCol", decay_time = "PT5s", cols = c("col1Emmin = col1", "col2Emmin = col2")), by = "boolCol")
 #'
 #' # compute 20-second exponential moving minimum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_emmin_time(ts_col="timeCol", decay_time="PT20s", cols=c("col1Emmin = col1", "col2Emmin = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_emmin_time(ts_col = "timeCol", decay_time = "PT20s", cols = c("col1Emmin = col1", "col2Emmin = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1050,6 +974,9 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1062,12 +989,12 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1076,16 +1003,16 @@ uby_emmin_time <- function(ts_col, decay_time, cols = character(), operation_con
 #'
 #' # compute 10-row exponential moving maximum of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_emmax_tick(decay_ticks=10, cols=c("col1Emmax = col1", "col2Emmax = col2")))
+#'   update_by(uby_emmax_tick(decay_ticks = 10, cols = c("col1Emmax = col1", "col2Emmax = col2")))
 #'
 #' # compute 5-row exponential moving maximum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_emmax_tick(decay_ticks=5, cols=c("col1Emmax = col1", "col2Emmax = col2")), by="boolCol")
+#'   update_by(uby_emmax_tick(decay_ticks = 5, cols = c("col1Emmax = col1", "col2Emmax = col2")), by = "boolCol")
 #'
 #' # compute 20-row exponential moving maximum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_emmax_tick(decay_ticks=20, cols=c("col1Emmax = col1", "col2Emmax = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_emmax_tick(decay_ticks = 20, cols = c("col1Emmax = col1", "col2Emmax = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1129,6 +1056,9 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1141,12 +1071,12 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1155,16 +1085,16 @@ uby_emmax_tick <- function(decay_ticks, cols = character(), operation_control = 
 #'
 #' # compute 10-second exponential moving maximum of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_emmax_time(ts_col="timeCol", decay_time="PT10s", cols=c("col1Emmax = col1", "col2Emmax = col2")))
+#'   update_by(uby_emmax_time(ts_col = "timeCol", decay_time = "PT10s", cols = c("col1Emmax = col1", "col2Emmax = col2")))
 #'
 #' # compute 5-second exponential moving maximum of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_emmax_time(ts_col="timeCol", decay_time="PT5s", cols=c("col1Emmax = col1", "col2Emmax = col2")), by="boolCol")
+#'   update_by(uby_emmax_time(ts_col = "timeCol", decay_time = "PT5s", cols = c("col1Emmax = col1", "col2Emmax = col2")), by = "boolCol")
 #'
 #' # compute 20-second exponential moving maximum of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_emmax_time(ts_col="timeCol", decay_time="PT20s", cols=c("col1Emmax = col1", "col2Emmax = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_emmax_time(ts_col = "timeCol", decay_time = "PT20s", cols = c("col1Emmax = col1", "col2Emmax = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1213,6 +1143,9 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_ticks Numeric scalar denoting the decay rate in ticks.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1225,12 +1158,12 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1239,16 +1172,16 @@ uby_emmax_time <- function(ts_col, decay_time, cols = character(), operation_con
 #'
 #' # compute 10-row exponential moving standard deviation of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_emstd_tick(decay_ticks=10, cols=c("col1Emstd = col1", "col2Emstd = col2")))
+#'   update_by(uby_emstd_tick(decay_ticks = 10, cols = c("col1Emstd = col1", "col2Emstd = col2")))
 #'
 #' # compute 5-row exponential moving standard deviation of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_emstd_tick(decay_ticks=5, cols=c("col1Emstd = col1", "col2Emstd = col2")), by="boolCol")
+#'   update_by(uby_emstd_tick(decay_ticks = 5, cols = c("col1Emstd = col1", "col2Emstd = col2")), by = "boolCol")
 #'
 #' # compute 20-row exponential moving standard deviation of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_emstd_tick(decay_ticks=20, cols=c("col1Emstd = col1", "col2Emstd = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_emstd_tick(decay_ticks = 20, cols = c("col1Emstd = col1", "col2Emstd = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1297,6 +1230,9 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param decay_time ISO-8601-formatted duration string specifying the decay rate.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1309,12 +1245,12 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1323,16 +1259,16 @@ uby_emstd_tick <- function(decay_ticks, cols = character(), operation_control = 
 #'
 #' # compute 10-second exponential moving standard deviation of col1 and col2
 #' th1 <- th$
-#'   update_by(uby_emstd_time(ts_col="timeCol", decay_time="PT10s", cols=c("col1Emstd = col1", "col2Emstd = col2")))
+#'   update_by(uby_emstd_time(ts_col = "timeCol", decay_time = "PT10s", cols = c("col1Emstd = col1", "col2Emstd = col2")))
 #'
 #' # compute 5-second exponential moving standard deviation of col1 and col2, grouped by boolCol
 #' th2 <- th$
-#'   update_by(uby_emstd_time(ts_col="timeCol", decay_time="PT5s", cols=c("col1Emstd = col1", "col2Emstd = col2")), by="boolCol")
+#'   update_by(uby_emstd_time(ts_col = "timeCol", decay_time = "PT5s", cols = c("col1Emstd = col1", "col2Emstd = col2")), by = "boolCol")
 #'
 #' # compute 20-second exponential moving standard deviation of col1 and col2, grouped by boolCol and parity of col3
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_emstd_time(ts_col="timeCol", decay_time="PT20s", cols=c("col1Emstd = col1", "col2Emstd = col2")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_emstd_time(ts_col = "timeCol", decay_time = "PT20s", cols = c("col1Emstd = col1", "col2Emstd = col2")), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1380,6 +1316,9 @@ uby_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling sum for all non-grouping columns.
@@ -1392,12 +1331,12 @@ uby_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1406,16 +1345,16 @@ uby_emstd_time <- function(ts_col, decay_time, cols = character(), operation_con
 #'
 #' # compute rolling sum of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_sum_tick(cols=c("col1RollSum = col1", "col2RollSum = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_sum_tick(cols = c("col1RollSum = col1", "col2RollSum = col2"), rev_ticks = 6))
 #'
 #' # compute rolling sum of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_sum_tick(cols=c("col1RollSum = col1", "col2RollSum = col2"), rev_ticks=6, fwd_ticks=5)), by="boolCol")
+#'   update_by(uby_rolling_sum_tick(cols = c("col1RollSum = col1", "col2RollSum = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling sum of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_sum_tick(cols=c("col1RollSum = col1", "col2RollSum = col2"), rev_ticks=1, fwd_ticks=10)), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_sum_tick(cols = c("col1RollSum = col1", "col2RollSum = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1459,6 +1398,9 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1472,12 +1414,12 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1486,16 +1428,16 @@ uby_rolling_sum_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling sum of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_sum_time(ts_col="timeCol", cols=c("col1RollSum = col1", "col2RollSum = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_sum_time(ts_col = "timeCol", cols = c("col1RollSum = col1", "col2RollSum = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling sum of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_sum_time(ts_col="timeCol", cols=c("col1RollSum = col1", "col2RollSum = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+#'   update_by(uby_rolling_sum_time(ts_col = "timeCol", cols = c("col1RollSum = col1", "col2RollSum = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling sum of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_sum_time(ts_col="timeCol", cols=c("col1RollSum = col1", "col2RollSum = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_sum_time(ts_col = "timeCol", cols = c("col1RollSum = col1", "col2RollSum = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1543,6 +1485,9 @@ uby_rolling_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling group for all non-grouping columns.
@@ -1555,12 +1500,12 @@ uby_rolling_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1569,12 +1514,12 @@ uby_rolling_sum_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling group of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th1 <- th$
-#'   update_by(uby_rolling_group_tick(cols=c("col1RollGroup = col1", "col2RollGroup = col2"), rev_ticks=6, fwd_ticks=5)), by="boolCol")
+#'   update_by(uby_rolling_group_tick(cols = c("col1RollGroup = col1", "col2RollGroup = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling group of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th2 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_group_tick(cols=c("col1RollGroup = col1", "col2RollGroup = col2"), rev_ticks=1, fwd_ticks=10)), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_group_tick(cols = c("col1RollGroup = col1", "col2RollGroup = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1618,6 +1563,9 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1631,12 +1579,12 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1645,12 +1593,12 @@ uby_rolling_group_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling group of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_group_time(ts_col="timeCol", cols=c("col1RollGroup = col1", "col2RollGroup = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+#'   update_by(uby_rolling_group_time(ts_col = "timeCol", cols = c("col1RollGroup = col1", "col2RollGroup = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling group of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th2 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_group_time(ts_col="timeCol", cols=c("col1RollGroup = col1", "col2RollGroup = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_group_time(ts_col = "timeCol", cols = c("col1RollGroup = col1", "col2RollGroup = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1698,6 +1646,9 @@ uby_rolling_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling average for all non-grouping columns.
@@ -1710,12 +1661,12 @@ uby_rolling_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1724,16 +1675,16 @@ uby_rolling_group_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling average of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_avg_tick(cols=c("col1RollAvg = col1", "col2RollAvg = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_avg_tick(cols = c("col1RollAvg = col1", "col2RollAvg = col2"), rev_ticks = 6))
 #'
 #' # compute rolling average of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_avg_tick(cols=c("col1RollAvg = col1", "col2RollAvg = col2"), rev_ticks=6, fwd_ticks=5)), by="boolCol")
+#'   update_by(uby_rolling_avg_tick(cols = c("col1RollAvg = col1", "col2RollAvg = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling average of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_avg_tick(cols=c("col1RollAvg = col1", "col2RollAvg = col2"), rev_ticks=1, fwd_ticks=10)), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_avg_tick(cols = c("col1RollAvg = col1", "col2RollAvg = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1777,6 +1728,9 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1790,12 +1744,12 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1804,16 +1758,16 @@ uby_rolling_avg_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling average of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_avg_time(ts_col="timeCol", cols=c("col1RollAvg = col1", "col2RollAvg = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_avg_time(ts_col = "timeCol", cols = c("col1RollAvg = col1", "col2RollAvg = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling average of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_avg_time(ts_col="timeCol", cols=c("col1RollAvg = col1", "col2RollAvg = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+#'   update_by(uby_rolling_avg_time(ts_col = "timeCol", cols = c("col1RollAvg = col1", "col2RollAvg = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling average of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_avg_time(ts_col="timeCol", cols=c("col1RollAvg = col1", "col2RollAvg = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_avg_time(ts_col = "timeCol", cols = c("col1RollAvg = col1", "col2RollAvg = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1861,6 +1815,9 @@ uby_rolling_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling minimum for all non-grouping columns.
@@ -1873,12 +1830,12 @@ uby_rolling_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1887,16 +1844,16 @@ uby_rolling_avg_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling minimum of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_min_tick(cols=c("col1RollMin = col1", "col2RollMin = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_min_tick(cols = c("col1RollMin = col1", "col2RollMin = col2"), rev_ticks = 6))
 #'
 #' # compute rolling minimum of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_min_tick(cols=c("col1RollMin = col1", "col2RollMin = col2"), rev_ticks=6, fwd_ticks=5)), by="boolCol")
+#'   update_by(uby_rolling_min_tick(cols = c("col1RollMin = col1", "col2RollMin = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling minimum of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_min_tick(cols=c("col1RollMin = col1", "col2RollMin = col2"), rev_ticks=1, fwd_ticks=10)), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_min_tick(cols = c("col1RollMin = col1", "col2RollMin = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -1940,6 +1897,9 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -1953,12 +1913,12 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -1967,16 +1927,16 @@ uby_rolling_min_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling minimum of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_min_time(ts_col="timeCol", cols=c("col1RollMin = col1", "col2RollMin = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_min_time(ts_col = "timeCol", cols = c("col1RollMin = col1", "col2RollMin = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling minimum of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_min_time(ts_col="timeCol", cols=c("col1RollMin = col1", "col2RollMin = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+#'   update_by(uby_rolling_min_time(ts_col = "timeCol", cols = c("col1RollMin = col1", "col2RollMin = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling minimum of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_min_time(ts_col="timeCol", cols=c("col1RollMin = col1", "col2RollMin = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_min_time(ts_col = "timeCol", cols = c("col1RollMin = col1", "col2RollMin = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2024,6 +1984,9 @@ uby_rolling_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling maximum for all non-grouping columns.
@@ -2036,12 +1999,12 @@ uby_rolling_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2050,16 +2013,16 @@ uby_rolling_min_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling maximum of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_max_tick(cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_max_tick(cols = c("col1RollMax = col1", "col2RollMax = col2"), rev_ticks = 6))
 #'
 #' # compute rolling maximum of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_max_tick(cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_ticks=6, fwd_ticks=5)), by="boolCol")
+#'   update_by(uby_rolling_max_tick(cols = c("col1RollMax = col1", "col2RollMax = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling maximum of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_max_tick(cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_ticks=1, fwd_ticks=10)), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_max_tick(cols = c("col1RollMax = col1", "col2RollMax = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2103,6 +2066,9 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2116,12 +2082,12 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2130,16 +2096,16 @@ uby_rolling_max_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling maximum of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_max_time(ts_col="timeCol", cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_max_time(ts_col = "timeCol", cols = c("col1RollMax = col1", "col2RollMax = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling maximum of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_max_time(ts_col="timeCol", cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+#'   update_by(uby_rolling_max_time(ts_col = "timeCol", cols = c("col1RollMax = col1", "col2RollMax = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling maximum of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_max_time(ts_col="timeCol", cols=c("col1RollMax = col1", "col2RollMax = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_max_time(ts_col = "timeCol", cols = c("col1RollMax = col1", "col2RollMax = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2187,6 +2153,9 @@ uby_rolling_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling product for all non-grouping columns.
@@ -2199,12 +2168,12 @@ uby_rolling_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2213,16 +2182,16 @@ uby_rolling_max_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling product of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_prod_tick(cols=c("col1RollProd = col1", "col2RollProd = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_prod_tick(cols = c("col1RollProd = col1", "col2RollProd = col2"), rev_ticks = 6))
 #'
 #' # compute rolling product of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_prod_tick(cols=c("col1RollProd = col1", "col2RollProd = col2"), rev_ticks=6, fwd_ticks=5)), by="boolCol")
+#'   update_by(uby_rolling_prod_tick(cols = c("col1RollProd = col1", "col2RollProd = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling product of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_prod_tick(cols=c("col1RollProd = col1", "col2RollProd = col2"), rev_ticks=1, fwd_ticks=10)), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_prod_tick(cols = c("col1RollProd = col1", "col2RollProd = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2266,6 +2235,9 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2279,12 +2251,12 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2293,16 +2265,16 @@ uby_rolling_prod_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling product of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_prod_time(ts_col="timeCol", cols=c("col1RollProd = col1", "col2RollProd = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_prod_time(ts_col = "timeCol", cols = c("col1RollProd = col1", "col2RollProd = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling product of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_prod_time(ts_col="timeCol", cols=c("col1RollProd = col1", "col2RollProd = col2"), rev_time="PT5s", fwd_ticks="PT5s")), by="boolCol")
+#'   update_by(uby_rolling_prod_time(ts_col = "timeCol", cols = c("col1RollProd = col1", "col2RollProd = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling product of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_prod_time(ts_col="timeCol", cols=c("col1RollProd = col1", "col2RollProd = col2"), rev_time="PT0s", fwd_time="PT10s")), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_prod_time(ts_col = "timeCol", cols = c("col1RollProd = col1", "col2RollProd = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2350,6 +2322,9 @@ uby_rolling_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling count for all non-grouping columns.
@@ -2362,12 +2337,12 @@ uby_rolling_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2376,16 +2351,16 @@ uby_rolling_prod_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling count of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_count_tick(cols=c("col1RollCount = col1", "col2RollCount = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_count_tick(cols = c("col1RollCount = col1", "col2RollCount = col2"), rev_ticks = 6))
 #'
 #' # compute rolling count of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_count_tick(cols=c("col1RollCount = col1", "col2RollCount = col2"), rev_ticks=6, fwd_ticks=5), by="boolCol")
+#'   update_by(uby_rolling_count_tick(cols = c("col1RollCount = col1", "col2RollCount = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling count of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_count_tick(cols=c("col1RollCount = col1", "col2RollCount = col2"), rev_ticks=1, fwd_ticks=10), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_count_tick(cols = c("col1RollCount = col1", "col2RollCount = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2429,6 +2404,9 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2442,12 +2420,12 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2456,16 +2434,16 @@ uby_rolling_count_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling count of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_count_time(ts_col="timeCol", cols=c("col1RollCount = col1", "col2RollCount = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_count_time(ts_col = "timeCol", cols = c("col1RollCount = col1", "col2RollCount = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling count of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_count_time(ts_col="timeCol", cols=c("col1RollCount = col1", "col2RollCount = col2"), rev_time="PT5s", fwd_ticks="PT5s"), by="boolCol")
+#'   update_by(uby_rolling_count_time(ts_col = "timeCol", cols = c("col1RollCount = col1", "col2RollCount = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling count of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_count_time(ts_col="timeCol", cols=c("col1RollCount = col1", "col2RollCount = col2"), rev_time="PT0s", fwd_time="PT10s"), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_count_time(ts_col = "timeCol", cols = c("col1RollCount = col1", "col2RollCount = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2513,6 +2491,9 @@ uby_rolling_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
 #' Default is to compute the rolling standard deviation for all non-grouping columns.
@@ -2525,12 +2506,12 @@ uby_rolling_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2539,16 +2520,16 @@ uby_rolling_count_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling standard deviation of col1 and col2, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_std_tick(cols=c("col1RollStd = col1", "col2RollStd = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_std_tick(cols = c("col1RollStd = col1", "col2RollStd = col2"), rev_ticks = 6))
 #'
 #' # compute rolling standard deviation of col1 and col2, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_std_tick(cols=c("col1RollStd = col1", "col2RollStd = col2"), rev_ticks=6, fwd_ticks=5), by="boolCol")
+#'   update_by(uby_rolling_std_tick(cols = c("col1RollStd = col1", "col2RollStd = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling standard deviation of col1 and col2, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_std_tick(cols=c("col1RollStd = col1", "col2RollStd = col2"), rev_ticks=1, fwd_ticks=10), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_std_tick(cols = c("col1RollStd = col1", "col2RollStd = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2592,6 +2573,9 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2605,12 +2589,12 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2619,16 +2603,16 @@ uby_rolling_std_tick <- function(cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling standard deviation of col1 and col2, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_std_time(ts_col="timeCol", cols=c("col1RollStd = col1", "col2RollStd = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_std_time(ts_col = "timeCol", cols = c("col1RollStd = col1", "col2RollStd = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling standard deviation of col1 and col2, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_std_time(ts_col="timeCol", cols=c("col1RollStd = col1", "col2RollStd = col2"), rev_time="PT5s", fwd_ticks="PT5s"), by="boolCol")
+#'   update_by(uby_rolling_std_time(ts_col = "timeCol", cols = c("col1RollStd = col1", "col2RollStd = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling standard deviation of col1 and col2, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_std_time(ts_col="timeCol", cols=c("col1RollStd = col1", "col2RollStd = col2"), rev_time="PT0s", fwd_time="PT10s"), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_std_time(ts_col = "timeCol", cols = c("col1RollStd = col1", "col2RollStd = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2676,6 +2660,9 @@ uby_rolling_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
 #' @param cols String or list of strings denoting the column(s) to operate on. Can be renaming expressions, i.e. “new_col = col”.
@@ -2689,12 +2676,12 @@ uby_rolling_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2703,16 +2690,16 @@ uby_rolling_std_time <- function(ts_col, cols, rev_time, fwd_time = "PT0s") {
 #'
 #' # compute rolling weighted average of col1 and col2, weighted by col3, using the previous 5 rows and current row
 #' th1 <- th$
-#'   update_by(uby_rolling_wavg_tick(wcol="col3", cols=c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_ticks=6))
+#'   update_by(uby_rolling_wavg_tick(wcol = "col3", cols = c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_ticks = 6))
 #'
 #' # compute rolling weighted average of col1 and col2, weighted by col3, grouped by boolCol, using previous 5 rows, current row, and following 5 rows
 #' th2 <- th$
-#'   update_by(uby_rolling_wavg_tick(wcol="col3", cols=c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_ticks=6, fwd_ticks=5), by="boolCol")
+#'   update_by(uby_rolling_wavg_tick(wcol = "col3", cols = c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_ticks = 6, fwd_ticks = 5), by = "boolCol")
 #'
 #' # compute rolling weighted average of col1 and col2, weighted by col3, grouped by boolCol and parity of col3, using current row and following 10 rows
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_wavg_tick(wcol="col3", cols=c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_ticks=1, fwd_ticks=10), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_wavg_tick(wcol = "col3", cols = c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_ticks = 1, fwd_ticks = 10), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }
@@ -2757,6 +2744,9 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' function called an [`UpdateByOp`][UpdateByOp] intended to be used in a call to `update_by()`. This detail is typically
 #' hidden from the user. However, it is important to understand this detail for debugging purposes, as the output of
 #' a `uby` function can otherwise seem unexpected.
+#' 
+#' For more information, see the vignette on `uby` functions by running
+#' `vignette("update_by")`.
 #'
 #' @param ts_col String denoting the column to use as the timestamp.
 #' @param wcol String denoting the column to use for weights. This must be a numeric column.
@@ -2771,12 +2761,12 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #' library(rdeephaven)
 #'
 #' # connecting to Deephaven server
-#' client <- Client$new("localhost:10000", auth_type="psk", auth_token="my_secret_token")
+#' client <- Client$new("localhost:10000", auth_type = "psk", auth_token = "my_secret_token")
 #'
 #' # create data frame, push to server, retrieve TableHandle
 #' df <- data.frame(
 #'   timeCol = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.01), by = "1 sec")[1:500],
-#'   boolCol = sample(c(TRUE,FALSE), 500, TRUE),
+#'   boolCol = sample(c(TRUE, FALSE), 500, TRUE),
 #'   col1 = sample(10000, size = 500, replace = TRUE),
 #'   col2 = sample(10000, size = 500, replace = TRUE),
 #'   col3 = 1:500
@@ -2785,16 +2775,16 @@ uby_rolling_wavg_tick <- function(wcol, cols, rev_ticks, fwd_ticks = 0) {
 #'
 #' # compute rolling weighted average of col1 and col2, weighted by col3, using the previous 5 seconds
 #' th1 <- th$
-#'   update_by(uby_rolling_wavg_time(ts_col="timeCol", wcol="col3", cols=c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_time="PT5s"))
+#'   update_by(uby_rolling_wavg_time(ts_col = "timeCol", wcol = "col3", cols = c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_time = "PT5s"))
 #'
 #' # compute rolling weighted average of col1 and col2, weighted by col3, grouped by boolCol, using previous 5 seconds, and following 5 seconds
 #' th2 <- th$
-#'   update_by(uby_rolling_wavg_time(ts_col="timeCol", wcol="col3", cols=c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_time="PT5s", fwd_ticks="PT5s"), by="boolCol")
+#'   update_by(uby_rolling_wavg_time(ts_col = "timeCol", wcol = "col3", cols = c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_time = "PT5s", fwd_ticks = "PT5s"), by = "boolCol")
 #'
 #' # compute rolling weighted average of col1 and col2, weighted by col3, grouped by boolCol and parity of col3, using following 10 seconds
 #' th3 <- th$
 #'   update("col3Parity = col3 % 2")$
-#'   update_by(uby_rolling_wavg_time(ts_col="timeCol", wcol="col3", cols=c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_time="PT0s", fwd_time="PT10s"), by=c("boolCol", "col3Parity"))
+#'   update_by(uby_rolling_wavg_time(ts_col = "timeCol", wcol = "col3", cols = c("col1RollWAvg = col1", "col2RollWAvg = col2"), rev_time = "PT0s", fwd_time = "PT10s"), by = c("boolCol", "col3Parity"))
 #'
 #' client$close()
 #' }

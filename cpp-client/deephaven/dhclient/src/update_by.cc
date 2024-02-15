@@ -12,7 +12,6 @@
 
 using deephaven::client::impl::MoveVectorData;
 using deephaven::client::impl::UpdateByOperationImpl;
-using deephaven::dhcore::utility::Stringf;
 // typedef io::deephaven::proto::backplane::grpc::UpdateByDelta UpdateByDelta;
 using io::deephaven::proto::backplane::grpc::UpdateByEmOptions;
 
@@ -45,7 +44,7 @@ UpdateByNullBehavior convertDeltaControl(DeltaControl dc) {
     case DeltaControl::kValueDominates: return UpdateByNullBehavior::VALUE_DOMINATES;
     case DeltaControl::kZeroDominates: return UpdateByNullBehavior::ZERO_DOMINATES;
     default: {
-      auto message = Stringf("Unexpected DeltaControl %o", static_cast<int>(dc));
+      auto message = fmt::format("Unexpected DeltaControl {}", static_cast<int>(dc));
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
@@ -58,7 +57,7 @@ BadDataBehaviorProtoEnum convertBadDataBehavior(BadDataBehavior bdb) {
     case BadDataBehavior::kThrow: return BadDataBehaviorProtoEnum::THROW;
     case BadDataBehavior::kPoison: return BadDataBehaviorProtoEnum::POISON;
     default: {
-      auto message = Stringf("Unexpected BadDataBehavior %o", static_cast<int>(bdb));
+      auto message = fmt::format("Unexpected BadDataBehavior {}", static_cast<int>(bdb));
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
@@ -95,7 +94,7 @@ MathContextProto convertMathContext(MathContext mctx) {
       break;
     }
     default: {
-      auto message = Stringf("Unexpected MathContext %o", static_cast<int>(mctx));
+      auto message = fmt::format("Unexpected MathContext {}", static_cast<int>(mctx));
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
   }
