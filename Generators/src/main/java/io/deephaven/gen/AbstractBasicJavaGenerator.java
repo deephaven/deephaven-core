@@ -41,13 +41,21 @@ public abstract class AbstractBasicJavaGenerator {
      * @param skipsGen Collection of predicates to determine if a function should be skipped when generating code.
      * @throws ClassNotFoundException If a class in the imports array cannot be found.
      */
-    public AbstractBasicJavaGenerator(final String gradleTask, final String packageName, final String className,
-            final String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
+    public AbstractBasicJavaGenerator(
+            final String gradleTask,
+            final String packageName,
+            final String className,
+            final String[] imports,
+            final Predicate<Method> includeMethod,
+            final Collection<Predicate<JavaFunction>> skipsGen,
+            final Level logLevel)
             throws ClassNotFoundException {
         this.gradleTask = gradleTask;
         this.packageName = packageName;
         this.className = className;
         this.skipsGen = skipsGen;
+
+        log.setLevel(logLevel);
 
         for (String imp : imports) {
             Class<?> c = Class.forName(imp, false, Thread.currentThread().getContextClassLoader());
@@ -158,7 +166,6 @@ public abstract class AbstractBasicJavaGenerator {
             System.exit(-1);
         }
 
-        log.setLevel(Level.WARNING);
         log.warning("Running " + gen.getClass().getSimpleName() + " assertNoChange=" + assertNoChange);
 
         final String code = gen.generateCode();
