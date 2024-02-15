@@ -30,31 +30,26 @@ public class MultiJoinGrpcImpl extends GrpcTableOperation<MultiJoinTablesRequest
         super(authWiring::checkPermissionMultiJoinTables,
                 BatchTableRequest.Operation::getMultiJoin,
                 MultiJoinTablesRequest::getResultId,
-                (MultiDependencyFunction<MultiJoinTablesRequest>) request -> request.getMultiJoinInputsList().isEmpty()
-                        ? request.getSourceIdsList()
-                        : request.getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId)
-                                .collect(Collectors.toList()));
+                (MultiDependencyFunction<MultiJoinTablesRequest>) request -> request.getMultiJoinInputsList().stream()
+                        .map(MultiJoinInput::getSourceId).collect(Collectors.toList()));
     }
 
     @Override
     public void validateRequest(final MultiJoinTablesRequest request) throws StatusRuntimeException {
         GrpcErrorHelper.checkHasNoUnknownFields(request);
 
-        if (request.getSourceIdsList().isEmpty() && request.getMultiJoinInputsList().isEmpty()) {
+        if (request.getMultiJoinInputsList().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot join zero source tables.");
         }
-        if (!request.getSourceIdsList().isEmpty() && !request.getMultiJoinInputsList().isEmpty()) {
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "If `multi_join_inputs` are provided, `source_ids` must remain empty.");
-        }
-        if (!request.getColumnsToMatchList().isEmpty() && !request.getMultiJoinInputsList().isEmpty()) {
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "If `multi_join_inputs` are provided, `columns_to_match` must remain empty.");
-        }
 
-        // Validate well-formed source table ids.
-        request.getSourceIdsList().forEach(Common::validate);
-        request.getMultiJoinInputsList().forEach(input -> Common.validate(input.getSourceId()));
+        // Verify well-formed MultiJoinInput.
+        request.getMultiJoinInputsList().forEach(input -> {
+            GrpcErrorHelper.checkHasNoUnknownFields(input);
+            // Columns to match must be non-empty.
+            GrpcErrorHelper.checkRepeatedFieldNonEmpty(input, MultiJoinInput.COLUMNS_TO_MATCH_FIELD_NUMBER);
+            // Validate the source table id.
+            Common.validate(input.getSourceId());
+        });
     }
 
     @Override
@@ -64,30 +59,20 @@ public class MultiJoinGrpcImpl extends GrpcTableOperation<MultiJoinTablesRequest
         final Table firstTable = sourceTables.get(0).get();
         final Table[] allTables = sourceTables.stream().map(SessionState.ExportObject::get).toArray(Table[]::new);
 
-        // Were multiJoinInputs provided?
-        if (!request.getMultiJoinInputsList().isEmpty()) {
-            // Build the multiJoinInput array.
-            final io.deephaven.engine.table.MultiJoinInput[] multiJoinInputs =
-                    new io.deephaven.engine.table.MultiJoinInput[request.getMultiJoinInputsCount()];
+        // Build the multiJoinInput array.
+        final io.deephaven.engine.table.MultiJoinInput[] multiJoinInputs =
+                new io.deephaven.engine.table.MultiJoinInput[request.getMultiJoinInputsCount()];
 
-            for (int i = 0; i < request.getMultiJoinInputsCount(); i++) {
-                final Table table = sourceTables.get(i).get();
+        for (int i = 0; i < request.getMultiJoinInputsCount(); i++) {
+            final Table table = sourceTables.get(i).get();
 
-                final MultiJoinInput mjInput = request.getMultiJoinInputs(i);
-                final String[] columnsToMatch = mjInput.getColumnsToMatchList().toArray(new String[0]);
-                final String[] columnsToAdd = mjInput.getColumnsToAddList().toArray(new String[0]);
+            final MultiJoinInput mjInput = request.getMultiJoinInputs(i);
+            final String[] columnsToMatch = mjInput.getColumnsToMatchList().toArray(new String[0]);
+            final String[] columnsToAdd = mjInput.getColumnsToAddList().toArray(new String[0]);
 
-                multiJoinInputs[i] =
-                        io.deephaven.engine.table.MultiJoinInput.of(table, columnsToMatch, columnsToAdd);
-            }
-            return firstTable.getUpdateGraph(allTables).sharedLock().computeLocked(
-                    () -> MultiJoinFactory.of(multiJoinInputs).table());
+            multiJoinInputs[i] = io.deephaven.engine.table.MultiJoinInput.of(table, columnsToMatch, columnsToAdd);
         }
-
-        // Build from the provided tables and key columns.
-        final String[] columnsToMatch = request.getColumnsToMatchList().toArray(new String[0]);
-
         return firstTable.getUpdateGraph(allTables).sharedLock().computeLocked(
-                () -> MultiJoinFactory.of(columnsToMatch, allTables).table());
+                () -> MultiJoinFactory.of(multiJoinInputs).table());
     }
 }

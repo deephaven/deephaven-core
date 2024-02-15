@@ -102,9 +102,7 @@ public class OperationHelper {
             case COLUMN_STATISTICS:
                 return Stream.of(op.getColumnStatistics().getSourceId());
             case MULTI_JOIN:
-                return op.getMultiJoin().getMultiJoinInputsList().isEmpty()
-                        ? op.getMultiJoin().getSourceIdsList().stream()
-                        : op.getMultiJoin().getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId);
+                return op.getMultiJoin().getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId);
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

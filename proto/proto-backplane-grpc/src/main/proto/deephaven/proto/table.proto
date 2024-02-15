@@ -763,9 +763,7 @@ message MultiJoinInput {
 // omitted.
 message MultiJoinTablesRequest {
   Ticket result_id = 1;
-  repeated TableReference source_ids = 2;
-  repeated string columns_to_match = 3;
-  repeated MultiJoinInput multi_join_inputs = 4;
+  repeated MultiJoinInput multi_join_inputs = 2;
 }
 
 message RangeJoinTablesRequest {

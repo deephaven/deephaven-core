@@ -35,19 +35,6 @@ public class MultiJoinGrpcTest extends GrpcTableOperationTestBase<MultiJoinTable
     }
 
     @Test
-    public void multiJoinStaticFromInputs() {
-        final MultiJoinTablesRequest request = prototypeMultiJoinInputs();
-        final ExportedTableCreationResponse response = channel().tableBlocking().multiJoinTables(request);
-        try {
-            assertThat(response.getSuccess()).isTrue();
-            assertThat(response.getIsStatic()).isTrue();
-            assertThat(response.getSize()).isEqualTo(1);
-        } finally {
-            release(response);
-        }
-    }
-
-    @Test
     public void missingResultId() {
         final MultiJoinTablesRequest request = MultiJoinTablesRequest.newBuilder(prototype())
                 .clearResultId()
@@ -58,45 +45,36 @@ public class MultiJoinGrpcTest extends GrpcTableOperationTestBase<MultiJoinTable
     @Test
     public void zeroTables() {
         final MultiJoinTablesRequest request = MultiJoinTablesRequest.newBuilder(prototype())
-                .clearSourceIds()
+                .clearMultiJoinInputs()
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "Cannot join zero source tables.");
     }
 
     @Test
-    public void sourceTablesAndInputProvided() {
-        MultiJoinTablesRequest prototype = prototype();
-        final MultiJoinTablesRequest request = MultiJoinTablesRequest.newBuilder(prototypeMultiJoinInputs())
-                .addAllSourceIds(prototype.getSourceIdsList())
-                .build();
-        assertError(request, Code.INVALID_ARGUMENT,
-                "If `multi_join_inputs` are provided, `source_ids` must remain empty.");
-    }
+    public void columnsToMatchNotProvided() {
+        final TableReference t1 = ref(TableTools.emptyTable(1).view("Key=ii", "First=ii"));
+        final TableReference t2 = ref(TableTools.emptyTable(1).view("Key=ii", "Second=ii*2"));
 
-    @Test
-    public void columnsToMatchAndInputProvided() {
-        final MultiJoinTablesRequest request = MultiJoinTablesRequest.newBuilder(prototypeMultiJoinInputs())
+        final MultiJoinInput input1 = MultiJoinInput.newBuilder()
+                .setSourceId(t1)
                 .addColumnsToMatch("OutputKey=Key")
+                .addColumnsToAdd("First")
+                .build();
+        final MultiJoinInput input2 = MultiJoinInput.newBuilder()
+                .setSourceId(t2)
+                .build();
+
+        final MultiJoinTablesRequest request = MultiJoinTablesRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .addMultiJoinInputs(input1)
+                .addMultiJoinInputs(input2)
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
-                "If `multi_join_inputs` are provided, `columns_to_match` must remain empty.");
+                "must have at least one columns_to_match");
     }
 
     private MultiJoinTablesRequest prototype() {
-        final TableReference t1 = ref(TableTools.emptyTable(1).view("Key=ii", "First=ii"));
-        final TableReference t2 = ref(TableTools.emptyTable(1).view("Key=ii", "Second=ii*2"));
-        final TableReference t3 = ref(TableTools.emptyTable(1).view("Key=ii", "Third=ii*3", "Extra=ii*4"));
-        return MultiJoinTablesRequest.newBuilder()
-                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
-                .addSourceIds(t1)
-                .addSourceIds(t2)
-                .addSourceIds(t3)
-                .addColumnsToMatch("OutputKey=Key")
-                .build();
-    }
-
-    private MultiJoinTablesRequest prototypeMultiJoinInputs() {
         final TableReference t1 = ref(TableTools.emptyTable(1).view("Key=ii", "First=ii"));
         final TableReference t2 = ref(TableTools.emptyTable(1).view("Key=ii", "Second=ii*2"));
         final TableReference t3 = ref(TableTools.emptyTable(1).view("Key=ii", "Third=ii*3"));
