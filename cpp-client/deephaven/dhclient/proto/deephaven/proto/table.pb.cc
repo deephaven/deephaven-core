@@ -3583,8 +3583,8 @@ const char descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto[] PROTOBU
   "olumn\030\005 \001(\t\022\026\n\016columns_to_add\030\006 \003(\t\"\210\001\n\016"
   "MultiJoinInput\022D\n\tsource_id\030\001 \001(\01321.io.d"
   "eephaven.proto.backplane.grpc.TableRefer"
-  "ence\022\030\n\020columns_to_match\030\003 \003(\t\022\026\n\016column"
-  "s_to_add\030\004 \003(\t\"\205\002\n\026MultiJoinTablesReques"
+  "ence\022\030\n\020columns_to_match\030\002 \003(\t\022\026\n\016column"
+  "s_to_add\030\003 \003(\t\"\205\002\n\026MultiJoinTablesReques"
   "t\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.prot"
   "o.backplane.grpc.Ticket\022E\n\nsource_ids\030\002 "
   "\003(\01321.io.deephaven.proto.backplane.grpc."
@@ -20239,9 +20239,9 @@ const char* MultiJoinInput::_InternalParse(const char* ptr, ::_pbi::ParseContext
         } else
           goto handle_unusual;
         continue;
-      // repeated string columns_to_match = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+      // repeated string columns_to_match = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr -= 1;
           do {
             ptr += 1;
@@ -20250,13 +20250,13 @@ const char* MultiJoinInput::_InternalParse(const char* ptr, ::_pbi::ParseContext
             CHK_(ptr);
             CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match"));
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
         } else
           goto handle_unusual;
         continue;
-      // repeated string columns_to_add = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+      // repeated string columns_to_add = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr -= 1;
           do {
             ptr += 1;
@@ -20265,7 +20265,7 @@ const char* MultiJoinInput::_InternalParse(const char* ptr, ::_pbi::ParseContext
             CHK_(ptr);
             CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add"));
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
         } else
           goto handle_unusual;
         continue;
@@ -20305,24 +20305,24 @@ uint8_t* MultiJoinInput::_InternalSerialize(
         _Internal::source_id(this).GetCachedSize(), target, stream);
   }
 
-  // repeated string columns_to_match = 3;
+  // repeated string columns_to_match = 2;
   for (int i = 0, n = this->_internal_columns_to_match_size(); i < n; i++) {
     const auto& s = this->_internal_columns_to_match(i);
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       s.data(), static_cast<int>(s.length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match");
-    target = stream->WriteString(3, s, target);
+    target = stream->WriteString(2, s, target);
   }
 
-  // repeated string columns_to_add = 4;
+  // repeated string columns_to_add = 3;
   for (int i = 0, n = this->_internal_columns_to_add_size(); i < n; i++) {
     const auto& s = this->_internal_columns_to_add(i);
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       s.data(), static_cast<int>(s.length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add");
-    target = stream->WriteString(4, s, target);
+    target = stream->WriteString(3, s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -20341,7 +20341,7 @@ size_t MultiJoinInput::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated string columns_to_match = 3;
+  // repeated string columns_to_match = 2;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.columns_to_match_.size());
   for (int i = 0, n = _impl_.columns_to_match_.size(); i < n; i++) {
@@ -20349,7 +20349,7 @@ size_t MultiJoinInput::ByteSizeLong() const {
       _impl_.columns_to_match_.Get(i));
   }
 
-  // repeated string columns_to_add = 4;
+  // repeated string columns_to_add = 3;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.columns_to_add_.size());
   for (int i = 0, n = _impl_.columns_to_add_.size(); i < n; i++) {

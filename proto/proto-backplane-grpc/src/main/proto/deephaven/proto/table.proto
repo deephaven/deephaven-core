@@ -755,13 +755,14 @@ message AjRajTablesRequest {
 
 message MultiJoinInput {
   TableReference source_id = 1;
-  repeated string columns_to_match = 3;
-  repeated string columns_to_add = 4;
+  repeated string columns_to_match = 2;
+  repeated string columns_to_add = 3;
 }
 
+// For MultiJoinTablesRequest, if `multi_join_inputs` are provided then `source_ids` and `columns_to_match` must be
+// omitted.
 message MultiJoinTablesRequest {
   Ticket result_id = 1;
-  // It is considered an error if both `source_ids` and `multi_join_inputs` are provided.
   repeated TableReference source_ids = 2;
   repeated string columns_to_match = 3;
   repeated MultiJoinInput multi_join_inputs = 4;
@@ -792,7 +793,7 @@ message RangeJoinTablesRequest {
   string left_end_column = 9;
   repeated Aggregation aggregations = 10;
   // Specifies the range match parameters as a parseable string. Providing `range_match` in the GRPC call is the
-  // alternative to detailed range match parameters provided in the `range_start_column`, `range_start_rule`,
+  // alternative to detailed range match parameters provided in the `left_start_column`, `range_start_rule`,
   // `right_range_column`, `range_end_rule`, and `left_end_column` fields.
   string range_match = 11;
 }

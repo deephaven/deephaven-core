@@ -12208,11 +12208,11 @@ class MultiJoinInput final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kColumnsToMatchFieldNumber = 3,
-    kColumnsToAddFieldNumber = 4,
+    kColumnsToMatchFieldNumber = 2,
+    kColumnsToAddFieldNumber = 3,
     kSourceIdFieldNumber = 1,
   };
-  // repeated string columns_to_match = 3;
+  // repeated string columns_to_match = 2;
   int columns_to_match_size() const;
   private:
   int _internal_columns_to_match_size() const;
@@ -12236,7 +12236,7 @@ class MultiJoinInput final :
   std::string* _internal_add_columns_to_match();
   public:
 
-  // repeated string columns_to_add = 4;
+  // repeated string columns_to_add = 3;
   int columns_to_add_size() const;
   private:
   int _internal_columns_to_add_size() const;
@@ -38606,7 +38606,7 @@ inline void MultiJoinInput::set_allocated_source_id(::io::deephaven::proto::back
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id)
 }
 
-// repeated string columns_to_match = 3;
+// repeated string columns_to_match = 2;
 inline int MultiJoinInput::_internal_columns_to_match_size() const {
   return _impl_.columns_to_match_.size();
 }
@@ -38681,7 +38681,7 @@ MultiJoinInput::mutable_columns_to_match() {
   return &_impl_.columns_to_match_;
 }
 
-// repeated string columns_to_add = 4;
+// repeated string columns_to_add = 3;
 inline int MultiJoinInput::_internal_columns_to_add_size() const {
   return _impl_.columns_to_add_.size();
 }

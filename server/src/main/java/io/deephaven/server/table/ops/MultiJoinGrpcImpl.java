@@ -11,6 +11,8 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.MultiJoinInput;
 import io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.grpc.Common;
+import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 
@@ -36,6 +38,8 @@ public class MultiJoinGrpcImpl extends GrpcTableOperation<MultiJoinTablesRequest
 
     @Override
     public void validateRequest(final MultiJoinTablesRequest request) throws StatusRuntimeException {
+        GrpcErrorHelper.checkHasNoUnknownFields(request);
+
         if (request.getSourceIdsList().isEmpty() && request.getMultiJoinInputsList().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot join zero source tables.");
         }
@@ -47,6 +51,10 @@ public class MultiJoinGrpcImpl extends GrpcTableOperation<MultiJoinTablesRequest
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "If `multi_join_inputs` are provided, `columns_to_match` must remain empty.");
         }
+
+        // Validate well-formed source table ids.
+        request.getSourceIdsList().forEach(Common::validate);
+        request.getMultiJoinInputsList().forEach(input -> Common.validate(input.getSourceId()));
     }
 
     @Override

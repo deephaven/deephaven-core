@@ -2816,8 +2816,8 @@ type MultiJoinInput struct {
 	unknownFields protoimpl.UnknownFields
 
 	SourceId       *TableReference `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
-	ColumnsToMatch []string        `protobuf:"bytes,3,rep,name=columns_to_match,json=columnsToMatch,proto3" json:"columns_to_match,omitempty"`
-	ColumnsToAdd   []string        `protobuf:"bytes,4,rep,name=columns_to_add,json=columnsToAdd,proto3" json:"columns_to_add,omitempty"`
+	ColumnsToMatch []string        `protobuf:"bytes,2,rep,name=columns_to_match,json=columnsToMatch,proto3" json:"columns_to_match,omitempty"`
+	ColumnsToAdd   []string        `protobuf:"bytes,3,rep,name=columns_to_add,json=columnsToAdd,proto3" json:"columns_to_add,omitempty"`
 }
 
 func (x *MultiJoinInput) Reset() {
@@ -2873,13 +2873,14 @@ func (x *MultiJoinInput) GetColumnsToAdd() []string {
 	return nil
 }
 
+// For MultiJoinTablesRequest, if `multi_join_inputs` are provided then `source_ids` and `columns_to_match` must be
+// omitted.
 type MultiJoinTablesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResultId *ticket.Ticket `protobuf:"bytes,1,opt,name=result_id,json=resultId,proto3" json:"result_id,omitempty"`
-	// It is considered an error if both `source_ids` and `multi_join_inputs` are provided.
+	ResultId        *ticket.Ticket    `protobuf:"bytes,1,opt,name=result_id,json=resultId,proto3" json:"result_id,omitempty"`
 	SourceIds       []*TableReference `protobuf:"bytes,2,rep,name=source_ids,json=sourceIds,proto3" json:"source_ids,omitempty"`
 	ColumnsToMatch  []string          `protobuf:"bytes,3,rep,name=columns_to_match,json=columnsToMatch,proto3" json:"columns_to_match,omitempty"`
 	MultiJoinInputs []*MultiJoinInput `protobuf:"bytes,4,rep,name=multi_join_inputs,json=multiJoinInputs,proto3" json:"multi_join_inputs,omitempty"`
@@ -2962,7 +2963,7 @@ type RangeJoinTablesRequest struct {
 	LeftEndColumn    string                                `protobuf:"bytes,9,opt,name=left_end_column,json=leftEndColumn,proto3" json:"left_end_column,omitempty"`
 	Aggregations     []*Aggregation                        `protobuf:"bytes,10,rep,name=aggregations,proto3" json:"aggregations,omitempty"`
 	// Specifies the range match parameters as a parseable string. Providing `range_match` in the GRPC call is the
-	// alternative to detailed range match parameters provided in the `range_start_column`, `range_start_rule`,
+	// alternative to detailed range match parameters provided in the `left_start_column`, `range_start_rule`,
 	// `right_range_column`, `range_end_rule`, and `left_end_column` fields.
 	RangeMatch string `protobuf:"bytes,11,opt,name=range_match,json=rangeMatch,proto3" json:"range_match,omitempty"`
 }
@@ -10868,10 +10869,10 @@ var file_deephaven_proto_table_proto_rawDesc = []byte{
 	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e, 0x54, 0x61, 0x62, 0x6c, 0x65,
 	0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x08, 0x73, 0x6f, 0x75, 0x72, 0x63,
 	0x65, 0x49, 0x64, 0x12, 0x28, 0x0a, 0x10, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x5f, 0x74,
-	0x6f, 0x5f, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0e, 0x63,
+	0x6f, 0x5f, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0e, 0x63,
 	0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x54, 0x6f, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x12, 0x24, 0x0a,
 	0x0e, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x5f, 0x74, 0x6f, 0x5f, 0x61, 0x64, 0x64, 0x18,
-	0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x54, 0x6f,
+	0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x54, 0x6f,
 	0x41, 0x64, 0x64, 0x22, 0xbb, 0x02, 0x0a, 0x16, 0x4d, 0x75, 0x6c, 0x74, 0x69, 0x4a, 0x6f, 0x69,
 	0x6e, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x46,
 	0x0a, 0x09, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,

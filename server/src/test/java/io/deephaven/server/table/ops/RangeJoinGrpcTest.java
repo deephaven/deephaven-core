@@ -56,7 +56,7 @@ public class RangeJoinGrpcTest extends GrpcTableOperationTestBase<RangeJoinTable
                 .setRangeMatch("Lower <= X <= Upper")
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
-                "If `range_match` is provided, range_details should remain empty.");
+                "If `range_match` is provided, range details should remain empty.");
     }
 
     @Test
