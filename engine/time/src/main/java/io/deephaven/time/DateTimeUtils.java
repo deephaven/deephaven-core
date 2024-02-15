@@ -3152,8 +3152,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the start
+     * of the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3172,8 +3172,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the start of
+     * the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param interval size of the window
@@ -3192,8 +3192,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
-     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
-     * start of the five-minute window that contains the input zoned date time.
+     * interval nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time
+     * value for the start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3212,8 +3212,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
-     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
-     * start of the five-minute window that contains the input zoned date time.
+     * interval nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value
+     * for the start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param interval size of the window
@@ -3232,8 +3232,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the start
+     * of the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3254,8 +3254,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the start of
+     * the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param interval size of the window
@@ -3275,8 +3275,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
-     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
-     * start of the five-minute window that contains the input zoned date time.
+     * interval nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time
+     * value for the start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3298,8 +3298,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
-     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
-     * start of the five-minute window that contains the input zoned date time.
+     * interval nanoseconds. For example, a five-minute {@code interval} intervalNanos value would return the zoned date
+     * time value for the start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param interval size of the window
@@ -3319,8 +3319,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the end of
+     * the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3339,7 +3339,7 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the end of the
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
@@ -3359,8 +3359,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
-     * the five-minute window that contains the input zoned date time.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time value for
+     * the end of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3379,8 +3379,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
-     * the five-minute window that contains the input zoned date time.
+     * nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value for the end
+     * of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param interval size of the window
@@ -3399,8 +3399,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the end of
+     * the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3422,7 +3422,7 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the end of the
      * five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
@@ -3443,8 +3443,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
-     * the five-minute window that contains the input zoned date time.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time value for
+     * the end of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3467,8 +3467,8 @@ public class DateTimeUtils {
 
     /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
-     * the five-minute window that contains the input zoned date time.
+     * nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value for the end
+     * of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param interval size of the window
