@@ -12417,54 +12417,10 @@ class MultiJoinTablesRequest final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kSourceIdsFieldNumber = 2,
-    kColumnsToMatchFieldNumber = 3,
-    kMultiJoinInputsFieldNumber = 4,
+    kMultiJoinInputsFieldNumber = 2,
     kResultIdFieldNumber = 1,
   };
-  // repeated .io.deephaven.proto.backplane.grpc.TableReference source_ids = 2;
-  int source_ids_size() const;
-  private:
-  int _internal_source_ids_size() const;
-  public:
-  void clear_source_ids();
-  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_source_ids(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TableReference >*
-      mutable_source_ids();
-  private:
-  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_source_ids(int index) const;
-  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_add_source_ids();
-  public:
-  const ::io::deephaven::proto::backplane::grpc::TableReference& source_ids(int index) const;
-  ::io::deephaven::proto::backplane::grpc::TableReference* add_source_ids();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TableReference >&
-      source_ids() const;
-
-  // repeated string columns_to_match = 3;
-  int columns_to_match_size() const;
-  private:
-  int _internal_columns_to_match_size() const;
-  public:
-  void clear_columns_to_match();
-  const std::string& columns_to_match(int index) const;
-  std::string* mutable_columns_to_match(int index);
-  void set_columns_to_match(int index, const std::string& value);
-  void set_columns_to_match(int index, std::string&& value);
-  void set_columns_to_match(int index, const char* value);
-  void set_columns_to_match(int index, const char* value, size_t size);
-  std::string* add_columns_to_match();
-  void add_columns_to_match(const std::string& value);
-  void add_columns_to_match(std::string&& value);
-  void add_columns_to_match(const char* value);
-  void add_columns_to_match(const char* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& columns_to_match() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_columns_to_match();
-  private:
-  const std::string& _internal_columns_to_match(int index) const;
-  std::string* _internal_add_columns_to_match();
-  public:
-
-  // repeated .io.deephaven.proto.backplane.grpc.MultiJoinInput multi_join_inputs = 4;
+  // repeated .io.deephaven.proto.backplane.grpc.MultiJoinInput multi_join_inputs = 2;
   int multi_join_inputs_size() const;
   private:
   int _internal_multi_join_inputs_size() const;
@@ -12508,8 +12464,6 @@ class MultiJoinTablesRequest final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TableReference > source_ids_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_match_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::MultiJoinInput > multi_join_inputs_;
     ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -38845,122 +38799,7 @@ inline void MultiJoinTablesRequest::set_allocated_result_id(::io::deephaven::pro
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id)
 }
 
-// repeated .io.deephaven.proto.backplane.grpc.TableReference source_ids = 2;
-inline int MultiJoinTablesRequest::_internal_source_ids_size() const {
-  return _impl_.source_ids_.size();
-}
-inline int MultiJoinTablesRequest::source_ids_size() const {
-  return _internal_source_ids_size();
-}
-inline void MultiJoinTablesRequest::clear_source_ids() {
-  _impl_.source_ids_.Clear();
-}
-inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinTablesRequest::mutable_source_ids(int index) {
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.source_ids)
-  return _impl_.source_ids_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TableReference >*
-MultiJoinTablesRequest::mutable_source_ids() {
-  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.source_ids)
-  return &_impl_.source_ids_;
-}
-inline const ::io::deephaven::proto::backplane::grpc::TableReference& MultiJoinTablesRequest::_internal_source_ids(int index) const {
-  return _impl_.source_ids_.Get(index);
-}
-inline const ::io::deephaven::proto::backplane::grpc::TableReference& MultiJoinTablesRequest::source_ids(int index) const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.source_ids)
-  return _internal_source_ids(index);
-}
-inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinTablesRequest::_internal_add_source_ids() {
-  return _impl_.source_ids_.Add();
-}
-inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinTablesRequest::add_source_ids() {
-  ::io::deephaven::proto::backplane::grpc::TableReference* _add = _internal_add_source_ids();
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.source_ids)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::TableReference >&
-MultiJoinTablesRequest::source_ids() const {
-  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.source_ids)
-  return _impl_.source_ids_;
-}
-
-// repeated string columns_to_match = 3;
-inline int MultiJoinTablesRequest::_internal_columns_to_match_size() const {
-  return _impl_.columns_to_match_.size();
-}
-inline int MultiJoinTablesRequest::columns_to_match_size() const {
-  return _internal_columns_to_match_size();
-}
-inline void MultiJoinTablesRequest::clear_columns_to_match() {
-  _impl_.columns_to_match_.Clear();
-}
-inline std::string* MultiJoinTablesRequest::add_columns_to_match() {
-  std::string* _s = _internal_add_columns_to_match();
-  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-  return _s;
-}
-inline const std::string& MultiJoinTablesRequest::_internal_columns_to_match(int index) const {
-  return _impl_.columns_to_match_.Get(index);
-}
-inline const std::string& MultiJoinTablesRequest::columns_to_match(int index) const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-  return _internal_columns_to_match(index);
-}
-inline std::string* MultiJoinTablesRequest::mutable_columns_to_match(int index) {
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-  return _impl_.columns_to_match_.Mutable(index);
-}
-inline void MultiJoinTablesRequest::set_columns_to_match(int index, const std::string& value) {
-  _impl_.columns_to_match_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline void MultiJoinTablesRequest::set_columns_to_match(int index, std::string&& value) {
-  _impl_.columns_to_match_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline void MultiJoinTablesRequest::set_columns_to_match(int index, const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.columns_to_match_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline void MultiJoinTablesRequest::set_columns_to_match(int index, const char* value, size_t size) {
-  _impl_.columns_to_match_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline std::string* MultiJoinTablesRequest::_internal_add_columns_to_match() {
-  return _impl_.columns_to_match_.Add();
-}
-inline void MultiJoinTablesRequest::add_columns_to_match(const std::string& value) {
-  _impl_.columns_to_match_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline void MultiJoinTablesRequest::add_columns_to_match(std::string&& value) {
-  _impl_.columns_to_match_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline void MultiJoinTablesRequest::add_columns_to_match(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.columns_to_match_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline void MultiJoinTablesRequest::add_columns_to_match(const char* value, size_t size) {
-  _impl_.columns_to_match_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-MultiJoinTablesRequest::columns_to_match() const {
-  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-  return _impl_.columns_to_match_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-MultiJoinTablesRequest::mutable_columns_to_match() {
-  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.columns_to_match)
-  return &_impl_.columns_to_match_;
-}
-
-// repeated .io.deephaven.proto.backplane.grpc.MultiJoinInput multi_join_inputs = 4;
+// repeated .io.deephaven.proto.backplane.grpc.MultiJoinInput multi_join_inputs = 2;
 inline int MultiJoinTablesRequest::_internal_multi_join_inputs_size() const {
   return _impl_.multi_join_inputs_.size();
 }
