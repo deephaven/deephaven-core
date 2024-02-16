@@ -480,9 +480,7 @@ public final class ParquetTableReadWriteTest {
 
         final File metadataFile = new File(rootFile, "_metadata");
         assertTrue(metadataFile.exists());
-        assertTrue(new File(rootFile, "._metadata.crc").exists());
         assertTrue(new File(rootFile, "_common_metadata").exists());
-        assertTrue(new File(rootFile, "._common_metadata.crc").exists());
 
         final Table fromDisk = readTable(destFile);
         assertTableEquals(table, fromDisk);
@@ -493,6 +491,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void parquetWithGroupingDataAndMetadataTest() {
+        final File rootFile = new File("/Users/shivammalhotra/Documents/tempDir");
         final Integer data[] = new Integer[500 * 4];
         for (int i = 0; i < data.length; i++) {
             data[i] = i / 4;
@@ -535,7 +534,7 @@ public final class ParquetTableReadWriteTest {
         parentDir.delete();
         parentDir.mkdir();
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(rootFile.getAbsolutePath())
+                .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
         writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), writeInstructions,
                 new File[] {firstDataFile, secondDataFile}, null);
@@ -543,7 +542,7 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = readTable(parentDir);
         assertTableEquals(source, fromDisk);
 
-        final File metadataFile = new File(rootFile, "_metadata");
+        final File metadataFile = new File(parentDir, "_metadata");
         final Table fromDiskWithMetadata = readTable(metadataFile);
         assertTableEquals(source, fromDiskWithMetadata);
     }

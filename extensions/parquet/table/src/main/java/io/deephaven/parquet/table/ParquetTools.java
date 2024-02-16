@@ -14,7 +14,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.parquet.base.ParquetMetadataFileWriterImpl;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -70,6 +69,8 @@ import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 public class ParquetTools {
 
     private static final int MAX_PARTITIONING_LEVELS_INFERENCE = 32;
+    private static final String PARQUET_METADATA_FILE = "_metadata";
+    private static final String PARQUET_COMMON_METADATA_FILE = "_common_metadata";
 
     private ParquetTools() {}
 
@@ -485,8 +486,8 @@ public class ParquetTools {
         }
         Arrays.stream(destinations).forEach(ParquetTools::deleteBackupFile);
 
-        // Write tables and index files at temporary shadow file paths in the same directory to prevent overwriting
-        // any existing files
+        // Write all files at temporary shadow file paths in the same directory to prevent overwriting any existing
+        // data in case of failure
         final File[] shadowDestFiles =
                 Arrays.stream(destinations).map(ParquetTools::getShadowFile).toArray(File[]::new);
         final File[] firstCreatedDirs =
@@ -494,7 +495,8 @@ public class ParquetTools {
 
         final ParquetMetadataFileWriter metadataFileWriter;
         final String metadataRootDir = writeInstructions.getMetadataRootDir();
-        if (metadataRootDir != null && !metadataRootDir.equals(ParquetInstructions.DEFAULT_METADATA_ROOT_DIR)) {
+        final boolean writeMetadataFiles = !ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(metadataRootDir);
+        if (writeMetadataFiles) {
             metadataFileWriter = new ParquetMetadataFileWriterImpl(metadataRootDir, destinations);
         } else {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
@@ -540,23 +542,21 @@ public class ParquetTools {
                 }
             }
 
-            // TODO (Discuss with Ryan) Note that we are directly combining the schema information from all the tables
-            // into a single metadata file. So say if we are writing a partitioned table data using this method, like
-            // writing "Date=1-1-2024/data.parquet" and "Date=1-2-2024/data.parquet" in the same call, then the metadata
-            // file with contain schema information from the tables and not the "Date" column.
-            //
-            // Another challenge is that based on the checks by the hadoop code, all the metadata files have to be
-            // written in the provided metadataRootDir path and the metadata file names are also fixed. Therefore, I
-            // cannot write these files to shadow paths. I will have to write them directly to the destination path
-            // which can lead to overwriting exiting files and deleting existing data in case of failure.
-            // One way I can think of is to make a copy of existing metadata files and then write the new metadata files
-            // and then delete the copies at the time of success.
-            // Other way is to copy the metadata file logic outside of hadoop code and then tweak it to use our shadow
-            // file writing logic. Note that the parquet-hadoop method is deprecated, so we don't expect the code to
-            // change in the future.
-            metadataFileWriter.writeMetadataFiles();
+            // Write the combined metadata files to shadow destinations
+            final File metadataDestFile, shadowMetadataFile, commonMetadataDestFile, shadowCommonMetadataFile;
+            if (writeMetadataFiles) {
+                metadataDestFile = new File(metadataRootDir, PARQUET_METADATA_FILE);
+                shadowMetadataFile = ParquetTools.getShadowFile(metadataDestFile);
+                shadowFiles.add(shadowMetadataFile);
+                commonMetadataDestFile = new File(metadataRootDir, PARQUET_COMMON_METADATA_FILE);
+                shadowCommonMetadataFile = ParquetTools.getShadowFile(commonMetadataDestFile);
+                shadowFiles.add(shadowCommonMetadataFile);
+                metadataFileWriter.writeMetadataFiles(shadowMetadataFile, shadowCommonMetadataFile);
+            } else {
+                metadataDestFile = shadowMetadataFile = commonMetadataDestFile = shadowCommonMetadataFile = null;
+            }
 
-            // Write to shadow files was successful
+            // Write to shadow files was successful, now replace the original files with the shadow files
             for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                 destFiles.add(destinations[tableIdx]);
                 installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
@@ -570,6 +570,12 @@ public class ParquetTools {
                         installShadowFile(indexDestFile, shadowIndexFile);
                     }
                 }
+            }
+            if (writeMetadataFiles) {
+                destFiles.add(metadataDestFile);
+                installShadowFile(metadataDestFile, shadowMetadataFile);
+                destFiles.add(commonMetadataDestFile);
+                installShadowFile(commonMetadataDestFile, shadowCommonMetadataFile);
             }
         } catch (Exception e) {
             for (final File file : destFiles) {

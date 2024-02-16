@@ -18,8 +18,8 @@ import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.parquet.base.ColumnWriter;
-import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
+import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
@@ -127,16 +127,7 @@ public class ParquetTableWriter {
                     cleanupFiles.add(groupingDestFile);
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(metadataGroupingFilePath.toPath()).toString()));
-                    // We don't include schema and row group information from grouping files in the metadata files
-
-                    // TODO Remove this comment
-                    // If I pass the regular metadata writer instead of the null here, it would fail with the following
-                    // error:
-                    // java.lang.RuntimeException: could not merge metadata: key deephaven has conflicting values:
-                    // [{"version":"unknown"},
-                    // {"version":"unknown","groupingColumns":[{"columnName":"vvv","groupingTablePath":".dh_metadata/indexes/vvv/index_vvv_groupingColumnsWriteTests.parquet"}]}]
-                    // Basically, the metadata file for grouping file has a different key-value-metadata than the non
-                    // grouping file.
+                    // We don't accumulate metadata from grouping files into the main metadata file
                     write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions, groupingDestFile,
                             metadataGroupingFilePath, Collections.emptyMap(), TableInfo.builder(),
                             NullParquetMetadataFileWriter.INSTANCE);

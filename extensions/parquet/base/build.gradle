@@ -9,7 +9,6 @@ dependencies {
     api project(':util-channel')
 
     Classpaths.inheritParquetHadoop(project)
-    Classpaths.inheritParquetHadoopConfiguration(project)
 
     implementation project(':extensions-parquet-compression')
     implementation project(':Base')

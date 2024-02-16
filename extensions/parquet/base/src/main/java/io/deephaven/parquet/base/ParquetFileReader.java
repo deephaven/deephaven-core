@@ -30,7 +30,7 @@ import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
     private static final String MAGIC_STR = "PAR1";
-    static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
+    public static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public static final String FILE_URI_SCHEME = "file";
 
     public final FileMetaData fileMetaData;

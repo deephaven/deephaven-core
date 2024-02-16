@@ -78,14 +78,16 @@ public final class ParquetFileWriter {
         serializeOffsetIndexes();
         final ParquetMetadata footer =
                 new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
-        serializeFooter(footer);
-        metadataFileWriter.addFooter(metadataFilePath, footer);
+        serializeFooter(footer, bufferedOutput);
+        metadataFileWriter.addParquetFileMetadata(metadataFilePath, footer);
         // Flush any buffered data and close the channel
         bufferedOutput.close();
         compressorAdapter.close();
     }
 
-    private void serializeFooter(final ParquetMetadata footer) throws IOException {
+    public static void serializeFooter(final ParquetMetadata footer,
+            final PositionedBufferedOutputStream bufferedOutput)
+            throws IOException {
         final long footerIndex = bufferedOutput.position();
         final org.apache.parquet.format.FileMetaData parquetMetadata =
                 metadataConverter.toParquetMetadata(VERSION, footer);
