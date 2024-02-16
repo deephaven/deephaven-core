@@ -29,7 +29,7 @@ import java.util.Map;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
-public final class RowGroupReaderImpl implements RowGroupReader {
+final class RowGroupReaderImpl implements RowGroupReader {
     private final RowGroup rowGroup;
     private final SeekableChannelsProvider channelsProvider;
     private final MessageType type;
