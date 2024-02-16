@@ -13,6 +13,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,10 +29,11 @@ public class DoubleEMOperator extends BasePrimitiveEMOperator {
         }
 
         @Override
-        public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+        public void accumulateCumulative(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                final LongChunk<? extends Values> tsChunk,
+                final int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -69,11 +71,15 @@ public class DoubleEMOperator extends BasePrimitiveEMOperator {
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
-                        // If the data looks good, and we have a null ema,  just accept the current value
+                        // If the data looks good, and we have a null computed value, accept the current value
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
+                        }
                         if (dt != 0) {
                             final double alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             final double oneMinusAlpha = 1.0 - alpha;

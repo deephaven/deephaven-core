@@ -12,6 +12,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,10 +75,15 @@ public class ShortEMOperator extends BasePrimitiveEMOperator {
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
+                        // We have a valid input value, we can initialize the output value with it.
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
+                        }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
                             alpha = Math.exp(-dt / reverseWindowScaleUnits);

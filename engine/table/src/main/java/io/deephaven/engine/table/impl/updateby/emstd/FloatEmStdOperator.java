@@ -1,8 +1,3 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEmStdOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.emstd;
 
 import io.deephaven.api.updateby.BadDataBehavior;
@@ -15,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -109,6 +105,10 @@ public class FloatEmStdOperator extends BasePrimitiveEmStdOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
+                        }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
                             alpha = Math.exp(-dt / reverseWindowScaleUnits);

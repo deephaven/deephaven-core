@@ -94,7 +94,8 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
         ctx.lastStamp = firstUnmodifiedTimestamp;
     }
 
-    void handleBadData(@NotNull final Context ctx,
+    void handleBadData(
+            @NotNull final Context ctx,
             final boolean isNull,
             final boolean isNan) {
         boolean doReset = false;
