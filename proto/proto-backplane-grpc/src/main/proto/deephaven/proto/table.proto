@@ -759,8 +759,6 @@ message MultiJoinInput {
   repeated string columns_to_add = 3;
 }
 
-// For MultiJoinTablesRequest, if `multi_join_inputs` are provided then `source_ids` and `columns_to_match` must be
-// omitted.
 message MultiJoinTablesRequest {
   Ticket result_id = 1;
   repeated MultiJoinInput multi_join_inputs = 2;

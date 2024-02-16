@@ -2873,8 +2873,6 @@ func (x *MultiJoinInput) GetColumnsToAdd() []string {
 	return nil
 }
 
-// For MultiJoinTablesRequest, if `multi_join_inputs` are provided then `source_ids` and `columns_to_match` must be
-// omitted.
 type MultiJoinTablesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
