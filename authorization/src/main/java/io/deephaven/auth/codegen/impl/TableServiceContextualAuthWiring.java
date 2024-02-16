@@ -31,6 +31,7 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.MetaTableRequest;
+import io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
@@ -373,6 +374,17 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to MultiJoinTables.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke MultiJoinTables
+     */
+    void checkPermissionMultiJoinTables(AuthContext authContext, MultiJoinTablesRequest request,
+            List<Table> sourceTables);
+
+    /**
      * Authorize a request to RangeJoinTables.
      *
      * @param authContext the authentication context of the request
@@ -677,6 +689,11 @@ public interface TableServiceContextualAuthWiring {
             checkPermission(authContext, sourceTables);
         }
 
+        public void checkPermissionMultiJoinTables(AuthContext authContext,
+                MultiJoinTablesRequest request, List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+
         public void checkPermissionRangeJoinTables(AuthContext authContext,
                 RangeJoinTablesRequest request, List<Table> sourceTables) {
             checkPermission(authContext, sourceTables);
@@ -969,6 +986,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionRajTables(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionMultiJoinTables(AuthContext authContext,
+                MultiJoinTablesRequest request, List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionMultiJoinTables(authContext, request, sourceTables);
             }
         }
 

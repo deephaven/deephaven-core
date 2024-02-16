@@ -1,5 +1,6 @@
 package io.deephaven.server.table.ops;
 
+import com.google.protobuf.Descriptors;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
@@ -47,11 +48,27 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
     public void validateRequest(RangeJoinTablesRequest request) throws StatusRuntimeException {
         GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.LEFT_ID_FIELD_NUMBER);
         GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RIGHT_ID_FIELD_NUMBER);
-        GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.LEFT_START_COLUMN_FIELD_NUMBER);
-        GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RANGE_START_RULE_FIELD_NUMBER);
-        GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RIGHT_RANGE_COLUMN_FIELD_NUMBER);
-        GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RANGE_END_RULE_FIELD_NUMBER);
-        GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.LEFT_END_COLUMN_FIELD_NUMBER);
+
+        // Validate that the `range_match` field is set OR the range detail fields are set
+        if (!hasRangeMatchString(request)) {
+            GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.LEFT_START_COLUMN_FIELD_NUMBER);
+            GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RANGE_START_RULE_FIELD_NUMBER);
+            GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RIGHT_RANGE_COLUMN_FIELD_NUMBER);
+            GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.RANGE_END_RULE_FIELD_NUMBER);
+            GrpcErrorHelper.checkHasField(request, RangeJoinTablesRequest.LEFT_END_COLUMN_FIELD_NUMBER);
+        } else {
+            try {
+                GrpcErrorHelper.checkDoesNotHaveField(request, RangeJoinTablesRequest.LEFT_START_COLUMN_FIELD_NUMBER);
+                GrpcErrorHelper.checkDoesNotHaveField(request, RangeJoinTablesRequest.RANGE_START_RULE_FIELD_NUMBER);
+                GrpcErrorHelper.checkDoesNotHaveField(request, RangeJoinTablesRequest.RIGHT_RANGE_COLUMN_FIELD_NUMBER);
+                GrpcErrorHelper.checkDoesNotHaveField(request, RangeJoinTablesRequest.RANGE_END_RULE_FIELD_NUMBER);
+                GrpcErrorHelper.checkDoesNotHaveField(request, RangeJoinTablesRequest.LEFT_END_COLUMN_FIELD_NUMBER);
+            } catch (Exception ex) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "If `range_match` is provided, range details should remain empty. \nInternal error: "
+                                + ex.getMessage());
+            }
+        }
 
         GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, RangeJoinTablesRequest.AGGREGATIONS_FIELD_NUMBER);
 
@@ -64,7 +81,12 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
             for (String exactMatch : request.getExactMatchColumnsList()) {
                 JoinMatch.parse(exactMatch);
             }
-            parseRangeMatch(request);
+            if (!hasRangeMatchString(request)) {
+                adaptRangeMatch(request);
+            } else {
+                // Parse the string and throw an exception if it's invalid
+                RangeJoinMatch.parse(request.getRangeMatch());
+            }
         } catch (IllegalArgumentException e) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, e.getMessage());
         }
@@ -82,7 +104,12 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
         final Table leftTable = sourceTables.get(0).get();
         final Table rightTable = sourceTables.get(1).get();
         final Collection<JoinMatch> exactMatches = JoinMatch.from(request.getExactMatchColumnsList());
-        final RangeJoinMatch rangeMatch = parseRangeMatch(request);
+        final RangeJoinMatch rangeMatch;
+        if (!hasRangeMatchString(request)) {
+            rangeMatch = adaptRangeMatch(request);
+        } else {
+            rangeMatch = RangeJoinMatch.parse(request.getRangeMatch());
+        }
         final Collection<? extends io.deephaven.api.agg.Aggregation> aggregations = request.getAggregationsList()
                 .stream()
                 .map(AggregationAdapter::adapt)
@@ -96,7 +123,14 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
         }
     }
 
-    private static RangeJoinMatch parseRangeMatch(@NotNull final RangeJoinTablesRequest request) {
+    private static boolean hasRangeMatchString(@NotNull final RangeJoinTablesRequest message) {
+        final Descriptors.Descriptor descriptor = message.getDescriptorForType();
+        final Descriptors.FieldDescriptor fieldDescriptor =
+                descriptor.findFieldByNumber(RangeJoinTablesRequest.RANGE_MATCH_FIELD_NUMBER);
+        return message.hasField(fieldDescriptor);
+    }
+
+    private static RangeJoinMatch adaptRangeMatch(@NotNull final RangeJoinTablesRequest request) {
         return RangeJoinMatch.of(
                 ColumnName.parse(request.getLeftStartColumn()),
                 adapt(request.getRangeStartRule()),

@@ -6,15 +6,11 @@ package io.deephaven.server.table.ops;
 import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecGroup;
-import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule;
-import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.Status.Code;
 import org.junit.Test;
@@ -39,6 +35,28 @@ public class RangeJoinGrpcTest extends GrpcTableOperationTestBase<RangeJoinTable
         } finally {
             release(response);
         }
+    }
+
+    @Test
+    public void rangeJoinStaticStringMatch() {
+        final RangeJoinTablesRequest request = prototypeStringMatch();
+        final ExportedTableCreationResponse response = channel().tableBlocking().rangeJoinTables(request);
+        try {
+            assertThat(response.getSuccess()).isTrue();
+            assertThat(response.getIsStatic()).isTrue();
+            assertThat(response.getSize()).isEqualTo(1);
+        } finally {
+            release(response);
+        }
+    }
+
+    @Test
+    public void stringMatchAndDetailsProvided() {
+        final RangeJoinTablesRequest request = RangeJoinTablesRequest.newBuilder(prototype())
+                .setRangeMatch("Lower <= X <= Upper")
+                .build();
+        assertError(request, Code.INVALID_ARGUMENT,
+                "If `range_match` is provided, range details should remain empty.");
     }
 
     @Test
@@ -184,6 +202,25 @@ public class RangeJoinGrpcTest extends GrpcTableOperationTestBase<RangeJoinTable
                 .setRightRangeColumn("X")
                 .setRangeEndRule(RangeEndRule.GREATER_THAN_OR_EQUAL)
                 .setLeftEndColumn("Upper")
+                .addAggregations(Aggregation.newBuilder()
+                        .setColumns(AggregationColumns.newBuilder()
+                                .setSpec(AggSpec.newBuilder()
+                                        .setGroup(AggSpecGroup.getDefaultInstance())
+                                        .build())
+                                .addMatchPairs("Y")
+                                .build())
+                        .build())
+                .build();
+    }
+
+    private RangeJoinTablesRequest prototypeStringMatch() {
+        final TableReference t1 = ref(TableTools.emptyTable(1).view("Lower=ii", "Upper=ii"));
+        final TableReference t2 = ref(TableTools.emptyTable(1).view("X=ii", "Y=ii"));
+        return RangeJoinTablesRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setLeftId(t1)
+                .setRightId(t2)
+                .setRangeMatch("Lower <= X <= Upper")
                 .addAggregations(Aggregation.newBuilder()
                         .setColumns(AggregationColumns.newBuilder()
                                 .setSpec(AggSpec.newBuilder()

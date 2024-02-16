@@ -23,6 +23,16 @@ public class GrpcErrorHelper {
         }
     }
 
+    public static void checkDoesNotHaveField(Message message, int fieldNumber) throws StatusRuntimeException {
+        final Descriptor descriptor = message.getDescriptorForType();
+        final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
+        if (message.hasField(fieldDescriptor)) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    String.format("%s must not have field %s (%d)",
+                            descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
+        }
+    }
+
     public static void checkRepeatedFieldNonEmpty(Message message, int fieldNumber) throws StatusRuntimeException {
         final Descriptor descriptor = message.getDescriptorForType();
         final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);

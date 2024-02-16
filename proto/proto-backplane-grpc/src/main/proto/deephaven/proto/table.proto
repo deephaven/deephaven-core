@@ -163,6 +163,11 @@ service TableService {
   rpc RajTables(AjRajTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
+   * Returns the result of a multi-join operation.
+   */
+  rpc MultiJoinTables(MultiJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
    * Returns the result of a range join operation.
    */
   rpc RangeJoinTables(RangeJoinTablesRequest) returns (ExportedTableCreationResponse) {}
@@ -748,6 +753,21 @@ message AjRajTablesRequest {
   repeated string columns_to_add = 6;
 }
 
+message MultiJoinInput {
+  // The source table to include in the multi-join output table.
+  TableReference source_id = 1;
+  // The key columns to match; may be renamed to match other source table key columns.
+  repeated string columns_to_match = 2;
+  // The columns from the source table to include; if not provided, all columns are included.
+  repeated string columns_to_add = 3;
+}
+
+message MultiJoinTablesRequest {
+  Ticket result_id = 1;
+  // The source table input specifications. One or more must be provided.
+  repeated MultiJoinInput multi_join_inputs = 2;
+}
+
 message RangeJoinTablesRequest {
   enum RangeStartRule {
     START_UNSPECIFIED = 0;
@@ -765,12 +785,17 @@ message RangeJoinTablesRequest {
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string exact_match_columns = 4;
+  // Provide detailed range match parameters for the range join (alternative to providing `range_match`)
   string left_start_column = 5;
   RangeStartRule range_start_rule = 6;
   string right_range_column = 7;
   RangeEndRule range_end_rule = 8;
   string left_end_column = 9;
   repeated Aggregation aggregations = 10;
+  // Specifies the range match parameters as a parseable string. Providing `range_match` in the GRPC call is the
+  // alternative to detailed range match parameters provided in the `left_start_column`, `range_start_rule`,
+  // `right_range_column`, `range_end_rule`, and `left_end_column` fields.
+  string range_match = 11;
 }
 
 message ComboAggregateRequest {
@@ -1307,6 +1332,7 @@ message BatchTableRequest {
       AjRajTablesRequest aj = 40;
       AjRajTablesRequest raj = 41;
       ColumnStatisticsRequest column_statistics = 42;
+      MultiJoinTablesRequest multi_join = 43;
     }
   }
 }
