@@ -754,13 +754,17 @@ message AjRajTablesRequest {
 }
 
 message MultiJoinInput {
+  // The source table to include in the multi-join output table.
   TableReference source_id = 1;
+  // The key columns to match; may be renamed to match other source table key columns.
   repeated string columns_to_match = 2;
+  // The columns from the source table to include; if not provided, all columns are included.
   repeated string columns_to_add = 3;
 }
 
 message MultiJoinTablesRequest {
   Ticket result_id = 1;
+  // The source table input specifications. One or more must be provided.
   repeated MultiJoinInput multi_join_inputs = 2;
 }
 

@@ -2815,9 +2815,12 @@ type MultiJoinInput struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SourceId       *TableReference `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
-	ColumnsToMatch []string        `protobuf:"bytes,2,rep,name=columns_to_match,json=columnsToMatch,proto3" json:"columns_to_match,omitempty"`
-	ColumnsToAdd   []string        `protobuf:"bytes,3,rep,name=columns_to_add,json=columnsToAdd,proto3" json:"columns_to_add,omitempty"`
+	// The source table to include in the multi-join output table.
+	SourceId *TableReference `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	// The key columns to match; may be renamed to match other source table key columns.
+	ColumnsToMatch []string `protobuf:"bytes,2,rep,name=columns_to_match,json=columnsToMatch,proto3" json:"columns_to_match,omitempty"`
+	// The columns from the source table to include; if not provided, all columns are included.
+	ColumnsToAdd []string `protobuf:"bytes,3,rep,name=columns_to_add,json=columnsToAdd,proto3" json:"columns_to_add,omitempty"`
 }
 
 func (x *MultiJoinInput) Reset() {
@@ -2878,7 +2881,8 @@ type MultiJoinTablesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResultId        *ticket.Ticket    `protobuf:"bytes,1,opt,name=result_id,json=resultId,proto3" json:"result_id,omitempty"`
+	ResultId *ticket.Ticket `protobuf:"bytes,1,opt,name=result_id,json=resultId,proto3" json:"result_id,omitempty"`
+	// The source table input specifications. One or more must be provided.
 	MultiJoinInputs []*MultiJoinInput `protobuf:"bytes,2,rep,name=multi_join_inputs,json=multiJoinInputs,proto3" json:"multi_join_inputs,omitempty"`
 }
 
