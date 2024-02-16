@@ -61,15 +61,14 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == null) {
-                        // If the data looks good, and we have a null computed value, accept the current value
+                        // We have a valid input value, we can initialize the output value with it.
                         curVal = new BigDecimal(input, control.bigValueContextOrDefault());
                         lastStamp = timestamp;
                     } else {
-                        final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                         final long dt = timestamp - lastStamp;
                         if (dt < 0) {
                             // negative time deltas are not allowed, throw an exception
-                            throw new TableDataException("Timestamp values in exponential operators must not decrease");
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
                         }
                         // Alpha is dynamic based on time, but only recalculated when needed
                         if (dt != lastDt) {
@@ -77,6 +76,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                             oneMinusAlpha = computeOneMinusAlpha(alpha);
                             lastDt = dt;
                         }
+                        final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                         curVal = aggFunction.apply(curVal, decimalInput, alpha, oneMinusAlpha);
                         lastStamp = timestamp;
                     }

@@ -78,7 +78,7 @@ public class DoubleEMOperator extends BasePrimitiveEMOperator {
                         final long dt = timestamp - lastStamp;
                         if (dt < 0) {
                             // negative time deltas are not allowed, throw an exception
-                            throw new TableDataException("Timestamp values in exponential operators must not decrease");
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
                         }
                         if (dt != 0) {
                             final double alpha = Math.exp(-dt / reverseWindowScaleUnits);

@@ -282,7 +282,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             }
             if (ts < lastTimestamp.longValue()) {
                 throw (new TableDataException(
-                        "updateBy time-based operators require non-descending timestamp values"));
+                        "Timestamp values in UpdateBy operators must not decrease"));
             }
 
             ssaValues.add(ts);

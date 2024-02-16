@@ -104,7 +104,7 @@ public class ShortEmStdOperator extends BasePrimitiveEmStdOperator {
                         final long dt = timestamp - lastStamp;
                         if (dt < 0) {
                             // negative time deltas are not allowed, throw an exception
-                            throw new TableDataException("Timestamp values in exponential operators must not decrease");
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
                         }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed

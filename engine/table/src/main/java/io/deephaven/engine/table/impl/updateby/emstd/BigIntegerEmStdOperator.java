@@ -87,15 +87,14 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curEma == null) {
-                        // If the data looks good, and we have a null computed value, accept the current value
+                        // We have a valid input value, we can initialize the output value with it.
                         curEma = new BigDecimal(input, mathContext);
                         lastStamp = timestamp;
                     } else {
-                        final BigDecimal decInput = new BigDecimal(input, mathContext);
                         final long dt = timestamp - lastStamp;
                         if (dt < 0) {
                             // negative time deltas are not allowed, throw an exception
-                            throw new TableDataException("Timestamp values in exponential operators must not decrease");
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
                         }
                         if (dt != 0) {
                             // alpha is dynamic based on time, but only recalculated when needed
@@ -105,6 +104,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
                                 lastDt = dt;
                             }
                             //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                            final BigDecimal decInput = new BigDecimal(input, mathContext);
                             curVariance = alpha.multiply(
                                     curVariance.add(
                                             oneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)), mathContext),
