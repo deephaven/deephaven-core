@@ -6,7 +6,6 @@ package io.deephaven.engine.context;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.util.ExecutionContextRegistrationException;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
@@ -55,7 +54,12 @@ public class PoisonedQueryScope implements QueryScope {
     }
 
     @Override
-    public <T> Map<String, T> toMap(@Nullable Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter) {
+    public Map<String, Object> toMap(@NotNull ParamFilter<Object> filter) {
+        return fail();
+    }
+
+    @Override
+    public <T> Map<String, T> toMap(@NotNull Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter) {
         return fail();
     }
 

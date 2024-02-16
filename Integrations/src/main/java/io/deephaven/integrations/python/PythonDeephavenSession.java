@@ -7,7 +7,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.OperationInitializer;
@@ -47,7 +46,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -256,11 +254,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected Set<String> getVariableNames(Predicate<String> allowName) {
-        return scope.currentScope().copy().keySet().stream()
-                .map(scope::convertStringKey)
-                .filter(allowName)
-                .collect(Collectors.toUnmodifiableSet());
+    protected Set<String> getVariableNames() {
+        try (final PyDictWrapper currScope = scope.currentScope().copy()) {
+            return currScope.keySet().stream()
+                    .map(scope::convertStringKey)
+                    .collect(Collectors.toSet());
+        }
     }
 
     @Override
@@ -309,17 +308,19 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             @NotNull final QueryScope.ParamFilter<T> filter) {
         final Map<String, T> result = new HashMap<>();
 
-        for (final Map.Entry<PyObject, PyObject> entry : scope.currentScope().copy().entrySet()) {
-            final String name = scope.convertStringKey(entry.getKey());
-            Object value = scope.convertValue(entry.getValue());
-            if (valueMapper != null) {
-                value = valueMapper.apply(value);
-            }
+        try (final PyDictWrapper currScope = scope.currentScope().copy()) {
+            for (final Map.Entry<PyObject, PyObject> entry : currScope.entrySet()) {
+                final String name = scope.convertStringKey(entry.getKey());
+                Object value = scope.convertValue(entry.getValue());
+                if (valueMapper != null) {
+                    value = valueMapper.apply(value);
+                }
 
-            // noinspection unchecked
-            if (filter.accept(name, (T) value)) {
                 // noinspection unchecked
-                result.put(name, (T) value);
+                if (filter.accept(name, (T) value)) {
+                    // noinspection unchecked
+                    result.put(name, (T) value);
+                }
             }
         }
 

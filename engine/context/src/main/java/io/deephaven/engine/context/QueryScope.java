@@ -6,7 +6,6 @@ package io.deephaven.engine.context;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +83,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     /**
      * Get all known scope variable names.
      *
-     * @return A collection of scope variable names.
+     * @return A caller-owned mutable collection of scope variable names.
      */
     Set<String> getParamNames();
 
@@ -133,6 +132,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      */
     <T> void putParam(final String name, final T value);
 
+    @FunctionalInterface
     interface ParamFilter<T> {
         boolean accept(String name, T value);
     }
@@ -144,10 +144,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @param filter a predicate to filter the map entries
      * @return a caller-owned mutable map with all known variables and their values.
      */
-    @FinalDefault
-    default Map<String, Object> toMap(@NotNull ParamFilter<Object> filter) {
-        return toMap(null, filter);
-    }
+    Map<String, Object> toMap(@NotNull ParamFilter<Object> filter);
 
     /**
      * Returns a mutable map with all objects in the scope.
@@ -161,7 +158,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @param <T> the type of the mapped values
      */
     <T> Map<String, T> toMap(
-            @Nullable Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter);
+            @NotNull Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter);
 
     /**
      * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning

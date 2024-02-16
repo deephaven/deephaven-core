@@ -18,7 +18,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.context.*;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -71,7 +70,6 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -744,9 +742,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected Set<String> getVariableNames(Predicate<String> allowName) {
+    protected Set<String> getVariableNames() {
         synchronized (bindingBackingMap) {
-            return bindingBackingMap.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
+            return new HashSet<>(bindingBackingMap.keySet());
         }
     }
 
@@ -757,8 +755,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     protected Object setVariable(String name, @Nullable Object newValue) {
-        NameValidator.validateQueryParameterName(name);
-
         Object oldValue = bindingBackingMap.put(name, newValue);
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from

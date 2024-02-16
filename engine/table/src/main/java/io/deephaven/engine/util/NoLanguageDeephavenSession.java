@@ -11,8 +11,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
@@ -75,9 +73,9 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected Set<String> getVariableNames(Predicate<String> allowName) {
+    protected Set<String> getVariableNames() {
         synchronized (variables) {
-            return variables.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
+            return new HashSet<>(variables.keySet());
         }
     }
 

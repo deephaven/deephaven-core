@@ -5,7 +5,6 @@ package io.deephaven.engine.util;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.CacheDir;
 import io.deephaven.engine.context.*;
@@ -30,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
@@ -264,10 +262,9 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * Retrieves all variable names present in the session's scope.
      *
-     * @param allowName a predicate to decide if a name should be in the returned immutable set
-     * @return an immutable set of variable names
+     * @return a caller-owned mutable set of variable names
      */
-    protected abstract Set<String> getVariableNames(Predicate<String> allowName);
+    protected abstract Set<String> getVariableNames();
 
     /**
      * Check if the scope has the given variable name.
@@ -315,12 +312,12 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public Set<String> getParamNames() {
-            return getVariableNames(NameValidator::isValidQueryParameterName);
+            return getVariableNames();
         }
 
         @Override
         public boolean hasParamName(String name) {
-            return NameValidator.isValidQueryParameterName(name) && hasVariable(name);
+            return hasVariable(name);
         }
 
         @Override
@@ -360,8 +357,13 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         @Override
+        public Map<String, Object> toMap(@NotNull final ParamFilter<Object> filter) {
+            return AbstractScriptSession.this.getAllValues(null, filter);
+        }
+
+        @Override
         public <T> Map<String, T> toMap(
-                @Nullable final Function<Object, T> valueMapper,
+                @NotNull final Function<Object, T> valueMapper,
                 @NotNull final ParamFilter<T> filter) {
             return AbstractScriptSession.this.getAllValues(valueMapper, filter);
         }

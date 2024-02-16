@@ -83,10 +83,8 @@ public final class Sql {
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        return queryScope.toMap(wrapped -> {
-            final Object value = queryScope.unwrapObject(wrapped);
-            return value instanceof Table ? (Table) value : null;
-        }, (n, t) -> t != null);
+        // noinspection unchecked,rawtypes
+        return (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
     }
 
     private static TableHeader adapt(TableDefinition tableDef) {
