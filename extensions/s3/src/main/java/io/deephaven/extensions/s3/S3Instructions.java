@@ -3,11 +3,12 @@
  */
 package io.deephaven.extensions.s3;
 
-import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.configuration.Configuration;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 import java.net.URI;
@@ -19,7 +20,12 @@ import java.util.Optional;
  * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-@BuildableStyle
+// Almost the same as BuildableStyle, but has copy-ability to support withReadAheadCount
+@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE,
+        defaults = @Value.Immutable(copy = true),
+        strictBuilder = true,
+        weakInterning = true,
+        jdkOnly = true)
 public abstract class S3Instructions {
 
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
@@ -29,7 +35,7 @@ public abstract class S3Instructions {
     final static int MAX_FRAGMENT_SIZE =
             Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MiB
     private final static int DEFAULT_FRAGMENT_SIZE = MAX_FRAGMENT_SIZE;
-
+    private final static int SINGLE_USE_FRAGMENT_SIZE_DEFAULT = Math.min(65536, MAX_FRAGMENT_SIZE); // 64 KiB
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private final static int DEFAULT_MAX_CACHE_SIZE = 32;
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
@@ -94,7 +100,9 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds
+     * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds. The
+     * implementation may choose to internally retry the request multiple times, so long as the total time does not
+     * exceed this timeout.
      */
     @Default
     public Duration readTimeout() {
@@ -141,6 +149,20 @@ public abstract class S3Instructions {
         }
 
         S3Instructions build();
+    }
+
+    abstract S3Instructions withReadAheadCount(int readAheadCount);
+
+    abstract S3Instructions withFragmentSize(int fragmentSize);
+
+    abstract S3Instructions withMaxCacheSize(int maxCacheSize);
+
+    @Lazy
+    S3Instructions singleUse() {
+        final int readAheadCount = Math.min(DEFAULT_READ_AHEAD_COUNT, readAheadCount());
+        return withReadAheadCount(readAheadCount)
+                .withFragmentSize(Math.min(SINGLE_USE_FRAGMENT_SIZE_DEFAULT, fragmentSize()))
+                .withMaxCacheSize(readAheadCount + 1);
     }
 
     @Check

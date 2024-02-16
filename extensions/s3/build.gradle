@@ -12,9 +12,10 @@ dependencies {
     implementation project(':Util')
     implementation project(':Configuration')
 
-    implementation platform('software.amazon.awssdk:bom:2.21.43')
+    implementation platform('software.amazon.awssdk:bom:2.23.19')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:aws-crt-client'
+    //implementation 'software.amazon.awssdk:netty-nio-client'
 
     compileOnly depAnnotations
 

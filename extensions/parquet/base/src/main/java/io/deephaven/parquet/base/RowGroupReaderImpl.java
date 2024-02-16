@@ -3,8 +3,9 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.format.Util;
@@ -15,11 +16,10 @@ import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,9 +29,7 @@ import java.util.Map;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
-public class RowGroupReaderImpl implements RowGroupReader {
-
-    private static final int BUFFER_SIZE = 65536;
+public final class RowGroupReaderImpl implements RowGroupReader {
     private final RowGroup rowGroup;
     private final SeekableChannelsProvider channelsProvider;
     private final MessageType type;
@@ -90,19 +88,29 @@ public class RowGroupReaderImpl implements RowGroupReader {
             columnChunkURI = rootURI;
         }
 
-        OffsetIndex offsetIndex = null;
-        if (columnChunk.isSetOffset_index_offset()) {
-            try (final SeekableByteChannel readChannel =
-                    channelsProvider.getReadChannel(channelContext, columnChunkURI)) {
-                readChannel.position(columnChunk.getOffset_index_offset());
-                offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
-                        new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));
-            } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
+        final OffsetIndex offsetIndex = offsetIndex(columnChunk, columnChunkURI, channelContext);
         return new ColumnChunkReaderImpl(columnChunk, channelsProvider, columnChunkURI, type, offsetIndex, fieldTypes,
                 numRows(), version);
+    }
+
+    private OffsetIndex offsetIndex(ColumnChunk chunk, URI columnChunkURI, @NotNull SeekableChannelContext context) {
+        if (!chunk.isSetOffset_index_offset()) {
+            return null;
+        }
+        return ParquetMetadataConverter.fromParquetOffsetIndex(readOffsetIndex(chunk, columnChunkURI, context));
+    }
+
+    private org.apache.parquet.format.OffsetIndex readOffsetIndex(ColumnChunk chunk, URI columnChunkURI,
+            @NotNull SeekableChannelContext channelContext) {
+        try (
+                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
+                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(holder.get(), columnChunkURI);
+                final InputStream in =
+                        channelsProvider.getInputStream(readChannel.position(chunk.getOffset_index_offset()))) {
+            return Util.readOffsetIndex(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

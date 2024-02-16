@@ -150,10 +150,10 @@ public class S3InstructionsTest {
     void basicCredentials() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
-                .credentials(Credentials.basicCredentials("foo", "bar"))
+                .credentials(Credentials.basic("foo", "bar"))
                 .build()
                 .credentials())
-                .isEqualTo(Credentials.basicCredentials("foo", "bar"));
+                .isEqualTo(Credentials.basic("foo", "bar"));
     }
 
     @Test

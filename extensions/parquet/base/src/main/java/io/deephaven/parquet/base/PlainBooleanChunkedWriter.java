@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
@@ -19,7 +18,7 @@ import java.nio.IntBuffer;
 /**
  * Plain encoding except for booleans
  */
-public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer> {
+final class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer> {
     private final BooleanPlainValuesWriter writer;
     private IntBuffer nullOffsets;
 

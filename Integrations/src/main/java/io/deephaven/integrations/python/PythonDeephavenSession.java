@@ -41,9 +41,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -301,10 +299,23 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     }
 
     @Override
-    protected Map<String, Object> getAllValues() {
-        return PyLib
-                .ensureGil(() -> scope.getEntries()
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)));
+    protected Map<String, Object> getAllValues(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
+        final HashMap<String, Object> result = PyLib.ensureGil(
+                () -> scope.getEntriesRaw().<Map.Entry<String, PyObject>>map(
+                        e -> new AbstractMap.SimpleImmutableEntry<>(scope.convertStringKey(e.getKey()), e.getValue()))
+                        .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+                                HashMap::putAll));
+
+        final Iterator<Map.Entry<String, Object>> iter = result.entrySet().iterator();
+        while (iter.hasNext()) {
+            final Map.Entry<String, Object> entry = iter.next();
+            entry.setValue(scope.convertValue((PyObject) entry.getValue()));
+            if (!predicate.test(entry)) {
+                iter.remove();
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -315,7 +326,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     // TODO core#41 move this logic into the python console instance or scope like this - can go further and move
     // isWidget too
     @Override
-    public Object unwrapObject(Object object) {
+    public Object unwrapObject(@Nullable Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
             final Object unwrapped = module.javaify(pyObject);

@@ -38,9 +38,7 @@ final class SingletonContainers {
             return builder
                     .endpointOverride(LOCALSTACK_S3.getEndpoint())
                     .regionName(LOCALSTACK_S3.getRegion())
-                    .credentials(
-                            Credentials.basicCredentials(LOCALSTACK_S3.getAccessKey(),
-                                    LOCALSTACK_S3.getSecretKey()));
+                    .credentials(Credentials.basic(LOCALSTACK_S3.getAccessKey(), LOCALSTACK_S3.getSecretKey()));
         }
 
         static S3Client s3Client() {
@@ -73,7 +71,7 @@ final class SingletonContainers {
             return builder
                     .endpointOverride(URI.create(MINIO.getS3URL()))
                     .regionName(Region.AWS_GLOBAL.id())
-                    .credentials(Credentials.basicCredentials(MINIO.getUserName(), MINIO.getPassword()));
+                    .credentials(Credentials.basic(MINIO.getUserName(), MINIO.getPassword()));
         }
 
         static S3Client s3Client() {

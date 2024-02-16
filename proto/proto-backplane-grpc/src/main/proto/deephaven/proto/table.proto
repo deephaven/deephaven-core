@@ -561,6 +561,13 @@ message UpdateByRequest {
           string weight_column = 3;
         }
 
+        message UpdateByRollingFormula {
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
+          string formula = 3;
+          string param_token = 4;
+        }
+
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;
@@ -582,6 +589,7 @@ message UpdateByRequest {
           UpdateByRollingCount rolling_count = 18;
           UpdateByRollingStd rolling_std = 19;
           UpdateByRollingWAvg rolling_wavg = 20;
+          UpdateByRollingFormula rolling_formula = 21;
         }
       }
 

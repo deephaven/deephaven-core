@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl.lang;
 
 import groovy.lang.Closure;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.context.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -3175,9 +3175,17 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed,
             boolean verifyIdempotence)
             throws Exception {
-        QueryLanguageParser.Result result =
+        final Map<String, Object> possibleParams;
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        if (!(queryScope instanceof PoisonedQueryScope)) {
+            possibleParams = queryScope.toMap(NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+        } else {
+            possibleParams = null;
+        }
+
+        final QueryLanguageParser.Result result =
                 new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                        variables, variableParameterizedTypes,
+                        variables, variableParameterizedTypes, possibleParams, null,
                         true,
                         verifyIdempotence,
                         PyCallableWrapperDummyImpl.class.getName()).getResult();

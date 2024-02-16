@@ -13,6 +13,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableDiff;
@@ -505,7 +506,9 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     private void doTestAppendOnly(boolean bucketed, int prevTicks, int postTicks) {
-        final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -564,9 +567,10 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
                         DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -627,7 +631,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingRev() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final long prevTicks = 100;
@@ -652,7 +658,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingRevExclusive() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final long prevTicks = 100;
@@ -677,7 +685,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingFwd() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -699,7 +709,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingFwdExclusive() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -724,7 +736,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = 0;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -752,7 +766,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = -50;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -780,7 +796,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 0;
         final int postTicks = 100;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -808,7 +826,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = -50;
         final int postTicks = 100;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -836,7 +856,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 50;
         final int postTicks = 50;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {

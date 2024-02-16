@@ -51,6 +51,7 @@ public abstract class RollingSumSpec extends RollingOpSpec {
         return
         // is primitive or boxed numeric
         applicableToNumeric(inputType)
+                || inputType == char.class || inputType == Character.class
                 // is boolean?
                 || inputType == boolean.class || inputType == Boolean.class;
     }

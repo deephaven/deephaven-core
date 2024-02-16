@@ -214,7 +214,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
             final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0, version);
             final ColumnChunkReader groupingKeyReader, beginPosReader, endPosReader;
-            try (final SeekableChannelContext channelContext = channelsProvider.makeContext()) {
+            try (final SeekableChannelContext channelContext = channelsProvider.makeSingleUseContext()) {
                 groupingKeyReader =
                         rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY), channelContext);
                 beginPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(BEGIN_POS), channelContext);
@@ -223,10 +223,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
                 log.warn().append("Index file ").append(indexFilePath)
                         .append(" is missing one or more expected columns for table location ")
-                        .append(tl()).append(", column ").append(getName());
+                        .append(tl()).append(", column ").append(getName()).endl();
                 return null;
             }
-
 
             final PageCache<ATTR> localPageCache = ensurePageCache();
 

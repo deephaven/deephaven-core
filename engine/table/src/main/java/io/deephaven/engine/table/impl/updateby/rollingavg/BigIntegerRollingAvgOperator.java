@@ -28,6 +28,7 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigInteger> objectWindowValues;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
@@ -104,19 +105,25 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public BigIntegerRollingAvgOperator(@NotNull final MatchPair pair,
-                                        @NotNull final String[] affectingColumns,
-                                        @Nullable final RowRedirection rowRedirection,
-                                        @Nullable final String timestampColumnName,
-                                        final long reverseWindowScaleUnits,
-                                        final long forwardWindowScaleUnits,
-                                        @NotNull final MathContext mathContext
-                                        // region extra-constructor-args
-                                        // endregion extra-constructor-args
-                                        ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigDecimal.class);
+    public BigIntegerRollingAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final MathContext mathContext) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
-        // region constructor
-        // endregion constructor        
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigIntegerRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                mathContext);
     }
 }

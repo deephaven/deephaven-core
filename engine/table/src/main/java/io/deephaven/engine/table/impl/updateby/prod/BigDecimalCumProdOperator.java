@@ -7,9 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -47,11 +45,16 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
         }
     }
 
-    public BigDecimalCumProdOperator(@NotNull final MatchPair inputPair,
-            @Nullable final RowRedirection rowRedirection,
+    public BigDecimalCumProdOperator(
+            @NotNull final MatchPair inputPair,
             @NotNull final MathContext mathContext) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigDecimal.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, BigDecimal.class);
         this.mathContext = mathContext;
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalCumProdOperator(pair, mathContext);
     }
 
     @NotNull

@@ -142,6 +142,14 @@ abstract class UpdateByWindow {
         }
     }
 
+
+    /**
+     * Create a new window by copying .
+     *
+     * @return a new {@link UpdateByWindow window} copied from this one
+     */
+    abstract UpdateByWindow copy();
+
     abstract void prepareWindowBucket(UpdateByWindowBucketContext context);
 
     @OverridingMethodsMustInvokeSuper

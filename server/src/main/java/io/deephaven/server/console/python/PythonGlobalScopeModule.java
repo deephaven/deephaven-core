@@ -16,7 +16,9 @@ public interface PythonGlobalScopeModule {
     @Provides
     static PythonEvaluatorJpy providePythonEvaluatorJpy() {
         try {
-            return PythonEvaluatorJpy.withGlobals();
+            PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobals();
+            PythonImportInitializer.init();
+            return jpy;
         } catch (IOException | InterruptedException | TimeoutException e) {
             throw new IllegalStateException("Unable to start a python session: ", e);
         }

@@ -1,28 +1,50 @@
 package io.deephaven.extensions.s3;
 
-import io.deephaven.util.SafeCloseable;
-import org.jetbrains.annotations.Nullable;
+import io.deephaven.base.reference.PooledObjectReference;
+import io.deephaven.base.reference.SimpleReference;
+import io.deephaven.util.datastructures.SegmentedSoftPool;
+import io.deephaven.util.referencecounting.ReferenceCounted;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
-interface BufferPool {
+final class BufferPool {
 
-    interface BufferHolder extends SafeCloseable {
-
-        /**
-         * @return The buffer if available, else {@code null}
-         */
-        @Nullable
-        ByteBuffer get();
-
-        /**
-         * Return the held buffer to its pool, and cause subsequent calls to {@link #get()} to return {@code null}
-         */
-        void close();
-    }
+    private static final int POOL_SEGMENT_CAPACITY = 10;
+    private final SegmentedSoftPool<ByteBuffer> pool;
+    private final int bufferSize;
 
     /**
-     * Returns a {@link BufferHolder} that will hold a buffer of at least the requested size.
+     * @param bufferSize Upper limit on size of buffers to be pooled
      */
-    BufferHolder take(int size);
+    BufferPool(final int bufferSize) {
+        this.bufferSize = bufferSize;
+        this.pool = new SegmentedSoftPool<>(
+                POOL_SEGMENT_CAPACITY,
+                () -> ByteBuffer.allocate(bufferSize),
+                ByteBuffer::clear);
+    }
+
+    public PooledObjectReference<ByteBuffer> take(final int size) {
+        if (size > bufferSize) {
+            throw new IllegalArgumentException("Buffer size " + size + " is larger than pool size " + bufferSize);
+        }
+        return new BufferReference(pool.take());
+    }
+
+    private void give(ByteBuffer buffer) {
+        pool.give(buffer);
+    }
+
+    final class BufferReference extends PooledObjectReference<ByteBuffer> {
+
+        BufferReference(@NotNull final ByteBuffer buffer) {
+            super(buffer);
+        }
+
+        @Override
+        protected void returnReferentToPool(@NotNull ByteBuffer referent) {
+            give(referent);
+        }
+    }
 }

@@ -6,10 +6,13 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 /**
  * Map-based implementation, extending LivenessArtifact to manage the objects passed into it.
@@ -77,9 +80,13 @@ public class StandaloneQueryScope extends LivenessArtifact implements QueryScope
     }
 
     @Override
-    public Map<String, Object> toMap() {
-        return valueRetrievers.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().value));
+    public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
+        final HashMap<String, Object> result = new HashMap<>();
+        valueRetrievers.entrySet().stream()
+                .map(e -> ImmutablePair.of(e.getKey(), (Object) e.getValue().value))
+                .filter(predicate)
+                .forEach(e -> result.put(e.getKey(), e.getValue()));
+        return result;
     }
 
     private static class ValueRetriever<T> {

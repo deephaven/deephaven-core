@@ -3,23 +3,33 @@
  */
 package io.deephaven.engine.util;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.configuration.Configuration;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyLib;
 import org.jpy.PyObject;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
+    private static volatile boolean cacheEnabled =
+            Configuration.getInstance().getBooleanForClassWithDefault(PythonScopeJpyImpl.class, "cacheEnabled", false);
+
+    public static void setCacheEnabled(boolean enabled) {
+        cacheEnabled = enabled;
+    }
+
     private final PyDictWrapper dict;
 
     private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
-    private static final ThreadLocal<Deque<Map<PyObject, Object>>> threadConvertedMapStack = new ThreadLocal<>();
+    private static final Cache<PyObject, Object> conversionCache = CacheBuilder.newBuilder().weakValues().build();
 
     public static PythonScopeJpyImpl ofMainGlobals() {
         return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
@@ -77,25 +87,6 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         return convert(value);
     }
 
-    private static Deque<Map<PyObject, Object>> ensureConvertedMap() {
-        Deque<Map<PyObject, Object>> convertedMapStack = threadConvertedMapStack.get();
-        if (convertedMapStack == null) {
-            convertedMapStack = new ArrayDeque<>();
-            threadConvertedMapStack.set(convertedMapStack);
-        }
-        // the current thread doesn't have a default map for the default main scope yet
-        if (convertedMapStack.isEmpty()) {
-            HashMap<PyObject, Object> convertedMap = new HashMap<>();
-            convertedMapStack.push(convertedMap);
-        }
-        return convertedMapStack;
-    }
-
-    private static Map<PyObject, Object> currentConvertedMap() {
-        Deque<Map<PyObject, Object>> convertedMapStack = ensureConvertedMap();
-        return convertedMapStack.peek();
-    }
-
     /**
      * Converts a pyObject into an appropriate Java object for use outside of JPy.
      * <p>
@@ -109,22 +100,31 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
      * @return a Java object representing the underlying JPy object.
      */
     public static Object convert(PyObject pyObject) {
-        Map<PyObject, Object> convertedMap = currentConvertedMap();
-        return convertedMap.computeIfAbsent(pyObject, PythonScopeJpyImpl::convertInternal);
+        if (!cacheEnabled) {
+            return convertInternal(pyObject, false);
+        }
+
+        try {
+            final Object cached = conversionCache.get(pyObject, () -> convertInternal(pyObject, true));
+            return cached instanceof NULL_TOKEN ? null : cached;
+        } catch (ExecutionException err) {
+            throw new UncheckedDeephavenException("Error converting PyObject to Java object", err);
+        }
     }
 
-    private static Object convertInternal(PyObject pyObject) {
+    private static Object convertInternal(PyObject pyObject, boolean fromCache) {
+        Object ret = pyObject;
         if (pyObject.isList()) {
-            return pyObject.asList();
+            ret = pyObject.asList();
         } else if (pyObject.isDict()) {
-            return pyObject.asDict();
+            ret = pyObject.asDict();
         } else if (pyObject.isCallable()) {
-            return new PyCallableWrapperJpyImpl(pyObject);
+            ret = new PyCallableWrapperJpyImpl(pyObject);
         } else if (pyObject.isConvertible()) {
-            return pyObject.getObjectValue();
-        } else {
-            return pyObject;
+            ret = pyObject.getObjectValue();
         }
+
+        return ret == null && fromCache ? new NULL_TOKEN() : ret;
     }
 
     public PyDictWrapper mainGlobals() {
@@ -139,10 +139,6 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             threadScopeStack.set(scopeStack);
         }
         scopeStack.push(pydict.asDict());
-
-        Deque<Map<PyObject, Object>> convertedMapStack = ensureConvertedMap();
-        HashMap<PyObject, Object> convertedMap = new HashMap<>();
-        convertedMapStack.push(convertedMap);
     }
 
     @Override
@@ -153,11 +149,12 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         }
         PyDictWrapper pydict = scopeStack.pop();
         pydict.close();
+    }
 
-        Deque<Map<PyObject, Object>> convertedMapStack = threadConvertedMapStack.get();
-        if (convertedMapStack == null) {
-            throw new IllegalStateException("The thread converted-map stack is empty.");
-        }
-        convertedMapStack.pop();
+    /**
+     * Guava caches are not allowed to hold on to null values. Additionally, we can't use a singleton pattern or else
+     * the weak-value map will never release null values.
+     */
+    private static class NULL_TOKEN {
     }
 }
