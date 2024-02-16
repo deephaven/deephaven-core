@@ -21,7 +21,9 @@ dependencies {
 def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.cpp
-    actualContents.set protoSourceDir
+    actualContents {
+        directory protoSourceDir
+    }
     generateTask.set ':cpp-client:updateProtobuf'
 }
 // fail a "check" build if these are out of date
