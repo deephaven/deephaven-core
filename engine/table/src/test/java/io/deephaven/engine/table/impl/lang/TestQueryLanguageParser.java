@@ -3178,7 +3178,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         final Map<String, Object> possibleParams;
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         if (!(queryScope instanceof PoisonedQueryScope)) {
-            possibleParams = queryScope.toMap(NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+            possibleParams = queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name));
         } else {
             possibleParams = null;
         }

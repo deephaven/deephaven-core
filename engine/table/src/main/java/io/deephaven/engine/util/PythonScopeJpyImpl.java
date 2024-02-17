@@ -13,10 +13,8 @@ import org.jpy.PyObject;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private static volatile boolean cacheEnabled =
@@ -39,7 +37,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         this.dict = dict;
     }
 
-    private PyDictWrapper currentScope() {
+    @Override
+    public PyDictWrapper currentScope() {
         Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
         if (scopeStack == null || scopeStack.isEmpty()) {
             return this.dict;
@@ -53,16 +52,6 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         // note: we *may* be returning Optional.of(None)
         // None is a valid PyObject, and can be in scope
         return Optional.ofNullable(currentScope().get(name));
-    }
-
-    @Override
-    public Stream<PyObject> getKeysRaw() {
-        return currentScope().keySet().stream();
-    }
-
-    @Override
-    public Stream<Entry<PyObject, PyObject>> getEntriesRaw() {
-        return currentScope().entrySet().stream();
     }
 
     @Override
