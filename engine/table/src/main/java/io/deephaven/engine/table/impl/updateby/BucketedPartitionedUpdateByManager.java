@@ -148,12 +148,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             throw new TableInitializationException(result.getDescription(),
                     "an exception occurred while initializing bucketed updateBy",
                     e.getCause());
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while initializing bucketed updateBy", e.getCause());
-            }
         }
     }
 
