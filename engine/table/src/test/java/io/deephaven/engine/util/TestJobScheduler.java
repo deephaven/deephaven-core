@@ -62,12 +62,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -111,12 +107,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -181,12 +173,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -232,12 +220,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -302,12 +286,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -340,12 +320,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -379,12 +355,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -453,12 +425,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
         }
     }
 
@@ -536,12 +504,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("failure while processing test", e.getCause());
         }
     }
 
@@ -618,12 +582,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
         }
     }
 
@@ -696,12 +656,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
         }
     }
 
@@ -774,12 +730,8 @@ public final class TestJobScheduler {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while processing test");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
-            }
+            // rethrow the error
+            throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
         }
     }
 
