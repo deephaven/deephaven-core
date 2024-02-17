@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -1185,7 +1186,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             return this;
         }
 
-        return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
+        final String whereDescription = "where(" + Arrays.toString(filters) + ")";
+        return QueryPerformanceRecorder.withNugget(whereDescription, sizeForInstrumentation(),
                 () -> {
                     for (int fi = 0; fi < filters.length; ++fi) {
                         if (!(filters[fi] instanceof ReindexingFilter)) {
@@ -1255,11 +1257,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     } catch (ExecutionException | InterruptedException e) {
                                         if (e instanceof InterruptedException) {
                                             throw new CancellationException("interrupted while filtering");
-                                        } else if (e.getCause() instanceof RuntimeException) {
-                                            throw (RuntimeException) e.getCause();
-                                        } else {
-                                            throw new UncheckedDeephavenException(e);
                                         }
+                                        throw new TableInitializationException(whereDescription,
+                                                "an exception occurred while performing the initial filter",
+                                                e.getCause());
                                     } finally {
                                         // account for work done in alternative threads
                                         final BasePerformanceEntry basePerformanceEntry =
@@ -1291,7 +1292,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                     if (snapshotControl != null) {
                                         final ListenerRecorder recorder = new ListenerRecorder(
-                                                "where(" + Arrays.toString(filters) + ")", QueryTable.this,
+                                                whereDescription, QueryTable.this,
                                                 filteredTable);
                                         final WhereListener whereListener = new WhereListener(
                                                 log, this, recorder, filteredTable, filters);
@@ -1501,12 +1502,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
-                                if (e.getCause() instanceof RuntimeException) {
-                                    throw (RuntimeException) e.getCause();
-                                } else {
-                                    throw new UncheckedDeephavenException("Failure computing select or update",
-                                            e.getCause());
-                                }
+                                throw new TableInitializationException(updateDescription,
+                                        "an exception occurred while performing the initial select or update",
+                                        e.getCause());
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
