@@ -15,7 +15,6 @@ dependencies {
     api project(':IO')
     api project(':extensions-parquet-table')
     api project(':Configuration')
-    api project(':FishUtil')
     api project(':TableLogger')
 
 
