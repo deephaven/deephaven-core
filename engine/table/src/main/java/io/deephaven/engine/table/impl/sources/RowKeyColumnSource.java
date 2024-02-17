@@ -46,7 +46,7 @@ public class RowKeyColumnSource extends AbstractColumnSource<Long>
         doFillChunk(destination, rowSequence);
     }
 
-    public static void doFillChunk(
+    static void doFillChunk(
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
         final WritableLongChunk<? super Values> longChunk = destination.asWritableLongChunk();

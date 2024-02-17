@@ -242,11 +242,7 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(resultRowSet, resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, outputPosition.intValue());
 
-        if (!input.isRefreshing()) {
-            if (resultRowSet.isFlat()) {
-                result.setFlat();
-            }
-        } else {
+        if (input.isRefreshing()) {
             assert keyColumnsCopied != null;
 
             ac.startTrackingPrevValues();
@@ -307,7 +303,14 @@ public class ChunkedOperatorAggregationHelper {
             snapshotControl.setListenerAndResult(listener, result);
         }
 
-        return ac.transformResult(result);
+        final QueryTable finalResult = ac.transformResult(result);
+        final boolean noInitialKeys = initialKeys == null || (!initialKeys.isRefreshing() && initialKeys.isEmpty());
+        if (!input.isRefreshing() && finalResult.getRowSet().isFlat()) {
+            finalResult.setFlat();
+        } else if ((input.isAddOnly() || input.isAppendOnly() || input.isBlink()) && (noInitialKeys || preserveEmpty)) {
+            finalResult.setFlat();
+        }
+        return finalResult;
     }
 
     private static OperatorAggregationStateManager makeStateManager(
@@ -1584,7 +1587,11 @@ public class ChunkedOperatorAggregationHelper {
             return keyToSlot::get;
         });
 
-        return ac.transformResult(result);
+        final QueryTable finalResult = ac.transformResult(result);
+        if (finalResult.getRowSet().isFlat()) {
+            finalResult.setFlat();
+        }
+        return finalResult;
     }
 
     private static void doGroupedAddition(
@@ -2119,7 +2126,9 @@ public class ChunkedOperatorAggregationHelper {
 
         ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
 
-        return ac.transformResult(result);
+        final QueryTable finalResult = ac.transformResult(result);
+        finalResult.setFlat();
+        return finalResult;
     }
 
     private static void doNoKeyAddition(RowSequence index, AggregationContext ac,
