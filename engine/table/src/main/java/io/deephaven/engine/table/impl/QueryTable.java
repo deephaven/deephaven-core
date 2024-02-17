@@ -3260,11 +3260,12 @@ public class QueryTable extends BaseTable<QueryTable> {
      * <p>
      * The result will not update on its own. The caller must also establish an appropriate listener to update the
      * provided column sources and propagate {@link TableUpdate updates}.
+     * <p>
+     * No attributes are propagated to the result table.
      *
      * @param additionalSources The additional columns to add or overwrite
      * @return A new table with the additional columns
      */
-    @Override
     public QueryTable withAdditionalColumns(@NotNull final Map<String, ColumnSource<?>> additionalSources) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {

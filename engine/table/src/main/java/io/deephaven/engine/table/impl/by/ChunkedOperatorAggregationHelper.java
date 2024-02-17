@@ -242,7 +242,11 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(resultRowSet, resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, outputPosition.intValue());
 
-        if (input.isRefreshing()) {
+        if (!input.isRefreshing()) {
+            if (resultRowSet.isFlat()) {
+                result.setFlat();
+            }
+        } else {
             assert keyColumnsCopied != null;
 
             ac.startTrackingPrevValues();

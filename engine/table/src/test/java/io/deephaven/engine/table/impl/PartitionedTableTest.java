@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Partition;
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
@@ -29,6 +30,8 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -36,6 +39,9 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.experimental.categories.Category;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -1070,6 +1076,33 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             partitionedTable.partitionedTransform(partitionedTable, (t, u) -> t.join(refreshingInput, "c", "c2=c"));
             TestCase.fail("Expected exception");
         } catch (IllegalStateException expected) {
+        }
+    }
+
+    public void testPartitionedTableSort() throws IOException {
+        final File tmpDir = Files.createTempDirectory("PartitionedTableTest-").toFile();
+        try {
+            final ParquetInstructions instructions = ParquetInstructions.builder().useDictionary("I", true).build();
+            Table a = emptyTable(200).update("I = `` + (50 + (ii % 100))", "K = ii");
+            Table b = emptyTable(200).update("I = `` + (ii % 100)", "K = ii");
+            ParquetTools.writeTable(a, new java.io.File(tmpDir + "/Partition=p0/data.parquet"), instructions);
+            ParquetTools.writeTable(b, new java.io.File(tmpDir + "/Partition=p1/data.parquet"), instructions);
+            a = a.updateView("Partition = `p0`").moveColumnsUp("Partition");
+            b = b.updateView("Partition = `p1`").moveColumnsUp("Partition");
+
+            final Table fromDisk = ParquetTools.readTable(tmpDir);
+
+            // Assert non-partitioned table sorts.
+            final Table diskOuterSort = fromDisk.sort("I");
+            final Table exOuterSort = TableTools.merge(a, b).sort("I");
+            assertTableEquals(exOuterSort, diskOuterSort);
+
+            // Assert partitioned table sorts.
+            final Table diskInnerSort = fromDisk.partitionBy("Partition").proxy().sort("I").target().merge();
+            final Table exInnerSort = TableTools.merge(a.sort("I"), b.sort("I"));
+            assertTableEquals(exInnerSort, diskInnerSort);
+        } finally {
+            FileUtils.deleteRecursively(tmpDir);
         }
     }
 }

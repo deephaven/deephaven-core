@@ -685,18 +685,6 @@ public interface Table extends
     Table getSubTable(TrackingRowSet rowSet);
 
     /**
-     * Get a {@link Table} that adds, or overwrites, columns from {@code this}. The result will share the same
-     * {@link #getRowSet() row set} as this table.
-     * <p>
-     * The result will not update on its own. The caller must also establish an appropriate listener to update the
-     * provided column sources and propagate {@link TableUpdate updates}.
-     *
-     * @param additionalSources The additional columns to add or overwrite
-     * @return A new table with the additional columns
-     */
-    Table withAdditionalColumns(Map<String, ColumnSource<?>> additionalSources);
-
-    /**
      * Applies a function to this table.
      * <p>
      * This is useful if you have a reference to a table or a proxy and want to run a series of operations against the

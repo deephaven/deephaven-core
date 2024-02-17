@@ -41,10 +41,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.LongPredicate;
-import java.util.stream.Collectors;
 
 public class SortHelpers {
     public static boolean sortBySymbolTable =
@@ -334,7 +332,7 @@ public class SortHelpers {
                 final long symTabId = originalSymbol.get(ii);
                 final int region = (int) (symTabId >> (32 + minTrailing));
                 final int id = (int) symTabId;
-                final int mappedId = LongSizedDataStructure.intSize("SortHelpers#createMapping", mappedIndex.get(ii));
+                final int mappedId = Math.toIntExact(mappedIndex.get(ii));
                 maxMapping = Math.max(maxMapping, mappedId);
                 lookupTable[region][id] = mappedId;
             }
@@ -344,7 +342,6 @@ public class SortHelpers {
     }
 
     private static final String SORTED_INDEX_COLUMN_NAME = "SortedIndex";
-    private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
     private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
             RowSet rowSet, boolean usePrev) {
@@ -359,10 +356,15 @@ public class SortHelpers {
             return getSortMappingOne(order, columnSource, rowSet, usePrev);
         }
 
-        final Table groupedSymbols = symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
-                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME);
-        final Table idMapping = groupedSymbols.withAdditionalColumns(Map.of(
-                SORTED_INDEX_COLUMN_NAME, new RowKeysColumnSource(groupedSymbols.getRowSet())))
+        final QueryTable groupedSymbols = (QueryTable) symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
+                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).coalesce();
+        final Map<String, ColumnSource<?>> extraColumn;
+        if (groupedSymbols.isFlat()) {
+            extraColumn = Map.of(SORTED_INDEX_COLUMN_NAME, RowKeyColumnSource.INSTANCE);
+        } else {
+            extraColumn = Map.of(SORTED_INDEX_COLUMN_NAME, new RowPositionColumnSource(groupedSymbols.getRowSet()));
+        }
+        final Table idMapping = groupedSymbols.withAdditionalColumns(extraColumn)
                 .ungroup()
                 .view(SymbolTableSource.ID_COLUMN_NAME, SORTED_INDEX_COLUMN_NAME);
 
