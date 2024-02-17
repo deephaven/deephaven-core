@@ -491,7 +491,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void parquetWithGroupingDataAndMetadataTest() {
-        final File rootFile = new File("/Users/shivammalhotra/Documents/tempDir");
+        final File parentDir = new File(rootFile, "tempDir");
         final Integer data[] = new Integer[500 * 4];
         for (int i = 0; i < data.length; i++) {
             data[i] = i / 4;
@@ -499,9 +499,9 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("vvv").withGrouping());
         final Table table = newTable(tableDefinition, TableTools.col("vvv", data));
 
-        final File destFile = new File(rootFile, "parquetWithGroupingDataAndMetadataTest.parquet");
+        final File destFile = new File(parentDir, "parquetWithGroupingDataAndMetadataTest.parquet");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(rootFile.getAbsolutePath())
+                .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
         writeTable(table, destFile, writeInstructions);
 
@@ -509,7 +509,7 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = readTable(destFile);
         assertTableEquals(table, fromDisk);
 
-        final File metadataFile = new File(rootFile, "_metadata");
+        final File metadataFile = new File(parentDir, "_metadata");
         final Table fromDiskWithMetadata = readTable(metadataFile);
         assertTableEquals(table, fromDiskWithMetadata);
     }
