@@ -9,27 +9,15 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
-
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err) {
-        return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
-    }
-
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err,
-            final Code statusCode) {
-        if (err instanceof StatusRuntimeException) {
-            return (StatusRuntimeException) err;
-        }
-
-        final UUID errorId = UUID.randomUUID();
-        log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
-        return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
-    }
 
     /**
      * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
@@ -87,22 +75,46 @@ public class GrpcUtil {
     /**
      * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
      * <p>
-     * </p>
      * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
      * stream.
      */
-    public static void safelyError(final StreamObserver<?> observer, final Code statusCode, final String msg) {
+    public static void safelyError(
+            @NotNull final StreamObserver<?> observer,
+            final Code statusCode,
+            @NotNull final String msg) {
         safelyError(observer, Exceptions.statusRuntimeException(statusCode, msg));
     }
 
     /**
      * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
      * <p>
-     * </p>
      * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
      * stream.
      */
-    public static void safelyError(final StreamObserver<?> observer, StatusRuntimeException exception) {
+    public static void safelyError(
+            @NotNull final StreamObserver<?> observer,
+            @NotNull final StatusRuntimeException exception) {
         safelyExecuteLocked(observer, () -> observer.onError(exception));
+    }
+
+    /**
+     * Cancels the observer in a try/catch block to minimize damage caused by failing observer call.
+     * <p>
+     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
+     * stream.
+     * <p>
+     * It is recommended that at least one of {@code message} or {@code cause} to be non-{@code null}, to provide useful
+     * debug information. Both arguments being null may log warnings and result in suboptimal performance. Also note
+     * that the provided information will not be sent to the server.
+     *
+     * @param observer the stream that will be used in the runnable
+     * @param message if not {@code null}, will appear as the description of the CANCELLED status
+     * @param cause if not {@code null}, will appear as the cause of the CANCELLED status
+     */
+    public static void safelyCancel(
+            @NotNull final ClientCallStreamObserver<?> observer,
+            @Nullable final String message,
+            @Nullable final Throwable cause) {
+        safelyExecuteLocked(observer, () -> observer.cancel(message, cause));
     }
 }

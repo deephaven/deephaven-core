@@ -465,8 +465,31 @@ public class ReplicatePrimitiveCode {
         floatToDouble(sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
+    private static String getResultClassPathFromSourceClassPath(String sourceClassJavaPath,
+            String[] exemptions, String[]... pairs) {
+        final String sourceClassName = className(sourceClassJavaPath);
+        final String resultClassName = replaceAllInternal(sourceClassName, null, exemptions, pairs);
+        final String resultClassJavaPath = basePath(sourceClassJavaPath) + '/' + resultClassName + ".java";
+        return resultClassJavaPath;
+    }
+
     public static String replaceAll(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String[] exemptions, String[]... pairs) throws IOException {
+        final String resultClassJavaPath =
+                getResultClassPathFromSourceClassPath(sourceClassJavaPath, exemptions, pairs);
+        return replaceAll(sourceClassJavaPath, resultClassJavaPath, serialVersionUIDs, exemptions, pairs);
+    }
+
+    public static String replaceAll(String sourceClassJavaPath, String resultClassJavaPath,
+            Map<String, Long> serialVersionUIDs, String[] exemptions, String[]... pairs) throws IOException {
+        if (resultClassJavaPath == null || resultClassJavaPath.isEmpty()) {
+            resultClassJavaPath = getResultClassPathFromSourceClassPath(sourceClassJavaPath, exemptions, pairs);
+        }
+        final String resultClassName = className(resultClassJavaPath);
+        final String resultClassPackageName = packageName(resultClassJavaPath);
+        final String fullResultClassName = resultClassPackageName + '.' + resultClassName;
+        final Long serialVersionUID = serialVersionUIDs == null ? null : serialVersionUIDs.get(fullResultClassName);
+
         final InputStream inputStream = new FileInputStream(sourceClassJavaPath);
         int nextChar;
         final StringBuilder inputText = new StringBuilder();
@@ -475,17 +498,9 @@ public class ReplicatePrimitiveCode {
         }
         inputStream.close();
 
-        final String sourceClassName = className(sourceClassJavaPath);
-        final String packageName = packageName(sourceClassJavaPath);
-
-        final String resultClassName = replaceAllInternal(sourceClassName, null, exemptions, pairs);
-        final String fullResultClassName = packageName + '.' + resultClassName;
-        final Long serialVersionUID = serialVersionUIDs == null ? null : serialVersionUIDs.get(fullResultClassName);
-        final String resultClassJavaPath = basePath(sourceClassJavaPath) + '/' + resultClassName + ".java";
-        final Map<String, List<String>> noReplicateParts = findNoLocateRegions(resultClassJavaPath);
-
         System.out.println("Generating java file " + resultClassJavaPath);
         String body = replaceAllInternal(inputText.toString(), serialVersionUID, exemptions, pairs);
+        final Map<String, List<String>> noReplicateParts = findNoLocateRegions(resultClassJavaPath);
         if (!noReplicateParts.isEmpty()) {
             final StringReader sr = new StringReader(body);
             List<String> lines = IOUtils.readLines(sr);
@@ -510,7 +525,7 @@ public class ReplicatePrimitiveCode {
         out.println(
                 " * ---------------------------------------------------------------------------------------------------------------------");
         out.println(" * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
-                + sourceClassName + " and regenerate");
+                + className(sourceClassJavaPath) + " and regenerate");
         out.println(
                 " * ---------------------------------------------------------------------------------------------------------------------");
         out.println(

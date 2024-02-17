@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -48,17 +49,14 @@ import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
-import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
-import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -116,15 +114,19 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         class Result<T extends DynamicNode & NotificationStepReceiver> {
             public final T resultNode;
-            public final TableUpdateListener resultListener; // may be null if parent is non-ticking
+            /**
+             * The listener that should be attached to the parent. The listener may be null if the table does not need
+             * to respond to ticks from other sources (e.g. the parent is non-refreshing).
+             */
+            public final TableUpdateListener resultListener;
 
             public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
             /**
-             * Construct the result of an operation. The listener may be null if the parent is non-ticking and the table
-             * does not need to respond to ticks from other sources.
+             * Construct the result of an operation. The listener may be null if the table does not need to respond to
+             * ticks from other sources (e.g. the parent is non-refreshing).
              *
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
@@ -355,7 +357,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public <T> ColumnSource<T> getColumnSource(String sourceName) {
         final ColumnSource<?> columnSource = columns.get(sourceName);
         if (columnSource == null) {
-            throw new NoSuchColumnException(columns.keySet(), Collections.singletonList(sourceName));
+            throw new NoSuchColumnException(columns.keySet(), sourceName);
         }
         // noinspection unchecked
         return (ColumnSource<T>) columnSource;
@@ -978,6 +980,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
+        @ReferentialIntegrity
+        Runnable delayedErrorReference;
+
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
@@ -1062,9 +1067,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeFilterExecution(source.getRowSet().copy());
+                        listener.makeRefilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
-                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
+                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
@@ -1074,9 +1080,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                     unmatchedRows.insert(upstream.modified());
                 }
                 final RowSet unmatched = unmatchedRows.copy();
-                final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
-                filterExecution.scheduleCompletion(fe -> {
-                    final WritableRowSet newMapping = fe.addedResult;
+                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatched);
+                filterExecution.scheduleCompletion((adds, mods) -> {
+                    final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         if (upstream != null) {
@@ -1085,8 +1091,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         newMapping.insert(previouslyMatched);
                     }
-                    completeRefilterUpdate(listener, upstream, update, fe.addedResult);
-                });
+                    completeRefilterUpdate(listener, upstream, update, adds);
+                }, exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
@@ -1099,9 +1105,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final RowSet matchedClone = matchedRows.copy();
 
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeFilterExecution(matchedClone);
+                        listener.makeRefilterExecution(matchedClone);
                 filterExecution.scheduleCompletion(
-                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
+                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1137,11 +1144,24 @@ public class QueryTable extends BaseTable<QueryTable> {
             update.shifted = upstream == null ? RowSetShiftData.EMPTY : upstream.shifted();
 
             notifyListeners(update);
-            if (upstream != null) {
-                upstream.release();
-            }
 
-            listener.setFinalExecutionStep();
+            // Release the upstream update and set the final notification step.
+            listener.finalizeUpdate(upstream);
+        }
+
+        private void errorRefilterUpdate(final WhereListener listener, final Exception e, final TableUpdate upstream) {
+            // Notify listeners that we had an issue refreshing the table.
+            if (getLastNotificationStep() == updateGraph.clock().currentStep()) {
+                if (listener != null) {
+                    listener.forceReferenceCountToZero();
+                }
+                delayedErrorReference = new DelayedErrorNotifier(e, listener == null ? null : listener.entry, this);
+            } else {
+                notifyListenersOnError(e, listener == null ? null : listener.entry);
+                forceReferenceCountToZero();
+            }
+            // Release the upstream update and set the final notification step.
+            listener.finalizeUpdate(upstream);
         }
 
         private void setWhereListener(MergedListener whereListener) {
@@ -1222,41 +1242,18 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                     final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
                                             new CompletableFuture<>();
-                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
-                                            this, filters, rowSetToUse.copy(), 0, rowSetToUse.size(), null, 0,
-                                            usePrev) {
-                                        @Override
-                                        void handleUncaughtException(Exception throwable) {
-                                            currentMappingFuture.completeExceptionally(throwable);
-                                        }
-                                    };
-                                    final ExecutionContext executionContext = ExecutionContext.getContext();
-                                    initialFilterExecution.scheduleCompletion(x -> {
-                                        try (final SafeCloseable ignored = executionContext.open()) {
-                                            if (x.exceptionResult != null) {
-                                                currentMappingFuture.completeExceptionally(x.exceptionResult);
-                                            } else {
-                                                currentMappingFuture.complete(x.addedResult.toTracking());
-                                            }
-                                        }
-                                    });
 
-                                    boolean cancelled = false;
-                                    TrackingWritableRowSet currentMapping = null;
+                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
+                                            this, filters, rowSetToUse.copy(), usePrev);
+                                    final TrackingWritableRowSet currentMapping;
+                                    initialFilterExecution.scheduleCompletion((adds, mods) -> {
+                                        currentMappingFuture.complete(adds.writableCast().toTracking());
+                                    }, currentMappingFuture::completeExceptionally);
+
                                     try {
-                                        boolean done = false;
-                                        while (!done) {
-                                            try {
-                                                currentMapping = currentMappingFuture.get();
-                                                done = true;
-                                            } catch (InterruptedException e) {
-                                                // cancel the job and wait for it to finish cancelling
-                                                cancelled = true;
-                                                initialFilterExecution.setCancelled();
-                                            }
-                                        }
-                                    } catch (ExecutionException e) {
-                                        if (cancelled) {
+                                        currentMapping = currentMappingFuture.get();
+                                    } catch (ExecutionException | InterruptedException e) {
+                                        if (e instanceof InterruptedException) {
                                             throw new CancellationException("interrupted while filtering");
                                         } else if (e.getCause() instanceof RuntimeException) {
                                             throw (RuntimeException) e.getCause();
@@ -1268,11 +1265,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         final BasePerformanceEntry basePerformanceEntry =
                                                 initialFilterExecution.getBasePerformanceEntry();
                                         if (basePerformanceEntry != null) {
-                                            final QueryPerformanceNugget outerNugget =
-                                                    QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                            if (outerNugget != null) {
-                                                outerNugget.addBaseEntry(basePerformanceEntry);
-                                            }
+                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget()
+                                                    .accumulate(basePerformanceEntry);
                                         }
                                     }
                                     currentMapping.initializePreviousValue();
@@ -1481,9 +1475,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
-                            && OperationInitializationThreadPool.canParallelize()
+                            && ExecutionContext.getContext().getOperationInitializer().canParallelize()
                             && analyzer.allowCrossColumnParallelization()) {
-                        jobScheduler = new OperationInitializationPoolJobScheduler();
+                        jobScheduler = new OperationInitializerJobScheduler();
                     } else {
                         jobScheduler = ImmediateJobScheduler.INSTANCE;
                     }
@@ -1516,11 +1510,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
-                                    final QueryPerformanceNugget outerNugget =
-                                            QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                    if (outerNugget != null) {
-                                        outerNugget.addBaseEntry(baseEntry);
-                                    }
+                                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
                                 }
                             }
                         }
@@ -1742,7 +1732,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
                                 this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet,
                                 getModifiedColumnSetForUpdates(),
-                                true, false, selectColumns);
+                                true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
                         final QueryTable result = new QueryTable(
@@ -1772,14 +1762,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
                     .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
                         final Mutable<Table> result = new MutableObject<>();
-
-                        final Set<String> existingColumns = new HashSet<>(definition.getColumnNames());
-                        final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
-                        if (!existingColumns.containsAll(columnNamesToDrop)) {
-                            columnNamesToDrop.removeAll(existingColumns);
-                            throw new RuntimeException("Unknown columns: " + columnNamesToDrop
-                                    + ", available columns = " + getColumnSourceMap().keySet());
-                        }
+                        definition.checkHasColumns(Arrays.asList(columnNames));
                         final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(columns);
                         for (String columnName : columnNames) {
                             newColumns.remove(columnName);
@@ -1794,14 +1777,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
                             copySortableColumns(resultTable,
-                                    resultTable.getDefinition().getColumnNameMap()::containsKey);
+                                    resultTable.getDefinition().getColumnNameSet()::contains);
                             maybeCopyColumnDescriptions(resultTable);
 
                             if (snapshotControl != null) {
                                 final ModifiedColumnSet.Transformer mcsTransformer =
                                         newModifiedColumnSetTransformer(resultTable,
-                                                resultTable.getColumnSourceMap().keySet()
-                                                        .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                                                resultTable.getDefinition().getColumnNamesArray());
                                 final ListenerImpl listener = new ListenerImpl(
                                         "dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
                                     @Override
@@ -2400,7 +2382,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Use the given columns (if specified); otherwise an empty array means all of my columns
         final String[] useStampColumns = stampColumns.length == 0
-                ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
+                ? definition.getColumnNamesArray()
                 : stampColumns;
 
         final Map<String, ColumnSource<?>> triggerColumns = new LinkedHashMap<>();
@@ -3552,8 +3534,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                 resultTable.setValue(result.resultNode);
                 if (snapshotControl != null) {
-                    snapshotControl.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
-                            result.resultNode);
+                    snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
                 }
 
                 return true;
@@ -3580,12 +3561,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private <R> R applyInternal(@NotNull final Function<Table, R> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-        try {
+        try (final SafeCloseable ignored =
+                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")")) {
             return function.apply(this);
-        } finally {
-            nugget.done();
         }
     }
 

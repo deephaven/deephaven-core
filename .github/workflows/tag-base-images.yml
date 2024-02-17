@@ -17,14 +17,14 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -59,7 +59,7 @@ jobs:
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/cpp-clients-fat-base/build/crane/retag.sh
+          ./docker/registry/cpp-clients-multi-base/build/crane/retag.sh
           ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh

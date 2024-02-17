@@ -98,6 +98,8 @@ public class OperationHelper {
                 return Stream.of(op.getWhereIn().getLeftId(), op.getWhereIn().getRightId());
             case RANGE_JOIN:
                 return Stream.of(op.getRangeJoin().getLeftId(), op.getRangeJoin().getRightId());
+            case COLUMN_STATISTICS:
+                return Stream.of(op.getColumnStatistics().getSourceId());
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

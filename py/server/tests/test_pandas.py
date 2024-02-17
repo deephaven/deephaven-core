@@ -54,7 +54,7 @@ class PandasTestCase(BaseTestCase):
         super().tearDown()
 
     def test_to_pandas_no_conv_null(self):
-        df = to_pandas(self.test_table, conv_null=False)
+        df = to_pandas(self.test_table, dtype_backend=None, conv_null=False)
         self.assertEqual(len(df.columns), len(self.test_table.columns))
         self.assertEqual(df.size, 2 * len(self.test_table.columns))
         df_series = [df[col] for col in list(df.columns)]
@@ -70,7 +70,7 @@ class PandasTestCase(BaseTestCase):
         prepared_table = self.test_table.update(
             formulas=["Long = isNull(Long_) ? Double.NaN : Long_"])
 
-        df = to_pandas(prepared_table, cols=["Boolean", "Long"], conv_null=False)
+        df = to_pandas(prepared_table, cols=["Boolean", "Long"], dtype_backend=None, conv_null=False)
         self.assertEqual(df['Long'].dtype, np.float64)
         self.assertEqual(df['Boolean'].values.dtype, np.bool_)
 
@@ -88,12 +88,12 @@ class PandasTestCase(BaseTestCase):
 
         test_table = test_table.group_by(["String"])
         df = to_pandas(test_table, cols=["String", "Doubles"])
-        self.assertEqual(df['String'].dtype, np.object_)
+        self.assertEqual(df['String'].dtype, pd.StringDtype())
         self.assertEqual(df['Doubles'].dtype, np.object_)
 
         double_series = df['Doubles']
-        self.assertEqual([1.0, 2.0], list(double_series[0].toArray()))
-        self.assertEqual([4.0, 8.0, 16.0], list(double_series[1].toArray()))
+        self.assertEqual([1.0, 2.0], list(double_series[0]))
+        self.assertEqual([4.0, 8.0, 16.0], list(double_series[1]))
 
     def test_invalid_col_name(self):
         with self.assertRaises(DHError) as cm:
@@ -114,7 +114,7 @@ class PandasTestCase(BaseTestCase):
             double_col(name="Double", data=[1.01, -1.01]),
         ]
         test_table = new_table(cols=input_cols)
-        df = to_pandas(test_table, conv_null=False)
+        df = to_pandas(test_table, dtype_backend=None, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, test_table)
 
@@ -123,7 +123,7 @@ class PandasTestCase(BaseTestCase):
         table_with_null_bool = new_table(cols=input_cols)
         prepared_table = table_with_null_bool.update(
             formulas=["Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"])
-        df = to_pandas(prepared_table, conv_null=False)
+        df = to_pandas(prepared_table, dtype_backend=None, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, prepared_table)
 
@@ -159,7 +159,7 @@ class PandasTestCase(BaseTestCase):
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),
         ]
         test_table = new_table(cols=input_cols)
-        df = to_pandas(test_table)
+        df = to_pandas(test_table, dtype_backend=None)
         self.assertEqual(len(df.columns), len(test_table.columns))
         self.assertEqual(df.size, 2 * len(test_table.columns))
         test_table2 = to_table(df)

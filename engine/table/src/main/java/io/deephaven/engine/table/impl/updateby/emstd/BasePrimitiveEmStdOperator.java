@@ -135,8 +135,14 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getDouble(firstUnmodifiedKey);
             ctx.curEma = emaSource.getDouble(firstUnmodifiedKey);
-            if (ctx.curVal == Double.NaN) {
-                ctx.curVariance = outputSource.getDouble(firstUnmodifiedKey);
+            if (ctx.curEma != NULL_DOUBLE
+                    && !Double.isNaN(ctx.curEma)
+                    && Double.isNaN(ctx.curVal)) {
+                // When we have a valid EMA, but the previous em_std value is NaN, we need to un-poison variance
+                // (by setting to 0.0) to allow the new variance to be computed properly.
+                // NOTE: this case can only exist between the first and second rows after initialization or a RESET
+                // caused by the {@link OperationControl control}.
+                ctx.curVariance = 0.0;
             } else if (ctx.curVal == NULL_DOUBLE) {
                 ctx.curVariance = 0.0;
             } else {

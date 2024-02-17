@@ -7,8 +7,7 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
@@ -24,6 +23,8 @@ import io.deephaven.server.log.LogInit;
 import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.calendar.BusinessCalendar;
+import io.deephaven.time.calendar.Calendars;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
 import io.deephaven.uri.resolver.UriResolversInstance;
@@ -37,6 +38,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -54,6 +56,7 @@ public class DeephavenApiServer {
     private final GrpcServer server;
     private final UpdateGraph ug;
     private final LogInit logInit;
+    private final Provider<Set<BusinessCalendar>> calendars;
     private final Scheduler scheduler;
     private final Provider<ScriptSession> scriptSessionProvider;
     private final PluginRegistration pluginRegistration;
@@ -69,6 +72,7 @@ public class DeephavenApiServer {
             final GrpcServer server,
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
             final LogInit logInit,
+            final Provider<Set<BusinessCalendar>> calendars,
             final Scheduler scheduler,
             final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
@@ -81,6 +85,7 @@ public class DeephavenApiServer {
         this.server = server;
         this.ug = ug;
         this.logInit = logInit;
+        this.calendars = calendars;
         this.scheduler = scheduler;
         this.scriptSessionProvider = scriptSessionProvider;
         this.pluginRegistration = pluginRegistration;
@@ -98,7 +103,7 @@ public class DeephavenApiServer {
     }
 
     @VisibleForTesting
-    SessionService sessionService() {
+    public SessionService sessionService() {
         return sessionService;
     }
 
@@ -136,6 +141,10 @@ public class DeephavenApiServer {
         log.info().append("Creating/Clearing Script Cache...").endl();
         AbstractScriptSession.createScriptCache();
 
+        for (BusinessCalendar calendar : calendars.get()) {
+            Calendars.addCalendar(calendar);
+        }
+
         log.info().append("Initializing Script Session...").endl();
         checkScopeChanges(scriptSessionProvider.get());
         pluginRegistration.registerAll();
@@ -144,17 +153,14 @@ public class DeephavenApiServer {
         // noinspection resource
         executionContextProvider.get().open();
 
-        log.info().append("Starting Operation Initialization Thread Pool...").endl();
-        OperationInitializationThreadPool.start();
-
         log.info().append("Starting Update Graph...").endl();
         getUpdateGraph().<PeriodicUpdateGraph>cast().start();
 
         EngineMetrics.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
-        QueryPerformanceRecorder.installPoolAllocationRecorder();
-        QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
+        QueryPerformanceRecorderState.installPoolAllocationRecorder();
+        QueryPerformanceRecorderState.installUpdateGraphLockInstrumentation();
         ServerStateTracker.start();
         AsyncErrorLogger.init();
 

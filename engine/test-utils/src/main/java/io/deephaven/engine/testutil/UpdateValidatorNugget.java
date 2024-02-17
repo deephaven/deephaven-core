@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import junit.framework.TestCase;
 import org.junit.Assert;
 
@@ -27,7 +28,7 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
         this.validator = TableUpdateValidator.make(originalValue);
 
         originalValue.addUpdateListener(failureListener);
-        validator.getResultTable().addUpdateListener(failureListener);
+        validator.getResultTable().addUpdateListener(validatorFailureListener);
     }
 
     private final QueryTable originalValue;
@@ -36,26 +37,34 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    private final TableUpdateListener failureListener =
-            new InstrumentedTableUpdateListener("Failure Listener") {
-                @Override
-                public void onUpdate(TableUpdate update) {}
-
-                @Override
-                public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-                    exception = originalException;
-                    final StringWriter errors = new StringWriter();
-                    originalException.printStackTrace(new PrintWriter(errors));
-                    TestCase.fail(errors.toString());
-                }
-            };
+    @ReferentialIntegrity
+    private final TableUpdateListener failureListener = new FailureListener();
+    @ReferentialIntegrity
+    private final TableUpdateListener validatorFailureListener = new FailureListener();
 
     public void validate(final String msg) {
         Assert.assertNull(exception);
-        Assert.assertEquals(0, validator.getResultTable().size());
+        Assert.assertFalse(validator.hasFailed());
     }
 
     public void show() {
         TableTools.showWithRowSet(originalValue, 100);
+    }
+
+    private class FailureListener extends InstrumentedTableUpdateListener {
+        public FailureListener() {
+            super("Failure Listener");
+        }
+
+        @Override
+        public void onUpdate(TableUpdate update) {}
+
+        @Override
+        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+            exception = originalException;
+            final StringWriter errors = new StringWriter();
+            originalException.printStackTrace(new PrintWriter(errors));
+            TestCase.fail(errors.toString());
+        }
     }
 }

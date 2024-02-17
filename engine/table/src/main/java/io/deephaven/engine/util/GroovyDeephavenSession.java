@@ -32,6 +32,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableFactory;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.util.TableLoggers;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.internal.log.LoggerFactory;
@@ -39,6 +40,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -145,18 +147,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             final RunScripts runScripts) throws IOException {
-        this(updateGraph, objectTypeLookup, null, runScripts);
+        this(updateGraph, operationInitializer, objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts)
             throws IOException {
-        super(updateGraph, objectTypeLookup, changeListener);
+        super(updateGraph, operationInitializer, objectTypeLookup, changeListener);
 
         addDefaultImports(consoleImports);
         if (INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY) {
@@ -238,7 +242,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 DateTimeUtils.class.getName(),
                 QueryLanguageFunctionUtils.class.getName(),
                 Aggregation.class.getName(),
-                UpdateByOperation.class.getName());
+                UpdateByOperation.class.getName(),
+                io.deephaven.time.calendar.Calendars.class.getName(),
+                StaticCalendarMethods.class.getName());
     }
 
     private String generateScriptName() {
@@ -565,7 +571,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private static boolean packageIsVisibleToClassGraph(String packageImport) {
-        try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
+        try (ScanResult scanResult =
+                new ClassGraph().enableClassInfo().enableSystemJarsAndModules().acceptPackages(packageImport).scan()) {
             final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
             // force load the class so that the jvm is aware of the package
             firstClassFound.ifPresent(ClassInfo::loadClass);

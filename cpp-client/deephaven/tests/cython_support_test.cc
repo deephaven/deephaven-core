@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
+#include <array>
 #include <type_traits>
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/column/array_column_source.h"
@@ -28,7 +29,9 @@ TEST_CASE("CreateStringColumnsSource", "[cython]") {
   static_assert((kNumElements + 7) / 8 == kValidity.size());
 
   auto result = CythonSupport::CreateStringColumnSource(kText, kText + kTextSize,
-      kOffsets.begin(), kOffsets.end(), kValidity.begin(), kValidity.end(), kNumElements);
+      kOffsets.data(), kOffsets.data() + kOffsets.size(),
+      kValidity.data(), kValidity.data() + kValidity.size(),
+      kNumElements);
 
   auto rs = RowSequence::CreateSequential(0, kNumElements);
   auto data = dhcore::chunk::StringChunk::Create(kNumElements);

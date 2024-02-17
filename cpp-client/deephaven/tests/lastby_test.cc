@@ -6,8 +6,6 @@
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
-using deephaven::dhcore::utility::Streamf;
-using deephaven::dhcore::utility::Stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Last By", "[lastby]") {

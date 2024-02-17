@@ -136,13 +136,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
     }
 
     @Override
-    protected void checkAvailableColumns(@NotNull final Collection<String> columns) {
-        final Set<String> availableColumns = root.getDefinition().getColumnNameMap().keySet();
-        final List<String> missingColumns =
-                columns.stream().filter(column -> !availableColumns.contains(column)).collect(Collectors.toList());
-        if (!missingColumns.isEmpty()) {
-            throw new NoSuchColumnException(availableColumns, missingColumns);
-        }
+    protected final void checkAvailableColumns(@NotNull final Collection<String> columns) {
+        root.getDefinition().checkHasColumns(columns);
     }
 
     /**

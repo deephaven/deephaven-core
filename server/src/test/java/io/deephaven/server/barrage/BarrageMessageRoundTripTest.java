@@ -32,6 +32,7 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -163,13 +164,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
                 final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer,
-                final String name) {
+                final Table sourceTable, final String name) {
             // assume a forward viewport when not specified
-            this(viewport, subscribedColumns, barrageMessageProducer, name, false, false);
+            this(viewport, subscribedColumns, barrageMessageProducer, sourceTable, name, false, false);
         }
 
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
                 final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer,
+                final Table sourceTable,
                 final String name, final boolean reverseViewport, final boolean deferSubscription) {
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
@@ -177,9 +179,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
 
+            final Map<String, Object> attributes = new HashMap<>(sourceTable.getAttributes());
+            if (sourceTable.isFlat()) {
+                attributes.put(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT, true);
+            }
             this.barrageTable = BarrageTable.make(updateSourceCombiner,
                     ExecutionContext.getContext().getUpdateGraph(),
-                    null, barrageMessageProducer.getTableDefinition(), new HashMap<>(), null);
+                    null, barrageMessageProducer.getTableDefinition(), attributes, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -386,8 +392,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         public RemoteClient newClient(final RowSet viewport, final BitSet subscribedColumns,
                 final boolean reverseViewport, final String name) {
-            clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer, name, reverseViewport,
-                    false));
+            clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer,
+                    originalTable, name, reverseViewport, false));
             return clients.get(clients.size() - 1);
         }
 
@@ -794,7 +800,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         columns.set(0, nugget.originalTable.numColumns() / 2);
                                         nugget.clients.add(new RemoteClient(
                                                 RowSetFactory.fromRange(size / 5, 2L * size / 5),
-                                                columns, nugget.barrageMessageProducer, "sub-changer"));
+                                                columns, nugget.barrageMessageProducer, nugget.originalTable,
+                                                "sub-changer"));
                                     }
                                 }
 
@@ -840,7 +847,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     columns.set(0, 4);
                                     nugget.clients.add(
                                             new RemoteClient(RowSetFactory.fromRange(0, size / 5),
-                                                    columns, nugget.barrageMessageProducer, "sub-changer"));
+                                                    columns, nugget.barrageMessageProducer, nugget.originalTable,
+                                                    "sub-changer"));
                                 }
 
                                 void maybeChangeSub(final int step, final int rt, final int pt) {
@@ -887,7 +895,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     columns.set(0, 4);
                                     nugget.clients.add(
                                             new RemoteClient(RowSetFactory.fromRange(0, size / 5),
-                                                    columns, nugget.barrageMessageProducer, "sub-changer"));
+                                                    columns, nugget.barrageMessageProducer, nugget.originalTable,
+                                                    "sub-changer"));
                                 }
 
                                 void maybeChangeSub(final int step, final int rt, final int pt) {
@@ -931,7 +940,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         columns.set(0, 3);
                                         nugget.clients.add(new RemoteClient(
                                                 RowSetFactory.fromRange(size / 5, 2L * size / 5),
-                                                columns, nugget.barrageMessageProducer, "sub-changer"));
+                                                columns, nugget.barrageMessageProducer, nugget.originalTable,
+                                                "sub-changer"));
                                     }
                                 }
 
@@ -999,7 +1009,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             final boolean deferSubscription = true;
                             nugget.clients.add(new RemoteClient(
                                     RowSetFactory.fromRange(size / 5, 2L * size / 5),
-                                    columns, nugget.barrageMessageProducer, "sub-changer", false, deferSubscription));
+                                    columns, nugget.barrageMessageProducer, nugget.originalTable,
+                                    "sub-changer", false, deferSubscription));
 
                         }
                     }.runTest();
@@ -1029,7 +1040,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         columns.set(0, 4);
                                         nugget.clients.add(new RemoteClient(
                                                 RowSetFactory.fromRange(size / 5, 3L * size / 5),
-                                                columns, nugget.barrageMessageProducer, "sub-changer"));
+                                                columns, nugget.barrageMessageProducer, nugget.originalTable,
+                                                "sub-changer"));
                                     }
                                 }
 
@@ -1068,7 +1080,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             columns.set(0, 4);
                             nugget.clients.add(new RemoteClient(
                                     RowSetFactory.fromRange(size / 5, 2L * size / 5),
-                                    columns, nugget.barrageMessageProducer, "sub-changer"));
+                                    columns, nugget.barrageMessageProducer, nugget.originalTable, "sub-changer"));
                         }
                     }
 
@@ -1200,13 +1212,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         allColumns.set(0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i().toTracking());
-        final Table queryTable = sourceTable.updateView("data = (short) k");
+        sourceTable.setFlat();
+        final QueryTable queryTable = (QueryTable) sourceTable.updateView("data = (short) k");
 
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
 
         // Create a few interesting clients around the mapping boundary.
         final int mb = SNAPSHOT_CHUNK_SIZE;
-        final int sz = 2 * mb;
+        final long sz = 2L * mb;
         // noinspection unused
         final RemoteClient[] remoteClients = new RemoteClient[] {
                 remoteNugget.newClient(null, allColumns, "full"),
@@ -1224,13 +1237,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         // Add all of our new rows spread over multiple deltas.
         final int numDeltas = 4;
+        final long blockSize = sz / numDeltas;
         for (int ii = 0; ii < numDeltas; ++ii) {
-            final RowSetBuilderSequential newRowsBuilder = RowSetFactory.builderSequential();
-            for (int jj = ii; jj < sz; jj += numDeltas) {
-                newRowsBuilder.appendKey(jj);
-            }
+            final RowSet newRows = RowSetFactory.fromRange(ii * blockSize, (ii + 1) * blockSize - 1);
             updateGraph.runWithinUnitTestCycle(() -> {
-                final RowSet newRows = newRowsBuilder.build();
                 TstUtils.addToTable(sourceTable, newRows);
                 sourceTable.notifyListeners(new TableUpdateImpl(
                         newRows,
@@ -1287,7 +1297,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                         public void createTable() {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
-                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol"},
+                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol",
+                                            "bytePrimArray", "intPrimArray"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers object
@@ -1301,7 +1312,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                             new String[] {}, null),
                                     new UnsortedInstantGenerator(
                                             DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")),
+                                    // uses var binary encoding
+                                    new ByteArrayGenerator(Byte.MIN_VALUE, Byte.MAX_VALUE, 0, 32),
+                                    // uses var list encoding
+                                    new IntArrayGenerator(0, Integer.MAX_VALUE, 0, 32));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };

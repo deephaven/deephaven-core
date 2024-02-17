@@ -8,9 +8,11 @@ import deephaven.plugin
 from typing import Union, Type
 from deephaven.plugin import Plugin, Registration, Callback
 from deephaven.plugin.object_type import ObjectType
+from deephaven.plugin.js import JsPlugin
 from .object import ObjectTypeAdapter
+from .js import to_j_js_plugin
 
-_JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
+_JCallbackAdapter = jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):
@@ -20,6 +22,7 @@ def initialize_all_and_register_into(callback: _JCallbackAdapter):
 
 class RegistrationAdapter(Callback):
     """Python implementation of Callback that delegates to its Java counterpart."""
+
     def __init__(self, callback: _JCallbackAdapter):
         self._callback = callback
 
@@ -29,8 +32,10 @@ class RegistrationAdapter(Callback):
             plugin = plugin()
         if isinstance(plugin, ObjectType):
             self._callback.registerObjectType(plugin.name, ObjectTypeAdapter(plugin))
+        elif isinstance(plugin, JsPlugin):
+            self._callback.registerJsPlugin(to_j_js_plugin(plugin))
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"Unexpected type: {type(plugin)}")
 
     def __str__(self):
         return str(self._callback)

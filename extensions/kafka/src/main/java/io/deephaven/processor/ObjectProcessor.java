@@ -67,6 +67,22 @@ public interface ObjectProcessor<T> {
     }
 
     /**
+     * Creates a "no-operation" object processor that ignores the input object chunk. If {@code fillWithNullValue} is
+     * {@code true}, during {@link ObjectProcessor#processAll(ObjectChunk, List) processAll}
+     * {@link WritableChunk#fillWithNullValue(int, int) fillWithNullValue} will be invoked on each output chunk;
+     * otherwise, the output chunk contents will not be modified. In either case, the processing will increment the
+     * output chunks sizes.
+     *
+     * @param outputTypes the output types
+     * @param fillWithNullValue if the output chunks should be filled with the appropriate null value
+     * @return the no-op object processor
+     * @param <T> the object type
+     */
+    static <T> ObjectProcessor<T> noop(List<Type<?>> outputTypes, boolean fillWithNullValue) {
+        return new ObjectProcessorNoop<>(outputTypes, fillWithNullValue);
+    }
+
+    /**
      * The relationship between {@link #outputTypes() output types} and the {@link #processAll(ObjectChunk, List)
      * processAll out param} {@link WritableChunk#getChunkType()}.
      *

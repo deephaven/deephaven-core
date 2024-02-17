@@ -164,8 +164,8 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
     private final ArrayList<GroupingValidator> groupingValidators = new ArrayList<>();
 
     private void addGroupingValidator(Table originalValue, String context) {
-        ArrayList<ArrayList<String>> columnSets2 = powerSet(originalValue.getColumnSourceMap().keySet());
-        ArrayList<String> columnNames = new ArrayList<>(originalValue.getColumnSourceMap().keySet());
+        ArrayList<ArrayList<String>> columnSets2 = powerSet(originalValue.getDefinition().getColumnNameSet());
+        ArrayList<String> columnNames = new ArrayList<>(originalValue.getDefinition().getColumnNameSet());
         columnSets2.add(columnNames);
         groupingValidators.add(new GroupingValidator(context, originalValue, columnSets2));
     }

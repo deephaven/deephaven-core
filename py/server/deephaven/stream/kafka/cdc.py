@@ -47,7 +47,7 @@ def consume(
             configuration here. Note this should include the relevant property for a schema server URL where the key
             and/or value Avro necessary schemas are stored.
         cdc_spec (CDCSpec): a CDCSpec obtained from calling either the cdc_long_spec or the cdc_short_spec function
-        partitions (List[int]: a list of integer partition numbers, default is None indicating all partitions
+        partitions (List[int]): a list of integer partition numbers, default is None indicating all partitions
         stream_table (bool):  if true, produce a streaming table of changed rows keeping the CDC 'op' column
             indicating the type of column change; if false, return a Deephaven ticking table that tracks the underlying
             database table through the CDC Stream.
@@ -84,7 +84,7 @@ def consume_raw(
             configuration here. Note this should include the relevant property for a schema server URL where the key
             and/or value Avro necessary schemas are stored.
         cdc_spec (CDCSpec): a CDCSpec obtained from calling either the cdc_long_spec or the cdc_short_spec function
-        partitions (List[int]: a list of integer partition numbers, default is None indicating all partitions
+        partitions (List[int]): a list of integer partition numbers, default is None indicating all partitions
         table_type (TableType): a TableType enum, default is TableType.stream()
 
     Returns:

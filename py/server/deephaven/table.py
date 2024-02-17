@@ -11,13 +11,10 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from functools import wraps
 from typing import Any, Optional, Callable, Dict
 from typing import Sequence, List, Union, Protocol
 
 import jpy
-import numba
-import numpy as np
 
 from deephaven import DHError
 from deephaven import dtypes
@@ -31,8 +28,6 @@ from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
-from deephaven.dtypes import _BUILDABLE_ARRAY_DTYPE_MAP, _scalar, _np_dtype_char, \
-    _component_np_dtype_char
 
 # Table
 _J_Table = jpy.get_type("io.deephaven.engine.table.Table")
@@ -79,10 +74,6 @@ _JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchica
 _JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
 _JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
 _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
-
-# For unittest vectorization
-_test_vectorization = False
-_vectorized_count = 0
 
 
 class NodeType(Enum):
@@ -363,142 +354,6 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-_SUPPORTED_NP_TYPE_CODES = ["i", "l", "h", "f", "d", "b", "?", "U", "M", "O"]
-
-
-def _encode_signature(fn: Callable) -> str:
-    """Encode the signature of a Python function by mapping the annotations of the parameter types and the return
-    type to numpy dtype chars (i,l,h,f,d,b,?,U,M,O), and pack them into a string with parameter type chars first,
-    in their original order, followed by the delimiter string '->', then the return type_char.
-
-    If a parameter or the return of the function is not annotated, the default 'O' - object type, will be used.
-    """
-    sig = inspect.signature(fn)
-
-    np_type_codes = []
-    for n, p in sig.parameters.items():
-        np_type_codes.append(_np_dtype_char(p.annotation))
-
-    return_type_code = _np_dtype_char(sig.return_annotation)
-    np_type_codes = [c if c in _SUPPORTED_NP_TYPE_CODES else "O" for c in np_type_codes]
-    return_type_code = return_type_code if return_type_code in _SUPPORTED_NP_TYPE_CODES else "O"
-
-    np_type_codes.extend(["-", ">", return_type_code])
-    return "".join(np_type_codes)
-
-
-def _py_udf(fn: Callable):
-    """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
-    Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
-    users.
-
-    For now, this decorator is only capable of converting Python function return values to Java values. It
-    does not yet convert Java values in arguments to usable Python object (e.g. numpy arrays) or properly translate
-    Deephaven primitive null values.
-
-    For properly annotated functions, including numba vectorized and guvectorized ones, this decorator inspects the
-    signature of the function and determines its return type, including supported primitive types and arrays of
-    the supported primitive types. It then converts the return value of the function to the corresponding Java value
-    of the same type. For unsupported types, the decorator returns the original Python value which appears as
-    org.jpy.PyObject in Java.
-    """
-
-    if hasattr(fn, "return_type"):
-        return fn
-
-    if isinstance(fn, (numba.np.ufunc.dufunc.DUFunc, numba.np.ufunc.gufunc.GUFunc)) and hasattr(fn, "types"):
-        dh_dtype = dtypes.from_np_dtype(np.dtype(fn.types[0][-1]))
-    else:
-        dh_dtype = dtypes.from_np_dtype(np.dtype(_encode_signature(fn)[-1]))
-
-    return_array = False
-
-    # If the function is a numba guvectorized function, examine the signature of the function to determine if it
-    # returns an array.
-    if isinstance(fn, numba.np.ufunc.gufunc.GUFunc):
-        sig = fn.signature
-        rtype = sig.split("->")[-1].strip("()")
-        if rtype:
-            return_array = True
-    else:
-        component_type = _component_np_dtype_char(inspect.signature(fn).return_annotation)
-        if component_type:
-            dh_dtype = dtypes.from_np_dtype(np.dtype(component_type))
-            if dh_dtype in _BUILDABLE_ARRAY_DTYPE_MAP:
-                return_array = True
-
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        ret = fn(*args, **kwargs)
-        if return_array:
-            return dtypes.array(dh_dtype, ret)
-        elif dh_dtype == dtypes.PyObject:
-            return ret
-        else:
-            return _scalar(ret)
-
-    wrapper.j_name = dh_dtype.j_name
-    ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(dh_dtype) if return_array else dh_dtype
-
-    if hasattr(dh_dtype.j_type, 'jclass'):
-        j_class = ret_dtype.j_type.jclass
-    else:
-        j_class = ret_dtype.qst_type.clazz()
-
-    wrapper.return_type = j_class
-
-    return wrapper
-
-
-def dh_vectorize(fn):
-    """A decorator to vectorize a Python function used in Deephaven query formulas and invoked on a row basis.
-
-    If this annotation is not used on a query function, the Deephaven query engine will make an effort to vectorize
-    the function. If vectorization is not possible, the query engine will use the original, non-vectorized function.
-    If this annotation is used on a function, the Deephaven query engine will use the vectorized function in a query,
-    or an error will result if the function can not be vectorized.
-
-    When this decorator is used on a function, the number and type of input and output arguments are changed.
-    These changes are only intended for use by the Deephaven query engine. Users are discouraged from using
-    vectorized functions in non-query code, since the function signature may change in future versions.
-    
-    The current vectorized function signature includes (1) the size of the input arrays, (2) the output array,
-    and (3) the input arrays.
-    """
-    signature = _encode_signature(fn)
-
-    @wraps(fn)
-    def wrapper(*args):
-        if len(args) != len(signature) - len("->?") + 2:
-            raise ValueError(
-                f"The number of arguments doesn't match the function signature. {len(args) - 2}, {signature}")
-        if args[0] <= 0:
-            raise ValueError(f"The chunk size argument must be a positive integer. {args[0]}")
-
-        chunk_size = args[0]
-        chunk_result = args[1]
-        if args[2:]:
-            vectorized_args = zip(*args[2:])
-            for i in range(chunk_size):
-                scalar_args = next(vectorized_args)
-                chunk_result[i] = _scalar(fn(*scalar_args))
-        else:
-            for i in range(chunk_size):
-                chunk_result[i] = fn()
-
-        return chunk_result
-
-    wrapper.callable = fn
-    wrapper.signature = signature
-    wrapper.dh_vectorized = True
-
-    if _test_vectorization:
-        global _vectorized_count
-        _vectorized_count += 1
-
-    return wrapper
-
-
 @contextlib.contextmanager
 def _query_scope_ctx():
     """A context manager to set/unset query scope based on the scope of the most immediate caller code that invokes
@@ -525,6 +380,15 @@ def _query_scope_ctx():
     else:
         # in the __main__ module, use the default main global scope
         yield
+
+
+def _query_scope_agg_ctx(aggs: Sequence[Aggregation]) -> contextlib.AbstractContextManager:
+    has_agg_formula = any([agg.is_formula for agg in aggs])
+    if has_agg_formula:
+        cm = _query_scope_ctx()
+    else:
+        cm = contextlib.nullcontext()
+    return cm
 
 
 class SortDirection(Enum):
@@ -1762,7 +1626,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table avg_by operation failed.") from e
 
     def std_by(self, by: Union[str, Sequence[str]] = None) -> Table:
-        """The std_by method creates a new table containing the standard deviation for each group.
+        """The std_by method creates a new table containing the sample standard deviation for each group.
+
+        Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -1783,7 +1650,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table std_by operation failed.") from e
 
     def var_by(self, by: Union[str, Sequence[str]] = None) -> Table:
-        """The var_by method creates a new table containing the variance for each group.
+        """The var_by method creates a new table containing the sample variance for each group.
+
+        Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -1919,13 +1789,16 @@ class Table(JObjectWrapper):
             if not by and initial_groups:
                 raise ValueError("missing group-by column names when initial_groups is provided.")
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            if not by:
-                return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
-            else:
-                j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
-                initial_groups = unwrap(initial_groups)
-                return Table(
-                    j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                if not by:
+                    return Table(j_table=self.j_table.aggBy(j_agg_list, preserve_empty))
+                else:
+                    j_column_name_list = j_array_list([_JColumnName.of(col) for col in by])
+                    initial_groups = unwrap(initial_groups)
+                    return Table(
+                        j_table=self.j_table.aggBy(j_agg_list, preserve_empty, initial_groups, j_column_name_list))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 
@@ -1962,8 +1835,11 @@ class Table(JObjectWrapper):
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             initial_groups = unwrap(initial_groups)
-            return PartitionedTable(
-                j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                return PartitionedTable(
+                    j_partitioned_table=self.j_table.partitionedAggBy(j_agg_list, preserve_empty, initial_groups, *by))
         except Exception as e:
             raise DHError(e, "table partitioned_agg_by operation failed.") from e
 
@@ -1986,7 +1862,9 @@ class Table(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
+            cm = _query_scope_agg_ctx([agg])
+            with cm:
+                return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "table agg_all_by operation failed.") from e
 
@@ -2156,19 +2034,19 @@ class Table(JObjectWrapper):
     def slice(self, start: int, stop: int) -> Table:
         """Extracts a subset of a table by row positions into a new Table.
 
-          If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
-          The start must be less than or equal to the stop.
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
 
-          If the start is positive and the stop is negative, then the start is counted from the beginning of the
-          table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
-          rows but the first and last. If the stop is before the start, the result is an empty table.
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
 
-          If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
-          If the start is negative and the stop is negative, they are both counted from the end of the
-          table. For example, slice(-2, -1) returns the second to last row of the table.
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
             start (int): the first row position to include in the result
@@ -2234,12 +2112,15 @@ class Table(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            if not by:
-                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
-                                   include_constituents=include_constituents, by=by)
-            else:
-                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
-                                   aggs=aggs, include_constituents=include_constituents, by=by)
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                if not by:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                       include_constituents=include_constituents, by=by)
+                else:
+                    return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                       aggs=aggs, include_constituents=include_constituents, by=by)
         except Exception as e:
             raise DHError(e, "table rollup operation failed.") from e
 
@@ -2601,13 +2482,18 @@ class PartitionedTable(JObjectWrapper):
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
 
-    def transform(self, func: Callable[[Table], Table]) -> PartitionedTable:
+    def transform(self, func: Callable[[Table], Table],
+                  dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None) -> PartitionedTable:
         """Apply the provided function to all constituent Tables and produce a new PartitionedTable with the results
         as its constituents, with the same data for all other columns in the underlying partitioned Table. Note that
         if the Table underlying this PartitionedTable changes, a corresponding change will propagate to the result.
 
         Args:
             func (Callable[[Table], Table]): a function which takes a Table as input and returns a new Table
+            dependencies (Optional[Sequence[Union[Table, PartitionedTable]]]): additional dependencies that must be
+                satisfied before applying the provided transform function to added or modified constituents during
+                update processing. If the transform function uses any other refreshing Table or refreshing Partitioned
+                Table, they must be included in this argument. Defaults to None.
 
         Returns:
             a PartitionedTable
@@ -2617,13 +2503,18 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_unary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
-            with auto_locking_ctx(self):
-                j_pt = self.j_partitioned_table.transform(j_operator)
+            dependencies = to_sequence(dependencies, wrapped=True)
+            j_dependencies = [d.j_table for d in dependencies if isinstance(d, Table) and d.is_refreshing]
+            j_dependencies.extend([d.table.j_table for d in dependencies if isinstance(d, PartitionedTable) and d.is_refreshing])
+            with auto_locking_ctx(self, *dependencies):
+                j_pt = self.j_partitioned_table.transform(j_operator, j_dependencies)
                 return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable.") from e
 
-    def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table]) -> PartitionedTable:
+    def partitioned_transform(self, other: PartitionedTable, func: Callable[[Table, Table], Table],
+                              dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None) -> \
+            PartitionedTable:
         """Join the underlying partitioned Tables from this PartitionedTable and other on the key columns, then apply
         the provided function to all pairs of constituent Tables with the same keys in order to produce a new
         PartitionedTable with the results as its constituents, with the same data for all other columns in the
@@ -2636,6 +2527,10 @@ class PartitionedTable(JObjectWrapper):
             other (PartitionedTable): the other Partitioned table whose constituent tables will be passed in as the 2nd
                 argument to the provided function
             func (Callable[[Table, Table], Table]): a function which takes two Tables as input and returns a new Table
+            dependencies (Optional[Sequence[Union[Table, PartitionedTable]]]): additional dependencies that must be
+                satisfied before applying the provided transform function to added, modified, or newly-matched
+                constituents during update processing. If the transform function uses any other refreshing Table or
+                refreshing Partitioned Table, they must be included in this argument. Defaults to None.
 
         Returns:
             a PartitionedTable
@@ -2645,8 +2540,12 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_binary_operator(func, dtypes.from_jtype(Table.j_object_type.jclass))
-            with auto_locking_ctx(self, other):
-                j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator)
+            dependencies = to_sequence(dependencies, wrapped=True)
+            j_dependencies = [d.j_table for d in dependencies if isinstance(d, Table) and d.is_refreshing]
+            j_dependencies.extend([d.table.j_table for d in dependencies if isinstance(d, PartitionedTable) and d.is_refreshing])
+            with auto_locking_ctx(self, other, *dependencies):
+                j_pt = self.j_partitioned_table.partitionedTransform(other.j_partitioned_table, j_operator,
+                                                                     j_dependencies)
                 return PartitionedTable(j_partitioned_table=j_pt)
         except Exception as e:
             raise DHError(e, "failed to transform the PartitionedTable with another PartitionedTable.") from e
@@ -3257,8 +3156,11 @@ class PartitionedTableProxy(JObjectWrapper):
             aggs = to_sequence(aggs)
             by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
+
+            cm = _query_scope_agg_ctx(aggs)
+            with cm:
+                with auto_locking_ctx(self):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "agg_by operation on the PartitionedTableProxy failed.") from e
 
@@ -3282,8 +3184,11 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             by = to_sequence(by)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
+
+            cm = _query_scope_agg_ctx([agg])
+            with cm:
+                with auto_locking_ctx(self):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "agg_all_by operation on the PartitionedTableProxy failed.") from e
 
@@ -3626,6 +3531,7 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "update-by operation on the PartitionedTableProxy failed.") from e
 
+
 class MultiJoinInput(JObjectWrapper):
     """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
     natural join. """
@@ -3693,7 +3599,8 @@ class MultiJoinTable(JObjectWrapper):
                 with auto_locking_ctx(*tables):
                     j_tables = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
-            elif isinstance(input, MultiJoinInput) or (isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+            elif isinstance(input, MultiJoinInput) or (
+                    isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
                 if on is not None:
                     raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
                 wrapped_input = to_sequence(input, wrapped=True)
@@ -3702,11 +3609,11 @@ class MultiJoinTable(JObjectWrapper):
                     input = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(*input)
             else:
-                raise DHError(message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+                raise DHError(
+                    message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
 
         except Exception as e:
             raise DHError(e, "failed to build a MultiJoinTable object.") from e
-
 
 
 def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],

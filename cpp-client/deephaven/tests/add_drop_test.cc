@@ -4,8 +4,6 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 
-using deephaven::dhcore::utility::Streamf;
-
 namespace deephaven::client::tests {
 
 TEST_CASE("Drop all columns", "[adddrop]") {

@@ -20,6 +20,7 @@ import io.deephaven.util.type.TypeUtils;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
@@ -41,8 +42,11 @@ class BucketingContext implements SafeCloseable {
 
     BucketingContext(final String listenerPrefix, final QueryTable leftTable, final QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, JoinControl control) {
-        final List<String> conflicts = Arrays.stream(columnsToAdd).map(MatchPair::leftColumn)
-                .filter(cn -> leftTable.getColumnSourceMap().containsKey(cn)).collect(Collectors.toList());
+        final Set<String> leftKeys = leftTable.getDefinition().getColumnNameSet();
+        final List<String> conflicts = Arrays.stream(columnsToAdd)
+                .map(MatchPair::leftColumn)
+                .filter(leftKeys::contains)
+                .collect(Collectors.toList());
         if (!conflicts.isEmpty()) {
             throw new RuntimeException("Conflicting column names " + conflicts);
         }

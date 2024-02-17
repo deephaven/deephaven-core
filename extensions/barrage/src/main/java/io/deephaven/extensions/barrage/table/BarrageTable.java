@@ -11,7 +11,8 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.impl.InstrumentedUpdateSource;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateSource;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -22,12 +23,10 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
@@ -46,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import java.util.function.Predicate;
 
 /**
  * A client side {@link Table} that mirrors an upstream/server side {@code Table}.
@@ -74,12 +74,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
          *
          * @param t the error
          */
-        void onError(Throwable t);
-
-        /**
-         * Called when the subscription is closed; will not be invoked after an onError.
-         */
-        void onClose();
+        void onError(@NotNull Throwable t);
     }
 
     public static final boolean DEBUG_ENABLED =
@@ -99,10 +94,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected long capacity = 0;
     /** the reinterpreted destination writable sources */
     protected final WritableColumnSource<?>[] destSources;
-
-
-    /** unsubscribed must never be reset to false once it has been set to true */
-    private volatile boolean unsubscribed = false;
 
     /**
      * The client and the server update asynchronously with respect to one another. The client requests a viewport, the
@@ -242,8 +233,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     @Override
     public void handleBarrageMessage(final BarrageMessage update) {
-        if (unsubscribed) {
-            beginLog(LogLevel.INFO).append(": Discarding update for unsubscribed table!").endl();
+        if (pendingError != null || isFailed()) {
+            beginLog(LogLevel.INFO).append(": Discarding update for errored table!").endl();
             return;
         }
 
@@ -255,10 +246,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             try {
                 realRefresh();
             } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 throw err;
             }
         } else {
@@ -271,10 +259,17 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         enqueueError(t);
     }
 
-    private class SourceRefresher extends InstrumentedUpdateSource {
+    private synchronized void tryToDeliverErrorToCallback(final Throwable err) {
+        if (viewportChangedCallback != null) {
+            viewportChangedCallback.onError(err);
+            viewportChangedCallback = null;
+        }
+    }
+
+    private class SourceRefresher extends InstrumentedTableUpdateSource {
 
         SourceRefresher() {
-            super(updateGraph, "BarrageTable(" + System.identityHashCode(BarrageTable.this)
+            super(BarrageTable.this, "BarrageTable(" + System.identityHashCode(BarrageTable.this)
                     + (stats != null ? ") " + stats.tableKey : ")"));
         }
 
@@ -287,21 +282,14 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             } catch (Throwable err) {
                 beginLog(LogLevel.ERROR).append(": Failure during BarrageTable instrumentedRefresh: ")
                         .append(err).endl();
-                notifyListenersOnError(err, null);
-
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
-                if (err instanceof Error) {
-                    // rethrow if this was an error (which should not be swallowed)
-                    throw err;
-                }
+                tryToDeliverErrorToCallback(err);
+                // rethrow for the caller to handle
+                throw err;
             }
         }
     }
 
-    protected void updateServerViewport(
+    protected synchronized void updateServerViewport(
             final RowSet viewport,
             final BitSet columns,
             final boolean reverseViewport) {
@@ -337,32 +325,20 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     private synchronized void realRefresh() {
+        if (isFailed()) {
+            discardAnyPendingUpdates();
+            return;
+        }
+
         if (pendingError != null) {
-            if (viewportChangedCallback != null) {
-                viewportChangedCallback.onError(pendingError);
-                viewportChangedCallback = null;
-            }
+            tryToDeliverErrorToCallback(pendingError);
             if (isRefreshing()) {
                 notifyListenersOnError(pendingError, null);
             }
             // once we notify on error we are done, we can not notify any further, we are failed
             cleanup();
-            return;
-        }
-        if (unsubscribed) {
-            if (getRowSet().isNonempty()) {
-                // publish one last clear downstream; this data would be stale
-                final RowSet allRows = getRowSet().copy();
-                getRowSet().writableCast().remove(allRows);
-                if (isRefreshing()) {
-                    notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
-                }
-            }
-            if (viewportChangedCallback != null) {
-                viewportChangedCallback.onClose();
-                viewportChangedCallback = null;
-            }
-            cleanup();
+            // we are quite certain the shadow copies should have been drained on the last run
+            Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
             return;
         }
 
@@ -396,20 +372,22 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
+    private void discardAnyPendingUpdates() {
+        synchronized (pendingUpdatesLock) {
+            pendingUpdates.forEach(BarrageMessage::close);
+            pendingUpdates.clear();
+        }
+    }
+
     private void cleanup() {
-        unsubscribed = true;
         if (stats != null) {
             stats.stop();
         }
         if (isRefreshing()) {
             registrar.removeSource(refresher);
         }
-        synchronized (pendingUpdatesLock) {
-            // release any pending snapshots, as we will never process them
-            pendingUpdates.clear();
-        }
-        // we are quite certain the shadow copies should have been drained on the last run
-        Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
+        // release any pending snapshots, as we will never process them
+        discardAnyPendingUpdates();
     }
 
     @Override
@@ -430,10 +408,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             try {
                 realRefresh();
             } catch (Throwable err) {
-                if (viewportChangedCallback != null) {
-                    viewportChangedCallback.onError(err);
-                    viewportChangedCallback = null;
-                }
+                tryToDeliverErrorToCallback(err);
                 throw err;
             }
         } else {
@@ -474,18 +449,29 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         final BarrageTable table;
 
-        Object isBlinkTable = attributes.getOrDefault(Table.BLINK_TABLE_ATTRIBUTE, false);
-        if (isBlinkTable instanceof Boolean && (Boolean) isBlinkTable) {
+        final Predicate<String> getAttribute = attr -> {
+            final Object value = attributes.getOrDefault(attr, false);
+            return value instanceof Boolean && (Boolean) value;
+        };
+
+        if (getAttribute.test(Table.BLINK_TABLE_ATTRIBUTE)) {
             final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources);
             table = new BarrageBlinkTable(
                     registrar, queue, executor, finalColumns, writableSources, attributes, vpCallback);
         } else {
-            final WritableRowRedirection rowRedirection =
-                    new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+            final WritableRowRedirection rowRedirection;
+            final boolean isFlat = getAttribute.test(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT);
+            if (getAttribute.test(Table.APPEND_ONLY_TABLE_ATTRIBUTE) || isFlat) {
+                rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+            } else {
+                rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(1024);
+            }
+
             final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                     makeColumns(columns, writableSources, rowRedirection);
             table = new BarrageRedirectedTable(
-                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, vpCallback);
+                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isFlat,
+                    vpCallback);
         }
 
         return table;
@@ -587,9 +573,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @Override
     protected void destroy() {
         super.destroy();
-        if (stats != null) {
-            stats.stop();
-        }
+        cleanup();
     }
 
     public LongConsumer getDeserializationTmConsumer() {

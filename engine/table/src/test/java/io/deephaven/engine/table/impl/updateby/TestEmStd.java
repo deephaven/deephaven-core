@@ -92,7 +92,7 @@ public class TestEmStd extends BaseUpdateByTest {
     private BigDecimal[] convert(double[] input) {
         final BigDecimal[] output = new BigDecimal[input.length];
         for (int ii = 0; ii < input.length; ii++) {
-            output[ii] = BigDecimal.valueOf(input[ii]);
+            output[ii] = Double.isNaN(input[ii]) ? BigDecimal.ZERO : BigDecimal.valueOf(input[ii]);
         }
         return output;
     }
@@ -125,8 +125,9 @@ public class TestEmStd extends BaseUpdateByTest {
         // generated from python pandas:
         // one_minus_alpha = 1.0 - math.exp(-1.0 / 10)
         // data["input"].ewm(alpha=one_minus_alpha, adjust=False).std(bias=True)
+        // NOTE: manually converted the first value to NaN to match Deephaven (from 0.0 in pandas)
         final double[] externalStd10 = new double[] {
-                0.0, 1829.0154392759346, 1758.8960442013629, 2076.3748022882937, 2553.5576361856415,
+                Double.NaN, 1829.0154392759346, 1758.8960442013629, 2076.3748022882937, 2553.5576361856415,
                 2433.2971958076046, 2314.9508862196717, 2330.690949555806, 2296.9168425011217, 2291.9729309301392,
                 2312.255890924336, 2207.8214715377408, 2525.894583487406, 2531.3289503882397, 2413.990404017413,
                 2587.5388769864812, 2531.6706405602604, 2890.7631052604515, 2753.5309285046505, 2734.616641196746,
@@ -151,8 +152,9 @@ public class TestEmStd extends BaseUpdateByTest {
         // generated from python pandas:
         // one_minus_alpha = 1.0 - math.exp(-1.0 / 50)
         // data["input"].ewm(alpha=one_minus_alpha, adjust=False).std(bias=True)
+        // NOTE: manually converted the first value to NaN to match Deephaven (from 0.0 in pandas)
         final double[] externalStd50 = new double[] {
-                0.0, 868.3667520669262, 861.6294154053817, 1065.6661593432248, 1365.1098539430147,
+                Double.NaN, 868.3667520669262, 861.6294154053817, 1065.6661593432248, 1365.1098539430147,
                 1369.6797998341608, 1367.2161208721454, 1448.8924859183394, 1507.5259703546187, 1498.3774979527218,
                 1496.6149141177552, 1482.433499352465, 1668.504887524693, 1742.0801310749232, 1728.8129551576424,
                 1752.4940689267764, 1740.522951793199, 1934.2905671973408, 1917.9800735018696, 1973.8732379079147,
@@ -878,6 +880,127 @@ public class TestEmStd extends BaseUpdateByTest {
             }
         }
     }
+    // endregion
+
+    // region Special Tests
+    @Test
+    public void testInitialEmptySingleRowIncrement() {
+        final CreateResult tickResult = createTestTable(0, true, false, true, 0x31313131,
+                new String[] {"charCol"}, new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1)});
+        final CreateResult timeResult = createTestTable(0, true, false, true, 0x31313131,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {
+                        new SortedInstantGenerator(
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
+
+        tickResult.t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        timeResult.t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        final UpdateByControl control = UpdateByControl.builder().useRedirection(false).build();
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return tickResult.t.updateBy(control,
+                                UpdateByOperation.EmStd(skipControl, 100, primitiveColumns),
+                                "Sym");
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return tickResult.t.updateBy(control,
+                                UpdateByOperation.EmStd(skipControl, 100, primitiveColumns));
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return tickResult.t.updateBy(control,
+                                UpdateByOperation.EmStd(resetControl, 100, primitiveColumns),
+                                "Sym");
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return tickResult.t.updateBy(control,
+                                UpdateByOperation.EmStd(resetControl, 100, primitiveColumns));
+                    }
+                }
+        };
+
+        final EvalNugget[] timeNuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        TableDefaults base = timeResult.t;
+                        return base.updateBy(control,
+                                UpdateByOperation.EmStd(skipControl, "ts", 10 * MINUTE, primitiveColumns),
+                                "Sym");
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        TableDefaults base = timeResult.t;
+                        return base.updateBy(control,
+                                UpdateByOperation.EmStd(skipControl, "ts", 10 * MINUTE, primitiveColumns));
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        TableDefaults base = timeResult.t;
+                        return base.updateBy(control,
+                                UpdateByOperation.EmStd(resetControl, "ts", 10 * MINUTE, primitiveColumns),
+                                "Sym");
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        TableDefaults base = timeResult.t;
+                        return base.updateBy(control,
+                                UpdateByOperation.EmStd(resetControl, "ts", 10 * MINUTE, primitiveColumns));
+                    }
+                }
+
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < 500; ii++) {
+            if (ii % 100 == 0) {
+                // Force nulls into the table for all the primitive columns
+
+            } else {
+                try {
+                    final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                    updateGraph.runWithinUnitTestCycle(() -> {
+                        generateAppends(1, billy, tickResult.t, tickResult.infos);
+                        generateAppends(1, billy, timeResult.t, timeResult.infos);
+                    });
+                    validate("Table", nuggets);
+                    validate("Table", timeNuggets);
+                } catch (Throwable t) {
+                    System.out.println("Crapped out on step " + ii);
+                    throw t;
+                }
+            }
+        }
+    }
+
     // endregion
 
     // region Manual Verification functions

@@ -22,7 +22,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
@@ -300,13 +299,12 @@ public abstract class UpdateBy {
                     dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (OperationInitializationThreadPool.canParallelize()) {
-                    jobScheduler = new OperationInitializationPoolJobScheduler();
+                if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
+                    jobScheduler = new OperationInitializerJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
                 executionContext = ExecutionContext.newBuilder()
-                        .captureUpdateGraph()
                         .markSystemic().build();
             } else {
                 // Determine which windows need to be computed.
@@ -907,19 +905,14 @@ public abstract class UpdateBy {
             final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
             if (accumulated != null) {
                 if (initialStep) {
-                    final QueryPerformanceNugget outerNugget = QueryPerformanceRecorder.getInstance().getOuterNugget();
-                    if (outerNugget != null) {
-                        outerNugget.addBaseEntry(accumulated);
-                    }
+                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
                 } else {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
-                            synchronized (accumulated) {
-                                final PerformanceEntry entry = sourceListener().getEntry();
-                                if (entry != null) {
-                                    entry.accumulate(accumulated);
-                                }
+                            final PerformanceEntry entry = sourceListener().getEntry();
+                            if (entry != null) {
+                                entry.accumulate(accumulated);
                             }
                         }
                     });
@@ -1188,7 +1181,7 @@ public abstract class UpdateBy {
 
         final Collection<List<ColumnUpdateOperation>> windowSpecs =
                 updateByOperatorFactory.getWindowOperatorSpecs(clauses);
-        if (windowSpecs.size() == 0) {
+        if (windowSpecs.isEmpty()) {
             throw new IllegalArgumentException("At least one operator must be specified");
         }
 
@@ -1198,7 +1191,7 @@ public abstract class UpdateBy {
 
         final MutableObject<String> timestampColumnName = new MutableObject<>(null);
         // create an initial set of all source columns
-        final Set<String> preservedColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
+        final LinkedHashSet<String> preservedColumnSet = new LinkedHashSet<>(source.getDefinition().getColumnNameSet());
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();

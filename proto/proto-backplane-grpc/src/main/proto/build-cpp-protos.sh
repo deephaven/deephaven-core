@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-if [ -z "$PROTOC_BIN" ] && [ -z "$DHCPP" ]; then
+if [ -z ${PROTOC_BIN:+x} ] && [ -z ${DHCPP:+x} ]; then
     echo "$0: At least one of the environment variables 'PROTOC_BIN' and 'DHCPP' must be defined, aborting." 1>&2
     exit 1
 fi

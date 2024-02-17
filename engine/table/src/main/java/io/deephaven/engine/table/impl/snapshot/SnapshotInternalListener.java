@@ -33,7 +33,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             Map<String, SingleValueColumnSource<?>> resultTriggerColumns,
             Map<String, WritableColumnSource<?>> resultBaseColumns,
             TrackingWritableRowSet resultRowSet) {
-        super("snapshot " + result.getColumnSourceMap().keySet(), triggerTable, result);
+        super("snapshot " + result.getDefinition().getColumnNameSet(), triggerTable, result);
         this.triggerTable = triggerTable;
         this.result = result;
         this.lazySnapshot = lazySnapshot;

@@ -123,9 +123,14 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
                         public FileVisitResult preVisitDirectory(
                                 @NotNull final Path dir,
                                 @NotNull final BasicFileAttributes attrs) {
+                            final String dirName = dir.getFileName().toString();
+                            // Skip dot directories
+                            if (!dirName.isEmpty() && dirName.charAt(0) == '.') {
+                                return FileVisitResult.SKIP_SUBTREE;
+                            }
                             if (++columnCount > 0) {
                                 // We're descending and past the root
-                                final String[] components = dir.getFileName().toString().split("=", 2);
+                                final String[] components = dirName.split("=", 2);
                                 if (components.length != 2) {
                                     throw new TableDataException(
                                             "Unexpected directory name format (not key=value) at " + dir);

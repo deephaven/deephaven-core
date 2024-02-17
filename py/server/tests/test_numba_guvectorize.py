@@ -5,7 +5,7 @@
 import unittest
 
 import numpy as np
-from numba import guvectorize, int64
+from numba import guvectorize, int64, int32
 
 from deephaven import empty_table, dtypes
 from tests.testbase import BaseTestCase
@@ -22,13 +22,13 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             for xi in x:
                 res[0] += xi
 
-        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z=g(Y)")
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y)")
         m = t.meta_table
         self.assertEqual(t.columns[2].data_type, dtypes.int64)
 
     def test_vector_return(self):
         # vector and scalar input to vector ouput function
-        @guvectorize([(int64[:], int64, int64[:])], "(m),()->(m)", nopython=True)
+        @guvectorize([(int32[:], int32, int64[:])], "(m),()->(m)", nopython=True)
         def g(x, y, res):
             for i in range(len(x)):
                 res[i] = x[i] + y
@@ -61,7 +61,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
         dummy = np.array([0, 0], dtype=np.int64)
 
         # vector input to fixed-length vector ouput function -- second arg is a dummy just to get a fixed size output
-        @guvectorize([(int64[:], int64[:], int64[:])], "(m),(n)->(n)", nopython=True)
+        @guvectorize([(int32[:], int64[:], int64[:])], "(m),(n)->(n)", nopython=True)
         def g(x, dummy, res):
             res[0] = min(x)
             res[1] = max(x)
@@ -78,7 +78,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             res[0] = np.min(x)
             res[1] = np.max(x)
 
-        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z=g(Y,dummy)")
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y,dummy)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
     def test_np_on_java_array2(self):
@@ -86,7 +86,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
         def g(x, res):
             res[:] = x + 5
 
-        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z=g(Y)")
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
 

@@ -12,7 +12,7 @@ RUN set -eux; \
   mkdir -p /generated/python; \
   mkdir -p /generated/cpp; \
   /opt/protoc/bin/protoc \
-    --plugin=protoc-gen-grpc=/opt/protoc-gen-grpc-java \
+    --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
     --java_out=/generated/java \
     --grpc_out=/generated/grpc \
     -I/dependencies \
@@ -64,9 +64,9 @@ RUN set -eux; \
     /includes/deephaven/proto/hierarchicaltable.proto \
     /includes/deephaven/proto/storage.proto; \
   /opt/protoc/bin/protoc \
-    --plugin=protoc-gen-go=/opt/protoc-gen-go \
-    --plugin=protoc-gen-go-grpc=/opt/protoc-gen-go-grpc \
-    --plugin=protoc-gen-cpp_grpc=/opt/cpp/grpc_cpp_plugin \
+    --plugin=protoc-gen-go=/opt/go/bin/protoc-gen-go \
+    --plugin=protoc-gen-go-grpc=/opt/go/bin/protoc-gen-go-grpc \
+    --plugin=protoc-gen-cpp_grpc=/opt/deephaven/bin/grpc_cpp_plugin \
     --go_out=/generated/go \
     --go-grpc_out=/generated/go \
     --go_opt=module=github.com/deephaven/deephaven-core/go \

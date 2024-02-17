@@ -7,6 +7,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -167,6 +168,10 @@ public class StreamToBlinkTableAdapter
                     setAttribute(e.getKey(), e.getValue());
                 }
                 addParentReference(StreamToBlinkTableAdapter.this);
+                // Ensure that the UpdateSourceRegistrar remains alive while the blink table does.
+                if (updateSourceRegistrar instanceof LivenessReferent) {
+                    manage((LivenessReferent) updateSourceRegistrar);
+                }
             }
 
             @Override

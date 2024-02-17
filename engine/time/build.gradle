@@ -16,8 +16,8 @@ dependencies {
     implementation project(':engine-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation project(':FishUtil')
     implementation depJdom2
+    Classpaths.inheritDagger(project)
 
     testImplementation TestTools.projectDependency(project, 'Base')
 
@@ -25,4 +25,12 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+spotless {
+    java {
+        targetExclude(
+                'src/main/java/io/deephaven/time/calendar/StaticCalendarMethods.java',
+        )
+    }
 }

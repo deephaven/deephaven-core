@@ -219,7 +219,6 @@ class TableTestCase(BaseTestCase):
         test_table = self.session.time_table(period=10000000).update(formulas=["Col1 = i", "Col2 = i * 2"])
         result_table = test_table.snapshot()
         self.assertEqual(test_table.schema, result_table.schema)
-        self.assertGreaterEqual(test_table.size, result_table.size)
 
     def test_snapshot_when(self):
         source_table = (self.session.time_table(period=10_000_000)

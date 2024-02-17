@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.InstrumentedUpdateSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
@@ -15,8 +16,8 @@ import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,12 +33,14 @@ public class Replayer implements ReplayerInterface, Runnable {
     protected Instant startTime;
     protected Instant endTime;
     private long deltaNanos = Long.MAX_VALUE;
-    private CopyOnWriteArrayList<Runnable> currentTables = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<ReplayTableBase> currentTables = new CopyOnWriteArrayList<>();
     private volatile boolean done;
     private boolean lastLap;
+
     private final ReplayerHandle handle = () -> Replayer.this;
 
     private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+    private final SourceRefresher sourceRefresher = new SourceRefresher();
 
     // Condition variable for use with PeriodicUpdateGraph lock - the object monitor is no longer used
     private final Condition ugpCondition = updateGraph.exclusiveLock().newCondition();
@@ -51,7 +54,6 @@ public class Replayer implements ReplayerInterface, Runnable {
     public Replayer(Instant startTime, Instant endTime) {
         this.endTime = endTime;
         this.startTime = startTime;
-        currentTables.add(this);
     }
 
     /**
@@ -60,8 +62,11 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void start() {
         deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - DateTimeUtils.epochNanos(startTime);
-        for (Runnable currentTable : currentTables) {
-            updateGraph.addSource(currentTable);
+        // Note: ReplayTables are allowed to run in parallel with this Replayer. However, we may wish to use an
+        // UpdateSourceCombiner to ensure that all of these tables are refreshed as a unit.
+        updateGraph.addSource(sourceRefresher);
+        for (ReplayTableBase currentTable : currentTables) {
+            currentTable.start();
         }
     }
 
@@ -77,17 +82,18 @@ public class Replayer implements ReplayerInterface, Runnable {
 
     /**
      * Shuts down the replayer.
-     *
-     * @throws IOException problem shutting down the replayer.
      */
     @Override
-    public void shutdown() throws IOException {
+    public void shutdown() {
         Clock clock = clock();
         endTime = clock.instantNanos();
         if (done) {
             return;
         }
-        updateGraph.removeSources(currentTables);
+        updateGraph.removeSource(sourceRefresher);
+        for (ReplayTableBase currentTable : currentTables) {
+            currentTable.stop();
+        }
         currentTables = null;
         if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
             shutdownInternal();
@@ -190,11 +196,13 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (dataSource.isRefreshing()) {
             dataSource = dataSource.snapshot();
         }
-        final ReplayTable result =
-                new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
+        final ReplayTable result;
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            result = new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
+        }
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
-            updateGraph.addSource(result);
+            result.start();
         }
         return result;
     }
@@ -210,11 +218,14 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
-        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getRowSet(),
-                dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
+        final ReplayGroupedFullTable result;
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            result = new ReplayGroupedFullTable(
+                    dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
+        }
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
-            updateGraph.addSource(result);
+            result.start();
         }
         return result;
     }
@@ -229,11 +240,14 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
-        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getRowSet(),
-                dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
+        final ReplayLastByGroupedTable result;
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            result = new ReplayLastByGroupedTable(
+                    dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
+        }
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
-            updateGraph.addSource(result);
+            result.start();
         }
         return result;
     }
@@ -260,15 +274,28 @@ public class Replayer implements ReplayerInterface, Runnable {
         }
 
         if (lastLap) {
-            try {
-                shutdown();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            shutdown();
         }
         Clock clock = clock();
         if (clock.instantNanos().compareTo(endTime) >= 0) {
             lastLap = true;
+        }
+    }
+
+    private class SourceRefresher extends InstrumentedUpdateSource {
+        SourceRefresher() {
+            super(Replayer.this.updateGraph, "Replayer");
+        }
+
+        @Override
+        protected void instrumentedRefresh() {
+            Replayer.this.run();
+        }
+
+        @Override
+        protected void onRefreshError(Exception error) {
+            log.error().append("Unexpected Error Refreshing Replayer: ").append(error).endl();
+            shutdown();
         }
     }
 

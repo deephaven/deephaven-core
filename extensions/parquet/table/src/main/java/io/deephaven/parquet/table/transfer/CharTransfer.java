@@ -10,8 +10,8 @@ import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 final class CharTransfer extends IntCastablePrimitiveTransfer<CharChunk<Values>> {
-    CharTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetSize) {
-        super(columnSource, tableRowSet, targetSize);
+    CharTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
     }
 
     @Override

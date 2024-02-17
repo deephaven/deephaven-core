@@ -179,11 +179,17 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
             return;
         }
         throw new IllegalStateException(String.format(
-                "May not initiate serial table operations: exclusiveLockHeld=%s, sharedLockHeld=%s, currentThreadProcessesUpdates=%s",
+                "May not initiate serial table operations for update graph %s: exclusiveLockHeld=%s, sharedLockHeld=%s, currentThreadProcessesUpdates=%s",
+                getName(),
                 exclusiveLock().isHeldByCurrentThread(),
                 sharedLock().isHeldByCurrentThread(),
                 currentThreadProcessesUpdates()));
     }
+
+    /**
+     * Attempt to stop this update graph, and cease processing further notifications.
+     */
+    void stop();
 
     // endregion thread control
 

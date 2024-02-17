@@ -7,44 +7,58 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * In order to be able to cache and reuse ChunkSources across multiple Tables (or other references),
- * {@code PagingChunkSource} adds a mask to the ChunkSource, and supports some additional {@code fillChunk} methods.
- *
- * The mask is a bitmask of the lower order bits of the keys in an OrderKeys, which specifies the bits from the
- * {@link RowSequence} which will be used to uniquely specify the offsets into the ChunkSource elements on calls to
- * {@link ChunkSource#fillChunk(FillContext, WritableChunk, RowSequence)},
- * {@link ChunkSource#getChunk(GetContext, RowSequence)}, {@link ChunkSource#getChunk(GetContext, long, long)}.
- *
- * Also, a new method {@link PagingChunkSource#fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} is
- * added, which supports doing a fillChunk incrementally across a series of pages.
+ * In order to be able to cache and reuse {@link ChunkSource ChunkSources} across multiple tables (or other references),
+ * {@code PagingChunkSource} adds a {@link #mask()} to {@code ChunkSource} and supports some additional
+ * {@link #fillChunk} methods.
+ * <p>
+ * The mask is a bitmask of the lower order bits of the row keys in a {@link RowSequence}, which specifies the bits from
+ * the {@link RowSequence} which will be used to uniquely specify the offsets into the ChunkSource elements on calls to
+ * {@link #fillChunk} and {@link #getChunk}.
+ * <p>
+ * Also, a new method {@link #fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} is added, which
+ * supports filling a chunk incrementally across a series of pages.
+ * <p>
+ * In order to support arbitrary nesting and re-use of {@link PagingChunkSource} implementations, it is required that
+ * all implementations use or extend {@link io.deephaven.engine.table.impl.DefaultGetContext DefaultGetContext} and
+ * {@link PagingContextHolder} as their {@link #makeGetContext(int, SharedContext) GetContext} and
+ * {@link #makeFillContext(int, SharedContext) FillContext}, respectively. Nested implementations may thus store their
+ * own state via the {@link PagingContextHolder#getInnerContext() inner context}, using sub-classes of
+ * {@link PagingContextHolder} to support chaining of nested state.
  */
-public interface PagingChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
+public interface PagingChunkSource<ATTR extends Any> extends DefaultChunkSource<ATTR> {
+
+    @Override
+    default FillContext makeFillContext(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
+        return new PagingContextHolder(chunkCapacity, sharedContext);
+    }
 
     /**
-     * This mask is applied to {@link RowSequence} which are passed into
-     * {@link #getChunk(ChunkSource.GetContext, RowSequence)} and
-     * {@link #fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence)}. This allows the {@link PagingChunkSource
-     * PagingChunkSources} to be cached, and reused even if they are properly relocated in key space.
+     * This mask is applied to {@link RowSequence RowSequences} which are passed into {@link #getChunk},
+     * {@link #fillChunk}, and {@link #fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} . This allows
+     * {@code PagingChunkSources} to be cached and reused even if they are properly relocated in key space.
      *
-     * @return the mask for this page, which must be a bitmask representing the some number of lower order bits of a
-     *         long.
+     * @return The mask for this {@code PagingChunkSource}, which must be a bitmask representing some number of lower
+     *         order bits of a long.
      */
     long mask();
 
     /**
      * <p>
-     * The {@code maxRow} is the greatest possible row which may reference this ChunkSource. This method is used by
-     * {@link #fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} to determine which of its
-     * {@code RowSequence} are referencing this {@code PagingChunkSource}.
+     * The {@code maxRow} is the greatest possible row key which may be referenced in this ChunkSource. This method is
+     * used by {@link #fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} to determine which of its row
+     * keys are supplied by this {@code PagingChunkSource}.
      * </p>
      *
      * <p>
      * The default implementation assumes that only one {@code PagingChunkSource} exits for each page reference. That
-     * is, there is only one {@code PagingChunkSource} for {@code OrderedKey}s with the same bits outside of
-     * {@link #mask()}.
+     * is, there is only one {@code PagingChunkSource} for {@link RowSequence RowSequences} with the same bits outside
+     * of {@link #mask()}.
      * </p>
      *
      * <p>
@@ -52,35 +66,34 @@ public interface PagingChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
      * this case, one typically will want to override {@code maxRow}. An example such implementation is
      * {@link ChunkPage}.
      *
-     * @param row Any row contained on this page.
-     * @return the maximum last row of this page, located in the same way as row.
+     * @param rowKey Any row key contained by this {@link PagingChunkSource}
+     * @return The maximum last row key of the page, located in the same way as {@code rowKey}
      */
-    default long maxRow(final long row) {
-        return row | mask();
+    default long maxRow(final long rowKey) {
+        return rowKey | mask();
     }
 
     /**
      * <p>
-     * Similar to {@link #fillChunk(FillContext, WritableChunk, RowSequence)}, except that the values from the
-     * ChunkSource are appended to {@code destination}, rather than placed at the beginning.
+     * Similar to {@link #fillChunk(FillContext, WritableChunk, RowSequence)}, except that the values are appended to
+     * {@code destination}, rather than placed at the beginning.
      * </p>
      *
      * <p>
      * The values to fill into {@code destination} are specified by {@code rowSequenceIterator}, whose
      * {@link RowSequence#firstRowKey()} must exist, and must be represented by this {@code PagingChunkSource} (modulo
-     * {#link @mask}), otherwise results are undefined.
+     * {@link #mask()}), otherwise results are undefined.
      * </p>
      *
      * <p>
-     * No more than the elements in {@code rowSequenceIterator}, which are on the same page as
-     * {@link RowSequence#firstRowKey()}, have their values appended to {@code destination}, and consumed from
-     * {@code rowSequenceIterator}. Indices are on the same page when the bits outside of {@link #mask()} are identical.
+     * All values specified by {@code rowSequenceIterator} that are on the same page as its next row key will be
+     * appended to {@code destination}. Row keys are on the same page when the bits outside of {@link #mask()} are
+     * identical.
      *
-     * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,
-     *        the Context may be used to provide a Chunk data pool
-     * @param destination The chunk to append the results to.
-     * @param rowSequenceIterator The iterator to the ordered keys, which contain at least the keys to extract from this
-     *        {@code ChunkSource}. The keys to extract will be at the beginning of iteration order.
+     * @param context A context containing all mutable/state related data used in filling {@code destination}
+     * @param destination The {@link WritableChunk} to append the results to
+     * @param rowSequenceIterator An iterator over the remaining row keys specifying the values to retrieve, which
+     *        contains at least the keys to extract from this {@code PagingChunkSource}
      */
     void fillChunkAppend(
             @NotNull FillContext context,

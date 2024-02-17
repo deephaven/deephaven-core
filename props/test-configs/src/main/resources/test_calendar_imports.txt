@@ -1,12 +1,5 @@
-/calendar/BEIJING.calendar
-/calendar/DTB.calendar
-/calendar/GBLO.calendar
-/calendar/GLOBAL.calendar
-/calendar/JPOSE.calendar
-/calendar/LSE.calendar
-/calendar/MOSCOW.calendar
-/calendar/MUMBAI.calendar
-/calendar/USNY.calendar
-/calendar/USNYSE.calendar
-/calendar/USNYSEWEEKDAYS.calendar
+/calendar/CAL1.calendar
+/calendar/CAL2.calendar
+/calendar/USBANK_EXAMPLE.calendar
+/calendar/USNYSE_EXAMPLE.calendar
 /calendar/UTC.calendar

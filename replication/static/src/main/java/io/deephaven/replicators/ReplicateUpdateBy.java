@@ -134,13 +134,17 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java");
+        files = ReplicatePrimitiveCode.charToIntegers(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java",
+                exemptions);
         for (final String f : files) {
-            if (f.contains("Integer")) {
+            if (f.contains("Int")) {
                 fixupInteger(f);
             }
         }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/FloatRollingProductOperator.java");
+
 
         files = ReplicatePrimitiveCode.charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/delta/CharDeltaOperator.java",

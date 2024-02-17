@@ -4,6 +4,7 @@
 package io.deephaven.server.util;
 
 import io.deephaven.base.clock.Clock;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -65,6 +66,18 @@ public interface Scheduler extends Clock {
             this.serialDelegate = Objects.requireNonNull(serialExecutor);
             this.concurrentDelegate = Objects.requireNonNull(concurrentExecutor);
             this.clock = Objects.requireNonNull(clock);
+        }
+
+        @VisibleForTesting
+        public void shutdown() throws InterruptedException {
+            concurrentDelegate.shutdownNow();
+            serialDelegate.shutdownNow();
+            if (!concurrentDelegate.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new RuntimeException("concurrentDelegate not shutdown within 5 seconds");
+            }
+            if (!serialDelegate.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new RuntimeException("serialDelegate not shutdown within 5 seconds");
+            }
         }
 
         @Override

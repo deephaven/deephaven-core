@@ -522,8 +522,12 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.spec.AggSpecStd standard deviation} aggregation for the supplied column name
-     * pairs.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecStd sample standard deviation} aggregation for the supplied
+     * column name pairs.
+     *
+     * Sample standard deviation is computed using Bessel's correction
+     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
+     * estimator of population variance.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -608,7 +612,11 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.spec.AggSpecVar variance} aggregation for the supplied column name pairs.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecVar sample variance} aggregation for the supplied column name
+     * pairs.
+     *
+     * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
+     * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation

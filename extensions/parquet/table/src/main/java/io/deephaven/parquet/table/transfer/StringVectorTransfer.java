@@ -10,8 +10,8 @@ import org.jetbrains.annotations.NotNull;
 
 final class StringVectorTransfer extends ObjectVectorTransfer<String> {
     StringVectorTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
-            final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize);
+            final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
     }
 
     @Override

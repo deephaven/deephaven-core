@@ -16,8 +16,8 @@ abstract class ObjectArrayTransfer<VALUE_TYPE> extends ObjectArrayAndVectorTrans
     private final ArrayDataSupplier<VALUE_TYPE> supplier;
 
     ObjectArrayTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
-                        final int targetPageSize) {
-        super(columnSource, tableRowSet, targetPageSize);
+                        final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
         supplier = new ArrayDataSupplier<>();
     }
 

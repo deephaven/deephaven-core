@@ -7,11 +7,11 @@ plugins {
     id 'license'
 }
 
-// We use the cpp-clients-fat-base image instead of the cpp-client-base,
+// We use the cpp-clients-multi-base image instead of the cpp-client-base,
 // so that the test tasks in py/client-ticking and R can in turn use the
 // image we will generate here as a base.
-// See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-fat
-evaluationDependsOn Docker.registryProject('cpp-clients-fat-base')
+// See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-multi
+evaluationDependsOn Docker.registryProject('cpp-clients-multi-base')
 
 configurations {
     cpp {}
@@ -79,15 +79,14 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
 
     dockerfile {
         // See comment at the beginning of this file for why we use this base image.
-        from('deephaven/cpp-clients-fat-base:local-build')
+        from('deephaven/cpp-clients-multi-base:local-build')
         //
         // Build and install client.
         //
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/bin/dhcpp \\
-                        ${prefix}/log \\
-                        ${prefix}/src/deephaven/{dhcore,dhclient,examples,tests}
+                        ${prefix}/log
                    """)
         copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
         copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
@@ -106,17 +105,17 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
                         -DCMAKE_BUILD_TYPE=Release \\
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
-                      make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
+                      VERBOSE=1 make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
                       cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp/tests; \\
                       cd ..; \\
                       rm -fr ${PREFIX}/src/deephaven/build
                    ''')
         // Note environment variables defined here are inherited by other images
-        // using this image as a base.
+        // using this image as a base ("from").
         environmentVariable 'DH_PREFIX', prefix
         environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
-    parentContainers = [ Docker.registryTask(project, 'cpp-clients-fat-base') ]
+    parentContainers = [ Docker.registryTask(project, 'cpp-clients-multi-base') ]
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {

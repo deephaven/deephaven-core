@@ -87,7 +87,8 @@ public class ApplicationServiceGrpcImplTest {
 
         // trigger a change
         ScriptSession scriptSession = new NoLanguageDeephavenSession(
-                ExecutionContext.getDefaultContext().getUpdateGraph());
+                ExecutionContext.getContext().getUpdateGraph(),
+                ExecutionContext.getContext().getOperationInitializer());
         scriptSession.setVariable("key", "hello world");
         ScriptSession.Changes changes = new ScriptSession.Changes();
         changes.created.put("key", "Object");

@@ -40,6 +40,8 @@ dependencies {
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+
+    Classpaths.inheritAssertJ(project)
 }
 
 spotless {

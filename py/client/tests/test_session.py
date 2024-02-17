@@ -56,6 +56,10 @@ class SessionTestCase(BaseTestCase):
             session.bind_table("t", t)
             session.run_script("""
 from deephaven import empty_table
+try:
+    del t1
+except NameError:
+    pass
 t1 = empty_table(0) if t.is_blink else None
 """)
             self.assertNotIn("t1", session.tables)
@@ -64,6 +68,10 @@ t1 = empty_table(0) if t.is_blink else None
             session.bind_table("t", t)
             session.run_script("""
 from deephaven import empty_table
+try:
+    del t1
+except NameError:
+    pass
 t1 = empty_table(0) if t.is_blink else None
 """)
             self.assertIn("t1", session.tables)

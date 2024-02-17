@@ -115,7 +115,10 @@ public class CharRollingStdOperator extends BaseDoubleUpdateByOperator {
                 final double valueSquareSum = valueSquareBuffer.evaluate();
                 final double valueSum = valueBuffer.evaluate();
 
-                if (Double.isNaN(valueSquareSum) || Double.isNaN(valueSum)) {
+                if (Double.isNaN(valueSquareSum)
+                        || Double.isNaN(valueSum)
+                        || Double.isInfinite(valueSquareSum)
+                        || Double.isInfinite(valueSum)) {
                     outputValues.set(outIdx, Double.NaN);
                     return;
                 }

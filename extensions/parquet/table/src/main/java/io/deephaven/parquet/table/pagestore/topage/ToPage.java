@@ -73,7 +73,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
     }
 
     /**
-     * Produce the appropriately typed chunk page for the page read by the columnPageReader. The is the expected entry
+     * Produce the appropriately typed chunk page for the page read by the columnPageReader. This is the expected entry
      * point for the ColumnChunkPageStore.
      */
     @NotNull

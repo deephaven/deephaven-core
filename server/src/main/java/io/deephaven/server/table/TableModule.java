@@ -18,6 +18,7 @@ import io.deephaven.server.table.ops.AjRajGrpcImpl.AjGrpcImpl;
 import io.deephaven.server.table.ops.AjRajGrpcImpl.RajGrpcImpl;
 import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
 import io.deephaven.server.table.ops.AjRajGrpcImpl;
+import io.deephaven.server.table.ops.ColumnStatisticsGrpcImpl;
 import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.server.table.ops.CreateInputTableGrpcImpl;
 import io.deephaven.server.table.ops.DropColumnsGrpcImpl;
@@ -252,6 +253,11 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.WHERE_IN)
     GrpcTableOperation<?> bindWhereIn(WhereInGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.COLUMN_STATISTICS)
+    GrpcTableOperation<?> bindColumnStats(ColumnStatisticsGrpcImpl op);
 
     @Binds
     @IntoMap

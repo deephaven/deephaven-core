@@ -11,7 +11,8 @@ import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import j_map_to_dict
-from deephaven.table import Table
+from deephaven.table import Table, TreeTable
+from deephaven.update_graph import auto_locking_ctx
 
 _JPerformanceQueries = jpy.get_type("io.deephaven.engine.table.impl.util.PerformanceQueries")
 _JMetricsManager = jpy.get_type("io.deephaven.util.metrics.MetricsManager")
@@ -94,6 +95,40 @@ def query_performance_log() -> Table:
         return Table(j_table=_JTableLoggers.queryPerformanceLog())
     except Exception as e:
         raise DHError(e, "failed to obtain the query performance log table.") from e
+
+def query_operation_performance_tree_table() -> TreeTable:
+    """ Returns a tree table with Deephaven performance data for individual subqueries.
+
+    Returns:
+        a TreeTable
+
+    Raises:
+        DHError
+    """
+    try:
+        with auto_locking_ctx(query_performance_log()):
+            return TreeTable(j_tree_table=_JPerformanceQueries.queryOperationPerformanceAsTreeTable(),
+                             id_col = "EvalKey", parent_col = "ParentEvalKey")
+    except Exception as e:
+        raise DHError(e, "failed to obtain the query operation performance log as tree table.") from e
+
+
+def query_performance_tree_table() -> TreeTable:
+    """ Returns a tree table with Deephaven query performance data. Performance data for individual sub-operations as
+    a tree table is available from calling `query_operation_performance_tree_table`.
+
+    Returns:
+        a TreeTable
+
+    Raises:
+        DHError
+    """
+    try:
+        with auto_locking_ctx(query_performance_log()):
+            return TreeTable(j_tree_table=_JPerformanceQueries.queryPerformanceAsTreeTable(),
+                             id_col = "EvaluationNumber", parent_col = "ParentEvaluationNumber")
+    except Exception as e:
+        raise DHError(e, "failed to obtain the query performance log as tree table.") from e
 
 
 def update_performance_log() -> Table:

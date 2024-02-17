@@ -20,8 +20,8 @@ final class DictEncodedStringTransfer extends IntCastablePrimitiveTransfer<Objec
     private boolean pageHasNull;
 
     DictEncodedStringTransfer(@NotNull ColumnSource<?> columnSource, @NotNull RowSequence tableRowSet,
-            int targetPageSize, StringDictionary dictionary) {
-        super(columnSource, tableRowSet, targetPageSize);
+            int targetPageSizeInBytes, StringDictionary dictionary) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes);
         this.dictionary = dictionary;
         this.pageHasNull = false;
     }
