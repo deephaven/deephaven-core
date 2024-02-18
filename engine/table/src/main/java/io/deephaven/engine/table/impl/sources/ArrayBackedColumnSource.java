@@ -37,10 +37,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * A ColumnSource backed by in-memory arrays of data.

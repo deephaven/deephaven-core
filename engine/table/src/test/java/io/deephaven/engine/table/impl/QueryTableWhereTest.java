@@ -13,6 +13,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.impl.select.*;
@@ -24,7 +25,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.sources.RowIdSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
@@ -1034,7 +1034,7 @@ public abstract class QueryTableWhereTest {
     public void testBigTable() {
         final Table source = new QueryTable(
                 RowSetFactory.flat(10_000_000L).toTracking(),
-                Collections.singletonMap("A", new RowIdSource()));
+                Collections.singletonMap("A", RowKeyColumnSource.INSTANCE));
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(0, 1000000L);
         final Table filtered = source.where(incrementalReleaseFilter);
         final Table result = filtered.where("A >= 6_000_000L", "A < 7_000_000L");
@@ -1053,7 +1053,7 @@ public abstract class QueryTableWhereTest {
     public void testBigTableInitial() {
         final Table source = new QueryTable(
                 RowSetFactory.flat(10_000_000L).toTracking(),
-                Collections.singletonMap("A", new RowIdSource()));
+                Collections.singletonMap("A", RowKeyColumnSource.INSTANCE));
         final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
 
         assertEquals(1_000_000, result.size());
