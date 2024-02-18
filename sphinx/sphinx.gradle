@@ -151,6 +151,7 @@ tasks.named('cppClientDocsPrepareDocker').configure {
 makePyDocTask('cppExamplesDocs', 'cpp-examples', [
         ("$rootDir/cpp-client/deephaven/examples/doc".toString()):'source',
         ("$buildDir/cppClientDocs".toString()):'cpp'
-], "$buildDir/cppExamplesDocs") {
-    it.containerDependencies.dependsOn = cppClientDocs
+], "$buildDir/cppExamplesDocs")
+tasks.named('cppExamplesDocsPrepareDocker').configure {
+    dependsOn cppClientDocs
 }
