@@ -13,6 +13,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
@@ -1069,13 +1070,17 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         try {
             partitionedTable.transform(t -> t.join(refreshingInput, "c", "c2=c"));
             TestCase.fail("Expected exception");
-        } catch (IllegalStateException expected) {
+        } catch (TableInitializationException expected) {
+            Assert.eqTrue(expected.getCause().getClass() == IllegalStateException.class,
+                    "expected.getCause().getClass() instanceof IllegalStateException");
         }
 
         try {
             partitionedTable.partitionedTransform(partitionedTable, (t, u) -> t.join(refreshingInput, "c", "c2=c"));
             TestCase.fail("Expected exception");
-        } catch (IllegalStateException expected) {
+        } catch (TableInitializationException expected) {
+            Assert.eqTrue(expected.getCause().getClass() == IllegalStateException.class,
+                    "expected.getCause().getClass() instanceof IllegalStateException");
         }
     }
 

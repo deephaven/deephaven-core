@@ -14,6 +14,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.impl.select.*;
@@ -723,8 +724,11 @@ public abstract class QueryTableWhereTest {
         waitForLatch(latch);
 
         assertEquals(0, fastCounter.invokes.get());
-        assertNotNull(caught.getValue());
-        assertEquals(CancellationException.class, caught.getValue().getClass());
+        Throwable err = caught.getValue();
+        assertNotNull(err);
+        assertEquals(TableInitializationException.class, err.getClass());
+        err = err.getCause();
+        assertEquals(CancellationException.class, err.getClass());
 
         QueryScope.addParam("slowCounter", null);
         QueryScope.addParam("fastCounter", null);
@@ -1071,7 +1075,10 @@ public abstract class QueryTableWhereTest {
         try {
             final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
             Assert.statementNeverExecuted("Expected exception not thrown.");
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            Assert.eqTrue(e instanceof TableInitializationException,
+                    "TableInitializationException expected.");
+            e = e.getCause();
             Assert.eqTrue(e instanceof FormulaEvaluationException
                     && e.getCause() != null && e.getCause() instanceof NullPointerException,
                     "NPE causing FormulaEvaluationException expected.");

@@ -4,10 +4,12 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
@@ -231,73 +233,103 @@ public class TestEms extends BaseUpdateByTest {
         final TableDefaults bytes = testTable(RowSetFactory.flat(4).toTracking(),
                 byteCol("col", (byte) 0, (byte) 1, NULL_BYTE, (byte) 3));
 
-        assertThrows(TableDataException.class,
+        Throwable err = assertThrows(TableInitializationException.class,
                 () -> bytes.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> bytes.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults shorts = testTable(RowSetFactory.flat(4).toTracking(),
                 shortCol("col", (short) 0, (short) 1, NULL_SHORT, (short) 3));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> shorts.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults ints = testTable(RowSetFactory.flat(4).toTracking(),
                 intCol("col", 0, 1, NULL_INT, 3));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> ints.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults longs = testTable(RowSetFactory.flat(4).toTracking(),
                 longCol("col", 0, 1, NULL_LONG, 3));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> longs.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults floats = testTable(RowSetFactory.flat(4).toTracking(),
                 floatCol("col", 0, 1, NULL_FLOAT, Float.NaN));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> floats.updateBy(
                         UpdateByOperation.Ems(OperationControl.builder().onNullValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered null value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered null value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered null value during Exponential Moving output processing\")");
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> floats.updateBy(
                         UpdateByOperation.Ems(OperationControl.builder().onNanValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered NaN value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered NaN value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered NaN value during Exponential Moving output processing\")");
 
         TableDefaults doubles = testTable(RowSetFactory.flat(4).toTracking(),
                 doubleCol("col", 0, 1, NULL_DOUBLE, Double.NaN));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> doubles.updateBy(
                         UpdateByOperation.Ems(OperationControl.builder().onNullValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered null value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered null value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered null value during Exponential Moving output processing\")");
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> doubles.updateBy(
                         UpdateByOperation.Ems(OperationControl.builder().onNanValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered NaN value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered NaN value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered NaN value during Exponential Moving output processing\")");
 
 
         TableDefaults bi = testTable(RowSetFactory.flat(4).toTracking(),
                 col("col", BigInteger.valueOf(0), BigInteger.valueOf(1), null, BigInteger.valueOf(3)));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> bi.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults bd = testTable(RowSetFactory.flat(4).toTracking(),
                 col("col", BigDecimal.valueOf(0), BigDecimal.valueOf(1), null, BigDecimal.valueOf(3)));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> bd.updateBy(UpdateByOperation.Ems(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
     }
 
     @Test
