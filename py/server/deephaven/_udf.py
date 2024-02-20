@@ -11,7 +11,10 @@ from dataclasses import dataclass, field
 from functools import wraps
 from typing import Callable, List, Any, Union, Tuple, _GenericAlias
 
-import numba
+from deephaven._dep import soft_dependency
+
+numba = soft_dependency("numba")
+
 import numpy
 import numpy as np
 
@@ -162,56 +165,57 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
     return pra
 
 
-def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
-    """ Parse a numba function's signature"""
-    sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
-    if sigs:
-        p_sig = _ParsedSignature(fn)
+if numba:
+    def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
+        """ Parse a numba function's signature"""
+        sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
+        if sigs:
+            p_sig = _ParsedSignature(fn)
 
-        # for now, we only support one signature for a numba function because the query engine is not ready to handle
-        # multiple signatures for vectorization https://github.com/deephaven/deephaven-core/issues/4762
-        sig = sigs[0]
-        params, rt_char = sig.split("->")
+            # for now, we only support one signature for a numba function because the query engine is not ready to handle
+            # multiple signatures for vectorization https://github.com/deephaven/deephaven-core/issues/4762
+            sig = sigs[0]
+            params, rt_char = sig.split("->")
 
-        p_sig.params = []
-        p_sig.ret_annotation = _ParsedReturnAnnotation()
-        p_sig.ret_annotation.encoded_type = rt_char
+            p_sig.params = []
+            p_sig.ret_annotation = _ParsedReturnAnnotation()
+            p_sig.ret_annotation.encoded_type = rt_char
 
-        if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
-            for p in params:
-                pa = _ParsedParamAnnotation()
-                pa.encoded_types.add(p)
-                if p in _NUMPY_INT_TYPE_CODES:
-                    pa.int_char = p
-                if p in _NUMPY_FLOATING_TYPE_CODES:
-                    pa.floating_char = p
-                p_sig.params.append(pa)
-        else:  # GUFunc
-            # An example: @guvectorize([(int64[:], int64[:], int64[:])], "(m),(n)->(n)"
-            input_output_decl = fn.signature  # "(m),(n)->(n)" in the above example
-            input_decl, output_decl = input_output_decl.split("->")
-            # remove the parentheses so that empty string indicates no array, non-empty string indicates array
-            input_decl = re.sub("[()]", "", input_decl).split(",")
-            output_decl = re.sub("[()]", "", output_decl)
-
-            for p, d in zip(params, input_decl):
-                pa = _ParsedParamAnnotation()
-                if d:
-                    pa.encoded_types.add("[" + p)
-                    pa.has_array = True
-                else:
+            if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
+                for p in params:
+                    pa = _ParsedParamAnnotation()
                     pa.encoded_types.add(p)
                     if p in _NUMPY_INT_TYPE_CODES:
                         pa.int_char = p
                     if p in _NUMPY_FLOATING_TYPE_CODES:
                         pa.floating_char = p
-                p_sig.params.append(pa)
+                    p_sig.params.append(pa)
+            else:  # GUFunc
+                # An example: @guvectorize([(int64[:], int64[:], int64[:])], "(m),(n)->(n)"
+                input_output_decl = fn.signature  # "(m),(n)->(n)" in the above example
+                input_decl, output_decl = input_output_decl.split("->")
+                # remove the parentheses so that empty string indicates no array, non-empty string indicates array
+                input_decl = re.sub("[()]", "", input_decl).split(",")
+                output_decl = re.sub("[()]", "", output_decl)
 
-            if output_decl:
-                p_sig.ret_annotation.has_array = True
-        return p_sig
-    else:
-        raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")
+                for p, d in zip(params, input_decl):
+                    pa = _ParsedParamAnnotation()
+                    if d:
+                        pa.encoded_types.add("[" + p)
+                        pa.has_array = True
+                    else:
+                        pa.encoded_types.add(p)
+                        if p in _NUMPY_INT_TYPE_CODES:
+                            pa.int_char = p
+                        if p in _NUMPY_FLOATING_TYPE_CODES:
+                            pa.floating_char = p
+                    p_sig.params.append(pa)
+
+                if output_decl:
+                    p_sig.ret_annotation.has_array = True
+            return p_sig
+        else:
+            raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")
 
 
 def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
@@ -232,9 +236,11 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
 def _parse_signature(fn: Callable) -> _ParsedSignature:
     """ Parse the signature of a function """
 
-    if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
-        return _parse_numba_signature(fn)
-    elif isinstance(fn, numpy.ufunc):
+    if numba:
+        if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
+            return _parse_numba_signature(fn)
+
+    if isinstance(fn, numpy.ufunc):
         return _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
