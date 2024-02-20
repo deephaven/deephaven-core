@@ -29,7 +29,7 @@ import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 /**
  * Used to generate a combined _metadata and _common_metadata file for provided Parquet files.
  */
-public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
+final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
 
     /**
      * A class to hold the parquet file and its metadata.
@@ -49,7 +49,7 @@ public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileW
     private final SeekableChannelsProvider channelsProvider;
     private List<ColumnTypeInfo> columnTypes; // Useful when merging deephaven specific metadata
 
-    public ParquetMetadataFileWriterImpl(final String metadataRootDir, final File[] destinations) {
+    ParquetMetadataFileWriterImpl(final String metadataRootDir, final File[] destinations) {
         for (final File destination : destinations) {
             if (!destination.getAbsolutePath().startsWith(metadataRootDir)) {
                 throw new UncheckedDeephavenException("All destinations must be contained in the provided metadata root"
