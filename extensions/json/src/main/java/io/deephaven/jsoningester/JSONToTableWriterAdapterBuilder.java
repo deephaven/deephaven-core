@@ -23,7 +23,7 @@ import static io.deephaven.jsoningester.JSONToTableWriterAdapter.SUBTABLE_RECORD
 public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter.Builder<JSONToTableWriterAdapter> {
     private int nConsumerThreads = JSONToTableWriterAdapter.N_CONSUMER_THREADS_DEFAULT;
 
-    private StringToTableWriterAdapter stringAdapter;
+    private StringIngestionAdapter stringAdapter;
     private final Map<String, String> columnToJsonField = new HashMap<>();
 
     private final Map<String, JsonPointer> columnToJsonPointer = new HashMap<>();

@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  * TableWriter that is passed to the factory method.
  */
 @Deprecated
-public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
+public class JSONToTableWriterAdapter implements StringIngestionAdapter {
     private static final long NANOS_PER_MILLI = 1_000_000L;
     private static final int ERROR_REPORTING = 96;
     private static final int ERROR_PROCESSING = 98;

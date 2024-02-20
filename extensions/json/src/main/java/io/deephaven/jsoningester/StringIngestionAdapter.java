@@ -10,12 +10,14 @@ import io.deephaven.jsoningester.msg.TextMessage;
 import java.io.IOException;
 
 /**
- * String messages must be adapted to a TableWriter. The StringToTableWriterAdapter consumes a String message and writes
- * zero or more rows to a TableWriter.
+ * String messages must be adapted to an ingester, such as a {@link io.deephaven.tablelogger.TableWriter} or
+ * {@link io.deephaven.stream.StreamPublisher}. The StringIngestionAdapter consumes a String message and writes zero or
+ * more rows to the ingester.
  */
-public interface StringToTableWriterAdapter extends AsynchronousDataIngester {
+public interface StringIngestionAdapter extends AsynchronousDataIngester {
     /**
-     * Consume a generic String and write zero or more records to a TableWriter.
+     * Consume a generic String and write zero or more records to an ingeseter (e.g.
+     * {@link io.deephaven.tablelogger.TableWriter} or {@link io.deephaven.stream.StreamPublisher}).
      *
      * @param msg The message to be consumed, including the string paylod and metadata. The
      *        {@link MessageMetadata#getMsgNo() message number} (and, if present, {@link MessageMetadata#getMessageId()
@@ -26,9 +28,9 @@ public interface StringToTableWriterAdapter extends AsynchronousDataIngester {
     void consumeString(final TextMessage msg) throws IOException;
 
     /**
-     * Record the owning StringMessageToTableAdapter, if this StringToTableWriterAdapter needs that.
+     * Record the owning StringMessageToTableAdapter, if this StringIngestionAdapter needs that.
      * 
-     * @param parent The StringMessageToTableAdapter that controls this StringToTableWriterAdapter.
+     * @param parent The StringMessageToTableAdapter that controls this StringIngestionAdapter.
      */
     void setOwner(StringMessageToTableAdapter<?> parent);
 

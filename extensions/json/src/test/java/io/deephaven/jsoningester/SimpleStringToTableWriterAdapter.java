@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * Converts String messages directly into a string column of data in the output table.
  */
-public class SimpleStringToTableWriterAdapter implements StringToTableWriterAdapter {
+public class SimpleStringToTableWriterAdapter implements StringIngestionAdapter {
     private final TableWriter<?> writer;
     @NotNull
     private final RowSetter<String> valueColumnSetter;

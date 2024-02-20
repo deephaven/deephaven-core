@@ -26,7 +26,7 @@ import java.util.function.ToLongFunction;
  */
 public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<M> {
 
-    private final StringToTableWriterAdapter stringAdapter;
+    private final StringIngestionAdapter stringAdapter;
     private final String messageIdColumn;
     private final String sendTimeColumn;
     private final String receiveTimeColumn;
@@ -46,7 +46,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
             final String receiveTimeColumn,
             final String nowTimeColumn,
             final String messageIdColumn,
-            final StringToTableWriterAdapter stringAdapter,
+            final StringIngestionAdapter stringAdapter,
             Function<M, String> messageToText,
             ToLongFunction<M> messageToSendTimeMicros,
             ToLongFunction<M> messageToRecvTimeMicros) {
@@ -101,7 +101,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
             if (sendTimeMicros > 0) {
                 sentTime = DateTimeUtils.epochMicrosToInstant(sendTimeMicros);
             }
-            // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
+            // do not set the value here; let the StringIngestionAdapter handle it, in case there are multiple
             // threads
         }
         if (receiveTimeSetter != null) {
@@ -111,13 +111,13 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
             if (recvTimeMicros > 0) {
                 receiveTime = DateTimeUtils.epochMicrosToInstant(recvTimeMicros);
             }
-            // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
+            // do not set the value here; let the StringIngestionAdapter handle it, in case there are multiple
             // threads
 
         }
         if (nowSetter != null) {
             ingestTime = Instant.now();
-            // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
+            // do not set the value here; let the StringIngestionAdapter handle it, in case there are multiple
             // threads
         }
 
@@ -209,7 +209,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
         stringAdapter.waitForProcessing(timeoutMillis);
     }
 
-    public abstract static class Builder<A extends StringToTableWriterAdapter>
+    public abstract static class Builder<A extends StringIngestionAdapter>
             extends BaseTableWriterAdapterBuilder<A> {
 
         @Deprecated
@@ -236,13 +236,13 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
      */
     public static <M> Function<TableWriter<?>, StringMessageToTableAdapter<M>> buildFactory(
             @NotNull final Logger log,
-            @NotNull final BaseTableWriterAdapterBuilder<? extends StringToTableWriterAdapter> adapterBuilder,
+            @NotNull final BaseTableWriterAdapterBuilder<? extends StringIngestionAdapter> adapterBuilder,
             @NotNull final Function<M, String> messageToText,
             @NotNull final ToLongFunction<M> messageToSendTimeMicros,
             @NotNull final ToLongFunction<M> messageToRecvTimeMicros) {
         return (tw) -> {
             // create the string-to-tablewriter adapter
-            final StringToTableWriterAdapter stringToTableWriterAdapter = adapterBuilder.makeAdapter(log, tw);
+            final StringIngestionAdapter stringIngestionAdapter = adapterBuilder.makeAdapter(log, tw);
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
             // adapter
@@ -251,7 +251,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
                     adapterBuilder.receiveTimestampColumnName,
                     adapterBuilder.timestampColumnName,
                     adapterBuilder.messageIdColumnName,
-                    stringToTableWriterAdapter,
+                    stringIngestionAdapter,
                     messageToText,
                     messageToSendTimeMicros,
                     messageToRecvTimeMicros);
@@ -260,7 +260,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
 
     public static Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(
             @NotNull final Logger log,
-            @NotNull final BaseTableWriterAdapterBuilder<? extends StringToTableWriterAdapter> adapterBuilder) {
+            @NotNull final BaseTableWriterAdapterBuilder<? extends StringIngestionAdapter> adapterBuilder) {
         return buildFactory(
                 log,
                 adapterBuilder,
@@ -273,7 +273,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
             Logger log, JSONToTableWriterAdapterBuilder adapterBuilder) {
         return (tablewriter, subtableWritersMap) -> {
             // create the string-to-tablewriter adapter
-            final StringToTableWriterAdapter stringToTableWriterAdapter =
+            final StringIngestionAdapter stringIngestionAdapter =
                     adapterBuilder.makeAdapter(log, tablewriter, subtableWritersMap);
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
@@ -283,7 +283,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
                     adapterBuilder.receiveTimestampColumnName,
                     adapterBuilder.timestampColumnName,
                     adapterBuilder.messageIdColumnName,
-                    stringToTableWriterAdapter,
+                    stringIngestionAdapter,
                     StringMessageHolder::getMsg,
                     StringMessageHolder::getSendTimeMicros,
                     StringMessageHolder::getRecvTimeMicros);
