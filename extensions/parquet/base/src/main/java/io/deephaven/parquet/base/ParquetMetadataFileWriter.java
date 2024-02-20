@@ -26,4 +26,9 @@ public interface ParquetMetadataFileWriter {
      * @param commonMetadataFile The destination file for the _common_metadata file
      */
     void writeMetadataFiles(File metadataFile, File commonMetadataFile) throws IOException;
+
+    /**
+     * Clear the list of metadata accumulated so far.
+     */
+    void clear();
 }

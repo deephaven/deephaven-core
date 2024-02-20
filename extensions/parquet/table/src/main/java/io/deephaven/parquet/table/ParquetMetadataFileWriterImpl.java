@@ -1,6 +1,7 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
@@ -17,11 +18,11 @@ import org.apache.parquet.schema.MessageType;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
@@ -43,74 +44,10 @@ public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileW
         }
     }
 
-    /**
-     * A class to accumulate metadata from multiple parquet files.
-     */
-    private static final class AccumulatedMetadata {
-        private MessageType schema;
-        private final Map<String, String> keyValueMetaData;
-        private final Set<String> createdBy;
-        private List<ColumnTypeInfo> columnTypes;
-
-        AccumulatedMetadata() {
-            this.schema = null;
-            this.keyValueMetaData = new HashMap<>();
-            this.createdBy = new HashSet<>();
-            this.columnTypes = null;
-        }
-
-        void combineWith(final FileMetaData fileMetaData) throws IOException {
-            // Take union of the schema
-            if (schema == null) {
-                schema = fileMetaData.getSchema();
-            } else if (!schema.equals(fileMetaData.getSchema())) {
-                schema = schema.union(fileMetaData.getSchema(), true);
-            }
-
-            // Accumulate the createdBy metadata
-            createdBy.add(fileMetaData.getCreatedBy());
-
-            // Accumulate the key-value metadata
-            for (final Map.Entry<String, String> entry : fileMetaData.getKeyValueMetaData().entrySet()) {
-                if (!entry.getKey().equals(ParquetTableWriter.METADATA_KEY)) {
-                    // We should only have one value for each key
-                    if (!keyValueMetaData.containsKey(entry.getKey())) {
-                        keyValueMetaData.put(entry.getKey(), entry.getValue());
-                    } else if (!keyValueMetaData.get(entry.getKey()).equals(entry.getValue())) {
-                        throw new UncheckedDeephavenException("Could not merge metadata for key " + entry.getKey() +
-                                ", has conflicting values: " + entry.getValue() + " and "
-                                + keyValueMetaData.get(entry.getKey()));
-                    }
-                } else {
-                    // For merging deephaven-specific metadata,
-                    // - groupingColumns, dataIndexes should always be dropped
-                    // - version is optional, so we read it from the first file's metadata
-                    // - columnTypes must be the same for all partitions
-                    final TableInfo tableInfo = TableInfo.deserializeFromJSON(entry.getValue());
-                    if (!keyValueMetaData.containsKey(ParquetTableWriter.METADATA_KEY)) {
-                        columnTypes = tableInfo.columnTypes();
-                        keyValueMetaData.put(ParquetTableWriter.METADATA_KEY,
-                                TableInfo.builder().addAllColumnTypes(columnTypes)
-                                        .version(tableInfo.version())
-                                        .build().serializeToJSON());
-                    } else if (!columnTypes.equals(tableInfo.columnTypes())) {
-                        throw new UncheckedDeephavenException("Could not merge metadata for key " +
-                                ParquetTableWriter.METADATA_KEY + ", has conflicting values for columnTypes: " +
-                                entry.getValue() + " and " + keyValueMetaData.get(entry.getKey()));
-                    }
-                }
-            }
-        }
-
-        FileMetaData getMerged() {
-            final String createdByString = createdBy.size() == 1 ? createdBy.iterator().next() : createdBy.toString();
-            return new FileMetaData(schema, keyValueMetaData, createdByString);
-        }
-    }
-
     private final String metadataRootDirAbsPath;
     private final List<ParquetFileMetadata> parquetFileMetadataList;
     private final SeekableChannelsProvider channelsProvider;
+    private List<ColumnTypeInfo> columnTypes; // Useful when merging deephaven specific metadata
 
     public ParquetMetadataFileWriterImpl(final String metadataRootDir, final File[] destinations) {
         for (final File destination : destinations) {
@@ -125,6 +62,7 @@ public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileW
         this.parquetFileMetadataList = new ArrayList<>(destinations.length);
         this.channelsProvider =
                 SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(rootDir.getPath()), null);
+        this.columnTypes = null;
     }
 
     /**
@@ -147,24 +85,83 @@ public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileW
     }
 
     private ParquetMetadata mergeMetadata() throws IOException {
-        final AccumulatedMetadata accumulatedMetadata = new AccumulatedMetadata();
-        final List<BlockMetaData> blocks = new ArrayList<>();
+        MessageType mergedSchema = null;
+        final Map<String, String> mergedKeyValueMetaData = new HashMap<>();
+        final List<BlockMetaData> mergedBlocks = new ArrayList<>();
+        final Collection<String> mergedCreatedBy = new HashSet<>();
         for (final ParquetFileMetadata parquetFileMetadata : parquetFileMetadataList) {
-            accumulatedMetadata.combineWith(parquetFileMetadata.metadata.getFileMetaData());
-            final String fileAbsolutePath = parquetFileMetadata.file.getAbsolutePath();
-            String fileRelativePath = fileAbsolutePath.substring(metadataRootDirAbsPath.length());
-            // Remove leading slashes from the relative path
-            int pos = 0;
-            while (pos < fileRelativePath.length() && fileRelativePath.charAt(pos) == '/') {
-                pos++;
-            }
-            fileRelativePath = fileRelativePath.substring(pos);
-            for (final BlockMetaData block : parquetFileMetadata.metadata.getBlocks()) {
-                block.setPath(fileRelativePath);
-                blocks.add(block);
+            final FileMetaData fileMetaData = parquetFileMetadata.metadata.getFileMetaData();
+            mergedSchema = mergeSchemaInto(fileMetaData.getSchema(), mergedSchema);
+            mergeKeyValueMetaDataInto(fileMetaData.getKeyValueMetaData(), mergedKeyValueMetaData);
+            mergeBlocksInto(parquetFileMetadata, metadataRootDirAbsPath, mergedBlocks);
+            mergedCreatedBy.add(fileMetaData.getCreatedBy());
+        }
+        final String createdByString =
+                mergedCreatedBy.size() == 1 ? mergedCreatedBy.iterator().next() : mergedCreatedBy.toString();
+        return new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, createdByString),
+                mergedBlocks);
+    }
+
+    private static MessageType mergeSchemaInto(final MessageType schema, final MessageType mergedSchema) {
+        if (mergedSchema == null) {
+            return schema;
+        }
+        if (mergedSchema.equals(schema)) {
+            return mergedSchema;
+        }
+        return mergedSchema.union(schema, true);
+    }
+
+    private void mergeKeyValueMetaDataInto(final Map<String, String> keyValueMetaData,
+            final Map<String, String> mergedKeyValueMetaData) throws IOException {
+        for (final Map.Entry<String, String> entry : keyValueMetaData.entrySet()) {
+            if (!entry.getKey().equals(ParquetTableWriter.METADATA_KEY)) {
+                // We should only have one value for each key
+                if (!mergedKeyValueMetaData.containsKey(entry.getKey())) {
+                    mergedKeyValueMetaData.put(entry.getKey(), entry.getValue());
+                } else if (!mergedKeyValueMetaData.get(entry.getKey()).equals(entry.getValue())) {
+                    throw new UncheckedDeephavenException("Could not merge metadata for key " + entry.getKey() +
+                            ", has conflicting values: " + entry.getValue() + " and "
+                            + mergedKeyValueMetaData.get(entry.getKey()));
+                }
+            } else {
+                // For merging deephaven-specific metadata,
+                // - groupingColumns, dataIndexes should always be dropped
+                // - version is optional, so we read it from the first file's metadata
+                // - columnTypes must be the same for all partitions
+                final TableInfo tableInfo = TableInfo.deserializeFromJSON(entry.getValue());
+                if (!mergedKeyValueMetaData.containsKey(ParquetTableWriter.METADATA_KEY)) {
+                    // First time we've seen deephaven specific metadata
+                    Assert.eqNull(columnTypes, "columnTypes");
+                    columnTypes = tableInfo.columnTypes();
+                    mergedKeyValueMetaData.put(ParquetTableWriter.METADATA_KEY,
+                            TableInfo.builder().addAllColumnTypes(columnTypes)
+                                    .version(tableInfo.version())
+                                    .build().serializeToJSON());
+                } else if (!columnTypes.equals(tableInfo.columnTypes())) {
+                    throw new UncheckedDeephavenException("Could not merge metadata for key " +
+                            ParquetTableWriter.METADATA_KEY + ", has conflicting values for columnTypes: " +
+                            entry.getValue() + " and " + mergedKeyValueMetaData.get(entry.getKey()));
+                }
             }
         }
-        return new ParquetMetadata(accumulatedMetadata.getMerged(), blocks);
+    }
+
+    private static void mergeBlocksInto(final ParquetFileMetadata parquetFileMetadata,
+            final String metadataRootDirAbsPath,
+            final List<BlockMetaData> mergedBlocks) {
+        final String fileAbsolutePath = parquetFileMetadata.file.getAbsolutePath();
+        String fileRelativePath = fileAbsolutePath.substring(metadataRootDirAbsPath.length());
+        // Remove leading slashes from the relative path
+        int pos = 0;
+        while (pos < fileRelativePath.length() && fileRelativePath.charAt(pos) == '/') {
+            pos++;
+        }
+        fileRelativePath = fileRelativePath.substring(pos);
+        for (final BlockMetaData block : parquetFileMetadata.metadata.getBlocks()) {
+            block.setPath(fileRelativePath);
+            mergedBlocks.add(block);
+        }
     }
 
     private void writeMetadataFile(final ParquetMetadata metadataFooter, final String outputPath) throws IOException {
@@ -173,5 +170,10 @@ public final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileW
         metadataOutputStream.write(ParquetFileReader.MAGIC);
         ParquetFileWriter.serializeFooter(metadataFooter, metadataOutputStream);
         metadataOutputStream.close();
+    }
+
+    public void clear() {
+        parquetFileMetadataList.clear();
+        columnTypes = null;
     }
 }

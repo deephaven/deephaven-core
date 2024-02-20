@@ -18,5 +18,8 @@ public final class NullParquetMetadataFileWriter implements ParquetMetadataFileW
 
     @Override
     public void writeMetadataFiles(final File metadataFile, final File commonMetadataFile) {}
+
+    @Override
+    public void clear() {}
 }
 
