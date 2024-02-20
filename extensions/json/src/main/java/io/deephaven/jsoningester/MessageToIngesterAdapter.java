@@ -19,12 +19,12 @@ import java.util.concurrent.TimeoutException;
  * data to the TableWriter.
  *
  * <pre>
- *     Subscriber --[message of type 'M']--> MessageToTableWriterAdapter --[String/Object]--> AsynchronousDataIngester --> TableWriter
+ *     Subscriber --[message of type 'M']--> MessageToIngesterAdapter --[String/Object]--> AsynchronousDataIngester --> TableWriter
  * </pre>
  *
  * @param <M> Message object type
  */
-public interface MessageToTableWriterAdapter<M> {
+public interface MessageToIngesterAdapter<M> {
     /**
      * Consume a generic String and write zero or more records to a TableWriter.
      *

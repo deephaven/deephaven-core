@@ -23,7 +23,7 @@ import java.util.function.ToLongFunction;
 /**
  * Translates a message into a standardized form for further processing, including attaching any needed metadata.
  */
-public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapter<M> {
+public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<M> {
 
     private final StringToTableWriterAdapter stringAdapter;
     private final String messageIdColumn;
