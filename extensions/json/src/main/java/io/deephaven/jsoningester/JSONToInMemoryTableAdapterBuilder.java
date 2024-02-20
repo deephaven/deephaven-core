@@ -20,6 +20,7 @@ import java.util.function.*;
 /**
  * This is a wrapper for {@link JSONToTableWriterAdapterBuilder} that also handles setting up the in-memory tables.
  */
+@Deprecated
 public class JSONToInMemoryTableAdapterBuilder {
 
     private static final AtomicLong adapterCounter = new AtomicLong(0);

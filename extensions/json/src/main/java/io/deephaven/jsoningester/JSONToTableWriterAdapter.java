@@ -44,6 +44,7 @@ import java.util.stream.Stream;
  * A factory for adapter should be created using the nested Builder class. Each adapter instance is bound to the
  * TableWriter that is passed to the factory method.
  */
+@Deprecated
 public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private static final long NANOS_PER_MILLI = 1_000_000L;
     private static final int ERROR_REPORTING = 96;
@@ -166,7 +167,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
     private static final AtomicInteger instanceCounter = new AtomicInteger();
     private final Map<String, JSONToTableWriterAdapter> subtableFieldsToAdapters = new LinkedHashMap<>();
 
-    private final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal;
+    private final ThreadLocal<Queue<SubtableData<JSONToTableWriterAdapter>>> subtableProcessingQueueThreadLocal;
     private final boolean isSubtableAdapter;
 
     /**
@@ -270,7 +271,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             @NotNull final Set<String> allowedUnmappedColumns,
             final boolean autoValueMapping,
             final boolean createHolders,
-            final ThreadLocal<Queue<SubtableData>> subtableProcessingQueueThreadLocal,
+            final ThreadLocal<Queue<SubtableData<JSONToTableWriterAdapter>>> subtableProcessingQueueThreadLocal,
             @Nullable final BiConsumer<MessageMetadata, JsonNode> postProcessConsumer,
             final boolean isSubtableAdapter) {
         this.log = log;
@@ -772,7 +773,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         // The ID above is displayed in tables and ideally would be unique even if persisted/reread.
         final AtomicLong subtableMessageCounter = new AtomicLong(0);
 
-        final SubtableProcessingParameters subtableProcessingParameters = new SubtableProcessingParameters(
+        final SubtableProcessingParameters<JSONToTableWriterAdapter> subtableProcessingParameters = new SubtableProcessingParameters<>(
                 fieldName,
                 subtableAdapter,
                 subtablePredicate,
@@ -815,8 +816,8 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                 rowSetter.setLong(subtableRecordIdxVal);
                 // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the main
                 // fieldProcessors have been processed)
-                final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
-                subtableProcessingQueue.add(new SubtableData(subtableProcessingParameters, subtableFieldValue));
+                final Queue<SubtableData<JSONToTableWriterAdapter>> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
+                subtableProcessingQueue.add(new SubtableData<>(subtableProcessingParameters, subtableFieldValue));
             }
         };
 
@@ -1751,12 +1752,12 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         }
 
         // Get current consumer thread's subtable processing queue
-        final Queue<SubtableData> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
+        final Queue<SubtableData<JSONToTableWriterAdapter>> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
 
-        for (SubtableData subtableFieldToProcess =
+        for (SubtableData<JSONToTableWriterAdapter> subtableFieldToProcess =
                 subtableProcessingQueue.poll(); subtableFieldToProcess != null; subtableFieldToProcess =
                         subtableProcessingQueue.poll()) {
-            final SubtableProcessingParameters subtableParameters = subtableFieldToProcess.subtableParameters;
+            final SubtableProcessingParameters<JSONToTableWriterAdapter> subtableParameters = subtableFieldToProcess.subtableParameters;
             final JsonNode subtableFieldValue = subtableFieldToProcess.subtableNode;
             final String subtableFieldName = subtableParameters.fieldName;
             final JSONToTableWriterAdapter subtableAdapter = subtableParameters.subtableAdapter;
@@ -2043,65 +2044,6 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
         @Override
         public void removeRange(final int fromIndex, final int toIndex) {
             super.removeRange(fromIndex, toIndex);
-        }
-    }
-
-    /**
-     * Wrapper for a {@link JsonNode} to process into a subtable as well as parameters to be used during parsing &
-     * processing.
-     */
-    static class SubtableData {
-        @NotNull
-        private final SubtableProcessingParameters subtableParameters;
-
-        @Nullable
-        private final JsonNode subtableNode;
-
-        private SubtableData(@NotNull SubtableProcessingParameters subtableParameters,
-                @Nullable JsonNode subtableNode) {
-            this.subtableParameters = subtableParameters;
-            this.subtableNode = subtableNode;
-        }
-
-    }
-
-    static class SubtableProcessingParameters {
-        @Nullable
-        private final String fieldName;
-        @NotNull
-        private final JSONToTableWriterAdapter subtableAdapter;
-
-        @Nullable
-        private final Predicate<JsonNode> subtablePredicate;
-
-        @NotNull
-        private final AtomicLong subtableMessageCounter;
-
-        private final boolean subtableKeyAllowedMissing;
-
-        private final boolean subtableKeyAllowedNull;
-
-        /**
-         * Whether the subtable node is expected to be an ArrayNode (as opposed to an ObjectNode). This should be
-         * {@code true} for 'routed' subtables (where we just send the original node to the subtable adapter) and
-         * {@code false} for regular (nested) subtables (where many rows are expected).
-         */
-        private final boolean isArrayNodeExpected;
-
-        private SubtableProcessingParameters(
-                @Nullable String fieldName,
-                @NotNull JSONToTableWriterAdapter subtableAdapter,
-                @Nullable Predicate<JsonNode> subtablePredicate,
-                @NotNull AtomicLong subtableMessageCounter,
-                boolean subtableKeyAllowedMissing,
-                boolean subtableKeyAllowedNull, boolean isArrayNodeExpected) {
-            this.fieldName = fieldName;
-            this.subtableAdapter = subtableAdapter;
-            this.subtablePredicate = subtablePredicate;
-            this.subtableMessageCounter = subtableMessageCounter;
-            this.subtableKeyAllowedMissing = subtableKeyAllowedMissing;
-            this.subtableKeyAllowedNull = subtableKeyAllowedNull;
-            this.isArrayNodeExpected = isArrayNodeExpected;
         }
     }
 

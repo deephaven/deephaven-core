@@ -18,6 +18,7 @@ import static io.deephaven.jsoningester.JSONToTableWriterAdapter.SUBTABLE_RECORD
 /**
  * The builder configures a factory for StringToTableWriterAdapters that accept JSON strings and writes a table.
  */
+@Deprecated
 public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter.Builder<JSONToTableWriterAdapter> {
     private int nConsumerThreads = JSONToTableWriterAdapter.N_CONSUMER_THREADS_DEFAULT;
 
@@ -500,7 +501,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
             @NotNull final TableWriter<?> tw,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
             @NotNull final Set<String> allUnmapped,
-            @NotNull final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue) {
+            @NotNull final ThreadLocal<Queue<SubtableData<JSONToTableWriterAdapter>>> subtableProcessingQueue) {
         final int nThreads = 0; // nested adapters don't need threads
 
         final boolean createHolders = false; // parent adapters create the holders
@@ -554,7 +555,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
             @NotNull final TableWriter<?> tw,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
             final Set<String> allUnmapped,
-            final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue,
+            final ThreadLocal<Queue<SubtableData<JSONToTableWriterAdapter>>> subtableProcessingQueue,
             final ThreadLocal<MutableLong> subtableRecordCounter) {
 
         // make a copy of the columnToLongFunction map (do not mutate the map from the original builder)

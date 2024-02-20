@@ -15,6 +15,8 @@ import java.util.stream.Stream;
 /**
  * Create a builder for processing message payloads. Common properties used by different message to table writer
  * adapters.
+ *
+ * @param <A> The adapter type that is produced by this builder
  */
 public abstract class BaseTableWriterAdapterBuilder<A> {
 
@@ -93,5 +95,6 @@ public abstract class BaseTableWriterAdapterBuilder<A> {
                 .collect(Collectors.toList());
     }
 
+    @Deprecated // TODO: deprecate entire class? generify? delete?
     public abstract A makeAdapter(final Logger log, final TableWriter<?> tableWriter);
 }
