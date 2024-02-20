@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.base.Pair;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.jsoningester.msg.MessageMetadata;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.util.annotations.ScriptApi;
 import org.apache.commons.lang3.mutable.MutableLong;

@@ -1,4 +1,4 @@
-package io.deephaven.jsoningester;
+package io.deephaven.jsoningester.msg;
 
 import java.time.Instant;
 

@@ -2,11 +2,11 @@
  * Copyright (c) 2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.jsoningester;
+package io.deephaven.jsoningester.msg;
 
 import java.time.Instant;
 
-abstract class BaseMessageMetadata implements MessageMetadata {
+public abstract class BaseMessageMetadata implements MessageMetadata {
 
     // The number of metadata fields that need separate setters.
     protected static final int NUM_METADATA_FIELDS = 3;

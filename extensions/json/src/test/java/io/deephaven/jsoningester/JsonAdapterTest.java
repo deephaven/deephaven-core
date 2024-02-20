@@ -16,6 +16,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
+import io.deephaven.jsoningester.msg.MessageMetadata;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.time.DateTimeUtils;

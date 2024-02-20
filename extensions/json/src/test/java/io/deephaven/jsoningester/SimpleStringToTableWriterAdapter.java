@@ -5,6 +5,7 @@
 package io.deephaven.jsoningester;
 
 import io.deephaven.io.logger.Logger;
+import io.deephaven.jsoningester.msg.TextMessage;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
 import org.jetbrains.annotations.NotNull;

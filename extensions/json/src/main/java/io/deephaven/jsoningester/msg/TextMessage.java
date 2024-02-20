@@ -2,7 +2,7 @@
  * Copyright (c) 2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.jsoningester;
+package io.deephaven.jsoningester.msg;
 
 import java.time.Instant;
 

@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.DynamicTableWriter;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.jsoningester.msg.MessageMetadata;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.util.annotations.ScriptApi;

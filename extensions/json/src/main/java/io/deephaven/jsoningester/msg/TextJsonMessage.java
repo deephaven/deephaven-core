@@ -1,6 +1,7 @@
-package io.deephaven.jsoningester;
+package io.deephaven.jsoningester.msg;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.deephaven.jsoningester.JsonNodeUtil;
 
 import java.time.Instant;
 

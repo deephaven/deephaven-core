@@ -4,6 +4,9 @@
 
 package io.deephaven.jsoningester;
 
+import io.deephaven.jsoningester.msg.MessageMetadata;
+import io.deephaven.jsoningester.msg.TextMessage;
+
 import java.io.IOException;
 
 /**

@@ -4,6 +4,7 @@
 
 package io.deephaven.jsoningester;
 
+import io.deephaven.jsoningester.msg.MessageMetadata;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.util.type.TypeUtils;
