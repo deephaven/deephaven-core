@@ -26,7 +26,7 @@ public abstract class StreamPublisherBase extends ReferenceCountedLivenessNode i
 
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
-    private final TableDefinition tableDefinition;
+    protected final TableDefinition tableDefinition;
 
     protected StreamConsumer consumer;
 
