@@ -16,11 +16,11 @@ import java.time.Instant;
 /**
  * Converts String messages directly into a string column of data in the output table.
  */
-public class SimpleStringToTableWriterAdapter implements StringIngestionAdapter {
+public class SimpleStringToTableWriterAdapter implements StringIngestionAdapter<StringMessageToTableWriterAdapter<?>> {
     private final TableWriter<?> writer;
     @NotNull
     private final RowSetter<String> valueColumnSetter;
-    private StringMessageToTableAdapter<?> owner;
+    private StringMessageToTableWriterAdapter<?> owner;
 
     private SimpleStringToTableWriterAdapter(final TableWriter<?> writer,
             final String valueColumnName) {
@@ -57,14 +57,14 @@ public class SimpleStringToTableWriterAdapter implements StringIngestionAdapter 
     }
 
     @Override
-    public void setOwner(final StringMessageToTableAdapter<?> parent) {
+    public void setOwner(final StringMessageToTableWriterAdapter<?> parent) {
         this.owner = parent;
     }
 
     /**
      * Create a builder for processing message payloads as simple strings.
      */
-    public static class Builder extends StringMessageToTableAdapter.Builder<SimpleStringToTableWriterAdapter> {
+    public static class Builder extends StringMessageToTableWriterAdapter.Builder<SimpleStringToTableWriterAdapter> {
         String valueColumnName;
 
         /**

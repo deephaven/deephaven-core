@@ -13,8 +13,10 @@ import java.io.IOException;
  * String messages must be adapted to an ingester, such as a {@link io.deephaven.tablelogger.TableWriter} or
  * {@link io.deephaven.stream.StreamPublisher}. The StringIngestionAdapter consumes a String message and writes zero or
  * more rows to the ingester.
+ *
+ * @param <A> The type of the adapter that processes and writes the String message
  */
-public interface StringIngestionAdapter extends AsynchronousDataIngester {
+public interface StringIngestionAdapter<A extends MessageToIngesterAdapter<?>> extends AsynchronousDataIngester {
     /**
      * Consume a generic String and write zero or more records to an ingeseter (e.g.
      * {@link io.deephaven.tablelogger.TableWriter} or {@link io.deephaven.stream.StreamPublisher}).
@@ -28,10 +30,10 @@ public interface StringIngestionAdapter extends AsynchronousDataIngester {
     void consumeString(final TextMessage msg) throws IOException;
 
     /**
-     * Record the owning StringMessageToTableAdapter, if this StringIngestionAdapter needs that.
+     * Record the owning MessageToIngesterAdapter, if this StringIngestionAdapter needs that.
      * 
-     * @param parent The StringMessageToTableAdapter that controls this StringIngestionAdapter.
+     * @param parent The MessageToIngesterAdapter that controls this StringIngestionAdapter.
      */
-    void setOwner(StringMessageToTableAdapter<?> parent);
+    void setOwner(A parent);
 
 }

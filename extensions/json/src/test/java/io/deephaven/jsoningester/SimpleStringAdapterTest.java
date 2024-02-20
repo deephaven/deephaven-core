@@ -30,8 +30,8 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
 
     @Test
     public void testSimple() throws IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(
                         new NullLoggerImpl(LogLevel.FATAL),
                         new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a"));
 
@@ -42,7 +42,7 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
+        final StringMessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
         final StringMessageHolder msg = new StringMessageHolder(input);
@@ -75,8 +75,8 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final String idCol = "id";
         // Deliberately skipping 'receive' and 'processed' cols for now, because then we need to do a lot more mocking;
         // both are set internally.
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(
                         new NullLoggerImpl(LogLevel.FATAL),
                         new SimpleStringToTableWriterAdapter.Builder()
                                 .setValueColumnName(testCol)
@@ -90,7 +90,7 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
+        final StringMessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final Instant sendTime = Instant.now();
         final long sendTimeMillis = sendTime.toEpochMilli();
@@ -113,8 +113,8 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final String sentCol = "sent";
         // Deliberately skipping 'receive' and 'processed' cols for now, because then we need to do a lot more mocking;
         // both are set internally.
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(
                         new NullLoggerImpl(LogLevel.FATAL),
                         new SimpleStringToTableWriterAdapter.Builder()
                                 .setValueColumnName(testCol)
@@ -127,7 +127,7 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
+        final StringMessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
         final StringMessageHolder msg = new StringMessageHolder(QueryConstants.NULL_LONG, input);
@@ -147,8 +147,8 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final String procCol = "processed";
         // Deliberately skipping 'receive' and 'processed' cols for now, because then we need to do a lot more mocking;
         // both are set internally.
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(
                         new NullLoggerImpl(LogLevel.FATAL),
                         new SimpleStringToTableWriterAdapter.Builder()
                                 .setValueColumnName(testCol)
@@ -162,7 +162,7 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
+        final StringMessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final String input = "{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}";
         final StringMessageHolder msg = new StringMessageHolder(input);
@@ -182,8 +182,8 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
 
     @Test
     public void testXMLContentMessage() throws IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(
                         new NullLoggerImpl(LogLevel.FATAL),
                         new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a"));
 
@@ -194,7 +194,7 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
+        final StringMessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final String input = "<blah>{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}</blah>";
         final StringMessageHolder msg = new StringMessageHolder(input);
@@ -209,8 +209,8 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
 
     @Test
     public void testBytesContentMessage() throws IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(
                         new NullLoggerImpl(LogLevel.FATAL),
                         new SimpleStringToTableWriterAdapter.Builder().setValueColumnName("a"));
 
@@ -221,7 +221,7 @@ public class SimpleStringAdapterTest extends RefreshingTableTestCase {
         final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
         final UpdateSourceQueryTable result = writer.getTable();
 
-        final StringMessageToTableAdapter<StringMessageHolder> adapter = factory.apply(writer);
+        final StringMessageToTableWriterAdapter<StringMessageHolder> adapter = factory.apply(writer);
 
         final String input = "<blah>{\"a\": \"Yo\", \"b\": 42.2, \"c\": 123}</blah>";
         final StringMessageHolder msg = new StringMessageHolder(input);

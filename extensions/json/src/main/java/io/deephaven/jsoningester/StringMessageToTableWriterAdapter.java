@@ -24,7 +24,7 @@ import java.util.function.ToLongFunction;
 /**
  * Translates a message into a standardized form for further processing, including attaching any needed metadata.
  */
-public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<M> {
+public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAdapter<M> {
 
     private final StringIngestionAdapter stringAdapter;
     private final String messageIdColumn;
@@ -41,7 +41,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
     private final ToLongFunction<M> messageToSendTimeMicros;
     private final ToLongFunction<M> messageToRecvTimeMicros;
 
-    private StringMessageToTableAdapter(final TableWriter<?> tableWriter,
+    private StringMessageToTableWriterAdapter(final TableWriter<?> tableWriter,
             final String sendTimeColumn,
             final String receiveTimeColumn,
             final String nowTimeColumn,
@@ -213,8 +213,8 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
             extends BaseTableWriterAdapterBuilder<A> {
 
         @Deprecated
-        public Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(Logger log) {
-            return StringMessageToTableAdapter.buildFactory(log, this);
+        public Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> buildFactory(Logger log) {
+            return StringMessageToTableWriterAdapter.buildFactory(log, this);
         }
     }
 
@@ -231,10 +231,10 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
      * @param messageToSendTimeMicros Function to extract a send timestamp from an instance of type {@code M}
      * @param messageToRecvTimeMicros Function to extract a receipt timestamp from an instance of type {@code M}
      * @param <M> The message datatype
-     * @return A function that takes a TableWriter and returns a new {@code StringMessageToTableAdapter} that writes
+     * @return A function that takes a TableWriter and returns a new {@code StringMessageToTableWriterAdapter} that writes
      *         data to that TableWriter.
      */
-    public static <M> Function<TableWriter<?>, StringMessageToTableAdapter<M>> buildFactory(
+    public static <M> Function<TableWriter<?>, StringMessageToTableWriterAdapter<M>> buildFactory(
             @NotNull final Logger log,
             @NotNull final BaseTableWriterAdapterBuilder<? extends StringIngestionAdapter> adapterBuilder,
             @NotNull final Function<M, String> messageToText,
@@ -246,7 +246,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
             // adapter
-            return new StringMessageToTableAdapter<>(tw,
+            return new StringMessageToTableWriterAdapter<>(tw,
                     adapterBuilder.sendTimestampColumnName,
                     adapterBuilder.receiveTimestampColumnName,
                     adapterBuilder.timestampColumnName,
@@ -258,7 +258,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
         };
     }
 
-    public static Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> buildFactory(
+    public static Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> buildFactory(
             @NotNull final Logger log,
             @NotNull final BaseTableWriterAdapterBuilder<? extends StringIngestionAdapter> adapterBuilder) {
         return buildFactory(
@@ -269,7 +269,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
                 StringMessageHolder::getRecvTimeMicros);
     }
 
-    public static BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> buildFactoryWithSubtables(
+    public static BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> buildFactoryWithSubtables(
             Logger log, JSONToTableWriterAdapterBuilder adapterBuilder) {
         return (tablewriter, subtableWritersMap) -> {
             // create the string-to-tablewriter adapter
@@ -278,7 +278,7 @@ public class StringMessageToTableAdapter<M> implements MessageToIngesterAdapter<
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
             // adapter
-            return new StringMessageToTableAdapter<>(tablewriter,
+            return new StringMessageToTableWriterAdapter<>(tablewriter,
                     adapterBuilder.sendTimestampColumnName,
                     adapterBuilder.receiveTimestampColumnName,
                     adapterBuilder.timestampColumnName,

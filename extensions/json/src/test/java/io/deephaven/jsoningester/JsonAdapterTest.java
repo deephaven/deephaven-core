@@ -56,7 +56,7 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     private final Logger log = LoggerFactory.getLogger(JsonAdapterTest.class);
 
     // For convenience, we want to be able to kill the consumer daemons and clear queues.
-    private StringMessageToTableAdapter<StringMessageHolder> adapter = null;
+    private StringMessageToTableWriterAdapter<StringMessageHolder> adapter = null;
 
     @Override
     public void setUp() throws Exception {
@@ -82,8 +82,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testAutomap() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
 
         final String strCol = "str";
         final String dblCol = "dbl";
@@ -133,8 +133,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testAutomapNulls() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log,
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log,
                         new JSONToTableWriterAdapterBuilder()
                                 .allowNullValues(true)
                                 .nConsumerThreads(0));
@@ -196,8 +196,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
         final String charColName = "cha";
         final String sendCol = "sent";
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log,
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log,
                         new JSONToTableWriterAdapterBuilder().sendTimestampColumnName(sendCol));
 
         final String[] names = new String[] {strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName,
@@ -251,8 +251,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testAutomapInvalidType() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
 
         final String strCol = "str";
         final String objCol = "obj";
@@ -273,8 +273,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testNullBoolean() throws IOException, InterruptedException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log,
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log,
                         new JSONToTableWriterAdapterBuilder().allowNullValues(true)
                                 .nConsumerThreads(0));
 
@@ -311,8 +311,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testExtraneousMappings() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromField("noSuchColumns", "ignored"));
 
         final String strCol = "str";
@@ -333,8 +333,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testMissing() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log,
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log,
                         new JSONToTableWriterAdapterBuilder().autoValueMapping(false));
 
         final String[] names = new String[] {"a", "b", "c"};
@@ -352,8 +352,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testWithMissingKeys() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowMissingKeys(true)
                         .nConsumerThreads(0));
 
@@ -375,8 +375,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testWithNullInt() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log,
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log,
                         new JSONToTableWriterAdapterBuilder().allowNullValues(true));
 
         final String[] names = new String[] {"a", "b", "c"};
@@ -397,8 +397,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testWithNullString() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log,
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log,
                         new JSONToTableWriterAdapterBuilder().allowNullValues(true));
 
         final String[] names = new String[] {"a", "b", "c"};
@@ -421,8 +421,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     public void testTimes() throws IOException, InterruptedException, TimeoutException {
         final Instant reference = DateTimeUtils.parseInstant("2020-06-25T09:37:00.123456789 NY");
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
 
         final String[] names = new String[] {"Nanos", "Micros", "Millis", "StringVal"};
         @SuppressWarnings("rawtypes")
@@ -461,8 +461,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testSimpleMapping() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B").addColumnFromField("A", "a"));
 
         final String[] names = new String[] {"A", "B", "c"};
@@ -482,8 +482,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testPrimitiveParallel() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromField("A", "a")
                         .addColumnFromField("B", "b")
                         .addFieldParallel("C", "c")
@@ -544,8 +544,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testParallelTypes() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromField("Expanded", "toExpand")
                         .addFieldParallel("ByteCol", "byte")
                         .addFieldParallel("CharCol", "char")
@@ -607,8 +607,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("I", "i")
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .addNestedFieldParallel("c", factoryNestedDe)
@@ -671,8 +671,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("H", "h")
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("I", "b")
                         .addColumnFromField("A", "a")
@@ -704,8 +704,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testJsonPointers() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .nConsumerThreads(0)
                         .addColumnFromField("A0", "a")
                         .addColumnFromField("B0", "b")
@@ -752,8 +752,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("E0", "e")
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .nConsumerThreads(0)
                         .addColumnFromField("A0", "a")
                         .addColumnFromPointer("A1", "/a")
@@ -798,8 +798,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 Type.fromClasses(long.class, String.class, long.class));
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
-        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .addFieldToSubTableMapping("c", factorySubtableDe)
@@ -882,8 +882,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 Type.fromClasses(long.class, String.class, int.class, long.class));
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
-        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .addFieldToSubTableMapping("c", factorySubtableDe)
@@ -974,8 +974,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 Type.fromClasses(long.class, String.class, long.class));
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
-        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .addNestedField("X1",
@@ -1035,8 +1035,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 Type.fromClasses(long.class, String.class, long.class));
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
-        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .addFieldToSubTableMapping("c", factorySubtableDe)
@@ -1098,8 +1098,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
         final UpdateSourceQueryTable resultMsgType1 = msgType1writer.getTable();
         final UpdateSourceQueryTable resultMsgType2 = msgType2writer.getTable();
 
-        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromField("A", "a")
                         .addRoutedTableAdapter("msgType1", node -> node.get("MsgType").intValue() == 1,
                                 factorySubtable_msgType1)
@@ -1176,8 +1176,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .addNestedField("f", factoryNestedGh)
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("I", "b")
                         .addColumnFromField("A", "a")
@@ -1225,8 +1225,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .addNestedField("f", factoryNestedGh)
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("I", "b")
                         .addColumnFromField("A", "a")
@@ -1262,8 +1262,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testTopLevelSimpleArray() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromField("I", "b")
                         .addColumnFromField("A", "a")
                         .autoValueMapping(false)
@@ -1299,8 +1299,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
         final UpdateSourceQueryTable resultSubtable = subtableWriter.getTable();
 
 
-        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
+        final BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactoryWithSubtables(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromField("A", "a")
                         .addColumnFromField("B", "b")
                         .addFieldToSubTableMapping("subtable", factorySubtableX)
@@ -1356,8 +1356,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .addNestedField("f", factoryNestedGh)
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("I", "b")
                         .addColumnFromField("A", "a")
@@ -1399,8 +1399,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testEmptyArrayOfMessages() throws InterruptedException, TimeoutException, IOException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .processArrays(true));
@@ -1443,8 +1443,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
                 .allowNullValues(true)
                 .autoValueMapping(false);
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("I", "b")
                         .addColumnFromField("A", "a")
@@ -1571,8 +1571,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testWaitForProcessingTimeout() throws IOException, InterruptedException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowUnmapped("B")
                         .addColumnFromField("A", "a")
                         .nConsumerThreads(-1));
@@ -1599,8 +1599,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testMissingColumns() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .autoValueMapping(false)
                         .allowUnmapped("unmapped")
                         .addColumnFromField("str", "a")
@@ -1626,8 +1626,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testColumnTypeMismatchDouble() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .autoValueMapping(false)
                         .allowUnmapped("unmapped")
                         .addColumnFromField("str", "a")
@@ -1650,8 +1650,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testColumnTypeMismatchInt() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .autoValueMapping(false)
                         .allowUnmapped("unmapped")
                         .addColumnFromField("str", "a")
@@ -1675,8 +1675,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testColumnTypeMismatchLong() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .autoValueMapping(false)
                         .allowUnmapped("unmapped")
                         .addColumnFromField("str", "a")
@@ -1699,8 +1699,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testFunction() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromFunction("StrCol", String.class,
                                 (r) -> JsonNodeUtil.getString(r, "a", false, false).split(",")[0])
                         .addColumnFromIntFunction("IntCol", (r) -> JsonNodeUtil.getInt(r, "c", false, false) * 2)
@@ -1733,8 +1733,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testFunctionWithMismatchedColumnType() {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromFunction("StrCol", Object.class, (r) -> new Object()));
 
         final String[] names = new String[] {"StrCol"};
@@ -1754,8 +1754,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testTypedGenericColumnSetterFunctions() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .addColumnFromFunction("StrCol", String.class,
                                 (r) -> JsonNodeUtil.getString(r, "a", false, false).split(",")[0])
                         .addColumnFromFunction("IntCol", int.class,
@@ -1887,8 +1887,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     public void testPerformanceSmallMessages() throws IOException, InterruptedException, TimeoutException {
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder());
 
         final String strCol = "str";
         final String dblCol = "dbl";
@@ -2022,8 +2022,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
         // Many other tests want fewer threads. For the performance test, we want to standardize on 4.
         final int numThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() - 1));
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .nConsumerThreads(numThreads));
 
         final String strCol = "str";
@@ -2212,8 +2212,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
             }
         });
 
-        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
-                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+        final Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> factory =
+                StringMessageToTableWriterAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
                         .allowNullValues(true)
                         .nConsumerThreads(1));
 
@@ -2279,7 +2279,7 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     /**
-     * Test an adapter built directly (rather than wrapped by {@link StringMessageToTableAdapter#buildFactory}). In this
+     * Test an adapter built directly (rather than wrapped by {@link StringMessageToTableWriterAdapter#buildFactory}). In this
      * case there is no {@link MessageMetadata} to process.
      */
     public void testNoMessageAdapter() throws IOException {
