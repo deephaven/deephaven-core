@@ -1431,11 +1431,19 @@ public final class ParquetTableReadWriteTest {
     @Test
     public void mixedDictionaryEncodingTest() {
         // Test the behavior of writing parquet files with some pages dictionary encoded and some not
-        final String path = ParquetTableReadWriteTest.class
+        String path = ParquetTableReadWriteTest.class
                 .getResource("/ParquetDataWithMixedEncodingWithoutOffsetIndex.parquet").getFile();
-        final Table fromDisk = readParquetFileFromGitLFS(new File(path)).select();
-        final Table expected =
+        Table fromDisk = readParquetFileFromGitLFS(new File(path)).select();
+        Table expected =
                 emptyTable(2_000_000).update("Broken=String.format(`%015d`,  ii < 1200000 ? (ii % 30000) : ii)");
+        assertTableEquals(expected, fromDisk);
+
+        path = ParquetTableReadWriteTest.class.getResource("/ParquetDataWithMixedEncodingWithOffsetIndex.parquet")
+                .getFile();
+        fromDisk = readParquetFileFromGitLFS(new File(path)).select();
+        final Collection<String> columns = new ArrayList<>(Arrays.asList("shortStringColumn = `Some data`"));
+        final int numRows = 20;
+        expected = TableTools.emptyTable(numRows).select(Selectable.from(columns));
         assertTableEquals(expected, fromDisk);
     }
 
