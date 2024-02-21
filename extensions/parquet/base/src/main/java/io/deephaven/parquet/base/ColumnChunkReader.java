@@ -61,8 +61,11 @@ public interface ColumnChunkReader {
     interface ColumnPageDirectAccessor {
         /**
          * Directly access a page reader for a given page number.
+         * 
+         * @param pageNum The page number to access.
+         * @param channelContext The channel context to use for constructing the reader
          */
-        ColumnPageReader getPageReader(int pageNum);
+        ColumnPageReader getPageReader(int pageNum, SeekableChannelContext channelContext);
     }
 
     /**

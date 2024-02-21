@@ -58,7 +58,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
             return ToPage.super.getResult(columnPageReader, channelContext);
         }
 
-        final int[] keys = new int[columnPageReader.numValues(channelContext)];
+        final int[] keys = new int[columnPageReader.numValues()];
         final IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT, channelContext);
 
         return offsets == null ? keys : new DataWithOffsets(offsets, keys);
