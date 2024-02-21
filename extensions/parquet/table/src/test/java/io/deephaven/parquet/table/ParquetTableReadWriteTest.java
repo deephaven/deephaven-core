@@ -93,6 +93,7 @@ import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
 import static io.deephaven.engine.util.TableTools.charCol;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.emptyTable;
 import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.instantCol;
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -1425,6 +1426,17 @@ public final class ParquetTableReadWriteTest {
                 secondColumnMetadata.contains("longStringColumn") && !secondColumnMetadata.contains("RLE_DICTIONARY"));
         final String thirdColumnMetadata = metadata.getBlocks().get(0).getColumns().get(2).toString();
         assertTrue(thirdColumnMetadata.contains("someIntColumn") && !thirdColumnMetadata.contains("RLE_DICTIONARY"));
+    }
+
+    @Test
+    public void mixedDictionaryEncodingTest() {
+        // Test the behavior of writing parquet files with some pages dictionary encoded and some not
+        final String path = ParquetTableReadWriteTest.class
+                .getResource("/ParquetDataWithMixedEncodingWithoutOffsetIndex.parquet").getFile();
+        final Table fromDisk = readParquetFileFromGitLFS(new File(path)).select();
+        final Table expected =
+                emptyTable(2_000_000).update("Broken=String.format(`%015d`,  ii < 1200000 ? (ii % 30000) : ii)");
+        assertTableEquals(expected, fromDisk);
     }
 
     @Test
