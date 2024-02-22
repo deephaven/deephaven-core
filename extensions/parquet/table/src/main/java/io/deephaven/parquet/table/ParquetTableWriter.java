@@ -61,25 +61,24 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    public static class GroupingColumnWritingInfo {
+    static class GroupingColumnWritingInfo {
         /**
          * Parquet name of this grouping column
          */
-        public final String parquetColumnName;
+        final String parquetColumnName;
         /**
          * File path to be added in the grouping metadata of main parquet file
          */
-        public final File metadataFilePath;
+        final File metadataFilePath;
 
         /**
          * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
          * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
          * should always hold the accurate path.
          */
-        public final File destFile;
+        final File destFile;
 
-        public GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath,
-                final File destFile) {
+        GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath, final File destFile) {
             this.parquetColumnName = parquetColumnName;
             this.metadataFilePath = metadataFilePath;
             this.destFile = destFile;
@@ -97,6 +96,10 @@ public class ParquetTableWriter {
      *        {@code destFile} if we are writing the parquet file to a shadow location first since the metadata should
      *        always hold the accurate path.
      * @param incomingMeta A map of metadata values to be stores in the file footer
+     * @param groupingColumnsWritingInfoMap A map of grouping column names to their respective info used for writing
+     *        grouping files
+     * @param metadataFileWriter The writer for the _metadata and _common_metadata files
+     *
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
@@ -161,6 +164,7 @@ public class ParquetTableWriter {
      *        always hold the accurate path.
      * @param tableMeta A map of metadata values to be stores in the file footer
      * @param tableInfoBuilder A partially constructed builder for the metadata object
+     * @param metadataFileWriter The writer for the _metadata and _common_metadata files
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
      *         unsupported types)
      * @throws IOException For file writing related errors
@@ -279,6 +283,7 @@ public class ParquetTableWriter {
      * @param writeInstructions write instructions for the file
      * @param tableMeta metadata to include in the parquet metadata
      * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
+     * @param metadataFileWriter The writer for the _metadata and _common_metadata files
      *
      * @return a new file writer
      */
