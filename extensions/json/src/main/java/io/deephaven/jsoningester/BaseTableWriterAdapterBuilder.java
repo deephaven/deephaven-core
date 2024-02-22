@@ -18,6 +18,7 @@ import java.util.stream.Stream;
  *
  * @param <A> The adapter type that is produced by this builder
  */
+@Deprecated
 public abstract class BaseTableWriterAdapterBuilder<A> {
 
     String sendTimestampColumnName;
