@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  * TableWriter that is passed to the factory method.
  */
 @Deprecated
-public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMessageToBlinkTableAdapter<?>> {
+public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMessageToTableWriterAdapter<?>> {
     private static final long NANOS_PER_MILLI = 1_000_000L;
     private static final int ERROR_REPORTING = 96;
     private static final int ERROR_PROCESSING = 98;
@@ -77,7 +77,7 @@ public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMe
      * The owner message adapter, which has {@link RowSetter setters} for metadata columns.
      */
     @Nullable
-    private StringMessageToBlinkTableAdapter<?> owner;
+    private StringMessageToTableWriterAdapter<?> owner;
 
     /**
      * TableWriter to write data to. TODO: replace this with a io.deephaven.stream.StreamPublisherImpl. Be mindful of
@@ -1566,7 +1566,7 @@ public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMe
     }
 
     @Override
-    public void setOwner(@Nullable final StringMessageToBlinkTableAdapter<?> parent) {
+    public void setOwner(@Nullable final StringMessageToTableWriterAdapter<?> parent) {
         this.owner = parent;
     }
 
