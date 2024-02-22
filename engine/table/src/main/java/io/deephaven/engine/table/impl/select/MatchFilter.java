@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class MatchFilter extends WhereFilterImpl {
 
@@ -116,7 +118,10 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     @Override
-    public synchronized void init(TableDefinition tableDefinition) {
+    public synchronized void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariablesSupplier,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
         }
@@ -130,12 +135,12 @@ public class MatchFilter extends WhereFilterImpl {
             return;
         }
         final List<Object> valueList = new ArrayList<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Map<String, Object> queryScopeVariables = queryScopeVariablesSupplier.get();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {
-            if (queryScope != null && queryScope.hasParamName(strValue)) {
-                Object paramValue = queryScope.readParamValue(strValue);
+            if (queryScopeVariables.containsKey(strValue)) {
+                Object paramValue = queryScopeVariables.get(strValue);
                 if (paramValue != null && paramValue.getClass().isArray()) {
                     ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
                     for (int ai = 0; ai < accessor.length(); ++ai) {

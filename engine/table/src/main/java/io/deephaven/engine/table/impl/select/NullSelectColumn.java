@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A SelectColumn implementation that can be used to replace columns with {@link NullValueColumnSource}s
@@ -32,13 +34,21 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         return Collections.emptyList();
     }
 
     @Override
     public Class<?> getReturnedType() {
         return nvcs.getType();
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return nvcs.getComponentType();
     }
 
     @Override

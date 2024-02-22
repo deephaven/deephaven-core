@@ -26,6 +26,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * A where filter that extracts a set of inclusion or exclusion keys from a set table.
@@ -221,7 +222,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {}
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {}
 
     @NotNull
     @Override

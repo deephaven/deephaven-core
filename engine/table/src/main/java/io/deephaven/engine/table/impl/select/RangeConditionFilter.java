@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -18,6 +19,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A filter for comparable types (including Instant) for {@link Condition} values: <br>
@@ -129,7 +132,10 @@ public class RangeConditionFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (filter != null) {
             return;
         }
@@ -179,7 +185,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
             }
         }
 
-        filter.init(tableDefinition);
+        filter.init(tableDefinition, queryScopeVariables, compilationProcessor);
     }
 
     public static char parseCharFilter(String value) {

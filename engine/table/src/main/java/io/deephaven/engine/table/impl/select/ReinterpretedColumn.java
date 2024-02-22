@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
 import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
@@ -34,17 +35,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Allows {@link ColumnSource} reinterpretation via view-type ({@link Table#view} and {@link Table#updateView})
  * {@link Table} operations.
- *
+ * <p>
  * TODO: If we come up with other valid, useful reinterpretations, it would be trivial to create a general purpose
  * syntax for use in view()/updateView() column expressions.
- *
+ * <p>
  * The syntax I have in mind is: "&lt;ColumnNameB&gt;=&lt;ColumnNameA&gt;.as(&lt;ClassName&gt;)"
  * "&lt;ColumnName&gt;.as(&lt;ClassName&gt;)"
- *
+ * <p>
  * Making this work would consist of any one of: 1. Adding a V1 version and updating SelectColumnFactory and
  * SelectColumnAdaptor 2. Adding the appropriate if-regex-matches to realColumn selection in V2 SwitchColumn 3. Creating
  * a V2-native SelectColumnFactory
@@ -151,7 +153,10 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         // noinspection unchecked
         final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {
@@ -167,6 +172,12 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     @Override
     public Class<?> getReturnedType() {
         return destDataType;
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        // we don't support reinterpretting column types with components
+        return null;
     }
 
     @Override

@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.LongRangeComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.gui.table.filters.Condition;
@@ -19,6 +20,9 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 public class LongRangeFilter extends AbstractRangeFilter {
     public static LongRangeFilter lt(String columnName, long x) {
@@ -67,7 +71,10 @@ public class LongRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (chunkFilter != null) {
             return;
         }

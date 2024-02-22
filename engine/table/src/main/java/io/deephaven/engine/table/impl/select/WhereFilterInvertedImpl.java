@@ -11,12 +11,15 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 class WhereFilterInvertedImpl
@@ -57,8 +60,11 @@ class WhereFilterInvertedImpl
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
-        filter.init(tableDefinition);
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+        filter.init(tableDefinition, queryScopeVariables, compilationProcessor);
     }
 
     @Override

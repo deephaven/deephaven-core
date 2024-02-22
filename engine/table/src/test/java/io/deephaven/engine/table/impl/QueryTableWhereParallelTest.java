@@ -21,6 +21,8 @@ import org.junit.experimental.categories.Category;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 
@@ -57,7 +59,10 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
             }
 
             @Override
-            public void init(TableDefinition tableDefinition) {}
+            public void init(
+                    @NotNull final TableDefinition tableDefinition,
+                    @NotNull final Supplier<Map<String, Object>> queryScopeSupplier,
+                    @NotNull final QueryCompilerRequestProcessor compilationProcessor) {}
 
             @NotNull
             @Override

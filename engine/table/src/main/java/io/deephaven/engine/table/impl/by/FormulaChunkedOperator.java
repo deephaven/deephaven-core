@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.ChunkSource.GetContext;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaUtil;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -69,10 +71,13 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
      * @param columnParamName The token to substitute column names for
      * @param resultColumnPairs The names for formula input and result columns
      */
-    FormulaChunkedOperator(@NotNull final GroupByChunkedOperator groupBy,
+    FormulaChunkedOperator(
+            @NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
             @NotNull final String formula,
             @NotNull final String columnParamName,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor,
             @NotNull final MatchPair... resultColumnPairs) {
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
@@ -95,9 +100,10 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
                     .fromGenericType(inputColumnName, inputColumnSource.getType(),
                             inputColumnSource.getComponentType());
-            formulaColumn.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition));
-            // noinspection unchecked
-            resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(0, formulaColumn.getReturnedType());
+            formulaColumn.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition),
+                    queryScopeVariables, compilationProcessor);
+            resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    0, formulaColumn.getReturnedType(), formulaColumn.getReturnedComponentType());
         }
     }
 

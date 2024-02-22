@@ -17,13 +17,16 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -50,7 +53,10 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(@NotNull final TableDefinition tableDefinition) {
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeSupplier,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         final ColumnDefinition<?> columnDefinition = tableDefinition.getColumn(columnName.name());
         if (columnDefinition == null) {
             throw new IllegalArgumentException(String.format("Missing expected input column %s",

@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaUtil;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
+import java.util.function.Supplier;
 
 abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     protected final String PARAM_COLUMN_NAME = "__PARAM_COLUMN__";
@@ -95,7 +97,9 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             @NotNull final String formula,
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
-            @NotNull final TableDefinition tableDef) {
+            @NotNull final TableDefinition tableDef,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.formulaColumnMap = formulaColumnMap;
         this.tableDef = tableDef;
@@ -113,7 +117,8 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
 
             final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
                     .fromGenericType(PARAM_COLUMN_NAME, inputVectorType, inputColumnType);
-            tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition));
+            tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition), queryScopeVariables,
+                    compilationProcessor);
             return tmp;
         });
     }

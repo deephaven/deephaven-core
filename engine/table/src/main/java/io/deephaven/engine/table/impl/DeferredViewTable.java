@@ -20,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,16 +47,20 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
         final TableDefinition parentDefinition = tableReference.getDefinition();
+        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                new QueryCompilerRequestProcessor.BatchProcessor();
         SelectAndViewAnalyzer.initializeSelectColumns(
-                parentDefinition.getColumnNameMap(), this.deferredViewColumns);
+                parentDefinition.getColumnNameMap(), variableSupplier, this.deferredViewColumns, compilationProcessor);
         this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
-            sf.init(parentDefinition);
+            sf.init(parentDefinition, variableSupplier, compilationProcessor);
             if (sf instanceof LivenessReferent && sf.isRefreshing()) {
                 manage((LivenessReferent) sf);
                 setRefreshing(true);
             }
         }
+        compilationProcessor.compile();
 
         // we really only expect one of these things to be set!
         final boolean haveDrop = this.deferredDropColumns.length > 0;
@@ -78,9 +83,13 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     @Override
     public Table where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
+        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                new QueryCompilerRequestProcessor.BatchProcessor();
         for (WhereFilter f : whereFilters) {
-            f.init(definition);
+            f.init(definition, variableSupplier, compilationProcessor);
         }
+        compilationProcessor.compile();
         return getResultTableWithWhere(whereFilters);
     }
 
@@ -189,8 +198,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             }
         }
 
+        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                new QueryCompilerRequestProcessor.BatchProcessor();
         for (final WhereFilter filter : filters) {
-            filter.init(definition);
+            filter.init(definition, variableSupplier, compilationProcessor);
 
             final boolean isPostView = Stream.of(filter.getColumns(), filter.getColumnArrays())
                     .flatMap(Collection::stream)
@@ -220,6 +232,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 postViewFilters.add(filter);
             }
         }
+        compilationProcessor.compile();
 
         return new PreAndPostFilters(preViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
                 postViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));

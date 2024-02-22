@@ -79,7 +79,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -1187,8 +1186,12 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     List<WhereFilter> selectFilters = new LinkedList<>();
                     List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
+                    final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                            new QueryCompilerRequestProcessor.BatchProcessor();
+                    final Supplier<Map<String, Object>> variableSupplier =
+                            SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
                     for (final WhereFilter filter : filters) {
-                        filter.init(getDefinition());
+                        filter.init(getDefinition(), variableSupplier, compilationProcessor);
                         if (filter instanceof AbstractConditionFilter
                                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
                             shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
@@ -1196,6 +1199,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             selectFilters.add(filter);
                         }
                     }
+                    compilationProcessor.compile();
 
                     if (!shiftColPairs.isEmpty()) {
                         return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, selectFilters);

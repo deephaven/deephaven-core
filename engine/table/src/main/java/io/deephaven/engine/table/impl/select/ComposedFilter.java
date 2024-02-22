@@ -4,12 +4,15 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.util.annotations.TestUseOnly;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl implements DependencyStreamProvider {
@@ -56,9 +59,12 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         for (WhereFilter filter : componentFilters) {
-            filter.init(tableDefinition);
+            filter.init(tableDefinition, queryScopeVariables, compilationProcessor);
         }
     }
 

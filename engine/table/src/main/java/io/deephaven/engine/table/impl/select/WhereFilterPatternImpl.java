@@ -16,12 +16,15 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 final class WhereFilterPatternImpl extends WhereFilterImpl {
 
@@ -43,7 +46,10 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         final String columnName = columnName();
         final ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
         if (column == null) {

@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.CharRangeComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.gui.table.filters.Condition;
@@ -15,6 +16,9 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 public class CharRangeFilter extends AbstractRangeFilter {
     public static CharRangeFilter lt(String columnName, char x) {
@@ -63,7 +67,10 @@ public class CharRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (chunkFilter != null) {
             return;
         }

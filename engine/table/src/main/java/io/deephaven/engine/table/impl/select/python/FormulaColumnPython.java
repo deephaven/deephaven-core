@@ -5,17 +5,21 @@ package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.select.AbstractFormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
@@ -25,8 +29,7 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING
 public class FormulaColumnPython extends AbstractFormulaColumn implements FormulaKernelFactory {
 
     @SuppressWarnings("unused") // called from python
-    public static FormulaColumnPython create(String columnName,
-            DeephavenCompatibleFunction dcf) {
+    public static FormulaColumnPython create(String columnName, DeephavenCompatibleFunction dcf) {
         return new FormulaColumnPython(columnName, dcf);
     }
 
@@ -39,13 +42,16 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public final List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public final List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         if (formulaFactory != null) {
             validateColumnDefinition(columnDefinitionMap);
         } else {
             returnedType = dcf.getReturnedType();
             applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()), Map.of());
-            formulaFactory = createKernelFormulaFactory(this);
+            formulaFactory = createKernelFormulaFactory(CompletionStageFuture.completedFuture(this));
         }
 
         return usedColumns;

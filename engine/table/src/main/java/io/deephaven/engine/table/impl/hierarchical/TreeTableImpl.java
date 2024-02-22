@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.LongUnaryOperator;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -154,13 +156,18 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (whereFilters.length == 0) {
             return noopResult();
         }
+        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                new QueryCompilerRequestProcessor.BatchProcessor();
         final Map<Boolean, List<WhereFilter>> nodeSuitabilityToFilters = Stream.of(whereFilters)
-                .peek(wf -> wf.init(source.getDefinition()))
+                .peek(wf -> wf.init(source.getDefinition(), variableSupplier, compilationProcessor))
                 .collect(Collectors.partitioningBy(wf -> {
                     // Node-level filters have only node-filter columns and use no column arrays
                     return wf.getColumns().stream().map(ColumnName::of).allMatch(nodeFilterColumns::contains)
                             && wf.getColumnArrays().isEmpty();
                 }));
+        compilationProcessor.compile();
+
         final List<WhereFilter> nodeFilters = nodeSuitabilityToFilters.get(true);
         final List<WhereFilter> sourceFilters = nodeSuitabilityToFilters.get(false);
 

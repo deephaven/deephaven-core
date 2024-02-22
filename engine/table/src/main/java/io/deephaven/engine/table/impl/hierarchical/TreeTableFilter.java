@@ -19,6 +19,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
@@ -31,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -151,7 +153,12 @@ public class TreeTableFilter {
         parentIdColumnName = tree.getParentIdentifierColumn();
         sourceRowLookup = tree.getSourceRowLookup();
         this.filters = filters;
-        Arrays.stream(filters).forEach((final WhereFilter filter) -> filter.init(source.getDefinition()));
+        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                new QueryCompilerRequestProcessor.BatchProcessor();
+        Arrays.stream(filters).forEach((final WhereFilter filter) -> filter.init(source.getDefinition(),
+                variableSupplier, compilationProcessor));
+        compilationProcessor.compile();
 
         idSource = source.getColumnSource(tree.getIdentifierColumn().name());
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());

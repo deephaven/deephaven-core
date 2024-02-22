@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.ColumnSource;
@@ -17,6 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Utilities for downsampling non-ticking time series data within a query. The input table must be sorted by the
@@ -85,7 +88,10 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {}
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {}
 
     @NotNull
     @Override

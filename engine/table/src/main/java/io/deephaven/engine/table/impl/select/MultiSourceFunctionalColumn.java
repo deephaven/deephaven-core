@@ -9,6 +9,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -19,11 +20,11 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 // TODO: Comment the heck out of this...
@@ -94,7 +95,10 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         NoSuchColumnException.throwIf(columnDefinitionMap.keySet(), sourceNames);
         return getColumns();
     }
@@ -102,6 +106,11 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @Override
     public Class<?> getReturnedType() {
         return destDataType;
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return componentType;
     }
 
     @Override

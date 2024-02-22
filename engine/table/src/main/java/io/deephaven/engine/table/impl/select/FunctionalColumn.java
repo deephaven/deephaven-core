@@ -8,6 +8,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class FunctionalColumn<S, D> implements SelectColumn {
 
@@ -106,7 +108,10 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         // noinspection unchecked
         final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {
@@ -123,6 +128,11 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @Override
     public Class<?> getReturnedType() {
         return destDataType;
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return componentType;
     }
 
     @Override

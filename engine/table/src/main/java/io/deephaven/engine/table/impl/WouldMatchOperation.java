@@ -10,6 +10,7 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -21,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -91,9 +93,18 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
-            matchColumns.forEach(holder -> {
-                final WhereFilter filter = holder.getFilter();
-                filter.init(parent.getDefinition());
+            final Supplier<Map<String, Object>> variableSupplier =
+                    SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+            final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                    new QueryCompilerRequestProcessor.BatchProcessor();
+            final WhereFilter[] filters = matchColumns.stream().map(ColumnHolder::getFilter)
+                    .peek(holder -> holder.init(parent.getDefinition(), variableSupplier, compilationProcessor))
+                    .toArray(WhereFilter[]::new);
+            compilationProcessor.compile();
+
+            for (int ii = 0; ii < filters.length; ++ii) {
+                final ColumnHolder holder = matchColumns.get(ii);
+                final WhereFilter filter = filters[ii];
                 final WritableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(
                         holder.getColumnName(), parent, result.toTracking(), filter);
@@ -114,7 +125,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 if (filter.isRefreshing()) {
                     anyRefreshing.setTrue();
                 }
-            });
+            }
 
             this.resultTable = new QueryTable(parent.getRowSet(), newColumns);
 

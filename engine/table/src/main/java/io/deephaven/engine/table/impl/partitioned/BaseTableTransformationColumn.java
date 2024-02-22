@@ -29,6 +29,12 @@ abstract class BaseTableTransformationColumn implements SelectColumn {
     }
 
     @Override
+    public Class<?> getReturnedComponentType() {
+        // Table does not have a component type
+        return null;
+    }
+
+    @Override
     public final List<String> getColumnArrays() {
         return Collections.emptyList();
     }

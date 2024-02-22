@@ -19,12 +19,14 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
 import io.deephaven.engine.table.impl.NotificationStepSource;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortOperation;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.type.TypeUtils;
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -275,8 +278,11 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Collection<? extends Filter> filters,
             @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                new QueryCompilerRequestProcessor.BatchProcessor();
         for (final WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(source.getDefinition());
+            whereFilter.init(source.getDefinition(), variableSupplier, compilationProcessor);
             final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
                     .filter(cn -> !groupByColumns.contains(cn)).map(ColumnName::name).collect(Collectors.toList());
             if (!invalidColumnsUsed.isEmpty()) {
@@ -290,6 +296,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         + " may not use column arrays, but uses column arrays from " + whereFilter.getColumnArrays());
             }
         }
+        compilationProcessor.compile();
+
         return whereFilters;
     }
 
