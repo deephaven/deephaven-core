@@ -192,6 +192,11 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         if (!OUTSTANDING_STATE_UPDATER.compareAndSet(this, OUTSTANDING, NOT_OUTSTANDING)) {
             return;
         }
+        if (Liveness.DEBUG_MODE_ENABLED || (onCleanup && Liveness.CLEANUP_LOG_ENABLED)) {
+            Liveness.log.info().append("LivenessDebug: Ensuring references dropped ")
+                    .append(onCleanup ? "(on cleanup) " : "").append("for ").append(Utils.REFERENT_FORMATTER, this)
+                    .endl();
+        }
         outstandingCount.decrementAndGet();
 
         Queue<WeakReference<? extends LivenessReferent>> pendingDropReferences = tlPendingDropReferences.get();
@@ -205,17 +210,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             tlPendingDropReferences.set(pendingDropReferences);
         }
 
-        int numToDrop = -pendingDropReferences.size();
         synchronized (this) {
             impl.forEach(pendingDropReferences::add);
             impl.clear();
-            numToDrop += pendingDropReferences.size();
-        }
-
-        if (numToDrop > 0 && (Liveness.DEBUG_MODE_ENABLED || (onCleanup && Liveness.CLEANUP_LOG_ENABLED))) {
-            Liveness.log.info().append("LivenessDebug: Ensuring references dropped ")
-                    .append(onCleanup ? "(on cleanup) " : "").append("for ").append(Utils.REFERENT_FORMATTER, this)
-                    .endl();
         }
 
         if (processDrops) {
