@@ -89,6 +89,7 @@ jobs:
           user: __token__
           password: ${{ secrets.DEEPHAVENCORE_PYPI_TOKEN }}
           packages_dir: py/server/build/wheel/
+        continue-on-error: true
 
       - name: Publish deephaven-server to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -97,6 +98,7 @@ jobs:
           user: __token__
           password: ${{ secrets.DEEPHAVENSERVER_PYPI_TOKEN }}
           packages_dir: py/embedded-server/build/wheel/
+        continue-on-error: true
 
       - name: Publish pydeephaven to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
@@ -105,9 +107,11 @@ jobs:
           user: __token__
           password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
           packages_dir: py/client/build/wheel/
+        continue-on-error: true
 
       - name: Publish @deephaven/jsapi-types to npmjs
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.DEEPHAVENBOT_NPM_TOKEN }}
         run: npm publish --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz
+        continue-on-error: true
