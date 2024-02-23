@@ -60,7 +60,7 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    public static class GroupingColumnWritingInfo {
+    static class GroupingColumnWritingInfo {
         /**
          * Parquet name of this grouping column
          */
@@ -96,7 +96,7 @@ public class ParquetTableWriter {
      *         unsupported types)
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,

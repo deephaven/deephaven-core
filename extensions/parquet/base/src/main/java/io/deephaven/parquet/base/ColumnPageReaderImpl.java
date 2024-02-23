@@ -4,7 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -91,10 +91,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         this.uri = uri;
         this.fieldTypes = fieldTypes;
         this.dataOffset = dataOffset;
-        Assert.neqNull(pageHeader, "pageHeader");
-        this.pageHeader = pageHeader;
-        Assert.geqZero(numValues, "numValues");
-        this.numValues = numValues;
+        this.pageHeader = Require.neqNull(pageHeader, "pageHeader");
+        this.numValues = Require.geqZero(numValues, "numValues");
     }
 
     @Override

@@ -104,8 +104,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public ColumnPageReaderIterator getPageIterator() {
-        return new ColumnPageReaderIteratorImpl(columnChunk.meta_data.getData_page_offset(),
-                columnChunk.getMeta_data().getNum_values());
+        return new ColumnPageReaderIteratorImpl();
     }
 
     @Override
@@ -226,9 +225,9 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         private long nextHeaderOffset;
         private long remainingValues;
 
-        ColumnPageReaderIteratorImpl(final long dataPageStartOffset, final long numValues) {
-            this.remainingValues = numValues;
-            this.nextHeaderOffset = dataPageStartOffset;
+        ColumnPageReaderIteratorImpl() {
+            this.remainingValues = columnChunk.meta_data.getNum_values();
+            this.nextHeaderOffset = columnChunk.meta_data.getData_page_offset();
         }
 
         @Override
@@ -252,9 +251,15 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final long dataOffset = ch.position();
                 nextHeaderOffset = dataOffset + pageHeader.getCompressed_page_size();
                 final PageType pageType = pageHeader.type;
+                if (pageType == PageType.DICTIONARY_PAGE && headerOffset == columnChunk.meta_data.getData_page_offset()
+                        && columnChunk.meta_data.getDictionary_page_offset() == 0) {
+                    // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+                    // Skip the dictionary page and jump to the data page
+                    return next(holder.get());
+                }
                 if (pageType != PageType.DATA_PAGE && pageType != PageType.DATA_PAGE_V2) {
-                    throw new IllegalStateException("Expected data page, but got " + pageType + " in file " + ch +
-                            " at offset " + headerOffset);
+                    throw new IllegalStateException("Expected data page, but got " + pageType + " at offset " +
+                            headerOffset + " for file " + getURI());
                 }
                 final int numValuesInPage = getNumValues(pageHeader);
                 remainingValues -= numValuesInPage;
@@ -263,7 +268,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 return new ColumnPageReaderImpl(channelsProvider, decompressor, pageDictionarySupplier,
                         nullMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader, numValuesInPage);
             } catch (IOException e) {
-                throw new UncheckedDeephavenException("Error reading page header", e);
+                throw new UncheckedDeephavenException("Error reading page header at offset " + headerOffset + " for " +
+                        "file " + getURI(), e);
             }
         }
     }
@@ -321,7 +327,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final PageType pageType = pageHeader.type;
                 if (pageType != PageType.DATA_PAGE && pageType != PageType.DATA_PAGE_V2) {
                     throw new IllegalStateException("Expected data page, but got " + pageType + " for page number "
-                            + pageNum + " for column " + getURI());
+                            + pageNum + " at offset " + headerOffset + " for file " + getURI());
                 }
                 final Function<SeekableChannelContext, Dictionary> pageDictionarySupplier =
                         getPageDictionarySupplier(pageHeader);
@@ -329,8 +335,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                         nullMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader,
                         getNumValues(pageHeader));
             } catch (final IOException e) {
-                throw new UncheckedDeephavenException("Error reading page header for page number " + pageNum + " for " +
-                        "column " + getURI(), e);
+                throw new UncheckedDeephavenException("Error reading page header for page number " + pageNum +
+                        " at offset " + headerOffset + "  for file " + getURI(), e);
             }
         }
     }
