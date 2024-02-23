@@ -255,6 +255,10 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                         && columnChunk.meta_data.getDictionary_page_offset() == 0) {
                     // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
                     // Skip the dictionary page and jump to the data page
+                    if (!hasNext()) {
+                        throw new IllegalStateException("Expected to find a data page at offset " + nextHeaderOffset +
+                                " after the dictionary page for file " + getURI() + ", but there is no more data");
+                    }
                     return next(holder.get());
                 }
                 if (pageType != PageType.DATA_PAGE && pageType != PageType.DATA_PAGE_V2) {
