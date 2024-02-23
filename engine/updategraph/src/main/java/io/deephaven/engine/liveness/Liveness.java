@@ -35,7 +35,7 @@ public final class Liveness {
             Configuration.getInstance().getBooleanWithDefault("Liveness.heapDump", false);
 
     static final boolean CLEANUP_LOG_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", true);
+            Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", false);
 
     private static final long OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS = 1000L;
 
