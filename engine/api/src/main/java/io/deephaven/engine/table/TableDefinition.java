@@ -9,9 +9,11 @@ import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.type.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map.Entry;
@@ -31,6 +33,20 @@ public class TableDefinition implements LogOutputAppendable {
 
     public static TableDefinition of(ColumnDefinition<?>... columnDefinitions) {
         return new TableDefinition(new ArrayList<>(Arrays.asList(columnDefinitions)));
+    }
+
+    public static TableDefinition of(List<String> colNames, List<Class<?>> colTypes) {
+        final int nCols = colNames.size();
+        Require.eq(nCols, "colNames.size()", colTypes.size(), "colTypes.size()");
+
+        final Iterator<String> itCn = colNames.iterator();
+        final Iterator<Class<?>> itCt = colTypes.iterator();
+        final List<ColumnDefinition<?>> colDefs = new ArrayList<>(nCols);
+        while (itCn.hasNext()) {
+            colDefs.add(ColumnDefinition.of(itCn.next(), Type.find(itCt.next())));
+        }
+
+        return new TableDefinition(colDefs);
     }
 
     public static TableDefinition of(Collection<ColumnDefinition<?>> columnDefinitions) {
