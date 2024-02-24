@@ -2279,8 +2279,8 @@ public class JsonAdapterTest extends RefreshingTableTestCase {
     }
 
     /**
-     * Test an adapter built directly (rather than wrapped by {@link StringMessageToTableWriterAdapter#buildFactory}). In this
-     * case there is no {@link MessageMetadata} to process.
+     * Test an adapter built directly (rather than wrapped by {@link StringMessageToTableWriterAdapter#buildFactory}).
+     * In this case there is no {@link MessageMetadata} to process.
      */
     public void testNoMessageAdapter() throws IOException {
         final DynamicTableWriter tableWriter = new DynamicTableWriter(

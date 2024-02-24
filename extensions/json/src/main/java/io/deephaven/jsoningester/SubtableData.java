@@ -16,7 +16,7 @@ class SubtableData<T> {
     final JsonNode subtableNode;
 
     SubtableData(@NotNull SubtableProcessingParameters<T> subtableParameters,
-                 @Nullable JsonNode subtableNode) {
+            @Nullable JsonNode subtableNode) {
         this.subtableParameters = subtableParameters;
         this.subtableNode = subtableNode;
     }

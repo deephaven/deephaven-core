@@ -774,14 +774,15 @@ public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMe
         // The ID above is displayed in tables and ideally would be unique even if persisted/reread.
         final AtomicLong subtableMessageCounter = new AtomicLong(0);
 
-        final SubtableProcessingParameters<JSONToTableWriterAdapter> subtableProcessingParameters = new SubtableProcessingParameters<>(
-                fieldName,
-                subtableAdapter,
-                subtablePredicate,
-                subtableMessageCounter,
-                subtableKeyAllowedMissing,
-                subtableKeyAllowedNull,
-                !isRoutedTable);
+        final SubtableProcessingParameters<JSONToTableWriterAdapter> subtableProcessingParameters =
+                new SubtableProcessingParameters<>(
+                        fieldName,
+                        subtableAdapter,
+                        subtablePredicate,
+                        subtableMessageCounter,
+                        subtableKeyAllowedMissing,
+                        subtableKeyAllowedNull,
+                        !isRoutedTable);
 
         // Field name in the *parent* Table giving the corresponding ID of the row(s) in the subtable
         final String subtableRowIdFieldName = getSubtableRowIdColName(fieldName);
@@ -805,7 +806,8 @@ public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMe
             if (isRoutedTable) {
                 subtableFieldValue = record;
             } else {
-                subtableFieldValue = JsonNodeUtil.checkAllowMissingOrNull(record, fieldName, allowMissingKeys, allowNullValues);
+                subtableFieldValue =
+                        JsonNodeUtil.checkAllowMissingOrNull(record, fieldName, allowMissingKeys, allowNullValues);
             }
 
             // store the idx in the rowSetter (later, the fieldSetter will add it to the table)
@@ -817,7 +819,8 @@ public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMe
                 rowSetter.setLong(subtableRecordIdxVal);
                 // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the main
                 // fieldProcessors have been processed)
-                final Queue<SubtableData<JSONToTableWriterAdapter>> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
+                final Queue<SubtableData<JSONToTableWriterAdapter>> subtableProcessingQueue =
+                        subtableProcessingQueueThreadLocal.get();
                 subtableProcessingQueue.add(new SubtableData<>(subtableProcessingParameters, subtableFieldValue));
             }
         };
@@ -1753,12 +1756,14 @@ public class JSONToTableWriterAdapter implements StringIngestionAdapter<StringMe
         }
 
         // Get current consumer thread's subtable processing queue
-        final Queue<SubtableData<JSONToTableWriterAdapter>> subtableProcessingQueue = subtableProcessingQueueThreadLocal.get();
+        final Queue<SubtableData<JSONToTableWriterAdapter>> subtableProcessingQueue =
+                subtableProcessingQueueThreadLocal.get();
 
         for (SubtableData<JSONToTableWriterAdapter> subtableFieldToProcess =
                 subtableProcessingQueue.poll(); subtableFieldToProcess != null; subtableFieldToProcess =
                         subtableProcessingQueue.poll()) {
-            final SubtableProcessingParameters<JSONToTableWriterAdapter> subtableParameters = subtableFieldToProcess.subtableParameters;
+            final SubtableProcessingParameters<JSONToTableWriterAdapter> subtableParameters =
+                    subtableFieldToProcess.subtableParameters;
             final JsonNode subtableFieldValue = subtableFieldToProcess.subtableNode;
             final String subtableFieldName = subtableParameters.fieldName;
             final JSONToTableWriterAdapter subtableAdapter = subtableParameters.subtableAdapter;

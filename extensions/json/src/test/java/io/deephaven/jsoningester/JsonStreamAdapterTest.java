@@ -45,8 +45,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <p>
  * Note that some tests are run with a consumer thread pool (as would be used in production), and others use zero
  * threads ({@link JSONToStreamPublisherAdapterBuilder#nConsumerThreads(int)
- * JSONToStreamPublisherAdapterBuilder#nConsumerThreads(0)}) and consume/process messages synchronously (which is helpful
- * for catching exceptions and producing helpful stack traes in the unit tests).
+ * JSONToStreamPublisherAdapterBuilder#nConsumerThreads(0)}) and consume/process messages synchronously (which is
+ * helpful for catching exceptions and producing helpful stack traes in the unit tests).
  */
 public class JsonStreamAdapterTest extends RefreshingTableTestCase {
     private static final double NANOS_PER_SECOND = 1000000000.0;
@@ -98,8 +98,9 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final List<String> names = Arrays.asList(strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName,
                 boolColName, charColName);
-        final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
-                float.class, boolean.class, char.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
+                        float.class, boolean.class, char.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -153,8 +154,9 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final List<String> names = Arrays.asList(strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName,
                 boolColName, charColName);
-        final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
-                float.class, boolean.class, char.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
+                        float.class, boolean.class, char.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -205,8 +207,9 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final List<String> names = Arrays.asList(strCol, dblCol, intCol, shortCol, longCol, byteCol, floatColName,
                 boolColName, charColName, sendCol);
-        final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
-                float.class, boolean.class, char.class, Instant.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
+                        float.class, boolean.class, char.class, Instant.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -503,7 +506,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
 
-        injectJson("{\"a\": \"test\", \"b\": 42.2, \"c\": [2020, 2021], \"d\": [\"Foo\", \"Bar\"] }", "id", tableAndPublisher);
+        injectJson("{\"a\": \"test\", \"b\": 42.2, \"c\": [2020, 2021], \"d\": [\"Foo\", \"Bar\"] }", "id",
+                tableAndPublisher);
 
         Assert.assertEquals(2, result.intSize());
         final Table expected = newTable(
@@ -567,8 +571,9 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final List<String> names = Arrays.asList("Expanded", "ByteCol", "CharCol", "ShortCol", "IntCol", "LongCol",
                 "FloatCol", "DoubleCol", "StringCol", "BoolCol", "DTCol");
-        final List<Class<?>> types = Arrays.asList(String.class, byte.class, char.class, short.class, int.class, long.class,
-                float.class, double.class, String.class, Boolean.class, Instant.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, byte.class, char.class, short.class, int.class, long.class,
+                        float.class, double.class, String.class, Boolean.class, Instant.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -772,7 +777,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                         .autoValueMapping(false));
 
         final List<String> names = Arrays.asList("A0", "A1", "D0", "E0", "D1", "E1");
-        final List<Class<?>> types = Arrays.asList(String.class, String.class, long.class, String.class, long.class, String.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, String.class, long.class, String.class, long.class, String.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -804,21 +810,20 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final StreamPublisherAndTable resultSubtable = createStreamPublisherAndTable(
                 Arrays.asList("D", "E", "SubtableRecordId"),
-                Arrays.asList(long.class, String.class, long.class)
-        );
+                Arrays.asList(long.class, String.class, long.class));
 
         final BiFunction<SimpleStreamPublisher, Map<String, SimpleStreamPublisher>, StringMessageToBlinkTableAdapter<StringMessageHolder>> factory =
-                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log, new JSONToStreamPublisherAdapterBuilder()
-                        .allowUnmapped("B")
-                        .addColumnFromField("A", "a")
-                        .addFieldToSubTableMapping("c", factorySubtableDe)
-                        .autoValueMapping(false)
-                        .nConsumerThreads(0));
+                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log,
+                        new JSONToStreamPublisherAdapterBuilder()
+                                .allowUnmapped("B")
+                                .addColumnFromField("A", "a")
+                                .addFieldToSubTableMapping("c", factorySubtableDe)
+                                .autoValueMapping(false)
+                                .nConsumerThreads(0));
 
         final StreamPublisherAndTable resultMain = createStreamPublisherAndTable(
                 Arrays.asList("A", "B", "c_id"),
-                Arrays.asList(String.class, double.class, long.class)
-        );
+                Arrays.asList(String.class, double.class, long.class));
 
         adapter = factory.apply(resultMain.getPublisher(), Map.of("c", resultSubtable.getPublisher()));
 
@@ -895,7 +900,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("D", "d")
                 .addColumnFromField("E", "e")
                 .addNestedField("X1",
-                        new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false).addColumnFromField("X1_y", "y"))
+                        new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false).addColumnFromField("X1_y",
+                                "y"))
                 .autoValueMapping(false);
 
         final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
@@ -904,15 +910,17 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
 
         final BiFunction<SimpleStreamPublisher, Map<String, SimpleStreamPublisher>, StringMessageToBlinkTableAdapter<StringMessageHolder>> factory =
-                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log, new JSONToStreamPublisherAdapterBuilder()
-                        .allowUnmapped("B")
-                        .addColumnFromField("A", "a")
-                        .addFieldToSubTableMapping("c", factorySubtableDe)
-                        .addNestedField("X2",
-                                new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false).addColumnFromField("X2_y",
-                                        "y"))
-                        .autoValueMapping(false)
-                        .nConsumerThreads(0));
+                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log,
+                        new JSONToStreamPublisherAdapterBuilder()
+                                .allowUnmapped("B")
+                                .addColumnFromField("A", "a")
+                                .addFieldToSubTableMapping("c", factorySubtableDe)
+                                .addNestedField("X2",
+                                        new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false)
+                                                .addColumnFromField("X2_y",
+                                                        "y"))
+                                .autoValueMapping(false)
+                                .nConsumerThreads(0));
 
         final List<String> names = Arrays.asList("A", "B", "X2_y", "c_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, long.class);
@@ -993,22 +1001,23 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("D", "E", "SubtableRecordId"),
-                Arrays.asList(long.class, String.class, long.class)
-        );
+                Arrays.asList(long.class, String.class, long.class));
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
 
         final BiFunction<SimpleStreamPublisher, Map<String, SimpleStreamPublisher>, StringMessageToBlinkTableAdapter<StringMessageHolder>> factory =
-                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log, new JSONToStreamPublisherAdapterBuilder()
-                        .allowUnmapped("B")
-                        .addColumnFromField("A", "a")
-                        .addNestedField("X1",
-                                new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false).addColumnFromField("X1_y",
-                                        "y"))
-                        .addNestedField("X2",
-                                new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false)
-                                        .addFieldToSubTableMapping("c", factorySubtableDe))
-                        .autoValueMapping(false)
-                        .nConsumerThreads(0));
+                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log,
+                        new JSONToStreamPublisherAdapterBuilder()
+                                .allowUnmapped("B")
+                                .addColumnFromField("A", "a")
+                                .addNestedField("X1",
+                                        new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false)
+                                                .addColumnFromField("X1_y",
+                                                        "y"))
+                                .addNestedField("X2",
+                                        new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false)
+                                                .addFieldToSubTableMapping("c", factorySubtableDe))
+                                .autoValueMapping(false)
+                                .nConsumerThreads(0));
 
         final List<String> names = Arrays.asList("A", "B", "X1_y", "c_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, long.class);
@@ -1060,12 +1069,13 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
 
         final BiFunction<SimpleStreamPublisher, Map<String, SimpleStreamPublisher>, StringMessageToBlinkTableAdapter<StringMessageHolder>> factory =
-                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log, new JSONToStreamPublisherAdapterBuilder()
-                        .allowUnmapped("B")
-                        .addColumnFromField("A", "a")
-                        .addFieldToSubTableMapping("c", factorySubtableDe)
-                        .autoValueMapping(false)
-                        .nConsumerThreads(0));
+                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log,
+                        new JSONToStreamPublisherAdapterBuilder()
+                                .allowUnmapped("B")
+                                .addColumnFromField("A", "a")
+                                .addFieldToSubTableMapping("c", factorySubtableDe)
+                                .autoValueMapping(false)
+                                .nConsumerThreads(0));
 
         final List<String> names = Arrays.asList("A", "B", "c_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class);
@@ -1120,14 +1130,15 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final Table resultMsgType2 = msgType2TAP.getAppendOnlyTable();
 
         final BiFunction<SimpleStreamPublisher, Map<String, SimpleStreamPublisher>, StringMessageToBlinkTableAdapter<StringMessageHolder>> factory =
-                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log, new JSONToStreamPublisherAdapterBuilder()
-                        .addColumnFromField("A", "a")
-                        .addRoutedTableAdapter("msgType1", node -> node.get("MsgType").intValue() == 1,
-                                factorySubtable_msgType1)
-                        .addRoutedTableAdapter("msgType2", node -> node.get("MsgType").intValue() == 2,
-                                factorySubtable_msgType2)
-                        .autoValueMapping(false)
-                        .nConsumerThreads(0));
+                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log,
+                        new JSONToStreamPublisherAdapterBuilder()
+                                .addColumnFromField("A", "a")
+                                .addRoutedTableAdapter("msgType1", node -> node.get("MsgType").intValue() == 1,
+                                        factorySubtable_msgType1)
+                                .addRoutedTableAdapter("msgType2", node -> node.get("MsgType").intValue() == 2,
+                                        factorySubtable_msgType2)
+                                .autoValueMapping(false)
+                                .nConsumerThreads(0));
 
         final List<String> names = Arrays.asList("A", "msgType1_id", "msgType2_id");
         final List<Class<?>> types = Arrays.asList(String.class, long.class, long.class);
@@ -1139,8 +1150,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         adapter = factory.apply(tableAndPublisher.getPublisher(),
                 Map.<String, SimpleStreamPublisher>of(
                         "msgType1", msgType1TAP.getPublisher(),
-                        "msgType2", msgType2TAP.getPublisher())
-        );
+                        "msgType2", msgType2TAP.getPublisher()));
 
         injectJson(
                 "{\"MsgType\": 0, \"a\": \"test\"}",
@@ -1323,19 +1333,19 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("X", "SubtableRecordId"),
-                Arrays.asList(int.class, long.class)
-        );
+                Arrays.asList(int.class, long.class));
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
 
 
         final BiFunction<SimpleStreamPublisher, Map<String, SimpleStreamPublisher>, StringMessageToBlinkTableAdapter<StringMessageHolder>> factory =
-                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log, new JSONToStreamPublisherAdapterBuilder()
-                        .addColumnFromField("A", "a")
-                        .addColumnFromField("B", "b")
-                        .addFieldToSubTableMapping("subtable", factorySubtableX)
-                        .autoValueMapping(false)
-                        .processArrays(true)
-                        .nConsumerThreads(0));
+                StringMessageToBlinkTableAdapter.buildFactoryWithSubtables(log,
+                        new JSONToStreamPublisherAdapterBuilder()
+                                .addColumnFromField("A", "a")
+                                .addColumnFromField("B", "b")
+                                .addFieldToSubTableMapping("subtable", factorySubtableX)
+                                .autoValueMapping(false)
+                                .processArrays(true)
+                                .nConsumerThreads(0));
 
         final List<String> names = Arrays.asList("A", "B", "subtable_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class);
@@ -1343,7 +1353,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table resultMain = tableAndPublisher.getAppendOnlyTable();
 
-        adapter = factory.apply(tableAndPublisher.getPublisher(), Map.of("subtable", subtableAndPublisher.getPublisher()));
+        adapter = factory.apply(tableAndPublisher.getPublisher(),
+                Map.of("subtable", subtableAndPublisher.getPublisher()));
 
         injectJson(
                 "[{\"a\": \"test\", \"b\": 42.2, \"subtable\": [{ \"x\": 42 }] }, {\"a\": \"test2\", \"b\": 21.1, \"subtable\": [{ \"x\": 43 }] }]",
@@ -1504,7 +1515,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         TableTools.show(result);
         Assert.assertEquals("", diff(result, expected, 10));
 
-        injectJson("{\"a\": \"Eliza\", \"b\": 44, \"c\": {\"d\": 124, \"e\": \"Bar\", \"f\": null } }", "id", tableAndPublisher);
+        injectJson("{\"a\": \"Eliza\", \"b\": 44, \"c\": {\"d\": 124, \"e\": \"Bar\", \"f\": null } }", "id",
+                tableAndPublisher);
 
         final Table expected2 = newTable(
                 col("A", "Angelica", "Eliza"), doubleCol("B", QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE),
@@ -1666,7 +1678,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                         .addColumnFromFunction("obj", String.class, (x) -> ""));
 
         final List<String> names = Arrays.asList("str", "dbl", "iger", "lng", "obj", "unmapped");
-        final List<Class<?>> types = Arrays.asList(String.class, int.class, double.class, int.class, int.class, Object.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, int.class, double.class, int.class, int.class, Object.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         try {
@@ -1689,7 +1702,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                         .addColumnFromFunction("obj", String.class, (x) -> ""));
 
         final List<String> names = Arrays.asList("str", "dbl", "iger", "lng", "obj", "unmapped");
-        final List<Class<?>> types = Arrays.asList(String.class, double.class, double.class, int.class, int.class, Object.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, double.class, double.class, int.class, int.class, Object.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         try {
@@ -1712,7 +1726,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                         .addColumnFromFunction("obj", String.class, (x) -> ""));
 
         final List<String> names = Arrays.asList("str", "dbl", "iger", "lng", "obj", "unmapped");
-        final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, int.class, int.class, Object.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, double.class, int.class, int.class, int.class, Object.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         try {
@@ -1806,8 +1821,9 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final List<String> names = Arrays.asList("StrCol", "DoubleCol", "IntCol", "LongCol", "ShortCol", "FloatCol",
                 "ByteCol", "BoolCol", "CharCol");
-        final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, long.class, short.class, float.class,
-                byte.class, Boolean.class, char.class);
+        final List<Class<?>> types =
+                Arrays.asList(String.class, double.class, int.class, long.class, short.class, float.class,
+                        byte.class, Boolean.class, char.class);
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -1836,17 +1852,18 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
      *
      * @param jsonStr The JSON string to wrap in a message and send to the adapter
      * @param msgId The message ID string
-     * @param streamToBlinkAdapters StreamToBlinkTableAdapters to {@link StreamToBlinkTableAdapter#run() refresh} after consuming and publishing the message
+     * @param streamToBlinkAdapters StreamToBlinkTableAdapters to {@link StreamToBlinkTableAdapter#run() refresh} after
+     *        consuming and publishing the message
      */
-    private void injectJson(final String jsonStr, final String msgId, final StreamPublisherAndTable... streamToBlinkAdapters)
+    private void injectJson(final String jsonStr, final String msgId,
+            final StreamPublisherAndTable... streamToBlinkAdapters)
             throws IOException, InterruptedException, TimeoutException {
         injectJson(
                 jsonStr,
                 msgId,
                 Arrays.stream(streamToBlinkAdapters)
                         .map(StreamPublisherAndTable::getAdapter)
-                        .toArray(StreamToBlinkTableAdapter[]::new)
-        );
+                        .toArray(StreamToBlinkTableAdapter[]::new));
     }
 
     /**
@@ -1854,9 +1871,11 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
      *
      * @param jsonStr The JSON string to wrap in a message and send to the adapter
      * @param msgId The message ID string
-     * @param streamToBlinkAdapters StreamToBlinkTableAdapters to {@link StreamToBlinkTableAdapter#run() refresh} after consuming and publishing the message
+     * @param streamToBlinkAdapters StreamToBlinkTableAdapters to {@link StreamToBlinkTableAdapter#run() refresh} after
+     *        consuming and publishing the message
      */
-    private void injectJson(final String jsonStr, final String msgId, final StreamToBlinkTableAdapter... streamToBlinkAdapters)
+    private void injectJson(final String jsonStr, final String msgId,
+            final StreamToBlinkTableAdapter... streamToBlinkAdapters)
             throws IOException, InterruptedException, TimeoutException {
         final StringMessageHolder msg = new StringMessageHolder(MESSAGE_TIMESTAMP_MILLIS * 1000L, jsonStr);
 
@@ -1870,18 +1889,17 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
     private static void updateBlinkTables(StreamPublisherAndTable... streamToBlinkAdapters) {
         updateBlinkTables(
                 Arrays.stream(streamToBlinkAdapters)
-                .map(StreamPublisherAndTable::getAdapter)
-                .toArray(StreamToBlinkTableAdapter[]::new)
-        );
+                        .map(StreamPublisherAndTable::getAdapter)
+                        .toArray(StreamToBlinkTableAdapter[]::new));
     }
 
 
     /**
-     * Update the output blink tables byc calling {@link StreamToBlinkTableAdapter#run() run()} on the adapters,
-     * during the UpdateGraph's unit test cycle.
+     * Update the output blink tables byc calling {@link StreamToBlinkTableAdapter#run() run()} on the adapters, during
+     * the UpdateGraph's unit test cycle.
      * <p>
-     * This also closes the chunks that were handed off to the blink table on the previous cycle. Accordingly, this
-     * must be called for each adapter at the end of each test.
+     * This also closes the chunks that were handed off to the blink table on the previous cycle. Accordingly, this must
+     * be called for each adapter at the end of each test.
      *
      * @param streamToBlinkAdapters The adapters to update
      */
@@ -1901,15 +1919,13 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
             final List<Class<?>> colTypes) {
         final SimpleStreamPublisher publisher = new SimpleStreamPublisher(TableDefinition.of(
                 colNames,
-                colTypes
-        ));
+                colTypes));
 
         final StreamToBlinkTableAdapter subtableStreamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
                 publisher.getTableDefinition(),
                 publisher,
                 ExecutionContext.getContext().getUpdateGraph(),
-                "streamToBlinkAdapter"
-        );
+                "streamToBlinkAdapter");
         return new JsonStreamAdapterTest.StreamPublisherAndTable(publisher, subtableStreamToBlinkTableAdapter);
     }
 
@@ -2098,8 +2114,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList(names),
-                Arrays.asList(types)
-        );
+                Arrays.asList(types));
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -2409,8 +2424,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
     }
 
     /**
-     * Test an adapter built directly (rather than wrapped by {@link StringMessageToBlinkTableAdapter#buildFactory}). In this
-     * case there is no {@link MessageMetadata} to process.
+     * Test an adapter built directly (rather than wrapped by {@link StringMessageToBlinkTableAdapter#buildFactory}). In
+     * this case there is no {@link MessageMetadata} to process.
      */
     public void testNoMessageAdapter() throws IOException {
         final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(

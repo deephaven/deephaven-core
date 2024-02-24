@@ -36,14 +36,14 @@ public class StringMessageToBlinkTableAdapter<M> implements MessageToIngesterAda
     private final ToLongFunction<M> messageToRecvTimeMicros;
 
     private StringMessageToBlinkTableAdapter(final SimpleStreamPublisher streamPublisher,
-                                             final String sendTimeColumn,
-                                             final String receiveTimeColumn,
-                                             final String nowTimeColumn,
-                                             final String messageIdColumn,
-                                             final StringIngestionAdapter<StringMessageToBlinkTableAdapter<M>> stringAdapter,
-                                             Function<M, String> messageToText,
-                                             ToLongFunction<M> messageToSendTimeMicros,
-                                             ToLongFunction<M> messageToRecvTimeMicros) {
+            final String sendTimeColumn,
+            final String receiveTimeColumn,
+            final String nowTimeColumn,
+            final String messageIdColumn,
+            final StringIngestionAdapter<StringMessageToBlinkTableAdapter<M>> stringAdapter,
+            Function<M, String> messageToText,
+            ToLongFunction<M> messageToSendTimeMicros,
+            ToLongFunction<M> messageToRecvTimeMicros) {
         this.stringAdapter = stringAdapter;
         this.messageIdColumn = messageIdColumn;
         this.sendTimeColumn = sendTimeColumn;
@@ -64,8 +64,9 @@ public class StringMessageToBlinkTableAdapter<M> implements MessageToIngesterAda
             tableDefinition.checkHasColumn(messageIdColumn, String.class);
         }
 
-        // TODO: instead of setOwner(), seems like it would make more sense to pass this adapter to the StringIngestionAdapter,
-        //   so this stuff could be handled in its constructor
+        // TODO: instead of setOwner(), seems like it would make more sense to pass this adapter to the
+        // StringIngestionAdapter,
+        // so this stuff could be handled in its constructor
         stringAdapter.setOwner(this);
 
         this.messageToText = messageToText;
@@ -164,7 +165,8 @@ public class StringMessageToBlinkTableAdapter<M> implements MessageToIngesterAda
             extends BaseStreamPublisherAdapterBuilder<A> {
 
         @Deprecated
-        public Function<SimpleStreamPublisher, StringMessageToBlinkTableAdapter<StringMessageHolder>> buildFactory(Logger log) {
+        public Function<SimpleStreamPublisher, StringMessageToBlinkTableAdapter<StringMessageHolder>> buildFactory(
+                Logger log) {
             return StringMessageToBlinkTableAdapter.buildFactory(log, this);
         }
     }
@@ -182,8 +184,8 @@ public class StringMessageToBlinkTableAdapter<M> implements MessageToIngesterAda
      * @param messageToSendTimeMicros Function to extract a send timestamp from an instance of type {@code M}
      * @param messageToRecvTimeMicros Function to extract a receipt timestamp from an instance of type {@code M}
      * @param <M> The message datatype
-     * @return A function that takes a TableWriter and returns a new {@code StringMessageToBlinkTableAdapter} that writes
-     *         data to that TableWriter.
+     * @return A function that takes a TableWriter and returns a new {@code StringMessageToBlinkTableAdapter} that
+     *         writes data to that TableWriter.
      */
     public static <M> Function<SimpleStreamPublisher, StringMessageToBlinkTableAdapter<M>> buildFactory(
             @NotNull final Logger log,
@@ -240,36 +242,5 @@ public class StringMessageToBlinkTableAdapter<M> implements MessageToIngesterAda
                     StringMessageHolder::getRecvTimeMicros);
         };
     }
-
-//    public static BiFunction<TableWriter<?>, Map<String, TableWriter<?>>, StringMessageToBlinkTableAdapter<StringMessageHolder>> buildFactoryWithSubtables(
-//            Logger log, JSONToStreamPublisherAdapterBuilder adapterBuilder) {
-//
-//
-//        return (tablewriter, subtableWritersMap) -> {
-//            // create the string-to-tablewriter adapter
-//            final JSONToStreamPublisherAdapter stringToStreamPublisherAdapter =
-//                    adapterBuilder.makeAdapter(log, tablewriter, subtableWritersMap);
-//
-//            // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
-//            // adapter
-////            return new StringMessageToBlinkTableAdapter<>(tablewriter,
-////                    adapterBuilder.sendTimestampColumnName,
-////                    adapterBuilder.receiveTimestampColumnName,
-////                    adapterBuilder.timestampColumnName,
-////                    adapterBuilder.messageIdColumnName,
-////                    stringToStreamPublisherAdapter,
-////                    StringMessageHolder::getMsg,
-////                    StringMessageHolder::getSendTimeMicros,
-////                    StringMessageHolder::getRecvTimeMicros);
-//
-//
-//            return new StreamToBlinkTableAdapter(
-//                    tableDef,
-//                    stringToStreamPublisherAdapter,
-//                    updateSourceRegistrar,
-//                    "TEST_ADAPTER" // TODO: use some arg
-//            );
-//        };
-//    }
 
 }

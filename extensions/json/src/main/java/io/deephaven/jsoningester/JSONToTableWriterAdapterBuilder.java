@@ -20,7 +20,8 @@ import static io.deephaven.jsoningester.JSONToTableWriterAdapter.SUBTABLE_RECORD
  * The builder configures a factory for StringToTableWriterAdapters that accept JSON strings and writes a table.
  */
 @Deprecated
-public class JSONToTableWriterAdapterBuilder extends StringMessageToTableWriterAdapter.Builder<JSONToTableWriterAdapter> {
+public class JSONToTableWriterAdapterBuilder
+        extends StringMessageToTableWriterAdapter.Builder<JSONToTableWriterAdapter> {
     private int nConsumerThreads = JSONToTableWriterAdapter.N_CONSUMER_THREADS_DEFAULT;
 
     private StringIngestionAdapter stringAdapter;

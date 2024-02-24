@@ -261,6 +261,7 @@ class InMemoryRowHolder {
         public void set(final Object value) {
             data[thisPosition] = value;
         }
+
         public void set(final Instant value) {
             data[thisPosition] = DateTimeUtils.epochNanos(value);
         }
@@ -268,6 +269,7 @@ class InMemoryRowHolder {
         public void setBoolean(final boolean value) {
             data[thisPosition] = value;
         }
+
         @Override
         public void setBoolean(final Boolean value) {
             data[thisPosition] = BooleanUtils.booleanAsByte(value);

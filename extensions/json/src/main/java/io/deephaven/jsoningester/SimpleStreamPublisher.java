@@ -7,25 +7,27 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.stream.StreamPublisherBase;
 
 /**
- * A basic {@link StreamPublisherBase} implementation that exposes its table definition. Chunks can be retrieved
- * with {@link #getChunks()}. The remaining space in the chunks is available via {@link #getChunkRemainingSpace()}.
- * When data is written to the chunks, {@link #decrementRemainingSpace} must be called.
+ * A basic {@link StreamPublisherBase} implementation that exposes its table definition. Chunks can be retrieved with
+ * {@link #getChunks()}. The remaining space in the chunks is available via {@link #getChunkRemainingSpace()}. When data
+ * is written to the chunks, {@link #decrementRemainingSpace} must be called.
  */
 public class SimpleStreamPublisher extends StreamPublisherBase {
-    //TODO SimpleStreamPublisher is a bad name. It's not very simple, as the caller has to worry about chunkRemainingSpace
+    // TODO SimpleStreamPublisher is a bad name. It's not very simple, as the caller has to worry about
+    // chunkRemainingSpace
 
     private final Runnable shutdownCallback;
 
     /**
-     * Remaining space in the {@link #chunks}. This publisher must be
-     * {@link StreamPublisherBase#flush() flush()ed} when the remaining space reaches zero.
+     * Remaining space in the {@link #chunks}. This publisher must be {@link StreamPublisherBase#flush() flush()ed} when
+     * the remaining space reaches zero.
      * <p>
      * This must only be accessed/modified under the lock.
      */
     private int chunkRemainingSpace = 0;
 
     public SimpleStreamPublisher(TableDefinition tableDefinition) {
-        this(tableDefinition, () -> {});
+        this(tableDefinition, () -> {
+        });
     }
 
     public SimpleStreamPublisher(TableDefinition tableDefinition, Runnable shutdownCallback) {
@@ -45,6 +47,7 @@ public class SimpleStreamPublisher extends StreamPublisherBase {
 
     /**
      * Get writable chunks with at least 1 row of free capacity
+     * 
      * @return The non-full, non-null chunks
      */
     synchronized WritableChunk<Values>[] getChunks() {
@@ -52,7 +55,8 @@ public class SimpleStreamPublisher extends StreamPublisherBase {
             return chunks;
         }
 
-        chunks = super.getChunksToFill(); // Note that this won't do anything unless streamPublisher.flush() was called previously
+        chunks = super.getChunksToFill(); // Note that this won't do anything unless streamPublisher.flush() was called
+                                          // previously
         chunkRemainingSpace = chunks[0].capacity() - chunks[0].size();
 
         return chunks;
@@ -60,6 +64,7 @@ public class SimpleStreamPublisher extends StreamPublisherBase {
 
     /**
      * Decrease the tracked amount of space available ({@link #chunkRemainingSpace} in the chunks.
+     * 
      * @param decrementAmount How much to decrement by
      * @return The updated remaining free space in the chunks
      */

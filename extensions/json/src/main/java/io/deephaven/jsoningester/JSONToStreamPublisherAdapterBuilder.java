@@ -18,7 +18,8 @@ import static io.deephaven.jsoningester.JSONToStreamPublisherAdapter.SUBTABLE_RE
 /**
  * The builder configures a factory for StringToTableWriterAdapters that accept JSON strings and writes a table.
  */
-public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTableAdapter.Builder<JSONToStreamPublisherAdapter> {
+public class JSONToStreamPublisherAdapterBuilder
+        extends StringMessageToBlinkTableAdapter.Builder<JSONToStreamPublisherAdapter> {
     private int nConsumerThreads = JSONToStreamPublisherAdapter.N_CONSUMER_THREADS_DEFAULT;
 
     private StringIngestionAdapter stringAdapter;
@@ -31,7 +32,8 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
     private final Map<String, ToDoubleFunction<JsonNode>> columnToDoubleFunction = new HashMap<>();
 
     private final Map<String, JSONToStreamPublisherAdapterBuilder> fieldToSubtableBuilders = new HashMap<>();
-    private final Map<String, JSONToStreamPublisherAdapter.RoutedAdapterInfo> routedTableIdsToBuilders = new HashMap<>();
+    private final Map<String, JSONToStreamPublisherAdapter.RoutedAdapterInfo> routedTableIdsToBuilders =
+            new HashMap<>();
     private final Map<String, Pair<Class<?>, Function<JsonNode, ?>>> columnToObjectFunction = new HashMap<>();
     private final Set<String> allowedUnmappedColumns = new HashSet<>();
     private final Set<String> nestedColumns = new HashSet<>();
@@ -105,7 +107,7 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @ScriptApi
     public JSONToStreamPublisherAdapterBuilder addFieldParallel(final String column,
-                                                                final String field) {
+            final String field) {
         checkAlreadyDefined(column);
         columnToParallelField.put(column, field);
         return this;
@@ -127,7 +129,7 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @ScriptApi
     public JSONToStreamPublisherAdapterBuilder addNestedFieldParallel(final String field,
-                                                                      final JSONToStreamPublisherAdapterBuilder builder) {
+            final JSONToStreamPublisherAdapterBuilder builder) {
         checkNestedBuilder(builder, field);
         addNestedColumns(builder);
         parallelNestedFieldBuilders.put(field, builder);
@@ -229,7 +231,7 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @ScriptApi
     public JSONToStreamPublisherAdapterBuilder addColumnFromIntFunction(final String column,
-                                                                        final ToIntFunction<JsonNode> toIntFunction) {
+            final ToIntFunction<JsonNode> toIntFunction) {
         checkAlreadyDefined(column);
         columnToIntFunction.put(column, toIntFunction);
         return this;
@@ -250,7 +252,7 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @ScriptApi
     public JSONToStreamPublisherAdapterBuilder addColumnFromLongFunction(final String column,
-                                                                         final ToLongFunction<JsonNode> toLongFunction) {
+            final ToLongFunction<JsonNode> toLongFunction) {
         checkAlreadyDefined(column);
         columnToLongFunction.put(column, toLongFunction);
         return this;
@@ -272,7 +274,7 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @ScriptApi
     public JSONToStreamPublisherAdapterBuilder addColumnFromDoubleFunction(final String column,
-                                                                           final ToDoubleFunction<JsonNode> toDoubleFunction) {
+            final ToDoubleFunction<JsonNode> toDoubleFunction) {
         checkAlreadyDefined(column);
         columnToDoubleFunction.put(column, toDoubleFunction);
         return this;
@@ -293,8 +295,8 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @ScriptApi
     public <R> JSONToStreamPublisherAdapterBuilder addColumnFromFunction(final String column,
-                                                                         final Class<R> returnType,
-                                                                         final Function<JsonNode, R> function) {
+            final Class<R> returnType,
+            final Function<JsonNode, R> function) {
         checkAlreadyDefined(column);
         columnToObjectFunction.put(column, new Pair<>(returnType, function));
         return this;
@@ -304,7 +306,8 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
         return addColumnFromPointer(column, JsonPointer.compile(jsonPointer));
     }
 
-    public JSONToStreamPublisherAdapterBuilder addColumnFromPointer(final String column, final JsonPointer jsonPointer) {
+    public JSONToStreamPublisherAdapterBuilder addColumnFromPointer(final String column,
+            final JsonPointer jsonPointer) {
         columnToJsonPointer.put(column, jsonPointer);
         return this;
     }
@@ -553,11 +556,11 @@ public class JSONToStreamPublisherAdapterBuilder extends StringMessageToBlinkTab
      */
     @NotNull
     JSONToStreamPublisherAdapter makeSubtableAdapter(@NotNull final Logger log,
-                                                     @NotNull final SimpleStreamPublisher subtablePublisher,
-                                                     @NotNull final Map<String, SimpleStreamPublisher> fieldToSubtableWriters,
-                                                     final Set<String> allUnmapped,
-                                                     final ThreadLocal<Queue<SubtableData<JSONToStreamPublisherAdapter>>> subtableProcessingQueue,
-                                                     final ThreadLocal<MutableLong> subtableRecordCounter) {
+            @NotNull final SimpleStreamPublisher subtablePublisher,
+            @NotNull final Map<String, SimpleStreamPublisher> fieldToSubtableWriters,
+            final Set<String> allUnmapped,
+            final ThreadLocal<Queue<SubtableData<JSONToStreamPublisherAdapter>>> subtableProcessingQueue,
+            final ThreadLocal<MutableLong> subtableRecordCounter) {
 
         // make a copy of the columnToLongFunction map (do not mutate the map from the original builder)
         final HashMap<String, ToLongFunction<JsonNode>> columnToLongFunctionForSubtableAdapter =

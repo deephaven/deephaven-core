@@ -213,7 +213,8 @@ public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAd
             extends BaseTableWriterAdapterBuilder<A> {
 
         @Deprecated
-        public Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> buildFactory(Logger log) {
+        public Function<TableWriter<?>, StringMessageToTableWriterAdapter<StringMessageHolder>> buildFactory(
+                Logger log) {
             return StringMessageToTableWriterAdapter.buildFactory(log, this);
         }
     }
@@ -231,8 +232,8 @@ public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAd
      * @param messageToSendTimeMicros Function to extract a send timestamp from an instance of type {@code M}
      * @param messageToRecvTimeMicros Function to extract a receipt timestamp from an instance of type {@code M}
      * @param <M> The message datatype
-     * @return A function that takes a TableWriter and returns a new {@code StringMessageToTableWriterAdapter} that writes
-     *         data to that TableWriter.
+     * @return A function that takes a TableWriter and returns a new {@code StringMessageToTableWriterAdapter} that
+     *         writes data to that TableWriter.
      */
     public static <M> Function<TableWriter<?>, StringMessageToTableWriterAdapter<M>> buildFactory(
             @NotNull final Logger log,
@@ -242,7 +243,8 @@ public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAd
             @NotNull final ToLongFunction<M> messageToRecvTimeMicros) {
         return (tw) -> {
             // create the string-to-tablewriter adapter
-            final StringIngestionAdapter<StringMessageToTableWriterAdapter<M>> stringIngestionAdapter = adapterBuilder.makeAdapter(log, tw);
+            final StringIngestionAdapter<StringMessageToTableWriterAdapter<M>> stringIngestionAdapter =
+                    adapterBuilder.makeAdapter(log, tw);
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
             // adapter
