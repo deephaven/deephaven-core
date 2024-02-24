@@ -326,10 +326,49 @@ public interface Table extends
     @ConcurrentMethod
     Table dropColumnFormats();
 
+    /**
+     * Produce a new table with the specified columns renamed using the syntax {@code "NewColumnName=OldColumnName"}.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param pairs The columns to rename
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameColumns(Collection<Pair> pairs);
 
+    /**
+     * Produce a new table with the specified columns renamed using the syntax {@code "NewColumnName=OldColumnName"}.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param pairs The columns to rename
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameColumns(String... pairs);
 
+    /**
+     * Produce a new table with the specified columns renamed using the provided function.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param renameFunction The function to apply to each column name
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameAllColumns(UnaryOperator<String> renameFunction);
 
     @ConcurrentMethod
@@ -342,8 +381,14 @@ public interface Table extends
     Table formatColumnWhere(String columnName, String condition, String formula);
 
     /**
-     * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
+     * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
      * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param columnsToMove The columns to move to the left (and, optionally, to rename)
      * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
@@ -354,6 +399,12 @@ public interface Table extends
     /**
      * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
      * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param columnsToMove The columns to move to the right (and, optionally, to rename)
      * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
@@ -362,8 +413,14 @@ public interface Table extends
     Table moveColumnsDown(String... columnsToMove);
 
     /**
-     * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
-     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
+     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param index The index to which the specified columns should be moved
      * @param columnsToMove The columns to move to the specified index (and, optionally, to rename)
@@ -371,9 +428,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table moveColumns(int index, String... columnsToMove);
-
-    @ConcurrentMethod
-    Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations

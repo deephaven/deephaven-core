@@ -271,8 +271,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
-        return coalesce().moveColumns(index, moveToEnd, columnsToMove);
+    public Table moveColumns(int index, String... columnsToMove) {
+        return coalesce().moveColumns(index, columnsToMove);
     }
 
     @Override

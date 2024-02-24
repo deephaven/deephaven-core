@@ -80,11 +80,11 @@ class NodeType(Enum):
     """An enum of node types for RollupTable"""
     AGGREGATED = _JNodeType.Aggregated
     """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
-    leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
+    leaf) level. These nodes have column names and types that result from applying aggregations on the source table
     of the RollupTable. """
     CONSTITUENT = _JNodeType.Constituent
-    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with 
-    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
+    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with
+    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names
     and types from the source table of the RollupTable. """
 
 
@@ -734,8 +734,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self):
-                return Table(j_table=self.j_table.renameColumns(*cols))
+            return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
