@@ -26,7 +26,7 @@ import java.util.function.ToLongFunction;
  */
 public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAdapter<M> {
 
-    private final StringIngestionAdapter stringAdapter;
+    private final StringIngestionAdapter<StringMessageToTableWriterAdapter<M>> stringAdapter;
     private final String messageIdColumn;
     private final String sendTimeColumn;
     private final String receiveTimeColumn;
@@ -46,7 +46,7 @@ public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAd
             final String receiveTimeColumn,
             final String nowTimeColumn,
             final String messageIdColumn,
-            final StringIngestionAdapter stringAdapter,
+            final StringIngestionAdapter<StringMessageToTableWriterAdapter<M>> stringAdapter,
             Function<M, String> messageToText,
             ToLongFunction<M> messageToSendTimeMicros,
             ToLongFunction<M> messageToRecvTimeMicros) {
@@ -242,7 +242,7 @@ public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAd
             @NotNull final ToLongFunction<M> messageToRecvTimeMicros) {
         return (tw) -> {
             // create the string-to-tablewriter adapter
-            final StringIngestionAdapter stringIngestionAdapter = adapterBuilder.makeAdapter(log, tw);
+            final StringIngestionAdapter<StringMessageToTableWriterAdapter<M>> stringIngestionAdapter = adapterBuilder.makeAdapter(log, tw);
 
             // create a message-to-tablewriter adapter, which runs the message content through the string-to-tablewriter
             // adapter
