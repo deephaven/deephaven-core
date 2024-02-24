@@ -141,6 +141,19 @@ public class FilterTest {
     }
 
     @Test
+    void filterStateful() {
+        stringsOf(StatefulFilter.of(Function.of("MyFunction1")), "stateful(MyFunction1())");
+        stringsOf(StatefulFilter.of(Method.of(FOO, "MyFunction1")), "stateful(Foo.MyFunction1())");
+
+        stringsOf(not(StatefulFilter.of(Function.of("MyFunction2", BAR))), "!stateful(MyFunction2(Bar))");
+        stringsOf(not(StatefulFilter.of(Method.of(FOO, "MyFunction2", BAR))), "!stateful(Foo.MyFunction2(Bar))");
+
+        stringsOf(StatefulFilter.of(not(Function.of("MyFunction2", BAR, BAZ))), "stateful(!MyFunction2(Bar, Baz))");
+        stringsOf(StatefulFilter.of(not(Method.of(FOO, "MyFunction2", BAR, BAZ))),
+                "stateful(!Foo.MyFunction2(Bar, Baz))");
+    }
+
+    @Test
     void filterPattern() {
         stringsOf(FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, false),
                 "FilterPattern(ColumnName(Foo), myregex, 0, FIND, false)");
@@ -210,6 +223,7 @@ public class FilterTest {
         visitor.visit((Method) null);
         visitor.visit(false);
         visitor.visit((RawString) null);
+        visitor.visit((StatefulFilter) null);
     }
 
     private enum FilterSpecificString implements Filter.Visitor<String> {
@@ -269,6 +283,11 @@ public class FilterTest {
         @Override
         public String visit(RawString rawString) {
             return of(rawString);
+        }
+
+        @Override
+        public String visit(StatefulFilter filter) {
+            return of(filter);
         }
     }
 
@@ -339,6 +358,12 @@ public class FilterTest {
         public CountingVisitor visit(RawString rawString) {
             ++count;
             return this;
+        }
+
+        @Override
+        public CountingVisitor visit(StatefulFilter filter) {
+            ++count;
+            return null;
         }
     }
 
@@ -429,6 +454,12 @@ public class FilterTest {
             out.add(RawString.of("Foo > Bar"));
             out.add(RawString.of("Foo >= Bar + 42"));
             out.add(RawString.of("aoeuaoeu"));
+            return null;
+        }
+
+        @Override
+        public Void visit(StatefulFilter filter) {
+            out.add(StatefulFilter.of(Function.of("my_function", FOO)));
             return null;
         }
     }

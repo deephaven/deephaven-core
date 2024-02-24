@@ -124,7 +124,7 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     }
 
     @Override
-    public boolean permitParallelization() {
-        return Arrays.stream(componentFilters).allMatch(WhereFilter::permitParallelization);
+    public boolean isStateless() {
+        return Arrays.stream(componentFilters).allMatch(WhereFilter::isStateless);
     }
 }

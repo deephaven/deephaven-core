@@ -258,7 +258,7 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
-    public boolean permitParallelization() {
+    public boolean isStateless() {
         return false;
     }
 }

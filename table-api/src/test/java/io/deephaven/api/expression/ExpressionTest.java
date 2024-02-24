@@ -83,6 +83,11 @@ public class ExpressionTest {
     }
 
     @Test
+    void expressionStateful() {
+        stringsOf(StatefulExpression.of(Method.of(FOO, "myMethod2", BAR)), "stateful(Foo.myMethod2(Bar))");
+    }
+
+    @Test
     void literals() {
         stringsOf(Literal.of(true), "true");
         stringsOf(Literal.of(false), "false");
@@ -141,6 +146,11 @@ public class ExpressionTest {
         public String visit(RawString rawString) {
             return of(rawString);
         }
+
+        @Override
+        public String visit(StatefulExpression statefulExpression) {
+            return of(statefulExpression);
+        }
     }
 
     /**
@@ -155,6 +165,7 @@ public class ExpressionTest {
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit((RawString) null);
+        visitor.visit((StatefulExpression) null);
     }
 
     private static class CountingVisitor implements Expression.Visitor<CountingVisitor> {
@@ -194,6 +205,12 @@ public class ExpressionTest {
         public CountingVisitor visit(RawString rawString) {
             ++count;
             return this;
+        }
+
+        @Override
+        public CountingVisitor visit(StatefulExpression statefulExpression) {
+            ++count;
+            return null;
         }
     }
 
@@ -245,6 +262,13 @@ public class ExpressionTest {
             out.add(RawString.of("Foo > Bar + 42"));
             out.add(RawString.of("!Foo - what_isTHIS(Bar)"));
             out.add(RawString.of("blerg9"));
+            return null;
+        }
+
+        @Override
+        public Void visit(StatefulExpression statefulExpression) {
+            out.add(StatefulExpression.of(Function.of("my_function", FOO)));
+            out.add(StatefulExpression.of(Method.of(FOO, "whats", BAR)));
             return null;
         }
     }

@@ -157,8 +157,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 } catch (Exception e) {
                     return null;
                 }
-                if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(selectColumn.getColumns(),
-                        selectColumn.getColumnArrays())) {
+                if (!selectColumn.isStateless() ||
+                        !((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
+                                selectColumn.getColumns(), selectColumn.getColumnArrays())) {
                     return null;
                 }
             }
@@ -325,7 +326,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
-            if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
+            if (!selectColumn.isStateless() ||
+                    !isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
                 return super.selectDistinct(selectColumns);

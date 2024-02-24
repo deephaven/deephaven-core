@@ -59,11 +59,6 @@ abstract class BaseTableTransformationColumn implements SelectColumn {
         return false;
     }
 
-    @Override
-    public final boolean isStateless() {
-        return true;
-    }
-
     static ColumnSource<Table> getAndValidateInputColumnSource(
             @NotNull final String inputColumnName,
             @NotNull final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {

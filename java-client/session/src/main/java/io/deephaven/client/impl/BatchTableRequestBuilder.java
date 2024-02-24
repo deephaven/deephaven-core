@@ -16,15 +16,9 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.expression.StatefulExpression;
+import io.deephaven.api.filter.*;
 import io.deephaven.api.filter.FilterComparison.Operator;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -720,6 +714,13 @@ class BatchTableRequestBuilder {
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from a raw string");
         }
+
+        @Override
+        public Value visit(StatefulExpression statefulExpression) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a stateful expression");
+        }
     }
 
     enum LiteralAdapter implements Literal.Visitor<io.deephaven.proto.backplane.grpc.Literal> {
@@ -902,6 +903,12 @@ class BatchTableRequestBuilder {
         public Condition visit(RawString rawString) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with raw string");
+        }
+
+        @Override
+        public Condition visit(StatefulFilter filter) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with stateful wrapper");
         }
     }
 }

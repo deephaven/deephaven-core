@@ -834,38 +834,4 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             return String.format("%s.%s(k)", name, getGetterName(columnDefinition.getDataType(), usePrev));
         }
     }
-
-    /**
-     * Is this parameter immutable, and thus would contribute no state to the formula?
-     * <p>
-     * If any query scope parameter is not a primitive, String, or known immutable class; then it may be a mutable
-     * object that results in undefined results when the column is not evaluated strictly in order.
-     *
-     * @return true if this query scope parameter is immutable
-     */
-    private static boolean isImmutableType(QueryScopeParam<?> param) {
-        final Object value = param.getValue();
-        if (value == null) {
-            return true;
-        }
-        final Class<?> type = value.getClass();
-        if (type == String.class || type == BigInteger.class || type == BigDecimal.class
-                || type == Instant.class || type == ZonedDateTime.class || Table.class.isAssignableFrom(type)) {
-            return true;
-        }
-        // if it is a boxed type, then it is immutable; otherwise we don't know what to do with it
-        return TypeUtils.isBoxedType(type);
-    }
-
-    private boolean isUsedColumnStateless(String columnName) {
-        return columnSources.get(columnName).isStateless();
-    }
-
-    @Override
-    public boolean isStateless() {
-        return Arrays.stream(params).allMatch(DhFormulaColumn::isImmutableType)
-                && usedColumns.stream().allMatch(this::isUsedColumnStateless)
-                && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
-    }
-
 }

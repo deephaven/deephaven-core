@@ -74,4 +74,9 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     public Collection<Filter> visit(RawString rawString) {
         return Collections.singleton(rawString);
     }
+
+    @Override
+    public Collection<Filter> visit(StatefulFilter filter) {
+        return Collections.singleton(filter);
+    }
 }

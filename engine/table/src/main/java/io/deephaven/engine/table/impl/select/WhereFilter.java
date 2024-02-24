@@ -211,7 +211,7 @@ public interface WhereFilter extends Filter {
     /**
      * @return if this filter can be applied in parallel
      */
-    default boolean permitParallelization() {
+    default boolean isStateless() {
         return true;
     }
 

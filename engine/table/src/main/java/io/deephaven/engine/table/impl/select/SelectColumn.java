@@ -3,13 +3,11 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
+import io.deephaven.api.expression.StatefulExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.context.QueryCompiler;
@@ -173,10 +171,12 @@ public interface SelectColumn extends Selectable {
     }
 
     /**
-     * Returns true if this column is stateless (i.e. one row does not depend on the order of evaluation for another
-     * row).
+     * @return true if this column is stateless (i.e. one row does not depend on the order of evaluation for another
+     *         row).
      */
-    boolean isStateless();
+    default boolean isStateless() {
+        return true;
+    }
 
     /**
      * Create a copy of this SelectColumn.
@@ -220,6 +220,11 @@ public interface SelectColumn extends Selectable {
         @Override
         public SelectColumn visit(RawString rhs) {
             return makeSelectColumn(Strings.of(rhs));
+        }
+
+        @Override
+        public SelectColumn visit(StatefulExpression statefulExpression) {
+            return StatefulSelectColumn.of(statefulExpression.innerExpression().walk(this));
         }
 
         private SelectColumn makeSelectColumn(String rhs) {

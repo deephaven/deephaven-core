@@ -89,11 +89,6 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public boolean isStateless() {
-        return true;
-    }
-
-    @Override
     public SelectColumn copy() {
         // noinspection unchecked,rawtypes
         return new NullSelectColumn(getReturnedType(), nvcs.getComponentType(), name);

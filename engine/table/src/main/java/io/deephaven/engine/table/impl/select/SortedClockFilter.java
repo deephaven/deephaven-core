@@ -83,7 +83,7 @@ public class SortedClockFilter extends ClockFilter {
     }
 
     @Override
-    public boolean permitParallelization() {
+    public boolean isStateless() {
         return false;
     }
 }

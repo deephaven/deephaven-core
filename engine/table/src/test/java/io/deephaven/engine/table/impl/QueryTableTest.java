@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import com.google.common.primitives.Ints;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.StatefulSelectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -1413,7 +1414,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final Table snappedFirst = base.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snappedFirst);
-        final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
+        final Table snappedDep = snappedFirst.select(Collections.singleton(StatefulSelectable.of(
+                Selectable.parse("B=testSnapshotDependenciesCounter.incrementAndGet()"))));
         final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Flag.INITIAL);
         validateUpdates(snappedOfSnap);
 
@@ -1553,7 +1555,8 @@ public class QueryTableTest extends QueryTableTestBase {
         QueryScope.addParam("testSnapshotDependenciesCounter", new AtomicInteger());
 
         final Table snappedFirst = base.snapshotWhen(trigger, Flag.INCREMENTAL);
-        final Table snappedDep = snappedFirst.select("B=testSnapshotDependenciesCounter.incrementAndGet()");
+        final Table snappedDep = snappedFirst.select(Collections.singleton(StatefulSelectable.of(
+                Selectable.parse("B=testSnapshotDependenciesCounter.incrementAndGet()"))));
         final Table snappedOfSnap = snappedDep.snapshotWhen(trigger, Flag.INCREMENTAL);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

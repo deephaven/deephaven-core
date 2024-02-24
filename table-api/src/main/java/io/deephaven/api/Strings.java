@@ -8,14 +8,8 @@ import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.expression.StatefulExpression;
+import io.deephaven.api.filter.*;
 import io.deephaven.api.literal.Literal;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -231,6 +225,22 @@ public class Strings {
                 + method.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
+    public static String of(StatefulFilter filter) {
+        return of(filter, false);
+    }
+
+    public static String of(StatefulFilter filter, boolean invert) {
+        return (invert ? "!" : "") + "stateful(" + of(filter.innerFilter()) + ")";
+    }
+
+    public static String of(StatefulExpression expression) {
+        return of(expression, false);
+    }
+
+    public static String of(StatefulExpression expression, boolean invert) {
+        return (invert ? "!" : "") + "stateful(" + of(expression.innerExpression()) + ")";
+    }
+
     public static String of(boolean literal) {
         return Boolean.toString(literal);
     }
@@ -322,6 +332,11 @@ public class Strings {
         public String visit(Method method) {
             return of(method, invert);
         }
+
+        @Override
+        public String visit(StatefulExpression statefulExpression) {
+            return of(statefulExpression, invert);
+        }
     }
 
     private static class FilterAdapter implements Filter.Visitor<String> {
@@ -377,6 +392,11 @@ public class Strings {
         @Override
         public String visit(Method method) {
             return of(method, invert);
+        }
+
+        @Override
+        public String visit(StatefulFilter filter) {
+            return of(filter, invert);
         }
 
         @Override

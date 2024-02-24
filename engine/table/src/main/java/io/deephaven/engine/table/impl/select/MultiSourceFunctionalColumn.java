@@ -198,11 +198,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public boolean isStateless() {
-        return false;
-    }
-
-    @Override
     public MultiSourceFunctionalColumn<D> copy() {
         return new MultiSourceFunctionalColumn<>(sourceNames, destName, destDataType, function);
     }
