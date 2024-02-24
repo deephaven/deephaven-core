@@ -7,8 +7,11 @@ package io.deephaven.jsoningester;
 import io.deephaven.jsoningester.msg.MessageMetadata;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +22,7 @@ import java.util.Map;
  */
 class InMemoryRowHolder {
 
-    // TODO: generate row holders specific to the adapter's field setter types?
+    // TODO: generate row holders specific to the adapter's field setter types? or just use primitive arrs?
     private final Object[] data;
     private int dataPosition = 0;
     private long messageNumber;
@@ -41,8 +44,7 @@ class InMemoryRowHolder {
      * @param type The class of the Deephaven column this RowSetter will emulate
      * @return a RowSetter that stores data to an in-memory store only
      */
-    public @SuppressWarnings("rawtypes") SingleRowSetter getSetter(final String columnName,
-            @SuppressWarnings("rawtypes") final Class type) {
+    public SingleRowSetter getSetter(final String columnName, final Class<?> type) {
         return setters.computeIfAbsent(columnName, setter -> new SingleRowSetter(type));
     }
 
@@ -194,6 +196,10 @@ class InMemoryRowHolder {
         return data[setters.get(columnName).getThisPosition()];
     }
 
+    public long getLong(final String columnName) {
+        return getLong(setters.get(columnName).getThisPosition());
+    }
+
     public Row.Flags getFlags() {
         return flags;
     }
@@ -255,10 +261,16 @@ class InMemoryRowHolder {
         public void set(final Object value) {
             data[thisPosition] = value;
         }
+        public void set(final Instant value) {
+            data[thisPosition] = DateTimeUtils.epochNanos(value);
+        }
 
+        public void setBoolean(final boolean value) {
+            data[thisPosition] = value;
+        }
         @Override
         public void setBoolean(final Boolean value) {
-            data[thisPosition] = value;
+            data[thisPosition] = BooleanUtils.booleanAsByte(value);
         }
 
         @Override
