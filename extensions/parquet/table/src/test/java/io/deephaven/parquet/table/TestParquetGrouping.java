@@ -32,7 +32,7 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
 
             final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v"));
             final Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
-            DataIndexer.of(table.getRowSet()).getOrCreateDataIndex(table, "v");
+            DataIndexer.getOrCreateDataIndex(table, "v");
 
             final ParquetInstructions instructions = ParquetInstructions.builder()
                     .addColumnNameMapping("V", "v")
@@ -42,8 +42,7 @@ public class TestParquetGrouping extends RefreshingTableTestCase {
 
             final Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
-            final DataIndexer dataIndexer = DataIndexer.of(tableR.getRowSet());
-            final DataIndex dataIndex = dataIndexer.getDataIndex(tableR, "V");
+            final DataIndex dataIndex = DataIndexer.getDataIndex(tableR, "V");
             Assert.neqNull(dataIndex, "dataIndex");
             final Table allGroupingTable = dataIndex.table();
 

@@ -24,7 +24,8 @@ public class ColumnInfo<T, U> {
     final static ColAttributes[] ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY = new ColAttributes[0];
 
     public enum ColAttributes {
-        None, Immutable, Grouped
+        None, Immutable, Grouped // TODO-RWC: This is an issue with refreshing tests
+
     }
 
     public ColumnInfo(TestDataGenerator<T, U> generator, String name, ColAttributes... colAttributes) {

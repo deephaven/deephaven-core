@@ -82,7 +82,7 @@ public class BaseUpdateByTest {
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
         if (!isRefreshing && includeGroups) {
-            DataIndexer.of(t.getRowSet()).getOrCreateDataIndex(t, "Sym");
+            DataIndexer.getOrCreateDataIndex(t, "Sym");
         }
 
         t.setRefreshing(isRefreshing);

@@ -18,10 +18,7 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
 public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
 
@@ -85,7 +82,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
                 Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
 
         final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        final BasicDataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
+        final BasicDataIndex dataIndex = Objects.requireNonNull(dataIndexer.getDataIndex(columnSources));
         final Table indexTable = dataIndex.table();
 
         // noinspection unchecked

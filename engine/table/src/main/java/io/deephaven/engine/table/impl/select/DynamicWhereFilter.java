@@ -224,13 +224,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private DataIndex optimalIndex(final Table inputTable) {
         final String[] keyColumnNames = MatchPair.getLeftColumns(matchPairs);
 
-        final DataIndexer dataIndexer = DataIndexer.of(inputTable.getRowSet());
-        final DataIndex fullIndex = dataIndexer.getDataIndex(inputTable, keyColumnNames);
+        final DataIndex fullIndex = DataIndexer.getDataIndex(inputTable, keyColumnNames);
         if (fullIndex != null) {
             return fullIndex;
         } else {
-            final DataIndex partialIndex = dataIndexer.getOptimalPartialIndex(inputTable, keyColumnNames);
-            return partialIndex;
+            return DataIndexer.getOptimalPartialIndex(inputTable, keyColumnNames);
         }
     }
 

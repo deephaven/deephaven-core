@@ -8,6 +8,8 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -24,12 +26,14 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
@@ -253,52 +257,56 @@ public class TimeTableTest extends RefreshingTableTestCase {
         Assert.assertEquals(timeTable.size(), 201);
 
         final DataIndexer dataIndexer = DataIndexer.of(timeTable.getRowSet());
+
         // Create the index for this table and column.
-        dataIndexer.getOrCreateDataIndex(timeTable, "Timestamp");
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+            DataIndexer.getOrCreateDataIndex(timeTable, "Timestamp");
 
-        final BasicDataIndex dataIndex =
-                dataIndexer.getDataIndex(dtColumn).transform(
-                        DataIndexTransformer.builder()
-                                .intersectRowSet(RowSetFactory.fromRange(100, 109))
-                                .build());
-        final Table indexTable = dataIndex.table();
+            final BasicDataIndex dataIndex =
+                    dataIndexer.getDataIndex(dtColumn).transform(
+                            DataIndexTransformer.builder()
+                                    .intersectRowSet(RowSetFactory.fromRange(100, 109))
+                                    .build());
+            final Table indexTable = dataIndex.table();
 
-        final ColumnSource<Long> reinterpretedColumn =
-                (ColumnSource<Long>) ReinterpretUtils.maybeConvertToPrimitive(dtColumn);
+            //noinspection unchecked
+            final ColumnSource<Long> reinterpretedColumn =
+                    (ColumnSource<Long>) ReinterpretUtils.maybeConvertToPrimitive(dtColumn);
 
-        Assert.assertEquals(indexTable.size(), 10);
-        try (final CloseableIterator<Long> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
-                final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
-            while (keyIt.hasNext()) {
-                final Long key = keyIt.next();
-                final RowSet rs = rsIt.next();
-                Assert.assertEquals(rs.size(), 1);
-                Assert.assertEquals(reinterpretedColumn.get(rs.firstRowKey()), key);
+            Assert.assertEquals(indexTable.size(), 10);
+            try (final CloseableIterator<Long> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
+                 final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+                while (keyIt.hasNext()) {
+                    final Long key = keyIt.next();
+                    final RowSet rs = rsIt.next();
+                    Assert.assertEquals(rs.size(), 1);
+                    Assert.assertEquals(reinterpretedColumn.get(rs.firstRowKey()), key);
+                }
             }
-        }
 
-        final Table riTable = timeTable.updateView(List.of(
-                new ReinterpretedColumn<>("Timestamp", Instant.class, "longTimestamp", long.class)));
+            final Table riTable = timeTable.updateView(List.of(
+                    new ReinterpretedColumn<>("Timestamp", Instant.class, "longTimestamp", long.class)));
 
-        // Create the index for this table and column.
-        dataIndexer.getOrCreateDataIndex(riTable, "longTimestamp");
+            // Create the index for this table and column.
+            DataIndexer.getOrCreateDataIndex(riTable, "longTimestamp");
 
-        final BasicDataIndex longDataIndex =
-                dataIndexer.getDataIndex(riTable.getColumnSource("longTimestamp")).transform(
-                        DataIndexTransformer.builder()
-                                .intersectRowSet(RowSetFactory.fromRange(100, 109))
-                                .build());
-        final Table longIndexTable = longDataIndex.table();
+            final BasicDataIndex longDataIndex =
+                    Objects.requireNonNull(DataIndexer.getDataIndex(riTable, "longTimestamp")).transform(
+                            DataIndexTransformer.builder()
+                                    .intersectRowSet(RowSetFactory.fromRange(100, 109))
+                                    .build());
+            final Table longIndexTable = longDataIndex.table();
 
-        Assert.assertEquals(longIndexTable.size(), 10);
-        try (final CloseableIterator<Long> keyIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0]);
-                final CloseableIterator<RowSet> rsIt =
-                        longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {
-            while (keyIt.hasNext()) {
-                final Long key = keyIt.next();
-                final RowSet rs = rsIt.next();
-                Assert.assertEquals(rs.size(), 1);
-                Assert.assertEquals(column.get(rs.firstRowKey()), key);
+            Assert.assertEquals(longIndexTable.size(), 10);
+            try (final CloseableIterator<Long> keyIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0]);
+                 final CloseableIterator<RowSet> rsIt =
+                         longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {
+                while (keyIt.hasNext()) {
+                    final Long key = keyIt.next();
+                    final RowSet rs = rsIt.next();
+                    Assert.assertEquals(rs.size(), 1);
+                    Assert.assertEquals(column.get(rs.firstRowKey()), key);
+                }
             }
         }
     }

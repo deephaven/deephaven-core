@@ -598,7 +598,7 @@ public class ParquetTools {
         if (dataIndexer == null) {
             return new String[0][];
         }
-        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes(true);
         if (dataIndexes.isEmpty()) {
             return new String[0][];
         }

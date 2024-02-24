@@ -139,7 +139,7 @@ public class MatchFilter extends WhereFilterImpl {
         if (sourceDataIndex == null) {
             // The outside world knows we would like to use this index, we can rely on it being in the correct state
             // for this cycle only.
-            sourceDataIndex = DataIndexer.of(sourceTable.getRowSet()).getDataIndex(sourceTable, columnName);
+            sourceDataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
         }
         if (sourceDataIndex == null) {
             return Collections.emptyList();

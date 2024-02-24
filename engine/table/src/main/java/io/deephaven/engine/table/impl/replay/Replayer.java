@@ -210,6 +210,9 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
+        if (dataSource.isRefreshing()) {
+            dataSource = dataSource.snapshot();
+        }
         final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
@@ -229,6 +232,9 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
+        if (dataSource.isRefreshing()) {
+            dataSource = dataSource.snapshot();
+        }
         final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
