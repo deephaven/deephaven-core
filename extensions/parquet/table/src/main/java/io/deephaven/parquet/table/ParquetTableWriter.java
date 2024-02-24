@@ -60,25 +60,24 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    public static class GroupingColumnWritingInfo {
+    static class GroupingColumnWritingInfo {
         /**
          * Parquet name of this grouping column
          */
-        public final String parquetColumnName;
+        final String parquetColumnName;
         /**
          * File path to be added in the grouping metadata of main parquet file
          */
-        public final File metadataFilePath;
+        final File metadataFilePath;
 
         /**
          * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
          * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
          * should always hold the accurate path.
          */
-        public final File destFile;
+        final File destFile;
 
-        public GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath,
-                final File destFile) {
+        GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath, final File destFile) {
             this.parquetColumnName = parquetColumnName;
             this.metadataFilePath = metadataFilePath;
             this.destFile = destFile;
@@ -97,7 +96,7 @@ public class ParquetTableWriter {
      *         unsupported types)
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
