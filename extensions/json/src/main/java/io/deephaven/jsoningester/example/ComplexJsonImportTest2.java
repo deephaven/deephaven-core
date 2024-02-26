@@ -9,16 +9,13 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
 import io.deephaven.jsoningester.JSONToInMemoryTableAdapterBuilder;
 import io.deephaven.jsoningester.JSONToTableWriterAdapter;
-import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.util.type.TypeUtils;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
 
@@ -189,7 +186,7 @@ public class ComplexJsonImportTest2 {
         }
     }
 
-    public static List<ColumnHeader<?>> addObservationNestedFieldBuilderAndGetColHeaders(
+    public static void addObservationNestedFieldBuilderAndGetColHeaders(
             JSONToInMemoryTableAdapterBuilder parentBuilder,
             String fieldName,
             Class<?> type) {
@@ -203,29 +200,7 @@ public class ComplexJsonImportTest2 {
         nestedBuilder.allowMissingKeys(true);
         nestedBuilder.allowNullValues(true);
 
-        ColumnHeader<?> firstColHeader;
-
-        type = TypeUtils.getBoxedType(type);
-        if (String.class.equals(type)) {
-            firstColHeader = ColumnHeader.ofString(observationName);
-        } else if (Double.class.equals(type)) {
-            firstColHeader = ColumnHeader.ofDouble(observationName);
-        } else if (Integer.class.equals(type)) {
-            firstColHeader = ColumnHeader.ofInt(observationName);
-        } else if (Long.class.equals(type)) {
-            firstColHeader = ColumnHeader.ofLong(observationName);
-        } else if (Boolean.class.equals(type)) {
-            firstColHeader = ColumnHeader.ofBoolean(observationName);
-        } else {
-            throw new IllegalArgumentException("Unsupported type: " + type.getName());
-        }
-
         parentBuilder.addNestedField(fieldName, nestedBuilder);
-
-        return List.of(
-                firstColHeader,
-                ColumnHeader.ofString(observationName + "_unitCode"),
-                ColumnHeader.ofString(observationName + "_qualityControl"));
     }
 
 }
