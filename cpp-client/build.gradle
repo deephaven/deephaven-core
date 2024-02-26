@@ -4,7 +4,6 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
-    id 'license'
 }
 
 // We use the cpp-clients-multi-base image instead of the cpp-client-base,
@@ -22,7 +21,9 @@ dependencies {
 def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.cpp
-    actualContents.set protoSourceDir
+    actualContents {
+        directory protoSourceDir
+    }
     generateTask.set ':cpp-client:updateProtobuf'
 }
 // fail a "check" build if these are out of date
@@ -33,23 +34,6 @@ tasks.register('updateProtobuf', Sync) {
     from configurations.cpp
     into protoSourceDir
 }
-
-license {
-    header rootProject.file('license-header')
-    include '**/*.h'
-    include '**/*.cc'
-    strictCheck true
-    useDefaultMappings true
-    ignoreFailures true
-}
-tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven']
-})
-tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven']
-})
-
-project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();

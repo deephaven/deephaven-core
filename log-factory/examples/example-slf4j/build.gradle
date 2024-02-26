@@ -11,7 +11,7 @@ dependencies {
 }
 
 application {
-	mainClassName = 'io.deephaven.internal.example.LogExampleMain'
+	mainClass.set 'io.deephaven.internal.example.LogExampleMain'
 	applicationDefaultJvmArgs = [
 		// http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html
 		'-Dorg.slf4j.simpleLogger.defaultLogLevel=debug',

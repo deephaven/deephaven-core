@@ -52,11 +52,14 @@ def compare = tasks.register('compareProtobuf', DiffTask) {
     dependsOn updatePyNamespaces
 
     expectedContents.set generatedProtoDir.get().dir('pydeephaven/proto')
-    actualContents.set layout.projectDirectory.dir('pydeephaven/proto')
-    generateTask.set ':py-client:updateProto'
-    ignore {
-        include '__init__.py'
+    actualContents {
+        directory layout.projectDirectory.dir('pydeephaven/proto')
+        ignore {
+            it.include '__init__.py'
+        }
     }
+    generateTask.set ':py-client:updateProto'
+
 }
 // fail a "check" build if these are out of date
 tasks.getByName('quick').dependsOn(compare)

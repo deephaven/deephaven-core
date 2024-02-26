@@ -45,15 +45,19 @@ tasks.findByName('clean').dependsOn cleanGen
 
 def gencode = { name, template, output ->
 
-    task(name, type: JavaExec) {
-        main = 'io.deephaven.generator.primitivetemplate.CodeGenerator'
+    def gen = project.tasks.register(name, JavaExec) {
+        mainClass.set 'io.deephaven.generator.primitivetemplate.CodeGenerator'
         classpath = configurations.primitiveCodegen
         args = [template, output]
         inputs.file template
         outputs.file output
     }
 
-    compileJava.dependsOn(name)
+    [sourceSets.main.compileJavaTaskName, sourceSets.main.sourcesJarTaskName, sourceSets.main.javadocTaskName].each {
+        tasks.named(it).configure {
+            dependsOn(gen)
+        }
+    }
     generatedFiles.add output
 }
 

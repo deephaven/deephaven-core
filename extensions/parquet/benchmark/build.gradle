@@ -50,7 +50,7 @@ task jmhRun(type: JavaExec)  {
 
     classpath = sourceSets.test.runtimeClasspath
 
-    main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+    mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
     // arguments to pass to the application
     jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
@@ -68,7 +68,7 @@ def createJmhTask = {
 
         task.workingDir "$rootDir/tmp/workspace"
         task.classpath = sourceSets.test.runtimeClasspath
-        task.main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+        task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application
         def jvmArgs = [ '-DConfiguration.rootFile=dh-tests.prop',

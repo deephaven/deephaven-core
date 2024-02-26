@@ -7,13 +7,12 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.artifacts.repositories.PasswordCredentials
-import org.gradle.api.plugins.BasePluginConvention
+import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.plugins.signing.SigningExtension
-import org.gradle.util.ConfigureUtil
 
 @CompileStatic
 class PublishingTools {
@@ -37,7 +36,12 @@ class PublishingTools {
     static final String RELEASE_REPO = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
 
     static void setupPublications(Project project, Closure closure) {
-        setupPublications(project, ConfigureUtil.configureUsing(closure))
+        setupPublications(project, new Action<MavenPublication>() {
+            @Override
+            void execute(MavenPublication mavenPublication) {
+                project.configure(mavenPublication, closure)
+            }
+        })
     }
 
     static void setupPublications(Project project, Action<MavenPublication> action) {
@@ -107,14 +111,15 @@ class PublishingTools {
             if (p.description == null) {
                 throw new IllegalStateException("Project '${project.name}' is missing a description, which is required for publishing to maven central")
             }
-            BasePluginConvention base = p.convention.getPlugin(BasePluginConvention)
+            BasePluginExtension base = p.extensions.findByType(BasePluginExtension)
             // The common-conventions plugin should take care of this, but we'll double-check here
-            if (!base.archivesBaseName.contains('deephaven')) {
-                throw new IllegalStateException("Project '${project.name}' archiveBaseName '${base.archivesBaseName}' does not contain 'deephaven'")
+            String archivesName = base.archivesName.get()
+            if (!archivesName.contains('deephaven')) {
+                throw new IllegalStateException("Project '${project.name}' archiveBaseName '${archivesName}' does not contain 'deephaven'")
             }
-            mavenPublication.artifactId = base.archivesBaseName
+            mavenPublication.artifactId = archivesName
             mavenPublication.pom { pom ->
-                pom.name.set base.archivesBaseName
+                pom.name.set archivesName
                 pom.description.set p.description
             }
         }
