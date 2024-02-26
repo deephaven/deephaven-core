@@ -7,9 +7,6 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-/**
- * Created by rbasralian on 9/29/22
- */
 public class ExampleJSON {
 
     /**

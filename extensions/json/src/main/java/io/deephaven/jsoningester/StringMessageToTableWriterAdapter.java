@@ -24,6 +24,7 @@ import java.util.function.ToLongFunction;
 /**
  * Translates a message into a standardized form for further processing, including attaching any needed metadata.
  */
+@Deprecated
 public class StringMessageToTableWriterAdapter<M> implements MessageToIngesterAdapter<M> {
 
     private final StringIngestionAdapter<StringMessageToTableWriterAdapter<M>> stringAdapter;

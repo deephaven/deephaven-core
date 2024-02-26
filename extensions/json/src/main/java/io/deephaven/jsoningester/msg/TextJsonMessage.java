@@ -5,9 +5,6 @@ import io.deephaven.jsoningester.JsonNodeUtil;
 
 import java.time.Instant;
 
-/**
- * Created by rbasralian on 10/19/22
- */
 public class TextJsonMessage extends TextMessage implements JsonMessage {
 
     /**

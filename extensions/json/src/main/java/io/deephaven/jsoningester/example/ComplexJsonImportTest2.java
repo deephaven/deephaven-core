@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Created by rbasralian on 9/28/22
- */
+@Deprecated
 public class ComplexJsonImportTest2 {
 
 

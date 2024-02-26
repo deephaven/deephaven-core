@@ -8,9 +8,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 
-/**
- * Created by rbasralian on 10/19/22
- */
 public class StreamJsonMessage extends BaseMessageMetadata implements JsonMessage {
 
     private final InputStream inputStream;

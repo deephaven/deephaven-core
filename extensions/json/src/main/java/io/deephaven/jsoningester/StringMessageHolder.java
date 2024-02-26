@@ -1,8 +1,5 @@
 package io.deephaven.jsoningester;
 
-/**
- * Created by rbasralian on 10/3/22
- */
 // TODO: replace this with TextMessage?
 public class StringMessageHolder {
     private final long sendTimeMicros;
