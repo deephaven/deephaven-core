@@ -11,6 +11,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -22,6 +23,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
@@ -717,17 +719,24 @@ public class WindowCheck {
                 final Entry taken = priorityQueue.removeTop();
                 Assert.equals(entry, "entry", taken, "taken");
 
+
+
                 // now scan the rest of the entry, which requires reading from the timestamp source;
                 // this would ideally be done as a chunk, reusing the context
-                long newFirst;
-                for (newFirst = entry.firstRowKey + 1; newFirst <= entry.lastRowKey; ++newFirst) {
-                    // TODO: When we port this to Core, we should use an iterator on the column source to take advantage
-                    // of chunks
-                    final long nanos = inWindowColumnSource.timeStampSource.getLong(newFirst);
-                    if (inWindowColumnSource.computeInWindowUnsafe(nanos)) {
-                        // nothing more to do, we've passed out of the window, note the new nanos for this entry
-                        entry.nanos = nanos;
-                        break;
+                long newFirst = entry.firstRowKey + 1;
+                if (newFirst <= entry.lastRowKey) {
+                    try (CloseablePrimitiveIteratorOfLong timestampIterator =
+                            new ChunkedLongColumnIterator(inWindowColumnSource.timeStampSource,
+                                    RowSetFactory.fromRange(entry.firstRowKey + 1, entry.lastRowKey))) {
+                        while (newFirst <= entry.lastRowKey) {
+                            final long nanos = timestampIterator.nextLong();
+                            if (inWindowColumnSource.computeInWindowUnsafe(nanos)) {
+                                // nothing more to do, we've passed out of the window, note the new nanos for this entry
+                                entry.nanos = nanos;
+                                break;
+                            }
+                            ++newFirst;
+                        }
                     }
                 }
 
@@ -843,9 +852,10 @@ public class WindowCheck {
             final ColumnSource<?> timeStampSource = table.getColumnSource(timestampColumn);
             Class<?> timestampType = timeStampSource.getType();
             if (timestampType == long.class) {
-                // noinspection unchecked,CastCanBeRemovedNarrowingVariableType
+                // noinspection unchecked
                 this.timeStampSource = (ColumnSource<Long>) timeStampSource;
             } else if (Instant.class.isAssignableFrom(timestampType)) {
+                // noinspection unchecked
                 this.timeStampSource = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) timeStampSource);
             } else {
                 throw new IllegalArgumentException(timestampColumn + " is not of type Instant!");
