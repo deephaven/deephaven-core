@@ -413,8 +413,8 @@ public interface Table extends
     Table moveColumnsDown(String... columnsToMove);
 
     /**
-     * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
-     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
+     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
