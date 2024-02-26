@@ -10,9 +10,8 @@ import io.deephaven.stream.StreamToBlinkTableAdapter;
 import java.util.List;
 
 /**
- * Wrapper for a {@link #getPublisher() stream publisher}, a corresponding
- * {@link #getAdapter()  StreamToBlinkTableAdapter}, and the
- * {@link #getBlinkTable() blink table} produced by the adapter.
+ * Wrapper for a {@link #getPublisher() stream publisher}, a corresponding {@link #getAdapter()
+ * StreamToBlinkTableAdapter}, and the {@link #getBlinkTable() blink table} produced by the adapter.
  */
 public class StreamPublisherAndTable implements AutoCloseable {
     private final SimpleStreamPublisher publisher;
@@ -33,6 +32,7 @@ public class StreamPublisherAndTable implements AutoCloseable {
 
     /**
      * Returns the adapter's blink table (see {@link StreamToBlinkTableAdapter#table()}).
+     * 
      * @return The table produced by the {@link #getAdapter() StreamToBlinkTableAdapter}
      */
     public Table getBlinkTable() {

@@ -50,16 +50,14 @@ public class JSONToBlinkTableAdapterBuilder {
         public TableAndAdapterBuilderResult(
                 Map<String, StreamPublisherAndTable> resultPublishersAndAdapters,
                 JSONToStreamPublisherAdapter streamPublisherAdapter,
-                final boolean createAppendOnlyTables
-                ) {
+                final boolean createAppendOnlyTables) {
             this.resultPublishersAndAdapters = Collections.unmodifiableMap(resultPublishersAndAdapters);
             this.streamPublisherAdapter = streamPublisherAdapter;
 
-            if(createAppendOnlyTables) {
+            if (createAppendOnlyTables) {
                 resultAppendOnlyTables = resultPublishersAndAdapters.entrySet().stream().collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        en -> BlinkTableTools.blinkToAppendOnly(en.getValue().getBlinkTable())
-                ));
+                        en -> BlinkTableTools.blinkToAppendOnly(en.getValue().getBlinkTable())));
             } else {
                 resultAppendOnlyTables = null;
             }
@@ -96,27 +94,28 @@ public class JSONToBlinkTableAdapterBuilder {
 
     /**
      *
-     * @param log                    A logger
+     * @param log A logger
      * @param createAppendOnlyTables Whether to create append-only tables from the result blink tables
      * @return
      */
     public TableAndAdapterBuilderResult build(Logger log,
-                                              boolean createAppendOnlyTables) {
+            boolean createAppendOnlyTables) {
         return build(log,
                 ExecutionContext.getContext().getUpdateGraph(),
                 createAppendOnlyTables);
     }
 
     /**
-     * @param log                    A logger
-     * @param updateSourceRegistrar  An update source registrar (typically an {@link io.deephaven.engine.updategraph.UpdateGraph),
-     *                               such as {@code ExecutionContext.getContext().getUpdateGraph()}})
+     * @param log A logger
+     * @param updateSourceRegistrar An update source registrar (typically an
+     *        {@link io.deephaven.engine.updategraph.UpdateGraph), such as
+     *        {@code ExecutionContext.getContext().getUpdateGraph()}})
      * @param createAppendOnlyTables Whether to create append-only tables from the result blink tables
      * @return
      */
     public TableAndAdapterBuilderResult build(Logger log,
-                                              UpdateSourceRegistrar updateSourceRegistrar,
-                                              boolean createAppendOnlyTables) {
+            UpdateSourceRegistrar updateSourceRegistrar,
+            boolean createAppendOnlyTables) {
         final String mainResultTableName;
         if (this.mainResultTableName == null) {
             mainResultTableName = "tableFromJSON_" + adapterCounter.getAndIncrement();
@@ -133,21 +132,25 @@ public class JSONToBlinkTableAdapterBuilder {
         final Map<String, SimpleStreamPublisher> routedAndSubtablePublishers = new LinkedHashMap<>();
 
         // Make this table's StreamPublisher
-        Map<String, StreamPublisherAndTable> results = new HashMap<>(1 + subtableFieldsToBuilders.size() + routedTableIdsToBuilders.size());
+        Map<String, StreamPublisherAndTable> results =
+                new HashMap<>(1 + subtableFieldsToBuilders.size() + routedTableIdsToBuilders.size());
 
-        final StreamPublisherAndTable mainResultPublisherAndTable = getStreamPublisher(false, mainResultTableName, updateSourceRegistrar);
+        final StreamPublisherAndTable mainResultPublisherAndTable =
+                getStreamPublisher(false, mainResultTableName, updateSourceRegistrar);
         results.put(mainResultTableName, mainResultPublisherAndTable);
 
         subtableFieldsToBuilders.forEach((k, v) -> {
 
-            final StreamPublisherAndTable subtableAdapterAndPublisher = v.getStreamPublisher(true, mainResultTableName + "_" + k, updateSourceRegistrar);
+            final StreamPublisherAndTable subtableAdapterAndPublisher =
+                    v.getStreamPublisher(true, mainResultTableName + "_" + k, updateSourceRegistrar);
             routedAndSubtablePublishers.put(k, subtableAdapterAndPublisher.getPublisher());
 
             results.put(k, subtableAdapterAndPublisher);
         });
 
         routedTableIdsToBuilders.forEach((k, v) -> {
-            final StreamPublisherAndTable routedAdapterAndPublisher = v.getStreamPublisher(true, mainResultTableName + "_" + k, updateSourceRegistrar);
+            final StreamPublisherAndTable routedAdapterAndPublisher =
+                    v.getStreamPublisher(true, mainResultTableName + "_" + k, updateSourceRegistrar);
             if (routedAndSubtablePublishers.put(k, routedAdapterAndPublisher.getPublisher()) != null) {
                 throw new IllegalStateException("key " + k + " used for both routed table and subtable");
             }
@@ -168,20 +171,19 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     private StreamPublisherAndTable getStreamPublisher(final boolean subtable,
-                                                       final String adapterName,
-                                                       final UpdateSourceRegistrar updateSourceRegistrar) {
+            final String adapterName,
+            final UpdateSourceRegistrar updateSourceRegistrar) {
         final TableDefinition tableDef = getTableDefinition(subtable);
 
         return StreamPublisherAndTable.createStreamPublisherAndTable(
                 tableDef,
                 adapterName,
-                updateSourceRegistrar
-        );
+                updateSourceRegistrar);
     }
 
     /**
      * @param subtable Whether the table is a subtable (which requires adding a
-     *                 {@link JSONToStreamPublisherAdapter#SUBTABLE_RECORD_ID_COL}) to the table definition).
+     *        {@link JSONToStreamPublisherAdapter#SUBTABLE_RECORD_ID_COL}) to the table definition).
      * @return
      */
     @NotNull
@@ -214,12 +216,12 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromField(final String field,
-                                                             final Class<?> type) {
+            final Class<?> type) {
         return addColumnFromField(field, field, type);
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromField(final String column, final String field,
-                                                             final Class<?> type) {
+            final Class<?> type) {
         addCol(column, type);
         jsonAdpaterBuilder.addColumnFromField(column, field);
 
@@ -227,7 +229,7 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addFieldParallel(final String column,
-                                                           final String field, final Class<?> type) {
+            final String field, final Class<?> type) {
         addCol(column, type);
         jsonAdpaterBuilder.addFieldParallel(column, field);
 
@@ -235,7 +237,7 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addNestedFieldParallel(final String field,
-                                                                 final JSONToBlinkTableAdapterBuilder builder) {
+            final JSONToBlinkTableAdapterBuilder builder) {
         addCols(builder.colNames, builder.colTypes);
 
         subtableFieldsToBuilders.putAll(builder.subtableFieldsToBuilders);
@@ -256,7 +258,7 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addFieldToSubTableMapping(final String field,
-                                                                    final JSONToBlinkTableAdapterBuilder subtableBuilder) {
+            final JSONToBlinkTableAdapterBuilder subtableBuilder) {
         colNames.add(JSONToStreamPublisherAdapter.getSubtableRowIdColName(field));
         colTypes.add(long.class);
 
@@ -286,7 +288,7 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromIntFunction(final String column,
-                                                                   final ToIntFunction<JsonNode> toIntFunction) {
+            final ToIntFunction<JsonNode> toIntFunction) {
         addCol(column, int.class);
 
         jsonAdpaterBuilder.addColumnFromIntFunction(column, toIntFunction);
@@ -294,7 +296,7 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromLongFunction(final String column,
-                                                                    final ToLongFunction<JsonNode> toLongFunction) {
+            final ToLongFunction<JsonNode> toLongFunction) {
         addCol(column, long.class);
 
         jsonAdpaterBuilder.addColumnFromLongFunction(column, toLongFunction);
@@ -302,7 +304,7 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromDoubleFunction(final String column,
-                                                                      final ToDoubleFunction<JsonNode> toDoubleFunction) {
+            final ToDoubleFunction<JsonNode> toDoubleFunction) {
         addCol(column, double.class);
 
         jsonAdpaterBuilder.addColumnFromDoubleFunction(column, toDoubleFunction);
@@ -311,8 +313,8 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public <R> JSONToBlinkTableAdapterBuilder addColumnFromFunction(final String column,
-                                                                    final Class<R> returnType,
-                                                                    final Function<JsonNode, R> function) {
+            final Class<R> returnType,
+            final Function<JsonNode, R> function) {
         addCol(column, returnType);
 
         jsonAdpaterBuilder.addColumnFromFunction(column, returnType, function);
@@ -320,12 +322,12 @@ public class JSONToBlinkTableAdapterBuilder {
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromPointer(final String column, final Class<?> type,
-                                                               final String jsonPointer) {
+            final String jsonPointer) {
         return addColumnFromPointer(column, type, JsonPointer.compile(jsonPointer));
     }
 
     public JSONToBlinkTableAdapterBuilder addColumnFromPointer(final String column, final Class<?> type,
-                                                               final JsonPointer jsonPointer) {
+            final JsonPointer jsonPointer) {
         addCol(column, type);
         jsonAdpaterBuilder.addColumnFromPointer(column, jsonPointer);
 

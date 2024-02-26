@@ -977,7 +977,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         } else if (colType == Instant.class) {
             // Note that Instants are stored as longs
             fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setLong(DateTimeUtils.epochNanos((Instant) function.apply(record)));
+                    returnType, position, holderNumber)
+                    .setLong(DateTimeUtils.epochNanos((Instant) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
                     .add(holder.getLong(position.intValue()));
         } else {
