@@ -36,7 +36,7 @@ setup(
     long_description=_get_readme(),
     long_description_content_type='text/markdown',
     packages=find_namespace_packages(exclude=("tests")),
-    package_data={'deephaven_server': ['jars/*']},
+    package_data={'deephaven_server': ['jars/*', 'py.typed']},
     url='https://deephaven.io/',
     author='Deephaven Data Labs',
     author_email='python@deephaven.io',
