@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 from numba import guvectorize, int64, int32
 
-from deephaven import empty_table, dtypes
+from deephaven import empty_table, dtypes, DHError
 from tests.testbase import BaseTestCase
 
 a = np.arange(5, dtype=np.int64)
@@ -88,6 +88,18 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
 
         t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
+
+    def test_type_mismatch_error(self):
+        # vector input to scalar output function (m)->()
+        @guvectorize([(int64[:], int64[:])], "(m)->()", nopython=True)
+        def g(x, res):
+            res[0] = 0
+            for xi in x:
+                res[0] += xi
+
+        with self.assertRaises(DHError) as cm:
+            t = empty_table(10).update(["X=i%3", "Y=(double)ii"]).group_by("X").update("Z=g(Y)")
+        self.assertIn("Argument 1", str(cm.exception))
 
 
 if __name__ == '__main__':
