@@ -381,7 +381,7 @@ public interface Table extends
     Table formatColumnWhere(String columnName, String condition, String formula);
 
     /**
-     * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
+     * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
      * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
