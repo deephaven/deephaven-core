@@ -23,21 +23,13 @@ import java.util.Random;
 public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     public final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
-    private static final GenerateTableUpdates.SimulationProfile NO_SHIFT_PROFILE =
-            new GenerateTableUpdates.SimulationProfile() {
-                {
-                    SHIFT_10_PERCENT_KEY_SPACE = 0;
-                    SHIFT_10_PERCENT_POS_SPACE = 0;
-                    SHIFT_AGGRESSIVELY = 0;
-                }
-            };
-
     public final JoinIncrement leftStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
-            simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), leftSize, random, leftTable, leftColumnInfo, en);
+            simulateShiftAwareStep(GenerateTableUpdates.NO_SHIFT_PROFILE, toString(), leftSize, random, leftTable,
+                    leftColumnInfo, en);
         }
 
         @Override
@@ -63,7 +55,8 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
-            simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), rightSize, random, rightTable, rightColumnInfo, en);
+            simulateShiftAwareStep(GenerateTableUpdates.NO_SHIFT_PROFILE, toString(), rightSize, random, rightTable,
+                    rightColumnInfo, en);
         }
 
         @Override
@@ -89,8 +82,10 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
-            simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), leftSize, random, leftTable, leftColumnInfo, en);
-            simulateShiftAwareStep(NO_SHIFT_PROFILE, toString(), rightSize, random, rightTable, rightColumnInfo, en);
+            simulateShiftAwareStep(GenerateTableUpdates.NO_SHIFT_PROFILE, toString(), leftSize, random, leftTable,
+                    leftColumnInfo, en);
+            simulateShiftAwareStep(GenerateTableUpdates.NO_SHIFT_PROFILE, toString(), rightSize, random, rightTable,
+                    rightColumnInfo, en);
         }
 
         @Override

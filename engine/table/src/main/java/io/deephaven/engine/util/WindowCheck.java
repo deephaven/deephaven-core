@@ -11,7 +11,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -21,6 +20,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -30,8 +30,10 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.base.RAPriQueue;
-import gnu.trove.map.hash.TLongObjectHashMap;
 import io.deephaven.util.QueryConstants;
+import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -58,6 +60,10 @@ public class WindowCheck {
      * The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.
      * </p>
      *
+     * <p>
+     * The timestamp column must be a DBDateTime or a long value expressed as nanoseconds since the epoch.
+     * </p>
+     *
      * @param table the input table
      * @param timestampColumn the timestamp column to monitor in table
      * @param windowNanos how many nanoseconds in the past a timestamp can be before it is out of the window
@@ -67,7 +73,9 @@ public class WindowCheck {
     @SuppressWarnings("unused")
     public static Table addTimeWindow(QueryTable table, String timestampColumn, long windowNanos,
             String inWindowColumn) {
-        return addTimeWindowInternal(null, table, timestampColumn, windowNanos, inWindowColumn, true).first;
+        return QueryPerformanceRecorder.withNugget("addTimeWindow(" + timestampColumn + ", " + windowNanos + ")",
+                table.sizeForInstrumentation(),
+                () -> addTimeWindowInternal(null, table, timestampColumn, windowNanos, inWindowColumn, true).first);
     }
 
     private static class WindowListenerRecorder extends ListenerRecorder {
@@ -105,8 +113,10 @@ public class WindowCheck {
         final TimeWindowListener timeWindowListener =
                 new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, table, result);
         recorder.setMergedListener(timeWindowListener);
-        table.addUpdateListener(recorder);
-        timeWindowListener.addRowSequence(table.getRowSet());
+        if (table.isRefreshing()) {
+            table.addUpdateListener(recorder);
+        }
+        timeWindowListener.addRowSequence(table.getRowSet(), false);
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
@@ -119,42 +129,55 @@ public class WindowCheck {
      * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass out
      * of the window, the InWindow column is set to false and a modification tick happens.
      *
+     * <p>
      * It implements {@link Runnable}, so that we can be inserted into the {@link PeriodicUpdateGraph}.
+     * </p>
      */
     static class TimeWindowListener extends MergedListener implements Runnable {
         private final InWindowColumnSource inWindowColumnSource;
         private final QueryTable result;
-        /** a priority queue of InWindow entries, with the least recent timestamps getting pulled out first. */
+        /** A priority queue of entries within our window, with the least recent timestamps getting pulled out first. */
         private final RAPriQueue<Entry> priorityQueue;
-        /** a map from table indices to our entries. */
-        private final TLongObjectHashMap<Entry> rowKeyToEntry;
+        /** A sorted map from the last row key in an entry, to our entries. */
+        private final Long2ObjectAVLTreeMap<Entry> rowKeyToEntry;
         private final ModifiedColumnSet.Transformer mcsTransformer;
-        private final ModifiedColumnSet mcsNewColumns;
-        private final ModifiedColumnSet reusableModifiedColumnSet;
+        private final ModifiedColumnSet mcsResultWindowColumn;
+        private final ModifiedColumnSet mcsSourceTimestamp;
         private final Table source;
         private final ListenerRecorder recorder;
 
         /**
-         * An intrusive entry inside of indexToEntry and priorityQueue.
+         * An intrusive entry in priorityQueue, also stored in rowKeyToEntry (for tables with
+         * modifications/removes/shifts).
+         *
+         * <p>
+         * Each entry contains a contiguous range of Index keys, with non-descending timestamps.
+         * </p>
          */
         private static class Entry {
             /** position in the priority queue */
             int pos;
-            /** the timestamp */
+            /** the timestamp of the first row key */
             long nanos;
-            /** the row key within the source (and result) table */
-            long rowKey;
 
-            Entry(long rowKey, long timestamp) {
-                this.rowKey = Require.geqZero(rowKey, "rowKey");
-                this.nanos = timestamp;
+            /** the first row key within the source (and result) table */
+            long firstRowKey;
+            /** the last index within the source (and result) table */
+            long lastRowKey;
+
+
+            Entry(final long firstRowKey, final long lastRowKey, final long firstTimestamp) {
+                this.firstRowKey = Require.geqZero(firstRowKey, "firstRowKey");
+                this.lastRowKey = Require.geq(lastRowKey, "lastRowKey", firstRowKey, "firstRowKey");
+                this.nanos = firstTimestamp;
             }
 
             @Override
             public String toString() {
                 return "Entry{" +
                         "nanos=" + nanos +
-                        ", rowKey=" + rowKey +
+                        ", firstRowKey=" + firstRowKey +
+                        ", lastRowKey=" + lastRowKey +
                         '}';
             }
         }
@@ -192,12 +215,16 @@ public class WindowCheck {
                 }
             }, Entry.class);
 
-            this.rowKeyToEntry = new TLongObjectHashMap<>();
+            if (source.isAddOnly()) {
+                this.rowKeyToEntry = null;
+            } else {
+                this.rowKeyToEntry = new Long2ObjectAVLTreeMap<>();
+            }
 
             this.mcsTransformer = source.newModifiedColumnSetTransformer(result,
                     source.getDefinition().getColumnNamesArray());
-            this.mcsNewColumns = result.newModifiedColumnSet(inWindowColumnName);
-            this.reusableModifiedColumnSet = new ModifiedColumnSet(this.mcsNewColumns);
+            this.mcsSourceTimestamp = source.newModifiedColumnSet(inWindowColumnSource.timeStampName);
+            this.mcsResultWindowColumn = result.newModifiedColumnSet(inWindowColumnName);
         }
 
         @Override
@@ -206,57 +233,98 @@ public class WindowCheck {
                 final TableUpdate upstream = recorder.getUpdate();
 
                 // remove the removed indices from the priority queue
-                removeIndex(upstream.removed());
+                removeRowSet(upstream.removed(), true);
 
                 // anything that was shifted needs to be placed in the proper slots
-                try (final RowSet preShiftRowSet = source.getRowSet().copyPrev()) {
+                try (final WritableRowSet preShiftRowSet = source.getRowSet().copyPrev()) {
+                    preShiftRowSet.remove(upstream.removed());
                     upstream.shifted().apply((start, end, delta) -> {
-                        final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
-
-                        final RowSet.SearchIterator it =
-                                delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
-                        while (it.hasNext()) {
-                            final long idx = it.nextLong();
-                            final Entry entry = rowKeyToEntry.remove(idx);
-                            if (entry != null) {
-                                entry.rowKey = idx + delta;
-                                rowKeyToEntry.put(idx + delta, entry);
-                            }
+                        try (final RowSet subIndex = preShiftRowSet.subSetByKeyRange(start, end)) {
+                            shiftSubRowset(subIndex, delta);
                         }
                     });
                 }
 
-                // TODO: improve performance with getChunk
-                // TODO: reinterpret inWindowColumnSource so that it compares longs instead of objects
+                // figure out for all the modified indices if the timestamp or index changed
+                if (upstream.modifiedColumnSet().containsAny(mcsSourceTimestamp)) {
+                    final RowSetBuilderSequential changedTimestampIndexToRemovePost = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential changedTimestampIndexToAddPost = RowSetFactory.builderSequential();
 
-                // figure out for all the modified row keys if the timestamp or row key changed
-                upstream.forAllModified((oldIndex, newIndex) -> {
-                    final long currentTimestamp = inWindowColumnSource.timeStampSource.getLong(newIndex);
-                    final long prevTimestamp = inWindowColumnSource.timeStampSource.getPrevLong(oldIndex);
-                    if (currentTimestamp != prevTimestamp) {
-                        updateRow(newIndex, currentTimestamp);
+                    final int chunkSize = (int) Math.min(upstream.modified().size(), 4096);
+
+                    try (final ChunkSource.GetContext prevContext =
+                            inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
+                            final ChunkSource.GetContext currContext =
+                                    inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
+                            final RowSequence.Iterator previt = upstream.getModifiedPreShift().getRowSequenceIterator();
+                            final RowSequence.Iterator curit = upstream.modified().getRowSequenceIterator()) {
+                        while (curit.hasMore()) {
+                            final RowSequence prevOk = previt.getNextRowSequenceWithLength(chunkSize);
+                            final RowSequence curOk = curit.getNextRowSequenceWithLength(chunkSize);
+                            final LongChunk<OrderedRowKeys> chunkKeys = curOk.asRowKeyChunk();
+                            final LongChunk<? extends Values> prevTimestamps = inWindowColumnSource.timeStampSource
+                                    .getPrevChunk(prevContext, prevOk).asLongChunk();
+                            final LongChunk<? extends Values> currTimestamps =
+                                    inWindowColumnSource.timeStampSource.getChunk(currContext, curOk).asLongChunk();
+
+                            for (int ii = 0; ii < prevTimestamps.size(); ++ii) {
+                                final long prevTimestamp = prevTimestamps.get(ii);
+                                final long currentTimestamp = currTimestamps.get(ii);
+                                if (currentTimestamp != prevTimestamp) {
+                                    final boolean prevInWindow = prevTimestamp != QueryConstants.NULL_LONG
+                                            && inWindowColumnSource.computeInWindowUnsafePrev(prevTimestamp);
+                                    final boolean curInWindow = currentTimestamp != QueryConstants.NULL_LONG
+                                            && inWindowColumnSource.computeInWindowUnsafe(currentTimestamp);
+                                    if (prevInWindow) {
+                                        changedTimestampIndexToRemovePost.appendKey(chunkKeys.get(ii));
+                                    }
+                                    if (curInWindow) {
+                                        changedTimestampIndexToAddPost.appendKey(chunkKeys.get(ii));
+                                    }
+                                }
+                            }
+
+                            // TODO: can we be better about reusing the values we read, doing chunkwise additions of the
+                            // points?
+                            // We could certainly do chunkwise removal here, but that would potentially involve more
+                            // reads to update
+                            // the first entry that would then be removed on the next cycle.
+                        }
                     }
-                });
+
+                    // we should have shifted values where relevant above, so we only operate on the new index
+                    try (final RowSet changedTimestamps = changedTimestampIndexToRemovePost.build()) {
+                        if (changedTimestamps.isNonempty()) {
+                            removeRowSet(changedTimestamps, false);
+                        }
+                    }
+                    try (final RowSet changedTimestamps = changedTimestampIndexToAddPost.build()) {
+                        if (changedTimestamps.isNonempty()) {
+                            addRowSequence(changedTimestamps, rowKeyToEntry != null);
+                        }
+                    }
+                }
 
                 // now add the new timestamps
-                addRowSequence(upstream.added());
+                addRowSequence(upstream.added(), rowKeyToEntry != null);
 
-                final WritableRowSet downstreamModified = upstream.modified().copy();
+                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+
                 try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
-                        downstreamModified.insert(modifiedByTime);
+                        downstream.modified.writableCast().insert(modifiedByTime);
                     }
                 }
 
                 // everything that was added, removed, or modified stays added removed or modified
-                if (downstreamModified.isNonempty()) {
-                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), reusableModifiedColumnSet);
-                    reusableModifiedColumnSet.setAll(mcsNewColumns);
+                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                if (downstream.modified.isNonempty()) {
+                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+                    downstream.modifiedColumnSet.setAll(mcsResultWindowColumn);
                 } else {
-                    reusableModifiedColumnSet.clear();
+                    downstream.modifiedColumnSet.clear();
                 }
-                result.notifyListeners(new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                        downstreamModified, upstream.shifted(), reusableModifiedColumnSet));
+                result.notifyListeners(downstream);
             } else {
                 final RowSet modifiedByTime = recomputeModified();
                 if (modifiedByTime.isNonempty()) {
@@ -265,9 +333,9 @@ public class WindowCheck {
                     downstream.added = RowSetFactory.empty();
                     downstream.removed = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
-                    downstream.modifiedColumnSet = reusableModifiedColumnSet;
+                    downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                     downstream.modifiedColumnSet().clear();
-                    downstream.modifiedColumnSet().setAll(mcsNewColumns);
+                    downstream.modifiedColumnSet().setAll(mcsResultWindowColumn);
                     result.notifyListeners(downstream);
                 } else {
                     modifiedByTime.close();
@@ -276,78 +344,355 @@ public class WindowCheck {
         }
 
         /**
-         * Handles modified rowSets. If they are outside of the window, they need to be removed from the queue. If they
-         * are inside the window, they need to be (re)inserted into the queue.
+         * If the value of the timestamp is within the window, insert it into the queue and map.
+         *
+         * @param rowSequence the row sequence to insert into the table
+         * @param tryCombine try to combine newly added ranges with those already in the maps. For initial addition,
+         *        there is nothing to combine with, so we do not spend the time on map lookups. For add-only tables, we
+         *        do not maintain the indexToEntry map, so cannot find adjacent ranges for combination.
          */
-        private void updateRow(final long rowKey, long currentTimestamp) {
-            Entry entry = rowKeyToEntry.remove(rowKey);
-            if (currentTimestamp == QueryConstants.NULL_LONG) {
-                if (entry != null) {
-                    priorityQueue.remove(entry);
+        private void addRowSequence(RowSequence rowSequence, boolean tryCombine) {
+            final int chunkSize = (int) Math.min(rowSequence.size(), 4096);
+            Entry pendingEntry = null;
+            long lastNanos = Long.MAX_VALUE;
+
+            try (final ChunkSource.GetContext getContext =
+                    inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
+                    final RowSequence.Iterator rsit = rowSequence.getRowSequenceIterator()) {
+                while (rsit.hasMore()) {
+                    final RowSequence chunkOk = rsit.getNextRowSequenceWithLength(chunkSize);
+                    final LongChunk<OrderedRowKeys> rowKeys = chunkOk.asRowKeyChunk();
+                    final LongChunk<? extends Values> timestampValues =
+                            inWindowColumnSource.timeStampSource.getChunk(getContext, chunkOk).asLongChunk();
+                    for (int ii = 0; ii < rowKeys.size(); ++ii) {
+                        final long currentRowKey = rowKeys.get(ii);
+                        final long currentTimestamp = timestampValues.get(ii);
+                        if (currentTimestamp == QueryConstants.NULL_LONG) {
+                            if (pendingEntry != null) {
+                                enter(pendingEntry, lastNanos, tryCombine);
+                                pendingEntry = null;
+                            }
+                            continue;
+                        }
+                        if (pendingEntry != null && (currentTimestamp < pendingEntry.nanos
+                                || pendingEntry.lastRowKey + 1 != currentRowKey)) {
+                            enter(pendingEntry, lastNanos, tryCombine);
+                            pendingEntry = null;
+                        }
+                        if (inWindowColumnSource.computeInWindowUnsafe(currentTimestamp)) {
+                            lastNanos = currentTimestamp;
+                            if (pendingEntry == null) {
+                                if (tryCombine) {
+                                    // see if this can be combined with the prior entry
+                                    final Entry priorEntry = rowKeyToEntry.get(currentRowKey - 1);
+                                    if (priorEntry != null && priorEntry.nanos <= currentTimestamp) {
+                                        Assert.eq(priorEntry.lastRowKey, "priorEntry.lastIndex", currentRowKey - 1,
+                                                "currentRowKey - 1");
+                                        rowKeyToEntry.remove(currentRowKey - 1);
+                                        // Since we might be combining this with an entry later, we should remove it so
+                                        // that we don't have extra entries
+                                        priorityQueue.remove(priorEntry);
+                                        priorEntry.lastRowKey = currentRowKey;
+                                        pendingEntry = priorEntry;
+                                        continue;
+                                    }
+                                }
+                                pendingEntry = new Entry(currentRowKey, currentRowKey, currentTimestamp);
+                            } else {
+                                Assert.eq(pendingEntry.lastRowKey, "pendingEntry.lastRowKey", currentRowKey - 1,
+                                        "currentRowKey - 1");
+                                pendingEntry.lastRowKey = currentRowKey;
+                            }
+                        } else {
+                            Assert.eqNull(pendingEntry, "pendingEntry");
+                        }
+                    }
                 }
-                return;
-            }
-            if (inWindowColumnSource.computeInWindow(currentTimestamp, inWindowColumnSource.currentTime)) {
-                if (entry == null) {
-                    entry = new Entry(rowKey, 0);
+                if (pendingEntry != null) {
+                    enter(pendingEntry, lastNanos, tryCombine);
                 }
-                entry.nanos = currentTimestamp;
-                priorityQueue.enter(entry);
-                rowKeyToEntry.put(entry.rowKey, entry);
-            } else if (entry != null) {
-                priorityQueue.remove(entry);
             }
         }
 
         /**
-         * If the value of the timestamp is within the window, insert it into the queue and map.
-         *
-         * @param rowSequence the row sequence to insert into the table
+         * Add an entry into the priority queue, and if applicable the reverse map
+         * 
+         * @param pendingEntry the entry to insert
          */
-        private void addRowSequence(RowSequence rowSequence) {
-            final int chunkSize = (int) Math.min(rowSequence.size(), 4096);
-            try (final ChunkSource.GetContext getContext =
-                    inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
-                    final RowSequence.Iterator okit = rowSequence.getRowSequenceIterator()) {
-                while (okit.hasMore()) {
-                    final RowSequence chunkOk = okit.getNextRowSequenceWithLength(chunkSize);
-                    final LongChunk<OrderedRowKeys> keyIndices = chunkOk.asRowKeyChunk();
-                    final LongChunk<? extends Values> timestampValues =
-                            inWindowColumnSource.timeStampSource.getChunk(getContext, chunkOk).asLongChunk();
-                    for (int ii = 0; ii < keyIndices.size(); ++ii) {
-                        final long currentTimestamp = timestampValues.get(ii);
-                        if (currentTimestamp == QueryConstants.NULL_LONG) {
-                            continue;
+        void enter(@NotNull final Entry pendingEntry) {
+            priorityQueue.enter(pendingEntry);
+            if (rowKeyToEntry != null) {
+                rowKeyToEntry.put(pendingEntry.lastRowKey, pendingEntry);
+            }
+        }
+
+        /**
+         * Insert pendingEntry into the queue and map (if applicable).
+         *
+         * @param pendingEntry the entry to insert into our queue and reverse map
+         * @param lastNanos the final nanosecond value of the pending entry to insert, used to determine if we may
+         *        combine with the next entry
+         * @param tryCombine true if we should combine values with the next entry, previous entries would have been
+         *        combined during addIndex
+         */
+        void enter(@NotNull final Entry pendingEntry, final long lastNanos, final boolean tryCombine) {
+            if (tryCombine) {
+                final LongBidirectionalIterator it = rowKeyToEntry.keySet().iterator(pendingEntry.lastRowKey);
+                if (it.hasNext()) {
+                    final long nextKey = it.nextLong();
+                    final Entry nextEntry = rowKeyToEntry.get(nextKey);
+                    if (nextEntry.firstRowKey == pendingEntry.lastRowKey + 1 && nextEntry.nanos >= lastNanos) {
+                        // we can combine ourselves into next entry, because it is contiguous and has a timestamp
+                        // greater
+                        // than or equal to our entries last timestamp
+                        nextEntry.nanos = pendingEntry.nanos;
+                        nextEntry.firstRowKey = pendingEntry.firstRowKey;
+                        priorityQueue.enter(nextEntry);
+                        return;
+                    }
+                }
+            }
+            enter(pendingEntry);
+        }
+
+        /**
+         * If the keys are in the window, remove them from the map and queue.
+         *
+         * @param rowset the row keys to remove
+         * @param previous whether to operate in previous space
+         */
+        private void removeRowSet(final RowSet rowset, final boolean previous) {
+            if (rowset.isEmpty()) {
+                return;
+            }
+            Assert.neqNull(rowKeyToEntry, "rowKeyToEntry");
+
+            RANGE: for (final RowSet.RangeIterator rangeIterator = rowset.rangeIterator(); rangeIterator.hasNext();) {
+                rangeIterator.next();
+                long start = rangeIterator.currentRangeStart();
+                final long end = rangeIterator.currentRangeEnd();
+
+                // We have some range in the rowset that is removed. This range (or part thereof) may or may not exist
+                // in one or more entries. We process from the front of the range to the end of the range, possibly
+                // advancing the range start.
+
+                while (start <= end) {
+                    // we look for start - 1, so that we will find start if it exists
+                    // https://fastutil.di.unimi.it/docs/it/unimi/dsi/fastutil/longs/LongSortedSet.html#iterator(long)
+                    // "The next element of the returned iterator is the least element of the set that is greater than
+                    // the starting point (if there are no elements greater than the starting point, hasNext() will
+                    // return false)."
+                    final LongBidirectionalIterator reverseMapIterator = rowKeyToEntry.keySet().iterator(start - 1);
+                    // if there is no next, then the reverse map contains no values that are greater than or equal to
+                    // start, we can actually break out of the entire loop
+                    if (!reverseMapIterator.hasNext()) {
+                        break RANGE;
+                    }
+
+                    final long entryLastKey = reverseMapIterator.nextLong();
+                    final Entry entry = rowKeyToEntry.get(entryLastKey);
+                    if (entry.firstRowKey > end) {
+                        // there is nothing here for us
+                        start = entry.lastRowKey + 1;
+                        continue;
+                    }
+
+                    // there is some part of our start to end range that could be present in this entry.
+                    if (entry.firstRowKey >= start) {
+                        // we have visually one of the following three situations when start == firstRowKey:
+                        // @formatter:off
+                        //   [  RANGE  ]
+                        //   [  ENTRY    ] - the entry exceeds the range ( case a)
+                        //   [  ENTRY  ] - the whole entry is contained (case b)
+                        //   [ ENTRY ] - the entry is a prefix - (case c)
+                        // @formatter:on
+
+                        // we have visually one of the following three situations when start > firstRowKey:
+                        // @formatter:off
+                        //   [  RANGE    ]
+                        //      [  ENTRY  ] - the entry starts in the middle and terminates after (case a); so we remove a prefix of the entry
+                        //      [  ENTRY ] - entry starts in the middle and terminates the at same value (case b); delete the entry
+                        //                  [ ENTRY   ] - this cannot happen based on the search (case c)
+                        // @formatter:on
+
+                        if (entry.lastRowKey > end) { // (case a)
+                            // slice off the beginning of the entry
+                            entry.firstRowKey = end + 1;
+                            entry.nanos = previous ? inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey)
+                                    : inWindowColumnSource.timeStampSource.getLong(entry.firstRowKey);
+                            priorityQueue.enter(entry);
+                        } else { // (case b and c)
+                            // we are consuming the entire entry, so can remove it from the queue
+                            reverseMapIterator.remove();
+                            priorityQueue.remove(entry);
                         }
-                        if (inWindowColumnSource.computeInWindowUnsafe(
-                                currentTimestamp, inWindowColumnSource.currentTime)) {
-                            final Entry el = new Entry(keyIndices.get(ii), currentTimestamp);
-                            priorityQueue.enter(el);
-                            rowKeyToEntry.put(el.rowKey, el);
+                        // and we look for the next entry after this one
+                        start = entry.lastRowKey + 1;
+                    } else {
+                        // our entry is at least partially before end (because of the check after retrieving it),
+                        // and is after start (because of how we searched in the map).
+
+                        // we have visually one of the following three situations:
+                        // @formatter:off
+                        //     [  RANGE  ]
+                        //   [  ENTRY      ] - the entry exceeds the range ( case a), we must split into two entries
+                        //   [  ENTRY    ] - the entry starts before the range but ends with the range (case b); so we remove a suffix of the entry
+                        //   [ ENTRY  ] - the entry starts before the range and ends inside the range(case c); so we must remove a suffix of the entry
+                        // @formatter:on
+
+                        if (entry.lastRowKey > end) {
+                            final Entry frontEntry = new Entry(entry.firstRowKey, start - 1, entry.nanos);
+                            enter(frontEntry);
+
+                            entry.firstRowKey = end + 1;
+                            entry.nanos = previous ? inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey)
+                                    : inWindowColumnSource.timeStampSource.getLong(entry.firstRowKey);
+                            priorityQueue.enter(entry);
+                        } else { // case b and c
+                            entry.lastRowKey = start - 1;
+                            reverseMapIterator.remove();
+                            rowKeyToEntry.put(entry.lastRowKey, entry);
                         }
                     }
                 }
             }
         }
 
-        /**
-         * If the keys are in the window, remove them from the map and queue.
-         *
-         * @param rowSet the row keys to remove
-         */
-        private void removeIndex(final RowSet rowSet) {
-            rowSet.forAllRowKeys((final long key) -> {
-                final Entry e = rowKeyToEntry.remove(key);
-                if (e != null) {
-                    priorityQueue.remove(e);
+        private void shiftSubRowset(final RowSet rowset, final long delta) {
+            Assert.neqNull(rowKeyToEntry, "rowKeyToEntry");
+
+            // We need to be careful about reinserting entries into the correct order, if we are traversing forward,
+            // then we need to add the entries in opposite order to avoid overwriting another entry. We remove the
+            // entries
+            // in the loop, and if entriesToInsert is non-null add them to the list. If entriesToInsert is null, then
+            // we add them to the map.
+            final List<Entry> entriesToInsert = delta > 0 ? new ArrayList<>() : null;
+
+            RANGE: for (final RowSet.RangeIterator rangeIterator = rowset.rangeIterator(); rangeIterator.hasNext();) {
+                rangeIterator.next();
+                long start = rangeIterator.currentRangeStart();
+                final long end = rangeIterator.currentRangeEnd();
+
+                // We have some range in the rowset that has been moved about. This range (or part thereof) may or may
+                // not exist in one or more entries. We process from the front of the range to the end of the range,
+                // possibly
+                // advancing the range start.
+
+                while (start <= end) {
+                    // we look for start - 1, so that we will find start if it exists
+                    // https://fastutil.di.unimi.it/docs/it/unimi/dsi/fastutil/longs/LongSortedSet.html#iterator(long)
+                    // "The next element of the returned iterator is the least element of the set that is greater than
+                    // the starting point (if there are no elements greater than the starting point, hasNext() will
+                    // return false)."
+                    final LongBidirectionalIterator reverseMapIterator = rowKeyToEntry.keySet().iterator(start - 1);
+                    // if there is no next, then the reverse map contains no values that are greater than or equal to
+                    // start, we can actually break out of the entire loop
+                    if (!reverseMapIterator.hasNext()) {
+                        break RANGE;
+                    }
+
+                    final long entryLastKey = reverseMapIterator.nextLong();
+                    final Entry entry = rowKeyToEntry.get(entryLastKey);
+                    if (entry.firstRowKey > end) {
+                        // there is nothing here for us
+                        start = entry.lastRowKey + 1;
+                        continue;
+                    }
+
+                    // there is some part of our start to end range that could be present in this entry.
+                    if (entry.firstRowKey >= start) {
+
+                        // @formatter:off
+                        // we have visually one of the following three situations when start == firstIndex:
+                        //   [  RANGE  ]
+                        //   [  ENTRY    ] - the entry exceeds the range ( case a)
+                        //   [  ENTRY  ] - the whole entry is contained (case b)
+                        //   [ ENTRY ] - the entry is a prefix - (case c)
+
+                        // we have visually one of the following three situations when start > firstIndex:
+                        //   [  RANGE    ]
+                        //      [  ENTRY  ] - the entry starts in the middle and terminates after (case a)
+                        //      [  ENTRY ] - entry starts in the middle and terminates the at same value (case b)
+                        //                  [ ENTRY   ] - this cannot happen based on the search (case c)
+                        // @formatter:on
+
+                        // we look for the next entry after this one, but need to make sure to keep that happening in
+                        // pre-shift space
+                        start = entry.lastRowKey + 1;
+
+                        if (entry.lastRowKey > end) { // (case a)
+                            // slice off the beginning of the entry, creating a new entry for the shift
+                            final Entry newEntry = new Entry(entry.firstRowKey + delta, end + delta, entry.nanos);
+
+                            entry.firstRowKey = end + 1;
+                            entry.nanos = inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey);
+                            priorityQueue.enter(entry);
+                            priorityQueue.enter(newEntry);
+
+                            addOrDeferEntry(entriesToInsert, newEntry);
+                        } else { // (case b and c)
+                            // we are consuming the entire entry, so can leave it in the queue as is, but need to change
+                            // its reverse mapping
+                            entry.firstRowKey += delta;
+                            entry.lastRowKey += delta;
+                            reverseMapIterator.remove();
+                            addOrDeferEntry(entriesToInsert, entry);
+                        }
+                    } else {
+                        // our entry is at least partially before end (because of the check after retrieving it),
+                        // and is after start (because of how we searched in the map).
+
+                        // we have visually one of the following three situations:
+                        // @formatter:off
+                        //     [  RANGE  ]
+                        //   [  ENTRY      ] - the entry exceeds the range ( case a), we must split into two entries
+                        //   [  ENTRY    ] - the entry starts before the range but ends with the range (case b); so we remove a suffix of the entry
+                        //   [ ENTRY  ] - the entry starts before the range and ends inside the range(case c); so we must remove a suffix of the entry
+                        // @formatter:on
+
+                        if (entry.lastRowKey > end) {
+                            throw new IllegalStateException();
+                        } else { // case b and c
+
+                            final long backNanos = inWindowColumnSource.timeStampSource.getPrevLong(start);
+                            final Entry backEntry = new Entry(start + delta, entry.lastRowKey + delta, backNanos);
+                            priorityQueue.enter(backEntry);
+
+                            // the nanos stays the same, so entry just needs an adjust last rowset and the reverse map
+                            entry.lastRowKey = start - 1;
+
+                            // by reinserting, we preserve the things that we have not changed to enable us to find them
+                            // in the rest of the processing
+                            reverseMapIterator.remove();
+                            rowKeyToEntry.put(entry.lastRowKey, entry);
+
+                            addOrDeferEntry(entriesToInsert, backEntry);
+                        }
+                    }
                 }
-            });
+            }
+            if (entriesToInsert != null) {
+                for (int ii = entriesToInsert.size() - 1; ii >= 0; ii--) {
+                    final Entry entry = entriesToInsert.get(ii);
+                    rowKeyToEntry.put(entry.lastRowKey, entry);
+                }
+            }
+        }
+
+        private void addOrDeferEntry(final List<Entry> entriesToInsert, final Entry entry) {
+            if (entriesToInsert == null) {
+                rowKeyToEntry.put(entry.lastRowKey, entry);
+            } else {
+                entriesToInsert.add(entry);
+            }
         }
 
         /**
          * Pop elements out of the queue until we find one that is in the window.
          *
+         * <p>
          * Send a modification to the resulting table.
+         * </p>
          */
         @Override
         public void run() {
@@ -364,14 +709,36 @@ public class WindowCheck {
                     break;
                 }
 
-                if (inWindowColumnSource.computeInWindowUnsafe(entry.nanos, inWindowColumnSource.currentTime)) {
+                if (inWindowColumnSource.computeInWindowUnsafe(entry.nanos)) {
                     break;
-                } else {
-                    // take it out of the queue, and mark it as modified
-                    final Entry taken = priorityQueue.removeTop();
-                    Assert.equals(entry, "entry", taken, "taken");
-                    builder.addKey(entry.rowKey);
-                    rowKeyToEntry.remove(entry.rowKey);
+                }
+
+                // take it out of the queue, and mark it as modified
+                final Entry taken = priorityQueue.removeTop();
+                Assert.equals(entry, "entry", taken, "taken");
+
+                // now scan the rest of the entry, which requires reading from the timestamp source;
+                // this would ideally be done as a chunk, reusing the context
+                long newFirst;
+                for (newFirst = entry.firstRowKey + 1; newFirst <= entry.lastRowKey; ++newFirst) {
+                    // TODO: When we port this to Core, we should use an iterator on the column source to take advantage
+                    // of chunks
+                    final long nanos = inWindowColumnSource.timeStampSource.getLong(newFirst);
+                    if (inWindowColumnSource.computeInWindowUnsafe(nanos)) {
+                        // nothing more to do, we've passed out of the window, note the new nanos for this entry
+                        entry.nanos = nanos;
+                        break;
+                    }
+                }
+
+                builder.addRange(entry.firstRowKey, newFirst - 1);
+
+                // if anything is left, we need to reinsert it into the priority queue
+                if (newFirst <= entry.lastRowKey) {
+                    entry.firstRowKey = newFirst;
+                    priorityQueue.enter(entry);
+                } else if (rowKeyToEntry != null) {
+                    rowKeyToEntry.remove(entry.lastRowKey);
                 }
             }
 
@@ -384,15 +751,51 @@ public class WindowCheck {
 
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);
-            Arrays.stream(entries).mapToLong(entry -> entry.rowKey).forEach(builder::addKey);
+
+            if (rowKeyToEntry != null && entries.length != rowKeyToEntry.size()) {
+                dumpQueue();
+                Assert.eq(entries.length, "entries.length", rowKeyToEntry.size(), "indexToEntry.size()");
+            }
+
+            long entrySize = 0;
+            for (final Entry entry : entries) {
+                builder.addRange(entry.firstRowKey, entry.lastRowKey);
+                entrySize += (entry.lastRowKey - entry.firstRowKey + 1);
+                if (rowKeyToEntry != null) {
+                    final Entry check = rowKeyToEntry.get(entry.lastRowKey);
+                    if (check != entry) {
+                        dumpQueue();
+                        Assert.equals(check, "check", entry, "entry");
+                    }
+                }
+            }
 
             final RowSet inQueue = builder.build();
-            Assert.eq(inQueue.size(), "inQueue.size()", priorityQueue.size(), "priorityQueue.size()");
+            Assert.eq(inQueue.size(), "inQueue.size()", entrySize, "entrySize");
+
             final boolean condition = inQueue.subsetOf(resultRowSet);
             if (!condition) {
+                dumpQueue();
                 // noinspection ConstantConditions
                 Assert.assertion(condition, "inQueue.subsetOf(resultRowSet)", inQueue, "inQueue", resultRowSet,
                         "resultRowSet", inQueue.minus(resultRowSet), "inQueue.minus(resultRowSet)");
+            }
+            // TODO: verify that the size of inQueue is equal to the number of values in the window
+        }
+
+        void dumpQueue() {
+            final Entry[] entries = new Entry[priorityQueue.size()];
+            priorityQueue.dump(entries, 0);
+            System.out.println("Queue size: " + entries.length);
+            for (final Entry entry : entries) {
+                System.out.println(entry);
+            }
+
+            if (rowKeyToEntry != null) {
+                System.out.println("Map size: " + rowKeyToEntry.size());
+                for (final Long2ObjectMap.Entry<Entry> x : rowKeyToEntry.long2ObjectEntrySet()) {
+                    System.out.println(x.getLongKey() + ": " + x.getValue());
+                }
             }
         }
 
@@ -422,24 +825,31 @@ public class WindowCheck {
             implements MutableColumnSourceGetDefaults.ForBoolean {
         private final long windowNanos;
         private final ColumnSource<Long> timeStampSource;
+        private final String timeStampName;
 
-        private long prevTime;
-        private long currentTime;
+        private long prevTime = 0;
+        private long currentTime = 0;
         private long clockStep;
         private final long initialStep;
 
         InWindowColumnSource(Table table, String timestampColumn, long windowNanos) {
             super(Boolean.class);
             this.windowNanos = windowNanos;
+            this.timeStampName = timestampColumn;
 
             clockStep = updateGraph.clock().currentStep();
             initialStep = clockStep;
 
-            final ColumnSource<Instant> timeStampSource = table.getColumnSource(timestampColumn);
-            if (!Instant.class.isAssignableFrom(timeStampSource.getType())) {
+            final ColumnSource<?> timeStampSource = table.getColumnSource(timestampColumn);
+            Class<?> timestampType = timeStampSource.getType();
+            if (timestampType == long.class) {
+                // noinspection unchecked,CastCanBeRemovedNarrowingVariableType
+                this.timeStampSource = (ColumnSource<Long>) timeStampSource;
+            } else if (Instant.class.isAssignableFrom(timestampType)) {
+                this.timeStampSource = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) timeStampSource);
+            } else {
                 throw new IllegalArgumentException(timestampColumn + " is not of type Instant!");
             }
-            this.timeStampSource = ReinterpretUtils.instantToLongSource(timeStampSource);
         }
 
         /**
@@ -478,6 +888,14 @@ public class WindowCheck {
 
         private boolean computeInWindowUnsafe(long tableNanos, long time) {
             return (time - tableNanos) < windowNanos;
+        }
+
+        private boolean computeInWindowUnsafe(long tableNanos) {
+            return computeInWindowUnsafe(tableNanos, currentTime);
+        }
+
+        private boolean computeInWindowUnsafePrev(long tableNanos) {
+            return computeInWindowUnsafe(tableNanos, timeStampForPrev());
         }
 
         @Override

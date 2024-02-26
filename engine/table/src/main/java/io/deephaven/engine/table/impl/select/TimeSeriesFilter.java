@@ -24,7 +24,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This will filter a table for the most recent N nanoseconds (must be on a date time column).
+ * This will filter a table for the most recent N nanoseconds (must be on an {@link Instant} column).
+ *
+ * <p>
+ * Note, this filter rescans the source table. You should prefer to use {@link io.deephaven.engine.util.WindowCheck}
+ * instead.
+ * </p>
  */
 public class TimeSeriesFilter
         extends WhereFilterLivenessArtifactImpl
