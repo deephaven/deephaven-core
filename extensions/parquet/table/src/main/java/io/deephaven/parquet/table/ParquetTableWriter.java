@@ -104,7 +104,7 @@ public class ParquetTableWriter {
      *         unsupported types)
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,

@@ -31,3 +31,10 @@ jobs:
 
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@v3
+        env:
+          # Dependencies derived from :server-jetty-app runtimeClasspath get a "runtime" scope and everything else gets
+          # a "development" scope. Ideally, gradle would be able to pass along the finer dependency details (for
+          # example, the exact configuration scopes), but this is a limitation of GitHub dependency submissions API, see
+          # note in https://github.com/gradle/actions/tree/main/dependency-submission#limiting-the-dependencies-that-appear-in-the-dependency-graph
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_PROJECTS: ':server-jetty-app'
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: 'runtimeClasspath'

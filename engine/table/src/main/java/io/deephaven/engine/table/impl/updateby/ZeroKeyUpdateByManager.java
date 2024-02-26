@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
@@ -108,12 +109,9 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while initializing zero-key updateBy");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while initializing zero-key updateBy", e.getCause());
-            }
+            throw new TableInitializationException(bucketDescription,
+                    "an exception occurred while initializing zero-key updateBy",
+                    e.getCause());
         }
     }
 

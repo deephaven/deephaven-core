@@ -6,11 +6,7 @@ package io.deephaven.engine.util;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyObject;
 
-import java.util.Collection;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A collection of methods around retrieving objects from the given Python scope.
@@ -29,26 +25,6 @@ public interface PythonScope<PyObj> {
      * @return the value, or empty
      */
     Optional<PyObj> getValueRaw(String name);
-
-    /**
-     * Retrieves all keys from the give scope.
-     * <p>
-     * No conversion is done.
-     * <p>
-     * Technically, the keys can be tuples...
-     *
-     * @return the keys
-     */
-    Stream<PyObj> getKeysRaw();
-
-    /**
-     * Retrieves all keys and values from the given scope.
-     * <p>
-     * No conversion is done.
-     *
-     * @return the keys and values
-     */
-    Stream<Entry<PyObj, PyObj>> getEntriesRaw();
 
     /**
      * The helper method to turn a raw key into a string key.
@@ -121,29 +97,14 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getKeysRaw()}.map({@link #convertStringKey(Object)})
-     *
-     * @return the string keys
-     */
-    default Stream<String> getKeys() {
-        return getKeysRaw()
-                .map(this::convertStringKey);
-    }
-
-    /**
-     * Equivalent to {@link #getKeys()}.collect(someCollector)
-     *
-     * @return the string keys, as a collection
-     */
-    default Collection<String> getKeysCollection() {
-        return getKeys()
-                .collect(Collectors.toList());
-    }
-
-    /**
      * @return the Python's __main__ module namespace
      */
-    public PyDictWrapper mainGlobals();
+    PyDictWrapper mainGlobals();
+
+    /**
+     * @return the current scope or the main globals if no scope is set
+     */
+    PyDictWrapper currentScope();
 
     /**
      * Push the provided Python scope into the thread scope stack for subsequent operations on Tables

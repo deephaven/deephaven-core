@@ -4,7 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -22,7 +22,6 @@ import org.apache.parquet.format.DataPageHeader;
 import org.apache.parquet.format.DataPageHeaderV2;
 import org.apache.parquet.format.PageHeader;
 import org.apache.parquet.format.PageType;
-import org.apache.parquet.format.Util;
 import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
@@ -41,8 +40,7 @@ import java.util.function.Function;
 import static org.apache.parquet.column.ValuesType.VALUES;
 
 final class ColumnPageReaderImpl implements ColumnPageReader {
-    public static final int NULL_OFFSET = -1;
-    static final int NULL_NUM_VALUES = -1;
+    private static final int NULL_OFFSET = -1;
 
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
@@ -53,10 +51,9 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     private final List<Type> fieldTypes;
 
     /**
-     * Stores the offset from where the next byte should be read. Can be the offset of page header if
-     * {@link #pageHeader} is {@code null}, else will be the offset of data.
+     * The offset for data following the page header in the file.
      */
-    private long offset;
+    private final long dataOffset;
     private PageHeader pageHeader;
     private int numValues;
     private int rowCount = -1;
@@ -72,11 +69,9 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
      * @param path The path of the column.
      * @param uri The uri of the parquet file.
      * @param fieldTypes The types of the fields in the column.
-     * @param offset The offset for page header if supplied {@code pageHeader} is {@code null}. Else, the offset of data
-     *        following the header in the page.
-     * @param pageHeader The page header if it is already read from the file. Else, {@code null}.
-     * @param numValues The number of values in the page if it is already read from the file. Else,
-     *        {@value #NULL_NUM_VALUES}
+     * @param dataOffset The offset for data following the page header in the file.
+     * @param pageHeader The page header, should not be {@code null}.
+     * @param numValues The number of values in the page.
      */
     ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
             CompressorAdapter compressorAdapter,
@@ -85,7 +80,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             ColumnDescriptor path,
             URI uri,
             List<Type> fieldTypes,
-            long offset,
+            long dataOffset,
             PageHeader pageHeader,
             int numValues) {
         this.channelsProvider = channelsProvider;
@@ -95,9 +90,9 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         this.path = path;
         this.uri = uri;
         this.fieldTypes = fieldTypes;
-        this.offset = offset;
-        this.pageHeader = pageHeader;
-        this.numValues = numValues;
+        this.dataOffset = dataOffset;
+        this.pageHeader = Require.neqNull(pageHeader, "pageHeader");
+        this.numValues = Require.geqZero(numValues, "numValues");
     }
 
     @Override
@@ -106,7 +101,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         try (
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri)) {
-            ensurePageHeader(channelsProvider, ch);
+            ch.position(dataOffset);
             return readDataPage(nullValue, ch, holder.get());
         }
     }
@@ -115,7 +110,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         try (
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri)) {
-            ensurePageHeader(channelsProvider, ch);
+            ch.position(dataOffset);
             return readRowCountFromDataPage(ch);
         }
     }
@@ -126,48 +121,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         try (
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri)) {
-            ensurePageHeader(channelsProvider, ch);
+            ch.position(dataOffset);
             return readKeysFromDataPage(keyDest, nullPlaceholder, ch, holder.get());
-        }
-    }
-
-    /**
-     * If {@link #pageHeader} is {@code null}, read it from the channel, and increment the {@link #offset} by the length
-     * of page header. Channel position would be set to the end of page header or beginning of data before returning.
-     */
-    private void ensurePageHeader(SeekableChannelsProvider provider, SeekableByteChannel ch) throws IOException {
-        // Set this channel's position to appropriate offset for reading. If pageHeader is null, this offset would be
-        // the offset of page header, else it would be the offset of data.
-        ch.position(offset);
-        synchronized (this) {
-            if (pageHeader == null) {
-                try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(provider, ch)) {
-                    pageHeader = Util.readPageHeader(in);
-                }
-                offset = ch.position();
-                if (numValues >= 0) {
-                    final int numValuesFromHeader = readNumValuesFromPageHeader(pageHeader);
-                    if (numValues != numValuesFromHeader) {
-                        throw new IllegalStateException(
-                                "numValues = " + numValues + " different from number of values " +
-                                        "read from the page header = " + numValuesFromHeader + " for column " + path);
-                    }
-                }
-            }
-            if (numValues == NULL_NUM_VALUES) {
-                numValues = readNumValuesFromPageHeader(pageHeader);
-            }
-        }
-    }
-
-    private static int readNumValuesFromPageHeader(@NotNull final PageHeader header) throws IOException {
-        switch (header.type) {
-            case DATA_PAGE:
-                return header.getData_page_header().getNum_values();
-            case DATA_PAGE_V2:
-                return header.getData_page_header_v2().getNum_values();
-            default:
-                throw new IOException(String.format("Unexpected page of type {%s}", header.getType()));
         }
     }
 
@@ -588,18 +543,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     @Override
-    public int numValues(@NotNull final SeekableChannelContext channelContext) throws IOException {
-        if (numValues >= 0) {
-            return numValues;
-        }
-        try (
-                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
-                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri)) {
-            ensurePageHeader(channelsProvider, ch);
-            // Above will block till it populates numValues
-            Assert.geqZero(numValues, "numValues");
-            return numValues;
-        }
+    public int numValues() {
+        return numValues;
     }
 
     @NotNull
@@ -617,7 +562,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     public long numRows(@NotNull final SeekableChannelContext channelContext) throws IOException {
         if (rowCount == -1) {
             if (path.getMaxRepetitionLevel() == 0) {
-                rowCount = numValues(channelContext);
+                rowCount = numValues();
             } else {
                 rowCount = readRowCount(channelContext);
             }

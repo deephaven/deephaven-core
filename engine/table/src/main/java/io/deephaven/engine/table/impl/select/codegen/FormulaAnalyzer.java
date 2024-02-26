@@ -105,7 +105,7 @@ public class FormulaAnalyzer {
 
         final ExecutionContext context = ExecutionContext.getContext();
         final Map<String, Object> queryScopeVariables = context.getQueryScope().toMap(
-                NameValidator.VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE);
+                (name, value) -> NameValidator.isValidQueryParameterName(name));
         for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
             if (possibleVariables.containsKey(param.getKey())) {
                 // skip any existing matches

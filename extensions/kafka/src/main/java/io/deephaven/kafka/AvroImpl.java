@@ -37,6 +37,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +67,7 @@ class AvroImpl {
         private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
                 Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
 
-        private final Schema schema;
+        private Schema schema;
         private final String schemaName;
         private final String schemaVersion;
         /** fields mapped to null are skipped. */
@@ -75,7 +76,7 @@ class AvroImpl {
         private final boolean useUTF8Strings;
 
         AvroConsume(final Schema schema, final Function<String, String> fieldPathToColumnName) {
-            this.schema = schema;
+            this.schema = Objects.requireNonNull(schema);
             this.schemaName = null;
             this.schemaVersion = null;
             this.fieldPathToColumnName = fieldPathToColumnName;
@@ -107,21 +108,20 @@ class AvroImpl {
         @Override
         protected Deserializer<?> getDeserializer(KeyOrValue keyOrValue, SchemaRegistryClient schemaRegistryClient,
                 Map<String, ?> configs) {
-            return new KafkaAvroDeserializer(Objects.requireNonNull(schemaRegistryClient));
+            ensureSchema(schemaRegistryClient);
+            return new KafkaAvroDeserializerWithReaderSchema(schemaRegistryClient);
         }
 
         @Override
         protected KeyOrValueIngestData getIngestData(KeyOrValue keyOrValue,
                 SchemaRegistryClient schemaRegistryClient, Map<String, ?> configs, MutableInt nextColumnIndexMut,
                 List<ColumnDefinition<?>> columnDefinitionsOut) {
+            ensureSchema(schemaRegistryClient);
             KeyOrValueIngestData data = new KeyOrValueIngestData();
             data.fieldPathToColumnName = new HashMap<>();
-            final Schema localSchema = schema != null
-                    ? schema
-                    : getAvroSchema(schemaRegistryClient, schemaName, schemaVersion);
-            avroSchemaToColumnDefinitions(columnDefinitionsOut, data.fieldPathToColumnName, localSchema,
+            avroSchemaToColumnDefinitions(columnDefinitionsOut, data.fieldPathToColumnName, schema,
                     fieldPathToColumnName, useUTF8Strings);
-            data.extra = localSchema;
+            data.extra = schema;
             return data;
         }
 
@@ -136,6 +136,36 @@ class AvroImpl {
                     true);
         }
 
+        private void ensureSchema(SchemaRegistryClient schemaRegistryClient) {
+            // This adds a little bit of stateful-ness to AvroConsume. Typically, this is not something we want /
+            // encourage for implementations, but due to the getDeserializer / getProcessor dependency on the exact
+            // same schema, we need to ensure we don't race if the user has set AVRO_LATEST_VERSION. Alternatively, we
+            // could break the KeyOrValueSpec API and pass Deserializer as parameter to getIngestData.
+            if (schema != null) {
+                return;
+            }
+            schema = Objects.requireNonNull(getAvroSchema(schemaRegistryClient, schemaName, schemaVersion));
+        }
+
+        /**
+         * Our getProcessor relies on a specific {@link Schema}; we need to ensure that Kafka layer adapts the on-wire
+         * writer's schema to our reader's schema.
+         */
+        class KafkaAvroDeserializerWithReaderSchema extends KafkaAvroDeserializer {
+            public KafkaAvroDeserializerWithReaderSchema(SchemaRegistryClient client) {
+                super(client);
+            }
+
+            @Override
+            public java.lang.Object deserialize(String topic, byte[] bytes) {
+                return super.deserialize(topic, bytes, schema);
+            }
+
+            @Override
+            public java.lang.Object deserialize(String topic, Headers headers, byte[] bytes) {
+                return super.deserialize(topic, headers, bytes, schema);
+            }
+        }
     }
 
     static final class AvroProduce extends Produce.KeyOrValueSpec {

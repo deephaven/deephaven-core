@@ -7,10 +7,8 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class EmptyQueryScope implements QueryScope {
@@ -20,7 +18,7 @@ public class EmptyQueryScope implements QueryScope {
 
     @Override
     public Set<String> getParamNames() {
-        return Collections.emptySet();
+        return new HashSet<>();
     }
 
     @Override
@@ -49,8 +47,13 @@ public class EmptyQueryScope implements QueryScope {
     }
 
     @Override
-    public Map<String, Object> toMap(@NotNull Predicate<Map.Entry<String, Object>> predicate) {
-        return Collections.emptyMap();
+    public Map<String, Object> toMap(@NotNull ParamFilter<Object> filter) {
+        return new HashMap<>();
+    }
+
+    @Override
+    public <T> Map<String, T> toMap(@NotNull Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter) {
+        return new HashMap<>();
     }
 
     @Override

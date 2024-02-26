@@ -4,6 +4,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -55,7 +56,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param source the source table
      * @param preservedColumns columns from the source table that are unchanged in the result table
      * @param resultSources the result sources
-     * @param byColumns the columns to use for the bucket keys
+     * @param byColumnNames the columns to use for the bucket keys
      * @param timestampColumnName the column to use for all time-aware operators
      * @param rowRedirection the row redirection for dense output sources
      * @param control the control object.
@@ -144,12 +145,9 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while initializing bucketed updateBy");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while initializing bucketed updateBy", e.getCause());
-            }
+            throw new TableInitializationException(result.getDescription(),
+                    "an exception occurred while initializing bucketed updateBy",
+                    e.getCause());
         }
     }
 

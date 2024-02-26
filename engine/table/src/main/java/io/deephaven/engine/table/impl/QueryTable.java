@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -1185,7 +1186,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             return this;
         }
 
-        return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
+        final String whereDescription = "where(" + Arrays.toString(filters) + ")";
+        return QueryPerformanceRecorder.withNugget(whereDescription, sizeForInstrumentation(),
                 () -> {
                     for (int fi = 0; fi < filters.length; ++fi) {
                         if (!(filters[fi] instanceof ReindexingFilter)) {
@@ -1255,11 +1257,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     } catch (ExecutionException | InterruptedException e) {
                                         if (e instanceof InterruptedException) {
                                             throw new CancellationException("interrupted while filtering");
-                                        } else if (e.getCause() instanceof RuntimeException) {
-                                            throw (RuntimeException) e.getCause();
-                                        } else {
-                                            throw new UncheckedDeephavenException(e);
                                         }
+                                        throw new TableInitializationException(whereDescription,
+                                                "an exception occurred while performing the initial filter",
+                                                e.getCause());
                                     } finally {
                                         // account for work done in alternative threads
                                         final BasePerformanceEntry basePerformanceEntry =
@@ -1291,7 +1292,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                     if (snapshotControl != null) {
                                         final ListenerRecorder recorder = new ListenerRecorder(
-                                                "where(" + Arrays.toString(filters) + ")", QueryTable.this,
+                                                whereDescription, QueryTable.this,
                                                 filteredTable);
                                         final WhereListener whereListener = new WhereListener(
                                                 log, this, recorder, filteredTable, filters);
@@ -1501,12 +1502,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
-                                if (e.getCause() instanceof RuntimeException) {
-                                    throw (RuntimeException) e.getCause();
-                                } else {
-                                    throw new UncheckedDeephavenException("Failure computing select or update",
-                                            e.getCause());
-                                }
+                                throw new TableInitializationException(updateDescription,
+                                        "an exception occurred while performing the initial select or update",
+                                        e.getCause());
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
@@ -3235,10 +3233,10 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own, the caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
-     *
+     * <p>
      * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
      * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
      * the enclosing operation.
@@ -3255,15 +3253,37 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
+     * Get a {@link Table} that adds, or overwrites, columns from {@code this}. The result will share the same
+     * {@link #getRowSet() row set} as this table.
+     * <p>
+     * The result will not update on its own. The caller must also establish an appropriate listener to update the
+     * provided column sources and propagate {@link TableUpdate updates}.
+     * <p>
+     * No attributes are propagated to the result table.
+     *
+     * @param additionalSources The additional columns to add or overwrite
+     * @return A new table with the additional columns
+     */
+    public QueryTable withAdditionalColumns(@NotNull final Map<String, ColumnSource<?>> additionalSources) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(this.columns);
+            columns.putAll(additionalSources);
+            final TableDefinition definition = TableDefinition.inferFrom(columns);
+            return new QueryTable(definition, rowSet, columns, null, null);
+        }
+    }
+
+    /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own, the caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
-     *
+     * <p>
      * This method is intended to be used for composing alternative engine operations, in particular
      * {@link #partitionBy(boolean, String...)}.
-     *
+     * <p>
      * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
      * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
      * the enclosing operation.

@@ -15,9 +15,9 @@ dependencies {
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
-    api 'org.apache.kafka:kafka-clients:7.4.0-ccs'
-    api 'io.confluent:kafka-avro-serializer:7.4.0'
-    api 'io.confluent:kafka-protobuf-serializer:7.4.0'
+    api 'org.apache.kafka:kafka-clients:7.6.0-ccs'
+    api 'io.confluent:kafka-avro-serializer:7.6.0'
+    api 'io.confluent:kafka-protobuf-serializer:7.6.0'
 
     // When updating the kafka implementation, it may be useful to test out the minimum kafka version that our code
     // compiles, tests, and runs with. If we want to offer more strict guarantees in these regards in the future, at

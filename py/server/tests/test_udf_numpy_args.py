@@ -337,7 +337,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f3(null, Y )"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f31(p1: Optional[np.ndarray[bool]], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -352,7 +352,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f1(Y)"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f11(p1: Union[str, None], p2=None) -> bool:
                 return p1 is None
@@ -366,7 +366,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f2(Y)"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
                 return p1 is None
@@ -380,7 +380,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f3(Y)"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])
             t1 = t.update(["X1 = f3(Y)"])

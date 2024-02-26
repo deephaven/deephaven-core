@@ -1,9 +1,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
-import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
-import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;

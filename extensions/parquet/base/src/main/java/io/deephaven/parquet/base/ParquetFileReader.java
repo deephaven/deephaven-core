@@ -123,7 +123,7 @@ public class ParquetFileReader {
      * True only if we are certain every data page in this column chunk uses dictionary encoding; note false also covers
      * the "we can't tell" case.
      */
-    private boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
+    private static boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
         final ColumnMetaData columnMeta = columnChunk.getMeta_data();
         if (columnMeta.encoding_stats == null) {
             return false; // this is false as "don't know".

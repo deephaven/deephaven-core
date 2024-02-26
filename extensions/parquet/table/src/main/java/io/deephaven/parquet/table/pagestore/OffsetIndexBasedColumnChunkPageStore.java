@@ -127,9 +127,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     private ChunkPage<ATTR> getPageImpl(@Nullable FillContext fillContext, int pageNum) {
-        final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
         // Use the latest context while reading the page, or create (and close) new one
         try (final ContextHolder holder = ensureContext(fillContext)) {
+            final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum, holder.get());
             return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, holder.get());
         } catch (IOException e) {
             throw new UncheckedIOException(e);

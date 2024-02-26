@@ -18,10 +18,10 @@ public interface ColumnPageReader extends AutoCloseable {
 
     /**
      * @param channelContext The channel context to use for reading the parquet file
-     * @return The number of rows in this ColumnChunk, or -1 if it's unknown.
+     * @return The number of rows in this page, or -1 if it's unknown.
      */
     default long numRows(final SeekableChannelContext channelContext) throws IOException {
-        return numValues(channelContext);
+        return numValues();
     }
 
     /**
@@ -47,10 +47,9 @@ public interface ColumnPageReader extends AutoCloseable {
             SeekableChannelContext channelContext) throws IOException;
 
     /**
-     * @param channelContext The channel context to use for reading the parquet file
-     * @return The value stored under number DataPageHeader.num_values
+     * @return The number of values in this page
      */
-    int numValues(SeekableChannelContext channelContext) throws IOException;
+    int numValues();
 
     /**
      * @param channelContext The channel context to use for reading the parquet file
