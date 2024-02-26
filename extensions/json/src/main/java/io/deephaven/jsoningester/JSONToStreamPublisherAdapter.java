@@ -15,7 +15,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -24,6 +24,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.jsoningester.msg.*;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -973,6 +974,12 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                     returnType, position, holderNumber).setDouble(TypeUtils.unbox((Double) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableDoubleChunk()
                     .add(holder.getDouble(position.intValue()));
+        } else if (colType == Instant.class) {
+            // Note that Instants are stored as longs
+            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
+                    returnType, position, holderNumber).setLong(DateTimeUtils.epochNanos((Instant) function.apply(record)));
+            fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
+                    .add(holder.getLong(position.intValue()));
         } else {
             fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
                     returnType, position, holderNumber).set(function.apply(record));

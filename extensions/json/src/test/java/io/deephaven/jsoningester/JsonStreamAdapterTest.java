@@ -102,7 +102,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
                         float.class, boolean.class, char.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -158,7 +158,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
                         float.class, boolean.class, char.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -211,7 +211,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 Arrays.asList(String.class, double.class, int.class, short.class, long.class, byte.class,
                         float.class, boolean.class, char.class, Instant.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -289,7 +289,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList(strCol, boolColName);
         final List<Class<?>> types = Arrays.asList(String.class, Boolean.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -363,7 +363,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("a", "b", "c");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -386,7 +386,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("a", "b", "c");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -409,7 +409,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("a", "b", "c");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, String.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -433,7 +433,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("Nanos", "Micros", "Millis", "StringVal");
         final List<Class<?>> types = Arrays.asList(Instant.class, Instant.class, Instant.class, Instant.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -474,7 +474,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "B", "c");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -501,7 +501,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "B", "C", "D");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -575,7 +575,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 Arrays.asList(String.class, byte.class, char.class, short.class, int.class, long.class,
                         float.class, double.class, String.class, Boolean.class, Instant.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -632,7 +632,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class, int.class,
                 String.class, String.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -696,7 +696,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class, short.class,
                 float.class, double.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -735,7 +735,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, String.class, double.class, long.class,
                 String.class, short.class, float.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -780,7 +780,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types =
                 Arrays.asList(String.class, String.class, long.class, String.class, long.class, String.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -808,7 +808,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("E", "e")
                 .autoValueMapping(false);
 
-        final StreamPublisherAndTable resultSubtable = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable resultSubtable = createStreamPublisherAndTable(
                 Arrays.asList("D", "E", "SubtableRecordId"),
                 Arrays.asList(long.class, String.class, long.class));
 
@@ -821,7 +821,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                                 .autoValueMapping(false)
                                 .nConsumerThreads(0));
 
-        final StreamPublisherAndTable resultMain = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable resultMain = createStreamPublisherAndTable(
                 Arrays.asList("A", "B", "c_id"),
                 Arrays.asList(String.class, double.class, long.class));
 
@@ -904,7 +904,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                                 "y"))
                 .autoValueMapping(false);
 
-        final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable subtableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("D", "E", "X1_y", "SubtableRecordId"),
                 Arrays.asList(long.class, String.class, int.class, long.class));
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
@@ -925,7 +925,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "B", "X2_y", "c_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, long.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table resultMain = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher(), Map.of("c", subtableAndPublisher.getPublisher()));
@@ -999,7 +999,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("E", "e")
                 .autoValueMapping(false);
 
-        final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable subtableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("D", "E", "SubtableRecordId"),
                 Arrays.asList(long.class, String.class, long.class));
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
@@ -1022,7 +1022,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "B", "X1_y", "c_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, long.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table resultMain = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher(), Map.of("c", subtableAndPublisher.getPublisher()));
@@ -1063,7 +1063,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("E", "e")
                 .autoValueMapping(false);
 
-        final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable subtableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("D", "E", "SubtableRecordId"),
                 Arrays.asList(long.class, String.class, long.class));
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
@@ -1118,11 +1118,11 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 .addColumnFromField("E", "e")
                 .autoValueMapping(false);
 
-        final StreamPublisherAndTable msgType1TAP = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable msgType1TAP = createStreamPublisherAndTable(
                 Arrays.asList("A", "B", "C", "SubtableRecordId"),
                 Arrays.asList(String.class, double.class, int.class, long.class));
 
-        final StreamPublisherAndTable msgType2TAP = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable msgType2TAP = createStreamPublisherAndTable(
                 Arrays.asList("A", "D", "E", "SubtableRecordId"),
                 Arrays.asList(String.class, String.class, int.class, long.class));
 
@@ -1143,7 +1143,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "msgType1_id", "msgType2_id");
         final List<Class<?>> types = Arrays.asList(String.class, long.class, long.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table resultMain = tableAndPublisher.getAppendOnlyTable();
 
         // noinspection RedundantTypeArguments (there's an unchecked assignment warning if the type args are removed)
@@ -1224,7 +1224,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class, short.class,
                 float.class, double.class, Instant.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1274,7 +1274,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class, short.class,
                 float.class, double.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1310,7 +1310,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "I");
         final List<Class<?>> types = Arrays.asList(String.class, double.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1331,7 +1331,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 .allowMissingKeys(true)
                 .addColumnFromField("X", "x");
 
-        final StreamPublisherAndTable subtableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable subtableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("X", "SubtableRecordId"),
                 Arrays.asList(int.class, long.class));
         final Table resultSubtable = subtableAndPublisher.getAppendOnlyTable();
@@ -1350,7 +1350,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "B", "subtable_id");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table resultMain = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher(),
@@ -1409,7 +1409,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class, short.class,
                 float.class, double.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1449,7 +1449,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("A", "B", "c");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1499,7 +1499,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<Class<?>> types = Arrays.asList(String.class, double.class, long.class, String.class, short.class,
                 float.class, double.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1757,7 +1757,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList("StrCol", "DoubleCol", "IntCol", "LongCol");
         final List<Class<?>> types = Arrays.asList(String.class, double.class, int.class, long.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1825,7 +1825,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
                 Arrays.asList(String.class, double.class, int.class, long.class, short.class, float.class,
                         byte.class, Boolean.class, char.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -1914,42 +1914,27 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         });
     }
 
-    private static JsonStreamAdapterTest.StreamPublisherAndTable createStreamPublisherAndTable(
+    private static StreamPublisherAndAppendOnlyTable createStreamPublisherAndTable(
             final List<String> colNames,
             final List<Class<?>> colTypes) {
         final SimpleStreamPublisher publisher = new SimpleStreamPublisher(TableDefinition.of(
                 colNames,
                 colTypes));
 
-        final StreamToBlinkTableAdapter subtableStreamToBlinkTableAdapter = new StreamToBlinkTableAdapter(
+        final StreamToBlinkTableAdapter streamToBlinkAdapter = new StreamToBlinkTableAdapter(
                 publisher.getTableDefinition(),
                 publisher,
                 ExecutionContext.getContext().getUpdateGraph(),
-                "streamToBlinkAdapter");
-        return new JsonStreamAdapterTest.StreamPublisherAndTable(publisher, subtableStreamToBlinkTableAdapter);
+                "testStreamToBlinkAdapter");
+        return new StreamPublisherAndAppendOnlyTable(publisher, streamToBlinkAdapter);
     }
 
-    private static class StreamPublisherAndTable implements AutoCloseable {
-        private final SimpleStreamPublisher publisher;
-        private final StreamToBlinkTableAdapter adapter;
+    private static class StreamPublisherAndAppendOnlyTable extends StreamPublisherAndTable {
         private final Table appendOnlyTable;
 
-        public StreamPublisherAndTable(SimpleStreamPublisher publisher, StreamToBlinkTableAdapter adapter) {
-            this.publisher = publisher;
-            this.adapter = adapter;
+        public StreamPublisherAndAppendOnlyTable(SimpleStreamPublisher publisher, StreamToBlinkTableAdapter adapter) {
+            super(publisher, adapter);
             appendOnlyTable = BlinkTableTools.blinkToAppendOnly(adapter.table());
-        }
-
-        public SimpleStreamPublisher getPublisher() {
-            return publisher;
-        }
-
-        public StreamToBlinkTableAdapter getAdapter() {
-            return adapter;
-        }
-
-        public Table getBlinkTable() {
-            return adapter.table();
         }
 
         public Table getAppendOnlyTable() {
@@ -1958,7 +1943,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
 
         @Override
         public void close() {
-            adapter.close();
+            super.close();
             appendOnlyTable.close();
         }
     }
@@ -2112,7 +2097,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
             messages[i] = new StringMessageHolder(builder.toString());
         }
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList(names),
                 Arrays.asList(types));
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -2249,7 +2234,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
             messages[i] = new StringMessageHolder(builder.toString());
         }
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList(names),
                 Arrays.asList(types));
         final Table result = tableAndPublisher.getAppendOnlyTable();
@@ -2367,7 +2352,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final List<String> names = Arrays.asList(strCol, boolColName);
         final List<Class<?>> types = Arrays.asList(String.class, Boolean.class);
 
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(names, types);
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table result = tableAndPublisher.getAppendOnlyTable();
 
         adapter = factory.apply(tableAndPublisher.getPublisher());
@@ -2428,7 +2413,7 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
      * this case there is no {@link MessageMetadata} to process.
      */
     public void testNoMessageAdapter() throws IOException {
-        final StreamPublisherAndTable tableAndPublisher = createStreamPublisherAndTable(
+        final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(
                 Arrays.asList("Col1"),
                 Arrays.asList(String.class));
 
