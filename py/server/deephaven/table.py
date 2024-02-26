@@ -665,7 +665,7 @@ class Table(JObjectWrapper):
 
     def move_columns(self, idx: int, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns method creates a new table with specified columns moved to a specific column index value.
-        Columns may be renamed with the same semantics as rename_columns. The renames are simulatenous, and unordered,
+        Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous, and unordered,
         enabling direct swaps between column names. Specifying a source or destination more than once is prohibited.
 
         Args:
@@ -686,7 +686,7 @@ class Table(JObjectWrapper):
 
     def move_columns_down(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_down method creates a new table with specified columns appearing last in order, to the far
-        right. Columns may be renamed with the same semantics as rename_columns. The renames are simulatenous, and
+        right. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous, and
         unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
         prohibited.
 
@@ -707,7 +707,7 @@ class Table(JObjectWrapper):
 
     def move_columns_up(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_up method creates a new table with specified columns appearing first in order, to the far
-        left. Columns may be renamed with the same semantics as rename_columns. The renames are simulatenous, and
+        left. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous, and
         unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
         prohibited.
 
@@ -728,7 +728,7 @@ class Table(JObjectWrapper):
 
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed. The renames are
-        simulatenous, and unordered, enabling direct swaps between column names. Specifying a source or
+        simultaneous, and unordered, enabling direct swaps between column names. Specifying a source or
          destination more than once is prohibited.
 
         Args:
