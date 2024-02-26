@@ -71,11 +71,10 @@ final class RowGroupReaderImpl implements RowGroupReader {
     }
 
     @Override
-    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path,
-            @NotNull final SeekableChannelContext channelContext) {
-        String key = path.toString();
-        ColumnChunk columnChunk = chunkMap.get(key);
-        List<Type> fieldTypes = schemaMap.get(key);
+    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path) {
+        final String key = path.toString();
+        final ColumnChunk columnChunk = chunkMap.get(key);
+        final List<Type> fieldTypes = schemaMap.get(key);
         if (columnChunk == null) {
             return null;
         }
@@ -87,31 +86,11 @@ final class RowGroupReaderImpl implements RowGroupReader {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             columnChunkURI = rootURI;
         }
-
-        final OffsetIndex offsetIndex = offsetIndex(columnChunk, columnChunkURI, channelContext);
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, columnChunkURI, type, offsetIndex, fieldTypes,
-                numRows(), version);
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, columnChunkURI, type, fieldTypes, numRows(),
+                version);
     }
 
-    private OffsetIndex offsetIndex(ColumnChunk chunk, URI columnChunkURI, @NotNull SeekableChannelContext context) {
-        if (!chunk.isSetOffset_index_offset()) {
-            return null;
-        }
-        return ParquetMetadataConverter.fromParquetOffsetIndex(readOffsetIndex(chunk, columnChunkURI, context));
-    }
 
-    private org.apache.parquet.format.OffsetIndex readOffsetIndex(ColumnChunk chunk, URI columnChunkURI,
-            @NotNull SeekableChannelContext channelContext) {
-        try (
-                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
-                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(holder.get(), columnChunkURI);
-                final InputStream in =
-                        channelsProvider.getInputStream(readChannel.position(chunk.getOffset_index_offset()))) {
-            return Util.readOffsetIndex(in);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
 
     @Override
     public long numRows() {

@@ -17,10 +17,9 @@ public interface RowGroupReader {
      * Returns the accessor to a given Column Chunk
      * 
      * @param path the full column path
-     * @param channelContext the channel context to use while reading the parquet file
      * @return the accessor to a given Column Chunk
      */
-    ColumnChunkReader getColumnChunk(@NotNull List<String> path, @NotNull final SeekableChannelContext channelContext);
+    ColumnChunkReader getColumnChunk(@NotNull List<String> path);
 
     long numRows();
 

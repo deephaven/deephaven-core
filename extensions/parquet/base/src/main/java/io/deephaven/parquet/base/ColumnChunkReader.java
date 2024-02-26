@@ -31,10 +31,17 @@ public interface ColumnChunkReader {
     int getMaxRl();
 
     /**
-     * @return The offset index for this column chunk, or null if it not found in the metadata.
+     * @return Whether the column chunk has offset index information set in the metadata or not.
      */
-    @Nullable
-    OffsetIndex getOffsetIndex();
+    boolean hasOffsetIndex();
+
+    /**
+     * Get the offset index for a column chunk.
+     *
+     * @param context The channel context to use for reading the offset index.
+     *
+     */
+    OffsetIndex getOffsetIndex(final SeekableChannelContext context);
 
     /**
      * Used to iterate over column page readers for each page with the capability to set channel context to for reading
@@ -69,9 +76,9 @@ public interface ColumnChunkReader {
     }
 
     /**
-     * @return An accessor for individual parquet pages.
+     * @return An accessor for individual parquet pages which uses the provided offset index.
      */
-    ColumnPageDirectAccessor getPageAccessor();
+    ColumnPageDirectAccessor getPageAccessor(OffsetIndex offsetIndex);
 
     /**
      * @return Whether this column chunk uses a dictionary-based encoding on every page.

@@ -213,13 +213,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final String version = tableInfo.map(TableInfo::version).orElse(null);
 
             final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0, version);
-            final ColumnChunkReader groupingKeyReader, beginPosReader, endPosReader;
-            try (final SeekableChannelContext channelContext = channelsProvider.makeSingleUseContext()) {
-                groupingKeyReader =
-                        rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY), channelContext);
-                beginPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(BEGIN_POS), channelContext);
-                endPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(END_POS), channelContext);
-            }
+            final ColumnChunkReader groupingKeyReader =
+                    rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY));
+            final ColumnChunkReader beginPosReader =
+                    rowGroupReader.getColumnChunk(Collections.singletonList(BEGIN_POS));
+            final ColumnChunkReader endPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(END_POS));
             if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
                 log.warn().append("Index file ").append(indexFilePath)
                         .append(" is missing one or more expected columns for table location ")

@@ -11,6 +11,7 @@ import io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.jetbrains.annotations.NotNull;
@@ -56,12 +57,15 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             final long mask,
             @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(pageCache, columnChunkReader, mask, toPage);
-        offsetIndex = columnChunkReader.getOffsetIndex();
+        try (final SeekableChannelContext channelContext =
+                columnChunkReader.getChannelsProvider().makeSingleUseContext()) {
+            offsetIndex = columnChunkReader.getOffsetIndex(channelContext);
+        }
         Assert.neqNull(offsetIndex, "offsetIndex");
         numPages = offsetIndex.getPageCount();
         Assert.gtZero(numPages, "numPages");
         pageStates = new AtomicReferenceArray<>(numPages);
-        columnPageDirectAccessor = columnChunkReader.getPageAccessor();
+        columnPageDirectAccessor = columnChunkReader.getPageAccessor(offsetIndex);
 
         if (numPages == 1) {
             fixedPageSize = numRows();

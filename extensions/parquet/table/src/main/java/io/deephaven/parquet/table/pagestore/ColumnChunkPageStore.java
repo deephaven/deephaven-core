@@ -62,7 +62,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private static boolean canUseOffsetIndexBasedPageStore(
             @NotNull final ColumnChunkReader columnChunkReader,
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        if (columnChunkReader.getOffsetIndex() == null) {
+        if (!columnChunkReader.hasOffsetIndex()) {
             return false;
         }
         final String version = columnChunkReader.getVersion();

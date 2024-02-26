@@ -27,12 +27,10 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -42,7 +40,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter decompressor;
     private final ColumnDescriptor path;
-    private final OffsetIndex offsetIndex;
+    private OffsetIndexReader offsetIndexReader;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
     private final PageMaterializerFactory nullMaterializerFactory;
@@ -57,8 +55,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final String version;
 
     ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, URI columnChunkURI,
-            MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes, final long numRows,
-            final String version) {
+            MessageType type, List<Type> fieldTypes, final long numRows, final String version) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
         this.columnChunkURI = columnChunkURI;
@@ -70,12 +67,15 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             decompressor = CompressorAdapter.PASSTHRU;
         }
-        this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new LazyCachingFunction<>(this::getDictionary);
         this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
         this.numRows = numRows;
         this.version = version;
+        // Construct the reader object but don't read the offset index yet
+        this.offsetIndexReader = (columnChunk.isSetOffset_index_offset())
+                ? new OffsetIndexReaderImpl(channelsProvider, columnChunk, columnChunkURI)
+                : OffsetIndexReader.NULL;
     }
 
     @Override
@@ -93,8 +93,15 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         return path.getMaxRepetitionLevel();
     }
 
-    public OffsetIndex getOffsetIndex() {
-        return offsetIndex;
+    @Override
+    public boolean hasOffsetIndex() {
+        return columnChunk.isSetOffset_index_offset();
+    }
+
+    @Override
+    public OffsetIndex getOffsetIndex(final SeekableChannelContext context) {
+        // Read the offset index if it hasn't been read yet
+        return offsetIndexReader.getOffsetIndex(context);
     }
 
     @Override
@@ -103,11 +110,11 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public final ColumnPageDirectAccessor getPageAccessor() {
+    public ColumnPageDirectAccessor getPageAccessor(final OffsetIndex offsetIndex) {
         if (offsetIndex == null) {
             throw new UnsupportedOperationException("Cannot use direct accessor without offset index");
         }
-        return new ColumnPageDirectAccessorImpl();
+        return new ColumnPageDirectAccessorImpl(offsetIndex);
     }
 
     private URI getURI() {
@@ -294,7 +301,11 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
 
-        ColumnPageDirectAccessorImpl() {}
+        private final OffsetIndex offsetIndex;
+
+        ColumnPageDirectAccessorImpl(final OffsetIndex offsetIndex) {
+            this.offsetIndex = offsetIndex;
+        }
 
         @Override
         public ColumnPageReader getPageReader(final int pageNum, final SeekableChannelContext channelContext) {
