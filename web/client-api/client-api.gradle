@@ -41,8 +41,14 @@ Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
 
 evaluationDependsOn ':web-shared-beans'
 evaluationDependsOn ':web-client-backplane'
+repositories {
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
 gwt {
-    gwtVersion = '2.11.0'
+    gwtVersion = "2.12.0-instanceof-SNAPSHOT"
+//    gwtVersion = "2.11.0"
     modules 'io.deephaven.web.DeephavenApi'
 
     src += files(project.files(project(':web-shared-beans').sourceSets.main.allSource.srcDirs))
@@ -51,9 +57,12 @@ gwt {
 
     maxHeapSize '1024m'
 
+    extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005']
+
     jsInteropExports{
         setGenerate true
     }
+//    extraDir layout.buildDirectory.dir('gwt/extra')
 }
 
 def jsOutput = layout.buildDirectory.dir('js')
