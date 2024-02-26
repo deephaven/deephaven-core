@@ -84,7 +84,7 @@ public class CoreClient extends HasEventHandling {
     public Promise<String[][]> getAuthConfigValues() {
         return ideConnection.getConnectOptions().then(options -> {
             BrowserHeaders metadata = new BrowserHeaders();
-            JsObject.keys(options.headers).forEach((key, index, arr) -> {
+            JsObject.keys(options.headers).forEach((key, index) -> {
                 metadata.set(key, options.headers.get(key));
                 return null;
             });

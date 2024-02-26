@@ -21,7 +21,7 @@ import org.gradle.internal.Actions
 class Classpaths {
 
     static final String ELEMENTAL_GROUP = 'com.google.elemental2'
-    static final String ELEMENTAL_VERSION = '1.1.0'
+    static final String ELEMENTAL_VERSION = '1.2.1'
 
     static final String GWT_GROUP = 'com.google.gwt'
     static final String GWT_VERSION = '2.10.0'
