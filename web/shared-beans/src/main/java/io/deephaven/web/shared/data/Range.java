@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.shared.data;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 
 /**
@@ -45,7 +44,7 @@ public class Range implements Serializable, Comparable<Range> {
     }
 
     @Override
-    public int compareTo(@Nonnull Range o) {
+    public int compareTo(Range o) {
         return Long.compare(first, o.first);
     }
 

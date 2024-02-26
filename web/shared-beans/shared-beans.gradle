@@ -5,7 +5,7 @@ plugins {
 
 apply from: "$rootDir/gradle/web-common.gradle"
 
-GwtTools.gwtLib project
+//GwtTools.gwtLib project
 
 configurations {
     testImplementation.extendsFrom junit
