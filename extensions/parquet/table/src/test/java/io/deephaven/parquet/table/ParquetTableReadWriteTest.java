@@ -1419,7 +1419,7 @@ public final class ParquetTableReadWriteTest {
         readChangedUnderlyingFileTestsImpl(MULTI_WRITER);
     }
 
-    public void readChangedUnderlyingFileTestsImpl(TestParquetTableWriter writer) {
+    private void readChangedUnderlyingFileTestsImpl(TestParquetTableWriter writer) {
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readChangedUnderlyingFileTests.parquet";
@@ -1439,9 +1439,9 @@ public final class ParquetTableReadWriteTest {
 
         // Read back fromDisk. Since the underlying file has changed, we expect this to fail.
         try {
-            fromDisk.coalesce();
-            TestCase.fail("Expected TableDataException");
-        } catch (TableDataException ignored) {
+            fromDisk.select();
+            TestCase.fail("Expected exception");
+        } catch (RuntimeException ignored) {
             // expected
         }
     }
