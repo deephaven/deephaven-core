@@ -5,8 +5,6 @@ package io.deephaven.engine.context;
 
 public class QueryScopeParam<T> {
 
-    public static final QueryScopeParam<?>[] ZERO_LENGTH_PARAM_ARRAY = new QueryScopeParam[0];
-
     private final String name;
     private final T value;
 

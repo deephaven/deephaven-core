@@ -33,9 +33,11 @@ def executor_names() -> List[str]:
 
 def submit_task(executor_name: str, task: Callable[[], None]) -> None:
     """
-    Submits a task to run on a named executor. If no such executor exists, raises KeyError.
+    Submits a task to run on a named executor. If no such executor exists, raises KeyError. The provided task should
+    take care to set up any execution context or liveness scope to ensure that the task runs as intended.
 
-    Typically, tasks should not block on other threads. Ensure tasks never block on other tasks submitted to the same executor.
+    Typically, tasks should not block on other threads. Ensure tasks never block on other tasks submitted to the same
+    executor.
 
     Args:
         executor_name (str): the name of the executor to submit the task to

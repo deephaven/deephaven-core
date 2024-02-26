@@ -26,6 +26,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.table.*;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -50,6 +52,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongFunction;
@@ -58,6 +61,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
@@ -163,16 +167,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         if (!hasGroupingTable) {
             return null;
         }
-        final File parquetFile = tl().getParquetFile();
+        final URI parquetFileURI = tl().getParquetKey().getURI();
+        Assert.assertion(FILE_URI_SCHEME.equals(parquetFileURI.getScheme()),
+                "Expected a file uri, got " + parquetFileURI);
+        final File parquetFile = new File(parquetFileURI);
         try {
             ParquetFileReader parquetFileReader;
             final String indexFilePath;
             final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
+            final SeekableChannelsProvider channelsProvider = tl().getChannelProvider();
             if (groupingColumnInfo != null) {
                 final String indexFileRelativePath = groupingColumnInfo.groupingTablePath();
                 indexFilePath = parquetFile.toPath().getParent().resolve(indexFileRelativePath).toString();
                 try {
-                    parquetFileReader = new ParquetFileReader(indexFilePath, tl().getChannelProvider());
+                    parquetFileReader = new ParquetFileReader(indexFilePath, channelsProvider);
                 } catch (final RuntimeException e) {
                     logWarnFailedToRead(indexFilePath);
                     return null;
@@ -182,7 +190,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         ParquetTools.getRelativeIndexFilePath(parquetFile, parquetColumnName);
                 indexFilePath = parquetFile.toPath().getParent().resolve(relativeIndexFilePath).toString();
                 try {
-                    parquetFileReader = new ParquetFileReader(indexFilePath, tl().getChannelProvider());
+                    parquetFileReader = new ParquetFileReader(indexFilePath, channelsProvider);
                 } catch (final RuntimeException e1) {
                     // Retry with legacy grouping file path
                     final String legacyGroupingFileName =
@@ -190,7 +198,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     final File legacyGroupingFile = new File(parquetFile.getParent(), legacyGroupingFileName);
                     try {
                         parquetFileReader =
-                                new ParquetFileReader(legacyGroupingFile.getAbsolutePath(), tl().getChannelProvider());
+                                new ParquetFileReader(legacyGroupingFile.getAbsolutePath(), channelsProvider);
                     } catch (final RuntimeException e2) {
                         logWarnFailedToRead(indexFilePath);
                         return null;
@@ -205,19 +213,19 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final String version = tableInfo.map(TableInfo::version).orElse(null);
 
             final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0, version);
-            final ColumnChunkReader groupingKeyReader =
-                    rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY));
-            final ColumnChunkReader beginPosReader =
-                    rowGroupReader.getColumnChunk(Collections.singletonList(BEGIN_POS));
-            final ColumnChunkReader endPosReader =
-                    rowGroupReader.getColumnChunk(Collections.singletonList(END_POS));
+            final ColumnChunkReader groupingKeyReader, beginPosReader, endPosReader;
+            try (final SeekableChannelContext channelContext = channelsProvider.makeSingleUseContext()) {
+                groupingKeyReader =
+                        rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY), channelContext);
+                beginPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(BEGIN_POS), channelContext);
+                endPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(END_POS), channelContext);
+            }
             if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
                 log.warn().append("Index file ").append(indexFilePath)
                         .append(" is missing one or more expected columns for table location ")
-                        .append(tl()).append(", column ").append(getName());
+                        .append(tl()).append(", column ").append(getName()).endl();
                 return null;
             }
-
 
             final PageCache<ATTR> localPageCache = ensurePageCache();
 

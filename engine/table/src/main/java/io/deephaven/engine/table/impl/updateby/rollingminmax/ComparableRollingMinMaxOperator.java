@@ -8,21 +8,19 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends BaseObjectUpdateByOperator<T> {
     private final boolean isMax;
     private static final int BUFFER_INITIAL_CAPACITY = 128;
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
         protected ObjectChunk<T, ? extends Values> objectInfluencerValuesChunk;
         protected AggregatingObjectRingBuffer<T> aggMinMax;
         protected boolean evaluationNeeded;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             if (isMax) {
@@ -83,7 +81,7 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
 
         @Override
         public void pop(int count) {
-            Assert.geq(aggMinMax.size(), "shortWindowValues.size()", count);
+            Assert.geq(aggMinMax.size(), "aggMinMax.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
                 T val = aggMinMax.removeUnsafe();
@@ -126,19 +124,26 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
 
     public ComparableRollingMinMaxOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            final boolean isMax
-            // region extra-constructor-args
-            , final Class colType
-    // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
-                forwardWindowScaleUnits, true, colType);
+            final boolean isMax,
+            final Class<?> colType) {
+        // noinspection unchecked
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                (Class<T>) colType);
         this.isMax = isMax;
-        // region constructor
-        // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new ComparableRollingMinMaxOperator<>(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                isMax,
+                colType);
     }
 }

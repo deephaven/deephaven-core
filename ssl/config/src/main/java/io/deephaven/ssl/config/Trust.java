@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * @see TrustJdk
  * @see TrustProperties
  * @see TrustSystem
+ * @see TrustCustom
  * @see TrustAll
  * @see TrustList
  */
@@ -47,6 +48,8 @@ public interface Trust {
         T visit(TrustProperties properties);
 
         T visit(TrustSystem system);
+
+        T visit(TrustCustom custom);
 
         T visit(TrustAll all);
 

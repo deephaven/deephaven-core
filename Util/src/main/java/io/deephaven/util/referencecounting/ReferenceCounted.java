@@ -10,16 +10,13 @@ import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * Implements a recurring reference counting pattern - a concurrent reference count that should refuse to go below zero,
  * and invokes {@link #onReferenceCountAtZero()} exactly once when the count returns to zero.
  */
-public abstract class ReferenceCounted implements LogOutputAppendable, Serializable {
-
-    private static final long serialVersionUID = 1L;
+public abstract class ReferenceCounted implements LogOutputAppendable {
 
     /**
      * Field updater for referenceCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger}

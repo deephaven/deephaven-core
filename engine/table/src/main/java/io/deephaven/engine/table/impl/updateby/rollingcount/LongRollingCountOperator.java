@@ -13,7 +13,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,6 +27,7 @@ public class LongRollingCountOperator extends BaseLongUpdateByOperator {
         protected LongChunk<? extends Values> influencerValuesChunk;
         protected ByteRingBuffer buffer;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
@@ -91,17 +91,29 @@ public class LongRollingCountOperator extends BaseLongUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public LongRollingCountOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @Nullable final String timestampColumnName,
-                                    final long reverseWindowScaleUnits,
-                                    final long forwardWindowScaleUnits
-                                    // region extra-constructor-args
-                                    // endregion extra-constructor-args
+    public LongRollingCountOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new LongRollingCountOperator(pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 }

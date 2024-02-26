@@ -124,7 +124,7 @@ public class FuzzerTest {
             clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
         }
 
-        final TimeTable timeTable = (TimeTable) session.getVariable("tt");
+        final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
 
         final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
 
@@ -164,7 +164,7 @@ public class FuzzerTest {
             validateBindingTables(session, hardReferences);
 
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            final TimeTable timeTable = (TimeTable) session.getVariable("tt");
+            final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
             for (int step = 0; step < fuzzDescriptor.steps; ++step) {
                 final int fstep = step;
                 updateGraph.runWithinUnitTestCycle(() -> {
@@ -262,7 +262,7 @@ public class FuzzerTest {
         final long startTime = System.currentTimeMillis();
 
         final long loopStart = System.currentTimeMillis();
-        final TimeTable timeTable = (TimeTable) session.getVariable("tt");
+        final TimeTable timeTable = session.getQueryScope().readParamValue("tt");
         final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < stepsToRun; ++step) {
@@ -316,7 +316,7 @@ public class FuzzerTest {
 
     private void addPrintListener(
             GroovyDeephavenSession session, final String variable, Map<String, Object> hardReferences) {
-        final Table table = (Table) session.getVariable(variable);
+        final Table table = session.getQueryScope().readParamValue(variable);
         System.out.println(variable);
         TableTools.showWithRowSet(table);
         System.out.println();

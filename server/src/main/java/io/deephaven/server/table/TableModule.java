@@ -12,39 +12,9 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.table.ops.AggregateAllGrpcImpl;
-import io.deephaven.server.table.ops.AggregateGrpcImpl;
+import io.deephaven.server.table.ops.*;
 import io.deephaven.server.table.ops.AjRajGrpcImpl.AjGrpcImpl;
 import io.deephaven.server.table.ops.AjRajGrpcImpl.RajGrpcImpl;
-import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
-import io.deephaven.server.table.ops.AjRajGrpcImpl;
-import io.deephaven.server.table.ops.ColumnStatisticsGrpcImpl;
-import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
-import io.deephaven.server.table.ops.CreateInputTableGrpcImpl;
-import io.deephaven.server.table.ops.DropColumnsGrpcImpl;
-import io.deephaven.server.table.ops.EmptyTableGrpcImpl;
-import io.deephaven.server.table.ops.FetchTableGrpcImpl;
-import io.deephaven.server.table.ops.FilterTableGrpcImpl;
-import io.deephaven.server.table.ops.FlattenTableGrpcImpl;
-import io.deephaven.server.table.ops.GrpcTableOperation;
-import io.deephaven.server.table.ops.HeadOrTailByGrpcImpl;
-import io.deephaven.server.table.ops.HeadOrTailGrpcImpl;
-import io.deephaven.server.table.ops.JoinTablesGrpcImpl;
-import io.deephaven.server.table.ops.MergeTablesGrpcImpl;
-import io.deephaven.server.table.ops.MetaTableGrpcImpl;
-import io.deephaven.server.table.ops.RangeJoinGrpcImpl;
-import io.deephaven.server.table.ops.RunChartDownsampleGrpcImpl;
-import io.deephaven.server.table.ops.SelectDistinctGrpcImpl;
-import io.deephaven.server.table.ops.SnapshotTableGrpcImpl;
-import io.deephaven.server.table.ops.SnapshotWhenTableGrpcImpl;
-import io.deephaven.server.table.ops.SortTableGrpcImpl;
-import io.deephaven.server.table.ops.TableServiceGrpcImpl;
-import io.deephaven.server.table.ops.TimeTableGrpcImpl;
-import io.deephaven.server.table.ops.UngroupGrpcImpl;
-import io.deephaven.server.table.ops.UnstructuredFilterTableGrpcImpl;
-import io.deephaven.server.table.ops.UpdateByGrpcImpl;
-import io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl;
-import io.deephaven.server.table.ops.WhereInGrpcImpl;
 import io.grpc.BindableService;
 
 @MapKey
@@ -218,6 +188,11 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.RAJ)
     GrpcTableOperation<?> bindOperationRaj(RajGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.MULTI_JOIN)
+    GrpcTableOperation<?> bindOperationMultiJoin(MultiJoinGrpcImpl op);
 
     @Binds
     @IntoMap

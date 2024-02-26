@@ -34,26 +34,11 @@ on them anymore so we do notguarantee they are current for those platforms.
 
 6. Build and install dependencies for Deephaven C++ client.
 
-   Get the `build-dependencies.sh` script from Deephaven's base images repository.
-
-   ***Note you need the right version of `build-dependencies.sh` matching
-   your sources***.
-
-   The link in the paragraph that follows points to a specific
-   version that works with the code this README.md files accompanies;
-   if you are reading a different version of the README.md compared
-   to the source version you will be trying to compile, go back
-   to the right `README.md` now.
-
-   Download `build-dependencies.sh` directly from
-   https://github.com/deephaven/deephaven-base-images/raw/0f2c39f142140601b92d69a8fe8ee0c49b76ec7b/cpp-client/build-dependencies.sh
-
-   (this script is also used from our automated tools, to generate a docker image to
-   support tests runs; that's why it lives in a separate repo).
-   The script downloads, builds and installs the dependent libraries
+   The `build-dependencies.sh` script in this directory downloads,
+   builds and installs the dependent libraries
    (Protobuf, re2, gflags, absl, flatbuffers, c-ares, zlib, gRPC, and Arrow).
    Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
-   Create that directory and save the script there.
+   Create that directory and copy the script there.
 
    The three main build types of a standard cmake build are supported,
    `Release`, `Debug` and `RelWithDebInfo`.  By default. `build-dependencies.sh`
@@ -73,9 +58,8 @@ on them anymore so we do notguarantee they are current for those platforms.
    export DHCPP=$HOME/dhcpp
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
+   cp build-dependencies.sh $DHCPP
    cd $DHCPP
-   wget https://github.com/deephaven/deephaven-base-images/raw/0f2c39f142140601b92d69a8fe8ee0c49b76ec7b/cpp-client/build-dependencies.sh
-   chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
    # any deviation from defaults may require changing other files later.

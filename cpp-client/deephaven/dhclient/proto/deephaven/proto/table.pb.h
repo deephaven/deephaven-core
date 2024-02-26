@@ -259,6 +259,12 @@ extern MergeTablesRequestDefaultTypeInternal _MergeTablesRequest_default_instanc
 class MetaTableRequest;
 struct MetaTableRequestDefaultTypeInternal;
 extern MetaTableRequestDefaultTypeInternal _MetaTableRequest_default_instance_;
+class MultiJoinInput;
+struct MultiJoinInputDefaultTypeInternal;
+extern MultiJoinInputDefaultTypeInternal _MultiJoinInput_default_instance_;
+class MultiJoinTablesRequest;
+struct MultiJoinTablesRequestDefaultTypeInternal;
+extern MultiJoinTablesRequestDefaultTypeInternal _MultiJoinTablesRequest_default_instance_;
 class NaturalJoinTablesRequest;
 struct NaturalJoinTablesRequestDefaultTypeInternal;
 extern NaturalJoinTablesRequestDefaultTypeInternal _NaturalJoinTablesRequest_default_instance_;
@@ -376,6 +382,9 @@ extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRol
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCountDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCountDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount_default_instance_;
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula;
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormulaDefaultTypeInternal;
+extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormulaDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula_default_instance_;
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup;
 struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal;
 extern UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup_default_instance_;
@@ -490,6 +499,8 @@ template<> ::io::deephaven::proto::backplane::grpc::MatchesCondition* Arena::Cre
 template<> ::io::deephaven::proto::backplane::grpc::MathContext* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MathContext>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::MergeTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MergeTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::MetaTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MetaTableRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::MultiJoinInput* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MultiJoinInput>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::NotCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::NotCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::OrCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::OrCondition>(Arena*);
@@ -529,6 +540,7 @@ template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOper
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin>(Arena*);
@@ -7206,6 +7218,215 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRoll
 };
 // -------------------------------------------------------------------
 
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula) */ {
+ public:
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula() : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula(nullptr) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula() override;
+  explicit PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& from);
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula&& from) noexcept
+    : UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula() {
+    *this = ::std::move(from);
+  }
+
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& operator=(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& operator=(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* internal_default_instance() {
+    return reinterpret_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula*>(
+               &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    36;
+
+  friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& from) {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula";
+  }
+  protected:
+  explicit UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kFormulaFieldNumber = 3,
+    kParamTokenFieldNumber = 4,
+    kReverseWindowScaleFieldNumber = 1,
+    kForwardWindowScaleFieldNumber = 2,
+  };
+  // string formula = 3;
+  void clear_formula();
+  const std::string& formula() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_formula(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_formula();
+  PROTOBUF_NODISCARD std::string* release_formula();
+  void set_allocated_formula(std::string* formula);
+  private:
+  const std::string& _internal_formula() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_formula(const std::string& value);
+  std::string* _internal_mutable_formula();
+  public:
+
+  // string param_token = 4;
+  void clear_param_token();
+  const std::string& param_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_param_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_param_token();
+  PROTOBUF_NODISCARD std::string* release_param_token();
+  void set_allocated_param_token(std::string* param_token);
+  private:
+  const std::string& _internal_param_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_param_token(const std::string& value);
+  std::string* _internal_mutable_param_token();
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+  bool has_reverse_window_scale() const;
+  private:
+  bool _internal_has_reverse_window_scale() const;
+  public:
+  void clear_reverse_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& reverse_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_reverse_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_reverse_window_scale();
+  void set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_reverse_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_reverse_window_scale();
+  public:
+  void unsafe_arena_set_allocated_reverse_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_reverse_window_scale();
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+  bool has_forward_window_scale() const;
+  private:
+  bool _internal_has_forward_window_scale() const;
+  public:
+  void clear_forward_window_scale();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& forward_window_scale() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* release_forward_window_scale();
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* mutable_forward_window_scale();
+  void set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& _internal_forward_window_scale() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _internal_mutable_forward_window_scale();
+  public:
+  void unsafe_arena_set_allocated_forward_window_scale(
+      ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale);
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* unsafe_arena_release_forward_window_scale();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr formula_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr param_token_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale_;
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec) */ {
  public:
@@ -7270,6 +7491,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
     kRollingCount = 18,
     kRollingStd = 19,
     kRollingWavg = 20,
+    kRollingFormula = 21,
     TYPE_NOT_SET = 0,
   };
 
@@ -7278,7 +7500,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    36;
+    37;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec& a, UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec& b) {
     a.Swap(&b);
@@ -7368,6 +7590,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount UpdateByRollingCount;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd UpdateByRollingStd;
   typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg UpdateByRollingWAvg;
+  typedef UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula UpdateByRollingFormula;
 
   // accessors -------------------------------------------------------
 
@@ -7392,6 +7615,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
     kRollingCountFieldNumber = 18,
     kRollingStdFieldNumber = 19,
     kRollingWavgFieldNumber = 20,
+    kRollingFormulaFieldNumber = 21,
   };
   // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum sum = 1;
   bool has_sum() const;
@@ -7753,6 +7977,24 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
       ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* rolling_wavg);
   ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* unsafe_arena_release_rolling_wavg();
 
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula rolling_formula = 21;
+  bool has_rolling_formula() const;
+  private:
+  bool _internal_has_rolling_formula() const;
+  public:
+  void clear_rolling_formula();
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& rolling_formula() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* release_rolling_formula();
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* mutable_rolling_formula();
+  void set_allocated_rolling_formula(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* rolling_formula);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& _internal_rolling_formula() const;
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* _internal_mutable_rolling_formula();
+  public:
+  void unsafe_arena_set_allocated_rolling_formula(
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* rolling_formula);
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* unsafe_arena_release_rolling_formula();
+
   void clear_type();
   TypeCase type_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec)
@@ -7778,6 +8020,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
   void set_has_rolling_count();
   void set_has_rolling_std();
   void set_has_rolling_wavg();
+  void set_has_rolling_formula();
 
   inline bool has_type() const;
   inline void clear_has_type();
@@ -7809,6 +8052,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec final :
       ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingCount* rolling_count_;
       ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingStd* rolling_std_;
       ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* rolling_wavg_;
+      ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* rolling_formula_;
     } type_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     uint32_t _oneof_case_[1];
@@ -7867,7 +8111,7 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn final :
                &_UpdateByRequest_UpdateByOperation_UpdateByColumn_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    37;
+    38;
 
   friend void swap(UpdateByRequest_UpdateByOperation_UpdateByColumn& a, UpdateByRequest_UpdateByOperation_UpdateByColumn& b) {
     a.Swap(&b);
@@ -8057,7 +8301,7 @@ class UpdateByRequest_UpdateByOperation final :
                &_UpdateByRequest_UpdateByOperation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    38;
+    39;
 
   friend void swap(UpdateByRequest_UpdateByOperation& a, UpdateByRequest_UpdateByOperation& b) {
     a.Swap(&b);
@@ -8228,7 +8472,7 @@ class UpdateByRequest final :
                &_UpdateByRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    39;
+    40;
 
   friend void swap(UpdateByRequest& a, UpdateByRequest& b) {
     a.Swap(&b);
@@ -8474,7 +8718,7 @@ class SelectDistinctRequest final :
                &_SelectDistinctRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    40;
+    41;
 
   friend void swap(SelectDistinctRequest& a, SelectDistinctRequest& b) {
     a.Swap(&b);
@@ -8677,7 +8921,7 @@ class DropColumnsRequest final :
                &_DropColumnsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    41;
+    42;
 
   friend void swap(DropColumnsRequest& a, DropColumnsRequest& b) {
     a.Swap(&b);
@@ -8880,7 +9124,7 @@ class UnstructuredFilterTableRequest final :
                &_UnstructuredFilterTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    42;
+    43;
 
   friend void swap(UnstructuredFilterTableRequest& a, UnstructuredFilterTableRequest& b) {
     a.Swap(&b);
@@ -9083,7 +9327,7 @@ class HeadOrTailRequest final :
                &_HeadOrTailRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    43;
+    44;
 
   friend void swap(HeadOrTailRequest& a, HeadOrTailRequest& b) {
     a.Swap(&b);
@@ -9271,7 +9515,7 @@ class HeadOrTailByRequest final :
                &_HeadOrTailByRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    44;
+    45;
 
   friend void swap(HeadOrTailByRequest& a, HeadOrTailByRequest& b) {
     a.Swap(&b);
@@ -9485,7 +9729,7 @@ class UngroupRequest final :
                &_UngroupRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    45;
+    46;
 
   friend void swap(UngroupRequest& a, UngroupRequest& b) {
     a.Swap(&b);
@@ -9699,7 +9943,7 @@ class MergeTablesRequest final :
                &_MergeTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    46;
+    47;
 
   friend void swap(MergeTablesRequest& a, MergeTablesRequest& b) {
     a.Swap(&b);
@@ -9892,7 +10136,7 @@ class SnapshotTableRequest final :
                &_SnapshotTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    47;
+    48;
 
   friend void swap(SnapshotTableRequest& a, SnapshotTableRequest& b) {
     a.Swap(&b);
@@ -10069,7 +10313,7 @@ class SnapshotWhenTableRequest final :
                &_SnapshotWhenTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    48;
+    49;
 
   friend void swap(SnapshotWhenTableRequest& a, SnapshotWhenTableRequest& b) {
     a.Swap(&b);
@@ -10325,7 +10569,7 @@ class CrossJoinTablesRequest final :
                &_CrossJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    50;
 
   friend void swap(CrossJoinTablesRequest& a, CrossJoinTablesRequest& b) {
     a.Swap(&b);
@@ -10585,7 +10829,7 @@ class NaturalJoinTablesRequest final :
                &_NaturalJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    50;
+    51;
 
   friend void swap(NaturalJoinTablesRequest& a, NaturalJoinTablesRequest& b) {
     a.Swap(&b);
@@ -10834,7 +11078,7 @@ class ExactJoinTablesRequest final :
                &_ExactJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    51;
+    52;
 
   friend void swap(ExactJoinTablesRequest& a, ExactJoinTablesRequest& b) {
     a.Swap(&b);
@@ -11083,7 +11327,7 @@ class LeftJoinTablesRequest final :
                &_LeftJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    52;
+    53;
 
   friend void swap(LeftJoinTablesRequest& a, LeftJoinTablesRequest& b) {
     a.Swap(&b);
@@ -11332,7 +11576,7 @@ class AsOfJoinTablesRequest final :
                &_AsOfJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    53;
+    54;
 
   friend void swap(AsOfJoinTablesRequest& a, AsOfJoinTablesRequest& b) {
     a.Swap(&b);
@@ -11626,7 +11870,7 @@ class AjRajTablesRequest final :
                &_AjRajTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    54;
+    55;
 
   friend void swap(AjRajTablesRequest& a, AjRajTablesRequest& b) {
     a.Swap(&b);
@@ -11843,6 +12087,392 @@ class AjRajTablesRequest final :
 };
 // -------------------------------------------------------------------
 
+class MultiJoinInput final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.MultiJoinInput) */ {
+ public:
+  inline MultiJoinInput() : MultiJoinInput(nullptr) {}
+  ~MultiJoinInput() override;
+  explicit PROTOBUF_CONSTEXPR MultiJoinInput(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  MultiJoinInput(const MultiJoinInput& from);
+  MultiJoinInput(MultiJoinInput&& from) noexcept
+    : MultiJoinInput() {
+    *this = ::std::move(from);
+  }
+
+  inline MultiJoinInput& operator=(const MultiJoinInput& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline MultiJoinInput& operator=(MultiJoinInput&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const MultiJoinInput& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const MultiJoinInput* internal_default_instance() {
+    return reinterpret_cast<const MultiJoinInput*>(
+               &_MultiJoinInput_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    56;
+
+  friend void swap(MultiJoinInput& a, MultiJoinInput& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(MultiJoinInput* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(MultiJoinInput* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  MultiJoinInput* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<MultiJoinInput>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const MultiJoinInput& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const MultiJoinInput& from) {
+    MultiJoinInput::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(MultiJoinInput* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.MultiJoinInput";
+  }
+  protected:
+  explicit MultiJoinInput(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kColumnsToMatchFieldNumber = 2,
+    kColumnsToAddFieldNumber = 3,
+    kSourceIdFieldNumber = 1,
+  };
+  // repeated string columns_to_match = 2;
+  int columns_to_match_size() const;
+  private:
+  int _internal_columns_to_match_size() const;
+  public:
+  void clear_columns_to_match();
+  const std::string& columns_to_match(int index) const;
+  std::string* mutable_columns_to_match(int index);
+  void set_columns_to_match(int index, const std::string& value);
+  void set_columns_to_match(int index, std::string&& value);
+  void set_columns_to_match(int index, const char* value);
+  void set_columns_to_match(int index, const char* value, size_t size);
+  std::string* add_columns_to_match();
+  void add_columns_to_match(const std::string& value);
+  void add_columns_to_match(std::string&& value);
+  void add_columns_to_match(const char* value);
+  void add_columns_to_match(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& columns_to_match() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_columns_to_match();
+  private:
+  const std::string& _internal_columns_to_match(int index) const;
+  std::string* _internal_add_columns_to_match();
+  public:
+
+  // repeated string columns_to_add = 3;
+  int columns_to_add_size() const;
+  private:
+  int _internal_columns_to_add_size() const;
+  public:
+  void clear_columns_to_add();
+  const std::string& columns_to_add(int index) const;
+  std::string* mutable_columns_to_add(int index);
+  void set_columns_to_add(int index, const std::string& value);
+  void set_columns_to_add(int index, std::string&& value);
+  void set_columns_to_add(int index, const char* value);
+  void set_columns_to_add(int index, const char* value, size_t size);
+  std::string* add_columns_to_add();
+  void add_columns_to_add(const std::string& value);
+  void add_columns_to_add(std::string&& value);
+  void add_columns_to_add(const char* value);
+  void add_columns_to_add(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& columns_to_add() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_columns_to_add();
+  private:
+  const std::string& _internal_columns_to_add(int index) const;
+  std::string* _internal_add_columns_to_add();
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.TableReference source_id = 1;
+  bool has_source_id() const;
+  private:
+  bool _internal_has_source_id() const;
+  public:
+  void clear_source_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& source_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TableReference* release_source_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_source_id();
+  void set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TableReference* source_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_source_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_source_id();
+  public:
+  void unsafe_arena_set_allocated_source_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* source_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_source_id();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.MultiJoinInput)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_match_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_add_;
+    ::io::deephaven::proto::backplane::grpc::TableReference* source_id_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
+class MultiJoinTablesRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest) */ {
+ public:
+  inline MultiJoinTablesRequest() : MultiJoinTablesRequest(nullptr) {}
+  ~MultiJoinTablesRequest() override;
+  explicit PROTOBUF_CONSTEXPR MultiJoinTablesRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  MultiJoinTablesRequest(const MultiJoinTablesRequest& from);
+  MultiJoinTablesRequest(MultiJoinTablesRequest&& from) noexcept
+    : MultiJoinTablesRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline MultiJoinTablesRequest& operator=(const MultiJoinTablesRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline MultiJoinTablesRequest& operator=(MultiJoinTablesRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const MultiJoinTablesRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const MultiJoinTablesRequest* internal_default_instance() {
+    return reinterpret_cast<const MultiJoinTablesRequest*>(
+               &_MultiJoinTablesRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    57;
+
+  friend void swap(MultiJoinTablesRequest& a, MultiJoinTablesRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(MultiJoinTablesRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(MultiJoinTablesRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  MultiJoinTablesRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<MultiJoinTablesRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const MultiJoinTablesRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const MultiJoinTablesRequest& from) {
+    MultiJoinTablesRequest::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(MultiJoinTablesRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest";
+  }
+  protected:
+  explicit MultiJoinTablesRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kMultiJoinInputsFieldNumber = 2,
+    kResultIdFieldNumber = 1,
+  };
+  // repeated .io.deephaven.proto.backplane.grpc.MultiJoinInput multi_join_inputs = 2;
+  int multi_join_inputs_size() const;
+  private:
+  int _internal_multi_join_inputs_size() const;
+  public:
+  void clear_multi_join_inputs();
+  ::io::deephaven::proto::backplane::grpc::MultiJoinInput* mutable_multi_join_inputs(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::MultiJoinInput >*
+      mutable_multi_join_inputs();
+  private:
+  const ::io::deephaven::proto::backplane::grpc::MultiJoinInput& _internal_multi_join_inputs(int index) const;
+  ::io::deephaven::proto::backplane::grpc::MultiJoinInput* _internal_add_multi_join_inputs();
+  public:
+  const ::io::deephaven::proto::backplane::grpc::MultiJoinInput& multi_join_inputs(int index) const;
+  ::io::deephaven::proto::backplane::grpc::MultiJoinInput* add_multi_join_inputs();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::MultiJoinInput >&
+      multi_join_inputs() const;
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  bool has_result_id() const;
+  private:
+  bool _internal_has_result_id() const;
+  public:
+  void clear_result_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& result_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_result_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_result_id();
+  void set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_result_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_result_id();
+  public:
+  void unsafe_arena_set_allocated_result_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_result_id();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::MultiJoinInput > multi_join_inputs_;
+    ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class RangeJoinTablesRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest) */ {
  public:
@@ -11891,7 +12521,7 @@ class RangeJoinTablesRequest final :
                &_RangeJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    55;
+    58;
 
   friend void swap(RangeJoinTablesRequest& a, RangeJoinTablesRequest& b) {
     a.Swap(&b);
@@ -12037,6 +12667,7 @@ class RangeJoinTablesRequest final :
     kLeftStartColumnFieldNumber = 5,
     kRightRangeColumnFieldNumber = 7,
     kLeftEndColumnFieldNumber = 9,
+    kRangeMatchFieldNumber = 11,
     kResultIdFieldNumber = 1,
     kLeftIdFieldNumber = 2,
     kRightIdFieldNumber = 3,
@@ -12127,6 +12758,20 @@ class RangeJoinTablesRequest final :
   std::string* _internal_mutable_left_end_column();
   public:
 
+  // string range_match = 11;
+  void clear_range_match();
+  const std::string& range_match() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_range_match(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_range_match();
+  PROTOBUF_NODISCARD std::string* release_range_match();
+  void set_allocated_range_match(std::string* range_match);
+  private:
+  const std::string& _internal_range_match() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_range_match(const std::string& value);
+  std::string* _internal_mutable_range_match();
+  public:
+
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
   bool has_result_id() const;
   private:
@@ -12212,6 +12857,7 @@ class RangeJoinTablesRequest final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr left_start_column_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr right_range_column_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr left_end_column_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr range_match_;
     ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
     ::io::deephaven::proto::backplane::grpc::TableReference* left_id_;
     ::io::deephaven::proto::backplane::grpc::TableReference* right_id_;
@@ -12272,7 +12918,7 @@ class ComboAggregateRequest_Aggregate final :
                &_ComboAggregateRequest_Aggregate_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    56;
+    59;
 
   friend void swap(ComboAggregateRequest_Aggregate& a, ComboAggregateRequest_Aggregate& b) {
     a.Swap(&b);
@@ -12484,7 +13130,7 @@ class ComboAggregateRequest final :
                &_ComboAggregateRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    57;
+    60;
 
   friend void swap(ComboAggregateRequest& a, ComboAggregateRequest& b) {
     a.Swap(&b);
@@ -12774,7 +13420,7 @@ class AggregateAllRequest final :
                &_AggregateAllRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    58;
+    61;
 
   friend void swap(AggregateAllRequest& a, AggregateAllRequest& b) {
     a.Swap(&b);
@@ -12997,7 +13643,7 @@ class AggSpec_AggSpecApproximatePercentile final :
                &_AggSpec_AggSpecApproximatePercentile_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    59;
+    62;
 
   friend void swap(AggSpec_AggSpecApproximatePercentile& a, AggSpec_AggSpecApproximatePercentile& b) {
     a.Swap(&b);
@@ -13161,7 +13807,7 @@ class AggSpec_AggSpecCountDistinct final :
                &_AggSpec_AggSpecCountDistinct_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    60;
+    63;
 
   friend void swap(AggSpec_AggSpecCountDistinct& a, AggSpec_AggSpecCountDistinct& b) {
     a.Swap(&b);
@@ -13309,7 +13955,7 @@ class AggSpec_AggSpecDistinct final :
                &_AggSpec_AggSpecDistinct_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    61;
+    64;
 
   friend void swap(AggSpec_AggSpecDistinct& a, AggSpec_AggSpecDistinct& b) {
     a.Swap(&b);
@@ -13457,7 +14103,7 @@ class AggSpec_AggSpecFormula final :
                &_AggSpec_AggSpecFormula_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    62;
+    65;
 
   friend void swap(AggSpec_AggSpecFormula& a, AggSpec_AggSpecFormula& b) {
     a.Swap(&b);
@@ -13626,7 +14272,7 @@ class AggSpec_AggSpecMedian final :
                &_AggSpec_AggSpecMedian_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    63;
+    66;
 
   friend void swap(AggSpec_AggSpecMedian& a, AggSpec_AggSpecMedian& b) {
     a.Swap(&b);
@@ -13774,7 +14420,7 @@ class AggSpec_AggSpecPercentile final :
                &_AggSpec_AggSpecPercentile_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    64;
+    67;
 
   friend void swap(AggSpec_AggSpecPercentile& a, AggSpec_AggSpecPercentile& b) {
     a.Swap(&b);
@@ -13933,7 +14579,7 @@ class AggSpec_AggSpecSorted final :
                &_AggSpec_AggSpecSorted_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    65;
+    68;
 
   friend void swap(AggSpec_AggSpecSorted& a, AggSpec_AggSpecSorted& b) {
     a.Swap(&b);
@@ -14090,7 +14736,7 @@ class AggSpec_AggSpecSortedColumn final :
                &_AggSpec_AggSpecSortedColumn_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    66;
+    69;
 
   friend void swap(AggSpec_AggSpecSortedColumn& a, AggSpec_AggSpecSortedColumn& b) {
     a.Swap(&b);
@@ -14243,7 +14889,7 @@ class AggSpec_AggSpecTDigest final :
                &_AggSpec_AggSpecTDigest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    67;
+    70;
 
   friend void swap(AggSpec_AggSpecTDigest& a, AggSpec_AggSpecTDigest& b) {
     a.Swap(&b);
@@ -14396,7 +15042,7 @@ class AggSpec_AggSpecUnique final :
                &_AggSpec_AggSpecUnique_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    68;
+    71;
 
   friend void swap(AggSpec_AggSpecUnique& a, AggSpec_AggSpecUnique& b) {
     a.Swap(&b);
@@ -14578,7 +15224,7 @@ class AggSpec_AggSpecNonUniqueSentinel final :
                &_AggSpec_AggSpecNonUniqueSentinel_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    69;
+    72;
 
   friend void swap(AggSpec_AggSpecNonUniqueSentinel& a, AggSpec_AggSpecNonUniqueSentinel& b) {
     a.Swap(&b);
@@ -14891,7 +15537,7 @@ class AggSpec_AggSpecWeighted final :
                &_AggSpec_AggSpecWeighted_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    70;
+    73;
 
   friend void swap(AggSpec_AggSpecWeighted& a, AggSpec_AggSpecWeighted& b) {
     a.Swap(&b);
@@ -15043,7 +15689,7 @@ class AggSpec_AggSpecAbsSum final :
                &_AggSpec_AggSpecAbsSum_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    71;
+    74;
 
   friend void swap(AggSpec_AggSpecAbsSum& a, AggSpec_AggSpecAbsSum& b) {
     a.Swap(&b);
@@ -15161,7 +15807,7 @@ class AggSpec_AggSpecAvg final :
                &_AggSpec_AggSpecAvg_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    72;
+    75;
 
   friend void swap(AggSpec_AggSpecAvg& a, AggSpec_AggSpecAvg& b) {
     a.Swap(&b);
@@ -15279,7 +15925,7 @@ class AggSpec_AggSpecFirst final :
                &_AggSpec_AggSpecFirst_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    73;
+    76;
 
   friend void swap(AggSpec_AggSpecFirst& a, AggSpec_AggSpecFirst& b) {
     a.Swap(&b);
@@ -15397,7 +16043,7 @@ class AggSpec_AggSpecFreeze final :
                &_AggSpec_AggSpecFreeze_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    74;
+    77;
 
   friend void swap(AggSpec_AggSpecFreeze& a, AggSpec_AggSpecFreeze& b) {
     a.Swap(&b);
@@ -15515,7 +16161,7 @@ class AggSpec_AggSpecGroup final :
                &_AggSpec_AggSpecGroup_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    75;
+    78;
 
   friend void swap(AggSpec_AggSpecGroup& a, AggSpec_AggSpecGroup& b) {
     a.Swap(&b);
@@ -15633,7 +16279,7 @@ class AggSpec_AggSpecLast final :
                &_AggSpec_AggSpecLast_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    76;
+    79;
 
   friend void swap(AggSpec_AggSpecLast& a, AggSpec_AggSpecLast& b) {
     a.Swap(&b);
@@ -15751,7 +16397,7 @@ class AggSpec_AggSpecMax final :
                &_AggSpec_AggSpecMax_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    77;
+    80;
 
   friend void swap(AggSpec_AggSpecMax& a, AggSpec_AggSpecMax& b) {
     a.Swap(&b);
@@ -15869,7 +16515,7 @@ class AggSpec_AggSpecMin final :
                &_AggSpec_AggSpecMin_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    78;
+    81;
 
   friend void swap(AggSpec_AggSpecMin& a, AggSpec_AggSpecMin& b) {
     a.Swap(&b);
@@ -15987,7 +16633,7 @@ class AggSpec_AggSpecStd final :
                &_AggSpec_AggSpecStd_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    79;
+    82;
 
   friend void swap(AggSpec_AggSpecStd& a, AggSpec_AggSpecStd& b) {
     a.Swap(&b);
@@ -16105,7 +16751,7 @@ class AggSpec_AggSpecSum final :
                &_AggSpec_AggSpecSum_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    80;
+    83;
 
   friend void swap(AggSpec_AggSpecSum& a, AggSpec_AggSpecSum& b) {
     a.Swap(&b);
@@ -16223,7 +16869,7 @@ class AggSpec_AggSpecVar final :
                &_AggSpec_AggSpecVar_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    81;
+    84;
 
   friend void swap(AggSpec_AggSpecVar& a, AggSpec_AggSpecVar& b) {
     a.Swap(&b);
@@ -16369,7 +17015,7 @@ class AggSpec final :
                &_AggSpec_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    82;
+    85;
 
   friend void swap(AggSpec& a, AggSpec& b) {
     a.Swap(&b);
@@ -17024,7 +17670,7 @@ class AggregateRequest final :
                &_AggregateRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    83;
+    86;
 
   friend void swap(AggregateRequest& a, AggregateRequest& b) {
     a.Swap(&b);
@@ -17278,7 +17924,7 @@ class Aggregation_AggregationColumns final :
                &_Aggregation_AggregationColumns_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    84;
+    87;
 
   friend void swap(Aggregation_AggregationColumns& a, Aggregation_AggregationColumns& b) {
     a.Swap(&b);
@@ -17461,7 +18107,7 @@ class Aggregation_AggregationCount final :
                &_Aggregation_AggregationCount_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    85;
+    88;
 
   friend void swap(Aggregation_AggregationCount& a, Aggregation_AggregationCount& b) {
     a.Swap(&b);
@@ -17614,7 +18260,7 @@ class Aggregation_AggregationRowKey final :
                &_Aggregation_AggregationRowKey_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    86;
+    89;
 
   friend void swap(Aggregation_AggregationRowKey& a, Aggregation_AggregationRowKey& b) {
     a.Swap(&b);
@@ -17767,7 +18413,7 @@ class Aggregation_AggregationPartition final :
                &_Aggregation_AggregationPartition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    87;
+    90;
 
   friend void swap(Aggregation_AggregationPartition& a, Aggregation_AggregationPartition& b) {
     a.Swap(&b);
@@ -17940,7 +18586,7 @@ class Aggregation final :
                &_Aggregation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    88;
+    91;
 
   friend void swap(Aggregation& a, Aggregation& b) {
     a.Swap(&b);
@@ -18198,7 +18844,7 @@ class SortDescriptor final :
                &_SortDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    89;
+    92;
 
   friend void swap(SortDescriptor& a, SortDescriptor& b) {
     a.Swap(&b);
@@ -18407,7 +19053,7 @@ class SortTableRequest final :
                &_SortTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    90;
+    93;
 
   friend void swap(SortTableRequest& a, SortTableRequest& b) {
     a.Swap(&b);
@@ -18604,7 +19250,7 @@ class FilterTableRequest final :
                &_FilterTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    91;
+    94;
 
   friend void swap(FilterTableRequest& a, FilterTableRequest& b) {
     a.Swap(&b);
@@ -18801,7 +19447,7 @@ class SeekRowRequest final :
                &_SeekRowRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    92;
+    95;
 
   friend void swap(SeekRowRequest& a, SeekRowRequest& b) {
     a.Swap(&b);
@@ -19038,7 +19684,7 @@ class SeekRowResponse final :
                &_SeekRowResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    93;
+    96;
 
   friend void swap(SeekRowResponse& a, SeekRowResponse& b) {
     a.Swap(&b);
@@ -19186,7 +19832,7 @@ class Reference final :
                &_Reference_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    94;
+    97;
 
   friend void swap(Reference& a, Reference& b) {
     a.Swap(&b);
@@ -19348,7 +19994,7 @@ class Literal final :
                &_Literal_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    95;
+    98;
 
   friend void swap(Literal& a, Literal& b) {
     a.Swap(&b);
@@ -19587,7 +20233,7 @@ class Value final :
                &_Value_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    96;
+    99;
 
   friend void swap(Value& a, Value& b) {
     a.Swap(&b);
@@ -19791,7 +20437,7 @@ class Condition final :
                &_Condition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    97;
+    100;
 
   friend void swap(Condition& a, Condition& b) {
     a.Swap(&b);
@@ -20149,7 +20795,7 @@ class AndCondition final :
                &_AndCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    98;
+    101;
 
   friend void swap(AndCondition& a, AndCondition& b) {
     a.Swap(&b);
@@ -20306,7 +20952,7 @@ class OrCondition final :
                &_OrCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    99;
+    102;
 
   friend void swap(OrCondition& a, OrCondition& b) {
     a.Swap(&b);
@@ -20463,7 +21109,7 @@ class NotCondition final :
                &_NotCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    100;
+    103;
 
   friend void swap(NotCondition& a, NotCondition& b) {
     a.Swap(&b);
@@ -20620,7 +21266,7 @@ class CompareCondition final :
                &_CompareCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    101;
+    104;
 
   friend void swap(CompareCondition& a, CompareCondition& b) {
     a.Swap(&b);
@@ -20857,7 +21503,7 @@ class InCondition final :
                &_InCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    102;
+    105;
 
   friend void swap(InCondition& a, InCondition& b) {
     a.Swap(&b);
@@ -21056,7 +21702,7 @@ class InvokeCondition final :
                &_InvokeCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    103;
+    106;
 
   friend void swap(InvokeCondition& a, InvokeCondition& b) {
     a.Swap(&b);
@@ -21249,7 +21895,7 @@ class IsNullCondition final :
                &_IsNullCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    104;
+    107;
 
   friend void swap(IsNullCondition& a, IsNullCondition& b) {
     a.Swap(&b);
@@ -21406,7 +22052,7 @@ class MatchesCondition final :
                &_MatchesCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    105;
+    108;
 
   friend void swap(MatchesCondition& a, MatchesCondition& b) {
     a.Swap(&b);
@@ -21601,7 +22247,7 @@ class ContainsCondition final :
                &_ContainsCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    106;
+    109;
 
   friend void swap(ContainsCondition& a, ContainsCondition& b) {
     a.Swap(&b);
@@ -21796,7 +22442,7 @@ class SearchCondition final :
                &_SearchCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    107;
+    110;
 
   friend void swap(SearchCondition& a, SearchCondition& b) {
     a.Swap(&b);
@@ -21969,7 +22615,7 @@ class FlattenRequest final :
                &_FlattenRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    108;
+    111;
 
   friend void swap(FlattenRequest& a, FlattenRequest& b) {
     a.Swap(&b);
@@ -22146,7 +22792,7 @@ class MetaTableRequest final :
                &_MetaTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    109;
+    112;
 
   friend void swap(MetaTableRequest& a, MetaTableRequest& b) {
     a.Swap(&b);
@@ -22323,7 +22969,7 @@ class RunChartDownsampleRequest_ZoomRange final :
                &_RunChartDownsampleRequest_ZoomRange_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    110;
+    113;
 
   friend void swap(RunChartDownsampleRequest_ZoomRange& a, RunChartDownsampleRequest_ZoomRange& b) {
     a.Swap(&b);
@@ -22491,7 +23137,7 @@ class RunChartDownsampleRequest final :
                &_RunChartDownsampleRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    111;
+    114;
 
   friend void swap(RunChartDownsampleRequest& a, RunChartDownsampleRequest& b) {
     a.Swap(&b);
@@ -22742,7 +23388,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryAppendOnly final :
                &_CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    112;
+    115;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& a, CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& b) {
     a.Swap(&b);
@@ -22861,7 +23507,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryKeyBacked final :
                &_CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    113;
+    116;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& a, CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& b) {
     a.Swap(&b);
@@ -23023,7 +23669,7 @@ class CreateInputTableRequest_InputTableKind_Blink final :
                &_CreateInputTableRequest_InputTableKind_Blink_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    114;
+    117;
 
   friend void swap(CreateInputTableRequest_InputTableKind_Blink& a, CreateInputTableRequest_InputTableKind_Blink& b) {
     a.Swap(&b);
@@ -23149,7 +23795,7 @@ class CreateInputTableRequest_InputTableKind final :
                &_CreateInputTableRequest_InputTableKind_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    115;
+    118;
 
   friend void swap(CreateInputTableRequest_InputTableKind& a, CreateInputTableRequest_InputTableKind& b) {
     a.Swap(&b);
@@ -23370,7 +24016,7 @@ class CreateInputTableRequest final :
                &_CreateInputTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    116;
+    119;
 
   friend void swap(CreateInputTableRequest& a, CreateInputTableRequest& b) {
     a.Swap(&b);
@@ -23602,7 +24248,7 @@ class WhereInRequest final :
                &_WhereInRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    117;
+    120;
 
   friend void swap(WhereInRequest& a, WhereInRequest& b) {
     a.Swap(&b);
@@ -23836,7 +24482,7 @@ class ColumnStatisticsRequest final :
                &_ColumnStatisticsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    118;
+    121;
 
   friend void swap(ColumnStatisticsRequest& a, ColumnStatisticsRequest& b) {
     a.Swap(&b);
@@ -24081,6 +24727,7 @@ class BatchTableRequest_Operation final :
     kAj = 40,
     kRaj = 41,
     kColumnStatistics = 42,
+    kMultiJoin = 43,
     OP_NOT_SET = 0,
   };
 
@@ -24089,7 +24736,7 @@ class BatchTableRequest_Operation final :
                &_BatchTableRequest_Operation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    119;
+    122;
 
   friend void swap(BatchTableRequest_Operation& a, BatchTableRequest_Operation& b) {
     a.Swap(&b);
@@ -24202,6 +24849,7 @@ class BatchTableRequest_Operation final :
     kAjFieldNumber = 40,
     kRajFieldNumber = 41,
     kColumnStatisticsFieldNumber = 42,
+    kMultiJoinFieldNumber = 43,
   };
   // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
   bool has_empty_table() const;
@@ -24923,6 +25571,24 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* column_statistics);
   ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* unsafe_arena_release_column_statistics();
 
+  // .io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest multi_join = 43;
+  bool has_multi_join() const;
+  private:
+  bool _internal_has_multi_join() const;
+  public:
+  void clear_multi_join();
+  const ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest& multi_join() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* release_multi_join();
+  ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* mutable_multi_join();
+  void set_allocated_multi_join(::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* multi_join);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest& _internal_multi_join() const;
+  ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* _internal_mutable_multi_join();
+  public:
+  void unsafe_arena_set_allocated_multi_join(
+      ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* multi_join);
+  ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* unsafe_arena_release_multi_join();
+
   void clear_op();
   OpCase op_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation)
@@ -24968,6 +25634,7 @@ class BatchTableRequest_Operation final :
   void set_has_aj();
   void set_has_raj();
   void set_has_column_statistics();
+  void set_has_multi_join();
 
   inline bool has_op() const;
   inline void clear_has_op();
@@ -25019,6 +25686,7 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj_;
       ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj_;
       ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* column_statistics_;
+      ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* multi_join_;
     } op_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     uint32_t _oneof_case_[1];
@@ -25077,7 +25745,7 @@ class BatchTableRequest final :
                &_BatchTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    120;
+    123;
 
   friend void swap(BatchTableRequest& a, BatchTableRequest& b) {
     a.Swap(&b);
@@ -30434,6 +31102,290 @@ inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_Update
 
 // -------------------------------------------------------------------
 
+// UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale reverse_window_scale = 1;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_has_reverse_window_scale() const {
+  return this != internal_default_instance() && _impl_.reverse_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::has_reverse_window_scale() const {
+  return _internal_has_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::clear_reverse_window_scale() {
+  if (GetArenaForAllocation() == nullptr && _impl_.reverse_window_scale_ != nullptr) {
+    delete _impl_.reverse_window_scale_;
+  }
+  _impl_.reverse_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_reverse_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = _impl_.reverse_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::reverse_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale)
+  return _internal_reverse_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::unsafe_arena_set_allocated_reverse_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.reverse_window_scale_);
+  }
+  _impl_.reverse_window_scale_ = reverse_window_scale;
+  if (reverse_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::release_reverse_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = _impl_.reverse_window_scale_;
+  _impl_.reverse_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::unsafe_arena_release_reverse_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = _impl_.reverse_window_scale_;
+  _impl_.reverse_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_mutable_reverse_window_scale() {
+  
+  if (_impl_.reverse_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    _impl_.reverse_window_scale_ = p;
+  }
+  return _impl_.reverse_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::mutable_reverse_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_reverse_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::set_allocated_reverse_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* reverse_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.reverse_window_scale_;
+  }
+  if (reverse_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(reverse_window_scale);
+    if (message_arena != submessage_arena) {
+      reverse_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reverse_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.reverse_window_scale_ = reverse_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale)
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByWindowScale forward_window_scale = 2;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_has_forward_window_scale() const {
+  return this != internal_default_instance() && _impl_.forward_window_scale_ != nullptr;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::has_forward_window_scale() const {
+  return _internal_has_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::clear_forward_window_scale() {
+  if (GetArenaForAllocation() == nullptr && _impl_.forward_window_scale_ != nullptr) {
+    delete _impl_.forward_window_scale_;
+  }
+  _impl_.forward_window_scale_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_forward_window_scale() const {
+  const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* p = _impl_.forward_window_scale_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale&>(
+      ::io::deephaven::proto::backplane::grpc::_UpdateByWindowScale_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::forward_window_scale() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale)
+  return _internal_forward_window_scale();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::unsafe_arena_set_allocated_forward_window_scale(
+    ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.forward_window_scale_);
+  }
+  _impl_.forward_window_scale_ = forward_window_scale;
+  if (forward_window_scale) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::release_forward_window_scale() {
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = _impl_.forward_window_scale_;
+  _impl_.forward_window_scale_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::unsafe_arena_release_forward_window_scale() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale)
+  
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* temp = _impl_.forward_window_scale_;
+  _impl_.forward_window_scale_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_mutable_forward_window_scale() {
+  
+  if (_impl_.forward_window_scale_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::UpdateByWindowScale>(GetArenaForAllocation());
+    _impl_.forward_window_scale_ = p;
+  }
+  return _impl_.forward_window_scale_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::mutable_forward_window_scale() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* _msg = _internal_mutable_forward_window_scale();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale)
+  return _msg;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::set_allocated_forward_window_scale(::io::deephaven::proto::backplane::grpc::UpdateByWindowScale* forward_window_scale) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.forward_window_scale_;
+  }
+  if (forward_window_scale) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(forward_window_scale);
+    if (message_arena != submessage_arena) {
+      forward_window_scale = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, forward_window_scale, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.forward_window_scale_ = forward_window_scale;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale)
+}
+
+// string formula = 3;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::clear_formula() {
+  _impl_.formula_.ClearToEmpty();
+}
+inline const std::string& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::formula() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.formula)
+  return _internal_formula();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::set_formula(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.formula_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.formula)
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::mutable_formula() {
+  std::string* _s = _internal_mutable_formula();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.formula)
+  return _s;
+}
+inline const std::string& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_formula() const {
+  return _impl_.formula_.Get();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_set_formula(const std::string& value) {
+  
+  _impl_.formula_.Set(value, GetArenaForAllocation());
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_mutable_formula() {
+  
+  return _impl_.formula_.Mutable(GetArenaForAllocation());
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::release_formula() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.formula)
+  return _impl_.formula_.Release();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::set_allocated_formula(std::string* formula) {
+  if (formula != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.formula_.SetAllocated(formula, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.formula_.IsDefault()) {
+    _impl_.formula_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.formula)
+}
+
+// string param_token = 4;
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::clear_param_token() {
+  _impl_.param_token_.ClearToEmpty();
+}
+inline const std::string& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::param_token() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.param_token)
+  return _internal_param_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::set_param_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.param_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.param_token)
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::mutable_param_token() {
+  std::string* _s = _internal_mutable_param_token();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.param_token)
+  return _s;
+}
+inline const std::string& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_param_token() const {
+  return _impl_.param_token_.Get();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_set_param_token(const std::string& value) {
+  
+  _impl_.param_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::_internal_mutable_param_token() {
+  
+  return _impl_.param_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::release_param_token() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.param_token)
+  return _impl_.param_token_.Release();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula::set_allocated_param_token(std::string* param_token) {
+  if (param_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.param_token_.SetAllocated(param_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.param_token_.IsDefault()) {
+    _impl_.param_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.param_token)
+}
+
+// -------------------------------------------------------------------
+
 // UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec
 
 // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum sum = 1;
@@ -31913,6 +32865,80 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperatio
 inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_rolling_wavg() {
   ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingWAvg* _msg = _internal_mutable_rolling_wavg();
   // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula rolling_formula = 21;
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_has_rolling_formula() const {
+  return type_case() == kRollingFormula;
+}
+inline bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::has_rolling_formula() const {
+  return _internal_has_rolling_formula();
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_has_rolling_formula() {
+  _impl_._oneof_case_[0] = kRollingFormula;
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_rolling_formula() {
+  if (_internal_has_rolling_formula()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete _impl_.type_.rolling_formula_;
+    }
+    clear_has_type();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::release_rolling_formula() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula)
+  if (_internal_has_rolling_formula()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* temp = _impl_.type_.rolling_formula_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    _impl_.type_.rolling_formula_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_rolling_formula() const {
+  return _internal_has_rolling_formula()
+      ? *_impl_.type_.rolling_formula_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula&>(::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula& UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::rolling_formula() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula)
+  return _internal_rolling_formula();
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_release_rolling_formula() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula)
+  if (_internal_has_rolling_formula()) {
+    clear_has_type();
+    ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* temp = _impl_.type_.rolling_formula_;
+    _impl_.type_.rolling_formula_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::unsafe_arena_set_allocated_rolling_formula(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* rolling_formula) {
+  clear_type();
+  if (rolling_formula) {
+    set_has_rolling_formula();
+    _impl_.type_.rolling_formula_ = rolling_formula;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula)
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_internal_mutable_rolling_formula() {
+  if (!_internal_has_rolling_formula()) {
+    clear_type();
+    set_has_rolling_formula();
+    _impl_.type_.rolling_formula_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula >(GetArenaForAllocation());
+  }
+  return _impl_.type_.rolling_formula_;
+}
+inline ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::mutable_rolling_formula() {
+  ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingFormula* _msg = _internal_mutable_rolling_formula();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula)
   return _msg;
 }
 
@@ -37442,6 +38468,379 @@ AjRajTablesRequest::mutable_columns_to_add() {
 
 // -------------------------------------------------------------------
 
+// MultiJoinInput
+
+// .io.deephaven.proto.backplane.grpc.TableReference source_id = 1;
+inline bool MultiJoinInput::_internal_has_source_id() const {
+  return this != internal_default_instance() && _impl_.source_id_ != nullptr;
+}
+inline bool MultiJoinInput::has_source_id() const {
+  return _internal_has_source_id();
+}
+inline void MultiJoinInput::clear_source_id() {
+  if (GetArenaForAllocation() == nullptr && _impl_.source_id_ != nullptr) {
+    delete _impl_.source_id_;
+  }
+  _impl_.source_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& MultiJoinInput::_internal_source_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = _impl_.source_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& MultiJoinInput::source_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id)
+  return _internal_source_id();
+}
+inline void MultiJoinInput::unsafe_arena_set_allocated_source_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* source_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.source_id_);
+  }
+  _impl_.source_id_ = source_id;
+  if (source_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinInput::release_source_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = _impl_.source_id_;
+  _impl_.source_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinInput::unsafe_arena_release_source_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = _impl_.source_id_;
+  _impl_.source_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinInput::_internal_mutable_source_id() {
+  
+  if (_impl_.source_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    _impl_.source_id_ = p;
+  }
+  return _impl_.source_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MultiJoinInput::mutable_source_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_source_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id)
+  return _msg;
+}
+inline void MultiJoinInput::set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TableReference* source_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.source_id_;
+  }
+  if (source_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(source_id);
+    if (message_arena != submessage_arena) {
+      source_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, source_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.source_id_ = source_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id)
+}
+
+// repeated string columns_to_match = 2;
+inline int MultiJoinInput::_internal_columns_to_match_size() const {
+  return _impl_.columns_to_match_.size();
+}
+inline int MultiJoinInput::columns_to_match_size() const {
+  return _internal_columns_to_match_size();
+}
+inline void MultiJoinInput::clear_columns_to_match() {
+  _impl_.columns_to_match_.Clear();
+}
+inline std::string* MultiJoinInput::add_columns_to_match() {
+  std::string* _s = _internal_add_columns_to_match();
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+  return _s;
+}
+inline const std::string& MultiJoinInput::_internal_columns_to_match(int index) const {
+  return _impl_.columns_to_match_.Get(index);
+}
+inline const std::string& MultiJoinInput::columns_to_match(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+  return _internal_columns_to_match(index);
+}
+inline std::string* MultiJoinInput::mutable_columns_to_match(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+  return _impl_.columns_to_match_.Mutable(index);
+}
+inline void MultiJoinInput::set_columns_to_match(int index, const std::string& value) {
+  _impl_.columns_to_match_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline void MultiJoinInput::set_columns_to_match(int index, std::string&& value) {
+  _impl_.columns_to_match_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline void MultiJoinInput::set_columns_to_match(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.columns_to_match_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline void MultiJoinInput::set_columns_to_match(int index, const char* value, size_t size) {
+  _impl_.columns_to_match_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline std::string* MultiJoinInput::_internal_add_columns_to_match() {
+  return _impl_.columns_to_match_.Add();
+}
+inline void MultiJoinInput::add_columns_to_match(const std::string& value) {
+  _impl_.columns_to_match_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline void MultiJoinInput::add_columns_to_match(std::string&& value) {
+  _impl_.columns_to_match_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline void MultiJoinInput::add_columns_to_match(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.columns_to_match_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline void MultiJoinInput::add_columns_to_match(const char* value, size_t size) {
+  _impl_.columns_to_match_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+MultiJoinInput::columns_to_match() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+  return _impl_.columns_to_match_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+MultiJoinInput::mutable_columns_to_match() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_match)
+  return &_impl_.columns_to_match_;
+}
+
+// repeated string columns_to_add = 3;
+inline int MultiJoinInput::_internal_columns_to_add_size() const {
+  return _impl_.columns_to_add_.size();
+}
+inline int MultiJoinInput::columns_to_add_size() const {
+  return _internal_columns_to_add_size();
+}
+inline void MultiJoinInput::clear_columns_to_add() {
+  _impl_.columns_to_add_.Clear();
+}
+inline std::string* MultiJoinInput::add_columns_to_add() {
+  std::string* _s = _internal_add_columns_to_add();
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+  return _s;
+}
+inline const std::string& MultiJoinInput::_internal_columns_to_add(int index) const {
+  return _impl_.columns_to_add_.Get(index);
+}
+inline const std::string& MultiJoinInput::columns_to_add(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+  return _internal_columns_to_add(index);
+}
+inline std::string* MultiJoinInput::mutable_columns_to_add(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+  return _impl_.columns_to_add_.Mutable(index);
+}
+inline void MultiJoinInput::set_columns_to_add(int index, const std::string& value) {
+  _impl_.columns_to_add_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline void MultiJoinInput::set_columns_to_add(int index, std::string&& value) {
+  _impl_.columns_to_add_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline void MultiJoinInput::set_columns_to_add(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.columns_to_add_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline void MultiJoinInput::set_columns_to_add(int index, const char* value, size_t size) {
+  _impl_.columns_to_add_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline std::string* MultiJoinInput::_internal_add_columns_to_add() {
+  return _impl_.columns_to_add_.Add();
+}
+inline void MultiJoinInput::add_columns_to_add(const std::string& value) {
+  _impl_.columns_to_add_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline void MultiJoinInput::add_columns_to_add(std::string&& value) {
+  _impl_.columns_to_add_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline void MultiJoinInput::add_columns_to_add(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.columns_to_add_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline void MultiJoinInput::add_columns_to_add(const char* value, size_t size) {
+  _impl_.columns_to_add_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+MultiJoinInput::columns_to_add() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+  return _impl_.columns_to_add_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+MultiJoinInput::mutable_columns_to_add() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.MultiJoinInput.columns_to_add)
+  return &_impl_.columns_to_add_;
+}
+
+// -------------------------------------------------------------------
+
+// MultiJoinTablesRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+inline bool MultiJoinTablesRequest::_internal_has_result_id() const {
+  return this != internal_default_instance() && _impl_.result_id_ != nullptr;
+}
+inline bool MultiJoinTablesRequest::has_result_id() const {
+  return _internal_has_result_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& MultiJoinTablesRequest::_internal_result_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = _impl_.result_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& MultiJoinTablesRequest::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id)
+  return _internal_result_id();
+}
+inline void MultiJoinTablesRequest::unsafe_arena_set_allocated_result_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.result_id_);
+  }
+  _impl_.result_id_ = result_id;
+  if (result_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MultiJoinTablesRequest::release_result_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = _impl_.result_id_;
+  _impl_.result_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MultiJoinTablesRequest::unsafe_arena_release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = _impl_.result_id_;
+  _impl_.result_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MultiJoinTablesRequest::_internal_mutable_result_id() {
+  
+  if (_impl_.result_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    _impl_.result_id_ = p;
+  }
+  return _impl_.result_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MultiJoinTablesRequest::mutable_result_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id)
+  return _msg;
+}
+inline void MultiJoinTablesRequest::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.result_id_);
+  }
+  if (result_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id));
+    if (message_arena != submessage_arena) {
+      result_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, result_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.result_id_ = result_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id)
+}
+
+// repeated .io.deephaven.proto.backplane.grpc.MultiJoinInput multi_join_inputs = 2;
+inline int MultiJoinTablesRequest::_internal_multi_join_inputs_size() const {
+  return _impl_.multi_join_inputs_.size();
+}
+inline int MultiJoinTablesRequest::multi_join_inputs_size() const {
+  return _internal_multi_join_inputs_size();
+}
+inline void MultiJoinTablesRequest::clear_multi_join_inputs() {
+  _impl_.multi_join_inputs_.Clear();
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinInput* MultiJoinTablesRequest::mutable_multi_join_inputs(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.multi_join_inputs)
+  return _impl_.multi_join_inputs_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::MultiJoinInput >*
+MultiJoinTablesRequest::mutable_multi_join_inputs() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.multi_join_inputs)
+  return &_impl_.multi_join_inputs_;
+}
+inline const ::io::deephaven::proto::backplane::grpc::MultiJoinInput& MultiJoinTablesRequest::_internal_multi_join_inputs(int index) const {
+  return _impl_.multi_join_inputs_.Get(index);
+}
+inline const ::io::deephaven::proto::backplane::grpc::MultiJoinInput& MultiJoinTablesRequest::multi_join_inputs(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.multi_join_inputs)
+  return _internal_multi_join_inputs(index);
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinInput* MultiJoinTablesRequest::_internal_add_multi_join_inputs() {
+  return _impl_.multi_join_inputs_.Add();
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinInput* MultiJoinTablesRequest::add_multi_join_inputs() {
+  ::io::deephaven::proto::backplane::grpc::MultiJoinInput* _add = _internal_add_multi_join_inputs();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.multi_join_inputs)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::MultiJoinInput >&
+MultiJoinTablesRequest::multi_join_inputs() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.multi_join_inputs)
+  return _impl_.multi_join_inputs_;
+}
+
+// -------------------------------------------------------------------
+
 // RangeJoinTablesRequest
 
 // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
@@ -38012,6 +39411,56 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::
 RangeJoinTablesRequest::aggregations() const {
   // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.aggregations)
   return _impl_.aggregations_;
+}
+
+// string range_match = 11;
+inline void RangeJoinTablesRequest::clear_range_match() {
+  _impl_.range_match_.ClearToEmpty();
+}
+inline const std::string& RangeJoinTablesRequest::range_match() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_match)
+  return _internal_range_match();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void RangeJoinTablesRequest::set_range_match(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.range_match_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_match)
+}
+inline std::string* RangeJoinTablesRequest::mutable_range_match() {
+  std::string* _s = _internal_mutable_range_match();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_match)
+  return _s;
+}
+inline const std::string& RangeJoinTablesRequest::_internal_range_match() const {
+  return _impl_.range_match_.Get();
+}
+inline void RangeJoinTablesRequest::_internal_set_range_match(const std::string& value) {
+  
+  _impl_.range_match_.Set(value, GetArenaForAllocation());
+}
+inline std::string* RangeJoinTablesRequest::_internal_mutable_range_match() {
+  
+  return _impl_.range_match_.Mutable(GetArenaForAllocation());
+}
+inline std::string* RangeJoinTablesRequest::release_range_match() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_match)
+  return _impl_.range_match_.Release();
+}
+inline void RangeJoinTablesRequest::set_allocated_range_match(std::string* range_match) {
+  if (range_match != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.range_match_.SetAllocated(range_match, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.range_match_.IsDefault()) {
+    _impl_.range_match_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_match)
 }
 
 // -------------------------------------------------------------------
@@ -51233,6 +52682,80 @@ inline ::io::deephaven::proto::backplane::grpc::ColumnStatisticsRequest* BatchTa
   return _msg;
 }
 
+// .io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest multi_join = 43;
+inline bool BatchTableRequest_Operation::_internal_has_multi_join() const {
+  return op_case() == kMultiJoin;
+}
+inline bool BatchTableRequest_Operation::has_multi_join() const {
+  return _internal_has_multi_join();
+}
+inline void BatchTableRequest_Operation::set_has_multi_join() {
+  _impl_._oneof_case_[0] = kMultiJoin;
+}
+inline void BatchTableRequest_Operation::clear_multi_join() {
+  if (_internal_has_multi_join()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete _impl_.op_.multi_join_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* BatchTableRequest_Operation::release_multi_join() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join)
+  if (_internal_has_multi_join()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* temp = _impl_.op_.multi_join_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    _impl_.op_.multi_join_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest& BatchTableRequest_Operation::_internal_multi_join() const {
+  return _internal_has_multi_join()
+      ? *_impl_.op_.multi_join_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest&>(::io::deephaven::proto::backplane::grpc::_MultiJoinTablesRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest& BatchTableRequest_Operation::multi_join() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join)
+  return _internal_multi_join();
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* BatchTableRequest_Operation::unsafe_arena_release_multi_join() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join)
+  if (_internal_has_multi_join()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* temp = _impl_.op_.multi_join_;
+    _impl_.op_.multi_join_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_multi_join(::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* multi_join) {
+  clear_op();
+  if (multi_join) {
+    set_has_multi_join();
+    _impl_.op_.multi_join_ = multi_join;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join)
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* BatchTableRequest_Operation::_internal_mutable_multi_join() {
+  if (!_internal_has_multi_join()) {
+    clear_op();
+    set_has_multi_join();
+    _impl_.op_.multi_join_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest >(GetArenaForAllocation());
+  }
+  return _impl_.op_.multi_join_;
+}
+inline ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* BatchTableRequest_Operation::mutable_multi_join() {
+  ::io::deephaven::proto::backplane::grpc::MultiJoinTablesRequest* _msg = _internal_mutable_multi_join();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join)
+  return _msg;
+}
+
 inline bool BatchTableRequest_Operation::has_op() const {
   return op_case() != OP_NOT_SET;
 }
@@ -51289,6 +52812,12 @@ BatchTableRequest::ops() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

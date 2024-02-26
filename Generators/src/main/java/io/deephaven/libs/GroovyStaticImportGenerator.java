@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 
@@ -25,9 +26,9 @@ import java.util.stream.Collectors;
 public class GroovyStaticImportGenerator extends AbstractBasicJavaGenerator {
 
     public GroovyStaticImportGenerator(String gradleTask, String packageName, String className, String[] imports,
-            Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
+            Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen, Level logLevel)
             throws ClassNotFoundException {
-        super(gradleTask, packageName, className, imports, includeMethod, skipsGen);
+        super(gradleTask, packageName, className, imports, includeMethod, skipsGen, logLevel);
     }
 
     @Override
@@ -79,7 +80,8 @@ public class GroovyStaticImportGenerator extends AbstractBasicJavaGenerator {
                 // skipping common erasure "sum"
                 Collections.singletonList((f) -> f.getMethodName().equals("sum") && f.getParameterTypes().length == 1
                         && f.getParameterTypes()[0].getTypeName()
-                                .contains("ObjectVector<")));
+                                .contains("ObjectVector<")),
+                Level.WARNING);
 
         runCommandLine(gen, relativeFilePath, args);
     }

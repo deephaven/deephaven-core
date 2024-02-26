@@ -20,12 +20,12 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.RowGroupWriter;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.transfer.*;
-import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -45,6 +45,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+
 /**
  * API for writing DH tables in parquet format
  */
@@ -58,25 +60,24 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
      */
-    public static class GroupingColumnWritingInfo {
+    static class GroupingColumnWritingInfo {
         /**
          * Parquet name of this grouping column
          */
-        public final String parquetColumnName;
+        final String parquetColumnName;
         /**
          * File path to be added in the grouping metadata of main parquet file
          */
-        public final File metadataFilePath;
+        final File metadataFilePath;
 
         /**
          * Destination path for writing the grouping file. The two filenames can differ because we write grouping files
          * to shadow file paths first and then place them at the final path once the write is complete. But the metadata
          * should always hold the accurate path.
          */
-        public final File destFile;
+        final File destFile;
 
-        public GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath,
-                final File destFile) {
+        GroupingColumnWritingInfo(final String parquetColumnName, final File metadataFilePath, final File destFile) {
             this.parquetColumnName = parquetColumnName;
             this.metadataFilePath = metadataFilePath;
             this.destFile = destFile;
@@ -95,7 +96,7 @@ public class ParquetTableWriter {
      *         unsupported types)
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
@@ -312,7 +313,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(),
+        return new ParquetFileWriter(path,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(path), null),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);

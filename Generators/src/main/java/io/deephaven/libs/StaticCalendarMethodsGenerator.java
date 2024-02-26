@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -24,8 +25,8 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
 
     public StaticCalendarMethodsGenerator(String gradleTask, String packageName, String className, String[] imports,
             Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen,
-            Function<String, String> renamer) throws ClassNotFoundException {
-        super(gradleTask, packageName, className, imports, includeMethod, skipsGen);
+            Function<String, String> renamer, Level logLevel) throws ClassNotFoundException {
+        super(gradleTask, packageName, className, imports, includeMethod, skipsGen, logLevel);
         this.renamer = renamer;
     }
 
@@ -93,7 +94,8 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
                             } else {
                                 return s;
                             }
-                        });
+                        },
+                        Level.WARNING);
 
         runCommandLine(gen, relativeFilePath, args);
     }

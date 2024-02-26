@@ -3,7 +3,9 @@
  */
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.format.Util;
@@ -14,18 +16,17 @@ import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.channels.Channels;
+import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RowGroupReaderImpl implements RowGroupReader {
+final class RowGroupReaderImpl implements RowGroupReader {
 
     private static final int BUFFER_SIZE = 65536;
     private final RowGroup rowGroup;
@@ -34,19 +35,22 @@ public class RowGroupReaderImpl implements RowGroupReader {
     private final Map<String, List<Type>> schemaMap = new HashMap<>();
     private final Map<String, ColumnChunk> chunkMap = new HashMap<>();
 
-    private final Path rootPath;
+    /**
+     * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
+     */
+    private final URI rootURI;
     private final String version;
 
     RowGroupReaderImpl(
             @NotNull final RowGroup rowGroup,
             @NotNull final SeekableChannelsProvider channelsProvider,
-            @NotNull final Path rootPath,
+            @NotNull final URI rootURI,
             @NotNull final MessageType type,
             @NotNull final MessageType schema,
             @Nullable final String version) {
         this.channelsProvider = channelsProvider;
         this.rowGroup = rowGroup;
-        this.rootPath = rootPath;
+        this.rootURI = rootURI;
         this.type = type;
         for (ColumnChunk column : rowGroup.columns) {
             List<String> path_in_schema = column.getMeta_data().path_in_schema;
@@ -66,26 +70,37 @@ public class RowGroupReaderImpl implements RowGroupReader {
     }
 
     @Override
-    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path) {
+    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path,
+            @NotNull final SeekableChannelContext channelContext) {
         String key = path.toString();
         ColumnChunk columnChunk = chunkMap.get(key);
         List<Type> fieldTypes = schemaMap.get(key);
         if (columnChunk == null) {
             return null;
         }
-
-        OffsetIndex offsetIndex = null;
-        if (columnChunk.isSetOffset_index_offset()) {
-            try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(rootPath)) {
-                readChannel.position(columnChunk.getOffset_index_offset());
-                offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(
-                        new BufferedInputStream(Channels.newInputStream(readChannel), BUFFER_SIZE)));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath, type, offsetIndex, fieldTypes,
+        final OffsetIndex offsetIndex = offsetIndex(columnChunk, channelContext);
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootURI, type, offsetIndex, fieldTypes,
                 numRows(), version);
+    }
+
+    private OffsetIndex offsetIndex(ColumnChunk chunk, @NotNull SeekableChannelContext context) {
+        if (!chunk.isSetOffset_index_offset()) {
+            return null;
+        }
+        return ParquetMetadataConverter.fromParquetOffsetIndex(readOffsetIndex(chunk, context));
+    }
+
+    private org.apache.parquet.format.OffsetIndex readOffsetIndex(ColumnChunk chunk,
+            @NotNull SeekableChannelContext channelContext) {
+        try (
+                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
+                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(holder.get(), rootURI);
+                final InputStream in =
+                        channelsProvider.getInputStream(readChannel.position(chunk.getOffset_index_offset()))) {
+            return Util.readOffsetIndex(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

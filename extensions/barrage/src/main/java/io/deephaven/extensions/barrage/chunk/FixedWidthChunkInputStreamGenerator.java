@@ -3,7 +3,6 @@
  */
 package io.deephaven.extensions.barrage.chunk;
 
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -14,6 +13,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 public class FixedWidthChunkInputStreamGenerator {
     private static final String DEBUG_NAME = "FixedWidthChunkInputStreamGenerator";
@@ -45,15 +45,15 @@ public class FixedWidthChunkInputStreamGenerator {
             final StreamReaderOptions options,
             final TypeConversion<T> conversion,
             final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
 
         final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long payloadBuffer = bufferInfoIter.nextLong();
 
         final WritableObjectChunk<T, Values> chunk;
         if (outChunk != null) {

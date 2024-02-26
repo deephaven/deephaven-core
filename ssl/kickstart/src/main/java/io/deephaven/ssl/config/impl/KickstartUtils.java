@@ -24,6 +24,7 @@ import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustAll;
 import io.deephaven.ssl.config.TrustCertificates;
+import io.deephaven.ssl.config.TrustCustom;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.TrustList;
 import io.deephaven.ssl.config.TrustProperties;
@@ -87,6 +88,12 @@ public class KickstartUtils {
             @Override
             public Void visit(TrustSystem system) {
                 builder.withSystemTrustMaterial();
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustCustom custom) {
+                builder.withTrustMaterial(custom.certificates());
                 return null;
             }
 

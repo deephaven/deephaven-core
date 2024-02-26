@@ -7,17 +7,16 @@ package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
 import io.deephaven.base.ringbuffer.AggregatingShortRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
     private final boolean isMax;
@@ -30,6 +29,7 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         protected AggregatingShortRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             if (isMax) {
@@ -137,19 +137,33 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public ShortRollingMinMaxOperator(@NotNull final MatchPair pair,
-                                     @NotNull final String[] affectingColumns,
-                                     @Nullable final RowRedirection rowRedirection,
-                                     @Nullable final String timestampColumnName,
-                                     final long reverseWindowScaleUnits,
-                                     final long forwardWindowScaleUnits,
-                                     final boolean isMax
-                                     // region extra-constructor-args
-                                     // endregion extra-constructor-args
+    public ShortRollingMinMaxOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final boolean isMax
+            // region extra-constructor-args
+            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.isMax = isMax;
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new ShortRollingMinMaxOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                isMax
+                // region extra-copy-args
+                // endregion extra-copy-args
+        );
     }
 }

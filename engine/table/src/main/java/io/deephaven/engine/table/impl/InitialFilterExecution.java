@@ -38,7 +38,7 @@ class InitialFilterExecution extends AbstractFilterExecution {
         if (permitParallelization) {
             jobScheduler = new OperationInitializerJobScheduler();
         } else {
-            jobScheduler = ImmediateJobScheduler.INSTANCE;
+            jobScheduler = new ImmediateJobScheduler();
         }
     }
 

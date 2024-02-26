@@ -24,7 +24,6 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyInputMode;
+import org.jpy.PyLib;
 import org.jpy.PyLib.CallableKind;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
@@ -41,14 +41,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -150,13 +147,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
     }
 
-    @Override
-    @VisibleForTesting
-    public QueryScope newQueryScope() {
-        // depend on the GIL instead of local synchronization
-        return new UnsynchronizedScriptSessionQueryScope(this);
-    }
-
     /**
      * Finds the specified script; and runs it as a file, or if it is a stream writes it to a temporary file in order to
      * run it.
@@ -183,20 +173,14 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         }
     }
 
-    @NotNull
+    @SuppressWarnings("unchecked")
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        return scope
+    protected <T> T getVariable(String name) throws QueryScope.MissingVariableException {
+        return (T) scope
                 .getValue(name)
-                .orElseThrow(() -> new QueryScope.MissingVariableException("No variable for: " + name));
+                .orElseThrow(() -> new QueryScope.MissingVariableException("Missing variable " + name));
     }
 
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        return scope
-                .<T>getValueUnchecked(name)
-                .orElse(defaultValue);
-    }
 
     @SuppressWarnings("unused")
     @ScriptApi
@@ -222,13 +206,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         } catch (InterruptedException e) {
             throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
-    }
-
-    @Override
-    public Map<String, Object> getVariables() {
-        final Map<String, Object> outMap = new LinkedHashMap<>();
-        scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(value)));
-        return outMap;
     }
 
     protected static class PythonSnapshot implements Snapshot, SafeCloseable {
@@ -270,59 +247,84 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 final String name = change.call(String.class, "__getitem__", int.class, 0);
                 final PyObject fromValue = change.call(PyObject.class, "__getitem__", int.class, 1);
                 final PyObject toValue = change.call(PyObject.class, "__getitem__", int.class, 2);
-                applyVariableChangeToDiff(diff, name, maybeUnwrap(fromValue), maybeUnwrap(toValue));
+                applyVariableChangeToDiff(diff, name, unwrapObject(fromValue), unwrapObject(toValue));
             }
             return diff;
         }
     }
 
-    private Object maybeUnwrap(Object o) {
-        if (o instanceof PyObject) {
-            return maybeUnwrap((PyObject) o);
+    @Override
+    protected Set<String> getVariableNames() {
+        try (final PyDictWrapper currScope = scope.currentScope().copy()) {
+            return currScope.keySet().stream()
+                    .map(scope::convertStringKey)
+                    .collect(Collectors.toSet());
         }
-        return o;
-    }
-
-    private Object maybeUnwrap(PyObject o) {
-        if (o == null) {
-            return null;
-        }
-        final Object javaObject = module.javaify(o);
-        if (javaObject != null) {
-            return javaObject;
-        }
-        return o;
     }
 
     @Override
-    public Set<String> getVariableNames() {
-        return Collections.unmodifiableSet(scope.getKeys().collect(Collectors.toSet()));
-    }
-
-    @Override
-    public boolean hasVariableName(String name) {
+    protected boolean hasVariable(String name) {
         return scope.containsKey(name);
     }
 
     @Override
-    public synchronized void setVariable(String name, @Nullable Object newValue) {
-        final PyDictWrapper globals = scope.mainGlobals();
-        if (newValue == null) {
-            try {
-                globals.delItem(name);
-            } catch (KeyError key) {
-                // ignore
+    protected synchronized Object setVariable(String name, @Nullable Object newValue) {
+        Object old = PyLib.ensureGil(() -> {
+            final PyDictWrapper globals = scope.mainGlobals();
+
+            if (newValue == null) {
+                try {
+                    return globals.unwrap().callMethod("pop", name);
+                } catch (KeyError key) {
+                    return null;
+                }
+            } else {
+                Object wrapped;
+                if (newValue instanceof PyObject) {
+                    wrapped = newValue;
+                } else {
+                    wrapped = PythonObjectWrapper.wrap(newValue);
+                }
+                // This isn't thread safe, we're relying on the GIL being kind to us (as we have historically done).
+                // There is no built-in for "replace a variable and return the old one".
+                Object prev = globals.get(name);
+                globals.setItem(name, wrapped);
+                return prev;
             }
-        } else {
-            if (!(newValue instanceof PyObject)) {
-                newValue = PythonObjectWrapper.wrap(newValue);
-            }
-            globals.setItem(name, newValue);
-        }
+        });
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
         // other threads)
         observeScopeChanges();
+
+        // This doesn't return the same Java instance of PyObject, so we won't decref it properly, but
+        // again, that is consistent with how we've historically treated these references.
+        return old;
+    }
+
+    @Override
+    protected <T> Map<String, T> getAllValues(
+            @Nullable final Function<Object, T> valueMapper,
+            @NotNull final QueryScope.ParamFilter<T> filter) {
+        final Map<String, T> result = new HashMap<>();
+
+        try (final PyDictWrapper currScope = scope.currentScope().copy()) {
+            for (final Map.Entry<PyObject, PyObject> entry : currScope.entrySet()) {
+                final String name = scope.convertStringKey(entry.getKey());
+                Object value = scope.convertValue(entry.getValue());
+                if (valueMapper != null) {
+                    value = valueMapper.apply(value);
+                }
+
+                // noinspection unchecked
+                if (filter.accept(name, (T) value)) {
+                    // noinspection unchecked
+                    result.put(name, (T) value);
+                }
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -333,7 +335,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     // TODO core#41 move this logic into the python console instance or scope like this - can go further and move
     // isWidget too
     @Override
-    public Object unwrapObject(Object object) {
+    public Object unwrapObject(@Nullable Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
             final Object unwrapped = module.javaify(pyObject);

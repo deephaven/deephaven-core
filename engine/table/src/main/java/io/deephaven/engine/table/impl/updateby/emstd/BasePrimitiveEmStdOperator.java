@@ -5,13 +5,12 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
@@ -29,10 +28,13 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
     /** For EM operators, we can allow floating-point tick/time units. */
     protected final double reverseWindowScaleUnits;
     protected final double opAlpha;
+
+    protected ColumnSource<?> valueSource;
+
     protected double opOneMinusAlpha;
 
-    protected final WritableColumnSource<Double> emaSource;
-    protected final WritableColumnSource<Double> maybeEmaInnerSource;
+    protected WritableColumnSource<Double> emaSource;
+    protected WritableColumnSource<Double> maybeEmaInnerSource;
 
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
         protected final ChunkSink.FillFromContext emaFillContext;
@@ -83,7 +85,6 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the row redirection to use for the EM operator output columns
      * @param control the control parameters for EM operator
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
@@ -92,34 +93,40 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
      */
     public BasePrimitiveEmStdOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final double windowScaleUnits,
-            final boolean sourceRefreshing) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, 0, 0, false);
+            final double windowScaleUnits) {
+        super(pair, affectingColumns, timestampColumnName, 0, 0, false);
         this.control = control;
         this.reverseWindowScaleUnits = windowScaleUnits;
 
-        if (sourceRefreshing) {
+        opAlpha = Math.exp(-1.0 / reverseWindowScaleUnits);
+        opOneMinusAlpha = 1 - opAlpha;
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        valueSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(pair.rightColumn));
+
+        // do we need another
+        if (source.isRefreshing()) {
             if (rowRedirection != null) {
                 // region create-dense
-                this.maybeEmaInnerSource = new DoubleArraySource();
+                maybeEmaInnerSource = new DoubleArraySource();
                 // endregion create-dense
-                this.emaSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
+                emaSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
             } else {
-                this.maybeEmaInnerSource = null;
+                maybeEmaInnerSource = null;
                 // region create-sparse
-                this.emaSource = new DoubleSparseArraySource();
+                emaSource = new DoubleSparseArraySource();
                 // endregion create-sparse
             }
         } else {
-            this.maybeEmaInnerSource = null;
-            this.emaSource = null;
+            maybeEmaInnerSource = null;
+            emaSource = null;
         }
-
-        opAlpha = Math.exp(-1.0 / reverseWindowScaleUnits);
-        opOneMinusAlpha = 1 - opAlpha;
     }
 
     @Override

@@ -17,19 +17,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for Object data.
  */
-public final class ResettableObjectChunk<T, ATTR_UPPER extends Any>
+public class ResettableObjectChunk<T, ATTR_UPPER extends Any>
         extends ObjectChunk<T, ATTR_UPPER>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <T, ATTR_BASE extends Any> ResettableObjectChunk<T, ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getObjectChunkPool().takeResettableObjectChunk();
+            return MultiChunkPool.forThisThread().takeResettableObjectChunk();
         }
         return new ResettableObjectChunk<>();
     }
 
     public static <T, ATTR_BASE extends Any> ResettableObjectChunk<T, ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableObjectChunk<>();
+        return new ResettableObjectChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableObjectChunk(this);
+            }
+        };
     }
 
     private ResettableObjectChunk(T[] data, int offset, int capacity) {
@@ -87,8 +92,5 @@ public final class ResettableObjectChunk<T, ATTR_UPPER extends Any>
 
     @Override
     public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getObjectChunkPool().giveResettableObjectChunk(this);
-        }
     }
 }

@@ -1906,6 +1906,200 @@ public interface UpdateByOperation {
         return RollingWAvgSpec.ofTime(timestampCol, revTime, fwdTime, weightCol).clause(pairs);
     }
 
+
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using ticks as the
+     * windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include. The
+     * current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply
+     * return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this
+     * row for a total of 10 rows.
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the parameter name for the input column's vector within the formula. If formula is
+     *        <em>max(each)</em>, then <em>each</em> is the formula_param.
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(long revTicks, String formula, String paramToken, String... pairs) {
+        return RollingFormulaSpec.ofTicks(revTicks, formula, paramToken).clause(pairs);
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using ticks as the
+     * windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to
+     * include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revTicks = 1, fwdTicks = 0} - contains only the current row</li>
+     * <li>{@code revTicks = 10, fwdTicks = 0} - contains 9 previous rows and the current row</li>
+     * <li>{@code revTicks = 0, fwdTicks = 10} - contains the following 10 rows, excludes the current row</li>
+     * <li>{@code revTicks = 10, fwdTicks = 10} - contains the previous 9 rows, the current row and the 10 rows
+     * following</li>
+     * <li>{@code revTicks = 10, fwdTicks = -5} - contains 5 rows, beginning at 9 rows before, ending at 5 rows before
+     * the current row (inclusive)</li>
+     * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
+     * the current row (inclusive)</li>
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * following the current row (inclusive)</li>
+     * </ul>
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param fwdTicks the look-ahead window size (in rows/ticks)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the parameter name for the input column's vector within the formula. If formula is
+     *        <em>max(each)</em>, then <em>each</em> is the formula_param.
+     * @param pairs the input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(long revTicks, long fwdTicks, String formula, String paramToken,
+            String... pairs) {
+        return RollingFormulaSpec.ofTicks(revTicks, fwdTicks, formula, paramToken).clause(pairs);
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m} - contains rows from 10m earlier through the current row timestamp (inclusive)</li>
+     * </ul>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param formula the user-defined {@link RollingFormulaSpec#formula() formula} to apply to each group. This formula
+     *        can contain any combination of the following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the {@link RollingFormulaSpec#paramToken() parameter token} for the input column's vector
+     *        within the formula. If formula is <em>max(each)</em>, then <em>each</em> is the formula_param.
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, Duration revDuration, String formula,
+            String paramToken, String... pairs) {
+        return RollingFormulaSpec.ofTime(timestampCol, revDuration, formula, paramToken).clause(pairs);
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@link Duration durations} as the reverse and forward window parameters.
+     * Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
+     * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
+     * considered in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 0m} - contains rows from 10m earlier through the current row
+     * timestamp (inclusive)</li>
+     * <li>{@code revDuration = 0m, fwdDuration = 10m} - contains rows from the current row through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 10m} - contains rows from 10m earlier through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = -5m} - contains rows from 10m earlier through 5m before the current
+     * row timestamp (inclusive), this is a purely backwards looking window</li>
+     * <li>{@code revDuration = -5m, fwdDuration = 10m} - contains rows from 5m following through 10m following the
+     * current row timestamp (inclusive), this is a purely forwards looking window</li>
+     * </ul>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param fwdDuration the look-ahead window size (in Duration)
+     * @param formula the user-defined {@link RollingFormulaSpec#formula() formula} to apply to each group. This formula
+     *        can contain any combination of the following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the {@link RollingFormulaSpec#paramToken() parameter token} for the input column's vector
+     *        within the formula. If formula is <em>max(each)</em>, then <em>each</em> is the formula_param.
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, Duration revDuration, Duration fwdDuration,
+            String formula, String paramToken, String... pairs) {
+        return RollingFormulaSpec.ofTime(timestampCol, revDuration, fwdDuration, formula, paramToken).clause(pairs);
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a
+     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
+     * the windows of other rows.
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the parameter name for the input column's vector within the formula. If formula is
+     *        <em>max(each)</em>, then <em>each</em> is the formula_param.
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, long revTime, String formula, String paramToken,
+            String... pairs) {
+        return RollingFormulaSpec.ofTime(timestampCol, revTime, formula, paramToken).clause(pairs);
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param fwdTime the look-ahead window size (in nanoseconds)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @param paramToken the parameter name for the input column's vector within the formula. If formula is
+     *        <em>max(each)</em>, then <em>each</em> is the formula_param.
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, long revTime, long fwdTime, String formula,
+            String paramToken,
+            String... pairs) {
+        return RollingFormulaSpec.ofTime(timestampCol, revTime, fwdTime, formula, paramToken).clause(pairs);
+    }
+
+
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {

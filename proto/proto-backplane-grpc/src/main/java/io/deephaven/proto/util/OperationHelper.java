@@ -5,6 +5,7 @@ package io.deephaven.proto.util;
 
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
+import io.deephaven.proto.backplane.grpc.MultiJoinInput;
 import io.deephaven.proto.backplane.grpc.TableReference;
 
 import java.util.stream.Stream;
@@ -100,6 +101,8 @@ public class OperationHelper {
                 return Stream.of(op.getRangeJoin().getLeftId(), op.getRangeJoin().getRightId());
             case COLUMN_STATISTICS:
                 return Stream.of(op.getColumnStatistics().getSourceId());
+            case MULTI_JOIN:
+                return op.getMultiJoin().getMultiJoinInputsList().stream().map(MultiJoinInput::getSourceId);
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

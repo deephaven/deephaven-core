@@ -13,6 +13,7 @@ dependencies {
     api project(':Base')
     api project(':Util')
 
+    implementation project(':table-api')
     implementation project(':engine-function')
     implementation project(':Configuration')
     implementation project(':log-factory')

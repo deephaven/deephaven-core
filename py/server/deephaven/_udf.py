@@ -11,7 +11,10 @@ from dataclasses import dataclass, field
 from functools import wraps
 from typing import Callable, List, Any, Union, Tuple, _GenericAlias
 
-import numba
+from deephaven._dep import soft_dependency
+
+numba = soft_dependency("numba")
+
 import numpy
 import numpy as np
 
@@ -31,7 +34,8 @@ _SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O
 
 
 @dataclass
-class _ParsedParamAnnotation:
+class _ParsedParam:
+    name: Union[str, int] = field(init=True)
     orig_types: set[type] = field(default_factory=set)
     encoded_types: set[str] = field(default_factory=set)
     none_allowed: bool = False
@@ -51,7 +55,7 @@ class _ParsedReturnAnnotation:
 @dataclass
 class _ParsedSignature:
     fn: Callable = None
-    params: List[_ParsedParamAnnotation] = field(default_factory=list)
+    params: List[_ParsedParam] = field(default_factory=list)
     ret_annotation: _ParsedReturnAnnotation = None
 
     @property
@@ -90,22 +94,22 @@ def _encode_param_type(t: type) -> str:
     return tc
 
 
-def _parse_param_annotation(annotation: Any) -> _ParsedParamAnnotation:
+def _parse_param(name: str, annotation: Any) -> _ParsedParam:
     """ Parse a parameter annotation in a function's signature """
-    p_annotation = _ParsedParamAnnotation()
+    p_param = _ParsedParam(name)
 
     if annotation is inspect._empty:
-        p_annotation.encoded_types.add("O")
-        p_annotation.none_allowed = True
+        p_param.encoded_types.add("O")
+        p_param.none_allowed = True
     elif isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union:
         for t in annotation.__args__:
-            _parse_type_no_nested(annotation, p_annotation, t)
+            _parse_type_no_nested(annotation, p_param, t)
     else:
-        _parse_type_no_nested(annotation, p_annotation, annotation)
-    return p_annotation
+        _parse_type_no_nested(annotation, p_param, annotation)
+    return p_param
 
 
-def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedParamAnnotation, t: Union[type, str]) -> None:
+def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type, str]) -> None:
     """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
@@ -114,25 +118,25 @@ def _parse_type_no_nested(annotation: Any, p_annotation: _ParsedParamAnnotation,
     # annotation is already a type, and we can remove this line.
     t = eval(t) if isinstance(t, str) else t
     
-    p_annotation.orig_types.add(t)
+    p_param.orig_types.add(t)
     tc = _encode_param_type(t)
     if "[" in tc:
-        p_annotation.has_array = True
+        p_param.has_array = True
     if tc in {"N", "O"}:
-        p_annotation.none_allowed = True
+        p_param.none_allowed = True
     if tc in _NUMPY_INT_TYPE_CODES:
-        if p_annotation.int_char and p_annotation.int_char != tc:
+        if p_param.int_char and p_param.int_char != tc:
             raise DHError(message=f"multiple integer types in annotation: {annotation}, "
-                                  f"types: {p_annotation.int_char}, {tc}. this is not supported because it is not "
+                                  f"types: {p_param.int_char}, {tc}. this is not supported because it is not "
                                   f"clear which Deephaven null value to use when checking for nulls in the argument")
-        p_annotation.int_char = tc
+        p_param.int_char = tc
     if tc in _NUMPY_FLOATING_TYPE_CODES:
-        if p_annotation.floating_char and p_annotation.floating_char != tc:
+        if p_param.floating_char and p_param.floating_char != tc:
             raise DHError(message=f"multiple floating types in annotation: {annotation}, "
-                                  f"types: {p_annotation.floating_char}, {tc}. this is not supported because it is not "
+                                  f"types: {p_param.floating_char}, {tc}. this is not supported because it is not "
                                   f"clear which Deephaven null value to use when checking for nulls in the argument")
-        p_annotation.floating_char = tc
-    p_annotation.encoded_types.add(tc)
+        p_param.floating_char = tc
+    p_param.encoded_types.add(tc)
 
 
 def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
@@ -162,56 +166,57 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
     return pra
 
 
-def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
-    """ Parse a numba function's signature"""
-    sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
-    if sigs:
-        p_sig = _ParsedSignature(fn)
+if numba:
+    def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
+        """ Parse a numba function's signature"""
+        sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
+        if sigs:
+            p_sig = _ParsedSignature(fn)
 
-        # for now, we only support one signature for a numba function because the query engine is not ready to handle
-        # multiple signatures for vectorization https://github.com/deephaven/deephaven-core/issues/4762
-        sig = sigs[0]
-        params, rt_char = sig.split("->")
+            # for now, we only support one signature for a numba function because the query engine is not ready to handle
+            # multiple signatures for vectorization https://github.com/deephaven/deephaven-core/issues/4762
+            sig = sigs[0]
+            params, rt_char = sig.split("->")
 
-        p_sig.params = []
-        p_sig.ret_annotation = _ParsedReturnAnnotation()
-        p_sig.ret_annotation.encoded_type = rt_char
+            p_sig.params = []
+            p_sig.ret_annotation = _ParsedReturnAnnotation()
+            p_sig.ret_annotation.encoded_type = rt_char
 
-        if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
-            for p in params:
-                pa = _ParsedParamAnnotation()
-                pa.encoded_types.add(p)
-                if p in _NUMPY_INT_TYPE_CODES:
-                    pa.int_char = p
-                if p in _NUMPY_FLOATING_TYPE_CODES:
-                    pa.floating_char = p
-                p_sig.params.append(pa)
-        else:  # GUFunc
-            # An example: @guvectorize([(int64[:], int64[:], int64[:])], "(m),(n)->(n)"
-            input_output_decl = fn.signature  # "(m),(n)->(n)" in the above example
-            input_decl, output_decl = input_output_decl.split("->")
-            # remove the parentheses so that empty string indicates no array, non-empty string indicates array
-            input_decl = re.sub("[()]", "", input_decl).split(",")
-            output_decl = re.sub("[()]", "", output_decl)
-
-            for p, d in zip(params, input_decl):
-                pa = _ParsedParamAnnotation()
-                if d:
-                    pa.encoded_types.add("[" + p)
-                    pa.has_array = True
-                else:
+            if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
+                for i, p in enumerate(params):
+                    pa = _ParsedParam(i + 1)
                     pa.encoded_types.add(p)
                     if p in _NUMPY_INT_TYPE_CODES:
                         pa.int_char = p
                     if p in _NUMPY_FLOATING_TYPE_CODES:
                         pa.floating_char = p
-                p_sig.params.append(pa)
+                    p_sig.params.append(pa)
+            else:  # GUFunc
+                # An example: @guvectorize([(int64[:], int64[:], int64[:])], "(m),(n)->(n)"
+                input_output_decl = fn.signature  # "(m),(n)->(n)" in the above example
+                input_decl, output_decl = input_output_decl.split("->")
+                # remove the parentheses so that empty string indicates no array, non-empty string indicates array
+                input_decl = re.sub("[()]", "", input_decl).split(",")
+                output_decl = re.sub("[()]", "", output_decl)
 
-            if output_decl:
-                p_sig.ret_annotation.has_array = True
-        return p_sig
-    else:
-        raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")
+                for i, (p, d) in enumerate(zip(params, input_decl)):
+                    pa = _ParsedParam(i + 1)
+                    if d:
+                        pa.encoded_types.add("[" + p)
+                        pa.has_array = True
+                    else:
+                        pa.encoded_types.add(p)
+                        if p in _NUMPY_INT_TYPE_CODES:
+                            pa.int_char = p
+                        if p in _NUMPY_FLOATING_TYPE_CODES:
+                            pa.floating_char = p
+                    p_sig.params.append(pa)
+
+                if output_decl:
+                    p_sig.ret_annotation.has_array = True
+            return p_sig
+        else:
+            raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")
 
 
 def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
@@ -221,9 +226,10 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
     # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
     p_sig = _ParsedSignature(fn)
     if fn.nin > 0:
-        pa = _ParsedParamAnnotation()
-        pa.encoded_types.add("O")
-        p_sig.params = [pa] * fn.nin
+        for i in range(fn.nin):
+            pa = _ParsedParam(i + 1)
+            pa.encoded_types.add("O")
+            p_sig.params.append(pa)
     p_sig.ret_annotation = _ParsedReturnAnnotation()
     p_sig.ret_annotation.encoded_type = "O"
     return p_sig
@@ -232,9 +238,11 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
 def _parse_signature(fn: Callable) -> _ParsedSignature:
     """ Parse the signature of a function """
 
-    if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
-        return _parse_numba_signature(fn)
-    elif isinstance(fn, numpy.ufunc):
+    if numba:
+        if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
+            return _parse_numba_signature(fn)
+
+    if isinstance(fn, numpy.ufunc):
         return _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
@@ -243,7 +251,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         else:
             sig = inspect.signature(fn)
         for n, p in sig.parameters.items():
-            p_sig.params.append(_parse_param_annotation(p.annotation))
+            p_sig.params.append(_parse_param(n, p.annotation))
 
         p_sig.ret_annotation = _parse_return_annotation(sig.return_annotation)
         return p_sig
@@ -257,11 +265,11 @@ def _is_from_np_type(param_types: set[type], np_type_char: str) -> bool:
     return False
 
 
-def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
+def _convert_arg(param: _ParsedParam, arg: Any) -> Any:
     """ Convert a single argument to the type specified by the annotation """
     if arg is None:
         if not param.none_allowed:
-            raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+            raise TypeError(f"Argument {param.name!r}: {arg} is not compatible with annotation {param.orig_types}")
         else:
             return None
 
@@ -271,12 +279,17 @@ def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
         # if it matches one of the encoded types, convert it
         if encoded_type in param.encoded_types:
             dtype = dtypes.from_np_dtype(np_dtype)
-            return _j_array_to_numpy_array(dtype, arg, conv_null=True, type_promotion=False)
+            try:
+                return _j_array_to_numpy_array(dtype, arg, conv_null=True, type_promotion=False)
+            except Exception as e:
+                raise TypeError(f"Argument {param.name!r}: {arg} is not compatible with annotation"
+                                f" {param.encoded_types}"
+                                f"\n{str(e)}") from e
         # if the annotation is missing, or it is a generic object type, return the arg
         elif "O" in param.encoded_types:
             return arg
         else:
-            raise TypeError(f"Argument {arg} is not compatible with annotation {param.encoded_types}")
+            raise TypeError(f"Argument {param.name!r}: {arg} is not compatible with annotation {param.encoded_types}")
     else:  # if the arg is not a Java array
         specific_types = param.encoded_types - {"N", "O"}  # remove NoneType and object type
         if specific_types:
@@ -294,7 +307,8 @@ def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
                         if param.none_allowed:
                             return None
                         else:
-                            raise DHError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+                            raise DHError(f"Argument {param.name!r}: {arg} is not compatible with annotation"
+                                          f" {param.orig_types}")
                     else:
                         # return a numpy integer instance only if the annotation is a numpy type
                         if _is_from_np_type(param.orig_types, param.int_char):
@@ -326,7 +340,8 @@ def _convert_arg(param: _ParsedParamAnnotation, arg: Any) -> Any:
                 if "O" in param.encoded_types:
                     return arg
                 else:
-                    raise TypeError(f"Argument {arg} is not compatible with annotation {param.orig_types}")
+                    raise TypeError(f"Argument {param.name!r}: {arg} is not compatible with annotation"
+                                    f" {param.orig_types}")
         else:  # if no annotation or generic object, return arg
             return arg
 
@@ -411,6 +426,7 @@ def _dh_vectorize(fn):
     and (3) the input arrays.
     """
     p_sig = _parse_signature(fn)
+    return_array = p_sig.ret_annotation.has_array
     ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
     @wraps(fn)
@@ -428,10 +444,18 @@ def _dh_vectorize(fn):
             for i in range(chunk_size):
                 scalar_args = next(vectorized_args)
                 converted_args = _convert_args(p_sig, scalar_args)
-                chunk_result[i] = _scalar(fn(*converted_args), ret_dtype)
+                ret = fn(*converted_args)
+                if return_array:
+                    chunk_result[i] = dtypes.array(ret_dtype, ret)
+                else:
+                    chunk_result[i] = _scalar(ret, ret_dtype)
         else:
             for i in range(chunk_size):
-                chunk_result[i] = _scalar(fn(), ret_dtype)
+                ret = fn()
+                if return_array:
+                    chunk_result[i] = dtypes.array(ret_dtype, ret)
+                else:
+                    chunk_result[i] = _scalar(ret, ret_dtype)
 
         return chunk_result
 

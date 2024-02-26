@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,8 +29,8 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
-    protected final WritableColumnSource<Long> outputSource;
-    protected final WritableColumnSource<Long> maybeInnerSource;
+    protected WritableColumnSource<Long> outputSource;
+    protected WritableColumnSource<Long> maybeInnerSource;
 
     // region extra-fields
     // endregion extra-fields
@@ -41,8 +42,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         public long curVal = NULL_LONG;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableLongChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableLongChunk.makeWritableChunk(chunkSize);
         }
 
         @Override
@@ -142,15 +143,14 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
      */
-    public BaseLongUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection
-                                    // region extra-constructor-args
-                                    // endregion extra-constructor-args
-    ) {
-        this(pair, affectingColumns, rowRedirection, null, 0, 0, false);
+    public BaseLongUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+            ) {
+        this(pair, affectingColumns, null, 0, 0, false);
     }
 
     /**
@@ -159,7 +159,6 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
      * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
@@ -167,31 +166,36 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
      * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
      *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BaseLongUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @Nullable final String timestampColumnName,
-                                    final long reverseWindowScaleUnits,
-                                    final long forwardWindowScaleUnits,
-                                    final boolean isWindowed
-                                    // region extra-constructor-args
-                                    // endregion extra-constructor-args
-                                    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
-        if(rowRedirection != null) {
-            // region create-dense
-            this.maybeInnerSource = new LongArraySource();
-            // endregion create-dense
-            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
-        } else {
-            this.maybeInnerSource = null;
-            // region create-sparse
-            this.outputSource = new LongSparseArraySource();
-            // endregion create-sparse
-        }
-
+    public BaseLongUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final boolean isWindowed
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+            ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    @OverridingMethodsMustInvokeSuper
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        this.rowRedirection = rowRedirection;
+        if(rowRedirection != null) {
+            // region create-dense
+            maybeInnerSource = new LongArraySource();
+            // endregion create-dense
+            outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
+        } else {
+            maybeInnerSource = null;
+            // region create-sparse
+            outputSource = new LongSparseArraySource();
+            // endregion create-sparse
+        }
     }
 
 

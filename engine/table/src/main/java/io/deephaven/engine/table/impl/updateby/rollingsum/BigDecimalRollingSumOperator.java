@@ -7,7 +7,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -97,15 +96,26 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
         return new Context(affectedChunkSize);
     }
 
-    public BigDecimalRollingSumOperator(@NotNull final MatchPair pair,
+    public BigDecimalRollingSumOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalRollingSumOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                mathContext);
     }
 }

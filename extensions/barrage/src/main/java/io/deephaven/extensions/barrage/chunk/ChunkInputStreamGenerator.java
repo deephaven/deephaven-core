@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -28,10 +27,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
 
@@ -158,7 +157,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final StreamReaderOptions options,
             final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk, final int offset, final int totalRows) throws IOException {
         return extractChunkFromInputStream(options, 1, chunkType, type, componentType, fieldNodeIter, bufferInfoIter, is,
@@ -170,7 +169,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final int factor,
             final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
         switch (chunkType) {

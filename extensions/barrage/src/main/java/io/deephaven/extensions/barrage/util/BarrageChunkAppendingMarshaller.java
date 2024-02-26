@@ -2,8 +2,6 @@ package io.deephaven.extensions.barrage.util;
 
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.protobuf.CodedInputStream;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -22,7 +20,9 @@ import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 /**
  * This class is used to append the results of a DoGet directly into destination {@link WritableChunk<Values>}.
@@ -140,7 +140,7 @@ public class BarrageChunkAppendingMarshaller implements MethodDescriptor.Marshal
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                     i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-                    final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+                    final long[] bufferInfo = new long[batch.buffersLength()];
                     for (int bi = 0; bi < batch.buffersLength(); ++bi) {
                         int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
                         int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
@@ -150,9 +150,9 @@ public class BarrageChunkAppendingMarshaller implements MethodDescriptor.Marshal
                             // our parsers handle overhanging buffers
                             length += Math.max(0, nextOffset - offset - length);
                         }
-                        bufferInfo.add(length);
+                        bufferInfo[bi] = length;
                     }
-                    final TLongIterator bufferInfoIter = bufferInfo.iterator();
+                    final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
                     for (int ci = 0; ci < destChunks.length; ++ci) {
                         final WritableChunk<Values> dest = destChunks[ci];

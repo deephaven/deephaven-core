@@ -212,6 +212,12 @@ project(':engine-query-constants').projectDir = file('engine/query-constants')
 include(':engine-sql')
 project(':engine-sql').projectDir = file('engine/sql')
 
+include ':engine-processor'
+project(':engine-processor').projectDir = file('engine/processor')
+
+include ':engine-processor-function'
+project(':engine-processor-function').projectDir = file('engine/processor-function')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -256,6 +262,12 @@ project(':extensions-source-support').projectDir = file('extensions/source-suppo
 
 include(':extensions-protobuf')
 project(':extensions-protobuf').projectDir = file('extensions/protobuf')
+
+include(':extensions-trackedfile')
+project(':extensions-trackedfile').projectDir = file('extensions/trackedfile')
+
+include(':extensions-s3')
+project(':extensions-s3').projectDir = file('extensions/s3')
 
 include(':plugin')
 
@@ -310,12 +322,22 @@ project(':java-client-barrage-examples').projectDir = file('java-client/barrage-
 include(':java-client-example-utilities')
 project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
 
-include(':qst:graphviz')
+include(':qst-graphviz')
+project(':qst-graphviz').projectDir = file('qst/graphviz')
+
+include(':qst-type')
+project(':qst-type').projectDir = file('qst/type')
 
 include(':application-mode')
 
 include(':util-immutables')
-project(':util-immutables').projectDir = file('Util/util-immutables')
+project(':util-immutables').projectDir = file('Util/immutables')
+
+include ':util-function'
+project(':util-function').projectDir = file('Util/function')
+
+include(':util-channel')
+project(':util-channel').projectDir = file('Util/channel')
 
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')

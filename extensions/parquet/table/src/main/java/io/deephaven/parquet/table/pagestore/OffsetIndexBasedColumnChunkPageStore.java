@@ -7,9 +7,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
+import io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -98,7 +100,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         return (low - 1); // 'row' is somewhere in the middle of page
     }
 
-    private ChunkPage<ATTR> getPage(final int pageNum) {
+    private ChunkPage<ATTR> getPage(@Nullable final FillContext fillContext, final int pageNum) {
         if (pageNum < 0 || pageNum >= numPages) {
             throw new IllegalArgumentException("pageNum " + pageNum + " is out of range [0, " + numPages + ")");
         }
@@ -115,14 +117,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
                 if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
-                    // TODO(deephaven-core#4836): getPage() should accept the outer fill context, and get an inner fill
-                    // context from this.ColumnChunkReader to pass into getPageReader.
-                    final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
-                    try {
-                        page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum), reader));
-                    } catch (final IOException except) {
-                        throw new UncheckedIOException(except);
-                    }
+                    page = new IntrusivePage<>(getPageImpl(fillContext, pageNum));
                     pageState.pageRef = new WeakReference<>(page);
                 }
             }
@@ -131,11 +126,21 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         return page.getPage();
     }
 
+    private ChunkPage<ATTR> getPageImpl(@Nullable FillContext fillContext, int pageNum) {
+        // Use the latest context while reading the page, or create (and close) new one
+        try (final ContextHolder holder = ensureContext(fillContext)) {
+            final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum, holder.get());
+            return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, holder.get());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     @Override
     @NotNull
     public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
         rowKey &= mask();
-        Require.inRange(rowKey, "row", numRows(), "numRows");
+        Require.inRange(rowKey, "rowKey", numRows(), "numRows");
 
         int pageNum;
         if (fixedPageSize == PAGE_SIZE_NOT_FIXED) {
@@ -150,6 +155,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                 pageNum = (numPages - 1);
             }
         }
-        return getPage(pageNum);
+
+        return getPage(fillContext, pageNum);
     }
 }

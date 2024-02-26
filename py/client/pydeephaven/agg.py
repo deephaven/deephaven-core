@@ -172,11 +172,15 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
 
 
 def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a user defined formula aggregation.
+    """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
+        |  Built-in functions such as `min`, `max`, etc.
+        |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
+        |  User-defined functions
 
     Args:
-        formula (str): the user defined formula to apply to each group
-        formula_param (str): the parameter name within the formula
+        formula (str): the user defined formula to apply to each group.
+        formula_param (str): the parameter name for the input column's vector within the formula. If formula is
+            `max(each)`, then `each` is the formula_param.
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 

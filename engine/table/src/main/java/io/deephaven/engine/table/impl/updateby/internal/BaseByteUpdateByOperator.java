@@ -26,6 +26,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.Map;
 
@@ -33,8 +34,8 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
-    protected final WritableColumnSource<Byte> outputSource;
-    protected final WritableColumnSource<Byte> maybeInnerSource;
+    protected WritableColumnSource<Byte> outputSource;
+    protected WritableColumnSource<Byte> maybeInnerSource;
 
     // region extra-fields
     final byte nullValue;
@@ -47,8 +48,8 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
         public byte curVal = NULL_BYTE;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableByteChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableByteChunk.makeWritableChunk(chunkSize);
         }
 
         @Override
@@ -148,15 +149,14 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
      */
-    public BaseByteUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection
-                                    // region extra-constructor-args
-                                    // endregion extra-constructor-args
-    ) {
-        this(pair, affectingColumns, rowRedirection, null, 0, 0, false);
+    public BaseByteUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+            ) {
+        this(pair, affectingColumns, null, 0, 0, false);
     }
 
     /**
@@ -165,7 +165,6 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
      * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
@@ -173,32 +172,37 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
      *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BaseByteUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @Nullable final String timestampColumnName,
-                                    final long reverseWindowScaleUnits,
-                                    final long forwardWindowScaleUnits,
-                                    final boolean isWindowed
-                                    // region extra-constructor-args
-                                    // endregion extra-constructor-args
-                                    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
+    public BaseByteUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final boolean isWindowed
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+            ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
+        // region constructor
+        this.nullValue = getNullValue();
+        // endregion constructor
+    }
+
+    @Override
+    @OverridingMethodsMustInvokeSuper
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        this.rowRedirection = rowRedirection;
         if(rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = makeDenseSource();
             // endregion create-dense
-            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
+            outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
-            this.maybeInnerSource = null;
+            maybeInnerSource = null;
             // region create-sparse
             this.outputSource = makeSparseSource();
             // endregion create-sparse
         }
-
-        // region constructor
-        this.nullValue = getNullValue();
-        // endregion constructor
     }
 
 

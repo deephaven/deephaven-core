@@ -115,6 +115,9 @@ type TableServiceClient interface {
 	// Returns the result of an raj operation.
 	RajTables(ctx context.Context, in *AjRajTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	//
+	// Returns the result of a multi-join operation.
+	MultiJoinTables(ctx context.Context, in *MultiJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	//
 	// Returns the result of a range join operation.
 	RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
@@ -454,6 +457,15 @@ func (c *tableServiceClient) RajTables(ctx context.Context, in *AjRajTablesReque
 	return out, nil
 }
 
+func (c *tableServiceClient) MultiJoinTables(ctx context.Context, in *MultiJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/MultiJoinTables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tableServiceClient) RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables", in, out, opts...)
@@ -732,6 +744,9 @@ type TableServiceServer interface {
 	// Returns the result of an raj operation.
 	RajTables(context.Context, *AjRajTablesRequest) (*ExportedTableCreationResponse, error)
 	//
+	// Returns the result of a multi-join operation.
+	MultiJoinTables(context.Context, *MultiJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	//
 	// Returns the result of a range join operation.
 	RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
@@ -892,6 +907,9 @@ func (UnimplementedTableServiceServer) AjTables(context.Context, *AjRajTablesReq
 }
 func (UnimplementedTableServiceServer) RajTables(context.Context, *AjRajTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RajTables not implemented")
+}
+func (UnimplementedTableServiceServer) MultiJoinTables(context.Context, *MultiJoinTablesRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MultiJoinTables not implemented")
 }
 func (UnimplementedTableServiceServer) RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RangeJoinTables not implemented")
@@ -1473,6 +1491,24 @@ func _TableService_RajTables_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_MultiJoinTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MultiJoinTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).MultiJoinTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/MultiJoinTables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).MultiJoinTables(ctx, req.(*MultiJoinTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_RangeJoinTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RangeJoinTablesRequest)
 	if err := dec(in); err != nil {
@@ -1871,6 +1907,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RajTables",
 			Handler:    _TableService_RajTables_Handler,
+		},
+		{
+			MethodName: "MultiJoinTables",
+			Handler:    _TableService_MultiJoinTables_Handler,
 		},
 		{
 			MethodName: "RangeJoinTables",
