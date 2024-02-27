@@ -63,7 +63,7 @@ public class WindowCheck {
      * </p>
      *
      * <p>
-     * The timestamp column must be a DBDateTime or a long value expressed as nanoseconds since the epoch.
+     * The timestamp column must be an Instant or a long value expressed as nanoseconds since the epoch.
      * </p>
      *
      * @param table the input table
@@ -157,7 +157,7 @@ public class WindowCheck {
          * modifications/removes/shifts).
          *
          * <p>
-         * Each entry contains a contiguous range of Index keys, with non-descending timestamps.
+         * Each entry contains a contiguous range of row keys, with non-descending timestamps.
          * </p>
          */
         private static class Entry {
@@ -175,7 +175,7 @@ public class WindowCheck {
              */
             long firstRowKey;
             /**
-             * the last index within the source (and result) table
+             * the last row key within the source (and result) table
              */
             long lastRowKey;
 
@@ -253,16 +253,16 @@ public class WindowCheck {
                 try (final WritableRowSet preShiftRowSet = source.getRowSet().copyPrev()) {
                     preShiftRowSet.remove(upstream.removed());
                     upstream.shifted().apply((start, end, delta) -> {
-                        try (final RowSet subIndex = preShiftRowSet.subSetByKeyRange(start, end)) {
-                            shiftSubRowset(subIndex, delta);
+                        try (final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end)) {
+                            shiftSubRowSet(subRowSet, delta);
                         }
                     });
                 }
 
                 // figure out for all the modified indices if the timestamp or index changed
                 if (upstream.modifiedColumnSet().containsAny(mcsSourceTimestamp)) {
-                    final RowSetBuilderSequential changedTimestampIndexToRemovePost = RowSetFactory.builderSequential();
-                    final RowSetBuilderSequential changedTimestampIndexToAddPost = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential changedTimestampRowsToRemovePost = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential changedTimestampRowsToAddPost = RowSetFactory.builderSequential();
 
                     final int chunkSize = (int) Math.min(upstream.modified().size(), 4096);
 
@@ -270,11 +270,11 @@ public class WindowCheck {
                             inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
                             final ChunkSource.GetContext currContext =
                                     inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
-                            final RowSequence.Iterator previt = upstream.getModifiedPreShift().getRowSequenceIterator();
-                            final RowSequence.Iterator curit = upstream.modified().getRowSequenceIterator()) {
-                        while (curit.hasMore()) {
-                            final RowSequence prevOk = previt.getNextRowSequenceWithLength(chunkSize);
-                            final RowSequence curOk = curit.getNextRowSequenceWithLength(chunkSize);
+                            final RowSequence.Iterator prevIt = upstream.getModifiedPreShift().getRowSequenceIterator();
+                            final RowSequence.Iterator currIt = upstream.modified().getRowSequenceIterator()) {
+                        while (currIt.hasMore()) {
+                            final RowSequence prevRows = prevIt.getNextRowSequenceWithLength(chunkSize);
+                            final RowSequence currRows = currIt.getNextRowSequenceWithLength(chunkSize);
                             final LongChunk<OrderedRowKeys> chunkKeys = curOk.asRowKeyChunk();
                             final LongChunk<? extends Values> prevTimestamps = inWindowColumnSource.timeStampSource
                                     .getPrevChunk(prevContext, prevOk).asLongChunk();
