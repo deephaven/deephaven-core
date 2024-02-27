@@ -138,9 +138,13 @@ public class WindowCheck {
     static class TimeWindowListener extends MergedListener implements Runnable {
         private final InWindowColumnSource inWindowColumnSource;
         private final QueryTable result;
-        /** A priority queue of entries within our window, with the least recent timestamps getting pulled out first. */
+        /**
+         * A priority queue of entries within our window, with the least recent timestamps getting pulled out first.
+         */
         private final RAPriQueue<Entry> priorityQueue;
-        /** A sorted map from the last row key in an entry, to our entries. */
+        /**
+         * A sorted map from the last row key in an entry, to our entries.
+         */
         private final Long2ObjectAVLTreeMap<Entry> rowKeyToEntry;
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsResultWindowColumn;
@@ -157,14 +161,22 @@ public class WindowCheck {
          * </p>
          */
         private static class Entry {
-            /** position in the priority queue */
+            /**
+             * position in the priority queue
+             */
             int pos;
-            /** the timestamp of the first row key */
+            /**
+             * the timestamp of the first row key
+             */
             long nanos;
 
-            /** the first row key within the source (and result) table */
+            /**
+             * the first row key within the source (and result) table
+             */
             long firstRowKey;
-            /** the last index within the source (and result) table */
+            /**
+             * the last index within the source (and result) table
+             */
             long lastRowKey;
 
 
@@ -277,20 +289,45 @@ public class WindowCheck {
                                             && inWindowColumnSource.computeInWindowUnsafePrev(prevTimestamp);
                                     final boolean curInWindow = currentTimestamp != QueryConstants.NULL_LONG
                                             && inWindowColumnSource.computeInWindowUnsafe(currentTimestamp);
+                                    final long rowKey = chunkKeys.get(ii);
+                                    if (prevInWindow && curInWindow) {
+                                        // we might not have actually reordered anything, if we can check that "easily"
+                                        // we should do it to avoid churn and reading from the column, first find the
+                                        // entry based on our index
+                                        final LongBidirectionalIterator iterator =
+                                                rowKeyToEntry.keySet().iterator(rowKey - 1);
+                                        // we have to have an entry, otherwise we would not be in the window
+                                        Assert.assertion(iterator.hasNext(), "iterator.hasNext()");
+                                        final Entry foundEntry = rowKeyToEntry.get(iterator.nextLong());
+                                        Assert.neqNull(foundEntry, "foundEntry");
+
+                                        if (foundEntry.firstRowKey == rowKey
+                                                && foundEntry.lastRowKey == foundEntry.firstRowKey) {
+                                            // we should update the nanos for this entry
+                                            foundEntry.nanos = currentTimestamp;
+                                            priorityQueue.enter(foundEntry);
+                                            continue;
+                                        }
+
+                                        /*
+                                         * TODO: If we want to get fancier, there are some more cases where we could
+                                         * determine that there is no need to re-read the data. In particular, we would
+                                         * have to know that we have both the previous and next values in our chunk;
+                                         * otherwise we would be re-reading data anyway. The counterpoint is that if we
+                                         * are actually in those cases, where we are modifying Timestamps that are in
+                                         * the window it seems unlikely that the table is going to have consecutive
+                                         * timestamp ranges. To encode that logic would be fairly complex, and I think
+                                         * not actually worth it.
+                                         */
+                                    }
                                     if (prevInWindow) {
-                                        changedTimestampIndexToRemovePost.appendKey(chunkKeys.get(ii));
+                                        changedTimestampIndexToRemovePost.appendKey(rowKey);
                                     }
                                     if (curInWindow) {
-                                        changedTimestampIndexToAddPost.appendKey(chunkKeys.get(ii));
+                                        changedTimestampIndexToAddPost.appendKey(rowKey);
                                     }
                                 }
                             }
-
-                            // TODO: can we be better about reusing the values we read, doing chunkwise additions of the
-                            // points?
-                            // We could certainly do chunkwise removal here, but that would potentially involve more
-                            // reads to update
-                            // the first entry that would then be removed on the next cycle.
                         }
                     }
 
@@ -418,7 +455,7 @@ public class WindowCheck {
 
         /**
          * Add an entry into the priority queue, and if applicable the reverse map
-         * 
+         *
          * @param pendingEntry the entry to insert
          */
         void enter(@NotNull final Entry pendingEntry) {
@@ -718,7 +755,6 @@ public class WindowCheck {
                 // take it out of the queue, and mark it as modified
                 final Entry taken = priorityQueue.removeTop();
                 Assert.equals(entry, "entry", taken, "taken");
-
 
 
                 // now scan the rest of the entry, which requires reading from the timestamp source;
