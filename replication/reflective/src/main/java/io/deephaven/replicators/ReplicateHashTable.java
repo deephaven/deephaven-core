@@ -71,23 +71,25 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.fullClassName;
  */
 public class ReplicateHashTable {
 
+    public static final String SOURCE = "engine/table/src/main/java/io/deephaven/engine/table/impl/LeftOnlyIncrementalChunkedCrossJoinStateManager.java";
+
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         final boolean allowMissingDestinations = false;
 
         // Left-Only-Incremental Cross Join-> Symbol Table Combiner
         doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/LeftOnlyIncrementalChunkedCrossJoinStateManager.java",
+                SOURCE,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java",
                 allowMissingDestinations, Arrays.asList("overflowLocationToHashLocation", "getStateValue", "prev"));
 
         // Left-Only-Incremental Cross Join -> Right-Incremental Cross Join
         doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/LeftOnlyIncrementalChunkedCrossJoinStateManager.java",
+                SOURCE,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/RightIncrementalChunkedCrossJoinStateManager.java",
                 allowMissingDestinations, Arrays.asList("allowUpdateWriteThroughState"));
         // Left-Only-Incremental Cross Join -> Static Cross Join
         doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/LeftOnlyIncrementalChunkedCrossJoinStateManager.java",
+                SOURCE,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/StaticChunkedCrossJoinStateManager.java",
                 allowMissingDestinations, Arrays.asList("prev"));
     }

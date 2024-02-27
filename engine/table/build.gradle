@@ -93,7 +93,6 @@ spotless {
                 '**/*Float*.java',
                 '**/*Double*.java',
                 '**/*Object*.java',
-                '**/*StateManager.java',
                 '**/incagg/gen/*.java',
                 '**/incopenagg/gen/*.java',
                 '**/staticagg/gen/*.java',
@@ -107,6 +106,8 @@ spotless {
                 '**/multijoin/typed/staticopen/gen/*.java',
                 '**/multijoin/typed/incopen/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
+                'src/main/java/io/deephaven/engine/table/impl/RightIncrementalChunkedCrossJoinStateManager.java',
+                'src/main/java/io/deephaven/engine/table/impl/StaticChunkedCrossJoinStateManager.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'
         )
