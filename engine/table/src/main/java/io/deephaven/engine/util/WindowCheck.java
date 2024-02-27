@@ -214,17 +214,17 @@ public class WindowCheck {
             // queue; we'll just depend on exponential doubling to get us there if need be
             this.priorityQueue = new RAPriQueue<>(4096, new RAPriQueue.Adapter<>() {
                 @Override
-                public boolean less(Entry a, Entry b) {
+                public boolean less(final Entry a, final Entry b) {
                     return a.nanos < b.nanos;
                 }
 
                 @Override
-                public void setPos(Entry el, int pos) {
+                public void setPos(final Entry el, final int pos) {
                     el.pos = pos;
                 }
 
                 @Override
-                public int getPos(Entry el) {
+                public int getPos(final Entry el) {
                     return el.pos;
                 }
             }, Entry.class);
@@ -373,8 +373,8 @@ public class WindowCheck {
                     downstream.removed = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    downstream.modifiedColumnSet().clear();
-                    downstream.modifiedColumnSet().setAll(mcsResultWindowColumn);
+                    downstream.modifiedColumnSet.clear();
+                    downstream.modifiedColumnSet.setAll(mcsResultWindowColumn);
                     result.notifyListeners(downstream);
                 } else {
                     modifiedByTime.close();
@@ -399,10 +399,10 @@ public class WindowCheck {
                     inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
                     final RowSequence.Iterator rsit = rowSequence.getRowSequenceIterator()) {
                 while (rsit.hasMore()) {
-                    final RowSequence chunkOk = rsit.getNextRowSequenceWithLength(chunkSize);
-                    final LongChunk<OrderedRowKeys> rowKeys = chunkOk.asRowKeyChunk();
+                    final RowSequence chunkRows = rsit.getNextRowSequenceWithLength(chunkSize);
+                    final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
                     final LongChunk<? extends Values> timestampValues =
-                            inWindowColumnSource.timeStampSource.getChunk(getContext, chunkOk).asLongChunk();
+                            inWindowColumnSource.timeStampSource.getChunk(getContext, chunkRows).asLongChunk();
                     for (int ii = 0; ii < rowKeys.size(); ++ii) {
                         final long currentRowKey = rowKeys.get(ii);
                         final long currentTimestamp = timestampValues.get(ii);
@@ -482,8 +482,7 @@ public class WindowCheck {
                     final Entry nextEntry = rowKeyToEntry.get(nextKey);
                     if (nextEntry.firstRowKey == pendingEntry.lastRowKey + 1 && nextEntry.nanos >= lastNanos) {
                         // we can combine ourselves into next entry, because it is contiguous and has a timestamp
-                        // greater
-                        // than or equal to our entries last timestamp
+                        // greater than or equal to our entries last timestamp
                         nextEntry.nanos = pendingEntry.nanos;
                         nextEntry.firstRowKey = pendingEntry.firstRowKey;
                         priorityQueue.enter(nextEntry);
@@ -497,21 +496,21 @@ public class WindowCheck {
         /**
          * If the keys are in the window, remove them from the map and queue.
          *
-         * @param rowset the row keys to remove
+         * @param rowSet the row keys to remove
          * @param previous whether to operate in previous space
          */
-        private void removeRowSet(final RowSet rowset, final boolean previous) {
-            if (rowset.isEmpty()) {
+        private void removeRowSet(final RowSet rowSet, final boolean previous) {
+            if (rowSet.isEmpty()) {
                 return;
             }
             Assert.neqNull(rowKeyToEntry, "rowKeyToEntry");
 
-            RANGE: for (final RowSet.RangeIterator rangeIterator = rowset.rangeIterator(); rangeIterator.hasNext();) {
+            RANGE: for (final RowSet.RangeIterator rangeIterator = rowSet.rangeIterator(); rangeIterator.hasNext();) {
                 rangeIterator.next();
                 long start = rangeIterator.currentRangeStart();
                 final long end = rangeIterator.currentRangeEnd();
 
-                // We have some range in the rowset that is removed. This range (or part thereof) may or may not exist
+                // We have some range in the rowSet that is removed. This range (or part thereof) may or may not exist
                 // in one or more entries. We process from the front of the range to the end of the range, possibly
                 // advancing the range start.
 
@@ -557,7 +556,8 @@ public class WindowCheck {
                         if (entry.lastRowKey > end) { // (case a)
                             // slice off the beginning of the entry
                             entry.firstRowKey = end + 1;
-                            entry.nanos = previous ? inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey)
+                            entry.nanos = previous
+                                    ? inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey)
                                     : inWindowColumnSource.timeStampSource.getLong(entry.firstRowKey);
                             priorityQueue.enter(entry);
                         } else { // (case b and c)
@@ -584,7 +584,8 @@ public class WindowCheck {
                             enter(frontEntry);
 
                             entry.firstRowKey = end + 1;
-                            entry.nanos = previous ? inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey)
+                            entry.nanos = previous
+                                    ? inWindowColumnSource.timeStampSource.getPrevLong(entry.firstRowKey)
                                     : inWindowColumnSource.timeStampSource.getLong(entry.firstRowKey);
                             priorityQueue.enter(entry);
                         } else { // case b and c
@@ -597,7 +598,7 @@ public class WindowCheck {
             }
         }
 
-        private void shiftSubRowset(final RowSet rowset, final long delta) {
+        private void shiftSubRowset(final RowSet rowSet, final long delta) {
             Assert.neqNull(rowKeyToEntry, "rowKeyToEntry");
 
             // We need to be careful about reinserting entries into the correct order, if we are traversing forward,
@@ -607,15 +608,14 @@ public class WindowCheck {
             // we add them to the map.
             final List<Entry> entriesToInsert = delta > 0 ? new ArrayList<>() : null;
 
-            RANGE: for (final RowSet.RangeIterator rangeIterator = rowset.rangeIterator(); rangeIterator.hasNext();) {
+            RANGE: for (final RowSet.RangeIterator rangeIterator = rowSet.rangeIterator(); rangeIterator.hasNext();) {
                 rangeIterator.next();
                 long start = rangeIterator.currentRangeStart();
                 final long end = rangeIterator.currentRangeEnd();
 
-                // We have some range in the rowset that has been moved about. This range (or part thereof) may or may
+                // We have some range in the rowSet that has been moved about. This range (or part thereof) may or may
                 // not exist in one or more entries. We process from the front of the range to the end of the range,
-                // possibly
-                // advancing the range start.
+                // possibly advancing the range start.
 
                 while (start <= end) {
                     // we look for start - 1, so that we will find start if it exists
@@ -697,7 +697,7 @@ public class WindowCheck {
                             final Entry backEntry = new Entry(start + delta, entry.lastRowKey + delta, backNanos);
                             priorityQueue.enter(backEntry);
 
-                            // the nanos stays the same, so entry just needs an adjust last rowset and the reverse map
+                            // the nanos stays the same, so entry just needs an adjust last rowSet and the reverse map
                             entry.lastRowKey = start - 1;
 
                             // by reinserting, we preserve the things that we have not changed to enable us to find them
