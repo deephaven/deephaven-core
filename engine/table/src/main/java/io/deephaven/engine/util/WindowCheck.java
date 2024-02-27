@@ -684,9 +684,10 @@ public class WindowCheck {
                         // we have visually one of the following three situations:
                         // @formatter:off
                         //     [  RANGE  ]
-                        //   [  ENTRY      ] - the entry exceeds the range ( case a), we must split into two entries
-                        //   [  ENTRY    ] - the entry starts before the range but ends with the range (case b); so we remove a suffix of the entry
-                        //   [ ENTRY  ] - the entry starts before the range and ends inside the range(case c); so we must remove a suffix of the entry
+                        //   [  ENTRY      ] - the entry exceeds the range ( case a), we must split into three entries;
+                        //                     but we would be splatting over stuff, so this is not permitted in a reasonable shift
+                        //   [  ENTRY    ] - the entry starts before the range but ends with the range (case b)
+                        //   [ ENTRY  ] - the entry starts before the range and ends inside the range(case c)
                         // @formatter:on
 
                         if (entry.lastRowKey > end) {
@@ -888,15 +889,14 @@ public class WindowCheck {
             initialStep = clockStep;
 
             final ColumnSource<?> timeStampSource = table.getColumnSource(timestampColumn);
-            Class<?> timestampType = timeStampSource.getType();
+            final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timeStampSource);
+            Class<?> timestampType = reinterpreted.getType();
             if (timestampType == long.class) {
                 // noinspection unchecked
-                this.timeStampSource = (ColumnSource<Long>) timeStampSource;
-            } else if (Instant.class.isAssignableFrom(timestampType)) {
-                // noinspection unchecked
-                this.timeStampSource = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) timeStampSource);
+                this.timeStampSource = (ColumnSource<Long>) reinterpreted;
             } else {
-                throw new IllegalArgumentException(timestampColumn + " is not of type Instant!");
+                throw new IllegalArgumentException("The timestamp column, " + timestampColumn
+                        + ", cannot be interpreted as a long, it should be an Instant.");
             }
         }
 
