@@ -9,6 +9,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -68,12 +69,18 @@ public class TestWindowCheck {
     /**
      * Run a window check over the course of a simulated day.
      *
+     * <p>
      * We have a Timestamp column and a sentinel column.
+     * </p>
      *
+     * <p>
      * Time advances by one second per step, which randomly modifies the source table.
+     * </p>
      *
+     * <p>
      * The WindowEvalNugget verifies the original columns are unchanged and that the value of the InWindow column is
      * correct. A prev checker is added to ensure that getPrev works on the new table.
+     * </p>
      */
     private void testWindowCheckIterative(int seed, boolean withShifts) {
         final Random random = new Random(seed);
@@ -503,8 +510,8 @@ public class TestWindowCheck {
         for (int step = 1; step < 10; ++step) {
             final int fstep = step;
             updateGraph.runWithinUnitTestCycle(() -> {
-                final TrackingWritableRowSet added =
-                        RowSetFactory.fromRange(fstep * 10_000, fstep * 10_000 + 9_999).toTracking();
+                final WritableRowSet added =
+                        RowSetFactory.fromRange(fstep * 10_000, fstep * 10_000 + 9_999);
                 added.insertRange(fstep * 10_000 + regionSize, fstep * 10_000 + 9_999 + regionSize);
                 rowsetTable.getRowSet().writableCast().insert(added);
                 rowsetTable.notifyListeners(added, i(), i());

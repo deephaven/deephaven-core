@@ -246,7 +246,7 @@ public class WindowCheck {
             if (recorder.recordedVariablesAreValid()) {
                 final TableUpdate upstream = recorder.getUpdate();
 
-                // remove the removed indices from the priority queue
+                // remove the removed row keys from the priority queue
                 removeRowSet(upstream.removed(), true);
 
                 // anything that was shifted needs to be placed in the proper slots
@@ -254,12 +254,12 @@ public class WindowCheck {
                     preShiftRowSet.remove(upstream.removed());
                     upstream.shifted().apply((start, end, delta) -> {
                         try (final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end)) {
-                            shiftSubRowSet(subRowSet, delta);
+                            shiftSubRowset(subRowSet, delta);
                         }
                     });
                 }
 
-                // figure out for all the modified indices if the timestamp or index changed
+                // figure out for all the modified row keys if the timestamp or row key changed
                 if (upstream.modifiedColumnSet().containsAny(mcsSourceTimestamp)) {
                     final RowSetBuilderSequential changedTimestampRowsToRemovePost = RowSetFactory.builderSequential();
                     final RowSetBuilderSequential changedTimestampRowsToAddPost = RowSetFactory.builderSequential();
@@ -275,11 +275,11 @@ public class WindowCheck {
                         while (currIt.hasMore()) {
                             final RowSequence prevRows = prevIt.getNextRowSequenceWithLength(chunkSize);
                             final RowSequence currRows = currIt.getNextRowSequenceWithLength(chunkSize);
-                            final LongChunk<OrderedRowKeys> chunkKeys = curOk.asRowKeyChunk();
+                            final LongChunk<OrderedRowKeys> chunkKeys = currRows.asRowKeyChunk();
                             final LongChunk<? extends Values> prevTimestamps = inWindowColumnSource.timeStampSource
-                                    .getPrevChunk(prevContext, prevOk).asLongChunk();
+                                    .getPrevChunk(prevContext, prevRows).asLongChunk();
                             final LongChunk<? extends Values> currTimestamps =
-                                    inWindowColumnSource.timeStampSource.getChunk(currContext, curOk).asLongChunk();
+                                    inWindowColumnSource.timeStampSource.getChunk(currContext, currRows).asLongChunk();
 
                             for (int ii = 0; ii < prevTimestamps.size(); ++ii) {
                                 final long prevTimestamp = prevTimestamps.get(ii);
@@ -293,7 +293,7 @@ public class WindowCheck {
                                     if (prevInWindow && curInWindow) {
                                         // we might not have actually reordered anything, if we can check that "easily"
                                         // we should do it to avoid churn and reading from the column, first find the
-                                        // entry based on our index
+                                        // entry based on our row key
                                         final LongBidirectionalIterator iterator =
                                                 rowKeyToEntry.keySet().iterator(rowKey - 1);
                                         // we have to have an entry, otherwise we would not be in the window
@@ -310,34 +310,34 @@ public class WindowCheck {
                                         }
 
                                         /*
-                                         * TODO: If we want to get fancier, there are some more cases where we could
-                                         * determine that there is no need to re-read the data. In particular, we would
-                                         * have to know that we have both the previous and next values in our chunk;
-                                         * otherwise we would be re-reading data anyway. The counterpoint is that if we
-                                         * are actually in those cases, where we are modifying Timestamps that are in
-                                         * the window it seems unlikely that the table is going to have consecutive
+                                         * If we want to get fancier, there are some more cases where we could determine
+                                         * that there is no need to re-read the data. In particular, we would have to
+                                         * know that we have both the previous and next values in our chunk; otherwise
+                                         * we would be re-reading data anyway. The counterpoint is that if we are
+                                         * actually in those cases, where we are modifying Timestamps that are in the
+                                         * window it seems unlikely that the table is going to have consecutive
                                          * timestamp ranges. To encode that logic would be fairly complex, and I think
                                          * not actually worth it.
                                          */
                                     }
                                     if (prevInWindow) {
-                                        changedTimestampIndexToRemovePost.appendKey(rowKey);
+                                        changedTimestampRowsToRemovePost.appendKey(rowKey);
                                     }
                                     if (curInWindow) {
-                                        changedTimestampIndexToAddPost.appendKey(rowKey);
+                                        changedTimestampRowsToAddPost.appendKey(rowKey);
                                     }
                                 }
                             }
                         }
                     }
 
-                    // we should have shifted values where relevant above, so we only operate on the new index
-                    try (final RowSet changedTimestamps = changedTimestampIndexToRemovePost.build()) {
+                    // we should have shifted values where relevant above, so we only operate on the new row key
+                    try (final RowSet changedTimestamps = changedTimestampRowsToRemovePost.build()) {
                         if (changedTimestamps.isNonempty()) {
                             removeRowSet(changedTimestamps, false);
                         }
                     }
-                    try (final RowSet changedTimestamps = changedTimestampIndexToAddPost.build()) {
+                    try (final RowSet changedTimestamps = changedTimestampRowsToAddPost.build()) {
                         if (changedTimestamps.isNonempty()) {
                             addRowSequence(changedTimestamps, rowKeyToEntry != null);
                         }
@@ -388,7 +388,7 @@ public class WindowCheck {
          * @param rowSequence the row sequence to insert into the table
          * @param tryCombine try to combine newly added ranges with those already in the maps. For initial addition,
          *        there is nothing to combine with, so we do not spend the time on map lookups. For add-only tables, we
-         *        do not maintain the indexToEntry map, so cannot find adjacent ranges for combination.
+         *        do not maintain the rowKeyToEntry map, so cannot find adjacent ranges for combination.
          */
         private void addRowSequence(RowSequence rowSequence, boolean tryCombine) {
             final int chunkSize = (int) Math.min(rowSequence.size(), 4096);
@@ -425,7 +425,7 @@ public class WindowCheck {
                                     // see if this can be combined with the prior entry
                                     final Entry priorEntry = rowKeyToEntry.get(currentRowKey - 1);
                                     if (priorEntry != null && priorEntry.nanos <= currentTimestamp) {
-                                        Assert.eq(priorEntry.lastRowKey, "priorEntry.lastIndex", currentRowKey - 1,
+                                        Assert.eq(priorEntry.lastRowKey, "priorEntry.lastRowKey", currentRowKey - 1,
                                                 "currentRowKey - 1");
                                         rowKeyToEntry.remove(currentRowKey - 1);
                                         // Since we might be combining this with an entry later, we should remove it so
@@ -472,7 +472,7 @@ public class WindowCheck {
          * @param lastNanos the final nanosecond value of the pending entry to insert, used to determine if we may
          *        combine with the next entry
          * @param tryCombine true if we should combine values with the next entry, previous entries would have been
-         *        combined during addIndex
+         *        combined during addRowSequence
          */
         void enter(@NotNull final Entry pendingEntry, final long lastNanos, final boolean tryCombine) {
             if (tryCombine) {
@@ -642,13 +642,13 @@ public class WindowCheck {
                     if (entry.firstRowKey >= start) {
 
                         // @formatter:off
-                        // we have visually one of the following three situations when start == firstIndex:
+                        // we have visually one of the following three situations when start == firstRowKey:
                         //   [  RANGE  ]
                         //   [  ENTRY    ] - the entry exceeds the range ( case a)
                         //   [  ENTRY  ] - the whole entry is contained (case b)
                         //   [ ENTRY ] - the entry is a prefix - (case c)
 
-                        // we have visually one of the following three situations when start > firstIndex:
+                        // we have visually one of the following three situations when start > firstRowKey:
                         //   [  RANGE    ]
                         //      [  ENTRY  ] - the entry starts in the middle and terminates after (case a)
                         //      [  ENTRY ] - entry starts in the middle and terminates the at same value (case b)
@@ -761,9 +761,11 @@ public class WindowCheck {
                 // this would ideally be done as a chunk, reusing the context
                 long newFirst = entry.firstRowKey + 1;
                 if (newFirst <= entry.lastRowKey) {
-                    try (CloseablePrimitiveIteratorOfLong timestampIterator =
-                            new ChunkedLongColumnIterator(inWindowColumnSource.timeStampSource,
-                                    RowSetFactory.fromRange(entry.firstRowKey + 1, entry.lastRowKey))) {
+                    try (final RowSequence rowSequence =
+                            RowSequenceFactory.forRange(entry.firstRowKey + 1, entry.lastRowKey);
+                            final CloseablePrimitiveIteratorOfLong timestampIterator =
+                                    new ChunkedLongColumnIterator(inWindowColumnSource.timeStampSource,
+                                            rowSequence)) {
                         while (newFirst <= entry.lastRowKey) {
                             final long nanos = timestampIterator.nextLong();
                             if (inWindowColumnSource.computeInWindowUnsafe(nanos)) {
@@ -799,7 +801,7 @@ public class WindowCheck {
 
             if (rowKeyToEntry != null && entries.length != rowKeyToEntry.size()) {
                 dumpQueue();
-                Assert.eq(entries.length, "entries.length", rowKeyToEntry.size(), "indexToEntry.size()");
+                Assert.eq(entries.length, "entries.length", rowKeyToEntry.size(), "rowKeyToEntry.size()");
             }
 
             long entrySize = 0;
@@ -825,7 +827,7 @@ public class WindowCheck {
                 Assert.assertion(condition, "inQueue.subsetOf(resultRowSet)", inQueue, "inQueue", resultRowSet,
                         "resultRowSet", inQueue.minus(resultRowSet), "inQueue.minus(resultRowSet)");
             }
-            // TODO: verify that the size of inQueue is equal to the number of values in the window
+            // Verify that the size of inQueue is equal to the number of values in the window
         }
 
         void dumpQueue() {
