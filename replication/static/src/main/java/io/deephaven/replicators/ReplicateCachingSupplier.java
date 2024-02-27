@@ -22,6 +22,6 @@ public class ReplicateCachingSupplier {
                 {"Supplier", "Function"},
                 {"supplier", "function"},
         };
-        replaceAll(LAZY_CACHING_SUPPLIER_PATH, LAZY_CACHING_FUNCTION_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll("replicateCachingSupplier", LAZY_CACHING_SUPPLIER_PATH, LAZY_CACHING_FUNCTION_PATH, null, NO_EXCEPTIONS, pairs);
     }
 }

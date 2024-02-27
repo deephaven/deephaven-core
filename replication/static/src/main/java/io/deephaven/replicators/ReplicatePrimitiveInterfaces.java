@@ -15,6 +15,7 @@ import java.util.stream.IntStream;
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicatePrimitiveInterfaces {
+    private static final String TASK = "replicatePrimitiveInterfaces";
 
     private static final String CHAR_CONSUMER_PATH =
             "engine/primitive/src/main/java/io/deephaven/engine/primitive/function/CharConsumer.java";
@@ -30,13 +31,13 @@ public class ReplicatePrimitiveInterfaces {
 
     public static void main(String[] args) throws IOException {
         {
-            charToShortAndByte(CHAR_CONSUMER_PATH);
-            charToFloat(CHAR_CONSUMER_PATH, null);
+            charToShortAndByte(TASK, CHAR_CONSUMER_PATH);
+            charToFloat(TASK, CHAR_CONSUMER_PATH, null);
         }
         {
-            charToShortAndByte(CHAR_TO_INT_PATH);
-            final String floatToIntPath = charToFloat(CHAR_TO_INT_PATH, null);
-            removeExtraCopyrightHeader(intToDouble(floatToIntPath, null,
+            charToShortAndByte(TASK, CHAR_TO_INT_PATH);
+            final String floatToIntPath = charToFloat(TASK, CHAR_TO_INT_PATH, null);
+            removeExtraCopyrightHeader(intToDouble(TASK, floatToIntPath, null,
                     "interface",
                     "FunctionalInterface",
                     CHAR_TO_INT_PATH.substring(
@@ -47,9 +48,9 @@ public class ReplicatePrimitiveInterfaces {
             }
         }
         {
-            charToShortAndByte(CHAR_ITERATOR_PATH);
-            final String floatPath = charToFloat(CHAR_ITERATOR_PATH, null);
-            removeExtraCopyrightHeader(intToDouble(floatPath, null,
+            charToShortAndByte(TASK, CHAR_ITERATOR_PATH);
+            final String floatPath = charToFloat(TASK, CHAR_ITERATOR_PATH, null);
+            removeExtraCopyrightHeader(intToDouble(TASK, floatPath, null,
                     "interface",
                     "FunctionalInterface",
                     "int valueIndex",
@@ -59,12 +60,12 @@ public class ReplicatePrimitiveInterfaces {
                             CHAR_ITERATOR_PATH.lastIndexOf(".java"))));
         }
         {
-            intToLong(INT_ITERATOR_PATH, null,
+            intToLong(TASK, INT_ITERATOR_PATH, null,
                     "interface",
                     "FunctionalInterface",
                     "int valueIndex",
                     "int subIteratorIndex");
-            intToDouble(INT_ITERATOR_PATH, null,
+            intToDouble(TASK, INT_ITERATOR_PATH, null,
                     "interface",
                     "FunctionalInterface",
                     "int valueIndex",

@@ -10,7 +10,7 @@ import java.io.IOException;
 public class ReplicateReverseKernel {
     public static void main(String[] args) throws IOException {
         ReplicatePrimitiveCode
-                .charToAll(
+                .charToAll("replicateReverseKernel",
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/util/reverse/CharReverseKernel.java");
     }
 }

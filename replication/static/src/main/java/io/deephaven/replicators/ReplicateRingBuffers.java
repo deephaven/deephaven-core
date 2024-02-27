@@ -17,11 +17,12 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateRingBuffers {
+    private static final String TASK = "replicateRingBuffers";
 
     public static void main(String... args) throws IOException {
         // replicate ring buffers to all but Object (since RingBuffer<> already exisits)
-        charToAllButBoolean("Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
-        String objectResult = ReplicatePrimitiveCode.charToObject(
+        charToAllButBoolean(TASK, "Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
+        String objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
         File objectFile = new File(objectResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
@@ -66,9 +67,9 @@ public class ReplicateRingBuffers {
                                 "\n"));
         FileUtils.writeLines(objectFile, lines);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "Base/src/main/java/io/deephaven/base/ringbuffer/AggregatingCharRingBuffer.java");
-        objectResult = ReplicatePrimitiveCode.charToObject(
+        objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "Base/src/main/java/io/deephaven/base/ringbuffer/AggregatingCharRingBuffer.java");
         objectFile = new File(objectResult);
         lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
@@ -102,8 +103,8 @@ public class ReplicateRingBuffers {
 
 
         // replicate the tests
-        charToAllButBoolean("Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
-        objectResult = ReplicatePrimitiveCode.charToObject(
+        charToAllButBoolean(TASK, "Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
+        objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
         objectFile = new File(objectResult);
         lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
@@ -111,7 +112,7 @@ public class ReplicateRingBuffers {
                 "Object.MIN_VALUE", "new Object()");
         FileUtils.writeLines(objectFile, lines);
 
-        List<String> files = charToAllButBoolean(
+        List<String> files = charToAllButBoolean(TASK,
                 "Base/src/test/java/io/deephaven/base/ringbuffer/AggregatingCharRingBufferTest.java");
         for (final String f : files) {
             if (f.contains("Byte")) {

@@ -9,7 +9,7 @@ import java.io.IOException;
 
 public class ReplicateRingChunkSources {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateRingChunkSources",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/ring/CharacterRingChunkSource.java");
     }
 }

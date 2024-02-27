@@ -19,6 +19,7 @@ public class ReplicateParquetChunkedWriters {
     public static void main(String[] args) throws IOException {
 
         ReplicatePrimitiveCode.intToLongAndFloatingPoints(
+                "replicateParquetChunkedWriters",
                 "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/PlainIntChunkedWriter.java",
                 "int pageSize",
                 "IntBuffer.allocate\\(4\\)",

@@ -28,22 +28,23 @@ public class ReplicateColumnIterators {
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/ChunkedCharacterColumnIterator.java";
     private static final String CHAR_SERIAL_PATH =
             "engine/api/src/main/java/io/deephaven/engine/table/iterators/SerialCharacterColumnIterator.java";
+    public static final String TASK = "replicateColumnIterators";
 
     public static void main(String... args) throws IOException {
         {
-            charToByte(CHAR_IFACE_PATH, Collections.emptyMap());
-            charToShort(CHAR_IFACE_PATH, Collections.emptyMap());
-            fixupIntToDouble(charToFloat(CHAR_IFACE_PATH, Collections.emptyMap()));
+            charToByte(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
+            charToShort(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
+            fixupIntToDouble(charToFloat(TASK, CHAR_IFACE_PATH, Collections.emptyMap()));
         }
         {
-            fixupChunkSize(intToLong(INT_IFACE_PATH, Collections.emptyMap(), "interface"), "long");
-            fixupChunkSize(intToDouble(INT_IFACE_PATH, Collections.emptyMap(), "interface"), "double");
+            fixupChunkSize(intToLong(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface"), "long");
+            fixupChunkSize(intToDouble(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface"), "double");
         }
         {
-            fixupPrimitiveConsumer(charToAllButBoolean(CHAR_CHUNKED_PATH));
+            fixupPrimitiveConsumer(charToAllButBoolean(TASK, CHAR_CHUNKED_PATH));
         }
         {
-            charToAllButBoolean(CHAR_SERIAL_PATH);
+            charToAllButBoolean(TASK, CHAR_SERIAL_PATH);
         }
     }
 

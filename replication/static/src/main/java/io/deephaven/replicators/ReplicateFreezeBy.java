@@ -16,14 +16,14 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateFreezeBy {
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean(
+        charToAllButBoolean("replicateFreezeBy",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
 
-        final String objectResult = charToObject(
+        final String objectResult = charToObject("replicateFreezeBy",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupObject(objectResult);
 
-        final String booleanResult = charToBoolean(
+        final String booleanResult = charToBoolean("replicateFreezeBy",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupBoolean(booleanResult);
     }

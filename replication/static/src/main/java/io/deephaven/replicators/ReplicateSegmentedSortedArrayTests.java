@@ -18,10 +18,10 @@ public class ReplicateSegmentedSortedArrayTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedArray.main(args);
 
-        charToAllButBoolean(
+        charToAllButBoolean("replicateSegmentedSortedArrayTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         final String objectSsaTest =
-                charToObject(
+                charToObject("replicateSegmentedSortedArrayTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         fixupObjectSsaTest(objectSsaTest);
     }

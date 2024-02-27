@@ -22,6 +22,6 @@ public class ReplicateTableLocationKey {
                 {"file", "uri"},
                 {"File", "URI"},
         };
-        replaceAll(FILE_TABLE_LOCATION_KEY_PATH, URI_TABLE_LOCATION_KEY_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll("replicateTableLocationKey", FILE_TABLE_LOCATION_KEY_PATH, URI_TABLE_LOCATION_KEY_PATH, null, NO_EXCEPTIONS, pairs);
     }
 }

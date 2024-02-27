@@ -17,8 +17,8 @@ import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 public class ReplicateCopyKernelTests {
     public static void main(String[] args) throws IOException {
         ReplicateCopyKernel.main(args);
-        charToAll("engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java");
-        fixupObjectCopyKernelTest(charToObject(
+        charToAll("replicateCopyKernelTests", "engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java");
+        fixupObjectCopyKernelTest(charToObject("replicateCopyKernelTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java"));
     }
 

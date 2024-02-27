@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class ReplicateDownsamplingValueTrackers extends ReplicatePrimitiveCode {
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean(
+        charToAllButBoolean("replicateDownsamplingValueTrackers",
                 "ClientSupport/src/main/java/io/deephaven/clientsupport/plotdownsampling/CharValueTracker.java");
     }
 }

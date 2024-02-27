@@ -18,17 +18,17 @@ public class ReplicateSegmentedSortedMultisetTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedMultiset.main(args);
 
-        charToAllButBooleanAndFloats(
+        charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupFloatTests(
-                charToFloat(
+                charToFloat("replicateSegmentedSortedMultisetTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
                         null));
-        fixupFloatTests(charToDouble(
+        fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
                 null));
         final String objectSsaTest =
-                charToObject(
+                charToObject("replicateSegmentedSortedMultisetTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupObjectSsaTest(objectSsaTest);
     }

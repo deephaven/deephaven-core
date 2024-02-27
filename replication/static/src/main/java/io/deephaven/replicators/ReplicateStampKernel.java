@@ -16,21 +16,22 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateStampKernel {
+    private static final String TASK = "replicateStampKernel";
     public static void main(String[] args) throws IOException {
         final String charStampPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharStampKernel.java";
         final String charNoExactStampPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharNoExactStampKernel.java";
-        final List<String> stampKernels = charToAllButBoolean(charStampPath);
-        final List<String> noExactStampKernels = charToAllButBoolean(charNoExactStampPath);
+        final List<String> stampKernels = charToAllButBoolean(TASK, charStampPath);
+        final List<String> noExactStampKernels = charToAllButBoolean(TASK, charNoExactStampPath);
 
         stampKernels.addAll(noExactStampKernels);
         stampKernels.add(charStampPath);
         stampKernels.add(charNoExactStampPath);
 
-        final String objectStamp = charToObject(charStampPath);
+        final String objectStamp = charToObject(TASK, charStampPath);
         fixupObjectStamp(objectStamp);
-        final String objectNoExactStamp = charToObject(charNoExactStampPath);
+        final String objectNoExactStamp = charToObject(TASK, charNoExactStampPath);
         fixupObjectStamp(objectNoExactStamp);
 
         stampKernels.add(objectStamp);

@@ -21,6 +21,7 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSortKernel {
+    private static final String TASK = "replicateSortKernel";
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
         replicateLongToByte();
@@ -36,29 +37,29 @@ public class ReplicateSortKernel {
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
-        final String objectRunPath = charToObject(
+        final String objectRunPath = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         fixupObjectRuns(objectRunPath);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
-        final String objectPartitionPath = charToObject(
+        final String objectPartitionPath = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
-        fixupObjectPermute(charToObject(
+        fixupObjectPermute(charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
     }
 
     private static void doCharReplication(@NotNull final String sourceClassJavaPath) throws IOException {
         // replicate char to each of the other types
         final List<String> timsortPaths =
-                charToAllButBoolean(sourceClassJavaPath);
-        final String objectSortPath = charToObject(sourceClassJavaPath);
+                charToAllButBoolean(TASK, sourceClassJavaPath);
+        final String objectSortPath = charToObject(TASK, sourceClassJavaPath);
         timsortPaths.add(sourceClassJavaPath);
         timsortPaths.add(objectSortPath);
 
@@ -105,8 +106,8 @@ public class ReplicateSortKernel {
 
     private static void doCharMegaMergeReplication(String sourceClassJavaPath) throws IOException {
         // replicate char to each of the other types
-        final List<String> megaMergePaths = charToAllButBoolean(sourceClassJavaPath);
-        final String objectSortPath = charToObject(sourceClassJavaPath);
+        final List<String> megaMergePaths = charToAllButBoolean(TASK, sourceClassJavaPath);
+        final String objectSortPath = charToObject(TASK, sourceClassJavaPath);
         megaMergePaths.add(sourceClassJavaPath);
         megaMergePaths.add(objectSortPath);
 
@@ -124,21 +125,21 @@ public class ReplicateSortKernel {
     }
 
     private static void replicateLongToInt() throws IOException {
-        final String intSortKernelPath = longToInt(
+        final String intSortKernelPath = longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupIntSortKernel(intSortKernelPath);
-        longToInt(
+        longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        longToInt(
+        longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
     private static void replicateLongToByte() throws IOException {
-        final String byteSortKernelPath = longToByte(
+        final String byteSortKernelPath = longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupByteSortKernel(byteSortKernelPath);
-        longToByte("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        longToByte(
+        longToByte(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+        longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 

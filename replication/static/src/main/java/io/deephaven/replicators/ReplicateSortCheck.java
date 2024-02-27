@@ -25,8 +25,8 @@ public class ReplicateSortCheck {
         final String charSortCheckPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sortcheck/CharSortCheck.java";
         invertList.add(charSortCheckPath);
-        invertList.addAll(charToAllButBoolean(charSortCheckPath));
-        final String objectPath = charToObject(charSortCheckPath);
+        invertList.addAll(charToAllButBoolean("replicateSortCheck", charSortCheckPath));
+        final String objectPath = charToObject("replicateSortCheck", charSortCheckPath);
         invertList.add(objectPath);
         ReplicationUtils.fixupChunkAttributes(objectPath);
 

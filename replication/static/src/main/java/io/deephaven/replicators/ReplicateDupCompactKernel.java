@@ -24,8 +24,8 @@ public class ReplicateDupCompactKernel {
     public static void main(String[] args) throws IOException {
         final String charJavaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupcompact/CharDupCompactKernel.java";
-        final List<String> kernelsToInvert = ReplicatePrimitiveCode.charToAllButBoolean(charJavaPath);
-        final String objectDupCompact = ReplicatePrimitiveCode.charToObject(charJavaPath);
+        final List<String> kernelsToInvert = ReplicatePrimitiveCode.charToAllButBoolean("replicateDupCompactKernel", charJavaPath);
+        final String objectDupCompact = ReplicatePrimitiveCode.charToObject("replicateDupCompactKernel", charJavaPath);
         fixupObjectDupCompact(objectDupCompact);
 
         kernelsToInvert.add(charJavaPath);

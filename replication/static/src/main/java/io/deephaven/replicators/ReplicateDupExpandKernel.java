@@ -16,8 +16,8 @@ public class ReplicateDupExpandKernel {
     public static void main(String[] args) throws IOException {
         final String charClassPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupexpand/CharDupExpandKernel.java";
-        ReplicatePrimitiveCode.charToAll(charClassPath);
-        fixupObjectDupCompact(ReplicatePrimitiveCode.charToObject(charClassPath));
+        ReplicatePrimitiveCode.charToAll("replicateDupExpandKernel", charClassPath);
+        fixupObjectDupCompact(ReplicatePrimitiveCode.charToObject("replicateDupExpandKernel", charClassPath));
     }
 
     private static void fixupObjectDupCompact(String objectPath) throws IOException {
