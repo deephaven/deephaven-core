@@ -1837,6 +1837,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.lowerBin(instant, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second), second));
 
+        TestCase.assertEquals(DateTimeUtils.lowerBin(instant, Duration.ofMinutes(1)),
+                DateTimeUtils.lowerBin(instant, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((Instant) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.lowerBin(instant, second), TZ_AL),
@@ -1854,6 +1859,10 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second), second));
 
+        TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, Duration.ofMinutes(1)),
+                DateTimeUtils.lowerBin(zdt, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((ZonedDateTime) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, (Duration) null));
     }
 
     public void testLowerBinWithOffset() {
@@ -1871,6 +1880,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.lowerBin(instant, second, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second, second), second, second));
 
+        TestCase.assertEquals(DateTimeUtils.lowerBin(instant, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.lowerBin(instant, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.lowerBin((Instant) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, Duration.ofMinutes(1), (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:11:00 NY").withZoneSameInstant(TZ_AL),
@@ -1881,6 +1896,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, second, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second, second), second, second));
+
+        TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.lowerBin(zdt, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.lowerBin((ZonedDateTime) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, Duration.ofMinutes(1), (Duration) null));
     }
 
     public void testUpperBin() {
@@ -1902,6 +1923,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.upperBin(instant, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(instant, second), second));
 
+        TestCase.assertEquals(DateTimeUtils.upperBin(instant, Duration.ofMinutes(1)),
+                DateTimeUtils.upperBin(instant, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((Instant) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:14:02 NY").withZoneSameInstant(TZ_AL),
@@ -1915,6 +1941,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.upperBin(zdt, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second), second));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(zdt, Duration.ofMinutes(1)),
+                DateTimeUtils.upperBin(zdt, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, (Duration) null));
     }
 
     public void testUpperBinWithOffset() {
@@ -1932,6 +1963,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.upperBin(instant, second, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(instant, second, second), second, second));
 
+        TestCase.assertEquals(DateTimeUtils.upperBin(instant, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.upperBin(instant, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.upperBin((Instant) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, Duration.ofMinutes(1), (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:16:00 NY").withZoneSameInstant(TZ_AL),
@@ -1942,6 +1979,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.upperBin(zdt, second, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second, second), second, second));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(zdt, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.upperBin(zdt, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, Duration.ofMinutes(1), (Duration) null));
     }
 
     public void testPlusLocalDate() {
