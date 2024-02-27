@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.base.verify.Require;
@@ -74,13 +74,13 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableConstantByteSource.java");
         replicateImmutableConstantObjectSource();
 
-        charToAll(TASK,"engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
+        charToAll(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
         replicateObjectSizedChunk();
 
-        charToAll(TASK,"engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+        charToAll(TASK, "engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
         replicateObjectChunkPage("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
 
-        charToAll(TASK,"extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
+        charToAll(TASK, "extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
         replicateObjectChunkPage(
                 "extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
 
@@ -102,7 +102,7 @@ public class ReplicateSourcesAndChunks {
 
         replicateChunkFillers();
 
-        charToAll(TASK,"engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
+        charToAll(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
 
         replicateChunkColumnSource();
     }

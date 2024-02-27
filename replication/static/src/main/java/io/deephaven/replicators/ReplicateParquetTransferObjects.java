@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import java.io.IOException;
@@ -46,7 +46,8 @@ public class ReplicateParquetTransferObjects {
         charToShortAndByte(TASK, PARQUET_CHAR_ARRAY_TRANSFER_PATH);
         charToShortAndByte(TASK, PARQUET_CHAR_VECTOR_TRANSFER_PATH);
 
-        intToLongAndFloatingPoints(TASK, PARQUET_INT_TRANSFER_PATH, "int targetPageSizeInBytes", "int targetElementsPerPage",
+        intToLongAndFloatingPoints(TASK, PARQUET_INT_TRANSFER_PATH, "int targetPageSizeInBytes",
+                "int targetElementsPerPage",
                 "Math.toIntExact");
         intToLongAndFloatingPoints(TASK, PARQUET_INT_ARRAY_TRANSFER_PATH, "int targetPageSizeInBytes", "int length",
                 "int getSize");
@@ -61,8 +62,10 @@ public class ReplicateParquetTransferObjects {
                 {"Long", "Integer"},
                 {"long", "int"},
         };
-        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_DATE_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
-        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_DATE_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_DATE_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
+        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_DATE_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
 
         pairs = new String[][] {
                 {"InstantArrayTransfer", "TimeArrayTransfer"},
@@ -70,8 +73,10 @@ public class ReplicateParquetTransferObjects {
                 {"DateTimeUtils.epochNanos", "DateTimeUtils.nanosOfDay"},
                 {"Instant", "LocalTime"}
         };
-        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_TIME_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
-        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_TIME_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_TIME_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
+        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_TIME_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
 
         pairs = new String[][] {
                 {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.table.util.TransferUtils"},

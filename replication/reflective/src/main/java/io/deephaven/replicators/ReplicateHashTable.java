@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import gnu.trove.stack.TIntStack;
@@ -71,7 +71,8 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.fullClassName;
  */
 public class ReplicateHashTable {
 
-    public static final String SOURCE = "engine/table/src/main/java/io/deephaven/engine/table/impl/LeftOnlyIncrementalChunkedCrossJoinStateManager.java";
+    public static final String SOURCE =
+            "engine/table/src/main/java/io/deephaven/engine/table/impl/LeftOnlyIncrementalChunkedCrossJoinStateManager.java";
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         final boolean allowMissingDestinations = false;

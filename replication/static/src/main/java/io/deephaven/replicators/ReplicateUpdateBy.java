@@ -17,6 +17,7 @@ import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateUpdateBy {
     private static final String TASK = "replicateUpdateBy";
+
     public static void main(String[] args) throws IOException {
         final String[] exemptions = new String[] {
                 "long singletonGroup = QueryConstants.NULL_LONG",

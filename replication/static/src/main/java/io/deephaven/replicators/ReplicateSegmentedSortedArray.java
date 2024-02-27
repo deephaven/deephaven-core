@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -19,6 +19,7 @@ import static io.deephaven.replication.ReplicationUtils.simpleFixup;
 
 public class ReplicateSegmentedSortedArray {
     private static final String TASK = "replicateSegmentedSortedArray";
+
     public static void main(String[] args) throws IOException {
         final String charSsaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSegmentedSortedArray.java";

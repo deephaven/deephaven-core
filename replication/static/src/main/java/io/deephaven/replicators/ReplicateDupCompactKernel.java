@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -24,7 +24,8 @@ public class ReplicateDupCompactKernel {
     public static void main(String[] args) throws IOException {
         final String charJavaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupcompact/CharDupCompactKernel.java";
-        final List<String> kernelsToInvert = ReplicatePrimitiveCode.charToAllButBoolean("replicateDupCompactKernel", charJavaPath);
+        final List<String> kernelsToInvert =
+                ReplicatePrimitiveCode.charToAllButBoolean("replicateDupCompactKernel", charJavaPath);
         final String objectDupCompact = ReplicatePrimitiveCode.charToObject("replicateDupCompactKernel", charJavaPath);
         fixupObjectDupCompact(objectDupCompact);
 
@@ -91,8 +92,7 @@ public class ReplicateDupCompactKernel {
                 "/****************************************************************************************************************************",
                 " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
                         + " and regenerate",
-                " ****************************************************************************************************************************/"
-        ));
+                " ****************************************************************************************************************************/"));
 
         FileUtils.writeLines(new File(newPath), lines);
 

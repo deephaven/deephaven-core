@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replication;
 
 import io.deephaven.base.verify.Require;
@@ -17,7 +17,8 @@ import static io.deephaven.replication.ReplicationUtils.replaceRegion;
 
 public class ReplicatePrimitiveCode {
 
-    private static String replicateCodeBasedOnChar(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String replicateCodeBasedOnChar(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String[] exemptions, String upperCharacterReplace, String upperCharReplace,
             String characterReplace, String charReplace, String allCapsCharReplace) throws IOException {
         String[][] pairs = new String[][] {
@@ -30,7 +31,8 @@ public class ReplicatePrimitiveCode {
         return replaceAll(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static String replicateCodeBasedOnInt(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String replicateCodeBasedOnInt(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String[] exemptions, String upperCharacterReplace, String upperCharReplace,
             String characterReplace, String charReplace, String allCapsCharReplace) throws IOException {
         String[][] pairs = new String[][] {
@@ -43,7 +45,8 @@ public class ReplicatePrimitiveCode {
         return replaceAll(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static String replicateCodeBasedOnShort(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String replicateCodeBasedOnShort(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String[] exemptions, String upperCharacterReplace,
             String charReplace, String allCapsCharReplace, String[]... extraPairs) throws IOException {
         final String[][] pairs;
@@ -62,7 +65,8 @@ public class ReplicatePrimitiveCode {
         return replaceAll(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    private static void replicateCodeBasedOnFloat(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static void replicateCodeBasedOnFloat(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String[] exemptions, String upperCharacterReplace,
             String charReplace, String allCapsCharReplace) throws IOException {
         String[][] pairs = new String[][] {
@@ -73,19 +77,22 @@ public class ReplicatePrimitiveCode {
         replaceAll(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, pairs);
     }
 
-    public static String charToBoolean(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToBoolean(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Boolean", "Boolean", "boolean", "boolean", "BOOLEAN");
     }
 
-    public static String charToBooleanAsByte(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToBooleanAsByte(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Boolean", "Boolean", "boolean", "byte", "BOOLEAN");
     }
 
-    private static String charToObject(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String charToObject(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Object", "Object", "Object", "Object", "OBJECT");
@@ -97,7 +104,8 @@ public class ReplicatePrimitiveCode {
                 "Byte", "Byte", "byte", "byte", "BYTE");
     }
 
-    public static String charToDouble(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToDouble(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Double", "Double", "double", "double", "DOUBLE");
@@ -109,7 +117,8 @@ public class ReplicatePrimitiveCode {
                 "Float", "Float", "float", "float", "FLOAT");
     }
 
-    public static String charToInteger(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToInteger(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Integer", "Int", "integer", "int", "INT");
@@ -121,7 +130,8 @@ public class ReplicatePrimitiveCode {
                 "Long", "Long", "long", "long", "LONG");
     }
 
-    public static String charToInstant(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static String charToInstant(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Instant", "Instant", "Instant", "Instant", "INSTANT");
@@ -152,7 +162,8 @@ public class ReplicatePrimitiveCode {
         return replaceAll(gradleTask, sourceClassJavaPath, null, exemptions, pairs);
     }
 
-    public static String longToInt(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String longToInt(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         final String[][] pairs = new String[][] {
                 // these happen in order, so we want to turn our longs to ints first, then do char to long, we can't
                 // actually discriminate between "Long" as text and "Long" as a type,
@@ -165,7 +176,8 @@ public class ReplicatePrimitiveCode {
         return replaceAll(gradleTask, sourceClassJavaPath, null, exemptions, pairs);
     }
 
-    public static String longToByte(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String longToByte(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         final String[][] pairs = new String[][] {
                 // these happen in order, so we want to turn our longs to ints first, then do char to long, we can't
                 // actually discriminate between "Long" as text and "Long" as a type,
@@ -197,12 +209,14 @@ public class ReplicatePrimitiveCode {
         return replaceAll(gradleTask, sourceClassJavaPath, null, exemptions, pairs);
     }
 
-    public static String intToObject(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String intToObject(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         return replicateCodeBasedOnInt(gradleTask, sourceClassJavaPath, null, exemptions,
                 "Object", "Object", "Object", "Object", "OBJECT");
     }
 
-    private static String intToObject(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String intToObject(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnInt(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions,
                 "Object", "Object", "Object", "Object", "OBJECT");
@@ -244,37 +258,49 @@ public class ReplicatePrimitiveCode {
                 "Short", "Short", "short", "short", "SHORT");
     }
 
-    private static String shortToByte(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToByte(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Byte", "byte", "BYTE");
+        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Byte", "byte",
+                "BYTE");
     }
 
-    private static String shortToDouble(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToDouble(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Double", "double",
+        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Double",
+                "double",
                 "DOUBLE");
     }
 
-    private static String shortToFloat(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToFloat(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Float", "float", "FLOAT");
+        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Float",
+                "float", "FLOAT");
     }
 
-    private static String shortToInteger(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToInteger(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Integer", "int", "INT",
+        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Integer",
+                "int", "INT",
                 new String[][] {{"ShortVector", "IntVector"}});
     }
 
-    private static String shortToLong(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static String shortToLong(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Long", "long", "LONG",
+        return replicateCodeBasedOnShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Long", "long",
+                "LONG",
                 new String[][] {{"Integer.signum", "Long.signum"}});
     }
 
-    private static void floatToDouble(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static void floatToDouble(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        replicateCodeBasedOnFloat(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Double", "double", "DOUBLE");
+        replicateCodeBasedOnFloat(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions, "Double", "double",
+                "DOUBLE");
     }
 
     public static List<String> charToAll(String gradleTask, String sourceClassJavaPath, String... exemptions)
@@ -282,7 +308,8 @@ public class ReplicatePrimitiveCode {
         return charToAll(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    private static List<String> charToAll(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    private static List<String> charToAll(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
         results.add(charToBoolean(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
@@ -305,23 +332,28 @@ public class ReplicatePrimitiveCode {
         return charToAllButBoolean(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static String charToByte(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String charToByte(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         return charToByte(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static String charToObject(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String charToObject(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         return charToObject(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static String charToBoolean(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String charToBoolean(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         return charToBoolean(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static String charToLong(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String charToLong(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         return charToLong(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static String charToInstant(String gradleTask, String sourceClassJavaPath, String... exemptions) throws IOException {
+    public static String charToInstant(String gradleTask, String sourceClassJavaPath, String... exemptions)
+            throws IOException {
         return charToInstant(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
@@ -365,9 +397,10 @@ public class ReplicatePrimitiveCode {
         charToShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
     }
 
-    public static List<String> charToAllButBooleanAndByte(String gradleTask, String sourceClassJavaPath, String... exemptions)
+    public static List<String> charToAllButBooleanAndByte(String gradleTask, String sourceClassJavaPath,
+            String... exemptions)
             throws IOException {
-        return charToAllButBooleanAndByte(sourceClassJavaPath, null, exemptions);
+        return charToAllButBooleanAndByte(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
     private static List<String> charToAllButBooleanAndByte(String gradleTask, String sourceClassJavaPath,
@@ -384,7 +417,7 @@ public class ReplicatePrimitiveCode {
 
     public static List<String> charToAllButBooleanAndFloats(String gradleTask, String sourceClass, String... exemptions)
             throws IOException {
-        return charToAllButBooleanAndFloats(sourceClass, null, exemptions);
+        return charToAllButBooleanAndFloats(gradleTask, sourceClass, null, exemptions);
     }
 
     public static void charToShortAndByte(String gradleTask, String sourceClassJavaPath, String... exemptions)
@@ -393,7 +426,8 @@ public class ReplicatePrimitiveCode {
         charToShort(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static List<String> charToAllButBooleanAndFloats(String gradleTask, String sourceClass, Map<String, Long> serialVersionUIDs,
+    public static List<String> charToAllButBooleanAndFloats(String gradleTask, String sourceClass,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> files = new ArrayList<>();
         files.add(charToInteger(gradleTask, sourceClass, serialVersionUIDs, exemptions));
@@ -403,7 +437,8 @@ public class ReplicatePrimitiveCode {
         return files;
     }
 
-    public static List<String> shortToAllNumericals(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static List<String> shortToAllNumericals(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
         results.add(shortToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
@@ -414,7 +449,8 @@ public class ReplicatePrimitiveCode {
         return results;
     }
 
-    public static void intToAllNumericals(String gradleTask, String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+    public static void intToAllNumericals(String gradleTask, String sourceClassJavaPath,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         intToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
         intToDouble(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
@@ -441,11 +477,13 @@ public class ReplicatePrimitiveCode {
         return results;
     }
 
-    public static List<String> shortToAllIntegralTypes(String gradleTask, String sourceClass, String... exemptions) throws IOException {
-        return shortToAllIntegralTypes(sourceClass, null, exemptions);
+    public static List<String> shortToAllIntegralTypes(String gradleTask, String sourceClass, String... exemptions)
+            throws IOException {
+        return shortToAllIntegralTypes(gradleTask, sourceClass, null, exemptions);
     }
 
-    private static List<String> shortToAllIntegralTypes(String gradleTask, String sourceClass, Map<String, Long> serialVersionUIDs,
+    private static List<String> shortToAllIntegralTypes(String gradleTask, String sourceClass,
+            Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
         results.add(shortToByte(gradleTask, sourceClass, serialVersionUIDs, exemptions));
@@ -526,10 +564,10 @@ public class ReplicatePrimitiveCode {
                 "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                "// ****** Edit " + className(sourceClassJavaPath) + " and run \"./gradlew " + gradleTask + "\" to regenerate",
+                "// ****** Edit " + className(sourceClassJavaPath) + " and run \"./gradlew " + gradleTask
+                        + "\" to regenerate",
                 "//",
-                ""
-        ));
+                ""));
 
         out.print(body);
         out.flush();
@@ -612,7 +650,8 @@ public class ReplicatePrimitiveCode {
         return files;
     }
 
-    public static List<String> intToLongAndFloatingPoints(String gradleTask, String sourceClassJavaPath, String... exemptions)
+    public static List<String> intToLongAndFloatingPoints(String gradleTask, String sourceClassJavaPath,
+            String... exemptions)
             throws IOException {
         return intToLongAndFloatingPoints(gradleTask, sourceClassJavaPath, null, exemptions);
     }

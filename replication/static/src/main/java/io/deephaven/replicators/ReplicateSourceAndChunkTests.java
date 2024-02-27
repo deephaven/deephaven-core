@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -18,6 +18,7 @@ import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSourceAndChunkTests {
     private static final String TASK = "replicateSourceAndChunkTests";
+
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 
@@ -61,8 +62,9 @@ public class ReplicateSourceAndChunkTests {
         fixupObjectDeltaAwareColumnSourceTest(charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java"));
 
-        charToAllButBoolean(TASK, "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java");
-        fixupObjectTestSource(charToObject(TASK,TASK,
+        charToAllButBoolean(TASK,
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java");
+        fixupObjectTestSource(charToObject(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java"));
         charToAllButBoolean(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/ImmutableCharTestSource.java");
@@ -75,8 +77,10 @@ public class ReplicateSourceAndChunkTests {
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/FloatGenerator.java");
         charToAllButBooleanAndFloats(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/UniqueCharGenerator.java");
-        charToLong(TASK, "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java");
-        charToInteger(TASK, "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
+        charToLong(TASK,
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java");
+        charToInteger(TASK,
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
                 Collections.emptyMap());
         fixupSortedDoubleGenerator(charToDouble(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",

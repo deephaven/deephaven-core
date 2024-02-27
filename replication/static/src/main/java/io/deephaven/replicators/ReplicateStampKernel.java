@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import org.apache.commons.io.FileUtils;
@@ -17,6 +17,7 @@ import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateStampKernel {
     private static final String TASK = "replicateStampKernel";
+
     public static void main(String[] args) throws IOException {
         final String charStampPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharStampKernel.java";

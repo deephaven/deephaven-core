@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -17,15 +17,18 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateOperators {
     private static final String TASK = "replicateOperators";
+
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndFloats(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
+        charToAllButBooleanAndFloats(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedSumOperator.java");
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAvgOperator.java");
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedVarOperator.java");
-        floatToAllFloatingPoints(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumFloatChunk.java");
+        floatToAllFloatingPoints(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumFloatChunk.java");
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedSumOperator.java");
         floatToAllFloatingPoints(TASK,

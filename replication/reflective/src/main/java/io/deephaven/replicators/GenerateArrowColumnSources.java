@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import com.squareup.javapoet.AnnotationSpec;
@@ -318,10 +318,10 @@ public class GenerateArrowColumnSources {
                     "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
                     "//",
                     "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                    "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask + "\" to regenerate",
+                    "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
+                            + "\" to regenerate",
                     "//",
-                    ""
-            );
+                    "");
 
             Files.write(Paths.get(path), (header + javaFile).getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import com.squareup.javapoet.ClassName;
@@ -94,7 +94,8 @@ public class ReplicateTypedHashers {
         fileBuilder.addFileComment("Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending\n");
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
-        fileBuilder.addFileComment("****** Run " + ReplicateTypedHashers.class.getSimpleName() + " or ./gradlew replicateTypedHashers to regenerate\n");
+        fileBuilder.addFileComment("****** Run " + ReplicateTypedHashers.class.getSimpleName()
+                + " or ./gradlew replicateTypedHashers to regenerate\n");
         final JavaFile dispatcherFile = fileBuilder.build();
         dispatcherFile.writeTo(sourceRoot);
     }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import gnu.trove.set.hash.THashSet;
@@ -20,6 +20,7 @@ import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
+
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
@@ -93,7 +94,7 @@ public class ReplicateSegmentedSortedMultiset {
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
         fixupObjectKernelOperator(charToObject(TASK,
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
                 "ssms");
 
         charToAllButBooleanAndLong(TASK,

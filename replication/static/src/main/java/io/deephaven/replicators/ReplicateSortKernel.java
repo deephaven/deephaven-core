@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -22,6 +22,7 @@ import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSortKernel {
     private static final String TASK = "replicateSortKernel";
+
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
         replicateLongToByte();
@@ -138,7 +139,8 @@ public class ReplicateSortKernel {
         final String byteSortKernelPath = longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupByteSortKernel(byteSortKernelPath);
-        longToByte(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+        longToByte(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
