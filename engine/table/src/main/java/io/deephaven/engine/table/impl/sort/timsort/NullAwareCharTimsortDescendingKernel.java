@@ -1,9 +1,9 @@
 /**
  * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
-/****************************************************************************************************************************
- ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTimsortDescendingKernel and regenerate
- ****************************************************************************************************************************/
+/* ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTimsortDescendingKernel and regenerate
+ * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.util.QueryConstants;

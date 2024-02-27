@@ -2,8 +2,6 @@
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CloseablePrimitiveIteratorOfChar and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CloseablePrimitiveIteratorOfFloat and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.primitive.iterator;
 

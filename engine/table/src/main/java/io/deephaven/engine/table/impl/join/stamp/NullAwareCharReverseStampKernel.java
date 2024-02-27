@@ -1,9 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-/****************************************************************************************************************************
- ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStampKernel and regenerate
- ****************************************************************************************************************************/
+/* ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStampKernel and regenerate
+ * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.stamp;
 
 import io.deephaven.util.QueryConstants;

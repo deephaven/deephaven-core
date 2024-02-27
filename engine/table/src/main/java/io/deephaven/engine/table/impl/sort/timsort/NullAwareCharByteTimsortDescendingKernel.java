@@ -1,9 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-/****************************************************************************************************************************
- ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharByteTimsortDescendingKernel and regenerate
- ****************************************************************************************************************************/
+/* ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharByteTimsortDescendingKernel and regenerate
+ * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharLongTimsortDescendingKernel and regenerate

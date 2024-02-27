@@ -2,8 +2,6 @@
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharToIntFunction and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatToIntFunction and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.primitive.function;
 
