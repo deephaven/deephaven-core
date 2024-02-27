@@ -617,6 +617,35 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void someMoreKeyValuePartitionedTestsWithComplexKeys() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("symbol").withPartitioning(),
+                ColumnDefinition.ofString("epic_collection_id").withPartitioning(),
+                ColumnDefinition.ofString("epic_request_id").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("symbol = (i % 2 == 0) ? `AA` : `BB`",
+                        "epic_collection_id = (i % 2 == 0) ? `fss_tick%1234%4321` : `fss_tick%5678%8765`",
+                        "epic_request_id = (i % 2 == 0) ? `223ea-asd43` : `98dce-oiu23`",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "someTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
+                fromDisk.sort("symbol", "epic_collection_id"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
+                fromDiskWithMetadata.sort("symbol", "epic_collection_id"));
+    }
+
+    @Test
     public void testVectorColumns() {
         final Table table = getTableFlat(20000, true, false);
         // Take a groupBy to create vector columns containing null values
