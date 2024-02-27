@@ -15,7 +15,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -30,7 +30,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.deephaven.util.type.TypeUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,6 +78,10 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
     @SuppressWarnings("FieldCanBeLocal")
     private final ThreadGroup consumerThreadGroup;
     private final List<AsynchronousDataIngester> allSubtableAdapters;
+
+    private final InMemoryRowHolder.SingleRowSetter messageIdSetter;
+    private final InMemoryRowHolder.SingleRowSetter sendTimeSetter;
+    private final InMemoryRowHolder.SingleRowSetter receiveTimeSetter;
     private ShutdownManager.Task shutdownTask;
     private final ShutdownManager.OrderingCategory SHUTDOWN_TASK_ORDERING_CATEGORY =
             ShutdownManager.OrderingCategory.FIRST;
@@ -93,7 +96,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
      * TableWriter to write data to. TODO: replace this with a io.deephaven.stream.StreamPublisherImpl. Be mindful of
      * transactions -- flush() all rows at once. Maybe ensure that subtables are updated at the same time too.
      */
-    private final SimpleStreamPublisher streamPublisher;
+    final SimpleStreamPublisher streamPublisher;
 
     private final TObjectIntMap<String> colNameToColIdx;
     private final Map<String, Class<?>> colNameToType;
@@ -109,7 +112,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
     private final Map<String, Consumer<InMemoryRowHolder>> chunkPopulators;
 
     /**
-     * Field processors, which pull data out of parsed JSON messages)
+     * Field processors, which pull data out of parsed JSON messages
      */
     private final List<ObjIntConsumer<JsonNode>> fieldProcessors = new ArrayList<>();
 
@@ -215,6 +218,12 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
     private WritableChunk<Values>[] chunks = null;
 
     private int nowTimeColIdx = -1;
+    private final Supplier<InMemoryRowHolder> rowHolderFactory;
+
+    /**
+     * Copies data from the first row holder to the second.
+     */
+    private final Function<InMemoryRowHolder, InMemoryRowHolder> rowHolderCopier;
 
     JSONToStreamPublisherAdapter(@NotNull final SimpleStreamPublisher streamPublisher,
             @NotNull final Logger log,
@@ -259,6 +268,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                 columnsUnmapped,
                 autoValueMapping,
                 createHolders,
+                null,
+                null,
                 ThreadLocal.withInitial(ConcurrentLinkedDeque::new),
                 postProcessConsumer,
                 false);
@@ -285,6 +296,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
      * @param allowedUnmappedColumns
      * @param autoValueMapping
      * @param createHolders Whether to create the InMemmoryRowHolders and associated thread pool.
+     * @param setterFactoryFromParent
+     * @param deferredArrayFieldProcessorCreatorsFromParent
      * @param subtableProcessingQueueThreadLocal
      * @param postProcessConsumer
      */
@@ -310,6 +323,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             @NotNull final Set<String> allowedUnmappedColumns,
             final boolean autoValueMapping,
             final boolean createHolders,
+            final InMemoryRowHolder.SetterFactory setterFactoryFromParent,
+            final List<Runnable> deferredArrayFieldProcessorCreatorsFromParent,
             final ThreadLocal<Queue<SubtableData<JSONToStreamPublisherAdapter>>> subtableProcessingQueueThreadLocal,
             @Nullable final BiConsumer<MessageMetadata, JsonNode> postProcessConsumer,
             final boolean isSubtableAdapter) {
@@ -327,6 +342,24 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         chunkPopulators = new LinkedHashMap<>(streamPublisher.getTableDefinition().numColumns());
 
         instanceId = instanceCounter.getAndIncrement();
+
+        // factory for creating setters for field consumers. these store the position in the
+        // InMemoryRowHolder's data arrays in which the value will be set.
+        // TODO: nested adapters need to use the parent's setterFactory!
+        // TODO: the array fields from the nested adapters also need to be at the end!
+        final InMemoryRowHolder.SetterFactory setterFactory;
+        // It is imperative that the array field processors be created *last*. This ensures that the array fields
+        // are at the end of the data arrays in the InMemoryRowHolders, which allows all earlier fields to be copied
+        // to each row created by expanding the array fields.
+        // TODO: for nested field builders, this needs to use the array from the parent
+        final List<Runnable> deferredArrayFieldProcessorCreators;
+        if (createHolders) {
+            setterFactory = new InMemoryRowHolder.SetterFactory();
+            deferredArrayFieldProcessorCreators = new ArrayList<>();
+        } else {
+            setterFactory = setterFactoryFromParent;
+            deferredArrayFieldProcessorCreators = deferredArrayFieldProcessorCreatorsFromParent;
+        }
 
 
         final TableDefinition tableDefinition = streamPublisher.getTableDefinition();
@@ -366,6 +399,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         final List<String> allColumns = List.copyOf(outputColumnNames);
 
         final List<String> missingColumns = new ArrayList<>();
+
         for (final String columnName : expectedColNamesArr) {
             if (nestedColumns.contains(columnName)) {
                 continue;
@@ -378,22 +412,24 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                 continue;
             }
             if (columnToJsonField.containsKey(columnName)) {
-                makeFieldProcessors(columnName, columnToJsonField.get(columnName));
+                makeFieldProcessors(columnName, columnToJsonField.get(columnName), setterFactory);
             } else if (columnToJsonPointer.containsKey(columnName)) {
-                makeJsonPointerFieldProcessor(columnName, columnToJsonPointer.get(columnName));
+                makeJsonPointerFieldProcessor(columnName, columnToJsonPointer.get(columnName), setterFactory);
             } else if (columnToIntFunctions.containsKey(columnName)) {
-                makeIntFunctionFieldProcessor(columnName, columnToIntFunctions.get(columnName));
+                makeIntFunctionFieldProcessor(columnName, columnToIntFunctions.get(columnName), setterFactory);
             } else if (columnToLongFunctions.containsKey(columnName)) {
-                makeLongFunctionFieldProcessor(columnName, columnToLongFunctions.get(columnName));
+                makeLongFunctionFieldProcessor(columnName, columnToLongFunctions.get(columnName), setterFactory);
             } else if (columnToDoubleFunctions.containsKey(columnName)) {
-                makeDoubleFunctionFieldProcessor(columnName, columnToDoubleFunctions.get(columnName));
+                makeDoubleFunctionFieldProcessor(columnName, columnToDoubleFunctions.get(columnName), setterFactory);
             } else if (columnToObjectFunctions.containsKey(columnName)) {
                 final Pair<Class<?>, Function<JsonNode, ?>> classFunctionPair = columnToObjectFunctions.get(columnName);
-                makeFunctionFieldProcessor(columnName, classFunctionPair.first, classFunctionPair.second);
+                makeFunctionFieldProcessor(columnName, classFunctionPair.first, classFunctionPair.second,
+                        setterFactory);
             } else if (columnToParallelField.containsKey(columnName)) {
-                makeArrayFieldProcessors(columnName, columnToParallelField.get(columnName));
+                deferredArrayFieldProcessorCreators.add(() -> makeArrayFieldProcessors(columnName,
+                        columnToParallelField.get(columnName), setterFactory));
             } else if (autoValueMapping) {
-                makeFieldProcessors(columnName, columnName);
+                makeFieldProcessors(columnName, columnName, setterFactory);
             } else {
                 missingColumns.add(columnName);
             }
@@ -420,7 +456,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                         fieldToSubtablePublisher,
                         allowMissingKeys,
                         allowNullValues,
-                        null);
+                        null,
+                        setterFactory);
             } catch (RuntimeException ex) {
                 throw new JSONIngesterException(
                         "Failed creating field processor for subtable field \"" + fieldName + '"', ex);
@@ -447,7 +484,9 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                         subtablePublisher,
                         fieldToSubtablePublisher,
                         allowMissingKeys,
-                        allowNullValues, routedTablePredicate);
+                        allowNullValues,
+                        routedTablePredicate,
+                        setterFactory);
             } catch (RuntimeException ex) {
                 throw new JSONIngesterException(
                         "Failed creating field processor for routed table \"" + routedTableIdentifier + '"', ex);
@@ -460,7 +499,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             final String fieldName = nestedFieldEntry.getKey();
             try {
                 makeCompositeFieldProcessor(streamPublisher, fieldToSubtablePublisher, allColumns, fieldName,
-                        nestedFieldEntry.getValue());
+                        nestedFieldEntry.getValue(), setterFactory, deferredArrayFieldProcessorCreators);
             } catch (RuntimeException ex) {
                 throw new JSONIngesterException(
                         "Failed creating field processor for nested field \"" + fieldName + '"', ex);
@@ -473,7 +512,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                 try {
                     makeCompositeFieldProcessor(streamPublisher, fieldToSubtablePublisher, allColumns,
                             jsonPointerHeadFieldName,
-                            new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false));
+                            new JSONToStreamPublisherAdapterBuilder().autoValueMapping(false), setterFactory,
+                            deferredArrayFieldProcessorCreators);
                 } catch (RuntimeException ex) {
                     throw new JSONIngesterException(
                             "Failed creating field processor for field from JsonPointer \"" + jsonPointerHeadFieldName
@@ -489,8 +529,11 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             outputColumnNames.removeAll(nestedParallelFieldEntry.getValue().getDefinedColumns());
             final String fieldName = nestedParallelFieldEntry.getKey();
             try {
-                makeCompositeParallelFieldProcessor(streamPublisher, fieldToSubtablePublisher, allColumns,
-                        fieldName, nestedParallelFieldEntry.getValue());
+                // See note above about how it is imperative that array field processors be created last
+                deferredArrayFieldProcessorCreators.add(
+                        () -> makeCompositeParallelFieldProcessor(streamPublisher, fieldToSubtablePublisher, allColumns,
+                                fieldName, nestedParallelFieldEntry.getValue(), setterFactory,
+                                deferredArrayFieldProcessorCreators));
             } catch (RuntimeException ex) {
                 throw new JSONIngesterException("Failed creating field processor for nested parallel field \""
                         + fieldName + '"', ex);
@@ -523,6 +566,62 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             throw new JSONIngesterException(
                     "Found mappings that do not correspond to this table: " + outputColumnNames);
         }
+
+        if (isNestedAdapter) {
+            // Nested adapter do not process metadata
+            messageIdSetter = null;
+            sendTimeSetter = null;
+            receiveTimeSetter = null;
+
+            rowHolderFactory = null;
+            rowHolderCopier = null;
+        } else {
+            if (!isSubtableAdapter) {
+                // Always create setters for the message metadata fields for the outermost adapter, even though they may
+                // not be used. (We don't at construction whether we need them -- they are only used if setOwner() is
+                // called.
+                messageIdSetter = setterFactory.createNextSetter(String.class);
+                sendTimeSetter = setterFactory.createNextSetter(Instant.class);
+                receiveTimeSetter = setterFactory.createNextSetter(Instant.class);
+            } else {
+                messageIdSetter = null;
+                sendTimeSetter = null;
+                receiveTimeSetter = null;
+            }
+
+            // Create the "row holder copier", which copies data from all non-array fields into a new holder
+            final int arrayFieldStartPosBoolean = setterFactory.getNextBooleanPos();
+            final int arrayFieldStartPosChar = setterFactory.getNextCharPos();
+            final int arrayFieldStartPosByte = setterFactory.getNextBytePos();
+            final int arrayFieldStartPosShort = setterFactory.getNextShortPos();
+            final int arrayFieldStartPosInt = setterFactory.getNextIntPos();
+            final int arrayFieldStartPosFloat = setterFactory.getNextFloatPos();
+            final int arrayFieldStartPosLong = setterFactory.getNextLongPos();
+            final int arrayFieldStartPosDouble = setterFactory.getNextDoublePos();
+            final int arrayFieldStartPosObject = setterFactory.getNextObjectPos();
+            rowHolderCopier = (existingHolder) -> {
+                final InMemoryRowHolder newHolder = createRowHolder();
+                newHolder.copyDataFrom(existingHolder,
+                        arrayFieldStartPosBoolean,
+                        arrayFieldStartPosChar,
+                        arrayFieldStartPosByte,
+                        arrayFieldStartPosShort,
+                        arrayFieldStartPosInt,
+                        arrayFieldStartPosFloat,
+                        arrayFieldStartPosLong,
+                        arrayFieldStartPosDouble,
+                        arrayFieldStartPosObject);
+                return newHolder;
+            };
+
+            // Now create the array field processors. The data from the array fields will be stored at the end of the
+            // holders' data arrays.
+            deferredArrayFieldProcessorCreators.forEach(Runnable::run);
+
+            rowHolderFactory = setterFactory.createRowHolderFactory();
+        }
+
+
 
         // A value must be added for ***ALL CHUNKS***, including the unmapped ones.
         // (otherwise, when processing a record, some columns' chunks will have 1 value appended and others will have 0)
@@ -699,7 +798,9 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             final Map<String, SimpleStreamPublisher> subtablePublishers,
             final List<String> allColumns,
             final String fieldName,
-            final JSONToStreamPublisherAdapterBuilder originalNestedBuilder) {
+            final JSONToStreamPublisherAdapterBuilder originalNestedBuilder,
+            @NotNull final InMemoryRowHolder.SetterFactory setterFactory,
+            @NotNull final List<Runnable> deferredArrayFieldProcessorCreators) {
 
         // Build a new set of columns that are allowed to be unmapped, as far as the nested field processor is
         // concerned.
@@ -729,7 +830,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
         final JSONToStreamPublisherAdapter nestedAdapter =
                 builderWithPointers.makeNestedAdapter(log, publisher, subtablePublishers, newAllowedUnmapped,
-                        subtableProcessingQueueThreadLocal);
+                        setterFactory,
+                        deferredArrayFieldProcessorCreators, subtableProcessingQueueThreadLocal);
         nestedAdapters.add(nestedAdapter);
 
         // we make a single field processor that in turn calls the nested adapter's field processors after extracting
@@ -761,7 +863,9 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             final Map<String, SimpleStreamPublisher> subtablePublishers,
             final List<String> allColumns,
             final String fieldName,
-            final JSONToStreamPublisherAdapterBuilder nestedBuilder) {
+            final JSONToStreamPublisherAdapterBuilder nestedBuilder,
+            @NotNull final InMemoryRowHolder.SetterFactory setterFactory,
+            @NotNull final List<Runnable> deferredArrayFieldProcessorCreators) {
         final Set<String> newUnmapped = new HashSet<>(allColumns);
         newUnmapped.removeAll(nestedBuilder.getDefinedColumns());
 
@@ -770,7 +874,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
         final JSONToStreamPublisherAdapter nestedAdapter =
                 nestedBuilder.makeNestedAdapter(log, publisher, subtablePublishers, newUnmapped,
-                        subtableProcessingQueueThreadLocal);
+                        setterFactory, deferredArrayFieldProcessorCreators, subtableProcessingQueueThreadLocal);
         nestedAdapters.add(nestedAdapter);
 
         arrayFieldNames.add(fieldName);
@@ -803,6 +907,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
      * @param subtableKeyAllowedNull Whether {@code fieldName} is allowed to have a null value. Ignored when
      *        {@code isRoutedTable} is {@code true}.
      * @param subtablePredicate A predicate to evaluate for the node, to determine whether the node should be processed.
+     * @param setterFactory
      */
     private void makeSubtableFieldProcessor(
             @NotNull final String fieldName,
@@ -812,7 +917,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             @NotNull final Map<String, SimpleStreamPublisher> allSubtablePublishers,
             final boolean subtableKeyAllowedMissing,
             final boolean subtableKeyAllowedNull,
-            final Predicate<JsonNode> subtablePredicate) {
+            final Predicate<JsonNode> subtablePredicate,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
 
         // Subtable record counter, mapping each row of the parent table to the corresponding rows of the subtable.
         // TODO: it would be better to use a unique parent message ID if available. (Pull it out of the holder?)
@@ -866,9 +972,14 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
          */
         final Class<?> subtableRowIdColType = long.class;
 
+        // store the idx in the rowSetter (later, the fieldSetter will add it to the table)
+        // note that this will only work correctly when single-threaded. (TODO: is that still true?)
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(subtableRowIdColType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
         final ObjIntConsumer<JsonNode> fieldProcessor;
-        // TODO: just write to the corresponding chunk directly, instead of into the InMemoryRowHolder?
-        final MutableInt position = new MutableInt();
+
         fieldProcessor = (JsonNode record, int holderNumber) -> {
             // index of the next record being processed into the subtable
             // TODO: holders[holderNumber].getMessageNumber() should be fine
@@ -886,19 +997,15 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                         JsonNodeUtil.checkAllowMissingOrNull(record, fieldName, allowMissingKeys, allowNullValues);
             }
 
-            // store the idx in the rowSetter (later, the fieldSetter will add it to the table)
-            // note that this will only work correctly when single-threaded
-            final InMemoryRowHolder.SingleRowSetter rowSetter =
-                    getSingleRowSetterAndCapturePosition(subtableRowIdColNameInParent, subtableRowIdColType, position,
-                            holderNumber);
-
             if (subtablePredicate == null || subtablePredicate.test(subtableFieldValue)) {
-                rowSetter.setLong(subtableRecordIdxVal);
+                setter.setLong(holders[holderNumber], subtableRecordIdxVal);
                 // Enqueue the subtable node to be processed by the subtable adapter (this happens after all the main
                 // fieldProcessors have been processed)
                 final Queue<SubtableData<JSONToStreamPublisherAdapter>> subtableProcessingQueue =
                         subtableProcessingQueueThreadLocal.get();
                 subtableProcessingQueue.add(new SubtableData<>(subtableProcessingParameters, subtableFieldValue));
+            } else {
+                setter.setLong(holders[holderNumber], QueryConstants.NULL_LONG);
             }
         };
 
@@ -909,14 +1016,15 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
         final Consumer<InMemoryRowHolder> fieldSetterParent =
                 (InMemoryRowHolder holder) -> chunks[subtableRowIdColIdx].asWritableLongChunk()
-                        .add(holder.getLong(position.intValue()));
+                        .add(holder.getLong(dataPosInHolderArr));
         putChunkPopulator(subtableRowIdColNameInParent, fieldSetterParent);
     }
 
     private void makeFunctionFieldProcessor(
             final String columnName,
             final Class<?> returnType,
-            final Function<JsonNode, ?> function) {
+            final Function<JsonNode, ?> function,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
@@ -926,66 +1034,68 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         }
         final Consumer<InMemoryRowHolder> fieldSetter;
         final ObjIntConsumer<JsonNode> fieldConsumer;
-        final MutableInt position = new MutableInt(0);
+
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
 
         if (colType == boolean.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setBoolean(TypeUtils.unbox((Boolean) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setBooleanPrimitive(holders[holderNumber],
+                    TypeUtils.unbox((Boolean) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableBooleanChunk()
-                    .add(holder.getBoolean(position.intValue()));
+                    .add(holder.getBooleanPrimitive(dataPosInHolderArr));
         } else if (colType == Boolean.class) {
             // Note that Booleans are stored as bytes. See io.deephaven.util.BooleanUtils.
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setBoolean((Boolean) function.apply(record));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setBooleanObj(holders[holderNumber],
+                    (Boolean) function.apply(record));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == char.class || colType == Character.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setChar(TypeUtils.unbox((Character) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setChar(holders[holderNumber],
+                    TypeUtils.unbox((Character) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableCharChunk()
-                    .add(holder.getChar(position.intValue()));
+                    .add(holder.getChar(dataPosInHolderArr));
         } else if (colType == byte.class || colType == Byte.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setByte(TypeUtils.unbox((Byte) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setByte(holders[holderNumber],
+                    TypeUtils.unbox((Byte) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == short.class || colType == Short.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setShort(TypeUtils.unbox((Short) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setShort(holders[holderNumber],
+                    TypeUtils.unbox((Short) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableShortChunk()
-                    .add(holder.getShort(position.intValue()));
+                    .add(holder.getShort(dataPosInHolderArr));
         } else if (colType == int.class || colType == Integer.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setInt(TypeUtils.unbox((Integer) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setInt(holders[holderNumber],
+                    TypeUtils.unbox((Integer) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableIntChunk()
-                    .add(holder.getInt(position.intValue()));
+                    .add(holder.getInt(dataPosInHolderArr));
         } else if (colType == long.class || colType == Long.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setLong(TypeUtils.unbox((Long) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setLong(holders[holderNumber],
+                    TypeUtils.unbox((Long) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else if (colType == float.class || colType == Float.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setFloat(TypeUtils.unbox((Float) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setFloat(holders[holderNumber],
+                    TypeUtils.unbox((Float) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableFloatChunk()
-                    .add(holder.getFloat(position.intValue()));
+                    .add(holder.getFloat(dataPosInHolderArr));
         } else if (colType == double.class || colType == Double.class) {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).setDouble(TypeUtils.unbox((Double) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setDouble(holders[holderNumber],
+                    TypeUtils.unbox((Double) function.apply(record)));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableDoubleChunk()
-                    .add(holder.getDouble(position.intValue()));
+                    .add(holder.getDouble(dataPosInHolderArr));
         } else if (colType == Instant.class) {
             // Note that Instants are stored as longs
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber)
-                    .setLong(DateTimeUtils.epochNanos((Instant) function.apply(record)));
+            fieldConsumer = (JsonNode record, int holderNumber) -> setter.setInstant(holders[holderNumber],
+                    (Instant) function.apply(record));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else {
-            fieldConsumer = (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    returnType, position, holderNumber).set(function.apply(record));
+            fieldConsumer =
+                    (JsonNode record, int holderNumber) -> setter.set(holders[holderNumber], function.apply(record));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableObjectChunk()
-                    .add(holder.getObject(position.intValue()));
+                    .add(holder.getObject(dataPosInHolderArr));
         }
         fieldProcessors.add(fieldConsumer);
         putChunkPopulator(columnName, fieldSetter);
@@ -993,7 +1103,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
     private void makeIntFunctionFieldProcessor(
             final String columnName,
-            final ToIntFunction<JsonNode> function) {
+            final ToIntFunction<JsonNode> function,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
@@ -1002,20 +1113,21 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                     "Column " + columnName + " is of type " + colType + ", can not assign ToIntFunction.");
         }
 
-        final MutableInt position = new MutableInt();
-        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record,
-                int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, int.class, position, holderNumber)
-                        .setInt(function.applyAsInt(record));
-        final Consumer<InMemoryRowHolder> fieldProcessor =
-                (InMemoryRowHolder holder) -> chunks[colIdx].asWritableIntChunk()
-                        .add(holder.getInt(position.intValue()));
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
+        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> setter
+                .setInt(holders[holderNumber], function.applyAsInt(record));
+        final Consumer<InMemoryRowHolder> fieldProcessor = (InMemoryRowHolder holder) -> chunks[colIdx]
+                .asWritableIntChunk().add(holder.getInt(dataPosInHolderArr));
         fieldProcessors.add(fieldConsumer);
         putChunkPopulator(columnName, fieldProcessor);
     }
 
     private void makeLongFunctionFieldProcessor(
             final String columnName,
-            final ToLongFunction<JsonNode> function) {
+            final ToLongFunction<JsonNode> function, InMemoryRowHolder.SetterFactory setterFactory) {
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
@@ -1024,20 +1136,22 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                     "Column " + columnName + " is of type " + colType + ", can not assign ToLongFunction.");
         }
 
-        final MutableInt position = new MutableInt();
-        final ObjIntConsumer<JsonNode> fieldConsumer =
-                (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, long.class,
-                        position, holderNumber).setLong(function.applyAsLong(record));
-        final Consumer<InMemoryRowHolder> fieldProcessor =
-                (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                        .add(holder.getLong(position.intValue()));
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
+        final ObjIntConsumer<JsonNode> fieldConsumer = (JsonNode record, int holderNumber) -> setter
+                .setLong(holders[holderNumber], function.applyAsLong(record));
+        final Consumer<InMemoryRowHolder> fieldProcessor = (InMemoryRowHolder holder) -> chunks[colIdx]
+                .asWritableLongChunk().add(holder.getLong(dataPosInHolderArr));
         fieldProcessors.add(fieldConsumer);
         putChunkPopulator(columnName, fieldProcessor);
     }
 
     private void makeDoubleFunctionFieldProcessor(
             final String columnName,
-            final ToDoubleFunction<JsonNode> function) {
+            final ToDoubleFunction<JsonNode> function,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
@@ -1046,28 +1160,33 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                     "Column " + columnName + " is of type " + colType + ", can not assign ToDoubleFunction.");
         }
 
-        final MutableInt position = new MutableInt();
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
         final ObjIntConsumer<JsonNode> fieldConsumer =
-                (JsonNode record, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, double.class,
-                        position, holderNumber).setDouble(function.applyAsDouble(record));
+                (JsonNode record, int holderNumber) -> setter.setDouble(holders[holderNumber],
+                        function.applyAsDouble(record));
         final Consumer<InMemoryRowHolder> fieldProcessor =
                 (InMemoryRowHolder holder) -> chunks[colIdx].asWritableDoubleChunk()
-                        .add(holder.getDouble(position.intValue()));
+                        .add(holder.getDouble(dataPosInHolderArr));
         fieldProcessors.add(fieldConsumer);
         putChunkPopulator(columnName, fieldProcessor);
     }
 
     private void makeFieldProcessors(final String columnName,
-            final String fieldName) {
+            final String fieldName,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> p =
-                makeFieldProcessorAndSetter(columnName, fieldName);
+                makeFieldProcessorAndSetter(columnName, fieldName, setterFactory);
         fieldProcessors.add(p.first);
         putChunkPopulator(columnName, p.second);
     }
 
     private void makeJsonPointerFieldProcessor(
             final String columnName,
-            final JsonPointer jsonPointer) {
+            final JsonPointer jsonPointer,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
 
         if (!nestedAdapters.isEmpty()) {
             throw new IllegalStateException("Nested adapter cannot be created before JsonPointers are processed");
@@ -1076,7 +1195,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
         if (jsonPointer.matches()) {
             final Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> p =
-                    makeFieldProcessorAndSetterNode(columnName);
+                    makeFieldProcessorAndSetterNode(columnName, setterFactory);
             fieldProcessors.add(p.first);
             putChunkPopulator(columnName, p.second);
             return;
@@ -1096,20 +1215,20 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         }
 
         final Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> p =
-                makeJsonPointerFieldProcessorAndSetter(columnName, jsonPointer);
+                makeJsonPointerFieldProcessorAndSetter(columnName, jsonPointer, setterFactory);
         fieldProcessors.add(p.first);
         putChunkPopulator(columnName, p.second);
     }
 
     private Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> makeFieldProcessorAndSetter(
             final String columnName,
-            final String fieldName) {
+            final String fieldName,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
         final Consumer<InMemoryRowHolder> fieldSetter;
         final ObjIntConsumer<JsonNode> fieldConsumer;
-        final MutableInt position = new MutableInt();
         // TODO: how does this work with threading? aren't the consumers run by multiple threads at once?
         /*
          * TODO: Why use these MutableInts? The position of each field in the InMemoryRowHolders is fixed anyway
@@ -1119,85 +1238,79 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
          * That also suggest that the InMemoryRowHolder could have properly-sized type-specific arrays, instead of
          * sticking everything into an Object[]
          */
+
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
         if (colType == boolean.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setBoolean(
-                                    JsonNodeUtil.getBoolean(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setBooleanPrimitive(holders[holderNumber],
+                            JsonNodeUtil.getBoolean(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableBooleanChunk()
-                    .add(holder.getBoolean(position.intValue()));
+                    .add(holder.getBooleanPrimitive(dataPosInHolderArr));
         } else if (colType == Boolean.class) {
             // Note that Booleans are stored as bytes. See io.deephaven.util.BooleanUtils.
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setBoolean(
-                                    JsonNodeUtil.getBoolean(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setBooleanObj(holders[holderNumber],
+                            JsonNodeUtil.getBoolean(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == char.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setChar(
-                                    JsonNodeUtil.getChar(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setChar(holders[holderNumber],
+                            JsonNodeUtil.getChar(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableCharChunk()
-                    .add(holder.getChar(position.intValue()));
+                    .add(holder.getChar(dataPosInHolderArr));
         } else if (colType == byte.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setByte(
-                                    JsonNodeUtil.getByte(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setByte(holders[holderNumber],
+                            JsonNodeUtil.getByte(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == short.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setShort(
-                                    JsonNodeUtil.getShort(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setShort(holders[holderNumber],
+                            JsonNodeUtil.getShort(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableShortChunk()
-                    .add(holder.getShort(position.intValue()));
+                    .add(holder.getShort(dataPosInHolderArr));
         } else if (colType == int.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber)
-                            .setInt(JsonNodeUtil.getInt(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setInt(holders[holderNumber],
+                            JsonNodeUtil.getInt(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableIntChunk()
-                    .add(holder.getInt(position.intValue()));
+                    .add(holder.getInt(dataPosInHolderArr));
         } else if (colType == long.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setLong(
-                                    JsonNodeUtil.getLong(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setLong(holders[holderNumber],
+                            JsonNodeUtil.getLong(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else if (colType == float.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setFloat(
-                                    JsonNodeUtil.getFloat(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setFloat(holders[holderNumber],
+                            JsonNodeUtil.getFloat(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableFloatChunk()
-                    .add(holder.getFloat(position.intValue()));
+                    .add(holder.getFloat(dataPosInHolderArr));
         } else if (colType == double.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setDouble(
-                                    JsonNodeUtil.getDouble(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setDouble(holders[holderNumber],
+                            JsonNodeUtil.getDouble(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableDoubleChunk()
-                    .add(holder.getDouble(position.intValue()));
+                    .add(holder.getDouble(dataPosInHolderArr));
         } else if (colType == String.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber)
-                            .set(JsonNodeUtil.getString(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.set(holders[holderNumber],
+                            JsonNodeUtil.getString(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableObjectChunk()
-                    .add(holder.getObject(position.intValue()));
+                    .add(holder.getObject(dataPosInHolderArr));
         } else if (colType == Instant.class) {
             // Note that Instants are stored as longs
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).set(
-                                    JsonNodeUtil.getInstant(record, fieldName, allowMissingKeys, allowNullValues));
+                    int holderNumber) -> setter.setInstant(holders[holderNumber],
+                            JsonNodeUtil.getInstant(record, fieldName, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else {
             throw new UnsupportedOperationException("Can not convert JSON field to " + colType + " for column "
                     + columnName + " (field " + fieldName + ")");
@@ -1244,70 +1357,76 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
     }
 
     private Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> makeFieldProcessorAndSetterNode(
-            final String columnName) {
+            final String columnName,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
+
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
         final Consumer<InMemoryRowHolder> fieldSetter;
         final ObjIntConsumer<JsonNode> fieldConsumer;
-        final MutableInt position = new MutableInt();
+
         if (colType == boolean.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setBoolean(JsonNodeUtil.getBoolean(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setBooleanPrimitive(holders[holderNumber],
+                    Objects.requireNonNull(JsonNodeUtil.getBoolean(node), () -> "field for column: " + columnName));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableBooleanChunk()
-                    .add(holder.getBoolean(position.intValue()));
+                    .add(holder.getBooleanPrimitive(dataPosInHolderArr));
         } else if (colType == Boolean.class) {
             // Note that Booleans are stored as bytes. See io.deephaven.util.BooleanUtils.
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setBoolean(JsonNodeUtil.getBoolean(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setBooleanObj(holders[holderNumber],
+                    JsonNodeUtil.getBoolean(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == char.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setChar(JsonNodeUtil.getChar(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setChar(holders[holderNumber],
+                    JsonNodeUtil.getChar(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableCharChunk()
-                    .add(holder.getChar(position.intValue()));
+                    .add(holder.getChar(dataPosInHolderArr));
         } else if (colType == byte.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setByte(JsonNodeUtil.getByte(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setByte(holders[holderNumber],
+                    JsonNodeUtil.getByte(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == short.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setShort(JsonNodeUtil.getShort(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setShort(holders[holderNumber],
+                    JsonNodeUtil.getShort(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableShortChunk()
-                    .add(holder.getShort(position.intValue()));
+                    .add(holder.getShort(dataPosInHolderArr));
         } else if (colType == int.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setInt(JsonNodeUtil.getInt(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setInt(holders[holderNumber],
+                    JsonNodeUtil.getInt(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableIntChunk()
-                    .add(holder.getInt(position.intValue()));
+                    .add(holder.getInt(dataPosInHolderArr));
         } else if (colType == long.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setLong(JsonNodeUtil.getLong(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setLong(holders[holderNumber],
+                    JsonNodeUtil.getLong(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else if (colType == float.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setFloat(JsonNodeUtil.getFloat(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setFloat(holders[holderNumber],
+                    JsonNodeUtil.getFloat(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableFloatChunk()
-                    .add(holder.getFloat(position.intValue()));
+                    .add(holder.getFloat(dataPosInHolderArr));
         } else if (colType == double.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).setDouble(JsonNodeUtil.getDouble(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setDouble(holders[holderNumber],
+                    JsonNodeUtil.getDouble(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableDoubleChunk()
-                    .add(holder.getDouble(position.intValue()));
+                    .add(holder.getDouble(dataPosInHolderArr));
         } else if (colType == String.class) {
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).set(JsonNodeUtil.getString(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.set(holders[holderNumber],
+                    JsonNodeUtil.getString(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableObjectChunk()
-                    .add(holder.getObject(position.intValue()));
+                    .add(holder.getObject(dataPosInHolderArr));
         } else if (colType == Instant.class) {
             // Note that Instants are stored as longs
-            fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    colType, position, holderNumber).set(JsonNodeUtil.getInstant(node));
+            fieldConsumer = (JsonNode node, int holderNumber) -> setter.setInstant(holders[holderNumber],
+                    JsonNodeUtil.getInstant(node));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else {
             throw new UnsupportedOperationException(
                     "Can not convert JSON field to " + colType + " for column " + columnName);
@@ -1317,87 +1436,86 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
     private Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> makeJsonPointerFieldProcessorAndSetter(
             final String columnName,
-            final JsonPointer jsonPointer) {
+            final JsonPointer jsonPointer,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final int colIdx = colNameToColIdx.get(columnName);
         final Class<?> colType = colNameToType.get(columnName);
 
+        final InMemoryRowHolder.SingleRowSetter setter = setterFactory.createNextSetter(colType);
+        final int dataPosInHolderArr = setter.getThisPosition(); // position within setter's array at which data is
+                                                                 // stored
+
         final Consumer<InMemoryRowHolder> fieldSetter;
         final ObjIntConsumer<JsonNode> fieldConsumer;
-        final MutableInt position = new MutableInt();
-        // TODO: how does this MutableInt work with threading? aren't the consumers run by multiple threads at once?
-        if (colType == boolean.class || colType == Boolean.class) {
+
+        if (colType == boolean.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setBoolean(
-                                    JsonNodeUtil.getBoolean(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setBooleanPrimitive(holders[holderNum],
+                            JsonNodeUtil.getBoolean(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableBooleanChunk()
-                    .add(holder.getBoolean(position.intValue()));
+                    .add(holder.getBooleanPrimitive(dataPosInHolderArr));
+        } else if (colType == Boolean.class) {
+            fieldConsumer = (JsonNode record,
+                    int holderNum) -> setter.setBooleanObj(holders[holderNum],
+                            JsonNodeUtil.getBoolean(record, jsonPointer, allowMissingKeys, allowNullValues));
+            fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == char.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setChar(
-                                    JsonNodeUtil.getChar(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setChar(holders[holderNum],
+                            JsonNodeUtil.getChar(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableCharChunk()
-                    .add(holder.getChar(position.intValue()));
+                    .add(holder.getChar(dataPosInHolderArr));
         } else if (colType == byte.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setByte(
-                                    JsonNodeUtil.getByte(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setByte(holders[holderNum],
+                            JsonNodeUtil.getByte(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableByteChunk()
-                    .add(holder.getByte(position.intValue()));
+                    .add(holder.getByte(dataPosInHolderArr));
         } else if (colType == short.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setShort(
-                                    JsonNodeUtil.getShort(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setShort(holders[holderNum],
+                            JsonNodeUtil.getShort(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableShortChunk()
-                    .add(holder.getShort(position.intValue()));
+                    .add(holder.getShort(dataPosInHolderArr));
         } else if (colType == int.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber)
-                            .setInt(JsonNodeUtil.getInt(record, jsonPointer, allowMissingKeys,
-                                    allowNullValues));
+                    int holderNum) -> setter.setInt(holders[holderNum],
+                            JsonNodeUtil.getInt(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableIntChunk()
-                    .add(holder.getInt(position.intValue()));
+                    .add(holder.getInt(dataPosInHolderArr));
         } else if (colType == long.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setLong(
-                                    JsonNodeUtil.getLong(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setLong(holders[holderNum],
+                            JsonNodeUtil.getLong(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else if (colType == float.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setFloat(
-                                    JsonNodeUtil.getFloat(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setFloat(holders[holderNum],
+                            JsonNodeUtil.getFloat(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableFloatChunk()
-                    .add(holder.getFloat(position.intValue()));
+                    .add(holder.getFloat(dataPosInHolderArr));
         } else if (colType == double.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).setDouble(
-                                    JsonNodeUtil.getDouble(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setDouble(holders[holderNum],
+                            JsonNodeUtil.getDouble(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableDoubleChunk()
-                    .add(holder.getDouble(position.intValue()));
+                    .add(holder.getDouble(dataPosInHolderArr));
         } else if (colType == String.class) {
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber)
-                            .set(JsonNodeUtil.getString(record, jsonPointer, allowMissingKeys,
+                    int holderNum) -> setter.set(holders[holderNum],
+                            JsonNodeUtil.getString(record, jsonPointer, allowMissingKeys,
                                     allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableObjectChunk()
-                    .add(holder.getObject(position.intValue()));
+                    .add(holder.getObject(dataPosInHolderArr));
         } else if (colType == Instant.class) {
             // Note that Instants are stored as longs
             fieldConsumer = (JsonNode record,
-                    int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, colType, position,
-                            holderNumber).set(
-                                    JsonNodeUtil.getInstant(record, jsonPointer, allowMissingKeys, allowNullValues));
+                    int holderNum) -> setter.setInstant(holders[holderNum],
+                            JsonNodeUtil.getInstant(record, jsonPointer, allowMissingKeys, allowNullValues));
             fieldSetter = (InMemoryRowHolder holder) -> chunks[colIdx].asWritableLongChunk()
-                    .add(holder.getLong(position.intValue()));
+                    .add(holder.getLong(dataPosInHolderArr));
         } else {
             throw new UnsupportedOperationException("Can not convert JSON field to " + colType + " for column "
                     + columnName + " (pointer: " + jsonPointer + ")");
@@ -1407,31 +1525,13 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
     private void makeArrayFieldProcessors(
             final String columnName,
-            final String fieldName) {
+            final String fieldName,
+            final InMemoryRowHolder.SetterFactory setterFactory) {
         final Pair<ObjIntConsumer<JsonNode>, Consumer<InMemoryRowHolder>> p =
-                makeFieldProcessorAndSetterNode(columnName);
+                makeFieldProcessorAndSetterNode(columnName, setterFactory);
         arrayFieldNames.add(fieldName);
         arrayFieldProcessors.add(p.first);
         chunkPopulators.put(columnName, p.second);
-    }
-
-    /**
-     * Get a SingleRowSetter and capture the position within the relevant holder's data array for the object controlled
-     * by that setter.
-     *
-     * @param columnName The name of the column being populated
-     * @param setterType The class of the column being populated
-     * @param position The AtomicInteger whose value will be set (this must be final to be used in the lambdas where
-     *        this can be called)
-     * @param holderNumber Which RowHolder this is operating on
-     * @return The resultant SingleRowSetter from the RowHolder for this column.
-     */
-    @NotNull
-    private InMemoryRowHolder.SingleRowSetter getSingleRowSetterAndCapturePosition(final String columnName,
-            final Class<?> setterType, final MutableInt position, final int holderNumber) {
-        final InMemoryRowHolder.SingleRowSetter str = holders[holderNumber].getSetter(columnName, setterType);
-        position.setValue(str.getThisPosition());
-        return str;
     }
 
     /**
@@ -1688,9 +1788,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                                     if (streamPublisher.decrementRemainingSpace(1) == 0) {
                                         streamPublisher.flush(); // TODO: this throws away transactionality?
                                         // The chunks we just flushed are no longer usable, so null-out references to
-                                        // them,
-                                        // including for nested adapters (to help prevent writing to the wrong chunks;
-                                        // NPEs will be thrown instead).
+                                        // them, including for nested adapters (to help prevent writing to the wrong
+                                        // chunks; NPEs will be thrown instead).
                                         setChunks(null);
                                     }
                                 }
@@ -1801,6 +1900,14 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             throw new IllegalStateException("owner already set!");
         }
 
+        if (isSubtableAdapter) {
+            throw new IllegalStateException("owner cannot be set for subtable adapters!");
+        }
+
+        if (isNestedAdapter) {
+            throw new IllegalStateException("owner cannot be set for nested adapters!");
+        }
+
         this.owner = Require.neqNull(parent, "parent");
 
         final String messageIdColumn = owner.getMessageIdColumn();
@@ -1812,24 +1919,36 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
             final int colIdx = colNameToColIdx.get(messageIdColumn);
             final Class<?> colType = colNameToType.get(messageIdColumn);
             Assert.equals(colType, "colType", String.class);
+
+            final int dataPosInHolderArr = messageIdSetter.getThisPosition(); // position within setter's array at which
+                                                                              // data is stored
+
             final Consumer<InMemoryRowHolder> chunkPopulator = (InMemoryRowHolder holder) -> chunks[colIdx]
-                    .asWritableObjectChunk().add(holder.getObject(messageIdColumn));
+                    .asWritableObjectChunk().add(holder.getObject(dataPosInHolderArr));
             chunkPopulators.put(messageIdColumn, chunkPopulator);
         }
         if (sendTimeColumn != null) {
             final int colIdx = colNameToColIdx.get(sendTimeColumn);
             final Class<?> colType = colNameToType.get(sendTimeColumn);
             Assert.equals(colType, "colType", Instant.class);
+
+            final int dataPosInHolderArr = sendTimeSetter.getThisPosition(); // position within setter's array at which
+                                                                             // data is stored
+
             final Consumer<InMemoryRowHolder> chunkPopulator = (InMemoryRowHolder holder) -> chunks[colIdx]
-                    .asWritableLongChunk().add(holder.getLong(sendTimeColumn));
+                    .asWritableLongChunk().add(holder.getLong(dataPosInHolderArr));
             chunkPopulators.put(sendTimeColumn, chunkPopulator);
         }
         if (receiveTimeColumn != null) {
             final int colIdx = colNameToColIdx.get(receiveTimeColumn);
             final Class<?> colType = colNameToType.get(receiveTimeColumn);
             Assert.equals(colType, "colType", Instant.class);
+
+            final int dataPosInHolderArr = receiveTimeSetter.getThisPosition(); // position within setter's array at
+                                                                                // which data is stored
+
             final Consumer<InMemoryRowHolder> chunkPopulator = (InMemoryRowHolder holder) -> chunks[colIdx]
-                    .asWritableLongChunk().add(holder.getLong(receiveTimeColumn));
+                    .asWritableLongChunk().add(holder.getLong(dataPosInHolderArr));
             chunkPopulators.put(receiveTimeColumn, chunkPopulator);
         }
 
@@ -2160,7 +2279,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                     } else {
                         holders[holder].inTransaction();
                     }
-                    final int startingPosition = holders[holder].getDataPosition();
+
                     for (int ii = 0; ii < nArrayFields; ++ii) {
                         final ArrayNode node = nodes[ii];
                         try {
@@ -2177,7 +2296,7 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
                     if (expandedRow == expectedLength - 1) {
                         processHolder(holder, isLast);
                     } else {
-                        copyAndProcessHolder(holder, startingPosition);
+                        copyAndProcessHolder(holder);
                     }
                 }
             }
@@ -2202,9 +2321,12 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
     }
 
     private static void processSingleSubtableRecord(JSONToStreamPublisherAdapter subtableAdapter,
-            String subtableFieldName,
-            int subtableHolderIdx, long thisSubtableMsgNo, JsonNode subtableRecord, boolean isSubtableFirst,
-            boolean isSubtableLast) {
+            final String subtableFieldName,
+            final int subtableHolderIdx,
+            final long thisSubtableMsgNo,
+            final JsonNode subtableRecord,
+            final boolean isSubtableFirst,
+            final boolean isSubtableLast) {
         try {
             subtableAdapter.holders[subtableHolderIdx].setMessageNumber(thisSubtableMsgNo);
 
@@ -2220,10 +2342,9 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
 
             // process the record (and reset the holder at holders[holderIdx])
             // the MessageMetadata can be null because subtables don't process it anyway.
-            final MessageMetadata subtableMsgMetadata = null;
             subtableAdapter.processOneRecordTopLevel(
                     subtableHolderIdx,
-                    subtableMsgMetadata,
+                    null,
                     subtableRecord,
                     isSubtableFirst,
                     isSubtableLast);
@@ -2256,10 +2377,9 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         holders[holder] = createRowHolder();
     }
 
-    private void copyAndProcessHolder(final int holder, final int startingPosition) {
+    private void copyAndProcessHolder(final int holder) {
         final InMemoryRowHolder existingHolder = holders[holder];
-        holders[holder] = createRowHolder();
-        holders[holder].copyDataFrom(existingHolder, startingPosition);
+        holders[holder] = rowHolderCopier.apply(existingHolder);
 
         processedMessages.add(existingHolder);
         // And now get ready for another row.
@@ -2269,7 +2389,8 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
     private InMemoryRowHolder createRowHolder() {
         // the row holder needs to have room for the message metadata as well
         // (these setters are stored in this adapter's 'owner'
-        return new InMemoryRowHolder(chunkPopulators.size() + TextMessage.numberOfMetadataFields());
+        /* return new InMemoryRowHolder(chunkPopulators.size() + TextMessage.numberOfMetadataFields()); */
+        return rowHolderFactory.get();
     }
 
     @Override
@@ -2326,13 +2447,13 @@ public class JSONToStreamPublisherAdapter implements StringIngestionAdapter<Stri
         if (owner != null) {
             final InMemoryRowHolder holder = holders[holderIdx];
             if (owner.getMessageIdColumn() != null) {
-                holder.getSetter(owner.getMessageIdColumn(), String.class).set(metadata.getMessageId());
+                messageIdSetter.set(holder, metadata.getMessageId());
             }
             if (owner.getSendTimeColumn() != null) {
-                holder.getSetter(owner.getSendTimeColumn(), long.class).set(metadata.getSentTime());
+                sendTimeSetter.setLong(holder, DateTimeUtils.epochNanos(metadata.getSentTime()));
             }
             if (owner.getReceiveTimeColumn() != null) {
-                holder.getSetter(owner.getReceiveTimeColumn(), long.class).set(metadata.getReceiveTime());
+                receiveTimeSetter.setLong(holder, DateTimeUtils.epochNanos(metadata.getReceiveTime()));
             }
             // Do not set the 'now' time - we want that to be set as the very last step before flushing data (to disk or
             // otherwise)

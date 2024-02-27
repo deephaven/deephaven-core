@@ -490,11 +490,14 @@ public class JSONToStreamPublisherAdapterBuilder
 
     /**
      * Creates an adapter to be used as a nested adapter. Nested adapters always have a single consumer thread, must use
-     * the same subtableProcessingQueue as the parent adapter, and always create new holders.
+     * the same subtableProcessingQueue as the parent adapter, and use the parent adapter's {@link InMemoryRowHolder
+     * holders} and {@code deferredArrayFieldProcessorCreators} list.
      *
      * @param log Logger to use
      * @param streamPublisher The stream publisher (same as parent)
      * @param allUnmapped Columns that are not required to be mapped to JSON data
+     * @param setterFactory
+     * @param deferredArrayFieldProcessorCreators
      * @param subtableProcessingQueue The queue to which subtable records to process are added (i.e. the parent's queue)
      * @return An adapter that provides field processors for nested fields within a JSON message
      */
@@ -503,6 +506,8 @@ public class JSONToStreamPublisherAdapterBuilder
             @NotNull final SimpleStreamPublisher streamPublisher,
             @NotNull final Map<String, SimpleStreamPublisher> fieldToSubtablePublishers,
             @NotNull final Set<String> allUnmapped,
+            @NotNull final InMemoryRowHolder.SetterFactory setterFactory,
+            @NotNull final List<Runnable> deferredArrayFieldProcessorCreators,
             @NotNull final ThreadLocal<Queue<SubtableData<JSONToStreamPublisherAdapter>>> subtableProcessingQueue) {
         final int nThreads = 0; // nested adapters don't need threads
 
@@ -538,6 +543,8 @@ public class JSONToStreamPublisherAdapterBuilder
                 allUnmapped,
                 autoValueMapping,
                 createHolders,
+                setterFactory,
+                deferredArrayFieldProcessorCreators,
                 subtableProcessingQueue,
                 postProcessConsumer,
                 isSubtableAdapter);
@@ -592,6 +599,8 @@ public class JSONToStreamPublisherAdapterBuilder
                 Collections.emptySet(),
                 autoValueMapping,
                 createHolders,
+                null,
+                null,
                 subtableProcessingQueue,
                 postProcessConsumer,
                 isSubtableAdapter);

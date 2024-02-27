@@ -1146,9 +1146,8 @@ public class JsonStreamAdapterTest extends RefreshingTableTestCase {
         final StreamPublisherAndAppendOnlyTable tableAndPublisher = createStreamPublisherAndTable(names, types);
         final Table resultMain = tableAndPublisher.getAppendOnlyTable();
 
-        // noinspection RedundantTypeArguments (there's an unchecked assignment warning if the type args are removed)
         adapter = factory.apply(tableAndPublisher.getPublisher(),
-                Map.<String, SimpleStreamPublisher>of(
+                Map.of(
                         "msgType1", msgType1TAP.getPublisher(),
                         "msgType2", msgType2TAP.getPublisher()));
 
