@@ -657,6 +657,7 @@ public class TypedHasherFactory {
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder
                 .addFileComment("****** Run ReplicateTypedHashers or ./gradlew replicateTypedHashers to regenerate\n");
+        fileBuilder.addFileComment("@formatter:off");
 
         for (ChunkType chunkType : chunkTypes) {
             fileBuilder.addStaticImport(

@@ -96,6 +96,8 @@ public class ReplicateTypedHashers {
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder.addFileComment("****** Run " + ReplicateTypedHashers.class.getSimpleName()
                 + " or ./gradlew replicateTypedHashers to regenerate\n");
+        fileBuilder.addFileComment("@formatter:off");
+
         final JavaFile dispatcherFile = fileBuilder.build();
         dispatcherFile.writeTo(sourceRoot);
     }
