@@ -11,8 +11,11 @@ public interface CrossJoinStateManager {
     TrackingRowSet getRightRowSetFromPrevLeftRow(long leftIndex);
 
     long getShifted(long rowKey);
+
     long getPrevShifted(long rowKey);
+
     long getMasked(long rowKey);
+
     long getPrevMasked(long rowKey);
 
     /**
