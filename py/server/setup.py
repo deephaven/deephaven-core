@@ -72,5 +72,6 @@ setup(
     },
     entry_points={
         'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
-    }
+    },
+    package_data={'deephaven': ['py.typed']}
 )
