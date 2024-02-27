@@ -601,12 +601,19 @@ public final class ParquetTableReadWriteTest {
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
-        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
         final Table fromDiskWithMetadata = readTable(commonMetadata);
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        // Delete some files from the partitioned data and read the required rows to verify that we only read the
+        // required partitions
+        FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=0"));
+        FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=1"));
+        fromDisk = readTable(commonMetadata).where("PC1 == 2");
+        assertTableEquals(inputData.where("PC1 == 2"), fromDisk);
     }
 
     @Test
