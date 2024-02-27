@@ -42,10 +42,9 @@ public class GenUtils {
                 "//",
                 "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
                 "//",
-                "// AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                "// Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask + "\" to regenerate",
-                "//",
-                ""
+                "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask + "\" to regenerate",
+                "//"
         );
     }
 
