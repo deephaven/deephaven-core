@@ -14,6 +14,8 @@ import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,9 +49,26 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     private final String metadataRootDirAbsPath;
     private final List<ParquetFileMetadata> parquetFileMetadataList;
     private final SeekableChannelsProvider channelsProvider;
-    private List<ColumnTypeInfo> columnTypes; // Useful when merging deephaven specific metadata
+    private final MessageType commonSchema;
 
-    ParquetMetadataFileWriterImpl(final String metadataRootDir, final File[] destinations) {
+    // The following fields are used to accumulate metadata for all parquet files
+    private MessageType mergedSchema;
+    private String mergedCreatedByString;
+    private final Map<String, String> mergedKeyValueMetaData;
+    private final List<BlockMetaData> mergedBlocks;
+
+    /**
+     * Per-column type information stored in key-value metadata
+     */
+    private List<ColumnTypeInfo> columnTypes;
+
+    /**
+     * @param metadataRootDir The root directory for the metadata files
+     * @param destinations The indivdual parquet file destinations, all of which must be contained in the metadata root
+     * @param commonSchema The common schema to be included for writing the _common_metadata file.
+     */
+    ParquetMetadataFileWriterImpl(@NotNull final String metadataRootDir, @NotNull final File[] destinations,
+            @Nullable final MessageType commonSchema) {
         for (final File destination : destinations) {
             if (!destination.getAbsolutePath().startsWith(metadataRootDir)) {
                 throw new UncheckedDeephavenException("All destinations must be contained in the provided metadata root"
@@ -63,6 +82,12 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         this.channelsProvider =
                 SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(rootDir.getPath()), null);
         this.columnTypes = null;
+        this.commonSchema = commonSchema;
+
+        this.mergedSchema = null;
+        this.mergedCreatedByString = null;
+        this.mergedKeyValueMetaData = new HashMap<>();
+        this.mergedBlocks = new ArrayList<>();
     }
 
     /**
@@ -75,19 +100,39 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         parquetFileMetadataList.add(new ParquetFileMetadata(parquetFile, metadata));
     }
 
+    /**
+     * Write the accumulated metadata to the provided files and clear the metadata accumulated so far.
+     *
+     * @param metadataFile The destination file for the _metadata file
+     * @param commonMetadataFile The destination file for the _common_metadata file
+     */
     public void writeMetadataFiles(final File metadataFile, final File commonMetadataFile) throws IOException {
-        final ParquetMetadata metadataFooter = mergeMetadata();
+        if (parquetFileMetadataList.isEmpty()) {
+            throw new UncheckedDeephavenException("No parquet files to write metadata for");
+        }
+        mergeMetadata();
+        final ParquetMetadata metadataFooter =
+                new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString),
+                        mergedBlocks);
         writeMetadataFile(metadataFooter, metadataFile.getAbsolutePath());
 
-        metadataFooter.getBlocks().clear();
-        writeMetadataFile(metadataFooter, commonMetadataFile.toString());
-        parquetFileMetadataList.clear();
+        // Skip the blocks data and merge schema with the common schema to write the common metadata file
+        // The ordering of arguments in method call is important because we want common schema to determine the overall
+        // ordering of the schema fields.
+        mergedSchema = mergeSchemaInto(mergedSchema, commonSchema);
+        final ParquetMetadata commonMetadataFooter =
+                new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString),
+                        new ArrayList<>());
+        writeMetadataFile(commonMetadataFooter, commonMetadataFile.toString());
+
+        // Clear the accumulated metadata
+        clear();
     }
 
-    private ParquetMetadata mergeMetadata() throws IOException {
-        MessageType mergedSchema = null;
-        final Map<String, String> mergedKeyValueMetaData = new HashMap<>();
-        final List<BlockMetaData> mergedBlocks = new ArrayList<>();
+    /**
+     * Merge all the accumulated metadata for the parquet files.
+     */
+    private void mergeMetadata() throws IOException {
         final Collection<String> mergedCreatedBy = new HashSet<>();
         for (final ParquetFileMetadata parquetFileMetadata : parquetFileMetadataList) {
             final FileMetaData fileMetaData = parquetFileMetadata.metadata.getFileMetaData();
@@ -96,12 +141,14 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             mergeBlocksInto(parquetFileMetadata, metadataRootDirAbsPath, mergedBlocks);
             mergedCreatedBy.add(fileMetaData.getCreatedBy());
         }
-        final String createdByString =
+        mergedCreatedByString =
                 mergedCreatedBy.size() == 1 ? mergedCreatedBy.iterator().next() : mergedCreatedBy.toString();
-        return new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, createdByString),
-                mergedBlocks);
     }
 
+    /**
+     * Merge the provided schema into the merged schema. Note that if there are common fields between the two schemas,
+     * the output schema will have the fields in the order they appear in the merged schema.
+     */
     private static MessageType mergeSchemaInto(final MessageType schema, final MessageType mergedSchema) {
         if (mergedSchema == null) {
             return schema;
@@ -126,7 +173,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                 }
             } else {
                 // For merging deephaven-specific metadata,
-                // - groupingColumns, dataIndexes should always be dropped
+                // - groupingColumns, dataIndexes are skipped
                 // - version is optional, so we read it from the first file's metadata
                 // - columnTypes must be the same for all partitions
                 final TableInfo tableInfo = TableInfo.deserializeFromJSON(entry.getValue());
@@ -135,9 +182,11 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                     Assert.eqNull(columnTypes, "columnTypes");
                     columnTypes = tableInfo.columnTypes();
                     mergedKeyValueMetaData.put(ParquetTableWriter.METADATA_KEY,
-                            TableInfo.builder().addAllColumnTypes(columnTypes)
+                            TableInfo.builder()
+                                    .addAllColumnTypes(columnTypes)
                                     .version(tableInfo.version())
-                                    .build().serializeToJSON());
+                                    .build()
+                                    .serializeToJSON());
                 } else if (!columnTypes.equals(tableInfo.columnTypes())) {
                     throw new UncheckedDeephavenException("Could not merge metadata for key " +
                             ParquetTableWriter.METADATA_KEY + ", has conflicting values for columnTypes: " +
@@ -174,6 +223,10 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
 
     public void clear() {
         parquetFileMetadataList.clear();
+        mergedKeyValueMetaData.clear();
+        mergedBlocks.clear();
         columnTypes = null;
+        mergedSchema = null;
+        mergedCreatedByString = null;
     }
 }

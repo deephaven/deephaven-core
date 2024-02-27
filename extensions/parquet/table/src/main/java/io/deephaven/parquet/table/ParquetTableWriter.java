@@ -36,6 +36,7 @@ import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
@@ -227,6 +228,22 @@ public class ParquetTableWriter {
         }
 
         parquetFileWriter.close();
+    }
+
+    /**
+     * Get the parquet schema for a table
+     *
+     * @param table the input table
+     * @param definition the table definition
+     * @param instructions write instructions for the file
+     * @return the parquet schema
+     */
+    static MessageType getSchemaForTable(@NotNull final Table table,
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions instructions) {
+        final Table pretransformTable = pretransformTable(table, definition);
+        return MappedSchema.create(new HashMap<>(), definition, pretransformTable.getRowSet(),
+                pretransformTable.getColumnSourceMap(), instructions).getParquetSchema();
     }
 
     /**

@@ -16,7 +16,6 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.SourceTable;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -107,6 +106,7 @@ import static io.deephaven.parquet.table.ParquetTools.readKeyValuePartitionedTab
 import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeParquetTables;
+import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.*;
@@ -516,7 +516,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void flatPartitionedParquetWithMetadataTest() {
+    public void flatPartitionedParquetWithMetadataTest() throws IOException {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
@@ -529,7 +529,7 @@ public final class ParquetTableReadWriteTest {
         // Write without any metadata files
         writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), ParquetInstructions.EMPTY,
                 new File[] {firstDataFile, secondDataFile}, null);
-        final Table source = readTable(parentDir);
+        final Table source = readTable(parentDir).select();
 
         // Now write with metadata files
         parentDir.delete();
@@ -546,6 +546,67 @@ public final class ParquetTableReadWriteTest {
         final File metadataFile = new File(parentDir, "_metadata");
         final Table fromDiskWithMetadata = readTable(metadataFile);
         assertTableEquals(source, fromDiskWithMetadata);
+
+        // Now replace the underlying data files with empty files and read the size from metadata file verifying that
+        // we can read the size without touching the data
+        firstDataFile.delete();
+        firstDataFile.createNewFile();
+        secondDataFile.delete();
+        secondDataFile.createNewFile();
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithIntegerPartitionsTest() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(20)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithMixedPartitionsTest() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofChar("PC2").withPartitioning(),
+                ColumnDefinition.ofString("PC3").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (char)(65 + (ii % 2))",
+                        "PC3 = java.time.LocalDate.ofEpochDay(i%5).toString()",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
     }
 
     @Test

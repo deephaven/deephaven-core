@@ -10,6 +10,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
@@ -58,6 +59,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+import static io.deephaven.parquet.table.ParquetTableWriter.getSchemaForTable;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -462,14 +464,86 @@ public class ParquetTools {
     }
 
     /**
+     * Write tables to disk in parquet format with partitioning columns written as "key=value" format in a nested
+     * directory structure. To generate these individual partitions, this method will call
+     * {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns.
+     *
+     * @param sourceTable The table to partition and write
+     * @param destinationDir The destination directory to store partitioned data in. Non-existing directories are
+     *        created.
+     * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
+     *        result in files named "partition1/table.parquet", "partition2/table.parquet", etc.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
+            @NotNull final File destinationDir,
+            @NotNull final String baseName,
+            @NotNull final ParquetInstructions writeInstructions) {
+        // TODO Should I take an additional write instruction for partitioning column names in case they are different
+        // from the table's partitioning columns? Also, I couldn't find a doc explaining how a user can convert a
+        // regular
+        // column to a partitioning column. So would be easier for users to just pass the partitioning column names.
+
+        // Also, how should I get the baseName, should I move it to the write instructions.
+        // Pyarrow has this optional parameter "basename_template" used to generate basenames of written data files.
+        // The token ‘{i}’ will be replaced with an automatically incremented integer for files in the same folder.
+        // If not specified, it defaults to “someHash-{i}.parquet”.
+        // pyspark has names of the form "part.{i}.parquet" and allows passing a naming function which takes an integer
+        // and generates a file name.
+
+        final TableDefinition sourceTableDefinition = sourceTable.getDefinition();
+        final List<ColumnDefinition<?>> partitioningColumns = sourceTableDefinition.getPartitioningColumns();
+        if (partitioningColumns.isEmpty()) {
+            throw new IllegalArgumentException("Table must have partitioning columns to write partitioned data");
+        }
+        final String[] partitioningColNames = partitioningColumns.stream()
+                .map(ColumnDefinition::getName)
+                .toArray(String[]::new);
+        final PartitionedTable partitionedData = sourceTable.partitionBy(partitioningColNames);
+        final Table keyTable = sourceTable.selectDistinct(partitioningColNames);
+        final Collection<Table> partitionedTables = new ArrayList<>();
+        final Collection<File> destinations = new ArrayList<>();
+        keyTable.getRowSet().forAllRowKeys(key -> {
+            final Object[] keyValues = Arrays.stream(partitioningColNames)
+                    .map(keyTable::getColumnSource)
+                    .map(colSource -> colSource.get(key))
+                    .toArray();
+            final StringBuilder partitionTableRelativePath = new StringBuilder();
+            for (int i = 0; i < partitioningColNames.length; i++) {
+                partitionTableRelativePath.append(File.separator)
+                        .append(partitioningColNames[i]).append("=").append(keyValues[i]);
+            }
+            partitionTableRelativePath.append(File.separator).append(baseName).append(".parquet");
+            destinations.add(new File(destinationDir, partitionTableRelativePath.toString()));
+            partitionedTables.add(partitionedData.constituentFor(keyValues));
+        });
+
+        // If needed, generate schema for _common_metadata file from source table
+        final ParquetInstructions updatedWriteInstructions;
+        if (!ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(writeInstructions.getMetadataRootDir())) {
+            final MessageType commonSchema = getSchemaForTable(sourceTable, sourceTableDefinition, writeInstructions);
+            updatedWriteInstructions = ParquetInstructions.createWithCommonSchema(writeInstructions, commonSchema);
+        } else {
+            updatedWriteInstructions = writeInstructions;
+        }
+        final TableDefinition partitionedTableDefinition = sourceTableDefinition.getWritable(false);
+        ParquetTools.writeParquetTables(
+                partitionedTables.toArray(Table[]::new),
+                partitionedTableDefinition,
+                updatedWriteInstructions,
+                destinations.toArray(File[]::new),
+                partitionedTableDefinition.getGroupingColumnNamesArray());
+    }
+
+    /**
      * Writes tables to disk in parquet format to a supplied set of destinations. If you specify grouping columns, there
      * must already be grouping information for those columns in the sources. This can be accomplished with
      * {@code .groupBy(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
      *
      * @param sources The tables to write
-     * @param definition The common schema for all the tables to write
+     * @param definition The common definition for all the tables to write
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destinations The destinations paths. Any non-existing directories in the paths provided are created. If
+     * @param destinations The destination paths. Any non-existing directories in the paths provided are created. If
      *        there is an error any intermediate directories previously created are removed; note this makes this method
      *        unsafe for concurrent use
      * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
@@ -497,7 +571,8 @@ public class ParquetTools {
         final String metadataRootDir = writeInstructions.getMetadataRootDir();
         final boolean writeMetadataFiles = !ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(metadataRootDir);
         if (writeMetadataFiles) {
-            metadataFileWriter = new ParquetMetadataFileWriterImpl(metadataRootDir, destinations);
+            metadataFileWriter = new ParquetMetadataFileWriterImpl(metadataRootDir, destinations,
+                    writeInstructions.getCommonSchema());
         } else {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }
