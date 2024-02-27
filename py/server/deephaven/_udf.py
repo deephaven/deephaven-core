@@ -119,6 +119,11 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
     t = eval(t) if isinstance(t, str) else t
     
     p_param.orig_types.add(t)
+
+    # if the annotation is a DH DType instance, we'll use its numpy type
+    if isinstance(t, dtypes.DType):
+        t = t.np_type
+
     tc = _encode_param_type(t)
     if "[" in tc:
         p_param.has_array = True
@@ -157,6 +162,11 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
             t = annotation.__args__[0]
         elif annotation.__args__[0] == type(None):  # noqa: E721
             t = annotation.__args__[1]
+
+    # if the annotation is a DH DType instance, we'll use its numpy type
+    if isinstance(t, dtypes.DType):
+        t = t.np_type
+
     component_char = _component_np_dtype_char(t)
     if component_char:
         pra.encoded_type = "[" + component_char
