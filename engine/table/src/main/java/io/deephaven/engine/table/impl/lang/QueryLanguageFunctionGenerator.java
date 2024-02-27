@@ -315,8 +315,7 @@ public class QueryLanguageFunctionGenerator {
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
                 "//",
-                ""
-        ));
+                ""));
 
         buf.append("package io.deephaven.engine.table.impl.lang;\n\n");
 
@@ -359,14 +358,13 @@ public class QueryLanguageFunctionGenerator {
         /* Now start the test class: */
 
         testBuf.append(String.join("\n",
-                        "//",
-                        "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
-                        "//",
-                        "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                        "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
-                        "//",
-                        ""
-                ));
+                "//",
+                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                "//",
+                "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
+                "//",
+                ""));
 
         testBuf.append("package io.deephaven.engine.table.impl.lang;\n\n");
 
