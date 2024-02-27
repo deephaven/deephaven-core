@@ -153,11 +153,14 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
 
         result = _create_non_conflicting_col_name(table, "__Result")
 
+        # calling __computer.clear() in a separate update ensures calculations are complete before computer is cleared
         return (table
                 .update(formulas=[
                     f"{future_offset} = __computer.compute(k)",
-                    f"{result} = {future_offset}.getFuture().get()",
-                    f"{clean} = __computer.clear()",
+                    f"{result} = {future_offset}.getFuture().get()"
+                ])
+                .update(formulas=[
+                    f"{clean} = __computer.clear()"
                 ])
                 .drop_columns(cols=[
                     f"{future_offset}",
