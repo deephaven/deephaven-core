@@ -80,7 +80,7 @@ public class TestWindowCheck {
         final Random combinedRandom = new Random(seed);
 
         final ColumnInfo<?, ?>[] columnInfo;
-        final int size = 10;
+        final int size = 100;
         final Instant startTime = DateTimeUtils.parseInstant("2018-02-23T09:30:00 NY");
         final Instant endTime;
         if (SHORT_TESTS) {
@@ -146,7 +146,7 @@ public class TestWindowCheck {
         }
     }
 
-    private void advanceTime(TestClock clock, WindowEvalNugget[] en, long nanosToAdvance) {
+    private void advanceTime(final TestClock clock, final WindowEvalNugget[] en, final long nanosToAdvance) {
         clock.now += nanosToAdvance;
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Ticking time to " + DateTimeUtils.epochNanosToInstant(clock.now));
@@ -394,6 +394,7 @@ public class TestWindowCheck {
         @Override
         public void show() {
             TableTools.showWithRowSet(windowed.first);
+            windowed.second.dumpQueue();
         }
     }
 
@@ -479,10 +480,10 @@ public class TestWindowCheck {
         final TrackingWritableRowSet inputRowSet = RowSetFactory.fromRange(0, 9999).toTracking();
 
         inputRowSet.insertRange(regionSize, regionSize + 9_999);
-        final QueryTable indexTable = TstUtils.testRefreshingTable(inputRowSet);
+        final QueryTable rowsetTable = TstUtils.testRefreshingTable(inputRowSet);
         // each chunk of 10_000 rows should account for one minute, or 60_000_000_000 / 10_000 = 6_000_000 nanos per row
         // we start 3 minutes behind the start, so everything is in the five-minute window
-        final Table inputTable = indexTable.updateView("Timestamp = startTime + ((k % regionSize) * 6_000_000)")
+        final Table inputTable = rowsetTable.updateView("Timestamp = startTime + ((k % regionSize) * 6_000_000)")
                 .withAttributes(Collections.singletonMap(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -505,8 +506,8 @@ public class TestWindowCheck {
                 final TrackingWritableRowSet added =
                         RowSetFactory.fromRange(fstep * 10_000, fstep * 10_000 + 9_999).toTracking();
                 added.insertRange(fstep * 10_000 + regionSize, fstep * 10_000 + 9_999 + regionSize);
-                indexTable.getRowSet().writableCast().insert(added);
-                indexTable.notifyListeners(added, i(), i());
+                rowsetTable.getRowSet().writableCast().insert(added);
+                rowsetTable.notifyListeners(added, i(), i());
                 advanceTime(timeProvider, en, fstep * DateTimeUtils.MINUTE);
             });
             TstUtils.validate("Step " + step, en);
