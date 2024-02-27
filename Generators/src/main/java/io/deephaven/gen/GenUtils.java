@@ -38,16 +38,13 @@ public class GenUtils {
      * @return The header for a generated java file
      */
     public static String javaHeader(final Class<?> generatorClass, final String gradleTask) {
-        return "/**\n" +
-                " * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending\n" +
-                " */\n" +
-                "/****************************************************************************************************************************\n"
-                +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run " + generatorClass.getSimpleName()
+        return "//\n" +
+                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending\n" +
+                "//\n" +
+                "//\n"
+                + "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run " + generatorClass.getSimpleName()
                 + " or \"./gradlew " + gradleTask + "\" to regenerate\n"
-                +
-                " ****************************************************************************************************************************/\n\n";
-
+                + "//\n\n";
     }
 
     /**
