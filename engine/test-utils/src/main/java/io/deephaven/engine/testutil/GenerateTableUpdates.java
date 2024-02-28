@@ -144,6 +144,15 @@ public class GenerateTableUpdates {
 
     public static final SimulationProfile DEFAULT_PROFILE = new SimulationProfile();
 
+    public static final SimulationProfile NO_SHIFT_PROFILE =
+            new SimulationProfile() {
+                {
+                    SHIFT_10_PERCENT_KEY_SPACE = 0;
+                    SHIFT_10_PERCENT_POS_SPACE = 0;
+                    SHIFT_AGGRESSIVELY = 0;
+                }
+            };
+
     public static void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
             final Random random, final QueryTable table,
             final ColumnInfo<?, ?>[] columnInfo) {

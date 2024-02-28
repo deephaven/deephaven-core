@@ -18,7 +18,7 @@ dependencies {
     implementation depCommonsLang3
     implementation depTrove3
 
-    implementation 'it.unimi.dsi:fastutil:8.5.11'
+    implementation 'it.unimi.dsi:fastutil:8.5.13'
 
     Classpaths.inheritJUnitClassic(project, 'implementation')
     Classpaths.inheritJUnitPlatform(project, 'implementation')

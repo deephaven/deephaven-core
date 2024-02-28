@@ -5,7 +5,11 @@ package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -13,6 +17,7 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
+import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.UnsortedInstantGenerator;
@@ -27,10 +32,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -38,6 +45,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class TestWindowCheck {
@@ -47,21 +55,34 @@ public class TestWindowCheck {
     @Test
     public void testWindowCheckIterative() {
         for (int seed = 0; seed < 1; ++seed) {
-            testWindowCheckIterative(seed);
+            testWindowCheckIterative(seed, true);
+        }
+    }
+
+    @Test
+    public void testWindowCheckIterativeNoShifts() {
+        for (int seed = 0; seed < 1; ++seed) {
+            testWindowCheckIterative(seed, false);
         }
     }
 
     /**
      * Run a window check over the course of a simulated day.
      *
+     * <p>
      * We have a Timestamp column and a sentinel column.
+     * </p>
      *
+     * <p>
      * Time advances by one second per step, which randomly modifies the source table.
+     * </p>
      *
+     * <p>
      * The WindowEvalNugget verifies the original columns are unchanged and that the value of the InWindow column is
      * correct. A prev checker is added to ensure that getPrev works on the new table.
+     * </p>
      */
-    private void testWindowCheckIterative(int seed) {
+    private void testWindowCheckIterative(int seed, boolean withShifts) {
         final Random random = new Random(seed);
         final Random combinedRandom = new Random(seed);
 
@@ -103,15 +124,21 @@ public class TestWindowCheck {
             ++step;
             final boolean combined = combinedRandom.nextBoolean();
 
+            final GenerateTableUpdates.SimulationProfile profile =
+                    withShifts ? GenerateTableUpdates.DEFAULT_PROFILE : GenerateTableUpdates.NO_SHIFT_PROFILE;
+
             if (combined) {
+                if (RefreshingTableTestCase.printTableUpdates) {
+                    System.out.println("Combined Step " + step);
+                }
                 updateGraph.runWithinUnitTestCycle(() -> {
-                    advanceTime(clock, en);
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
+                    advanceTime(clock, en, 5 * DateTimeUtils.SECOND);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(profile, size,
                             random, table, columnInfo);
                 });
                 TstUtils.validate("Step " + step, en);
             } else {
-                updateGraph.runWithinUnitTestCycle(() -> advanceTime(clock, en));
+                updateGraph.runWithinUnitTestCycle(() -> advanceTime(clock, en, 5 * DateTimeUtils.SECOND));
                 if (RefreshingTableTestCase.printTableUpdates) {
                     TstUtils.validate("Step = " + step + " time = " + DateTimeUtils.epochNanosToInstant(clock.now), en);
                 }
@@ -120,15 +147,17 @@ public class TestWindowCheck {
                     if (RefreshingTableTestCase.printTableUpdates) {
                         System.out.println("Step " + step + "-" + ii);
                     }
-                    RefreshingTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random, table, columnInfo,
+                    RefreshingTableTestCase.simulateShiftAwareStep(profile, step + "-" + ii, stepSize, random, table,
+                            columnInfo,
                             en);
+                    TstUtils.validate("Step " + step + "-" + ii, en);
                 }
             }
         }
     }
 
-    private void advanceTime(TestClock clock, WindowEvalNugget[] en) {
-        clock.now += 5 * DateTimeUtils.SECOND;
+    private void advanceTime(final TestClock clock, final WindowEvalNugget[] en, final long nanosToAdvance) {
+        clock.now += nanosToAdvance;
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Ticking time to " + DateTimeUtils.epochNanosToInstant(clock.now));
         }
@@ -154,7 +183,7 @@ public class TestWindowCheck {
                 () -> WindowCheck.addTimeWindowInternal(clock, tableToCheck, "Timestamp",
                         DateTimeUtils.SECOND * 60, "InWindow", false));
 
-        TableTools.showWithRowSet(windowed.first);
+        TableTools.showWithRowSet(windowed.first, 200);
 
         updateGraph.runWithinUnitTestCycle(windowed.second::run);
 
@@ -374,7 +403,212 @@ public class TestWindowCheck {
 
         @Override
         public void show() {
-            TableTools.show(windowed.first);
+            TableTools.showWithRowSet(windowed.first, 200);
+            windowed.second.dumpQueue();
         }
+    }
+
+    @Test
+    public void testMemoryUsageInWindow() throws IOException {
+        final TestClock timeProvider = new TestClock();
+        final Instant startTime = DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY");
+        timeProvider.now = DateTimeUtils.epochNanos(startTime);
+
+        QueryScope.addParam("startTime", startTime);
+
+        final QueryTable inputTable =
+                (QueryTable) TableTools.emptyTable(100_000_000).updateView("Timestamp = startTime");
+        inputTable.setRefreshing(true);
+        System.gc();
+        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+        RuntimeMemory.getInstance().read(sample);
+        final long memStart = sample.totalMemory - sample.freeMemory;
+        System.out.println("Start Memory: " + memStart);
+        final Pair<Table, WindowCheck.TimeWindowListener> withCheck = WindowCheck.addTimeWindowInternal(timeProvider,
+                inputTable,
+                "Timestamp",
+                60 * DateTimeUtils.SECOND,
+                "InLastXSeconds",
+                false);
+        System.gc();
+        RuntimeMemory.getInstance().read(sample);
+        final long memEnd = sample.totalMemory - sample.freeMemory;
+        System.out.println("End Memory: " + memEnd);
+        final long memChange = memEnd - memStart;
+        System.out.println("Change: " + memChange);
+        assertTrue(memChange < 100_000_000); // this previously would require about 645MB, so we're doing better
+        assertTableEquals(inputTable.updateView("InLastXSeconds=true"), withCheck.first);
+    }
+
+    @Test
+    public void testSequentialRanges() throws IOException {
+        final TestClock timeProvider = new TestClock();
+        final Instant startTime = DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY");
+        // start about three minutes in so we'll take things off more directly
+        timeProvider.now = DateTimeUtils.epochNanos(startTime) + 180 * 1_000_000_000L;
+
+        QueryScope.addParam("startTime", startTime);
+
+        // each row is 10ms, we have 50_000 rows so the span of the table is 500 seconds
+        final Table inputRanges = TableTools.emptyTable(50_000).updateView("Timestamp = startTime + (ii * 10_000_000)");
+        ((QueryTable) inputRanges).setRefreshing(true);
+
+        final Table[] duplicated = new Table[10];
+        Arrays.fill(duplicated, inputRanges);
+        final Table inputTable = TableTools.merge(duplicated);
+
+        final WindowEvalNugget[] en;
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.exclusiveLock().lock();
+        try {
+            en = new WindowEvalNugget[] {
+                    new WindowEvalNugget(timeProvider, (QueryTable) inputTable)
+            };
+        } finally {
+            updateGraph.exclusiveLock().unlock();
+        }
+
+        int step = 0;
+        while (timeProvider.now < DateTimeUtils.epochNanos(startTime) + 600 * DateTimeUtils.SECOND) {
+            step++;
+            updateGraph.runWithinUnitTestCycle(() -> advanceTime(timeProvider, en, 5 * DateTimeUtils.SECOND));
+            TstUtils.validate("Step " + step, en);
+        }
+    }
+
+    @Test
+    public void testSequentialRangesAddOnly() throws IOException {
+        final TestClock timeProvider = new TestClock();
+        final Instant startTime = DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY");
+        // start about three minutes in so we'll take things off more directly
+        timeProvider.now = DateTimeUtils.epochNanos(startTime) + 180 * 1_000_000_000L;
+        final long regionSize = 1_000_000L;
+
+        QueryScope.addParam("startTime", startTime);
+        QueryScope.addParam("regionSize", regionSize);
+
+        final TrackingWritableRowSet inputRowSet = RowSetFactory.fromRange(0, 9999).toTracking();
+
+        inputRowSet.insertRange(regionSize, regionSize + 9_999);
+        final QueryTable rowsetTable = TstUtils.testRefreshingTable(inputRowSet);
+        // each chunk of 10_000 rows should account for one minute, or 60_000_000_000 / 10_000 = 6_000_000 nanos per row
+        // we start 3 minutes behind the start, so everything is in the five-minute window
+        final Table inputTable = rowsetTable.updateView("Timestamp = startTime + ((k % regionSize) * 6_000_000)")
+                .withAttributes(Collections.singletonMap(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final WindowEvalNugget[] en;
+        final PrintListener pl;
+        updateGraph.exclusiveLock().lock();
+        try {
+            en = new WindowEvalNugget[] {
+                    new WindowEvalNugget(timeProvider, (QueryTable) inputTable)
+            };
+            pl = new PrintListener("windowed", en[0].windowed.first, 0);
+        } finally {
+            updateGraph.exclusiveLock().unlock();
+        }
+
+        for (int step = 1; step < 10; ++step) {
+            final int fstep = step;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet added =
+                        RowSetFactory.fromRange(fstep * 10_000, fstep * 10_000 + 9_999);
+                added.insertRange(fstep * 10_000 + regionSize, fstep * 10_000 + 9_999 + regionSize);
+                rowsetTable.getRowSet().writableCast().insert(added);
+                rowsetTable.notifyListeners(added, i(), i());
+                advanceTime(timeProvider, en, fstep * DateTimeUtils.MINUTE);
+            });
+            TstUtils.validate("Step " + step, en);
+        }
+    }
+
+    @Test
+    public void testCombination() {
+        final TestClock timeProvider = new TestClock();
+        final Instant startTime = DateTimeUtils.parseInstant("2024-02-28T09:29:01 NY");
+        timeProvider.now = DateTimeUtils.epochNanos(startTime);
+
+        final Instant[] initialValues = Arrays.stream(
+                new String[] {"2024-02-28T09:25:00 NY", "2024-02-28T09:27:00 NY"})
+                .map(DateTimeUtils::parseInstant).toArray(Instant[]::new);
+        final QueryTable tableToCheck = testRefreshingTable(i(0, 1).toTracking(),
+                col("Timestamp", initialValues),
+                intCol("Sentinel", 1, 2));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = updateGraph.sharedLock().computeLocked(
+                () -> WindowCheck.addTimeWindowInternal(
+                        timeProvider, tableToCheck, "Timestamp", DateTimeUtils.MINUTE * 5, "InWindow", false));
+
+        TableTools.showWithRowSet(windowed.first);
+
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        assertTableEquals(tableToCheck.updateView("InWindow = true"), windowed.first);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final Instant[] newValue = new Instant[] {DateTimeUtils.parseInstant("2024-02-28T09:26:00 NY")};
+            TstUtils.addToTable(tableToCheck, i(2), col("Timestamp", newValue), intCol("Sentinel", 3));
+            tableToCheck.notifyListeners(i(2), i(), i());
+        });
+        TableTools.showWithRowSet(windowed.first);
+        windowed.second.validateQueue();
+        assertTableEquals(tableToCheck.updateView("InWindow = true"), windowed.first);
+
+        // advance the clock to make sure we actually work
+        timeProvider.now += DateTimeUtils.MINUTE; // 9:30:01, passing the first entry out of the window
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = Sentinel > 1"), windowed.first);
+
+        timeProvider.now += DateTimeUtils.MINUTE; // 9:32:01, passing the second entry out of the window
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 2"), windowed.first);
+
+        timeProvider.now += DateTimeUtils.MINUTE; // 9:33:01, passing the all entries out of the window
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = false"), windowed.first);
+    }
+
+    @Test
+    public void testCombination2() {
+        final TestClock timeProvider = new TestClock();
+        final Instant startTime = DateTimeUtils.parseInstant("2024-02-28T09:29:01 NY");
+        timeProvider.now = DateTimeUtils.epochNanos(startTime);
+
+        final Instant[] initialValues = Arrays.stream(
+                new String[] {"2024-02-28T09:25:00 NY", "2024-02-28T09:27:00 NY", "2024-02-28T09:26:00 NY"})
+                .map(DateTimeUtils::parseInstant).toArray(Instant[]::new);
+        final QueryTable tableToCheck = testRefreshingTable(i(0, 1, 2).toTracking(),
+                col("Timestamp", initialValues),
+                intCol("Sentinel", 1, 2, 3));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = updateGraph.sharedLock().computeLocked(
+                () -> WindowCheck.addTimeWindowInternal(
+                        timeProvider, tableToCheck, "Timestamp", DateTimeUtils.MINUTE * 5, "InWindow", false));
+
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = true"), windowed.first);
+        windowed.second.validateQueue();
+
+        // advance the clock to make sure we actually work
+        timeProvider.now += DateTimeUtils.MINUTE; // 9:30:01, passing the first entry out of the window
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = Sentinel > 1"), windowed.first);
+
+        timeProvider.now += DateTimeUtils.MINUTE; // 9:32:01, passing the second entry out of the window
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 2"), windowed.first);
+
+        timeProvider.now += DateTimeUtils.MINUTE; // 9:33:01, passing the all entries out of the window
+        updateGraph.runWithinUnitTestCycle(windowed.second::run);
+        TableTools.showWithRowSet(windowed.first);
+        assertTableEquals(tableToCheck.updateView("InWindow = false"), windowed.first);
     }
 }
