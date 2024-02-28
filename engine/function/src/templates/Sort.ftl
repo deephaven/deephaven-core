@@ -276,9 +276,9 @@ public class Sort {
             return values.toArray();
         }
 
-        final ${pt.primitive}[] vs = values.copyToArray();
-        Arrays.sort(vs); ****
-        return vs;
+        final ${pt.boxed}[] vb = ArrayUtils.toObject(values.toArray());
+        Arrays.sort(vb, Numeric::compare);
+        return ArrayUtils.toPrimitive(vb);
     }
 
     /**
@@ -310,13 +310,9 @@ public class Sort {
             return new ${pt.primitive}[]{};
         }
 
-        final ${pt.primitive}[] vs = new ${pt.primitive}[values.length];
-        for (int i = 0; i < values.length; i++) {
-            vs[i] = isNull(values[i]) ? ${pt.null} : values[i];
-        }
-
-        Arrays.sort(vs); ****
-        return vs;
+        final ${pt.boxed}[] vb = values.clone();
+        Arrays.sort(vb, Numeric::compare);
+        return ArrayUtils.toPrimitive(vb);
     }
 
     /**
@@ -391,10 +387,8 @@ public class Sort {
             return values.toArray();
         }
 
-        final ${pt.primitive}[] vs = values.copyToArray();
-        Arrays.sort(vs); ****
+        final ${pt.primitive}[] vs = sort(values);
         ArrayUtils.reverse(vs);
-
         return vs;
     }
 
