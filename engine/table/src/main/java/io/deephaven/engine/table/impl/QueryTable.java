@@ -89,6 +89,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -474,13 +475,35 @@ public class QueryTable extends BaseTable<QueryTable> {
      * @param matchPairs the columns that map one-to-one with the result table
      * @return a transformer that passes dirty details via an identity mapping
      */
-    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(QueryTable resultTable,
-            MatchPair... matchPairs) {
+    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(
+            @NotNull final QueryTable resultTable,
+            @NotNull final MatchPair... matchPairs) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
         for (int ii = 0; ii < matchPairs.length; ++ii) {
             columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].leftColumn());
         }
         return newModifiedColumnSetTransformer(MatchPair.getRightColumns(matchPairs), columnSets);
+    }
+
+    /**
+     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
+     * listeners of the provided resultTable.
+     *
+     * @param resultTable the destination table
+     * @param pairs the columns that map one-to-one with the result table
+     * @return a transformer that passes dirty details via an identity mapping
+     */
+    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(
+            @NotNull final QueryTable resultTable,
+            @NotNull final io.deephaven.api.Pair... pairs) {
+        return newModifiedColumnSetTransformer(
+                Arrays.stream(pairs)
+                        .map(io.deephaven.api.Pair::output)
+                        .map(ColumnName::name)
+                        .toArray(String[]::new),
+                Arrays.stream(pairs)
+                        .map(pair -> resultTable.newModifiedColumnSet(pair.input().name()))
+                        .toArray(ModifiedColumnSet[]::new));
     }
 
     /**
@@ -926,8 +949,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table moveColumns(final int index, String... columnsToMove) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final MatchPair[] pairsToMove = MatchPairFactory.getExpressions(columnsToMove);
-            return renameColumnsImpl("moveColumns(" + index + ", ", Math.max(0, index), pairsToMove);
+            return renameColumnsImpl("moveColumns(" + index + ", ", Math.max(0, index),
+                    io.deephaven.api.Pair.from(columnsToMove));
         }
     }
 
@@ -1776,60 +1799,109 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table renameColumns(Collection<io.deephaven.api.Pair> pairs) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return renameColumnsImpl("renameColumns(", -1, MatchPair.fromPairs(pairs));
+            return renameColumnsImpl("renameColumns(", -1, pairs);
         }
+    }
+
+    private static String stringForPairs(@NotNull final Collection<io.deephaven.api.Pair> pairs) {
+        final StringBuilder result = new StringBuilder("[");
+        boolean first = true;
+        for (io.deephaven.api.Pair pair : pairs) {
+            if (!first) {
+                result.append(", ");
+            }
+            if (pair.input().equals(pair.output())) {
+                result.append(Strings.of(pair.output()));
+            } else {
+                result.append(String.format("%s=%s", Strings.of(pair.output()), Strings.of(pair.input())));
+            }
+            first = false;
+        }
+        result.append(']');
+        return result.toString();
     }
 
     private Table renameColumnsImpl(
             @NotNull final String methodNuggetPrefix,
             final int movePosition,
-            @NotNull final MatchPair... pairs) {
-        return QueryPerformanceRecorder.withNugget(methodNuggetPrefix + matchString(pairs) + ")",
+            @NotNull final Collection<io.deephaven.api.Pair> pairs) {
+        final String pairsLogString = stringForPairs(pairs);
+        return QueryPerformanceRecorder.withNugget(methodNuggetPrefix + pairsLogString + ")",
                 sizeForInstrumentation(), () -> {
-                    if (pairs == null || pairs.length == 0) {
+                    if (pairs.isEmpty()) {
                         return prepareReturnThis();
                     }
 
+                    Set<String> notFound = null;
+                    Set<String> duplicateSource = null;
+                    Set<String> duplicateDestination = null;
+
                     final Set<String> newNames = new HashSet<>();
-                    final Map<String, String> pairLookup = new LinkedHashMap<>();
-                    for (final MatchPair pair : pairs) {
-                        if (pair.leftColumn == null || pair.leftColumn.isEmpty()) {
-                            throw new IllegalArgumentException(
-                                    "Bad left column in rename pair \"" + pair + "\"");
+                    final Map<ColumnName, ColumnName> pairLookup = new LinkedHashMap<>();
+                    for (final io.deephaven.api.Pair pair : pairs) {
+                        if (!columns.containsKey(pair.input().name())) {
+                            if (notFound == null) {
+                                notFound = new HashSet<>();
+                            }
+                            notFound.add(pair.input().name());
                         }
-                        if (null == columns.get(pair.rightColumn)) {
-                            throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
+                        if (pairLookup.put(pair.input(), pair.output()) != null) {
+                            if (duplicateSource == null) {
+                                duplicateSource = new HashSet<>();
+                            }
+                            duplicateSource.add(pair.input().name());
                         }
-                        if (pairLookup.put(pair.rightColumn, pair.leftColumn) != null) {
-                            throw new IllegalArgumentException(
-                                    "Duplicate source column \"" + pair.rightColumn + "\"");
-                        }
-                        if (!newNames.add(pair.leftColumn)) {
-                            throw new IllegalArgumentException(
-                                    "Duplicate destination column \"" + pair.leftColumn + "\"");
+                        if (!newNames.add(pair.output().name())) {
+                            if (duplicateDestination == null) {
+                                duplicateDestination = new HashSet<>();
+                            }
+                            duplicateDestination.add(pair.output().name());
                         }
                     }
 
+                    // if we accumulated any errors, build one mega error message and throw it
+                    if (notFound != null || duplicateSource != null || duplicateDestination != null) {
+                        final StringBuilder msg = new StringBuilder();
+                        final Consumer<String> append = err -> {
+                            if (msg.length() > 0) {
+                                msg.append("\n");
+                            }
+                            msg.append(err);
+                        };
+                        if (notFound != null) {
+                            append.accept("Column(s) not found: " + String.join(", ", notFound));
+                        }
+                        if (duplicateSource != null) {
+                            append.accept("Duplicate source column(s): " + String.join(", ", duplicateSource));
+                        }
+                        if (duplicateDestination != null) {
+                            append.accept("Duplicate destination column(s): " +
+                                    String.join(", ", duplicateDestination));
+                        }
+                        throw new IllegalArgumentException(msg.toString());
+                    }
+
                     final MutableInt mcsPairIdx = new MutableInt();
-                    final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
+                    final io.deephaven.api.Pair[] modifiedColumnSetPairs = new io.deephaven.api.Pair[columns.size()];
                     final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
 
                     final Runnable moveColumns = () -> {
-                        for (final Map.Entry<String, String> rename : pairLookup.entrySet()) {
-                            final String oldName = rename.getKey();
-                            final String newName = rename.getValue();
-                            final ColumnSource<?> columnSource = columns.get(oldName);
-                            newColumns.put(newName, columnSource);
-                            modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] = new MatchPair(newName, oldName);
+                        for (final Map.Entry<ColumnName, ColumnName> rename : pairLookup.entrySet()) {
+                            final ColumnName oldName = rename.getKey();
+                            final ColumnName newName = rename.getValue();
+                            final ColumnSource<?> columnSource = columns.get(oldName.name());
+                            newColumns.put(newName.name(), columnSource);
+                            modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
+                                    io.deephaven.api.Pair.of(newName, oldName);
                         }
                     };
 
                     for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
-                        final String oldName = entry.getKey();
+                        final ColumnName oldName = ColumnName.of(entry.getKey());
                         final ColumnSource<?> columnSource = entry.getValue();
-                        String newName = pairLookup.get(oldName);
+                        ColumnName newName = pairLookup.get(oldName);
                         if (newName == null) {
-                            if (newNames.contains(oldName)) {
+                            if (newNames.contains(oldName.name())) {
                                 // this column is being replaced by a rename
                                 continue;
                             }
@@ -1843,8 +1915,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                             moveColumns.run();
                         }
 
-                        modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] = new MatchPair(newName, oldName);
-                        newColumns.put(newName, columnSource);
+                        modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
+                                io.deephaven.api.Pair.of(newName, oldName);
+                        newColumns.put(newName.name(), columnSource);
                     }
 
                     if (mcsPairIdx.intValue() <= movePosition) {
@@ -1867,16 +1940,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                             final ModifiedColumnSet.Transformer mcsTransformer =
                                     newModifiedColumnSetTransformer(resultTable, modifiedColumnSetPairs);
                             final ListenerImpl listener = new ListenerImpl(
-                                    methodNuggetPrefix + Arrays.deepToString(pairs) + ')', this, resultTable) {
+                                    methodNuggetPrefix + pairsLogString + ')', this, resultTable) {
                                 @Override
                                 public void onUpdate(final TableUpdate upstream) {
                                     final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                    downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
                                     if (upstream.modified().isNonempty()) {
+                                        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
                                         mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                                 downstream.modifiedColumnSet);
                                     } else {
-                                        downstream.modifiedColumnSet.clear();
+                                        downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                     }
                                     resultTable.notifyListeners(downstream);
                                 }
