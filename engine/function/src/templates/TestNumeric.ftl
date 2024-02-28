@@ -1302,8 +1302,8 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Compare() {
-        final ${pt.primitive} v1 = 1.4;
-        final ${pt.primitive} v2 = 2.3;
+        final ${pt.primitive} v1 = (${pt.primitive})1.4;
+        final ${pt.primitive} v2 = (${pt.primitive})2.3;
         final ${pt.primitive} v3 = ${pt.null};
         final ${pt.primitive} v4 = ${pt.null};
         final ${pt.primitive} v5 = ${pt.boxed}.NaN;
@@ -1333,8 +1333,8 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}CompareBoxed() {
-        final ${pt.boxed} v1 = 1.4;
-        final ${pt.boxed} v2 = 2.3;
+        final ${pt.boxed} v1 = (${pt.primitive})1.4;
+        final ${pt.boxed} v2 = (${pt.primitive})2.3;
         final ${pt.boxed} v3 = null;
         final ${pt.boxed} v4 = null;
         final ${pt.boxed} v5 = ${pt.boxed}.NaN;
@@ -1402,8 +1402,8 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Compare() {
-        final ${pt.primitive} v1 = 1.4;
-        final ${pt.primitive} v2 = 2.3;
+        final ${pt.primitive} v1 = (${pt.primitive})1;
+        final ${pt.primitive} v2 = (${pt.primitive})2;
         final ${pt.primitive} v3 = ${pt.null};
         final ${pt.primitive} v4 = ${pt.null};
 
@@ -1423,8 +1423,8 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}CompareBoxed() {
-        final ${pt.boxed} v1 = 1.4;
-        final ${pt.boxed} v2 = 2.3;
+        final ${pt.boxed} v1 = (${pt.primitive})1;
+        final ${pt.boxed} v2 = (${pt.primitive})2;
         final ${pt.boxed} v3 = null;
         final ${pt.boxed} v4 = null;
 

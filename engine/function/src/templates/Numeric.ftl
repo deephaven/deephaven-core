@@ -2876,8 +2876,8 @@ public class Numeric {
             return 1;
         }
 
-        final boolean isNaN1 = isNanVal(v1);
-        final boolean isNaN2 = isNanVal(v2);
+        final boolean isNaN1 = isNaN(v1);
+        final boolean isNaN2 = isNaN(v2);
 
         // NaN is considered the greatest
         if (isNaN1 && isNaN2) {
@@ -2888,7 +2888,7 @@ public class Numeric {
             return -1;
         }
 
-        return ${pt.Boxed}.compare(o1, o2);
+        return ${pt.boxed}.compare(v1, v2);
     }
 
 
