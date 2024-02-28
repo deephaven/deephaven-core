@@ -116,6 +116,10 @@ public class Strings {
         return (invert ? "!" : "") + inner;
     }
 
+    public static String ofPairs(Collection<? extends Pair> pairs) {
+        return pairs.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
+    }
+
     public static String of(Pair pair) {
         if (pair.input().equals(pair.output())) {
             return of(pair.output());

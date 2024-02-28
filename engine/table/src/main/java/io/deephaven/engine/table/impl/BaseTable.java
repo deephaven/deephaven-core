@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import io.deephaven.api.Pair;
 import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
@@ -1034,7 +1035,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         destination.setSortableColumns(currentSortableColumns.stream().filter(shouldCopy).collect(Collectors.toList()));
     }
 
-    void copySortableColumns(BaseTable<?> destination, Collection<io.deephaven.api.Pair> renamedColumns) {
+    void copySortableColumns(BaseTable<?> destination, Collection<Pair> renamedColumns) {
         final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
@@ -1047,7 +1048,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // b) The original column exists, and has not been replaced by another. For example
         // T1 = [ Col1, Col2, Col3 ]; T1.renameColumns(Col1=Col3, Col2];
         if (renamedColumns != null) {
-            for (final io.deephaven.api.Pair pair : renamedColumns) {
+            for (final Pair pair : renamedColumns) {
                 // Only the last grouping matters.
                 columnMapping.forcePut(pair.output().name(), pair.input().name());
             }
@@ -1160,7 +1161,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     void maybeCopyColumnDescriptions(
             final BaseTable<?> destination,
-            final Collection<io.deephaven.api.Pair> renamedColumns) {
+            final Collection<Pair> renamedColumns) {
         // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1171,7 +1172,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         final Map<String, String> sourceDescriptions = new HashMap<>(oldDescriptions);
 
         if (renamedColumns != null) {
-            for (final io.deephaven.api.Pair pair : renamedColumns) {
+            for (final Pair pair : renamedColumns) {
                 final String desc = sourceDescriptions.remove(pair.input().name());
                 if (desc != null) {
                     sourceDescriptions.put(pair.output().name(), desc);

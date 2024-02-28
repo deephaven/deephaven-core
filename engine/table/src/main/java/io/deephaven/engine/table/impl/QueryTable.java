@@ -3,15 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.AsOfJoinMatch;
-import io.deephaven.api.AsOfJoinRule;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
@@ -20,7 +12,6 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
@@ -46,7 +37,6 @@ import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
@@ -495,10 +485,10 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(
             @NotNull final QueryTable resultTable,
-            @NotNull final io.deephaven.api.Pair... pairs) {
+            @NotNull final Pair... pairs) {
         return newModifiedColumnSetTransformer(
                 Arrays.stream(pairs)
-                        .map(io.deephaven.api.Pair::output)
+                        .map(Pair::output)
                         .map(ColumnName::name)
                         .toArray(String[]::new),
                 Arrays.stream(pairs)
@@ -950,7 +940,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return renameColumnsImpl("moveColumns(" + index + ", ", Math.max(0, index),
-                    io.deephaven.api.Pair.from(columnsToMove));
+                    Pair.from(columnsToMove));
         }
     }
 
@@ -1196,7 +1186,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     List<WhereFilter> selectFilters = new LinkedList<>();
-                    List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
+                    List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
                     for (final WhereFilter filter : filters) {
                         filter.init(getDefinition());
                         if (filter instanceof AbstractConditionFilter
@@ -1796,36 +1786,18 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table renameColumns(Collection<io.deephaven.api.Pair> pairs) {
+    public Table renameColumns(Collection<Pair> pairs) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return renameColumnsImpl("renameColumns(", -1, pairs);
         }
     }
 
-    private static String stringForPairs(@NotNull final Collection<io.deephaven.api.Pair> pairs) {
-        final StringBuilder result = new StringBuilder("[");
-        boolean first = true;
-        for (io.deephaven.api.Pair pair : pairs) {
-            if (!first) {
-                result.append(", ");
-            }
-            if (pair.input().equals(pair.output())) {
-                result.append(Strings.of(pair.output()));
-            } else {
-                result.append(String.format("%s=%s", Strings.of(pair.output()), Strings.of(pair.input())));
-            }
-            first = false;
-        }
-        result.append(']');
-        return result.toString();
-    }
-
     private Table renameColumnsImpl(
             @NotNull final String methodNuggetPrefix,
             final int movePosition,
-            @NotNull final Collection<io.deephaven.api.Pair> pairs) {
-        final String pairsLogString = stringForPairs(pairs);
+            @NotNull final Collection<Pair> pairs) {
+        final String pairsLogString = Strings.ofPairs(pairs);
         return QueryPerformanceRecorder.withNugget(methodNuggetPrefix + pairsLogString + ")",
                 sizeForInstrumentation(), () -> {
                     if (pairs.isEmpty()) {
@@ -1834,55 +1806,38 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     Set<String> notFound = null;
                     Set<String> duplicateSource = null;
-                    Set<String> duplicateDestination = null;
+                    Set<String> duplicateDest = null;
 
-                    final Set<String> newNames = new HashSet<>();
+                    final Set<ColumnName> newNames = new HashSet<>();
                     final Map<ColumnName, ColumnName> pairLookup = new LinkedHashMap<>();
-                    for (final io.deephaven.api.Pair pair : pairs) {
+                    for (final Pair pair : pairs) {
                         if (!columns.containsKey(pair.input().name())) {
-                            if (notFound == null) {
-                                notFound = new HashSet<>();
-                            }
-                            notFound.add(pair.input().name());
+                            (notFound == null ? notFound = new LinkedHashSet<>() : notFound)
+                                    .add(pair.input().name());
                         }
                         if (pairLookup.put(pair.input(), pair.output()) != null) {
-                            if (duplicateSource == null) {
-                                duplicateSource = new HashSet<>();
-                            }
-                            duplicateSource.add(pair.input().name());
+                            (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
+                                    .add(pair.input().name());
                         }
-                        if (!newNames.add(pair.output().name())) {
-                            if (duplicateDestination == null) {
-                                duplicateDestination = new HashSet<>();
-                            }
-                            duplicateDestination.add(pair.output().name());
+                        if (!newNames.add(pair.output())) {
+                            (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
+                                    .add(pair.output().name());
                         }
                     }
 
                     // if we accumulated any errors, build one mega error message and throw it
-                    if (notFound != null || duplicateSource != null || duplicateDestination != null) {
-                        final StringBuilder msg = new StringBuilder();
-                        final Consumer<String> append = err -> {
-                            if (msg.length() > 0) {
-                                msg.append("\n");
-                            }
-                            msg.append(err);
-                        };
-                        if (notFound != null) {
-                            append.accept("Column(s) not found: " + String.join(", ", notFound));
-                        }
-                        if (duplicateSource != null) {
-                            append.accept("Duplicate source column(s): " + String.join(", ", duplicateSource));
-                        }
-                        if (duplicateDestination != null) {
-                            append.accept("Duplicate destination column(s): " +
-                                    String.join(", ", duplicateDestination));
-                        }
-                        throw new IllegalArgumentException(msg.toString());
+                    if (notFound != null || duplicateSource != null || duplicateDest != null) {
+                        throw new IllegalArgumentException(Stream.of(
+                                notFound == null ? null : "Column(s) not found: " + String.join(", ", notFound),
+                                duplicateSource == null ? null
+                                        : "Duplicate source column(s): " + String.join(", ", duplicateSource),
+                                duplicateDest == null ? null
+                                        : "Duplicate destination column(s): " + String.join(", ", duplicateDest))
+                                .filter(Objects::nonNull).collect(Collectors.joining("\n")));
                     }
 
                     final MutableInt mcsPairIdx = new MutableInt();
-                    final io.deephaven.api.Pair[] modifiedColumnSetPairs = new io.deephaven.api.Pair[columns.size()];
+                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size()];
                     final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
 
                     final Runnable moveColumns = () -> {
@@ -1892,7 +1847,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             final ColumnSource<?> columnSource = columns.get(oldName.name());
                             newColumns.put(newName.name(), columnSource);
                             modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
-                                    io.deephaven.api.Pair.of(newName, oldName);
+                                    Pair.of(newName, oldName);
                         }
                     };
 
@@ -1901,7 +1856,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final ColumnSource<?> columnSource = entry.getValue();
                         ColumnName newName = pairLookup.get(oldName);
                         if (newName == null) {
-                            if (newNames.contains(oldName.name())) {
+                            if (newNames.contains(oldName)) {
                                 // this column is being replaced by a rename
                                 continue;
                             }
@@ -1916,7 +1871,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
 
                         modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
-                                io.deephaven.api.Pair.of(newName, oldName);
+                                Pair.of(newName, oldName);
                         newColumns.put(newName.name(), columnSource);
                     }
 
