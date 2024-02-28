@@ -293,6 +293,16 @@ def fn(col) -> Optional[{np_dtype}]:
         t3 = empty_table(10).update(["X3 = nbsin(i)"])
         self.assertEqual(t3.columns[0].data_type, dtypes.double)
 
+    def test_java_instant_return(self):
+        from deephaven.time import to_j_instant
+
+        t = empty_table(10).update(["X1 = to_j_instant(`2021-01-01T00:00:00Z`)"])
+        self.assertEqual(t.columns[0].data_type, dtypes.Instant)
+
+        def udf() -> List[dtypes.Instant]:
+            return [to_j_instant("2021-01-01T00:00:00Z")]
+        t = empty_table(10).update(["X1 = udf()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.instant_array)
 
 if __name__ == '__main__':
     unittest.main()
