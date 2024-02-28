@@ -431,8 +431,7 @@ public class WindowCheck {
                                         if (priorEntryLastNanos <= currentTimestamp) {
                                             rowKeyToEntry.remove(currentRowKey - 1);
                                             // Since we might be combining this with an entry later, we should remove it
-                                            // so
-                                            // that we don't have extra entries
+                                            // so that we don't have extra entries
                                             priorityQueue.remove(priorEntry);
                                             priorEntry.lastRowKey = currentRowKey;
                                             pendingEntry = priorEntry;
