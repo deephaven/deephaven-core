@@ -550,13 +550,10 @@ public class ReplicatePrimitiveCode {
 
         PrintWriter out = new PrintWriter(resultClassJavaPath);
 
-        // preserve the first comment of the file; typically the copyright
-        if (body.startsWith("/*")) {
-            final int idx = body.indexOf("*/");
-            if (idx != -1 && body.length() >= idx + 3) {
-                out.print(body.substring(0, idx + 3));
-                body = body.substring(idx + 3);
-            }
+        // Remove the first comment block of the file, pruning prev copyright header (and sometimes generated header) so
+        // we write our own
+        while (body.startsWith("//")) {
+            body = body.substring(body.indexOf("\n", 2) + 1);
         }
 
         out.print(String.join("\n",
