@@ -7,14 +7,15 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -23,21 +24,30 @@ import java.util.function.Consumer;
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private static ParquetTableLocationKey locationKey(Path path, @NotNull final ParquetInstructions readInstructions) {
-        return new ParquetTableLocationKey(path.toFile(), 0, null, readInstructions);
+    private static ParquetTableLocationKey locationKey(URI uri, @NotNull final ParquetInstructions readInstructions) {
+        return new ParquetTableLocationKey(uri, 0, null, readInstructions);
     }
 
-    private final File tableRootDirectory;
-    private final Map<Path, ParquetTableLocationKey> cache;
+    private final URI tableRootDirectory;
+    private final Map<URI, ParquetTableLocationKey> cache;
     private final ParquetInstructions readInstructions;
 
     /**
-     * @param tableRootDirectory The directory to search for .parquet files.
+     * @param tableRootDirectoryFile The directory to search for .parquet files.
      * @param readInstructions the instructions for customizations while reading
      */
-    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory,
+    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectoryFile,
             @NotNull final ParquetInstructions readInstructions) {
-        this.tableRootDirectory = tableRootDirectory;
+        this(tableRootDirectoryFile.toURI(), readInstructions);
+    }
+
+    /**
+     * @param tableRootDirectoryURI The directory URI to search for .parquet files.
+     * @param readInstructions the instructions for customizations while reading
+     */
+    public ParquetFlatPartitionedLayout(@NotNull final URI tableRootDirectoryURI,
+            @NotNull final ParquetInstructions readInstructions) {
+        this.tableRootDirectory = tableRootDirectoryURI;
         this.cache = new HashMap<>();
         this.readInstructions = readInstructions;
     }
@@ -47,19 +57,25 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     }
 
     @Override
-    public synchronized void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        try (final DirectoryStream<Path> parquetFileStream =
-                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
-            for (final Path parquetFilePath : parquetFileStream) {
-                ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
-                if (locationKey == null) {
-                    locationKey = locationKey(parquetFilePath, readInstructions);
-                    if (!locationKey.verifyFileReader()) {
-                        continue;
+    public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
+        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                tableRootDirectory, readInstructions.getSpecialInstructions());
+        try {
+            final List<URI> parquetURIs = provider.getURIStreamFromDirectory(tableRootDirectory,
+                    ParquetFileHelper::fileNameMatches);
+            synchronized (this) {
+                // Iterate over the URI stream and add the location keys to the cache
+                parquetURIs.forEach(parquetFileURI -> {
+                    ParquetTableLocationKey locationKey = cache.get(parquetFileURI);
+                    if (locationKey == null) {
+                        locationKey = locationKey(parquetFileURI, readInstructions);
+                        if (!locationKey.verifyFileReader()) {
+                            return;
+                        }
+                        cache.put(parquetFileURI, locationKey);
                     }
-                    cache.put(parquetFilePath, locationKey);
-                }
-                locationKeyObserver.accept(locationKey);
+                    locationKeyObserver.accept(locationKey);
+                });
             }
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);

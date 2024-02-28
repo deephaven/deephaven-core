@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
@@ -107,6 +108,12 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
                 ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
                 : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
                                                                // end no matter what.
+    }
+
+    @Override
+    public List<URI> getURIStreamFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+            throws IOException {
+        return wrappedProvider.getURIStreamFromDirectory(directoryURI, uriFilter);
     }
 
     @Nullable

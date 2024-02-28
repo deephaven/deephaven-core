@@ -659,6 +659,25 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void readFlatPartitionedParquetFromS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.defaultCredentials())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        ParquetTools.readFlatPartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
+                readInstructions).select();
+    }
+
+    @Test
     public void stringDictionaryTest() {
         final int nullPos = -5;
         final int maxKeys = 10;

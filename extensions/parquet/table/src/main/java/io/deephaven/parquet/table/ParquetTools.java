@@ -914,7 +914,7 @@ public class ParquetTools {
      * Callers wishing to be more explicit and skip the inference step may prefer to call
      * {@link #readFlatPartitionedTable(File, ParquetInstructions, TableDefinition)}.
      *
-     * @param directory the source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
@@ -927,10 +927,31 @@ public class ParquetTools {
     }
 
     /**
+     * Creates a partitioned table via the flat parquet files from the root {@code directory}, inferring the table
+     * definition from those files.
+     *
+     * <p>
+     * Callers wishing to be more explicit and skip the inference step may prefer to call
+     * {@link #readFlatPartitionedTable(File, ParquetInstructions, TableDefinition)}.
+     *
+     * @param directory the path or URI for the directory to search for .parquet files
+     * @param readInstructions the instructions for customizations while reading
+     * @return the table
+     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
+     */
+    public static Table readFlatPartitionedTable(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory), readInstructions),
+                readInstructions);
+    }
+
+    /**
      * Creates a partitioned table via the flat parquet files from the root {@code directory} using the provided
      * {@code tableDefinition}.
      *
-     * @param directory the source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
@@ -942,6 +963,26 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
         return readPartitionedTable(new ParquetFlatPartitionedLayout(directory, readInstructions), readInstructions,
+                tableDefinition);
+    }
+
+    /**
+     * Creates a partitioned table via the flat parquet files from the root {@code directory} using the provided
+     * {@code tableDefinition}.
+     *
+     * @param directory the path or URI for the directory to search for .parquet files
+     * @param readInstructions the instructions for customizations while reading
+     * @param tableDefinition the table definition
+     * @return the table
+     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
+     */
+    public static Table readFlatPartitionedTable(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory), readInstructions),
+                readInstructions,
                 tableDefinition);
     }
 

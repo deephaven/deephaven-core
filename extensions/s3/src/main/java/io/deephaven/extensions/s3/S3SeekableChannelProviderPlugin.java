@@ -17,7 +17,7 @@ import java.net.URI;
 @AutoService(SeekableChannelsProviderPlugin.class)
 public final class S3SeekableChannelProviderPlugin implements SeekableChannelsProviderPlugin {
 
-    private static final String S3_URI_SCHEME = "s3";
+    static final String S3_URI_SCHEME = "s3";
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {

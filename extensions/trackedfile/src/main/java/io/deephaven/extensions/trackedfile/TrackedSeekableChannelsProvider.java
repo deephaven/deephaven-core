@@ -20,8 +20,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProviderPlugin.FILE_URI_SCHEME;
 
@@ -69,6 +74,18 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
                 : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
+    }
+
+    @Override
+    public List<URI> getURIStreamFromDirectory(@NotNull final URI directoryURI,
+            @NotNull final Predicate<URI> uriFilter) throws IOException {
+        try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
+            return childFileStream
+                    .map(Path::toUri)
+                    .filter(uriFilter)
+                    .collect(Collectors.toList());
+            // TODO Test if we get the "file://" in the URIs
+        }
     }
 
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {

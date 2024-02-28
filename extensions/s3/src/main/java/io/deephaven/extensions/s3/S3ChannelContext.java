@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -227,7 +226,7 @@ final class S3ChannelContext implements SeekableChannelContext {
                 try {
                     fullFragment = getFullFragment();
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                    throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()));
+                    throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()), instructions);
                 }
                 // fullFragment has limit == capacity. This lets us have safety around math and ability to simply
                 // clear to reset.
@@ -419,7 +418,8 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
     }
 
-    private IOException handleS3Exception(final Exception e, final String operationDescription) {
+    static IOException handleS3Exception(final Exception e, final String operationDescription,
+            final S3Instructions instructions) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
             return new IOException(String.format("Thread interrupted while %s", operationDescription), e);
@@ -456,7 +456,7 @@ final class S3ChannelContext implements SeekableChannelContext {
                             .build())
                     .get(instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-            throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()));
+            throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()), instructions);
         }
         setSize(headObjectResponse.contentLength());
     }

@@ -14,11 +14,25 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 import software.amazon.awssdk.services.s3.S3Uri;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_SCHEME;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
@@ -95,6 +109,42 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
         throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
+    }
+
+    // TODO Test for recursive listing
+    // TODO Test for non parquet files in the directory
+    // TODO Test for hidden files in the directory
+
+    @Override
+    public List<URI> getURIStreamFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+            throws IOException {
+        final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directoryURI);
+        final String bucketName = s3DirectoryURI.bucket().orElseThrow();
+        final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .prefix(s3DirectoryURI.key().orElseThrow())
+                .delimiter("/");
+        String continuationToken = null;
+        final List<URI> uris = new ArrayList<>();
+        final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
+        do {
+            final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
+            final ListObjectsV2Response response;
+            try {
+                // Wait for the first response, or throw an exception if it takes too long
+                response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
+            } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+                throw handleS3Exception(e, String.format("fetching list of files in directory %s", directoryURI),
+                        s3Instructions);
+            }
+            uris.addAll(response.contents().stream()
+                    .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
+                    .filter(uriFilter)
+                    .collect(Collectors.toList()));
+            continuationToken = response.nextContinuationToken();
+            // If the continuation token is null, we have reached the end of the list, else fetch the next page
+        } while (continuationToken != null);
+        return uris;
     }
 
     @Override
