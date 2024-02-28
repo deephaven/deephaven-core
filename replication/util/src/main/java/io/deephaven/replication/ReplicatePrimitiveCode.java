@@ -461,7 +461,7 @@ public class ReplicatePrimitiveCode {
 
     public static List<String> intToAllButBoolean(String gradleTask, String sourceClassJavaPath, String... exemptions)
             throws IOException {
-        return intToAllButBoolean(sourceClassJavaPath, null, exemptions);
+        return intToAllButBoolean(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
     public static List<String> intToAllButBoolean(String gradleTask, String sourceClassJavaPath,
@@ -564,6 +564,7 @@ public class ReplicatePrimitiveCode {
                 "// ****** Edit " + className(sourceClassJavaPath) + " and run \"./gradlew " + gradleTask
                         + "\" to regenerate",
                 "//",
+                "// @formatter:off",
                 ""));
 
         out.print(body);
