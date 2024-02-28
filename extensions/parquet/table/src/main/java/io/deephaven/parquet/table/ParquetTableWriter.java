@@ -239,10 +239,9 @@ public class ParquetTableWriter {
      * @return the parquet schema
      */
     static MessageType getSchemaForTable(@NotNull final Table table,
-            @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions instructions) {
-        final Table pretransformTable = pretransformTable(table, definition);
-        return MappedSchema.create(new HashMap<>(), definition, pretransformTable.getRowSet(),
+        final Table pretransformTable = pretransformTable(table, table.getDefinition());
+        return MappedSchema.create(new HashMap<>(), table.getDefinition(), pretransformTable.getRowSet(),
                 pretransformTable.getColumnSourceMap(), instructions).getParquetSchema();
     }
 

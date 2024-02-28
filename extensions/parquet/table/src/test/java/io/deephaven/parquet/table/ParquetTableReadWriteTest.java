@@ -15,6 +15,7 @@ import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -620,8 +621,8 @@ public final class ParquetTableReadWriteTest {
     public void someMoreKeyValuePartitionedTestsWithComplexKeys() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofString("symbol").withPartitioning(),
-                ColumnDefinition.ofString("epic_collection_id").withPartitioning(),
-                ColumnDefinition.ofString("epic_request_id").withPartitioning(),
+                ColumnDefinition.ofString("epic_collection_id"),
+                ColumnDefinition.ofString("epic_request_id"),
                 ColumnDefinition.ofLong("I"));
         final Table inputData = ((QueryTable) TableTools.emptyTable(10)
                 .updateView("symbol = (i % 2 == 0) ? `AA` : `BB`",
@@ -634,7 +635,9 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
-        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        final PartitionedTable partitionedTable =
+                inputData.partitionBy("symbol", "epic_collection_id", "epic_request_id");
+        writeKeyValuePartitionedTable(partitionedTable, parentDir, "data", writeInstructions);
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
                 fromDisk.sort("symbol", "epic_collection_id"));
