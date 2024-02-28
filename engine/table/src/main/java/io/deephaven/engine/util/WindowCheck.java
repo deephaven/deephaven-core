@@ -925,7 +925,7 @@ public class WindowCheck {
                 this.timeStampSource = (ColumnSource<Long>) reinterpreted;
             } else {
                 throw new IllegalArgumentException("The timestamp column, " + timestampColumn
-                        + ", cannot be interpreted as a long, it should be an Instant.");
+                        + ", cannot be interpreted as a long, it should be a supported time type (e.g. long, Instant, ZonedDateTime...)");
             }
         }
 
