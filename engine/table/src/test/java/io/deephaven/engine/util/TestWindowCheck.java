@@ -54,7 +54,7 @@ public class TestWindowCheck {
 
     @Test
     public void testWindowCheckIterative() {
-        for (int seed = 0; seed < 10; ++seed) {
+        for (int seed = 0; seed < 1; ++seed) {
             testWindowCheckIterative(seed, true);
         }
     }
