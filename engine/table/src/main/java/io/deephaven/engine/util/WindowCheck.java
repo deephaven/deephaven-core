@@ -426,9 +426,15 @@ public class WindowCheck {
                                     if (priorEntry != null && priorEntry.nanos <= currentTimestamp) {
                                         Assert.eq(priorEntry.lastRowKey, "priorEntry.lastRowKey", currentRowKey - 1,
                                                 "currentRowKey - 1");
-                                        final long priorEntryLastNanos =
-                                                inWindowColumnSource.timeStampSource.getLong(priorEntry.lastRowKey);
-                                        if (priorEntryLastNanos <= currentTimestamp) {
+                                        final boolean canCombine;
+                                        if (priorEntry.firstRowKey != priorEntry.lastRowKey) {
+                                            final long priorEntryLastNanos =
+                                                    inWindowColumnSource.timeStampSource.getLong(priorEntry.lastRowKey);
+                                            canCombine = priorEntryLastNanos <= currentTimestamp;
+                                        } else {
+                                            canCombine = true;
+                                        }
+                                        if (canCombine) {
                                             rowKeyToEntry.remove(currentRowKey - 1);
                                             // Since we might be combining this with an entry later, we should remove it
                                             // so that we don't have extra entries
