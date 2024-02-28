@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.isNull;
+import static io.deephaven.function.Numeric.compare;
 
 /**
  * Functions for sorting primitive types.
@@ -276,7 +277,7 @@ public class Sort {
         }
 
         final ${pt.primitive}[] vs = values.copyToArray();
-        Arrays.sort(vs);
+        Arrays.sort(vs); ****
         return vs;
     }
 
@@ -314,7 +315,7 @@ public class Sort {
             vs[i] = isNull(values[i]) ? ${pt.null} : values[i];
         }
 
-        Arrays.sort(vs);
+        Arrays.sort(vs); ****
         return vs;
     }
 
@@ -334,7 +335,7 @@ public class Sort {
         }
 
         return IntStream.range(0, values.intSize("rank"))
-            .boxed().sorted((i, j) -> ${pt.boxed}.compare(values.get(i), values.get(j)))
+            .boxed().sorted((i, j) -> compare(values.get(i), values.get(j)))
             .mapToInt(ele -> ele).toArray();
     }
 
@@ -391,7 +392,7 @@ public class Sort {
         }
 
         final ${pt.primitive}[] vs = values.copyToArray();
-        Arrays.sort(vs);
+        Arrays.sort(vs); ****
         ArrayUtils.reverse(vs);
 
         return vs;
@@ -443,7 +444,7 @@ public class Sort {
         }
 
         return IntStream.range(0, values.intSize("rank"))
-            .boxed().sorted((i, j) -> -${pt.boxed}.compare(values.get(i), values.get(j)))
+            .boxed().sorted((i, j) -> compare(values.get(j), values.get(i)))
             .mapToInt(ele -> ele).toArray();
     }
 
