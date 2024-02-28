@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.gen;
 
 import gnu.trove.map.TIntObjectMap;
@@ -45,7 +48,8 @@ public class GenUtils {
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
                         + "\" to regenerate",
-                "//");
+                "//",
+                "");
     }
 
     /**
