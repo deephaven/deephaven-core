@@ -2855,6 +2855,55 @@ public class Numeric {
 
     </#if>
 
+
+    /**
+     * Compares two specified values.  Deephaven null values are less than normal numbers which are less than NaN values.
+     *
+     * @param v1 the first value to compare.
+     * @param v2 the second value to compare.
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2; and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values. 
+     */
+    static public int compare(${pt.primitive} v1, ${pt.primitive} v2) {
+        final boolean isNull1 = isNull(v1);
+        final boolean isNull2 = isNull(v2);
+
+        if (isNull1 && isNull2) {
+            return 0;
+        } else if (isNull1) {
+            return -1;
+        } else if (isNull2) {
+            return 1;
+        }
+
+        final boolean isNaN1 = isNanVal(v1);
+        final boolean isNaN2 = isNanVal(v2);
+
+        // NaN is considered the greatest
+        if (isNaN1 && isNaN2) {
+            return 0;
+        } else if (isNaN1) {
+            return 1;
+        } else if (isNaN2) {
+            return -1;
+        }
+
+        return ${pt.Boxed}.compare(o1, o2);
+    }
+
+
+    /**
+     * Compares two specified values.  Deephaven null values are less than normal numbers which are less than NaN values.
+     *
+     * @param v1 the first value to compare.
+     * @param v2 the second value to compare.
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2; and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values. 
+     */
+    static public int compare(${pt.boxed} v1, ${pt.boxed} v2) {
+        return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
+    }
+
     </#if>
     </#list>
 }
