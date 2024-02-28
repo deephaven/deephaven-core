@@ -38,7 +38,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
 import java.util.*;
 
 /**
@@ -413,7 +412,7 @@ public class WindowCheck {
                             }
                             continue;
                         }
-                        if (pendingEntry != null && (currentTimestamp < pendingEntry.nanos
+                        if (pendingEntry != null && (currentTimestamp < lastNanos
                                 || pendingEntry.lastRowKey + 1 != currentRowKey)) {
                             enter(pendingEntry, lastNanos, tryCombine);
                             pendingEntry = null;
@@ -427,13 +426,18 @@ public class WindowCheck {
                                     if (priorEntry != null && priorEntry.nanos <= currentTimestamp) {
                                         Assert.eq(priorEntry.lastRowKey, "priorEntry.lastRowKey", currentRowKey - 1,
                                                 "currentRowKey - 1");
-                                        rowKeyToEntry.remove(currentRowKey - 1);
-                                        // Since we might be combining this with an entry later, we should remove it so
-                                        // that we don't have extra entries
-                                        priorityQueue.remove(priorEntry);
-                                        priorEntry.lastRowKey = currentRowKey;
-                                        pendingEntry = priorEntry;
-                                        continue;
+                                        final long priorEntryLastNanos =
+                                                inWindowColumnSource.timeStampSource.getLong(priorEntry.lastRowKey);
+                                        if (priorEntryLastNanos <= currentTimestamp) {
+                                            rowKeyToEntry.remove(currentRowKey - 1);
+                                            // Since we might be combining this with an entry later, we should remove it
+                                            // so
+                                            // that we don't have extra entries
+                                            priorityQueue.remove(priorEntry);
+                                            priorEntry.lastRowKey = currentRowKey;
+                                            pendingEntry = priorEntry;
+                                            continue;
+                                        }
                                     }
                                 }
                                 pendingEntry = new Entry(currentRowKey, currentRowKey, currentTimestamp);
@@ -816,6 +820,18 @@ public class WindowCheck {
                         Assert.equals(check, "check", entry, "entry");
                     }
                 }
+                // validate that the entry is non-descending
+                if (entry.lastRowKey > entry.firstRowKey) {
+                    long lastNanos = inWindowColumnSource.timeStampSource.getLong(entry.firstRowKey);
+                    for (long rowKey = entry.firstRowKey + 1; rowKey <= entry.lastRowKey; ++rowKey) {
+                        long nanos = inWindowColumnSource.timeStampSource.getLong(rowKey);
+                        if (nanos < lastNanos) {
+                            dumpQueue();
+                            Assert.geq(nanos, "nanos at " + rowKey, lastNanos, "lastNanos");
+                        }
+                        lastNanos = nanos;
+                    }
+                }
             }
 
             final RowSet inQueue = builder.build();
@@ -828,7 +844,21 @@ public class WindowCheck {
                 Assert.assertion(condition, "inQueue.subsetOf(resultRowSet)", inQueue, "inQueue", resultRowSet,
                         "resultRowSet", inQueue.minus(resultRowSet), "inQueue.minus(resultRowSet)");
             }
+
             // Verify that the size of inQueue is equal to the number of values in the window
+            final RowSetBuilderSequential inWindowBuilder = RowSetFactory.builderSequential();
+            try (final CloseablePrimitiveIteratorOfLong valueIt =
+                    new ChunkedLongColumnIterator(inWindowColumnSource.timeStampSource, source.getRowSet())) {
+                source.getRowSet().forAllRowKeys(key -> {
+                    long value = valueIt.nextLong();
+                    if (value != QueryConstants.NULL_LONG && inWindowColumnSource.computeInWindowUnsafe(value)) {
+                        inWindowBuilder.appendKey(key);
+                    }
+                });
+            }
+            try (final RowSet rowsInWindow = inWindowBuilder.build()) {
+                Assert.equals(rowsInWindow, "rowsInWindow", inQueue, "inQueue");
+            }
         }
 
         void dumpQueue() {
