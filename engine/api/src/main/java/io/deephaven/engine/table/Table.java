@@ -326,10 +326,56 @@ public interface Table extends
     @ConcurrentMethod
     Table dropColumnFormats();
 
+    /**
+     * Produce a new table with the specified columns renamed using the specified {@link Pair pairs}. The renames are
+     * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
+     * column ordering after applying the specified renames.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param pairs The columns to rename
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameColumns(Collection<Pair> pairs);
 
+    /**
+     * Produce a new table with the specified columns renamed using the syntax {@code "NewColumnName=OldColumnName"}.
+     * The renames are simultaneous and unordered, enabling direct swaps between column names. The resulting table
+     * retains the original column ordering after applying the specified renames.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param pairs The columns to rename
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameColumns(String... pairs);
 
+    /**
+     * Produce a new table with the specified columns renamed using the provided function. The renames are simultaneous
+     * and unordered, enabling direct swaps between column names. The resulting table retains the original column
+     * ordering after applying the specified renames.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param renameFunction The function to apply to each column name
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameAllColumns(UnaryOperator<String> renameFunction);
 
     @ConcurrentMethod
@@ -343,27 +389,56 @@ public interface Table extends
 
     /**
      * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
-     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}. The renames are simultaneous and unordered, enabling
+     * direct swaps between column names. All other columns are left in their original order.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param columnsToMove The columns to move to the left (and, optionally, to rename)
-     * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
+     * @return The new table, with the columns rearranged as explained above
      */
     @ConcurrentMethod
     Table moveColumnsUp(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
-     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}. The renames are simultaneous and unordered, enabling
+     * direct swaps between column names. All other columns are left in their original order.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param columnsToMove The columns to move to the right (and, optionally, to rename)
-     * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
+     * @return The new table, with the columns rearranged as explained above
      */
     @ConcurrentMethod
     Table moveColumnsDown(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
-     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}. The renames are
+     * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
+     * column ordering except for the specified columns, which are inserted at the specified index, in the order of
+     * {@code columnsToMove}, after the effects of applying any renames.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     * <p>
+     * Values of {@code index} outside the range of 0 to the number of columns in the table (exclusive) will be clamped
+     * to the nearest valid index.
      *
      * @param index The index to which the specified columns should be moved
      * @param columnsToMove The columns to move to the specified index (and, optionally, to rename)
@@ -371,9 +446,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     Table moveColumns(int index, String... columnsToMove);
-
-    @ConcurrentMethod
-    Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations

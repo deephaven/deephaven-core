@@ -80,11 +80,11 @@ class NodeType(Enum):
     """An enum of node types for RollupTable"""
     AGGREGATED = _JNodeType.Aggregated
     """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
-    leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
+    leaf) level. These nodes have column names and types that result from applying aggregations on the source table
     of the RollupTable. """
     CONSTITUENT = _JNodeType.Constituent
-    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with 
-    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
+    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with
+    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names
     and types from the source table of the RollupTable. """
 
 
@@ -665,10 +665,12 @@ class Table(JObjectWrapper):
 
     def move_columns(self, idx: int, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns method creates a new table with specified columns moved to a specific column index value.
+        Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and unordered,
+        enabling direct swaps between column names. Specifying a source or destination more than once is prohibited.
 
         Args:
             idx (int): the column index where the specified columns will be moved in the new table.
-            cols (Union[str, Sequence[str]]) : the column name(s)
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -684,10 +686,12 @@ class Table(JObjectWrapper):
 
     def move_columns_down(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_down method creates a new table with specified columns appearing last in order, to the far
-        right.
+        right. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
+        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
+        prohibited.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column name(s)
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -703,10 +707,12 @@ class Table(JObjectWrapper):
 
     def move_columns_up(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_up method creates a new table with specified columns appearing first in order, to the far
-        left.
+        left. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
+        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
+        prohibited.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column name(s)
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -721,7 +727,9 @@ class Table(JObjectWrapper):
             raise DHError(e, "table move_columns_up operation failed.") from e
 
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
-        """The rename_columns method creates a new table with the specified columns renamed.
+        """The rename_columns method creates a new table with the specified columns renamed. The renames are
+        simultaneous and unordered, enabling direct swaps between column names. Specifying a source or
+         destination more than once is prohibited.
 
         Args:
             cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
@@ -734,8 +742,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self):
-                return Table(j_table=self.j_table.renameColumns(*cols))
+            return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
