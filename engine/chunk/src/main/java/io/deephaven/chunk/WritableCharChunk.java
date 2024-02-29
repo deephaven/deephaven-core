@@ -23,8 +23,6 @@ import java.nio.CharBuffer;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
 
-// @formatter:on
-
 /**
  * {@link WritableChunk} implementation for char data.
  */
