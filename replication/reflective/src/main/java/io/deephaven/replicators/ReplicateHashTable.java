@@ -11,6 +11,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.HashTableAnnotations.EmptyStateValue;
 import io.deephaven.engine.table.impl.HashTableAnnotations.OverflowStateColumnSource;
 import io.deephaven.engine.table.impl.HashTableAnnotations.StateColumnSource;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,6 +28,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.fullClassName;
 
@@ -257,6 +259,22 @@ public class ReplicateHashTable {
         if (packageLine == 10) {
             throw new RuntimeException("Could not find package line to rewrite for " + destinationClass);
         }
+
+        // Remove any file header from rewrittenLines and replace with the generated header
+        // Skip, re-add file header
+        Iterator<String> iterator = rewrittenLines.iterator();
+        while (iterator.hasNext() && iterator.next().startsWith("//")) {
+            iterator.remove();
+        }
+        rewrittenLines.addAll(0, Arrays.asList("//",
+                        "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                        "//",
+                        "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                        "// ****** Edit " + ReplicationUtils.className(sourceClassJavaFile)
+                                + " and run \"./gradlew replicateHashTable\" to regenerate",
+                        "//",
+                        "// @formatter:off",
+                        ""));
 
         FileUtils.writeLines(destinationFile, rewrittenLines);
         System.out.println("Wrote: " + destinationClassJavaFile);
