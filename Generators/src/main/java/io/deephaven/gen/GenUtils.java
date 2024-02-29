@@ -49,6 +49,7 @@ public class GenUtils {
                 "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
                         + "\" to regenerate",
                 "//",
+                "// @formatter:off",
                 "");
     }
 
