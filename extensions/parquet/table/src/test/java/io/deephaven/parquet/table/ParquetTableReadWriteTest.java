@@ -575,6 +575,17 @@ public final class ParquetTableReadWriteTest {
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+
+        // Verify that the partitioned data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            for (int PC2 = 0; PC2 <= 1; PC2++) {
+                final File dir = new File(parentDir, "PC1=" + PC1 + File.separator + "PC2=" + PC2);
+                assertTrue(dir.exists() && dir.isDirectory());
+                final File dataFile = new File(dir, "data.parquet");
+                assertTrue(dataFile.exists() && dataFile.isFile());
+            }
+        }
+
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
@@ -593,7 +604,7 @@ public final class ParquetTableReadWriteTest {
         final Table inputData = ((QueryTable) TableTools.emptyTable(10)
                 .updateView("PC1 = (int)(ii%3)",
                         "PC2 = (char)(65 + (ii % 2))",
-                        "PC3 = java.time.LocalDate.ofEpochDay(i%5).toString()",
+                        "PC3 = java.time.LocalDate.ofEpochDay(i%2).toString()",
                         "I = ii"))
                 .withDefinitionUnsafe(definition);
 
@@ -602,6 +613,19 @@ public final class ParquetTableReadWriteTest {
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+
+        // Verify that the partitioned data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            for (int idx = 0; idx <= 1; idx++) {
+                final char PC2 = (char) ('A' + idx);
+                final String PC3 = java.time.LocalDate.ofEpochDay(idx).toString();
+                final File dir = new File(parentDir, "PC1=" + PC1 + File.separator + "PC2=" + PC2 +
+                        File.separator + "PC3=" + PC3);
+                assertTrue(dir.exists() && dir.isDirectory());
+                final File dataFile = new File(dir, "data.parquet");
+                assertTrue(dataFile.exists() && dataFile.isFile());
+            }
+        }
         Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
@@ -613,8 +637,8 @@ public final class ParquetTableReadWriteTest {
         // required partitions
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=0"));
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=1"));
-        fromDisk = readTable(commonMetadata).where("PC1 == 2");
-        assertTableEquals(inputData.where("PC1 == 2"), fromDisk);
+        assertTableEquals(inputData.where("PC1 == 2").sort("PC1", "PC2", "PC3"),
+                readTable(commonMetadata).where("PC1 == 2").sort("PC1", "PC2", "PC3"));
     }
 
     @Test
@@ -638,6 +662,11 @@ public final class ParquetTableReadWriteTest {
         final PartitionedTable partitionedTable =
                 inputData.partitionBy("symbol", "epic_collection_id", "epic_request_id");
         writeKeyValuePartitionedTable(partitionedTable, parentDir, "data", writeInstructions);
+        assertTrue(new File(parentDir,
+                "symbol=AA/epic_collection_id=fss_tick%1234%4321/epic_request_id=223ea-asd43/data.parquet").exists());
+        assertTrue(new File(parentDir,
+                "symbol=BB/epic_collection_id=fss_tick%5678%8765/epic_request_id=98dce-oiu23/data.parquet").exists());
+
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
                 fromDisk.sort("symbol", "epic_collection_id"));
@@ -1025,7 +1054,7 @@ public final class ParquetTableReadWriteTest {
      */
     private static void verifyFilesInDir(final File parentDir, final String[] expectedDataFiles,
             @Nullable final Map<String, String[]> indexingColumnToFileMap) {
-        final List filesInParentDir = Arrays.asList(parentDir.list());
+        final List<String> filesInParentDir = Arrays.asList(parentDir.list());
         for (String expectedFile : expectedDataFiles) {
             assertTrue(filesInParentDir.contains(expectedFile));
         }
