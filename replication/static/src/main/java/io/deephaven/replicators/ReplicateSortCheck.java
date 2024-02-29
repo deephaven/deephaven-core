@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
@@ -55,8 +57,14 @@ public class ReplicateSortCheck {
     private static List<String> ascendingNameToDescendingName(String path, List<String> lines) {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = ascendingNameToDescendingName(className);
-        // we should skip the replicate header
-        return globalReplacements(3, lines, className, newName);
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream("replicateSortCheck", ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))
+        ).collect(Collectors.toList());
+
+        return globalReplacements(lines, className, newName);
     }
 
     @NotNull

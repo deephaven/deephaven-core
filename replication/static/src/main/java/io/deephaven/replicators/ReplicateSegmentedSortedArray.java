@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
@@ -141,12 +143,18 @@ public class ReplicateSegmentedSortedArray {
 
         List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
 
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))
+        ).collect(Collectors.toList());
+
         if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp") || path.contains("SsaChecker")) {
-            lines = globalReplacements(3, lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
+            lines = globalReplacements(lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
         }
 
         if (path.contains("SegmentedSortedArray")) {
-            lines = globalReplacements(3, lines, "\\BSsaChecker", "ReverseSsaChecker");
+            lines = globalReplacements(lines, "\\BSsaChecker", "ReverseSsaChecker");
         }
 
 
@@ -165,7 +173,14 @@ public class ReplicateSegmentedSortedArray {
     private static void fixupSsaName(String path, String oldName, String newName) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        lines = globalReplacements(3, lines, oldName, newName);
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))
+        ).collect(Collectors.toList());
+
+        lines = globalReplacements(lines, oldName, newName);
         FileUtils.writeLines(new File(path), lines);
     }
 
@@ -173,8 +188,14 @@ public class ReplicateSegmentedSortedArray {
     private static List<String> ascendingNameToDescendingName(String path, List<String> lines) {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = descendingPath(className);
-        // we should skip the replicate header
-        return globalReplacements(3, lines, className, newName);
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))
+        ).collect(Collectors.toList());
+
+        return globalReplacements(lines, className, newName);
     }
 
     @NotNull

@@ -261,18 +261,12 @@ public class ReplicationUtils {
         return Pattern.compile("//\\s*endregion " + region + "(?=\\s|$)");
     }
 
-    public static List<String> globalReplacements(int skip, List<String> lines, String... replacements) {
+    public static List<String> globalReplacements(List<String> lines, String... replacements) {
         if (replacements.length == 0 || replacements.length % 2 != 0) {
             throw new IllegalArgumentException("Bad replacement length: " + replacements.length);
         }
-        final Stream<String> startStream = lines.subList(0, skip).stream();
-        final Stream<String> replacementStream = lines.subList(skip, lines.size()).stream();
-        return Stream.concat(startStream, replacementStream.map(x -> doLineReplacements(x, replacements)))
+        return lines.stream().map(x -> doLineReplacements(x, replacements))
                 .collect(Collectors.toList());
-    }
-
-    public static List<String> globalReplacements(List<String> lines, String... replacements) {
-        return globalReplacements(0, lines, replacements);
     }
 
     public static List<String> addImport(List<String> lines, Class... importClasses) {
@@ -425,9 +419,13 @@ public class ReplicationUtils {
         return noReplaceRegions;
     }
 
-    public static String fileHeader(String gradleTask, String sourceClassJavaPath) {
-        return String.join("\n",
-                "//",
+    public static String fileHeaderString(String gradleTask, String sourceClassJavaPath) {
+        Stream<String> fileHeaderStream = fileHeaderStream(gradleTask, sourceClassJavaPath);
+        return fileHeaderStream.collect(Collectors.joining("\n"));
+    }
+
+    public static Stream<String> fileHeaderStream(String gradleTask, String sourceClassJavaPath) {
+        return Stream.of("//",
                 "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",

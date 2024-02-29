@@ -246,7 +246,7 @@ public class TupleSourceCodeGenerator {
         final String[] extraImports = new String[] {TupleCodeGenerator.getTupleImport(tupleClassName),
                 TWO_COLUMN_FACTORY_NAME};
 
-        code.append(ReplicationUtils.fileHeader("replicateTupleSources", TupleSourceCodeGenerator.class.getSimpleName()));
+        code.append(ReplicationUtils.fileHeaderString("replicateTupleSources", TupleSourceCodeGenerator.class.getSimpleName()));
 
         code.append("package ").append(OUTPUT_PACKAGE).append(';').append(NEW_LINE);
 
@@ -512,7 +512,7 @@ public class TupleSourceCodeGenerator {
         final String[] extraImports = new String[] {TupleCodeGenerator.getTupleImport(tupleClassName),
                 "io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory"};
 
-        code.append(ReplicationUtils.fileHeader("replicateTupleSources", TupleSourceCodeGenerator.class.getSimpleName()));
+        code.append(ReplicationUtils.fileHeaderString("replicateTupleSources", TupleSourceCodeGenerator.class.getSimpleName()));
 
         code.append("package ").append(OUTPUT_PACKAGE).append(';').append(NEW_LINE);
 

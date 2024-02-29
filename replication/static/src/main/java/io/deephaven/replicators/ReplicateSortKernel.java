@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
@@ -174,15 +175,21 @@ public class ReplicateSortKernel {
     private static void invertSense(String path, String descendingPath) throws IOException {
         final File file = new File(path);
 
-        final List<String> lines = ascendingNameToDescendingName(FileUtils.readLines(file, Charset.defaultCharset()));
+        final List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
 
         FileUtils.writeLines(new File(descendingPath), invertComparisons(lines));
     }
 
     @NotNull
-    private static List<String> ascendingNameToDescendingName(List<String> lines) {
-        // we should skip the replicate header
-        return globalReplacements(3, lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
+    private static List<String> ascendingNameToDescendingName(String sourceFile, List<String> lines) {
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(sourceFile)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))
+        ).collect(Collectors.toList());
+
+        return globalReplacements(lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
                 "LongMegaMergeDescendingKernel");
     }
 
@@ -191,7 +198,7 @@ public class ReplicateSortKernel {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
         if (!ascending) {
-            lines = ascendingNameToDescendingName(lines);
+            lines = ascendingNameToDescendingName(objectPath, lines);
         }
 
         lines = fixupChunkAttributes(lines);
@@ -204,7 +211,7 @@ public class ReplicateSortKernel {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
         if (!ascending) {
-            lines = ascendingNameToDescendingName(lines);
+            lines = ascendingNameToDescendingName(objectPath, lines);
             lines = invertComparisons(lines);
         }
 
@@ -341,7 +348,7 @@ public class ReplicateSortKernel {
             }
         }
 
-        lines.add(insertionPoint, ReplicationUtils.fileHeader(TASK, oldName));
+        lines.add(insertionPoint, ReplicationUtils.fileHeaderString(TASK, oldName));
 
         FileUtils.writeLines(new File(newPath), lines);
     }

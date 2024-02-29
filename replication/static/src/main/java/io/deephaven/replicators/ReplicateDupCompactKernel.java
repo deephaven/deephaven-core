@@ -13,8 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicationUtils.className;
 import static io.deephaven.replication.ReplicationUtils.*;
@@ -87,7 +88,7 @@ public class ReplicateDupCompactKernel {
             }
         }
 
-        lines.add(insertionPoint, ReplicationUtils.fileHeader("replicateDupCompactKernel", oldName));
+        lines.add(insertionPoint, ReplicationUtils.fileHeaderString("replicateDupCompactKernel", oldName));
 
         FileUtils.writeLines(new File(newPath), lines);
 
@@ -127,8 +128,14 @@ public class ReplicateDupCompactKernel {
     private static List<String> ascendingNameToDescendingName(String path, List<String> lines) {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = className.replace("DupCompactKernel", "ReverseDupCompactKernel");
-        // we should skip the replicate header
-        return globalReplacements(3, lines, className, newName);
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream("replicateDupCompactKernel", ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))
+        ).collect(Collectors.toList());
+
+        return globalReplacements(lines, className, newName);
     }
 
     private static void fixupObjectDupCompact(String objectPath) throws IOException {

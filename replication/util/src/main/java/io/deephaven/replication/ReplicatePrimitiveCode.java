@@ -557,7 +557,7 @@ public class ReplicatePrimitiveCode {
             body = body.substring(body.indexOf("\n", 2) + 1);
         }
 
-        out.print(ReplicationUtils.fileHeader(gradleTask, className(sourceClassJavaPath)));
+        out.print(ReplicationUtils.fileHeaderString(gradleTask, className(sourceClassJavaPath)));
 
         out.print(body);
         out.flush();
