@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.util.type.TypeUtils;
@@ -315,6 +315,7 @@ public class QueryLanguageFunctionGenerator {
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
                 "//",
+                "// @formatter:off",
                 ""));
 
         buf.append("package io.deephaven.engine.table.impl.lang;\n\n");
@@ -364,6 +365,7 @@ public class QueryLanguageFunctionGenerator {
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
                 "//",
+                "// @formatter:off",
                 ""));
 
         testBuf.append("package io.deephaven.engine.table.impl.lang;\n\n");

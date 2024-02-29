@@ -321,6 +321,7 @@ public class GenerateArrowColumnSources {
                     "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
                             + "\" to regenerate",
                     "//",
+                    "// @formatter:off",
                     "");
 
             Files.write(Paths.get(path), (header + javaFile).getBytes(StandardCharsets.UTF_8));

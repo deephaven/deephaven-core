@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.generator.primitivetemplate;
 
 import freemarker.template.Configuration;
@@ -41,7 +41,8 @@ public class CodeGenerator {
                         "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
                         "//",
                         "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                        "// ****** Edit " + templateFile + " and run \"./gradlew :engine-function:compileJava\" to regenerate",
+                        "// ****** Edit " + templateFile
+                                + " and run \"./gradlew :engine-function:compileJava\" to regenerate",
                         "//",
                         "// @formatter:off",
                         ""));

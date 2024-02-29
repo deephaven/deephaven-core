@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.typed;
 
 import com.squareup.javapoet.*;
@@ -657,6 +657,7 @@ public class TypedHasherFactory {
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder
                 .addFileComment("****** Run ReplicateTypedHashers or ./gradlew replicateTypedHashers to regenerate\n");
+        fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("@formatter:off");
 
         for (ChunkType chunkType : chunkTypes) {
