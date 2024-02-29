@@ -1,6 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// @formatter:off
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
