@@ -122,7 +122,6 @@ public class TstUtils {
      */
     public static <T> ColumnHolder<T> groupedColumnHolderForChunk(
             String name, Class<T> type, Class<?> componentType, Chunk<Values> chunkData) {
-        // TODO-RWC: This is the only place that passes "grouped=true" to ColumnHolder
         return ColumnHolder.makeForChunk(name, type, componentType, true, chunkData);
     }
 
@@ -577,9 +576,10 @@ public class TstUtils {
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
 
         // Add grouping indexes for the grouping columns.
-        // TODO-RWC: We have a liveness problem here
         for (ColumnHolder<?> columnHolder : columnHolders) {
             if (columnHolder.grouped) {
+                // This mechanism is only safe in a reachability/liveness sense if we're enclosed in a LivenessScope
+                // that enforces strong reachability.
                 DataIndexer.getOrCreateDataIndex(queryTable, columnHolder.name);
             }
         }

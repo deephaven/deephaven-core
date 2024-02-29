@@ -31,6 +31,8 @@ import java.util.Optional;
  * Data to construct a data column.
  */
 public class ColumnHolder<T> {
+
+    @SuppressWarnings("rawtypes")
     public static final ColumnHolder[] ZERO_LENGTH_COLUMN_HOLDER_ARRAY = new ColumnHolder[0];
 
     /** The name of the column. */
@@ -39,7 +41,11 @@ public class ColumnHolder<T> {
     public final Class<T> dataType;
     /** The data's component type of the column. */
     public final Class<?> componentType;
-    /** Should the result column be grouped (used for test data only). */
+    /**
+     * Should the result column be grouped (used for test data only)? Only use this when enclosed by a
+     * {@link io.deephaven.engine.liveness.LivenessScope} that was constructed with
+     * {@code enforceStrongReachability == true}.
+     */
     public final boolean grouped;
 
     private final Object arrayData;

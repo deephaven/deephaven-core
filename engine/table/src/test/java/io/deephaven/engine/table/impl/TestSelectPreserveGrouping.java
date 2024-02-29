@@ -61,19 +61,17 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         final Table x = TstUtils.testTable(TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
 
-        final DataIndexer xIndexer = DataIndexer.of(x.getRowSet());
-        assertTrue(xIndexer.hasDataIndex(x.getColumnSource("Sym")));
-        assertFalse(xIndexer.hasDataIndex(x.getColumnSource("Sentinel")));
+        assertTrue(DataIndexer.hasDataIndex(x, "Sym"));
+        assertFalse(DataIndexer.hasDataIndex(x, "Sentinel"));
 
         QueryScope.addParam("switchColumnValue", 1);
         final Table xs = x.select("Sym", "SentinelDoubled=Sentinel*2", "Foo=switchColumnValue", "Sentinel");
         assertTableEquals(x, xs.view("Sym", "Sentinel"));
 
-        final DataIndexer xsIndexer = DataIndexer.of(xs.getRowSet());
-        assertTrue(xsIndexer.hasDataIndex(xs.getColumnSource("Sym")));
-        assertFalse(xsIndexer.hasDataIndex(xs.getColumnSource("SentinelDoubled")));
-        assertFalse(xsIndexer.hasDataIndex(xs.getColumnSource("Foo")));
-        assertFalse(xsIndexer.hasDataIndex(xs.getColumnSource("Sentinel")));
+        assertTrue(DataIndexer.hasDataIndex(xs, "Sym"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "SentinelDoubled"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "Foo"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "Sentinel"));
 
         final Table x2 = TstUtils.testTable(TstUtils.i(0, 1 << 16, 2 << 16, 3 << 16, 4 << 16, 5 << 16).toTracking(),
                 TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
@@ -82,10 +80,9 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         final Table xu = x2.update("Sym2=Sym");
         assertTableEquals(x2, xu.view("Sym=Sym2", "Sentinel"));
 
-        final DataIndexer xuIndexer = DataIndexer.of(xu.getRowSet());
-        assertTrue(xuIndexer.hasDataIndex(xu.getColumnSource("Sym")));
-        assertTrue(xuIndexer.hasDataIndex(xu.getColumnSource("Sym2")));
-        assertFalse(xuIndexer.hasDataIndex(xu.getColumnSource("Sentinel")));
+        assertTrue(DataIndexer.hasDataIndex(xu, "Sym"));
+        assertTrue(DataIndexer.hasDataIndex(xu, "Sym2"));
+        assertFalse(DataIndexer.hasDataIndex(xu, "Sentinel"));
     }
 
     public void testPreserveDeferredGrouping() throws IOException {
@@ -104,7 +101,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
                     ColumnDefinition.ofInt("Sentinel"));
             final Table x = new QueryTable(definition, rowSet, columns);
 
-            DataIndexer.of(x.getRowSet()).getOrCreateDataIndex(x, "Sym");
+            DataIndexer.getOrCreateDataIndex(x, "Sym");
 
             System.out.println(x.getDefinition());
             ParquetTools.writeTable(x, dest);
@@ -112,25 +109,23 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             final Table readBack = ParquetTools.readTable(dest);
             TableTools.showWithRowSet(readBack);
 
-            assertTrue(DataIndexer.of(readBack.getRowSet()).hasDataIndex(readBack.getColumnSource("Sym")));
+            assertTrue(DataIndexer.hasDataIndex(readBack, "Sym"));
 
             final Table xs = x.select("Sym", "Sentinel=Sentinel*2", "Foo=Sym", "Sent2=Sentinel");
 
-            final DataIndexer xsIndexer = DataIndexer.of(xs.getRowSet());
-            assertTrue(xsIndexer.hasDataIndex(xs.getColumnSource("Sym")));
-            assertTrue(xsIndexer.hasDataIndex(xs.getColumnSource("Foo")));
+            assertTrue(DataIndexer.hasDataIndex(xs, "Sym"));
+            assertTrue(DataIndexer.hasDataIndex(xs, "Foo"));
             assertSame(xs.getColumnSource("Sym"), xs.getColumnSource("Foo"));
-            assertFalse(xsIndexer.hasDataIndex(xs.getColumnSource("Sentinel")));
-            assertFalse(xsIndexer.hasDataIndex(xs.getColumnSource("Sent2")));
+            assertFalse(DataIndexer.hasDataIndex(xs, "Sentinel"));
+            assertFalse(DataIndexer.hasDataIndex(xs, "Sent2"));
 
             final Table xs2 = x.select("Foo=Sym", "Sentinel=Sentinel*2", "Foo2=Foo", "Foo3=Sym");
 
-            final DataIndexer xs2Indexer = DataIndexer.of(xs2.getRowSet());
-            assertTrue(xs2Indexer.hasDataIndex(xs2.getColumnSource("Foo")));
-            assertFalse(xs2Indexer.hasDataIndex(xs2.getColumnSource("Sentinel")));
-            assertTrue(xs2Indexer.hasDataIndex(xs2.getColumnSource("Foo2")));
+            assertTrue(DataIndexer.hasDataIndex(xs2, "Foo"));
+            assertFalse(DataIndexer.hasDataIndex(xs2, "Sentinel"));
+            assertTrue(DataIndexer.hasDataIndex(xs2, "Foo2"));
             assertSame(xs2.getColumnSource("Foo2"), xs2.getColumnSource("Foo"));
-            assertTrue(xs2Indexer.hasDataIndex(xs2.getColumnSource("Foo3")));
+            assertTrue(DataIndexer.hasDataIndex(xs2, "Foo3"));
         } finally {
             FileUtils.deleteRecursively(testDirectory);
         }

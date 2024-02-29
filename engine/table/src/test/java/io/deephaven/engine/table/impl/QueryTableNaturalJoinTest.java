@@ -296,10 +296,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         new SetGenerator<>("a", "b"),
                         rightInt2Generator));
         if (rightIndexed) {
-            final DataIndexer dataIndexer = DataIndexer.of(rightTable.getRowSet());
-            dataIndexer.getOrCreateDataIndex(rightTable, "I1");
-            dataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1");
-            dataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1", "C2");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1", "C2");
         }
 
         final ColumnInfo<?, ?>[] leftColumnInfo;
@@ -309,10 +308,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         new SetGenerator<>("a", "b", "c"),
                         new FromUniqueIntGenerator(rightInt2Generator, new IntGenerator(20, 10000), 0.75)));
         if (leftIndexed) {
-            final DataIndexer dataIndexer = DataIndexer.of(leftTable.getRowSet());
-            dataIndexer.getOrCreateDataIndex(leftTable, "I1");
-            dataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1");
-            dataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1", "C2");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1", "C2");
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -410,11 +408,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(noGroupingResult, result);
 
         final Table leftFlat = leftTable.flatten();
-        final ColumnSource<?> flatGrouped = leftFlat.getColumnSource("I1");
-        final TrackingRowSet flatRowSet = leftFlat.getRowSet();
 
         // Create the data index for this table and column.
-        DataIndexer.of(flatRowSet).getOrCreateDataIndex(leftFlat, "I1");
+        DataIndexer.getOrCreateDataIndex(leftFlat, "I1");
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);

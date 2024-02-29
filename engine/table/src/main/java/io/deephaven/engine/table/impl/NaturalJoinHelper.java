@@ -91,7 +91,7 @@ class NaturalJoinHelper {
             }
 
             final WritableRowRedirection rowRedirection;
-            final DataIndexer leftDataIndexer = DataIndexer.of(leftTable.getRowSet());
+            final DataIndexer leftDataIndexer = DataIndexer.existingOf(leftTable.getRowSet());
             final boolean useIndex;
             if (bucketingContext.useLeftIndex) {
                 final DataIndex leftDataIndex =

@@ -7,7 +7,6 @@ import com.google.common.collect.Sets;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -31,12 +30,9 @@ import static io.deephaven.engine.testutil.GenerateTableUpdates.generateTableUpd
 @Category(OutOfBandTest.class)
 public class TestDataIndexer extends RefreshingTableTestCase {
 
-    private List<DataIndex> dataIndexes;
-
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        dataIndexes = new ArrayList<>();
     }
 
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
@@ -77,13 +73,13 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         final QueryTable queryTable = TstUtils.getTable(size, random, columnInfo);
         queryTable.setRefreshing(true);
 
-        // Create indexes for every column combination
+        // Create indexes for every column combination; they will be retained by our parent class's LivenessScope
         for (final ArrayList<String> set : powerSet(queryTable.getColumnSourceMap().keySet())) {
             if (set.isEmpty()) {
                 continue;
             }
             System.out.println("Creating index for " + set);
-            dataIndexes.add(DataIndexer.getOrCreateDataIndex(queryTable, set.toArray(String[]::new)));
+            DataIndexer.getOrCreateDataIndex(queryTable, set.toArray(String[]::new));
         }
 
         addIndexValidator(queryTable, "queryTable");
@@ -199,11 +195,11 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));
         assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, doubleColumnSource));
 
-        // Add the multi-column indexes.
-        dataIndexes.add(DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym"));
-        dataIndexes.add(DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2"));
-        dataIndexes.add(DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "doubleCol"));
-        dataIndexes.add(DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol"));
+        // Add the multi-column indexes; they will be retained by our parent class's LivenessScope
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym");
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2");
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "doubleCol");
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol");
 
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource));
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));

@@ -107,15 +107,13 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      */
     @Nullable
     private DataIndex optimalIndex(final Table inputTable) {
-        final DataIndexer dataIndexer = DataIndexer.of(inputTable.getRowSet());
-
-        final DataIndex full = dataIndexer.getDataIndex(inputTable, sortColumnNames);
+        final DataIndex full = DataIndexer.getDataIndex(inputTable, sortColumnNames);
         if (full != null) {
             // We have an index for all sort columns.
             return full;
         }
         // Return an index for the first column (if one exists) or null.
-        return dataIndexer.getDataIndex(inputTable, sortColumnNames[0]);
+        return DataIndexer.getDataIndex(inputTable, sortColumnNames[0]);
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {

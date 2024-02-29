@@ -35,10 +35,10 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         this(context, source, convertListToArray(indexColumns));
     }
 
-    static private Collection<String[]> convertListToArray(ArrayList<ArrayList<String>> indexColumns) {
+    private static Collection<String[]> convertListToArray(ArrayList<ArrayList<String>> indexColumns) {
         Collection<String[]> collectionOfArrays = new ArrayList<>();
         for (ArrayList<String> columnSet : indexColumns) {
-            collectionOfArrays.add(columnSet.toArray(new String[columnSet.size()]));
+            collectionOfArrays.add(columnSet.toArray(new String[0]));
         }
         return collectionOfArrays;
     }
@@ -66,15 +66,13 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
 
     public static void validateIndex(String[] indexToCheck, RowSet rowSet, Table source, String context,
             boolean usePrev) {
-        final ColumnSource[] groupColumns = getColumnSources(indexToCheck, source);
-        if (!rowSet.isTracking() || !DataIndexer.of(rowSet.trackingCast()).hasDataIndex(groupColumns)) {
+        final ColumnSource<?>[] groupColumns = getColumnSources(indexToCheck, source);
+        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet.trackingCast());
+        if (!rowSet.isTracking() || dataIndexer == null || !dataIndexer.hasDataIndex(groupColumns)) {
             return;
         }
 
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet.trackingCast());
         final BaseDataIndex dataIndex = (BaseDataIndex) dataIndexer.getDataIndex(groupColumns);
-
-
         final Table indexTable = dataIndex.table();
 
         // Create column iterators for the keys and the row set
@@ -86,7 +84,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         while (rsIt.hasNext()) {
             final RowSet rs = rsIt.next();
             final Object[] keyValues = Arrays.stream(keyIterators).map(CloseableIterator::next).toArray();
-            final Object keys = getFromValues(groupColumns, keyValues);
+            final Object keys = getFromValues(keyValues);
 
             final RowSet.Iterator it = rs.iterator();
             while (it.hasNext()) {
@@ -133,11 +131,11 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         }
     }
 
-    private static ColumnSource[] getColumnSources(String[] indexToCheck, Table source) {
+    private static ColumnSource<?>[] getColumnSources(String[] indexToCheck, Table source) {
         return Arrays.stream(indexToCheck).map(source::getColumnSource).toArray(ColumnSource[]::new);
     }
 
-    static private void checkGroupKey(final ColumnSource[] groupColumns, final long next, final Object key,
+    private static void checkGroupKey(final ColumnSource<?>[] groupColumns, final long next, final Object key,
             final String context) {
         final Object value = getValue(groupColumns, next);
         if (key instanceof Object[]) {
@@ -149,7 +147,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
                 "context");
     }
 
-    static private void checkGroupPrevKey(final ColumnSource[] groupColumns, final long next, final Object key,
+    private static void checkGroupPrevKey(final ColumnSource<?>[] groupColumns, final long next, final Object key,
             final String context) {
         Object value = getPrevValue(groupColumns, next);
         if (key instanceof Object[]) {
@@ -161,7 +159,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
                 "context");
     }
 
-    static private Object getValue(ColumnSource[] groupColumns, long next) {
+    private static Object getValue(ColumnSource<?>[] groupColumns, long next) {
         // pretty inefficient, since this is a chunk source
         final ChunkSource.WithPrev<Values> source = DataIndexUtils.makeBoxedKeySource(groupColumns);
         try (final ChunkSource.GetContext ctx = source.makeGetContext(1)) {
@@ -169,7 +167,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         }
     }
 
-    static private Object getPrevValue(ColumnSource[] groupColumns, long next) {
+    private static Object getPrevValue(ColumnSource<?>[] groupColumns, long next) {
         // pretty inefficient, since this is a chunk source
         final ChunkSource.WithPrev<Values> source = DataIndexUtils.makeBoxedKeySource(groupColumns);
         try (final ChunkSource.GetContext ctx = source.makeGetContext(1)) {
@@ -177,7 +175,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
         }
     }
 
-    static private Object getFromValues(ColumnSource[] groupColumns, Object... values) {
+    private static Object getFromValues(Object... values) {
         if (values.length == 1) {
             return values[0];
         }

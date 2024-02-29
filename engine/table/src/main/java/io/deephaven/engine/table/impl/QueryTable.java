@@ -1412,8 +1412,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final boolean setRefreshing = rightTable.isRefreshing();
 
                     final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final DataIndex rightIndex =
-                            DataIndexer.of(rightTable.getRowSet()).getDataIndex(rightTable, columnNames);
+                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, columnNames);
                     if (rightIndex != null) {
                         // We have a distinct index table, let's use it.
                         distinctValues = rightIndex.table();
@@ -1642,8 +1641,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         // Get a list of all the data indexes in the source table.
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes();
+        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
+        if (dataIndexer == null) {
+            return;
+        }
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes(false);
         if (dataIndexes.isEmpty()) {
             return;
         }

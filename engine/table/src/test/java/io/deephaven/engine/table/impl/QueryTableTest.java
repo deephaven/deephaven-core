@@ -3048,12 +3048,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {
-            final ColumnSource<String> symbol = t.getColumnSource("Symbol");
             // Create the data index by asking for it.
-            DataIndexer.of(t.getRowSet()).getDataIndex(symbol);
+            DataIndexer.getOrCreateDataIndex(t, "Symbol");
 
-            final Table result =
-                    t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
+            final Table result = t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithRowSet(result);
         });
     }
@@ -3082,7 +3080,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 .groupBy("Symbol").ungroup();
 
         // Create the index for "Symbol" column.
-        DataIndexer.of(source.getRowSet()).getOrCreateDataIndex(source, "Symbol");
+        DataIndexer.getOrCreateDataIndex(source, "Symbol");
 
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
@@ -3328,7 +3326,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable t1 = new QueryTable(rowSet, columns);
 
         // Create an index for "T"
-        DataIndexer.of(t1.getRowSet()).getOrCreateDataIndex(t1, "T");
+        DataIndexer.getOrCreateDataIndex(t1, "T");
 
         final Table t2 = t1.select("T");
 

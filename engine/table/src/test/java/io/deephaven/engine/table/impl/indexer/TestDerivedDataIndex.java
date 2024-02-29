@@ -48,11 +48,17 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         testTable = TstUtils.getTable(INITIAL_SIZE, new Random(0), columnInfo);
         testTable.setRefreshing(true);
 
-        // Add some data indexes.
+        // Add some data indexes; they will be retained by our parent class's LivenessScope
         dataIndexes = new ArrayList<>();
         dataIndexes.add(DataIndexer.getOrCreateDataIndex(testTable, "Sym"));
         dataIndexes.add(DataIndexer.getOrCreateDataIndex(testTable, "Sym2"));
         dataIndexes.add(DataIndexer.getOrCreateDataIndex(testTable, "Sym", "Sym2"));
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        dataIndexes = null;
     }
 
     @Test
