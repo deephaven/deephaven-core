@@ -1,4 +1,3 @@
-
 package io.deephaven.function;
 
 import io.deephaven.base.verify.Require;
