@@ -3,14 +3,8 @@
 //
 package io.deephaven.replicators;
 
-import org.apache.commons.io.FileUtils;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.List;
-import java.util.stream.IntStream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
@@ -37,12 +31,12 @@ public class ReplicatePrimitiveInterfaces {
         {
             charToShortAndByte(TASK, CHAR_TO_INT_PATH);
             final String floatToIntPath = charToFloat(TASK, CHAR_TO_INT_PATH, null);
-            removeExtraCopyrightHeader(intToDouble(TASK, floatToIntPath, null,
+            intToDouble(TASK, floatToIntPath, null,
                     "interface",
                     "FunctionalInterface",
                     CHAR_TO_INT_PATH.substring(
                             CHAR_TO_INT_PATH.lastIndexOf('/') + 1,
-                            CHAR_TO_INT_PATH.lastIndexOf(".java"))));
+                            CHAR_TO_INT_PATH.lastIndexOf(".java")));
             if (!new File(floatToIntPath).delete()) {
                 throw new IOException("Failed to delete extraneous " + floatToIntPath);
             }
@@ -50,14 +44,14 @@ public class ReplicatePrimitiveInterfaces {
         {
             charToShortAndByte(TASK, CHAR_ITERATOR_PATH);
             final String floatPath = charToFloat(TASK, CHAR_ITERATOR_PATH, null);
-            removeExtraCopyrightHeader(intToDouble(TASK, floatPath, null,
+            intToDouble(TASK, floatPath, null,
                     "interface",
                     "FunctionalInterface",
                     "int valueIndex",
                     "int subIteratorIndex",
                     CHAR_ITERATOR_PATH.substring(
                             CHAR_ITERATOR_PATH.lastIndexOf('/') + 1,
-                            CHAR_ITERATOR_PATH.lastIndexOf(".java"))));
+                            CHAR_ITERATOR_PATH.lastIndexOf(".java")));
         }
         {
             intToLong(TASK, INT_ITERATOR_PATH, null,
@@ -71,14 +65,5 @@ public class ReplicatePrimitiveInterfaces {
                     "int valueIndex",
                     "int subIteratorIndex");
         }
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    private static String removeExtraCopyrightHeader(@NotNull final String path) throws IOException {
-        final File file = new File(path);
-        final List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        IntStream.of(3, 3, 3).forEach(lines::remove);
-        FileUtils.writeLines(file, lines);
-        return path;
     }
 }
