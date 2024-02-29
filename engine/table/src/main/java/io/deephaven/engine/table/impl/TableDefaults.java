@@ -243,14 +243,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table moveColumnsDown(String... columnsToMove) {
-        return moveColumns(numColumns() - columnsToMove.length, true, columnsToMove);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table moveColumns(int index, String... columnsToMove) {
-        return moveColumns(index, false, columnsToMove);
+        return moveColumns(numColumns() - columnsToMove.length, columnsToMove);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
