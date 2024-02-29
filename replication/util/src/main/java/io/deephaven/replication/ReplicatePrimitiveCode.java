@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.deephaven.replication.ReplicationUtils.className;
 import static io.deephaven.replication.ReplicationUtils.findNoLocateRegions;
 import static io.deephaven.replication.ReplicationUtils.replaceRegion;
 
@@ -505,7 +506,7 @@ public class ReplicatePrimitiveCode {
 
     private static String getResultClassPathFromSourceClassPath(String sourceClassJavaPath,
             String[] exemptions, String[]... pairs) {
-        final String sourceClassName = className(sourceClassJavaPath);
+        final String sourceClassName = ReplicationUtils.className(sourceClassJavaPath);
         final String resultClassName = replaceAllInternal(sourceClassName, null, exemptions, pairs);
         final String resultClassJavaPath = basePath(sourceClassJavaPath) + '/' + resultClassName + ".java";
         return resultClassJavaPath;
@@ -523,7 +524,7 @@ public class ReplicatePrimitiveCode {
         if (resultClassJavaPath == null || resultClassJavaPath.isEmpty()) {
             resultClassJavaPath = getResultClassPathFromSourceClassPath(sourceClassJavaPath, exemptions, pairs);
         }
-        final String resultClassName = className(resultClassJavaPath);
+        final String resultClassName = ReplicationUtils.className(resultClassJavaPath);
         final String resultClassPackageName = packageName(resultClassJavaPath);
         final String fullResultClassName = resultClassPackageName + '.' + resultClassName;
         final Long serialVersionUID = serialVersionUIDs == null ? null : serialVersionUIDs.get(fullResultClassName);
@@ -556,16 +557,7 @@ public class ReplicatePrimitiveCode {
             body = body.substring(body.indexOf("\n", 2) + 1);
         }
 
-        out.print(String.join("\n",
-                "//",
-                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
-                "//",
-                "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                "// ****** Edit " + className(sourceClassJavaPath) + " and run \"./gradlew " + gradleTask
-                        + "\" to regenerate",
-                "//",
-                "// @formatter:off",
-                ""));
+        out.print(ReplicationUtils.fileHeader(gradleTask, className(sourceClassJavaPath)));
 
         out.print(body);
         out.flush();
@@ -598,14 +590,8 @@ public class ReplicatePrimitiveCode {
     }
 
     @NotNull
-    public static String className(@NotNull final String sourceClassJavaPath) {
-        final String javaFileName = javaFileName(sourceClassJavaPath);
-        return javaFileName.substring(0, javaFileName.length() - ".java".length());
-    }
-
-    @NotNull
     public static String fullClassName(@NotNull final String sourceClassJavaPath) {
-        return packageName(sourceClassJavaPath) + '.' + className(sourceClassJavaPath);
+        return packageName(sourceClassJavaPath) + '.' + ReplicationUtils.className(sourceClassJavaPath);
     }
 
     public static String replaceAllInternal(String inputText, Long serialVersionUID, String[] exemptions,

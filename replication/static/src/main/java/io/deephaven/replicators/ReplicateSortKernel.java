@@ -341,11 +341,7 @@ public class ReplicateSortKernel {
             }
         }
 
-        lines.addAll(insertionPoint, Arrays.asList(
-                "/****************************************************************************************************************************",
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
-                        + " and regenerate",
-                " ****************************************************************************************************************************/"));
+        lines.add(insertionPoint, ReplicationUtils.fileHeader(TASK, oldName));
 
         FileUtils.writeLines(new File(newPath), lines);
     }

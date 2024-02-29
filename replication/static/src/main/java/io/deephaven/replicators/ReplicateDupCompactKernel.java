@@ -15,9 +15,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static io.deephaven.replication.ReplicatePrimitiveCode.className;
+import static io.deephaven.replication.ReplicationUtils.className;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateDupCompactKernel {
@@ -88,11 +87,7 @@ public class ReplicateDupCompactKernel {
             }
         }
 
-        lines.addAll(insertionPoint, Arrays.asList(
-                "/****************************************************************************************************************************",
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
-                        + " and regenerate",
-                " ****************************************************************************************************************************/"));
+        lines.add(insertionPoint, ReplicationUtils.fileHeader("replicateDupCompactKernel", oldName));
 
         FileUtils.writeLines(new File(newPath), lines);
 

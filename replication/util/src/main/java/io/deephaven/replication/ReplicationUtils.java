@@ -424,4 +424,23 @@ public class ReplicationUtils {
 
         return noReplaceRegions;
     }
+
+    public static String fileHeader(String gradleTask, String sourceClassJavaPath) {
+        return String.join("\n",
+                "//",
+                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                "//",
+                "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                "// ****** Edit " + sourceClassJavaPath + " and run \"./gradlew " + gradleTask
+                        + "\" to regenerate",
+                "//",
+                "// @formatter:off",
+                "");
+    }
+
+    @NotNull
+    public static String className(@NotNull final String sourceClassJavaPath) {
+        final String javaFileName = ReplicatePrimitiveCode.javaFileName(sourceClassJavaPath);
+        return javaFileName.substring(0, javaFileName.length() - ".java".length());
+    }
 }
