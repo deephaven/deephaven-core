@@ -13,11 +13,3 @@ dependencies {
 
     Classpaths.inheritAutoService(project)
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/generated/**',
-        )
-    }
-}

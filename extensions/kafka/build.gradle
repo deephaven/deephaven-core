@@ -46,11 +46,3 @@ dependencies {
 
     Classpaths.inheritAssertJ(project)
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/**FieldCopier.java',
-        )
-    }
-}

@@ -36,16 +36,3 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
-
-spotless {
-    java {
-        targetExclude(
-                'src/main/java/io/deephaven/plot/Axes.java',
-                'src/main/java/io/deephaven/plot/AxesImpl.java',
-                'src/main/java/io/deephaven/plot/Figure.java',
-                'src/main/java/io/deephaven/plot/FigureImpl.java',
-                'src/main/java/io/deephaven/plot/PlottingConvenience.java',
-                'src/main/java/io/deephaven/plot/datasets/multiseries/**'
-        )
-    }
-}

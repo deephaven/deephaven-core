@@ -69,21 +69,4 @@ if (Architecture.fromHost() == Architecture.AMD64) {
     })
 }
 
-spotless {
-    java {
-        targetExclude(
-                '**/*Boolean*.java',
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java',
-                '**/*Transfer*.java',
-        )
-    }
-}
-
 TestTools.addEngineOutOfBandTest(project)

@@ -27,13 +27,6 @@ dependencies {
 def generatedFiles = []
 
 
-spotless {
-    java {
-        targetExclude generatedFiles
-    }
-}
-
-
 //////////////// Code Generation ////////////////
 
 // task to clean up generated files

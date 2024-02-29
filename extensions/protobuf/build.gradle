@@ -33,14 +33,6 @@ test {
     useJUnitPlatform()
 }
 
-spotless {
-    java {
-        targetExclude(
-                'build/generated/source/proto/test/java/**',
-        )
-    }
-}
-
 protobuf {
     protoc {
         artifact = 'com.google.protobuf:protoc:3.24.1'
