@@ -312,7 +312,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     public ClientTableState state() {
-        assert currentState != null : "Table already closed, cannot be used again";
+        if (currentState == null) {
+            throw new IllegalStateException("Table already closed, cannot be used again");
+        }
         return currentState;
     }
 
