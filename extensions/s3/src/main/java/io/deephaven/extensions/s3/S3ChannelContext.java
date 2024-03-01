@@ -2,6 +2,7 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
 import io.deephaven.util.channel.SeekableChannelContext;
+import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -28,20 +29,26 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 /**
- * Context object used to store read-ahead buffers for efficiently reading from S3.
+ * Context object used to store read-ahead buffers for efficiently reading from S3. A single context object can only be
+ * associated with a single URI at a time.
  */
 final class S3ChannelContext implements SeekableChannelContext {
     private static final Logger log = LoggerFactory.getLogger(S3ChannelContext.class);
-    private static final long UNINITIALIZED_SIZE = -1;
+    static final long UNINITIALIZED_SIZE = -1;
+    private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
 
     private final S3AsyncClient client;
-    final S3Instructions instructions;
+    private final S3Instructions instructions;
     private final BufferPool bufferPool;
 
+    /**
+     * The URI associated with this context. A single context object can only be associated with a single URI at a time.
+     * But it can be re-associated with a different URI after closing.
+     */
     private S3Uri uri;
 
     /**
-     * Used to cache recently fetched fragments for faster lookup
+     * Used to cache recently fetched fragments from the {@link #uri} for faster lookup.
      */
     private final Request[] requests;
 
@@ -60,13 +67,19 @@ final class S3ChannelContext implements SeekableChannelContext {
         this.instructions = Objects.requireNonNull(instructions);
         this.bufferPool = Objects.requireNonNull(bufferPool);
         requests = new Request[instructions.maxCacheSize()];
+        uri = null;
         size = UNINITIALIZED_SIZE;
+        numFragments = UNINITIALIZED_NUM_FRAGMENTS;
         if (log.isDebugEnabled()) {
             log.debug("creating context: {}", ctxStr());
         }
     }
 
-    void verifyOrSetUri(S3Uri uri) {
+    S3Uri getUri() {
+        return uri;
+    }
+
+    void verifyOrSetUri(@Nullable final S3Uri uri) {
         if (this.uri == null) {
             this.uri = Objects.requireNonNull(uri);
         } else if (!this.uri.equals(uri)) {
@@ -84,7 +97,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
     }
 
-    public long size() throws IOException {
+    long size() throws IOException {
         ensureSize();
         return size;
     }
@@ -137,6 +150,10 @@ final class S3ChannelContext implements SeekableChannelContext {
                 requests[i] = null;
             }
         }
+        // Reset the internal state
+        uri = null;
+        size = UNINITIALIZED_SIZE;
+        numFragments = UNINITIALIZED_NUM_FRAGMENTS;
     }
 
     // --------------------------------------------------------------------------------------------------

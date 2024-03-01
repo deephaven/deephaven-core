@@ -982,8 +982,7 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
         return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory), readInstructions),
-                readInstructions,
-                tableDefinition);
+                readInstructions, tableDefinition);
     }
 
     /**

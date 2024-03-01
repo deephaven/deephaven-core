@@ -61,7 +61,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         try {
-            final List<URI> parquetURIs = provider.getURIStreamFromDirectory(tableRootDirectory,
+            final List<URI> parquetURIs = provider.getChildURIListFromDirectory(tableRootDirectory,
                     ParquetFileHelper::fileNameMatches);
             synchronized (this) {
                 // Iterate over the URI stream and add the location keys to the cache

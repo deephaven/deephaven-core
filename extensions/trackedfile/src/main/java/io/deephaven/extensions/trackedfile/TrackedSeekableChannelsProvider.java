@@ -77,7 +77,7 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public List<URI> getURIStreamFromDirectory(@NotNull final URI directoryURI,
+    public List<URI> getChildURIListFromDirectory(@NotNull final URI directoryURI,
             @NotNull final Predicate<URI> uriFilter) throws IOException {
         try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
             return childFileStream

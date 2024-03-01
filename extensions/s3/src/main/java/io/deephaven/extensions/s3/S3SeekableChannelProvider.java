@@ -111,15 +111,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
     }
 
-    // TODO Test for recursive listing
-    // TODO Test for non parquet files in the directory
-    // TODO Test for hidden files in the directory
-
     @Override
-    public List<URI> getURIStreamFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+    public List<URI> getChildURIListFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
             throws IOException {
         final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directoryURI);
         final String bucketName = s3DirectoryURI.bucket().orElseThrow();
+        final String directoryKey = s3DirectoryURI.key().orElseThrow();
         final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                 .bucket(bucketName)
                 .prefix(s3DirectoryURI.key().orElseThrow())
@@ -138,8 +135,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                         s3Instructions);
             }
             uris.addAll(response.contents().stream()
-                    .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
-                    .filter(uriFilter)
+                    .filter(s3Object -> !s3Object.key().equals(directoryKey)) // Skip the directory itself
+                    .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key())) // Convert to URI
+                    .filter(uriFilter) // Apply the filter
                     .collect(Collectors.toList()));
             continuationToken = response.nextContinuationToken();
             // If the continuation token is null, we have reached the end of the list, else fetch the next page

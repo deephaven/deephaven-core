@@ -116,7 +116,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @param directoryURI The URI of the directory to list
      * @param uriFilter A filter to apply to the URIs in the directory
      */
-    default List<URI> getURIStreamFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+    default List<URI> getChildURIListFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
             throws IOException {
         throw new UnsupportedOperationException("TODO Add this support for all providers");
     }

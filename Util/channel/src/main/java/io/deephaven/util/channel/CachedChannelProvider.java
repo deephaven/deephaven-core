@@ -111,9 +111,9 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public List<URI> getURIStreamFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+    public List<URI> getChildURIListFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
             throws IOException {
-        return wrappedProvider.getURIStreamFromDirectory(directoryURI, uriFilter);
+        return wrappedProvider.getChildURIListFromDirectory(directoryURI, uriFilter);
     }
 
     @Nullable
