@@ -58,7 +58,7 @@ public class JoinControl {
         private final From firstBuildFrom;
         private final int hashTableSize;
 
-        private BuildParameters(
+        BuildParameters(
                 @NotNull final JoinControl.BuildParameters.From firstBuildFrom,
                 final int hashTableSize) {
             this.firstBuildFrom = firstBuildFrom;

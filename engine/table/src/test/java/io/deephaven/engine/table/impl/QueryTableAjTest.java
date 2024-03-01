@@ -879,23 +879,13 @@ public class QueryTableAjTest {
                                             rightSize, joinIncrement, true, true, false, false, true, false,
                                             new JoinControl() {
                                                 @Override
-                                                int tableSizeForRightBuild(Table rightTable) {
-                                                    return 1 << 2;
-                                                }
-
-                                                @Override
-                                                int tableSizeForLeftBuild(Table leftTable) {
+                                                int initialBuildSize() {
                                                     return 1 << 2;
                                                 }
 
                                                 @Override
                                                 double getMaximumLoadFactor() {
                                                     return 0.75;
-                                                }
-
-                                                @Override
-                                                int initialBuildSize() {
-                                                    return 1 << 3;
                                                 }
 
                                                 @Override
