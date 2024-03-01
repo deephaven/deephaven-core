@@ -21,7 +21,6 @@ public abstract class StaticAsOfJoinStateManager {
         if (keySourcesForErrorMessages.length == 1) {
             return Objects.toString(keySourcesForErrorMessages[0].get(leftKey));
         }
-        return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey)))
-                .collect(Collectors.joining(", ")) + "]";
+        return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
     }
 }

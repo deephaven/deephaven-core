@@ -26,7 +26,7 @@ public interface MultiJoinStateManager {
     long getResultSize();
 
     /**
-     * Get the hash table column sources for the result table. These are used as the key columns of our result.
+     * Get the hash table column sources for the result table.  These are used as the key columns of our result.
      */
     ColumnSource<?>[] getKeyHashTableSources();
 

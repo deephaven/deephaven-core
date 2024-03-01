@@ -16,8 +16,7 @@ interface OperatorAggregationStateManager {
 
     SafeCloseable makeAggregationStateBuildContext(ColumnSource<?>[] buildSources, long maxSize);
 
-    void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition,
-            WritableIntChunk<RowKeys> outputPositions);
+    void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions);
 
     ColumnSource[] getKeyHashTableSources();
 

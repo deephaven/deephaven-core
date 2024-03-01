@@ -7,10 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 
 public interface IncrementalNaturalJoinStateManager {
     long getRightIndex(int slot);
-
     RowSet getLeftIndex(int slot);
-
     String keyString(int slot);
-
     void checkExactMatch(boolean exactMatch, long leftKeyIndex, long rightSide);
 }
