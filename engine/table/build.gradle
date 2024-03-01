@@ -80,6 +80,12 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
+spotless {
+    java {
+        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/FilterKernel*Sample.java'
+    }
+}
+
 test {
     //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
     //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
