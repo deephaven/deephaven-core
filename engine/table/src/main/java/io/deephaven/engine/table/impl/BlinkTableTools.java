@@ -104,17 +104,28 @@ public class BlinkTableTools {
     }
 
     /**
-     * Returns true if table is a blink table.
+     * Returns true if {@code table} is a blink table.
      *
      * @param table The table to check for blink behavior
-     * @return Whether this table is a blink table
+     * @return Whether {@code table} is a blink table
      * @see Table#BLINK_TABLE_ATTRIBUTE
      */
-    public static boolean isBlink(Table table) {
+    public static boolean isBlink(@NotNull final Table table) {
         if (!table.isRefreshing()) {
             return false;
         }
         return Boolean.TRUE.equals(table.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
+    }
+
+    /**
+     * Returns true if {@code attributes} indicate a blink table.
+     *
+     * @param attributes The map to check for blink table attributes
+     * @return Whether {@code attributes} indicate a blink table
+     * @see Table#BLINK_TABLE_ATTRIBUTE
+     */
+    public static boolean hasBlink(@NotNull final Map<String, Object> attributes) {
+        return Boolean.TRUE.equals(attributes.get(Table.BLINK_TABLE_ATTRIBUTE));
     }
 
     private static class BlinkToAppendOnlyOperation implements QueryTable.MemoizableOperation<QueryTable> {

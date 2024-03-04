@@ -60,6 +60,16 @@ public abstract class MemoizedOperationKey {
         abstract BaseTable.CopyAttributeOperation copyType();
     }
 
+    abstract static class BlinkIncompatibleMemoizedOperationKey extends MemoizedOperationKey {
+        @Override
+        boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
+            return BlinkTableTools.hasBlink(oldAttributes) == BlinkTableTools.hasBlink(newAttributes);
+        }
+
+        @Override
+        abstract BaseTable.CopyAttributeOperation copyType();
+    }
+
     public interface Provider {
         MemoizedOperationKey getMemoKey();
     }
@@ -360,7 +370,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class AggBy extends AttributeAgnosticMemoizedOperationKey {
+    private static class AggBy extends BlinkIncompatibleMemoizedOperationKey {
 
         private final List<? extends Aggregation> aggregations;
         private final boolean preserveEmpty;
@@ -442,7 +452,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class Rollup extends AttributeAgnosticMemoizedOperationKey {
+    private static class Rollup extends BlinkIncompatibleMemoizedOperationKey {
 
         private final AggBy aggBy;
         private final boolean includeConstituents;
