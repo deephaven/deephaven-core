@@ -22,10 +22,8 @@ import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProviderPlugin.FILE_URI_SCHEME;
@@ -77,14 +75,10 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public List<URI> getChildURIListFromDirectory(@NotNull final URI directoryURI,
-            @NotNull final Predicate<URI> uriFilter) throws IOException {
+    public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+            throws IOException {
         try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
-            return childFileStream
-                    .map(Path::toUri)
-                    .filter(uriFilter)
-                    .collect(Collectors.toList());
-            // TODO Test if we get the "file://" in the URIs
+            childFileStream.map(Path::toUri).forEach(processor);
         }
     }
 

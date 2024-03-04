@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 
 /**
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
@@ -111,9 +111,9 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public List<URI> getChildURIListFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+    public void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor)
             throws IOException {
-        return wrappedProvider.getChildURIListFromDirectory(directoryURI, uriFilter);
+        wrappedProvider.applyToChildURIs(directoryURI, processor);
     }
 
     @Nullable

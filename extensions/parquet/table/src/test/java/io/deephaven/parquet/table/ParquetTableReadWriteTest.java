@@ -660,7 +660,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readFlatPartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        // Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
                 .readAheadCount(1)

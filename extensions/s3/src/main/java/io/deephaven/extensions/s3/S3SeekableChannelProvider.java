@@ -22,17 +22,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
-import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_SCHEME;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
@@ -112,7 +108,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public List<URI> getChildURIListFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
+    public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
         final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directoryURI);
         final String bucketName = s3DirectoryURI.bucket().orElseThrow();
@@ -122,27 +118,26 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .prefix(s3DirectoryURI.key().orElseThrow())
                 .delimiter("/");
         String continuationToken = null;
-        final List<URI> uris = new ArrayList<>();
         final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
+        ListObjectsV2Response response;
         do {
             final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
-            final ListObjectsV2Response response;
             try {
-                // Wait for the first response, or throw an exception if it takes too long
                 response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
             } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
                 throw handleS3Exception(e, String.format("fetching list of files in directory %s", directoryURI),
                         s3Instructions);
             }
-            uris.addAll(response.contents().stream()
+            response.contents().stream()
                     .filter(s3Object -> !s3Object.key().equals(directoryKey)) // Skip the directory itself
-                    .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key())) // Convert to URI
-                    .filter(uriFilter) // Apply the filter
-                    .collect(Collectors.toList()));
+                    .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
+                    .forEach(processor);
+
+            // If the response is truncated, fetch the next page using the continuation token from the response
+            // Usually the response is truncated when there are more than 1000 objects in the bucket
+            // TODO Test this
             continuationToken = response.nextContinuationToken();
-            // If the continuation token is null, we have reached the end of the list, else fetch the next page
-        } while (continuationToken != null);
-        return uris;
+        } while (response.isTruncated());
     }
 
     @Override

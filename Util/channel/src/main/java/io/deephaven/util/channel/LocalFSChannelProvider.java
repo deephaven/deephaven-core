@@ -12,8 +12,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class LocalFSChannelProvider implements SeekableChannelsProvider {
     @Override
@@ -54,6 +57,13 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
             result.position(0);
         }
         return result;
+    }
+
+    @Override
+    public void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException {
+        try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
+            childFileStream.map(Path::toUri).forEach(processor);
+        }
     }
 
     @Override

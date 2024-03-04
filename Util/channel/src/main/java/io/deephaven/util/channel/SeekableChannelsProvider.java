@@ -14,8 +14,7 @@ import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 
 public interface SeekableChannelsProvider extends SafeCloseable {
 
@@ -110,15 +109,12 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) throws IOException;
 
     /**
-     * Get a list of URIs of files contained inside the given directory. The URIs are expected to be the direct children
-     * of the directory, and not recursively include files from subdirectories.
+     * Applies the supplied action on the list of file URIs contained inside the given directory. The logic is
+     * non-recursive.
      *
      * @param directoryURI The URI of the directory to list
-     * @param uriFilter A filter to apply to the URIs in the directory
+     * @param processor A method to apply to the URIs in the directory
      */
-    default List<URI> getChildURIListFromDirectory(@NotNull URI directoryURI, @NotNull Predicate<URI> uriFilter)
-            throws IOException {
-        throw new UnsupportedOperationException("TODO Add this support for all providers");
-    }
+    void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
 
 }

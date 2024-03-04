@@ -15,9 +15,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import static io.deephaven.parquet.table.layout.ParquetFileHelper.fileNameMatches;
 
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
@@ -61,22 +62,23 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         try {
-            final List<URI> parquetURIs = provider.getChildURIListFromDirectory(tableRootDirectory,
-                    ParquetFileHelper::fileNameMatches);
-            synchronized (this) {
-                // Iterate over the URI stream and add the location keys to the cache
-                parquetURIs.forEach(parquetFileURI -> {
-                    ParquetTableLocationKey locationKey = cache.get(parquetFileURI);
+            provider.applyToChildURIs(tableRootDirectory, uri -> {
+                if (!fileNameMatches(uri)) {
+                    // Skip non-parquet URIs
+                    return;
+                }
+                synchronized (this) {
+                    ParquetTableLocationKey locationKey = cache.get(uri);
                     if (locationKey == null) {
-                        locationKey = locationKey(parquetFileURI, readInstructions);
+                        locationKey = locationKey(uri, readInstructions);
                         if (!locationKey.verifyFileReader()) {
                             return;
                         }
-                        cache.put(parquetFileURI, locationKey);
+                        cache.put(uri, locationKey);
                     }
                     locationKeyObserver.accept(locationKey);
-                });
-            }
+                }
+            });
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
         }

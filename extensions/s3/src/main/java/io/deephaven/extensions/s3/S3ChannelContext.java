@@ -138,6 +138,9 @@ final class S3ChannelContext implements SeekableChannelContext {
         return filled;
     }
 
+    /**
+     * Close the context, cancelling all outstanding requests and releasing all resources associated with it.
+     */
     @Override
     public void close() {
         if (log.isDebugEnabled()) {
