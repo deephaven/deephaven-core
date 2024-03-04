@@ -12,7 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class takes an object read from a parquet file and formats it to a string, only for the supported types.
+ * This class takes an object read from a parquet file and formats it to a string used for generate partitioning column
+ * values.
  */
 enum PartitionFormatter {
     ForString {

@@ -9,8 +9,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -60,7 +60,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.getSchemaForTable;
 import static io.deephaven.parquet.table.ParquetUtils.PARQUET_FILE_EXTENSION;
@@ -546,8 +545,7 @@ public class ParquetTools {
         final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
         final Collection<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(keyColumnNames.size() +
                 partitionedTable.constituentDefinition().numColumns());
-        partitionedTable.table().getDefinition().getColumns().stream()
-                .filter(columnDefinition -> keyColumnNames.contains(columnDefinition.getName()))
+        keyColumnNames.stream().map(keyColName -> partitionedTable.table().getDefinition().getColumn(keyColName))
                 .forEach(columnDefinitions::add);
         partitionedTable.constituentDefinition().getColumns().stream()
                 .filter(columnDefinition -> !keyColumnNames.contains(columnDefinition.getName()))
@@ -576,55 +574,57 @@ public class ParquetTools {
             @NotNull final String baseName,
             @NotNull final ParquetInstructions writeInstructions) {
         final String[] partitioningColumnNames = partitionedTable.keyColumnNames().toArray(String[]::new);
-        if (partitionedTable.table().numColumns() == partitioningColumnNames.length) {
-            throw new IllegalArgumentException(
-                    "Cannot write a partitioned parquet table with no non-partitioning columns");
+        final TableDefinition partitionedTableDefinition = getNonKeyTableDefiniton(partitionedTable.keyColumnNames(),
+                definition);
+        if (partitionedTableDefinition.numColumns() == 0) {
+            throw new IllegalArgumentException("Cannot write a partitioned parquet table without any non-partitioning "
+                    + "columns");
         }
         // Note that there can be multiple constituents with the same key values, so cannot directly use the
         // partitionedTable.constituentFor(keyValues) method, and we need to group them together
         final Table withGroupConstituents = partitionedTable.table().groupBy(partitioningColumnNames);
-        final ColumnSource<ObjectVector<Table>> consituentVectorColumnSource =
-                withGroupConstituents.getColumnSource(partitionedTable.constituentColumnName());
-        if (consituentVectorColumnSource == null) {
-            throw new IllegalStateException("Grouped partitioned table must have a constituent column of type " +
-                    "ObjectVector");
+        final List<StringBuilder> relativePathBuilders = new ArrayList<>();
+        final long numRows = withGroupConstituents.size();
+        for (long i = 0; i < numRows; i++) {
+            relativePathBuilders.add(new StringBuilder());
         }
-        final Collection<Table> partitionedData = new ArrayList<>();
-        final Collection<File> destinations = new ArrayList<>();
-        withGroupConstituents.getRowSet().forAllRowKeys(key -> {
-            final StringBuilder relativePathBuilder = new StringBuilder();
-            for (final String partitioningColumnName : partitioningColumnNames) {
-                final ColumnSource<?> partitioningColSource =
-                        withGroupConstituents.getColumnSource(partitioningColumnName);
-                final Object partitioningKey = partitioningColSource.get(key);
-                if (partitioningKey == null) {
-                    throw new IllegalStateException("Partitioning column values must be non-null, found null " +
-                            "value for column " + partitioningColumnName);
+        // For partitioning column for each row, accumulate the values in a key=value format
+        Arrays.stream(partitioningColumnNames).forEach(columnName -> {
+            try (final CloseableIterator<?> valueIterator = withGroupConstituents.columnIterator(columnName)) {
+                int row = 0;
+                while (valueIterator.hasNext()) {
+                    final String partitioningValue = PartitionFormatter.formatToString(valueIterator.next());
+                    relativePathBuilders.get(row).append(columnName).append("=").append(partitioningValue)
+                            .append(File.separator);
+                    row++;
                 }
-                final String partitioningValue = PartitionFormatter.formatToString(partitioningKey);
-                relativePathBuilder.append(partitioningColumnName).append("=").append(partitioningValue)
-                        .append(File.separator);
-            }
-            final String relativePath = relativePathBuilder.toString();
-            final ObjectVector<? extends Table> constituentVector = consituentVectorColumnSource.get(key);
-            if (constituentVector == null) {
-                throw new IllegalStateException("Grouped partitioned table must have a vector constituent column for" +
-                        " key = " + key);
-            }
-            int count = 0;
-            for (final Table constituent : constituentVector) {
-                final File destination;
-                if (partitionedTable.uniqueKeys()) {
-                    destination = new File(destinationDir, relativePath + baseName + ".parquet");
-                } else {
-                    destination = new File(destinationDir, relativePath + baseName + "-part-" + count + ".parquet");
-                }
-                destinations.add(destination);
-                partitionedData.add(constituent);
-                count++;
             }
         });
 
+        // For constituent column for each row, build final file paths
+        final Collection<Table> partitionedData = new ArrayList<>();
+        final Collection<File> destinations = new ArrayList<>();
+        try (final CloseableIterator<ObjectVector<? extends Table>> constituentIterator =
+                withGroupConstituents.objectColumnIterator(partitionedTable.constituentColumnName())) {
+            int row = 0;
+            while (constituentIterator.hasNext()) {
+                final ObjectVector<? extends Table> constituentVector = constituentIterator.next();
+                final String relativePath = relativePathBuilders.get(row).toString();
+                int count = 0;
+                for (final Table constituent : constituentVector) {
+                    final File destination;
+                    if (partitionedTable.uniqueKeys()) {
+                        destination = new File(destinationDir, relativePath + baseName + ".parquet");
+                    } else {
+                        destination = new File(destinationDir, relativePath + baseName + "-part-" + count + ".parquet");
+                    }
+                    destinations.add(destination);
+                    partitionedData.add(constituent);
+                    count++;
+                }
+                row++;
+            }
+        }
         // If needed, generate schema for _common_metadata file from key table
         final ParquetInstructions updatedWriteInstructions;
         if (!ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(writeInstructions.getMetadataRootDir())) {
@@ -633,14 +633,12 @@ public class ParquetTools {
         } else {
             updatedWriteInstructions = writeInstructions;
         }
-        final TableDefinition partitionedTablesDefinition = getNonKeyTableDefiniton(partitionedTable.keyColumnNames(),
-                definition);
         ParquetTools.writeParquetTables(
                 partitionedData.toArray(Table[]::new),
-                partitionedTablesDefinition,
+                partitionedTableDefinition,
                 updatedWriteInstructions,
                 destinations.toArray(File[]::new),
-                partitionedTablesDefinition.getGroupingColumnNamesArray());
+                partitionedTableDefinition.getGroupingColumnNamesArray());
     }
 
     /**

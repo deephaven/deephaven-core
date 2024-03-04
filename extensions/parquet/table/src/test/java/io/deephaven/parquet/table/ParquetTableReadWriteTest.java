@@ -599,6 +599,27 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void writeKeyValuePartitionedDataWithNoNonPartitioningColumnsTest() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning());
+        final Table inputData = ((QueryTable) TableTools.emptyTable(20)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        try {
+            writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+            fail("Expected exception when writing the partitioned table with no non-partitioning columns");
+        } catch (final RuntimeException expected) {
+        }
+    }
+
+    @Test
     public void writeKeyValuePartitionedDataWithNonUniqueKeys() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
@@ -783,7 +804,7 @@ public final class ParquetTableReadWriteTest {
                 "PC8 = (float)(ii % 2)",
                 "PC9 = (double)(ii % 2)",
                 "PC10 = java.math.BigInteger.valueOf(ii)",
-                "PC11 = java.math.BigDecimal.valueOf(ii)",
+                "PC11 = java.math.BigDecimal.valueOf((double)ii)",
                 "PC12 = java.time.Instant.ofEpochSecond(ii)",
                 "PC13 = java.time.LocalDate.ofEpochDay(ii)",
                 "PC14 = java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
@@ -795,7 +816,17 @@ public final class ParquetTableReadWriteTest {
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
-        readKeyValuePartitionedTable(parentDir, EMPTY).select();
+
+        // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings
+        // Therefore, we cannot compare the tables directly
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+
+        // Reading with metadata file should deduce the correct type, so we can compare the tables
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final String[] partitioningColumns = definition.getPartitioningColumns().stream()
+                .map(ColumnDefinition::getName).toArray(String[]::new);
+        assertTableEquals(inputData.sort(partitioningColumns), fromDiskWithMetadata.sort(partitioningColumns));
     }
 
     @Test
