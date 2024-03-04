@@ -120,10 +120,7 @@ enum PartitionFormatter {
 
     abstract String format(@NotNull Object obj);
 
-    static String formatToString(final Object obj) {
-        if (obj == null) {
-            return "null";
-        }
+    static String formatToString(@NotNull final Object obj) {
         final PartitionFormatter formatter = typeMap.get(obj.getClass());
         if (formatter != null) {
             return formatter.format(obj);

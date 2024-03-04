@@ -584,9 +584,10 @@ public class ParquetTools {
         // partitionedTable.constituentFor(keyValues) method, and we need to group them together
         final Table withGroupConstituents = partitionedTable.table().groupBy(partitioningColumnNames);
         final ColumnSource<ObjectVector<Table>> consituentVectorColumnSource =
-                withGroupConstituents.getColumnSource(CONSTITUENT.name());
+                withGroupConstituents.getColumnSource(partitionedTable.constituentColumnName());
         if (consituentVectorColumnSource == null) {
-            throw new IllegalStateException("Partitioned table must have a constituent column");
+            throw new IllegalStateException("Grouped partitioned table must have a constituent column of type " +
+                    "ObjectVector");
         }
         final Collection<Table> partitionedData = new ArrayList<>();
         final Collection<File> destinations = new ArrayList<>();
@@ -595,7 +596,12 @@ public class ParquetTools {
             for (final String partitioningColumnName : partitioningColumnNames) {
                 final ColumnSource<?> partitioningColSource =
                         withGroupConstituents.getColumnSource(partitioningColumnName);
-                final String partitioningValue = PartitionFormatter.formatToString(partitioningColSource.get(key));
+                final Object partitioningKey = partitioningColSource.get(key);
+                if (partitioningKey == null) {
+                    throw new IllegalStateException("Partitioning column values must be non-null, found null " +
+                            "value for column " + partitioningColumnName);
+                }
+                final String partitioningValue = PartitionFormatter.formatToString(partitioningKey);
                 relativePathBuilder.append(partitioningColumnName).append("=").append(partitioningValue)
                         .append(File.separator);
             }
@@ -606,10 +612,9 @@ public class ParquetTools {
                         " key = " + key);
             }
             int count = 0;
-            final long numConstituents = constituentVector.size();
             for (final Table constituent : constituentVector) {
                 final File destination;
-                if (numConstituents == 1) {
+                if (partitionedTable.uniqueKeys()) {
                     destination = new File(destinationDir, relativePath + baseName + ".parquet");
                 } else {
                     destination = new File(destinationDir, relativePath + baseName + "-part-" + count + ".parquet");

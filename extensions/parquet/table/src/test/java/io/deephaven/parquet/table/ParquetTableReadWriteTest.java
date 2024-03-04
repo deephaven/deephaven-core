@@ -16,6 +16,7 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -595,6 +596,66 @@ public final class ParquetTableReadWriteTest {
         final File commonMetadata = new File(parentDir, "_common_metadata");
         final Table fromDiskWithMetadata = readTable(commonMetadata);
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNonUniqueKeys() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (int)(ii%3)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+        final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
+        final Table internalTable = partitionedTable.table();
+        final Table internalTableDuplicated = merge(internalTable, internalTable);
+        final PartitionedTable partitionedTableWithDuplicatedKeys = PartitionedTableFactory.of(internalTableDuplicated);
+        assertFalse(partitionedTableWithDuplicatedKeys.uniqueKeys());
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNonUniqueKeys");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data", writeInstructions);
+
+        // Verify that the partitioned data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            final File dir = new File(parentDir, "PC1=" + PC1 + File.separator);
+            assertTrue(dir.exists() && dir.isDirectory());
+            final File dataFile1 = new File(dir, "data-part-0.parquet");
+            assertTrue(dataFile1.exists() && dataFile1.isFile());
+            final File dataFile2 = new File(dir, "data-part-1.parquet");
+            assertTrue(dataFile2.exists() && dataFile2.isFile());
+        }
+
+        final Table expected = merge(inputData, inputData);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNullKeys() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (ii%2==1)? null : (int)(ii%3)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+        final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNullKeys");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        try {
+            writeKeyValuePartitionedTable(partitionedTable, parentDir, "data", writeInstructions);
+            fail("Expected exception when writing the partitioned table with null keys");
+        } catch (final RuntimeException expected) {
+        }
     }
 
     @Test
