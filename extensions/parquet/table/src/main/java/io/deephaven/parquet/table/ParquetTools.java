@@ -468,14 +468,24 @@ public class ParquetTools {
     /**
      * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
      * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
-     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns.
+     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns of provided
+     * table.
      *
      * @param sourceTable The table to partition and write
      * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
      *        directories are created.
      * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
-     *        result in files named "PartitioningColumn=partition1/table.parquet",
-     *        "PartitioningColumn=partition2/table.parquet", etc.
+     *        result in files named "PC=partition1/table.parquet", "PC=partition2/table.parquet", etc., where "PC" is a
+     *        partitioning column.
+     *        <p>
+     *        The token {@code {i}} in base name will be replaced with an automatically incremented integer for files in
+     *        a directory. For example, a base name of "table-{i}" will result in files named
+     *        "PC=partition1/table-0.parquet", "PC=partition1/table-1.parquet", etc.
+     *        <p>
+     *        Also, token {@code {partitions}} will be replaced with a concatenated string of partition values. For
+     *        example, a base name of "{partitions}-table" will result in files
+     *        "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are
+     *        partitioning columns.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
@@ -497,8 +507,17 @@ public class ParquetTools {
      * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
      *        directories are created.
      * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
-     *        result in files named "PartitioningColumn=partition1/table.parquet",
-     *        "PartitioningColumn=partition2/table.parquet", etc.
+     *        result in files named "PC=partition1/table.parquet", "PC=partition2/table.parquet", etc., where "PC" is a
+     *        partitioning column.
+     *        <p>
+     *        The token {@code {i}} in base name will be replaced with an automatically incremented integer for files in
+     *        a directory. For example, a base name of "table-{i}" will result in files named
+     *        "PC=partition1/table-0.parquet", "PC=partition1/table-1.parquet", etc.
+     *        <p>
+     *        Also, token {@code {partitions}} will be replaced with a concatenated string of partition values. For
+     *        example, a base name of "{partitions}-table" will result in files
+     *        "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are
+     *        partitioning columns.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
@@ -506,12 +525,6 @@ public class ParquetTools {
             @NotNull final File destinationDir,
             @NotNull final String baseName,
             @NotNull final ParquetInstructions writeInstructions) {
-        // TODO Also, how should I get the baseName, should I move it to the write instructions.
-        // Pyarrow has this optional parameter "basename_template" used to generate basenames of written data files.
-        // The token ‘{i}’ will be replaced with an automatically incremented integer for files in the same folder.
-        // If not specified, it defaults to “someHash-{i}.parquet”.
-        // pyspark has names of the form "part.{i}.parquet" and allows passing a naming function which takes an integer
-        // and generates a file name.
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
             throw new IllegalArgumentException("Table must have partitioning columns to write partitioned data");
@@ -532,8 +545,17 @@ public class ParquetTools {
      * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
      *        directories are created.
      * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
-     *        result in files named "PartitioningColumn=partition1/table.parquet",
-     *        "PartitioningColumn=partition2/table.parquet", etc.
+     *        result in files named "PC=partition1/table.parquet", "PC=partition2/table.parquet", etc., where "PC" is a
+     *        partitioning column.
+     *        <p>
+     *        The token {@code {i}} in base name will be replaced with an automatically incremented integer for files in
+     *        a directory. For example, a base name of "table-{i}" will result in files named
+     *        "PC=partition1/table-0.parquet", "PC=partition1/table-1.parquet", etc.
+     *        <p>
+     *        Also, token {@code {partitions}} will be replaced with a concatenated string of partition values. For
+     *        example, a base name of "{partitions}-table" will result in files
+     *        "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are
+     *        partitioning columns.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
@@ -541,7 +563,7 @@ public class ParquetTools {
             @NotNull final String baseName,
             @NotNull final ParquetInstructions writeInstructions) {
         // Get key column definitions from the partitioned table definition and non-key column definitions from the
-        // constituent table definition, and combine them to build the overall table definition
+        // constituent table definition, and combine them to build the overall table definition to be written
         final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
         final Collection<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(keyColumnNames.size() +
                 partitionedTable.constituentDefinition().numColumns());
@@ -564,8 +586,17 @@ public class ParquetTools {
      * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
      *        directories are created.
      * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
-     *        result in files named "PartitioningColumn=partition1/table.parquet",
-     *        "PartitioningColumn=partition2/table.parquet", etc.
+     *        result in files named "PC=partition1/table.parquet", "PC=partition2/table.parquet", etc., where "PC" is a
+     *        partitioning column.
+     *        <p>
+     *        The token {@code {i}} in base name will be replaced with an automatically incremented integer for files in
+     *        a directory. For example, a base name of "table-{i}" will result in files named
+     *        "PC=partition1/table-0.parquet", "PC=partition1/table-1.parquet", etc.
+     *        <p>
+     *        Also, token {@code {partitions}} will be replaced with a concatenated string of partition values. For
+     *        example, a base name of "{partitions}-table" will result in files
+     *        "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are
+     *        partitioning columns.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
@@ -573,35 +604,40 @@ public class ParquetTools {
             @NotNull final File destinationDir,
             @NotNull final String baseName,
             @NotNull final ParquetInstructions writeInstructions) {
-        final String[] partitioningColumnNames = partitionedTable.keyColumnNames().toArray(String[]::new);
         final TableDefinition partitionedTableDefinition = getNonKeyTableDefiniton(partitionedTable.keyColumnNames(),
                 definition);
         if (partitionedTableDefinition.numColumns() == 0) {
             throw new IllegalArgumentException("Cannot write a partitioned parquet table without any non-partitioning "
                     + "columns");
         }
+        final boolean hasPartitionInName = baseName.contains("{partitions}");
+        final boolean hasIndexInName = baseName.contains("{i}");
+        if (!partitionedTable.uniqueKeys() && !hasIndexInName) {
+            throw new IllegalArgumentException(
+                    "Cannot write a partitioned parquet table with non-unique keys without " +
+                            "{i} in the base name because there can be multiple partitions with the same key values");
+        }
         // Note that there can be multiple constituents with the same key values, so cannot directly use the
         // partitionedTable.constituentFor(keyValues) method, and we need to group them together
+        final String[] partitioningColumnNames = partitionedTable.keyColumnNames().toArray(String[]::new);
         final Table withGroupConstituents = partitionedTable.table().groupBy(partitioningColumnNames);
-        final List<StringBuilder> relativePathBuilders = new ArrayList<>();
+        // For each row, accumulate the partition values in a key=value format
+        final List<List<String>> partitionStringsList = new ArrayList<>();
         final long numRows = withGroupConstituents.size();
         for (long i = 0; i < numRows; i++) {
-            relativePathBuilders.add(new StringBuilder());
+            partitionStringsList.add(new ArrayList<>(partitioningColumnNames.length));
         }
-        // For partitioning column for each row, accumulate the values in a key=value format
         Arrays.stream(partitioningColumnNames).forEach(columnName -> {
             try (final CloseableIterator<?> valueIterator = withGroupConstituents.columnIterator(columnName)) {
                 int row = 0;
                 while (valueIterator.hasNext()) {
                     final String partitioningValue = PartitionFormatter.formatToString(valueIterator.next());
-                    relativePathBuilders.get(row).append(columnName).append("=").append(partitioningValue)
-                            .append(File.separator);
+                    partitionStringsList.get(row).add(columnName + "=" + partitioningValue);
                     row++;
                 }
             }
         });
-
-        // For constituent column for each row, build final file paths
+        // For the constituent column for each row, accumulate the constituent tables and build the final file paths
         final Collection<Table> partitionedData = new ArrayList<>();
         final Collection<File> destinations = new ArrayList<>();
         try (final CloseableIterator<ObjectVector<? extends Table>> constituentIterator =
@@ -609,16 +645,19 @@ public class ParquetTools {
             int row = 0;
             while (constituentIterator.hasNext()) {
                 final ObjectVector<? extends Table> constituentVector = constituentIterator.next();
-                final String relativePath = relativePathBuilders.get(row).toString();
+                final List<String> partitionStrings = partitionStringsList.get(row);
+                final File relativePath = new File(destinationDir, String.join("/", partitionStrings));
                 int count = 0;
                 for (final Table constituent : constituentVector) {
-                    final File destination;
-                    if (partitionedTable.uniqueKeys()) {
-                        destination = new File(destinationDir, relativePath + baseName + ".parquet");
-                    } else {
-                        destination = new File(destinationDir, relativePath + baseName + "-part-" + count + ".parquet");
+                    String filename = baseName;
+                    if (hasPartitionInName) {
+                        filename = baseName.replace("{partitions}", String.join("_", partitionStrings));
                     }
-                    destinations.add(destination);
+                    if (hasIndexInName) {
+                        filename = filename.replace("{i}", Integer.toString(count));
+                    }
+                    filename += PARQUET_FILE_EXTENSION;
+                    destinations.add(new File(relativePath, filename));
                     partitionedData.add(constituent);
                     count++;
                 }

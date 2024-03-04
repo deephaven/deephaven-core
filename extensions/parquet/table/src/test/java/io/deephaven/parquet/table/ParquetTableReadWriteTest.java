@@ -578,14 +578,14 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
-        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        writeKeyValuePartitionedTable(inputData, parentDir, "{partitions}-data-{i}", writeInstructions);
 
         // Verify that the partitioned data exists
         for (int PC1 = 0; PC1 <= 2; PC1++) {
             for (int PC2 = 0; PC2 <= 1; PC2++) {
                 final File dir = new File(parentDir, "PC1=" + PC1 + File.separator + "PC2=" + PC2);
                 assertTrue(dir.exists() && dir.isDirectory());
-                final File dataFile = new File(dir, "data.parquet");
+                final File dataFile = new File(dir, "PC1=" + PC1 + "_PC2=" + PC2 + "-data-0.parquet");
                 assertTrue(dataFile.exists() && dataFile.isFile());
             }
         }
@@ -637,7 +637,14 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
-        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data", writeInstructions);
+        try {
+            writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data", writeInstructions);
+            fail("Expected exception when writing the partitioned table with non-unique keys without {i} in base name");
+        } catch (final RuntimeException expected) {
+        }
+
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data-part-{i}",
+                writeInstructions);
 
         // Verify that the partitioned data exists
         for (int PC1 = 0; PC1 <= 2; PC1++) {
