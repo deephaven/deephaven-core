@@ -36,6 +36,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.deephaven.parquet.table.ParquetUtils.COMMON_METADATA_FILE_NAME;
+import static io.deephaven.parquet.table.ParquetUtils.METADATA_FILE_NAME;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -54,9 +56,6 @@ import static java.util.stream.Collectors.toMap;
  * </ul>
  */
 public class ParquetMetadataFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
-
-    public static final String METADATA_FILE_NAME = "_metadata";
-    public static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
 
     private final File metadataFile;
     private final File commonMetadataFile;

@@ -57,7 +57,6 @@ public class ParquetTableWriter {
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
-    public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
     /**
      * Helper struct used to pass information about where to write the grouping files for each grouping column
@@ -234,14 +233,15 @@ public class ParquetTableWriter {
      * Get the parquet schema for a table
      *
      * @param table the input table
-     * @param definition the table definition
+     * @param definition the definition to use for creating the schema
      * @param instructions write instructions for the file
      * @return the parquet schema
      */
     static MessageType getSchemaForTable(@NotNull final Table table,
+            @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions instructions) {
-        final Table pretransformTable = pretransformTable(table, table.getDefinition());
-        return MappedSchema.create(new HashMap<>(), table.getDefinition(), pretransformTable.getRowSet(),
+        final Table pretransformTable = pretransformTable(table, definition);
+        return MappedSchema.create(new HashMap<>(), definition, pretransformTable.getRowSet(),
                 pretransformTable.getColumnSourceMap(), instructions).getParquetSchema();
     }
 

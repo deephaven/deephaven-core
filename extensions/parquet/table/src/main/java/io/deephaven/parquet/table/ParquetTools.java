@@ -10,6 +10,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -59,10 +60,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.table.ParquetTableWriter.getSchemaForTable;
+import static io.deephaven.parquet.table.ParquetUtils.PARQUET_FILE_EXTENSION;
+import static io.deephaven.parquet.table.ParquetUtils.COMMON_METADATA_FILE_NAME;
+import static io.deephaven.parquet.table.ParquetUtils.METADATA_FILE_NAME;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
-import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
 /**
@@ -72,8 +76,6 @@ import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 public class ParquetTools {
 
     private static final int MAX_PARTITIONING_LEVELS_INFERENCE = 32;
-    private static final String PARQUET_METADATA_FILE = "_metadata";
-    private static final String PARQUET_COMMON_METADATA_FILE = "_common_metadata";
 
     private ParquetTools() {}
 
@@ -470,27 +472,48 @@ public class ParquetTools {
      * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns.
      *
      * @param sourceTable The table to partition and write
-     * @param destinationDir The destination directory to store partitioned data in. Non-existing directories are
-     *        created.
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
      * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
-     *        result in files named "partition1/table.parquet", "partition2/table.parquet", etc.
+     *        result in files named "PartitioningColumn=partition1/table.parquet",
+     *        "PartitioningColumn=partition2/table.parquet", etc.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
             @NotNull final File destinationDir,
             @NotNull final String baseName,
             @NotNull final ParquetInstructions writeInstructions) {
-        // TODO Should I take an additional write instruction for partitioning column names in case they are different
-        // from the table's partitioning columns? Also, should I take partitioning column names from the user as an
-        // argument to this method?
+        writeKeyValuePartitionedTable(sourceTable, sourceTable.getDefinition(), destinationDir, baseName,
+                writeInstructions);
+    }
 
-        // Also, how should I get the baseName, should I move it to the write instructions.
+    /**
+     * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
+     * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
+     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns in the provided
+     * table definition.
+     *
+     * @param sourceTable The table to partition and write
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
+     * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
+     *        result in files named "PartitioningColumn=partition1/table.parquet",
+     *        "PartitioningColumn=partition2/table.parquet", etc.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
+            @NotNull final TableDefinition definition,
+            @NotNull final File destinationDir,
+            @NotNull final String baseName,
+            @NotNull final ParquetInstructions writeInstructions) {
+        // TODO Also, how should I get the baseName, should I move it to the write instructions.
         // Pyarrow has this optional parameter "basename_template" used to generate basenames of written data files.
         // The token ‘{i}’ will be replaced with an automatically incremented integer for files in the same folder.
         // If not specified, it defaults to “someHash-{i}.parquet”.
         // pyspark has names of the form "part.{i}.parquet" and allows passing a naming function which takes an integer
         // and generates a file name.
-        final List<ColumnDefinition<?>> partitioningColumns = sourceTable.getDefinition().getPartitioningColumns();
+        final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
             throw new IllegalArgumentException("Table must have partitioning columns to write partitioned data");
         }
@@ -498,74 +521,130 @@ public class ParquetTools {
                 .map(ColumnDefinition::getName)
                 .toArray(String[]::new);
         final PartitionedTable partitionedTable = sourceTable.partitionBy(partitioningColNames);
-        writeKeyValuePartitionedTable(partitionedTable, destinationDir, baseName, writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTable, definition, destinationDir, baseName, writeInstructions);
     }
 
     /**
-     * Write a partitioned tables to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
+     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
      * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
      * {@link Table#partitionBy(String...) partitionBy} on the required columns.
      *
      * @param partitionedTable The partitioned table to write
-     * @param destinationDir The destination directory to store partitioned data in. Non-existing directories are
-     *        created.
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
      * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
-     *        result in files named "partition1/table.parquet", "partition2/table.parquet", etc.
+     *        result in files named "PartitioningColumn=partition1/table.parquet",
+     *        "PartitioningColumn=partition2/table.parquet", etc.
      * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
             @NotNull final File destinationDir,
             @NotNull final String baseName,
             @NotNull final ParquetInstructions writeInstructions) {
+        // Get key column definitions from the partitioned table definition and non-key column definitions from the
+        // constituent table definition, and combine them to build the overall table definition
+        final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
+        final Collection<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(keyColumnNames.size() +
+                partitionedTable.constituentDefinition().numColumns());
+        partitionedTable.table().getDefinition().getColumns().stream()
+                .filter(columnDefinition -> keyColumnNames.contains(columnDefinition.getName()))
+                .forEach(columnDefinitions::add);
+        partitionedTable.constituentDefinition().getColumns().stream()
+                .filter(columnDefinition -> !keyColumnNames.contains(columnDefinition.getName()))
+                .forEach(columnDefinitions::add);
+        final TableDefinition definition = TableDefinition.of(columnDefinitions);
+        writeKeyValuePartitionedTable(partitionedTable, definition, destinationDir, baseName, writeInstructions);
+    }
+
+    /**
+     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
+     * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
+     * {@link Table#partitionBy(String...) partitionBy} on the required columns.
+     *
+     * @param partitionedTable The partitioned table to write
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
+     * @param baseName The base name for the individual partitioned tables. For example, a base name of "table" will
+     *        result in files named "PartitioningColumn=partition1/table.parquet",
+     *        "PartitioningColumn=partition2/table.parquet", etc.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
+            @NotNull final TableDefinition definition,
+            @NotNull final File destinationDir,
+            @NotNull final String baseName,
+            @NotNull final ParquetInstructions writeInstructions) {
         final String[] partitioningColumnNames = partitionedTable.keyColumnNames().toArray(String[]::new);
-        final Table keyTable;
-        if (partitionedTable.uniqueKeys()) {
-            keyTable = partitionedTable.table().view(partitioningColumnNames);
-        } else {
-            keyTable = partitionedTable.table().selectDistinct(partitioningColumnNames);
+        if (partitionedTable.table().numColumns() == partitioningColumnNames.length) {
+            throw new IllegalArgumentException(
+                    "Cannot write a partitioned parquet table with no non-partitioning columns");
         }
-        final Collection<Table> constituentTables = new ArrayList<>();
+        // Note that there can be multiple constituents with the same key values, so cannot directly use the
+        // partitionedTable.constituentFor(keyValues) method, and we need to group them together
+        final Table withGroupConstituents = partitionedTable.table().groupBy(partitioningColumnNames);
+        final ColumnSource<ObjectVector<Table>> consituentVectorColumnSource =
+                withGroupConstituents.getColumnSource(CONSTITUENT.name());
+        if (consituentVectorColumnSource == null) {
+            throw new IllegalStateException("Partitioned table must have a constituent column");
+        }
+        final Collection<Table> partitionedData = new ArrayList<>();
         final Collection<File> destinations = new ArrayList<>();
-        keyTable.getRowSet().forAllRowKeys(key -> {
-            final Object[] keyValues = Arrays.stream(partitioningColumnNames)
-                    .map(keyTable::getColumnSource)
-                    .map(colSource -> colSource.get(key))
-                    .toArray();
-            final StringBuilder partitionTableRelativePath = new StringBuilder();
-            for (int i = 0; i < partitioningColumnNames.length; i++) {
-                partitionTableRelativePath.append(File.separator)
-                        .append(partitioningColumnNames[i]).append("=").append(keyValues[i]);
+        withGroupConstituents.getRowSet().forAllRowKeys(key -> {
+            final StringBuilder relativePathBuilder = new StringBuilder();
+            for (final String partitioningColumnName : partitioningColumnNames) {
+                final ColumnSource<?> partitioningColSource =
+                        withGroupConstituents.getColumnSource(partitioningColumnName);
+                final String partitioningValue = PartitionFormatter.formatToString(partitioningColSource.get(key));
+                relativePathBuilder.append(partitioningColumnName).append("=").append(partitioningValue)
+                        .append(File.separator);
             }
-            partitionTableRelativePath.append(File.separator).append(baseName).append(".parquet");
-            destinations.add(new File(destinationDir, partitionTableRelativePath.toString()));
-            constituentTables.add(partitionedTable.constituentFor(keyValues));
+            final String relativePath = relativePathBuilder.toString();
+            final ObjectVector<? extends Table> constituentVector = consituentVectorColumnSource.get(key);
+            if (constituentVector == null) {
+                throw new IllegalStateException("Grouped partitioned table must have a vector constituent column for" +
+                        " key = " + key);
+            }
+            int count = 0;
+            final long numConstituents = constituentVector.size();
+            for (final Table constituent : constituentVector) {
+                final File destination;
+                if (numConstituents == 1) {
+                    destination = new File(destinationDir, relativePath + baseName + ".parquet");
+                } else {
+                    destination = new File(destinationDir, relativePath + baseName + "-part-" + count + ".parquet");
+                }
+                destinations.add(destination);
+                partitionedData.add(constituent);
+                count++;
+            }
         });
 
         // If needed, generate schema for _common_metadata file from key table
         final ParquetInstructions updatedWriteInstructions;
         if (!ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(writeInstructions.getMetadataRootDir())) {
-            final MessageType commonSchema = getSchemaForTable(keyTable, writeInstructions);
+            final MessageType commonSchema = getSchemaForTable(partitionedTable.table(), definition, writeInstructions);
             updatedWriteInstructions = ParquetInstructions.createWithCommonSchema(writeInstructions, commonSchema);
         } else {
             updatedWriteInstructions = writeInstructions;
         }
-        final TableDefinition constituentDefinition = getNonKeyTableDefiniton(partitionedTable);
+        final TableDefinition partitionedTablesDefinition = getNonKeyTableDefiniton(partitionedTable.keyColumnNames(),
+                definition);
         ParquetTools.writeParquetTables(
-                constituentTables.toArray(Table[]::new),
-                constituentDefinition,
+                partitionedData.toArray(Table[]::new),
+                partitionedTablesDefinition,
                 updatedWriteInstructions,
                 destinations.toArray(File[]::new),
-                constituentDefinition.getGroupingColumnNamesArray());
+                partitionedTablesDefinition.getGroupingColumnNamesArray());
     }
 
     /**
-     * Create a table definition for the non-key columns of a partitioned table
+     * Using the provided definition and key column names, create a sub table definition for the non-key columns.
      */
-    private static TableDefinition getNonKeyTableDefiniton(@NotNull final PartitionedTable partitionedTable) {
-        final Collection<String> keyColumnNames = partitionedTable.keyColumnNames();
+    private static TableDefinition getNonKeyTableDefiniton(@NotNull final Collection<String> keyColumnNames,
+            @NotNull final TableDefinition definition) {
         final List<ColumnDefinition<?>> nonKeyColumnDefinition =
-                partitionedTable.constituentDefinition()
-                        .getColumns().stream()
+                definition.getColumns().stream()
                         .filter(columnDefinition -> {
                             final String columnName = columnDefinition.getName();
                             return !keyColumnNames.contains(columnName);
@@ -658,10 +737,10 @@ public class ParquetTools {
             // Write the combined metadata files to shadow destinations
             final File metadataDestFile, shadowMetadataFile, commonMetadataDestFile, shadowCommonMetadataFile;
             if (writeMetadataFiles) {
-                metadataDestFile = new File(metadataRootDir, PARQUET_METADATA_FILE);
+                metadataDestFile = new File(metadataRootDir, METADATA_FILE_NAME);
                 shadowMetadataFile = ParquetTools.getShadowFile(metadataDestFile);
                 shadowFiles.add(shadowMetadataFile);
-                commonMetadataDestFile = new File(metadataRootDir, PARQUET_COMMON_METADATA_FILE);
+                commonMetadataDestFile = new File(metadataRootDir, COMMON_METADATA_FILE_NAME);
                 shadowCommonMetadataFile = ParquetTools.getShadowFile(commonMetadataDestFile);
                 shadowFiles.add(shadowCommonMetadataFile);
                 metadataFileWriter.writeMetadataFiles(shadowMetadataFile, shadowCommonMetadataFile);
@@ -781,17 +860,17 @@ public class ParquetTools {
             if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
                 return readSingleFileTable(source, instructions);
             }
-            if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
+            if (sourceFileName.equals(METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(sourceFile.getParentFile(), instructions);
             }
-            if (sourceFileName.equals(ParquetMetadataFileLayout.COMMON_METADATA_FILE_NAME)) {
+            if (sourceFileName.equals(COMMON_METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(sourceFile.getParentFile(), instructions);
             }
             throw new TableDataException(
                     "Source file " + sourceFile + " does not appear to be a parquet file or metadata file");
         }
         if (sourceAttr.isDirectory()) {
-            final Path metadataPath = sourcePath.resolve(ParquetMetadataFileLayout.METADATA_FILE_NAME);
+            final Path metadataPath = sourcePath.resolve(METADATA_FILE_NAME);
             if (Files.exists(metadataPath)) {
                 return readPartitionedTableWithMetadata(sourceFile, instructions);
             }

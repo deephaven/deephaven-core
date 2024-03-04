@@ -34,6 +34,7 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -71,6 +72,8 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -598,21 +601,31 @@ public final class ParquetTableReadWriteTest {
     public void writeKeyValuePartitionedDataWithMixedPartitionsTest() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
-                ColumnDefinition.ofChar("PC2").withPartitioning(),
-                ColumnDefinition.ofString("PC3").withPartitioning(),
-                ColumnDefinition.ofLong("I"));
+                ColumnDefinition.ofChar("PC2"),
+                ColumnDefinition.ofString("PC3"),
+                ColumnDefinition.ofLong("II"),
+                ColumnDefinition.ofInt("I"));
         final Table inputData = ((QueryTable) TableTools.emptyTable(10)
                 .updateView("PC1 = (int)(ii%3)",
                         "PC2 = (char)(65 + (ii % 2))",
                         "PC3 = java.time.LocalDate.ofEpochDay(i%2).toString()",
-                        "I = ii"))
+                        "II = ii",
+                        "I = i"))
                 .withDefinitionUnsafe(definition);
+
+        // We skip one column in the definition, and add some more partitioning and non-partitioning columns
+        final TableDefinition tableDefinitionToWrite = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofChar("PC2").withPartitioning(),
+                ColumnDefinition.ofString("PC3").withPartitioning(),
+                ColumnDefinition.ofInt("I"),
+                ColumnDefinition.ofInt("J"));
 
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setMetadataRootDir(parentDir.getAbsolutePath())
                 .build();
-        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        writeKeyValuePartitionedTable(inputData, tableDefinitionToWrite, parentDir, "data", writeInstructions);
 
         // Verify that the partitioned data exists
         for (int PC1 = 0; PC1 <= 2; PC1++) {
@@ -626,18 +639,21 @@ public final class ParquetTableReadWriteTest {
                 assertTrue(dataFile.exists() && dataFile.isFile());
             }
         }
-        Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
-        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        // Give then updated table definition used to write the data, we drop the column "II" and add a new column "J"
+        final Table expected = inputData.dropColumns("II").updateView("J = (int)null");
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(expected.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
         final Table fromDiskWithMetadata = readTable(commonMetadata);
-        assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+        assertTableEquals(expected.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
 
         // Delete some files from the partitioned data and read the required rows to verify that we only read the
         // required partitions
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=0"));
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=1"));
-        assertTableEquals(inputData.where("PC1 == 2").sort("PC1", "PC2", "PC3"),
+        assertTableEquals(expected.where("PC1 == 2").sort("PC1", "PC2", "PC3"),
                 readTable(commonMetadata).where("PC1 == 2").sort("PC1", "PC2", "PC3"));
     }
 
@@ -675,6 +691,50 @@ public final class ParquetTableReadWriteTest {
         final Table fromDiskWithMetadata = readTable(commonMetadata);
         assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
                 fromDiskWithMetadata.sort("symbol", "epic_collection_id"));
+    }
+
+    @Test
+    public void testAllPartitioningColumnTypes() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofBoolean("PC2").withPartitioning(),
+                ColumnDefinition.ofChar("PC3").withPartitioning(),
+                ColumnDefinition.ofByte("PC4").withPartitioning(),
+                ColumnDefinition.ofShort("PC5").withPartitioning(),
+                ColumnDefinition.ofInt("PC6").withPartitioning(),
+                ColumnDefinition.ofLong("PC7").withPartitioning(),
+                ColumnDefinition.ofFloat("PC8").withPartitioning(),
+                ColumnDefinition.ofDouble("PC9").withPartitioning(),
+                ColumnDefinition.of("PC10", Type.find(BigInteger.class)).withPartitioning(),
+                ColumnDefinition.of("PC11", Type.find(BigDecimal.class)).withPartitioning(),
+                ColumnDefinition.of("PC12", Type.find(Instant.class)).withPartitioning(),
+                ColumnDefinition.of("PC13", Type.find(LocalDate.class)).withPartitioning(),
+                ColumnDefinition.of("PC14", Type.find(LocalTime.class)).withPartitioning(),
+                ColumnDefinition.ofInt("data"));
+
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView("PC1 =  (ii%2 == 0) ? `AA` : `BB`",
+                "PC2 = (ii % 2 == 0)",
+                "PC3 = (char)(65 + (ii % 2))",
+                "PC4 = (byte)(ii % 2)",
+                "PC5 = (short)(ii % 2)",
+                "PC6 = (int)(ii%3)",
+                "PC7 = (long)(ii%2)",
+                "PC8 = (float)(ii % 2)",
+                "PC9 = (double)(ii % 2)",
+                "PC10 = java.math.BigInteger.valueOf(ii)",
+                "PC11 = java.math.BigDecimal.valueOf(ii)",
+                "PC12 = java.time.Instant.ofEpochSecond(ii)",
+                "PC13 = java.time.LocalDate.ofEpochDay(ii)",
+                "PC14 = java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                "data = (int)(ii)"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "testAllPartitioningColumnTypes");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+        readKeyValuePartitionedTable(parentDir, EMPTY).select();
     }
 
     @Test
