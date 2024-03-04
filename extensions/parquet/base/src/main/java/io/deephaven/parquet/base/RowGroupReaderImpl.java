@@ -4,23 +4,14 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
-import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
-import org.apache.parquet.format.Util;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,8 +80,6 @@ final class RowGroupReaderImpl implements RowGroupReader {
         return new ColumnChunkReaderImpl(columnChunk, channelsProvider, columnChunkURI, type, fieldTypes, numRows(),
                 version);
     }
-
-
 
     @Override
     public long numRows() {
