@@ -220,8 +220,14 @@ public class QueryCompiler {
         compile(request, resolver);
         try {
             return resolver.getFuture().get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new UncheckedDeephavenException("Could not compile class", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new UncheckedDeephavenException("Error while compiling class", cause);
+        } catch (InterruptedException e) {
+            throw new UncheckedDeephavenException("Interrupted while compile class", e);
         }
     }
 
