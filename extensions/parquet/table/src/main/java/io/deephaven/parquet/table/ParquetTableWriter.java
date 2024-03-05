@@ -240,6 +240,9 @@ public class ParquetTableWriter {
     static MessageType getSchemaForTable(@NotNull final Table table,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions instructions) {
+        if (definition.numColumns() == 0) {
+            throw new IllegalArgumentException("Table definition must have at least one column");
+        }
         final Table pretransformTable = pretransformTable(table, definition);
         return MappedSchema.create(new HashMap<>(), definition, pretransformTable.getRowSet(),
                 pretransformTable.getColumnSourceMap(), instructions).getParquetSchema();

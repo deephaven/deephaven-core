@@ -5,8 +5,6 @@ package io.deephaven.util.channel;
 
 import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 public final class Channels {
 
