@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.jsoningester.JsonNodeUtil;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.Instant;

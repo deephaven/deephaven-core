@@ -10,6 +10,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.jsoningester.JsonNodeUtil;
 import io.deephaven.util.BooleanUtils;
 
 public class JsonNodeBooleanFieldCopier implements FieldCopier {

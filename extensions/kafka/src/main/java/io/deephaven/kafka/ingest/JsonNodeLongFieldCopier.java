@@ -14,6 +14,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.jsoningester.JsonNodeUtil;
 
 public class JsonNodeLongFieldCopier implements FieldCopier {
     private final JsonPointer fieldPointer;

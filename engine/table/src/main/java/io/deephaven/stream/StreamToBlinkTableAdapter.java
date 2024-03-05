@@ -367,7 +367,12 @@ public class StreamToBlinkTableAdapter
     }
 
     private TableUpdate doRefresh() {
+        //@formatter:off
+        // TODO: this happens automatically under UGP? seems like it should be up to owner of publisher.
+        //  This also means that anything locking the streamPublisher effectively blocks the UGP
+        //@formatter:on
         streamPublisher.flush();
+
         // Switch columns, update RowSet, deliver notification
 
         final long oldSize = rowSet.size();

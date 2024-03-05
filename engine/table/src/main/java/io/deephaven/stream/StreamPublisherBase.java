@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka;
+package io.deephaven.stream;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -26,7 +26,7 @@ public abstract class StreamPublisherBase extends ReferenceCountedLivenessNode i
 
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
-    private final TableDefinition tableDefinition;
+    protected final TableDefinition tableDefinition;
 
     protected StreamConsumer consumer;
 

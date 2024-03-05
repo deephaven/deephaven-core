@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.kafka.ingest;
+package io.deephaven.jsoningester;
 
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,6 +16,8 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -25,15 +27,32 @@ public class JsonNodeUtil {
             .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true))
             .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
+    @Nullable
     public static JsonNode makeJsonNode(final ObjectMapper mapper, final String json) {
         try {
             return mapper != null ? mapper.readTree(json) : DEFAULT_OBJECT_MAPPER.readTree(json);
         } catch (JsonProcessingException ex) {
-            throw new UncheckedDeephavenException("Failed to parse JSON string.", ex);
+            throw new JsonStringParseException("Failed to parse JSON string.", ex);
         }
     }
 
-    private static JsonNode checkAllowMissingOrNull(
+    @Nullable
+    public static JsonNode makeJsonNode(final String text) {
+        return makeJsonNode(null, text);
+    }
+
+    @Nullable
+    public static JsonNode makeJsonNode(final InputStream json) {
+        try {
+            return DEFAULT_OBJECT_MAPPER.readTree(json);
+        } catch (IOException ex) {
+            throw new JsonStringParseException("Failed to parse JSON string.", ex);
+        }
+    }
+
+    // TODO: should we just call this something like 'getNode()'?
+    public static JsonNode checkAllowMissingOrNull(
+
             final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = node == null ? null : node.get(key);
@@ -52,11 +71,15 @@ public class JsonNodeUtil {
     private static void checkNode(Object key, JsonNode node, boolean allowMissingKeys, boolean allowNullValues) {
         if (!allowMissingKeys && (node == null || node.isMissingNode())) {
             throw new IllegalArgumentException(
-                    String.format("Key '%s' not found in the record, and allowMissingKeys is false.", key));
+                    String.format("Key '%s' not found in the record, but allowMissingKeys is false.", key));
         }
-        if (!allowNullValues && isNullOrMissingField(node)) {
+        // 'node==null || node.isMissingNode()' is OK here, because missing keys are allowed.
+        // only *explicit* null values are disallowed -- so if explicit nulls are disallowed,
+        // and we actually have a non-null 'node' variable (meaning the key was present), but
+        // the node is a null node (`node.isNull()`), then we want to throw the exception.
+        if (!allowNullValues && node != null && node.isNull()) {
             throw new IllegalArgumentException(String
-                    .format("Value for '%s' is null or missing in the record, and allowNullValues is false.", key));
+                    .format("Value for '%s' is null in the record, but allowNullValues is false.", key));
         }
     }
 
@@ -701,6 +724,12 @@ public class JsonNodeUtil {
             return DateTimeUtils.epochAutoToInstant(value);
         } else {
             return DateTimeUtils.parseInstant(node.asText());
+        }
+    }
+
+    public static class JsonStringParseException extends IllegalArgumentException {
+        public JsonStringParseException(String message, IOException cause) {
+            super(message, cause);
         }
     }
 }

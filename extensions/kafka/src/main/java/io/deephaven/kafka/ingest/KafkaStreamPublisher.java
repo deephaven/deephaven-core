@@ -11,7 +11,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.kafka.StreamPublisherBase;
+import io.deephaven.stream.StreamPublisherBase;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;

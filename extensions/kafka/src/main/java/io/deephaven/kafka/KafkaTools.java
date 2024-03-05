@@ -52,6 +52,7 @@ import io.deephaven.kafka.JsonImpl.JsonProduce;
 import io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.PerPartition;
 import io.deephaven.kafka.KafkaTools.StreamConsumerRegistrarProvider.Single;
+import io.deephaven.jsoningester.JsonNodeUtil;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
@@ -279,7 +280,7 @@ public class KafkaTools {
          * <li>{@value DONT_SEEK}, don't seek</li>
          * <li>{@value SEEK_TO_END}, seek to the end</li>
          * </ul>
-         * 
+         *
          * @param consumer the consumer
          * @param topicPartition the topic partition
          * @return the initial

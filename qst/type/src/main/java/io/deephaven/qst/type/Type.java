@@ -145,6 +145,15 @@ public interface Type<T> {
         return CustomType.of(clazz);
     }
 
+    static Type<?>[] fromClasses(Class<?>... types) {
+        final int len = types.length;
+        final Type<?>[] result = new Type[len];
+        for (int ii = 0; ii < len; ii++) {
+            result[ii] = find(types[ii]);
+        }
+        return result;
+    }
+
     /**
      * The class representing {@code this} type.
      *

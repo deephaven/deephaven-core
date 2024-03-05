@@ -1,0 +1,52 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'JSON: Integrating Engine tables with JSON'
+
+dependencies {
+    api project(':Base')
+    api project(':Util')
+    api project(':engine-table')
+    api project(':engine-time')
+    api project(':engine-context')
+    api project(':table-api')
+    api project(':IO')
+    api project(':extensions-parquet-table')
+    api project(':Configuration')
+    api project(':TableLogger')
+
+
+    // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
+    // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
+    // version, but has a different version to make it easier to keep confluent dependencies aligned.
+    api 'org.apache.kafka:kafka-clients:7.1.1-ccs'
+    api 'io.confluent:kafka-avro-serializer:7.1.1'
+
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+    implementation depTrove3
+    implementation depCommonsLang3
+
+    Classpaths.inheritImmutables(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+
+    testRuntimeOnly project(path: ':test-configs')
+
+    runtimeOnly project(':log-to-slf4j'),
+            project(path: ':configs')
+
+
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/**FieldCopier.java',
+        )
+    }
+}
