@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.shared.data;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
@@ -14,7 +13,7 @@ import java.util.stream.LongStream;
  * Iteration protocol, but for now has one method which returns an iterator, and also supports querying the size.
  * Additionally, we may add support for creating RangeSet objects to better serve some use cases.
  */
-public class RangeSet implements Serializable {
+public class RangeSet {
 
     public static RangeSet empty() {
         return new RangeSet();
@@ -357,5 +356,80 @@ public class RangeSet implements Serializable {
 
     void setSortedRanges(Range[] sortedRanges) {
         this.sortedRanges = sortedRanges;
+    }
+
+    public RangeSet subsetForPositions(RangeSet positions, boolean reversed) {
+        if (reversed) {
+            throw new UnsupportedOperationException("reversed=true");
+        }
+        if (positions.isEmpty() || isEmpty()) {
+            return empty();
+        }
+        // if (positions.sortedRanges.length == 1) {
+        // // Desired range is contiguous
+        // List<Range> ranges = new ArrayList<>();
+        // final long offset = positions.getFirstRow();
+        // final long limit = positions.getLastRow();
+        // int i = 0;
+        // long position = 0;
+        // for (; i < sortedRanges.length; i++) {
+        // Range r = sortedRanges[i];
+        // if (offset < position + r.size()) {
+        // // Haven't hit the first range yet
+        // position += r.size();
+        // continue;
+        // }
+        // // This range is part of the desired range, take some/all of it
+        // //TODO wrong, we want the min to measure the index of the range to take
+        // ranges.add(new Range(position, Math.min(r.getLast(), limit)));
+        // position += r.size();
+        // i++;
+        // break;
+        // }
+        // for (; i < sortedRanges.length; i++) {
+        // Range r = sortedRanges[i];
+        // if (limit > position + r.size()) {
+        // // Past the end of the desired positions
+        // break;
+        // }
+        //// ranges.add(new Range(r.getFirst(), Math.))
+        //
+        //
+        // }
+        //
+        //
+        // return RangeSet.fromSortedRanges(ranges.toArray(Range[]::new));
+        // }
+
+
+        PrimitiveIterator.OfLong positionIter = positions.indexIterator();
+        PrimitiveIterator.OfLong valueIter = indexIterator();
+        int i = 0;
+        RangeSet result = new RangeSet();
+
+        // There must be at least one of each
+        long position = positionIter.nextLong();
+        long val = valueIter.nextLong();
+
+        done: do {
+            while (i != position) {
+                if (!valueIter.hasNext()) {
+                    break done;
+                }
+                i++;
+                val = valueIter.nextLong();
+            }
+
+            result.addRange(new Range(val, val));
+
+            if (!positionIter.hasNext() || !valueIter.hasNext()) {
+                break;
+            }
+            position = positionIter.nextLong();
+            i++;
+            val = valueIter.nextLong();
+        } while (true);
+
+        return result;
     }
 }
