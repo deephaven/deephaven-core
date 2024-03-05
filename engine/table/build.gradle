@@ -82,7 +82,9 @@ dependencies {
 
 spotless {
     java {
-        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/FilterKernel*Sample.java'
+        // Exclude these codegen sample files from here so we don't even need a comment to disable formatting
+        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/FilterKernel*Sample.java',
+                'src/test/java/io/deephaven/engine/table/impl/select/Formula*Sample.java'
     }
 }
 
