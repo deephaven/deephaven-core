@@ -8,7 +8,7 @@ import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * An exception to use when a series of operations must all be executed, but may all throw exceptions themselves. This
+ * An exception to use when a series of operations mus all be executed, but may all throw exceptions themselves. This
  * allows for retention of all exception data.
  */
 public class MultiException extends Exception {

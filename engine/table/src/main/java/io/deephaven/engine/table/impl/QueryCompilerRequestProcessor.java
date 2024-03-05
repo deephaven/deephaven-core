@@ -3,10 +3,12 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.CompletionStageFutureImpl;
@@ -14,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public interface QueryCompilerRequestProcessor {
     /**
@@ -80,12 +83,25 @@ public interface QueryCompilerRequestProcessor {
 
             try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(desc)) {
                 final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
-                if (requests.size() == 1) {
-                    compiler.compile(requests.get(0), resolvers.get(0));
-                } else {
-                    compiler.compile(
-                            requests.toArray(QueryCompilerRequest[]::new),
-                            resolvers.toArray(CompletionStageFuture.Resolver[]::new));
+                // noinspection unchecked
+                compiler.compile(
+                        requests.toArray(QueryCompilerRequest[]::new),
+                        resolvers.toArray(CompletionStageFuture.Resolver[]::new));
+
+                final List<Throwable> exceptions = new ArrayList<>();
+                for (CompletionStageFuture.Resolver<Class<?>> resolver : resolvers) {
+                    try {
+                        Object ignored2 = resolver.getFuture().get();
+                    } catch (ExecutionException err) {
+                        exceptions.add(err.getCause());
+                    } catch (InterruptedException err) {
+                        exceptions.add(err);
+                    }
+                }
+                if (!exceptions.isEmpty()) {
+                    throw new UncheckedDeephavenException("Compilation failed",
+                            MultiException.maybeWrapInMultiException("Compilation exceptions for multiple requests",
+                                    exceptions));
                 }
             }
         }

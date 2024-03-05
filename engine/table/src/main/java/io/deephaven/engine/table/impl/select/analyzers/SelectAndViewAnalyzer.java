@@ -52,8 +52,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     public static Supplier<Map<String, Object>> newQueryScopeVariableSupplier() {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        return new CachingSupplier<>(
-                () -> queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name)));
+        return new CachingSupplier<>(() -> Collections.unmodifiableMap(
+                queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name))));
     }
 
     public static void initializeSelectColumns(

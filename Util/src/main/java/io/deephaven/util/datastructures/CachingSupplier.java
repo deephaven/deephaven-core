@@ -17,7 +17,8 @@ public final class CachingSupplier<OUTPUT_TYPE> implements Supplier<OUTPUT_TYPE>
     private final Supplier<OUTPUT_TYPE> internalSupplier;
 
     private volatile boolean hasCachedResult;
-    private volatile OUTPUT_TYPE cachedResult;
+    private OUTPUT_TYPE cachedResult;
+    private RuntimeException errorResult;
 
     /**
      * Construct a {@link Supplier} wrapper.
@@ -33,12 +34,19 @@ public final class CachingSupplier<OUTPUT_TYPE> implements Supplier<OUTPUT_TYPE>
         if (!hasCachedResult) {
             synchronized (this) {
                 if (!hasCachedResult) {
-                    cachedResult = internalSupplier.get();
+                    try {
+                        cachedResult = internalSupplier.get();
+                    } catch (RuntimeException err) {
+                        errorResult = err;
+                    }
                     hasCachedResult = true;
                 }
             }
         }
 
+        if (errorResult != null) {
+            throw errorResult;
+        }
         return cachedResult;
     }
 }

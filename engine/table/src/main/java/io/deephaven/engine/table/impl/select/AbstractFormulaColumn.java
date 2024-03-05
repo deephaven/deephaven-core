@@ -286,8 +286,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return formulaKernelFactoryFuture
                 .thenApply(formulaKernelFactory -> (columnName, rowSet, lazy, columnsToData, params) -> {
                     // Maybe warn that we ignore "lazy". By the way, "lazy" is the wrong term anyway. "lazy" doesn't
-                    // mean
-                    // "cached", which is how we are using it.
+                    // mean "cached", which is how we are using it.
                     final Map<String, ColumnSource<?>> netColumnSources = new HashMap<>();
                     for (final String sourceColumnName : sd.sources) {
                         final ColumnSource<?> columnSourceToUse = columnsToData.get(sourceColumnName);

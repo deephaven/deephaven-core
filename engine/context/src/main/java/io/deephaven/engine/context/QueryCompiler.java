@@ -274,63 +274,32 @@ public class QueryCompiler {
             }
         }
 
-        /*
-         * @formatter:off
-         * 3. try to resolve CFs without compiling; retain next hash to try
-         * 4. compile all remaining with a single compilation task
-         * 5. goto step 3
-         * 6. probably need Consumer<Class<?>> to fit DhFormulaColumn pattern? (other select columns don't need this)
-         * @formatter:on
-         */
-
         if (!newResolvers.isEmpty()) {
-            // It's my job to fulfill the future of these futures.
+            // It's my job to fulfill these futures.
             try {
                 compileHelper(newRequests, newResolvers);
             } catch (RuntimeException e) {
                 // These failures are not applicable to a single request, so we can't just complete the future and
                 // leave the failure in the cache.
-                for (int ii = 0; ii < newRequests.size(); ++ii) {
-                    if (newResolvers.get(ii).completeExceptionally(e)) {
-                        knownClasses.remove(newRequests.get(ii).classBody());
+                synchronized (this) {
+                    for (int ii = 0; ii < newRequests.size(); ++ii) {
+                        if (newResolvers.get(ii).completeExceptionally(e)) {
+                            knownClasses.remove(newRequests.get(ii).classBody());
+                        }
                     }
                 }
                 throw e;
             }
         }
 
-        Error firstError = null;
-        RuntimeException firstException = null;
         for (int ii = 0; ii < requests.length; ++ii) {
             try {
                 resolvers[ii].complete(allFutures[ii].get());
-            } catch (InterruptedException | ExecutionException e) {
-                final RuntimeException err;
-                if (e instanceof InterruptedException) {
-                    err = new UncheckedDeephavenException("Interrupted while waiting for codegen", e);
-                } else {
-                    Throwable cause = e.getCause();
-                    if (cause instanceof Error) {
-                        firstError = (Error) cause;
-                        resolvers[ii].completeExceptionally(cause);
-                        continue;
-                    } else if (cause instanceof RuntimeException) {
-                        err = (RuntimeException) cause;
-                    } else {
-                        err = new UncheckedDeephavenException("Error during codegen", e);
-                    }
-                }
-                if (firstException == null) {
-                    firstException = err;
-                }
+            } catch (ExecutionException err) {
+                resolvers[ii].completeExceptionally(err.getCause());
+            } catch (Throwable err) {
                 resolvers[ii].completeExceptionally(err);
             }
-        }
-        if (firstError != null) {
-            throw firstError;
-        }
-        if (firstException != null) {
-            throw firstException;
         }
     }
 
@@ -483,6 +452,13 @@ public class QueryCompiler {
         return sb.toString();
     }
 
+    private static class CompilationState {
+        int next_pi;
+        boolean compiled;
+        String packageName;
+        String fqClassName;
+    }
+
     private void compileHelper(
             @NotNull final List<QueryCompilerRequest> requests,
             @NotNull final List<CompletionStageFuture.Resolver<Class<?>>> resolvers) {
@@ -500,19 +476,28 @@ public class QueryCompiler {
         }
 
         int numCompiled = 0;
-        final int[] next_pi = new int[requests.size()];
-        final boolean[] compiled = new boolean[requests.size()];
-        final String[] packageName = new String[requests.size()];
-        final String[] fqClassName = new String[requests.size()];
+        final CompilationState[] states = new CompilationState[requests.size()];
+        for (int ii = 0; ii < requests.size(); ++ii) {
+            states[ii] = new CompilationState();
+        }
+
+        /*
+         * @formatter:off
+         * 1. try to resolve CFs without compiling; retain next hash to try
+         * 2. compile all remaining with a single compilation task
+         * 3. goto step 1 if any are unresolved
+         * @formatter:on
+         */
 
         while (numCompiled < requests.size()) {
             for (int ii = 0; ii < requests.size(); ++ii) {
-                if (compiled[ii]) {
+                final CompilationState state = states[ii];
+                if (state.compiled) {
                     continue;
                 }
 
                 while (true) {
-                    final int pi = next_pi[ii]++;
+                    final int pi = state.next_pi++;
                     final String packageNameSuffix = "c_" + basicHashText[ii]
                             + (pi == 0 ? "" : ("p" + pi))
                             + "v" + JAVA_CLASS_VERSION;
@@ -523,26 +508,26 @@ public class QueryCompiler {
                                 + request.packageNameRoot() + ", class name=" + request.className() + ", class body "
                                 + "hash=" + basicHashText[ii] + " - contact Deephaven support!");
                         resolvers.get(ii).completeExceptionally(err);
-                        compiled[ii] = true;
+                        state.compiled = true;
                         ++numCompiled;
                         break;
                     }
 
-                    packageName[ii] = request.getPackageName(packageNameSuffix);
-                    fqClassName[ii] = packageName[ii] + "." + request.className();
+                    state.packageName = request.getPackageName(packageNameSuffix);
+                    state.fqClassName = state.packageName + "." + request.className();
 
                     // Ask the classloader to load an existing class with this name. This might:
                     // 1. Fail to find a class (returning null)
                     // 2. Find a class whose body has the formula we are looking for
                     // 3. Find a class whose body has a different formula (hash collision)
-                    Class<?> result = tryLoadClassByFqName(fqClassName[ii], request.parameterClasses());
+                    Class<?> result = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
                     if (result == null) {
                         break; // we'll try to compile it
                     }
 
-                    if (completeIfResultMatchesQueryCompilerRequest(packageName[ii], request, resolvers.get(ii),
+                    if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolvers.get(ii),
                             result)) {
-                        compiled[ii] = true;
+                        state.compiled = true;
                         ++numCompiled;
                         break;
                     }
@@ -554,16 +539,16 @@ public class QueryCompiler {
             }
 
             // Couldn't resolve at least one of the requests, so try a round of compilation.
-            final CompilationRequestAttempt[] compilationRequestAttempts =
-                    new CompilationRequestAttempt[requests.size() - numCompiled];
-            for (int ii = 0, jj = 0; ii < requests.size(); ++ii) {
-                if (!compiled[ii]) {
+            final List<CompilationRequestAttempt> compilationRequestAttempts = new ArrayList<>();
+            for (int ii = 0; ii < requests.size(); ++ii) {
+                final CompilationState state = states[ii];
+                if (!state.compiled) {
                     final QueryCompilerRequest request = requests.get(ii);
-                    compilationRequestAttempts[jj++] = new CompilationRequestAttempt(
+                    compilationRequestAttempts.add(new CompilationRequestAttempt(
                             request,
-                            packageName[ii],
-                            fqClassName[ii],
-                            resolvers.get(ii));
+                            state.packageName,
+                            state.fqClassName,
+                            resolvers.get(ii)));
                 }
             }
 
@@ -573,14 +558,15 @@ public class QueryCompiler {
             // ... then give the filesystem some time. All requests should use the same deadline.
             final long deadline = System.currentTimeMillis() + CODEGEN_TIMEOUT_MS - CODEGEN_LOOP_DELAY_MS;
             for (int ii = 0; ii < requests.size(); ++ii) {
-                if (compiled[ii]) {
+                final CompilationState state = states[ii];
+                if (state.compiled) {
                     continue;
                 }
 
                 final QueryCompilerRequest request = requests.get(ii);
                 final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers.get(ii);
                 if (resolver.getFuture().isDone()) {
-                    compiled[ii] = true;
+                    state.compiled = true;
                     ++numCompiled;
                     continue;
                 }
@@ -590,12 +576,12 @@ public class QueryCompiler {
                 // B. Lost a race to another process on the same file system which is compiling the identical formula
                 // C. Lost a race to another process on the same file system compiling a different formula that collides
 
-                Class<?> clazz = tryLoadClassByFqName(fqClassName[ii], request.parameterClasses());
+                Class<?> clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
                 try {
                     while (clazz == null && System.currentTimeMillis() < deadline) {
                         // noinspection BusyWait
                         Thread.sleep(CODEGEN_LOOP_DELAY_MS);
-                        clazz = tryLoadClassByFqName(fqClassName[ii], request.parameterClasses());
+                        clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
                     }
                 } catch (final InterruptedException ie) {
                     throw new UncheckedDeephavenException("Interrupted while waiting for codegen", ie);
@@ -606,8 +592,8 @@ public class QueryCompiler {
                     throw new IllegalStateException("Should have been able to load *some* class here");
                 }
 
-                if (completeIfResultMatchesQueryCompilerRequest(packageName[ii], request, resolver, clazz)) {
-                    compiled[ii] = true;
+                if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
+                    state.compiled = true;
                     ++numCompiled;
                 }
             }
@@ -805,7 +791,7 @@ public class QueryCompiler {
     }
 
     private void maybeCreateClass(
-            @NotNull final CompilationRequestAttempt[] requests) {
+            @NotNull final List<CompilationRequestAttempt> requests) {
         // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
         // directories (e.g. io/deephaven/test) if they are not already there. This will be useful later.
         // Also create a temp directory e.g. /tmp/workspace/cache/classes/temporaryCompilationDirectory12345
@@ -848,21 +834,21 @@ public class QueryCompiler {
             final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
             int parallelismFactor = operationInitializer.parallelismFactor();
 
-            int requestsPerTask = Math.max(32, (requests.length + parallelismFactor - 1) / parallelismFactor);
+            int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
             log.info().append("Compiling with parallelismFactor = ").append(parallelismFactor)
                     .append(" requestsPerTask = ").append(requestsPerTask).endl();
-            if (parallelismFactor == 1 || requestsPerTask >= requests.length) {
+            if (parallelismFactor == 1 || requestsPerTask >= requests.size()) {
                 maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
-                        0, requests.length, false);
+                        0, requests.size());
             } else {
-                int numTasks = (requests.length + requestsPerTask - 1) / requestsPerTask;
+                int numTasks = (requests.size() + requestsPerTask - 1) / requestsPerTask;
                 final Future<?>[] tasks = new Future[numTasks];
                 for (int jobId = 0; jobId < numTasks; ++jobId) {
                     final int startInclusive = jobId * requestsPerTask;
-                    final int endExclusive = Math.min(requests.length, (jobId + 1) * requestsPerTask);
+                    final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
                     tasks[jobId] = operationInitializer.submit(() -> {
                         maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
-                                startInclusive, endExclusive, false);
+                                startInclusive, endExclusive);
                     });
                 }
                 for (int jobId = 0; jobId < numTasks; ++jobId) {
@@ -897,12 +883,36 @@ public class QueryCompiler {
     private void maybeCreateClassHelper(
             @NotNull final JavaCompiler compiler,
             @NotNull final JavaFileManager fileManager,
-            @NotNull final CompilationRequestAttempt[] requests,
+            @NotNull final List<CompilationRequestAttempt> requests,
+            @NotNull final String rootPathAsString,
+            @NotNull final String tempDirAsString,
+            final int startInclusive,
+            final int endExclusive) {
+        final List<CompilationRequestAttempt> toRetry = new ArrayList<>();
+        final boolean wantRetry = maybeCreateClassHelper2(compiler,
+                fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive, toRetry);
+        if (!wantRetry) {
+            return;
+        }
+
+        final List<CompilationRequestAttempt> ignored = new ArrayList<>();
+        if (maybeCreateClassHelper2(compiler,
+                fileManager, toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(), ignored)) {
+            // We only retried compilation units that did not fail on the first pass, so we should not have any failures
+            // on the second pass.
+            throw new IllegalStateException("Unexpected failure during second pass of compilation");
+        }
+    }
+
+    private boolean maybeCreateClassHelper2(
+            @NotNull final JavaCompiler compiler,
+            @NotNull final JavaFileManager fileManager,
+            @NotNull final List<CompilationRequestAttempt> requests,
             @NotNull final String rootPathAsString,
             @NotNull final String tempDirAsString,
             final int startInclusive,
             final int endExclusive,
-            final boolean isRetry) {
+            List<CompilationRequestAttempt> toRetry) {
         final StringWriter compilerOutput = new StringWriter();
 
         final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
@@ -930,51 +940,48 @@ public class QueryCompiler {
                 },
                 compilerOptions,
                 null,
-                Arrays.stream(requests, startInclusive, endExclusive)
+                requests.subList(startInclusive, endExclusive).stream()
                         .map(CompilationRequestAttempt::makeSource)
                         .collect(Collectors.toList()))
                 .call();
 
-        final List<CompilationRequestAttempt> shouldRetry;
-        if (!isRetry && numFailures.intValue() > 0 && numFailures.intValue() != endExclusive - startInclusive) {
-            // if this is the first attempt, and we had some failures, but not all of them failed, then we should retry
-            shouldRetry = new ArrayList<>();
-        } else {
-            shouldRetry = null;
-        }
+        final boolean wantRetry = numFailures.intValue() > 0 && numFailures.intValue() != endExclusive - startInclusive;
 
         // The above has compiled into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
         // class files}
         // We want to atomically move it to e.g.
         // /tmp/workspace/cache/classes/io/deephaven/test/cm12862183232603186v52_0/{various class files}
-        Arrays.stream(requests, startInclusive, endExclusive).forEach(request -> {
+        requests.subList(startInclusive, endExclusive).forEach(request -> {
             final Path srcDir = Paths.get(tempDirAsString, request.splitPackageName);
             final Path destDir = Paths.get(rootPathAsString, request.splitPackageName);
             try {
                 Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
             } catch (IOException ioe) {
-                if (shouldRetry != null && !Files.exists(srcDir) && !request.resolver.getFuture().isDone()) {
-                    // This source actually succeeded in compiling, but was not written because some other source failed
-                    // to compile. Let's recursively call ourselves to try again.
-                    shouldRetry.add(request);
-                    return;
+                // The name "isDone" might be misleading here. We haven't called "complete" on the successful
+                // futures yet, so the only way they would be "done" at this point is if they completed
+                // exceptionally.
+                final boolean hasException = request.resolver.getFuture().isDone();
+
+                if (wantRetry && !Files.exists(srcDir)) {
+                    // The move failed and the source directory does not exist.
+                    if (!hasException) {
+                        // This source actually succeeded in compiling, but was not written because some other source
+                        // failed to compile. Let's schedule this work to try again.
+                        toRetry.add(request);
+                    }
                 }
 
-                if (!Files.exists(destDir) && !request.resolver.getFuture().isDone()) {
-                    // The move might have failed for a variety of bad reasons. However, if the reason was because
-                    // we lost the race to some other process, that's a harmless/desirable outcome, and we can ignore
-                    // it.
+                if (!Files.exists(destDir) && !hasException) {
+                    // Propagate an error here only if the destination does not exist; ignoring issues related to
+                    // collisions with another process.
                     request.resolver.completeExceptionally(new UncheckedIOException(
                             "Move failed for some reason other than destination already existing", ioe));
                 }
             }
         });
 
-        if (shouldRetry != null && !shouldRetry.isEmpty()) {
-            maybeCreateClassHelper(compiler, fileManager, shouldRetry.toArray(CompilationRequestAttempt[]::new),
-                    rootPathAsString, tempDirAsString, 0, shouldRetry.size(), true);
-        }
+        return wantRetry;
     }
 
     /**
