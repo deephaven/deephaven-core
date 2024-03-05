@@ -67,9 +67,56 @@ public abstract class WebBarrageSubscription {
         return serverColumns == null || serverColumns.get(ii);
     }
 
-    // public static class BlinkImpl extends WebBarrageSubscription {
-    //
-    // }
+    public static class BlinkImpl extends WebBarrageSubscription {
+        enum Mode {
+            BLINK, APPEND
+        }
+
+        private final Mode mode;
+
+        public BlinkImpl(ClientTableState state) {
+            super(state);
+            mode = Mode.APPEND;
+        }
+
+        @Override
+        protected void applyUpdates(WebBarrageMessage message) {
+            if (message.isSnapshot) {
+                updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
+            }
+
+            assert message.shifted.length == 0;
+            for (int i = 0; i < message.modColumnData.length; i++) {
+                assert message.modColumnData[i].rowsModified.isEmpty();
+            }
+
+            if (message.rowsIncluded.isEmpty()) {
+                return;
+            }
+
+            long addedRows = message.rowsAdded.size();
+            RangeSet destinationRowSet;
+            if (mode == Mode.APPEND) {
+                destinationRowSet = RangeSet.ofRange(capacity, capacity + addedRows - 1);
+                capacity += addedRows;
+            } else {
+                destinationRowSet = RangeSet.ofRange(0, addedRows - 1);
+                capacity = addedRows;
+            }
+            Arrays.stream(destSources).forEach(s -> s.ensureCapacity(capacity));
+            for (int ii = 0; ii < message.addColumnData.length; ii++) {
+                if (isSubscribedColumn(ii)) {
+                    WebBarrageMessage.AddColumnData column = message.addColumnData[ii];
+                    PrimitiveIterator.OfLong destIterator = destinationRowSet.indexIterator();
+                    for (int j = 0; j < column.data.size(); j++) {
+                        Chunk<Values> chunk = column.data.get(j);
+                        destSources[ii].fillChunk(chunk, destIterator);
+                    }
+                    assert !destIterator.hasNext();
+                }
+            }
+        }
+    }
 
     public static class RedirectedImpl extends WebBarrageSubscription {
         private RangeSet freeset = new RangeSet();
@@ -153,8 +200,9 @@ public abstract class WebBarrageSubscription {
                 }
             }
             currentRowsetShifter.flush();
-            populatedRowsetShifter.flush();
-
+            if (populatedRowsetShifter != null) {
+                populatedRowsetShifter.flush();
+            }
 
             message.rowsAdded.rangeIterator().forEachRemaining(currentRowSet::addRange);
 
