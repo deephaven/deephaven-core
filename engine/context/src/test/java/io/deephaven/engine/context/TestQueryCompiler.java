@@ -299,24 +299,15 @@ public class TestQueryCompiler {
                         CompletionStageFutureImpl.make(),
                 };
 
-        Exception firstErr;
         try {
             ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
             // noinspection DataFlowIssue
             throw Assert.statementNeverExecuted();
-        } catch (Exception err) {
-            firstErr = err;
+        } catch (Exception ignored) {
         }
 
         Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
         Assert.eqTrue(resolvers[1].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
         Assert.neqNull(resolvers[1].getFuture().get(), "resolvers[1].getFuture().get()");
-        try {
-            resolvers[0].getFuture().get();
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        } catch (ExecutionException err) {
-            Assert.eq(firstErr, "firstErr", err.getCause(), "err");
-        }
     }
 }

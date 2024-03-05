@@ -975,6 +975,7 @@ public class QueryCompiler {
                         // This source actually succeeded in compiling, but was not written because some other source
                         // failed to compile. Let's schedule this work to try again.
                         toRetry.add(request);
+                        return;
                     }
                 }
 
