@@ -1,5 +1,5 @@
 module.exports = async ({ github, context }) => {
-  const ISSUE_REPO_NAME = "deephaven.io";
+  const ISSUE_REPO_NAME = "deephaven-docs-community";
   const ISSUE_TYPES = ["Community"];
 
   const body =
