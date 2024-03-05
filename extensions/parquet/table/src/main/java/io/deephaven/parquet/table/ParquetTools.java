@@ -533,7 +533,11 @@ public class ParquetTools {
                 .map(ColumnDefinition::getName)
                 .toArray(String[]::new);
         final PartitionedTable partitionedTable = sourceTable.partitionBy(partitioningColNames);
-        writeKeyValuePartitionedTable(partitionedTable, definition, destinationDir, baseName, writeInstructions);
+        final TableDefinition keyTableDefinition = TableDefinition.of(partitioningColumns);
+        final TableDefinition leafDefinition =
+                getNonKeyTableDefinition(Arrays.asList(partitioningColNames), definition);
+        writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
+                baseName, writeInstructions);
     }
 
     /**
@@ -610,6 +614,16 @@ public class ParquetTools {
                 baseName, writeInstructions);
     }
 
+    /**
+     * Write a partitioned table to disk in a key=value partitioning format with the already computed definition for the
+     * key table and leaf table.
+     * <p>
+     * Check {@link #writeKeyValuePartitionedTable(PartitionedTable, File, String, ParquetInstructions)},
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, TableDefinition, File, String, ParquetInstructions)},
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, File, String, ParquetInstructions)}}, or
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, TableDefinition, File, String, ParquetInstructions)} for
+     * more details.
+     */
     private static void writeKeyValuePartitionedTableImpl(@NotNull final PartitionedTable partitionedTable,
             @NotNull final TableDefinition keyTableDefinition,
             @NotNull final TableDefinition leafDefinition,
