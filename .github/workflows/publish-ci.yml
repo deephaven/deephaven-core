@@ -113,5 +113,5 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.DEEPHAVENBOT_NPM_TOKEN }}
-        run: npm publish --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz
+        run: npm publish --provenance --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz
         continue-on-error: true
