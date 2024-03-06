@@ -40,6 +40,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -99,9 +100,11 @@ public class ParquetTableWriter {
      * @param groupingColumnsWritingInfoMap A map of grouping column names to their respective info used for writing
      *        grouping files
      * @param metadataFileWriter The writer for the _metadata and _common_metadata files
+     * @param computedCache When we need to perform some computation depending on column data to make a decision
+     *        impacting both schema and written data, we store results in computedCache to avoid having to calculate
+     *        twice. An example is the necessary precision and scale for a BigDecimal column written as a decimal
+     *        logical type.
      *
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-     *         unsupported types)
      * @throws IOException For file writing related errors
      */
     static void write(
@@ -111,9 +114,10 @@ public class ParquetTableWriter {
             @NotNull final File destFile,
             @NotNull final File metadataFilePath,
             @NotNull final Map<String, String> incomingMeta,
-            final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap,
-            @NotNull final ParquetMetadataFileWriter metadataFileWriter)
-            throws SchemaMappingException, IOException {
+            @Nullable final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap,
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache)
+            throws IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
         List<File> cleanupFiles = null;
         try {
@@ -133,11 +137,11 @@ public class ParquetTableWriter {
                     // We don't accumulate metadata from grouping files into the main metadata file
                     write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions, groupingDestFile,
                             metadataGroupingFilePath, Collections.emptyMap(), TableInfo.builder(),
-                            NullParquetMetadataFileWriter.INSTANCE);
+                            NullParquetMetadataFileWriter.INSTANCE, computedCache);
                 }
             }
             write(t, definition, writeInstructions, destFile, metadataFilePath, incomingMeta, tableInfoBuilder,
-                    metadataFileWriter);
+                    metadataFileWriter, computedCache);
         } catch (Exception e) {
             if (cleanupFiles != null) {
                 for (final File cleanupFile : cleanupFiles) {
@@ -165,11 +169,10 @@ public class ParquetTableWriter {
      * @param tableMeta A map of metadata values to be stores in the file footer
      * @param tableInfoBuilder A partially constructed builder for the metadata object
      * @param metadataFileWriter The writer for the _metadata and _common_metadata files
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-     *         unsupported types)
+     * @param computedCache Per column cache tags
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    static void write(
             @NotNull final Table table,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
@@ -177,15 +180,12 @@ public class ParquetTableWriter {
             @NotNull final File metadataFilePath,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
-            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws SchemaMappingException, IOException {
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
-            // When we need to perform some computation depending on column data to make a decision impacting both
-            // schema and written data, we store results in computedCache to avoid having to calculate twice.
-            // An example is the necessary precision and scale for a BigDecimal column written as decimal logical type.
-            final Map<String, Map<ParquetCacheTags, Object>> computedCache = new HashMap<>();
             final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
                     columnSourceMap, destFile, metadataFilePath, writeInstructions, tableMeta, tableInfoBuilder,
                     metadataFileWriter);

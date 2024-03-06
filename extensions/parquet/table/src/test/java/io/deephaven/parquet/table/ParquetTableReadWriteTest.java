@@ -481,7 +481,7 @@ public final class ParquetTableReadWriteTest {
         final String filename = "basicParquetWithMetadataTest.parquet";
         final File destFile = new File(rootFile, filename);
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(rootFile.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         writeTable(table, destFile, writeInstructions);
 
@@ -508,7 +508,7 @@ public final class ParquetTableReadWriteTest {
 
         final File destFile = new File(parentDir, "parquetWithGroupingDataAndMetadataTest.parquet");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         writeTable(table, destFile, writeInstructions);
 
@@ -541,7 +541,7 @@ public final class ParquetTableReadWriteTest {
         parentDir.delete();
         parentDir.mkdir();
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), writeInstructions,
                 new File[] {firstDataFile, secondDataFile}, null);
@@ -561,6 +561,16 @@ public final class ParquetTableReadWriteTest {
         secondDataFile.createNewFile();
         final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
         assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
+
+        // Now write with flat partitioned parquet files to different directories with metadata file
+        parentDir.delete();
+        final File updatedSecondDataFile = new File(rootFile, "testDir/data2.parquet");
+        try {
+            writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), writeInstructions,
+                    new File[] {firstDataFile, updatedSecondDataFile}, null);
+            fail("Expected exception when writing the metadata files for tables with different parent directories");
+        } catch (final RuntimeException expected) {
+        }
     }
 
     @Test
@@ -577,7 +587,7 @@ public final class ParquetTableReadWriteTest {
 
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir, "{partitions}-data-{i}", writeInstructions);
 
@@ -611,7 +621,7 @@ public final class ParquetTableReadWriteTest {
 
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         try {
             writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
@@ -636,7 +646,7 @@ public final class ParquetTableReadWriteTest {
         assertFalse(partitionedTableWithDuplicatedKeys.uniqueKeys());
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNonUniqueKeys");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         try {
             writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data", writeInstructions);
@@ -698,7 +708,7 @@ public final class ParquetTableReadWriteTest {
         final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNullKeys");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         try {
             writeKeyValuePartitionedTable(partitionedTable, parentDir, "data", writeInstructions);
@@ -736,7 +746,7 @@ public final class ParquetTableReadWriteTest {
 
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         writeKeyValuePartitionedTable(inputData, tableDefinitionToWrite, parentDir, "data", writeInstructions);
 
@@ -786,7 +796,7 @@ public final class ParquetTableReadWriteTest {
 
         final File parentDir = new File(rootFile, "someTest");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         final PartitionedTable partitionedTable =
                 inputData.partitionBy("symbol", "epic_collection_id", "epic_request_id");
@@ -836,7 +846,7 @@ public final class ParquetTableReadWriteTest {
                 "PC8 = (float)(ii % 2)",
                 "PC9 = (double)(ii % 2)",
                 "PC10 = java.math.BigInteger.valueOf(ii)",
-                "PC11 = java.math.BigDecimal.valueOf((double)ii)",
+                "PC11 = (ii%2 == 0) ? java.math.BigDecimal.valueOf((double)ii) : java.math.BigDecimal.valueOf((double)(ii*0.001))",
                 "PC12 = java.time.Instant.ofEpochSecond(ii)",
                 "PC13 = java.time.LocalDate.ofEpochDay(ii)",
                 "PC14 = java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
@@ -845,7 +855,7 @@ public final class ParquetTableReadWriteTest {
 
         final File parentDir = new File(rootFile, "testAllPartitioningColumnTypes");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
 
@@ -876,12 +886,12 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofFloat("NPC8"),
                 ColumnDefinition.ofDouble("NPC9"),
                 ColumnDefinition.of("NPC10", Type.find(BigInteger.class)),
-                ColumnDefinition.of("NPC11", Type.find(BigDecimal.class)),
+                ColumnDefinition.of("bdColumn", Type.find(BigDecimal.class)),
                 ColumnDefinition.of("NPC12", Type.find(Instant.class)),
                 ColumnDefinition.of("NPC13", Type.find(LocalDate.class)),
                 ColumnDefinition.of("NPC14", Type.find(LocalTime.class)));
 
-        final Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView(
+        Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView(
                 "PC1 =  (ii%2 == 0) ? `AA` : `BB`",
                 "PC2 = (int)(ii%3)",
                 "NPC1 =  (ii%2 == 0) ? `AA` : `BB`",
@@ -894,7 +904,7 @@ public final class ParquetTableReadWriteTest {
                 "NPC8 = (float)(ii % 2)",
                 "NPC9 = (double)(ii % 2)",
                 "NPC10 = java.math.BigInteger.valueOf(ii)",
-                "NPC11 = java.math.BigDecimal.valueOf((double)ii)",
+                "bdColumn = (ii%2 == 0) ? java.math.BigDecimal.valueOf((double)ii) : java.math.BigDecimal.valueOf((double)(ii*0.001))",
                 "NPC12 = java.time.Instant.ofEpochSecond(ii)",
                 "NPC13 = java.time.LocalDate.ofEpochDay(ii)",
                 "NPC14 = java.time.LocalTime.of(i%24, i%60, (i+10)%60)"))
@@ -902,11 +912,15 @@ public final class ParquetTableReadWriteTest {
 
         final File parentDir = new File(rootFile, "testAllNonPartitioningColumnTypes");
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setMetadataRootDir(parentDir.getAbsolutePath())
+                .setGenerateMetadataFiles(true)
                 .build();
 
         // First API we test is passing the table directly without any table definition
         writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+
+        // Store the big decimal with the precision and scale consistent with what we write to parquet
+        inputData = maybeFixBigDecimal(inputData);
+
         final String[] partitioningColumns = definition.getPartitioningColumns().stream()
                 .map(ColumnDefinition::getName).toArray(String[]::new);
         Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();

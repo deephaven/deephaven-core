@@ -67,20 +67,19 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
      * @param destinations The indivdual parquet file destinations, all of which must be contained in the metadata root
      * @param commonSchema The common schema to be included for writing the _common_metadata file.
      */
-    ParquetMetadataFileWriterImpl(@NotNull final String metadataRootDir, @NotNull final File[] destinations,
+    ParquetMetadataFileWriterImpl(@NotNull final File metadataRootDir, @NotNull final File[] destinations,
             @Nullable final MessageType commonSchema) {
+        this.metadataRootDirAbsPath = metadataRootDir.getAbsolutePath();
         for (final File destination : destinations) {
-            if (!destination.getAbsolutePath().startsWith(metadataRootDir)) {
+            if (!destination.getAbsolutePath().startsWith(metadataRootDirAbsPath)) {
                 throw new UncheckedDeephavenException("All destinations must be contained in the provided metadata root"
                         + " directory, provided destination " + destination.getAbsolutePath() + " is not in " +
-                        metadataRootDir);
+                        metadataRootDirAbsPath);
             }
         }
-        final File rootDir = new File(metadataRootDir);
-        this.metadataRootDirAbsPath = rootDir.getAbsolutePath();
         this.parquetFileMetadataList = new ArrayList<>(destinations.length);
-        this.channelsProvider =
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(rootDir.getPath()), null);
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                convertToURI(metadataRootDirAbsPath), null);
         this.columnTypes = null;
         this.commonSchema = commonSchema;
 

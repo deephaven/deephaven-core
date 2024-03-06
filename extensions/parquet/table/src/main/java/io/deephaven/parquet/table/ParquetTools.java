@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -52,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -692,22 +694,25 @@ public class ParquetTools {
                 row++;
             }
         }
-        final ParquetInstructions updatedWriteInstructions;
-        if (!ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(writeInstructions.getMetadataRootDir())) {
+        final MessageType commonSchema;
+        if (writeInstructions.generateMetadataFiles()) {
             // Generate initial schema for _common_metadata file from key columns. The schema for remaining columns will
             // be inferred at the time of writing the parquet files and merged with the common schema.
-            final MessageType commonSchema =
-                    getSchemaForTable(partitionedTable.table(), keyTableDefinition, writeInstructions);
-            updatedWriteInstructions = ParquetInstructions.createWithCommonSchema(writeInstructions, commonSchema);
+            commonSchema = getSchemaForTable(partitionedTable.table(), keyTableDefinition, writeInstructions);
         } else {
-            updatedWriteInstructions = writeInstructions;
+            commonSchema = null;
         }
-        ParquetTools.writeParquetTables(
+        final Map<String, Map<ParquetCacheTags, Object>> computedCache =
+                buildComputedCache(partitionedTable, leafDefinition);
+        ParquetTools.writeParquetTablesImpl(
                 partitionedData.toArray(Table[]::new),
                 leafDefinition,
-                updatedWriteInstructions,
+                writeInstructions,
                 destinations.toArray(File[]::new),
-                leafDefinition.getGroupingColumnNamesArray());
+                leafDefinition.getGroupingColumnNamesArray(),
+                commonSchema,
+                destinationDir,
+                computedCache);
     }
 
     /**
@@ -738,6 +743,30 @@ public class ParquetTools {
     }
 
     /**
+     * Precompute the precision and scale values for big decimal columns and pass it to the write method so that all the
+     * constituent parquet files are written with the same precision and scale values, and thus have the same schema.
+     */
+    private static Map<String, Map<ParquetCacheTags, Object>> buildComputedCache(
+            @NotNull final PartitionedTable partitionedTable,
+            @NotNull final TableDefinition leafDefinition) {
+        final Map<String, Map<ParquetCacheTags, Object>> computedCache = new HashMap<>();
+        Table mergedConstituents = null;
+        final List<ColumnDefinition<?>> leafColumnDefinitions = leafDefinition.getColumns();
+        for (final ColumnDefinition<?> columnDefinition : leafColumnDefinitions) {
+            if (columnDefinition.getDataType() == BigDecimal.class) {
+                if (mergedConstituents == null) {
+                    mergedConstituents = partitionedTable.merge();
+                }
+                final String columnName = columnDefinition.getName();
+                final ColumnSource<BigDecimal> bigDecimalColumnSource = mergedConstituents.getColumnSource(columnName);
+                TypeInfos.getPrecisionAndScale(computedCache, columnName, mergedConstituents.getRowSet(),
+                        () -> bigDecimalColumnSource);
+            }
+        }
+        return computedCache;
+    }
+
+    /**
      * Writes tables to disk in parquet format to a supplied set of destinations. If you specify grouping columns, there
      * must already be grouping information for those columns in the sources. This can be accomplished with
      * {@code .groupBy(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
@@ -756,6 +785,40 @@ public class ParquetTools {
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
             @Nullable final String[] groupingColumns) {
+        final File metadataRootDir;
+        if (writeInstructions.generateMetadataFiles()) {
+            // We will write the metadata file in the same directory as the destination files, so we need to ensure that
+            // all destination files are in the same directory.
+            final String firstDestinationDir = destinations[0].getParentFile().getAbsolutePath();
+            for (int i = 1; i < destinations.length; i++) {
+                if (!firstDestinationDir.equals(destinations[i].getParentFile().getAbsolutePath())) {
+                    throw new IllegalArgumentException("All destination files must be in the same directory for " +
+                            " generating metadata files");
+                }
+            }
+            metadataRootDir = new File(firstDestinationDir);
+        } else {
+            metadataRootDir = null;
+        }
+        // We do not have any common schema, therefore, is always set to null. Schema will be generated by combining the
+        // metadata at the time of writing the parquet file
+        writeParquetTablesImpl(sources, definition, writeInstructions, destinations, groupingColumns,
+                null, metadataRootDir, new HashMap<>());
+    }
+
+
+    /**
+     * Refer to {@link #writeParquetTables(Table[], TableDefinition, ParquetInstructions, File[], String[])} for more
+     * details.
+     */
+    private static void writeParquetTablesImpl(@NotNull final Table[] sources,
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final File[] destinations,
+            @Nullable final String[] groupingColumns,
+            @Nullable final MessageType commonSchema,
+            @Nullable final File metadataRootDir,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
@@ -770,11 +833,11 @@ public class ParquetTools {
                 Arrays.stream(shadowDestFiles).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
 
         final ParquetMetadataFileWriter metadataFileWriter;
-        final String metadataRootDir = writeInstructions.getMetadataRootDir();
-        final boolean writeMetadataFiles = !ParquetInstructions.DEFAULT_METADATA_ROOT_DIR.equals(metadataRootDir);
-        if (writeMetadataFiles) {
-            metadataFileWriter = new ParquetMetadataFileWriterImpl(metadataRootDir, destinations,
-                    writeInstructions.getCommonSchema());
+        if (writeInstructions.generateMetadataFiles()) {
+            if (metadataRootDir == null) {
+                throw new IllegalArgumentException("Metadata root directory must be set when writing metadata files");
+            }
+            metadataFileWriter = new ParquetMetadataFileWriterImpl(metadataRootDir, destinations, commonSchema);
         } else {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }
@@ -793,7 +856,8 @@ public class ParquetTools {
                     final Table source = sources[tableIdx];
                     ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx],
                             destinations[tableIdx], Collections.emptyMap(),
-                            (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null, metadataFileWriter);
+                            (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null, metadataFileWriter,
+                            computedCache);
                 }
             } else {
                 // Create grouping info for each table and write the table and grouping files to shadow path
@@ -815,13 +879,14 @@ public class ParquetTools {
 
                     final Table sourceTable = sources[tableIdx];
                     ParquetTableWriter.write(sourceTable, definition, writeInstructions, shadowDestFiles[tableIdx],
-                            tableDestination, Collections.emptyMap(), groupingColumnWritingInfoMap, metadataFileWriter);
+                            tableDestination, Collections.emptyMap(), groupingColumnWritingInfoMap, metadataFileWriter,
+                            computedCache);
                 }
             }
 
             // Write the combined metadata files to shadow destinations
             final File metadataDestFile, shadowMetadataFile, commonMetadataDestFile, shadowCommonMetadataFile;
-            if (writeMetadataFiles) {
+            if (writeInstructions.generateMetadataFiles()) {
                 metadataDestFile = new File(metadataRootDir, METADATA_FILE_NAME);
                 shadowMetadataFile = ParquetTools.getShadowFile(metadataDestFile);
                 shadowFiles.add(shadowMetadataFile);
@@ -848,7 +913,7 @@ public class ParquetTools {
                     }
                 }
             }
-            if (writeMetadataFiles) {
+            if (writeInstructions.generateMetadataFiles()) {
                 destFiles.add(metadataDestFile);
                 installShadowFile(metadataDestFile, shadowMetadataFile);
                 destFiles.add(commonMetadataDestFile);

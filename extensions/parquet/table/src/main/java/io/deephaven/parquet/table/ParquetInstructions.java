@@ -10,7 +10,6 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,47 +115,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultTargetPageSize;
     }
 
-    static final String DEFAULT_METADATA_ROOT_DIR = ""; // Empty = No metadata files written
-
-    private static final MessageType DEFAULT_COMMON_SCHEMA = null; // No common schema
+    private static final boolean DEFAULT_GENERATE_METADATA_FILES = false;
 
     public ParquetInstructions() {}
-
-    /**
-     * Create a new ParquetInstructions object by copying all fields from the base instructions, and then adding the
-     * provided common schema. This method is intended for use internally and therefore is package-private.
-     *
-     * @param baseInstructions The base instructions to copy from
-     * @param commonSchema The common schema to add
-     * @return A new ParquetInstructions object with the common schema added
-     */
-    static ParquetInstructions createWithCommonSchema(@NotNull final ParquetInstructions baseInstructions,
-            @NotNull final MessageType commonSchema) {
-        if (!(baseInstructions instanceof ReadOnly)) {
-            throw new UnsupportedOperationException("Cannot add common schema to non-ReadOnly ParquetInstructions");
-        }
-        if (baseInstructions.getCommonSchema() != DEFAULT_COMMON_SCHEMA) {
-            throw new UnsupportedOperationException("Cannot add common schema to ParquetInstructions with existing " +
-                    "common schema");
-        }
-        if (DEFAULT_METADATA_ROOT_DIR.equals(baseInstructions.getMetadataRootDir())) {
-            throw new UnsupportedOperationException("Cannot add common schema to ParquetInstructions without any" +
-                    " metadata root directory");
-        }
-        final ReadOnly readOnly = (ReadOnly) baseInstructions;
-        return new ReadOnly(
-                readOnly.copyColumnNameToInstructions(),
-                readOnly.copyParquetColumnNameToInstructions(),
-                readOnly.getCompressionCodecName(),
-                readOnly.getMaximumDictionaryKeys(),
-                readOnly.getMaximumDictionarySize(),
-                readOnly.isLegacyParquet(),
-                readOnly.getTargetPageSize(),
-                readOnly.isRefreshing(),
-                readOnly.getSpecialInstructions(),
-                readOnly.getMetadataRootDir(),
-                commonSchema);
-    }
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
         final String mapped = getColumnNameFromParquetColumnName(parquetColumnName);
@@ -206,14 +167,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract boolean isRefreshing();
 
     /**
-     * @return the directory in which metadata files should be stored.
+     * @return should we generate _meteadata and _common_metadata files while writing parquet files?
      */
-    public abstract String getMetadataRootDir();
-
-    /**
-     * @return the common schema used for writing _common_metadata file.
-     */
-    abstract MessageType getCommonSchema();
+    public abstract boolean generateMetadataFiles();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -291,13 +247,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public String getMetadataRootDir() {
-            return DEFAULT_METADATA_ROOT_DIR;
-        }
-
-        @Override
-        public MessageType getCommonSchema() {
-            return DEFAULT_COMMON_SCHEMA;
+        public boolean generateMetadataFiles() {
+            return DEFAULT_GENERATE_METADATA_FILES;
         }
     };
 
@@ -367,8 +318,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final int targetPageSize;
         private final boolean isRefreshing;
         private final Object specialInstructions;
-        private final String metadataRootDir;
-        private final MessageType commonSchema;
+        private final boolean generateMetadataFiles;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -380,8 +330,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final int targetPageSize,
                 final boolean isRefreshing,
                 final Object specialInstructions,
-                final String metadataRootDir,
-                final MessageType commonSchema) {
+                final boolean generateMetadataFiles) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -391,8 +340,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.targetPageSize = targetPageSize;
             this.isRefreshing = isRefreshing;
             this.specialInstructions = specialInstructions;
-            this.metadataRootDir = metadataRootDir;
-            this.commonSchema = commonSchema;
+            this.generateMetadataFiles = generateMetadataFiles;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -487,13 +435,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public String getMetadataRootDir() {
-            return metadataRootDir;
-        }
-
-        @Override
-        public MessageType getCommonSchema() {
-            return commonSchema;
+        public boolean generateMetadataFiles() {
+            return generateMetadataFiles;
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -547,7 +490,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
         private Object specialInstructions;
-        private String metadataRootDir = DEFAULT_METADATA_ROOT_DIR;
+        private boolean generateMetadataFiles = DEFAULT_GENERATE_METADATA_FILES;
 
         public Builder() {}
 
@@ -725,13 +668,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Set the default metadata root directory.
-         *
-         * @param metadataRootDir the root directory to store metadata files in. All the parquet destinations should be
-         *        inside this directory.
+         * Set whether to generate _metadata and _common_metadata files while writing parquet files.
+         * <ul>
+         * <li>When writing a single parquet file, metadata files are generated in the same parent directory as the
+         * parquet file.
+         * <li>When writing multiple parquet files in a single write call, metadata files are only generated if all
+         * parquet files are written to the same parent directory. The metadata files will also be written to the same
+         * parent directory.
+         * <li>When writing key-value partitioned parquet files, metadata files are generated in the root directory of
+         * the partitioned parquet files.
+         * </ul>
          */
-        public Builder setMetadataRootDir(final String metadataRootDir) {
-            this.metadataRootDir = metadataRootDir;
+        public Builder setGenerateMetadataFiles(final boolean generateMetadataFiles) {
+            this.generateMetadataFiles = generateMetadataFiles;
             return this;
         }
 
@@ -743,7 +692,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
-                    specialInstructions, metadataRootDir, DEFAULT_COMMON_SCHEMA);
+                    specialInstructions, generateMetadataFiles);
         }
     }
 
