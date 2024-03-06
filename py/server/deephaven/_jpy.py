@@ -4,7 +4,6 @@
 
 """ This module is an internal module to simplify usage patterns around jpy.
 """
-from __future__ import annotations
 
 import jpy
 
