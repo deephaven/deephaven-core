@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableCharArraySource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ImmutableCharArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.chunk.*;
@@ -30,16 +29,16 @@ import java.util.Arrays;
  *
  * No previous value tracking is permitted, so this column source is only useful as a flat static source.
  *
- * A single array backs the result, so getChunk calls with contiguous ranges should always be able to return a
- * reference to the backing store without an array copy.  The immediate consequence is that you may not create
- * sources that have a capacity larger than the maximum capacity of an array.
+ * A single array backs the result, so getChunk calls with contiguous ranges should always be able to return a reference
+ * to the backing store without an array copy. The immediate consequence is that you may not create sources that have a
+ * capacity larger than the maximum capacity of an array.
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DObjectArraySource}.
  */
 public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T>
         implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered<Values>,
         InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
-        /* MIXIN_IMPLS */ {
+/* MIXIN_IMPLS */ {
     private Object[] data;
 
     // region constructor
@@ -49,7 +48,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     // endregion constructor
 
     // region array constructor
-    public ImmutableObjectArraySource(Class<T> type, Class<?> componentType, Object [] data) {
+    public ImmutableObjectArraySource(Class<T> type, Class<?> componentType, Object[] data) {
         super(type, componentType);
         this.data = data;
     }
@@ -75,23 +74,23 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     }
 
     public final T getUnsafe(long rowKey) {
-        return (T)data[(int)rowKey];
+        return (T)data[(int) rowKey];
     }
 
     public final Object getAndSetUnsafe(long rowKey, Object newValue) {
-        Object oldValue = data[(int)rowKey];
-        data[(int)rowKey] = newValue;
+        Object oldValue = data[(int) rowKey];
+        data[(int) rowKey] = newValue;
         return oldValue;
     }
 
     @Override
     public final void setNull(long key) {
-        data[(int)key] = null;
+        data[(int) key] = null;
     }
 
     @Override
     public final void set(long key, T value) {
-        data[(int)key] = value;
+        data[(int) key] = value;
     }
 
     @Override
@@ -105,7 +104,8 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         if (rowSequence.getAverageRunLengthEstimate() >= ArrayBackedColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH) {
             fillChunkByRanges(destination, rowSequence);
         } else {
@@ -117,15 +117,15 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     /* TYPE_MIXIN */ void fillChunkByRanges(
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = destination.asWritableObjectChunk();
         // endregion chunkDecl
         final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int length = (int)(end - start + 1);
+            final int length = (int) (end - start + 1);
             // region copyFromTypedArrayImmutable
-            chunk.copyFromTypedArray((T[])data, (int)start, destPosition.getAndAdd(length), length);
+            chunk.copyFromTypedArray((T[])data, (int) start, destPosition.getAndAdd(length), length);
             // endregion copyFromTypedArrayImmutable
         });
         chunk.setSize(destPosition.intValue());
@@ -136,7 +136,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     /* TYPE_MIXIN */ void fillChunkByKeys(
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = destination.asWritableObjectChunk();
         // endregion chunkDecl
@@ -169,22 +169,23 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
 
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
-        final int capacity = (int)(data.length - position);
+        final int capacity = (int) (data.length - position);
         ResettableWritableObjectChunk resettableWritableObjectChunk = chunk.asResettableWritableObjectChunk();
-        resettableWritableObjectChunk.resetFromTypedArray((T[])data, (int)position, capacity);
+        resettableWritableObjectChunk.resetFromTypedArray((T[])data, (int) position, capacity);
         return capacity;
     }
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
-        final int len = (int)(lastKey - firstKey + 1);
-        //noinspection unchecked
+        final int len = (int) (lastKey - firstKey + 1);
+        // noinspection unchecked
         DefaultGetContext<? extends Values> context1 = (DefaultGetContext<? extends Values>) context;
-        return context1.getResettableChunk().resetFromArray(data, (int)firstKey, len);
+        return context1.getResettableChunk().resetFromArray(data, (int) firstKey, len);
     }
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull RowSequence rowSequence) {
         if (rowSequence.getAverageRunLengthEstimate() >= ArrayBackedColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH) {
             fillFromChunkByRanges(src, rowSequence);
         } else {
@@ -196,7 +197,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     /* TYPE_MIXIN */ void fillFromChunkByKeys(
             @NotNull final Chunk<? extends Values> src,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         // endregion chunkDecl
@@ -213,15 +214,15 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     /* TYPE_MIXIN */ void fillFromChunkByRanges(
             @NotNull final Chunk<? extends Values> src,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         // endregion chunkDecl
         final MutableInt srcPos = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int length = (int)(end - start + 1);
+            final int length = (int) (end - start + 1);
             // region copyToTypedArrayImmutable
-            chunk.copyToTypedArray(srcPos.getAndAdd(length), (T[])data, (int)start, length);
+            chunk.copyToTypedArray(srcPos.getAndAdd(length), (T[])data, (int) start, length);
             // endregion copyToTypedArrayImmutable
         });
     }
@@ -233,7 +234,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
             @NotNull final FillFromContext context,
             @NotNull final Chunk<? extends Values> src,
             @NotNull final LongChunk<RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         // endregion chunkDecl
@@ -251,7 +252,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         // endregion chunkDecl
@@ -260,7 +261,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
             if (longKey == RowSet.NULL_ROW_KEY) {
                 chunk.set(ii, null);
             } else {
-                final int key = (int)longKey;
+                final int key = (int) longKey;
                 // region conversion
                 chunk.set(ii, getUnsafe(key));
                 // endregion conversion
@@ -270,12 +271,14 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     // endregion fillChunkUnordered
 
     @Override
-    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
         fillChunkUnordered(context, dest, keys);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
 
@@ -301,13 +304,13 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     }
 
     // region getArray
-    public Object [] getArray() {
+    public Object[] getArray() {
         return data;
     }
     // endregion getArray
 
     // region setArray
-    public void setArray(Object [] array) {
+    public void setArray(Object[] array) {
         data = array;
     }
     // endregion setArray

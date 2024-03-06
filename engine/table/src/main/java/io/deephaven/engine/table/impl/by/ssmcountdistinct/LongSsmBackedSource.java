@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSsmBackedSource and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.LongVector;
@@ -20,27 +19,27 @@ import io.deephaven.engine.rowset.RowSet;
  * A {@link SsmBackedColumnSource} for Longs.
  */
 public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
-                                 implements ColumnSourceGetDefaults.ForObject<LongVector>,
-                                            MutableColumnSourceGetDefaults.ForObject<LongVector>,
-                                            SsmBackedColumnSource<LongSegmentedSortedMultiset, LongVector> {
+        implements ColumnSourceGetDefaults.ForObject<LongVector>,
+        MutableColumnSourceGetDefaults.ForObject<LongVector>,
+        SsmBackedColumnSource<LongSegmentedSortedMultiset, LongVector> {
     private final ObjectArraySource<LongSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
-    //region Constructor
+    // region Constructor
     public LongSsmBackedSource() {
         super(LongVector.class, long.class);
         underlying = new ObjectArraySource<>(LongSegmentedSortedMultiset.class, long.class);
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region SsmBackedColumnSource
+    // region SsmBackedColumnSource
     @Override
     public LongSegmentedSortedMultiset getOrCreate(long key) {
         LongSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
-        if(ssm == null) {
-            //region CreateNew
+        if (ssm == null) {
+            // region CreateNew
             underlying.set(key, ssm = new LongSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
-            //endregion CreateNew
+            // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
         return ssm;
@@ -65,7 +64,7 @@ public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
     public ObjectArraySource<LongSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
-    //endregion
+    // endregion
 
     @Override
     public boolean isImmutable() {
@@ -93,7 +92,7 @@ public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final LongSegmentedSortedMultiset ssm = getCurrentSsm(key);
-            if(ssm != null) {
+            if (ssm != null) {
                 ssm.clearDeltas();
             }
             return true;

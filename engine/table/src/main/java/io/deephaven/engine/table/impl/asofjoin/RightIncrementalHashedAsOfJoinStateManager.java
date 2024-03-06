@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.engine.rowset.*;
@@ -30,7 +30,8 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
     public static final byte ENTRY_LEFT_IS_SSA = 0x20;
     public static final byte ENTRY_LEFT_IS_INDEX = 0x30;
 
-    protected void addToSequentialBuilder(long slot, @NotNull ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, long indexKey) {
+    protected void addToSequentialBuilder(long slot,
+            @NotNull ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, long indexKey) {
         RowSetBuilderSequential builder = sequentialBuilders.getUnsafe(slot);
         if (builder == null) {
             builder = RowSetFactory.builderSequential();
@@ -40,39 +41,57 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
     }
 
     protected byte leftEntryAsRightType(byte entryType) {
-        return (byte)((entryType & ENTRY_LEFT_MASK) >> 4);
+        return (byte) ((entryType & ENTRY_LEFT_MASK) >> 4);
     }
 
     protected byte getRightEntryType(byte entryType) {
-        return (byte)(entryType & ENTRY_RIGHT_MASK);
+        return (byte) (entryType & ENTRY_RIGHT_MASK);
     }
 
-    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull IntegerArraySource addedSlots);
-    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull IntegerArraySource addedSlots, int usedSlots);
+    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
+            @NotNull IntegerArraySource addedSlots);
+
+    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
+            @NotNull IntegerArraySource addedSlots, int usedSlots);
 
     public abstract void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources);
-    public abstract int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
-    public abstract int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+
+    public abstract int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+
+    public abstract int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources,
+            IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
     public abstract SegmentedSortedArray getRightSsa(int slot);
+
     public abstract SegmentedSortedArray getRightSsa(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory);
+
     public abstract SegmentedSortedArray getLeftSsa(int slot);
+
     public abstract SegmentedSortedArray getLeftSsa(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory);
 
     public abstract SegmentedSortedArray getLeftSsaOrIndex(int slot, MutableObject<WritableRowSet> indexOutput);
+
     public abstract SegmentedSortedArray getRightSsaOrIndex(int slot, MutableObject<WritableRowSet> indexOutput);
+
     public abstract void setRightIndex(int slot, RowSet rowSet);
+
     public abstract void setLeftIndex(int slot, RowSet rowSet);
+
     public abstract WritableRowSet getLeftIndex(int slot);
+
     public abstract WritableRowSet getRightIndex(int slot);
 
     public abstract WritableRowSet getAndClearLeftIndex(int slot);
 
-    public abstract int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+    public abstract int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, IntegerArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
-    public abstract int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+    public abstract int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
-    public abstract int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+    public abstract int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources,
+            IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
     public abstract byte getState(int slot);
 

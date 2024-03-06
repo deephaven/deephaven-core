@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
@@ -9,8 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Supplier;
 
 /**
- * {@link ColumnRegionChar} implementation for deferred regions, i.e. regions that will be properly constructed on
- * first access.
+ * {@link ColumnRegionChar} implementation for deferred regions, i.e. regions that will be properly constructed on first
+ * access.
  */
 class DeferredColumnRegionByte<ATTR extends Any> extends DeferredColumnRegionBase<ATTR, ColumnRegionByte<ATTR>>
         implements ColumnRegionByte<ATTR> {

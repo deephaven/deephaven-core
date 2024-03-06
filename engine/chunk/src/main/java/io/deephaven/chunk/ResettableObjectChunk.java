@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -53,7 +52,8 @@ public class ResettableObjectChunk<T, ATTR_UPPER extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_UPPER> ObjectChunk<T, ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> ObjectChunk<T, ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asObjectChunk(), offset, capacity);
     }
 
@@ -76,7 +76,8 @@ public class ResettableObjectChunk<T, ATTR_UPPER extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_OBJECT_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_UPPER> ObjectChunk<T, ATTR> resetFromTypedChunk(ObjectChunk<T, ? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> ObjectChunk<T, ATTR> resetFromTypedChunk(ObjectChunk<T, ? extends ATTR> other, int offset,
+            int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -91,6 +92,5 @@ public class ResettableObjectChunk<T, ATTR_UPPER extends Any>
     }
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 }

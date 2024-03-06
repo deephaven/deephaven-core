@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.WritableObjectChunk;
@@ -17,10 +17,11 @@ public class TestBooleanImmutableArraySource extends AbstractBooleanColumnSource
         final int capacity = getSourceSize();
         final ImmutableByteArraySource immutableBooleanArraySource = new ImmutableByteArraySource();
         immutableBooleanArraySource.ensureCapacity(capacity);
-        final WritableByteAsBooleanColumnSource byteAsBooleanColumnSource = new WritableByteAsBooleanColumnSource(immutableBooleanArraySource);
+        final WritableByteAsBooleanColumnSource byteAsBooleanColumnSource =
+                new WritableByteAsBooleanColumnSource(immutableBooleanArraySource);
 
         try (final ChunkSink.FillFromContext ffc = byteAsBooleanColumnSource.makeFillFromContext(capacity);
-             final WritableObjectChunk nullChunk = WritableObjectChunk.makeWritableChunk(capacity)) {
+                final WritableObjectChunk nullChunk = WritableObjectChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);
             byteAsBooleanColumnSource.fillFromChunk(ffc, nullChunk, RowSetFactory.flat(capacity));
         }

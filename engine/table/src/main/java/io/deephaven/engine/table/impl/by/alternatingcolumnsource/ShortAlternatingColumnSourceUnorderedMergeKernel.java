@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharAlternatingColumnSourceUnorderedMergeKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharAlternatingColumnSourceUnorderedMergeKernel and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
 import io.deephaven.chunk.*;
@@ -15,13 +14,15 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import static io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
 public class ShortAlternatingColumnSourceUnorderedMergeKernel implements AlternatingColumnSourceUnorderedMergeKernel {
-    public static ShortAlternatingColumnSourceUnorderedMergeKernel INSTANCE = new ShortAlternatingColumnSourceUnorderedMergeKernel();
+    public static ShortAlternatingColumnSourceUnorderedMergeKernel INSTANCE =
+            new ShortAlternatingColumnSourceUnorderedMergeKernel();
 
     // static use only
     private ShortAlternatingColumnSourceUnorderedMergeKernel() {}
 
     @Override
-    public void mergeContext(WritableChunk<? super Values> dest, LongChunk<? extends RowKeys> outerKeys, Chunk<? super Values> src, int alternatePosition) {
+    public void mergeContext(WritableChunk<? super Values> dest, LongChunk<? extends RowKeys> outerKeys,
+            Chunk<? super Values> src, int alternatePosition) {
         final WritableShortChunk<? super Values> destAsShort = dest.asWritableShortChunk();
         final ShortChunk<? super Values> srcAsShort = src.asShortChunk();
 

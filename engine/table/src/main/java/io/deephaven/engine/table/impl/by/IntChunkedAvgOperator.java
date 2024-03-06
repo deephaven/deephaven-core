@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkedAvgOperator and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -45,7 +44,10 @@ class IntChunkedAvgOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final IntChunk<? extends Values> asIntChunk = values.asIntChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -55,7 +57,10 @@ class IntChunkedAvgOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final IntChunk<? extends Values> asIntChunk = values.asIntChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -65,15 +70,17 @@ class IntChunkedAvgOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asIntChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asIntChunk(), destination, 0, values.size());
     }
-    
+
     private boolean addChunk(IntChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt chunkNonNull = new MutableInt(0);
         final IntChunk<? extends Values> asIntChunk = values.asIntChunk();
@@ -83,7 +90,7 @@ class IntChunkedAvgOperator implements IterativeChunkedAggregationOperator {
             final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNull.intValue());
             final long newSum = plusLong(runningSum.getUnsafe(destination), chunkSum);
             runningSum.set(destination, newSum);
-            resultColumn.set(destination, (double)newSum / newCount);
+            resultColumn.set(destination, (double) newSum / newCount);
         } else if (nonNullCount.onlyNullsUnsafe(destination)) {
             resultColumn.set(destination, Double.NaN);
         } else {
@@ -103,7 +110,7 @@ class IntChunkedAvgOperator implements IterativeChunkedAggregationOperator {
         final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.intValue());
         final long newSum = minusLong(runningSum.getUnsafe(destination), chunkSum);
         runningSum.set(destination, newSum);
-        resultColumn.set(destination, (double)newSum / newCount);
+        resultColumn.set(destination, (double) newSum / newCount);
 
         return true;
     }

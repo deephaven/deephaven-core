@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -44,7 +47,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                             curVal = decimalInput;
                         } else {
                             curVal = aggFunction.apply(curVal, decimalInput, opAlpha, opOneMinusAlpha);
-                         }
+                        }
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -93,15 +96,16 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
             throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }
-    
+
     /**
      * An operator that computes an EMA from a BigInteger column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public BigIntegerEMOperator(
             @NotNull final MatchPair pair,
@@ -115,7 +119,8 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
 
     @Override
     public UpdateByOperator copy() {
-        return new BigIntegerEMOperator(pair, affectingColumns, control, timestampColumnName, reverseWindowScaleUnits, aggFunction);
+        return new BigIntegerEMOperator(pair, affectingColumns, control, timestampColumnName, reverseWindowScaleUnits,
+                aggFunction);
     }
 
     @NotNull

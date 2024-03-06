@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.ringbuffer.AggregatingFloatRingBuffer;
@@ -29,7 +32,7 @@ public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 if (a == NULL_FLOAT) {
                     return b;
                 } else if (b == NULL_FLOAT) {
-                    return  a;
+                    return a;
                 }
                 return a + b;
             });
@@ -82,7 +85,7 @@ public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 if (count == 0) {
                     outputValues.set(outIdx, Double.NaN);
                 } else {
-                    outputValues.set(outIdx, aggSum.evaluate() / (double)count);
+                    outputValues.set(outIdx, aggSum.evaluate() / (double) count);
                 }
             }
         }
@@ -106,8 +109,8 @@ public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
@@ -122,8 +125,8 @@ public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSsmBackedSource and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.IntVector;
@@ -20,27 +19,27 @@ import io.deephaven.engine.rowset.RowSet;
  * A {@link SsmBackedColumnSource} for Integers.
  */
 public class IntSsmBackedSource extends AbstractColumnSource<IntVector>
-                                 implements ColumnSourceGetDefaults.ForObject<IntVector>,
-                                            MutableColumnSourceGetDefaults.ForObject<IntVector>,
-                                            SsmBackedColumnSource<IntSegmentedSortedMultiset, IntVector> {
+        implements ColumnSourceGetDefaults.ForObject<IntVector>,
+        MutableColumnSourceGetDefaults.ForObject<IntVector>,
+        SsmBackedColumnSource<IntSegmentedSortedMultiset, IntVector> {
     private final ObjectArraySource<IntSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
-    //region Constructor
+    // region Constructor
     public IntSsmBackedSource() {
         super(IntVector.class, int.class);
         underlying = new ObjectArraySource<>(IntSegmentedSortedMultiset.class, int.class);
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region SsmBackedColumnSource
+    // region SsmBackedColumnSource
     @Override
     public IntSegmentedSortedMultiset getOrCreate(long key) {
         IntSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
-        if(ssm == null) {
-            //region CreateNew
+        if (ssm == null) {
+            // region CreateNew
             underlying.set(key, ssm = new IntSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
-            //endregion CreateNew
+            // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
         return ssm;
@@ -65,7 +64,7 @@ public class IntSsmBackedSource extends AbstractColumnSource<IntVector>
     public ObjectArraySource<IntSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
-    //endregion
+    // endregion
 
     @Override
     public boolean isImmutable() {
@@ -93,7 +92,7 @@ public class IntSsmBackedSource extends AbstractColumnSource<IntVector>
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final IntSegmentedSortedMultiset ssm = getCurrentSsm(key);
-            if(ssm != null) {
+            if (ssm != null) {
                 ssm.clearDeltas();
             }
             return true;

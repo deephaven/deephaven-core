@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.benchmark.engine.partition;
 
 import io.deephaven.tuple.generated.CharLongTuple;
@@ -40,8 +40,7 @@ public class CharPartitionKernelBenchmark {
     private Runnable doPartition;
 
     @TearDown(Level.Trial)
-    public void finishTrial() {
-    }
+    public void finishTrial() {}
 
     @Setup(Level.Iteration)
     public void setupIteration() {
@@ -78,7 +77,9 @@ public class CharPartitionKernelBenchmark {
         } else {
             numPartitionsValue = Integer.parseInt(numPartitions);
         }
-        final BaseTestCharTimSortKernel.CharPartitionKernelStuff partitionStuff = new BaseTestCharTimSortKernel.CharPartitionKernelStuff(stuffToSort, rowSet, chunkSize, numPartitionsValue, preserveEquality);
+        final BaseTestCharTimSortKernel.CharPartitionKernelStuff partitionStuff =
+                new BaseTestCharTimSortKernel.CharPartitionKernelStuff(stuffToSort, rowSet, chunkSize,
+                        numPartitionsValue, preserveEquality);
         doPartition = partitionStuff::run;
     }
 

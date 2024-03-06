@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.base.ClampUtil;
@@ -153,7 +153,8 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
-                return new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+                return new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(),
+                        rowSetSize);
             } else {
                 return new SerialObjectColumnIterator<>(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
             }
@@ -188,10 +189,11 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
                 ? repeat(null, includedInitialNulls)
                 : null;
         final CloseableIterator<T> rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
-                ? new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                ? new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+                        includedRows)
                 : includedRows > 0
-                ? new SerialObjectColumnIterator<>(columnSource, rowSet, firstIncludedRowKey, includedRows)
-                : null;
+                        ? new SerialObjectColumnIterator<>(columnSource, rowSet, firstIncludedRowKey, includedRows)
+                        : null;
         final CloseableIterator<T> finalNullsIterator = remaining > 0
                 ? repeat(null, remaining)
                 : null;

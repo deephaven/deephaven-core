@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -37,28 +37,28 @@ public class CharChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> CharChunk<ATTR> chunkWrap(Object array) {
-        final char[] typedArray = (char[])array;
+        final char[] typedArray = (char[]) array;
         return CharChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> CharChunk<ATTR> chunkWrap(Object array, int offset, int capacity) {
-        final char[] typedArray = (char[])array;
+        final char[] typedArray = (char[]) array;
         return CharChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> CharChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        CharChunk<ATTR>[] typedArray = (CharChunk<ATTR>[])array;
+        CharChunk<ATTR>[] typedArray = (CharChunk<ATTR>[]) array;
         return CharChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> CharChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-        CharChunk<ATTR>[] typedArray = (CharChunk<ATTR>[])array;
+        CharChunk<ATTR>[] typedArray = (CharChunk<ATTR>[]) array;
         return CharChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -90,14 +90,15 @@ public class CharChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> WritableCharChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        final char[] realType = (char[])array;
+        final char[] realType = (char[]) array;
         return WritableCharChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableCharChunk<ATTR>[] actual = (WritableCharChunk<ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableCharChunk<ATTR>[] actual = (WritableCharChunk<ATTR>[]) array;
         return WritableCharChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
 import io.deephaven.base.ringbuffer.AggregatingCharRingBuffer;
@@ -34,7 +37,7 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
                     } else if (b == NULL_CHAR) {
                         return a;
                     }
-                    return (char)Math.max(a, b);
+                    return (char) Math.max(a, b);
                 });
             } else {
                 aggMinMax = new AggregatingCharRingBuffer(BUFFER_INITIAL_CAPACITY, Character.MAX_VALUE, (a, b) -> {
@@ -43,7 +46,7 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
                     } else if (b == NULL_CHAR) {
                         return a;
                     }
-                    return (char)Math.min(a, b);
+                    return (char) Math.min(a, b);
                 });
             }
             curVal = isMax ? Character.MIN_VALUE : Character.MAX_VALUE;
@@ -97,7 +100,7 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
                 if (val == NULL_CHAR) {
                     nullCount--;
                 } else {
-                    // Only revaluate if we pop something equal to our current value.  Otherwise we have perfect
+                    // Only revaluate if we pop something equal to our current value. Otherwise we have perfect
                     // confidence that the min/max is still in the window.
                     if (curVal == val) {
                         evaluationNeeded = true;
@@ -139,8 +142,8 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isMax
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.isMax = isMax;
@@ -157,8 +160,8 @@ public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 isMax
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

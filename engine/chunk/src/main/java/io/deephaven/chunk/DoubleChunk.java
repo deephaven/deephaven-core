@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -34,7 +33,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final DoubleChunk EMPTY = new DoubleChunk<>(ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, 0, 0);
 
     public static <ATTR extends Any> DoubleChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
@@ -42,7 +41,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final DoubleChunk[] EMPTY_DOUBLE_CHUNK_ARRAY = new DoubleChunk[0];
 
     static <ATTR extends Any> DoubleChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_DOUBLE_CHUNK_ARRAY;
     }
 
@@ -92,7 +91,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     @Override
     public final void copyToArray(int srcOffset, Object dest, int destOffset, int length) {
-        final double[] realType = (double[])dest;
+        final double[] realType = (double[]) dest;
         copyToTypedArray(srcOffset, realType, destOffset, length);
     }
 
@@ -103,13 +102,13 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
             return;
         }
         if (ChunkHelpers.canCopyForward(data, sStart, destData, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 destData[destOffset + ii] = data[sStart + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             destData[destOffset + ii] = data[sStart + ii];
         }
@@ -136,22 +135,26 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region CopyToBuffer
     @Override
-    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset, final int length) {
+    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset,
+            final int length) {
         final DoubleBuffer doubleDestBuffer = (DoubleBuffer) destBuffer;
         copyToTypedBuffer(srcOffset, doubleDestBuffer, destOffset, length);
     }
 
     /**
-     * <p>Copy a sub-range of this DoubleChunk to a {@link DoubleBuffer}.
+     * <p>
+     * Copy a sub-range of this DoubleChunk to a {@link DoubleBuffer}.
      *
-     * <p>See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
      *
-     * @param srcOffset  The offset into this chunk to start copying from
+     * @param srcOffset The offset into this chunk to start copying from
      * @param destBuffer The destination {@link DoubleBuffer}
      * @param destOffset The absolute offset into {@code destBuffer} to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyToTypedBuffer(final int srcOffset, @NotNull final DoubleBuffer destBuffer, final int destOffset, final int length) {
+    public final void copyToTypedBuffer(final int srcOffset, @NotNull final DoubleBuffer destBuffer, final int destOffset,
+            final int length) {
         if (destBuffer.hasArray()) {
             copyToTypedArray(srcOffset, destBuffer.array(), destBuffer.arrayOffset() + destOffset, length);
             return;
@@ -165,7 +168,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region downcast
     public static <ATTR extends Any, ATTR_DERIV extends ATTR> DoubleChunk<ATTR_DERIV> downcast(DoubleChunk<ATTR> self) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (DoubleChunk<ATTR_DERIV>) self;
     }
     // endregion downcast

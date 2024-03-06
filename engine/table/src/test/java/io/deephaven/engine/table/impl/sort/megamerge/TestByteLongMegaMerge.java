@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharLongMegaMerge and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharLongMegaMerge and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.engine.table.ChunkSource;
@@ -44,13 +43,13 @@ public class TestByteLongMegaMerge {
         int totalSize = chunkSize * chunkCount;
 
         try (final WritableByteChunk<Values> allValues = WritableByteChunk.makeWritableChunk(totalSize);
-             final WritableLongChunk<RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
+                final WritableLongChunk<RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
 
             for (int chunk = 0; chunk < chunkCount; ++chunk) {
                 final int sizeAfterAddition = (chunk + 1) * chunkSize;
 
                 try (final WritableByteChunk<Values> valuesChunk = WritableByteChunk.makeWritableChunk(chunkSize);
-                     final WritableLongChunk<RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                        final WritableLongChunk<RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
 
                     final Random random = new Random(0);
 
@@ -62,9 +61,11 @@ public class TestByteLongMegaMerge {
                     MegaMergeTestUtils.doSort(ascending, chunkSize, valuesChunk, keysChunk);
 
                     if (ascending) {
-                        ByteLongMegaMergeKernel.merge(keySource, valuesSource, 0, sizeAfterAddition - chunkSize, keysChunk, valuesChunk);
+                        ByteLongMegaMergeKernel.merge(keySource, valuesSource, 0, sizeAfterAddition - chunkSize,
+                                keysChunk, valuesChunk);
                     } else {
-                        ByteLongMegaMergeDescendingKernel.merge(keySource, valuesSource, 0, sizeAfterAddition - chunkSize, keysChunk, valuesChunk);
+                        ByteLongMegaMergeDescendingKernel.merge(keySource, valuesSource, 0,
+                                sizeAfterAddition - chunkSize, keysChunk, valuesChunk);
                     }
 
                     allValues.setSize(sizeAfterAddition);
@@ -76,11 +77,12 @@ public class TestByteLongMegaMerge {
                 MegaMergeTestUtils.doSort(ascending, chunkSize * chunkCount, allValues, allKeys);
 
                 try (final ChunkSource.GetContext valueContext = valuesSource.makeGetContext(sizeAfterAddition);
-                     final ChunkSource.GetContext keyContext = keySource.makeGetContext(sizeAfterAddition)) {
+                        final ChunkSource.GetContext keyContext = keySource.makeGetContext(sizeAfterAddition)) {
                     final RowSequence rowSequence = RowSequenceFactory.forRange(0, sizeAfterAddition - 1);
 
 
-                    final ByteChunk<Values> checkValues = valuesSource.getChunk(valueContext, rowSequence).asByteChunk();
+                    final ByteChunk<Values> checkValues =
+                            valuesSource.getChunk(valueContext, rowSequence).asByteChunk();
                     final LongChunk<Values> checkKeys = keySource.getChunk(keyContext, rowSequence).asLongChunk();
 
                     TestCase.assertEquals(checkValues.size(), allValues.size());

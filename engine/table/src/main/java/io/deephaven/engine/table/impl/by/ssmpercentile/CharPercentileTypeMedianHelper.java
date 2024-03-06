@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.engine.table.WritableColumnSource;
@@ -18,7 +18,7 @@ public class CharPercentileTypeMedianHelper extends CharPercentileTypeHelper {
         super(percentile, null);
         this.percentile = percentile;
         // region resultColumn
-        this.resultColumn = (DoubleArraySource)resultColumn;
+        this.resultColumn = (DoubleArraySource) resultColumn;
         // endregion
     }
 
@@ -32,7 +32,7 @@ public class CharPercentileTypeMedianHelper extends CharPercentileTypeHelper {
         if (totalSize == 0) {
             newResult = NULL_DOUBLE;
         } else {
-            final long targetLo = (int)((totalSize - 1) * percentile) + 1;
+            final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);
             } else if (loSize > targetLo) {
@@ -41,10 +41,11 @@ public class CharPercentileTypeMedianHelper extends CharPercentileTypeHelper {
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
                 // region averageEvenlyDivided
-                return setResult(destination, (((CharSegmentedSortedMultiset)ssmLo).getMaxChar() + ((CharSegmentedSortedMultiset)ssmHi).getMinChar()) / 2.0);
+                return setResult(destination, (((CharSegmentedSortedMultiset) ssmLo).getMaxChar()
+                        + ((CharSegmentedSortedMultiset) ssmHi).getMinChar()) / 2.0);
                 // endregion averageEvenlyDivided
             } else {
-                return setResult(destination, ((CharSegmentedSortedMultiset)ssmLo).getMaxChar());
+                return setResult(destination, ((CharSegmentedSortedMultiset) ssmLo).getMaxChar());
             }
         }
         return setResult(destination, newResult);

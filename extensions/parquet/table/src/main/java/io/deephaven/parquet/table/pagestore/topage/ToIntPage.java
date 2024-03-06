@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
@@ -15,7 +15,7 @@ public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
 
     public static <ATTR extends Any> ToIntPage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || int.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 

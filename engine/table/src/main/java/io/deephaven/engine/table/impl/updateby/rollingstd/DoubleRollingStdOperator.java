@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingStdOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingStdOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingstd;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -80,7 +82,7 @@ public class DoubleRollingStdOperator extends BaseDoubleUpdateByOperator {
                 if (val != NULL_DOUBLE) {
                     // Add the value and its square to the buffers.
                     valueBuffer.addUnsafe(val);
-                    valueSquareBuffer.addUnsafe((double)val * val);
+                    valueSquareBuffer.addUnsafe((double) val * val);
                 } else {
                     // Add null to the buffers and increment the count.
                     valueBuffer.addUnsafe(NULL_DOUBLE);
@@ -163,8 +165,8 @@ public class DoubleRollingStdOperator extends BaseDoubleUpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
@@ -179,8 +181,8 @@ public class DoubleRollingStdOperator extends BaseDoubleUpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sort.radix;
 
 import io.deephaven.chunk.attributes.Any;
@@ -12,8 +12,7 @@ import io.deephaven.chunk.*;
 
 public class BooleanLongRadixSortKernel {
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
-    LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
             int size,
             SortingOrder order,
             boolean preserveValues) {
@@ -56,7 +55,8 @@ public class BooleanLongRadixSortKernel {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 nullKeys.setSize(0);
                 falseKeys.setSize(0);
-                doSortAscending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
+                doSortAscending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii),
+                        lengthsIn.get(ii));
             }
         }
 
@@ -103,8 +103,7 @@ public class BooleanLongRadixSortKernel {
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 
     private static class BooleanLongSortDescendingKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
@@ -139,7 +138,8 @@ public class BooleanLongRadixSortKernel {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 trueKeys.setSize(0);
                 falseKeys.setSize(0);
-                doSortDescending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
+                doSortDescending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii),
+                        lengthsIn.get(ii));
             }
         }
 
@@ -188,7 +188,6 @@ public class BooleanLongRadixSortKernel {
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 }

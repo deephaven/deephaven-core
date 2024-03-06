@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
 import io.deephaven.chunk.CharChunk;
@@ -64,10 +67,11 @@ public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final String weightColumnName
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, weightColumnName);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits,
+                weightColumnName);
         // region constructor
         // endregion constructor
     }
@@ -81,8 +85,8 @@ public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 weightColumnName
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

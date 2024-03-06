@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.WritableChunk;
@@ -28,17 +28,17 @@ public class FixedWidthChunkInputStreamGenerator {
      *
      * If useDeephavenNulls is enabled, then the conversion method must properly return a null value.
      *
-     * @param elementSize    the number of bytes per element (element size is fixed)
-     * @param options        the stream reader options
-     * @param conversion     the conversion method from input stream to the result type
-     * @param fieldNodeIter  arrow field node iterator
+     * @param elementSize the number of bytes per element (element size is fixed)
+     * @param options the stream reader options
+     * @param conversion the conversion method from input stream to the result type
+     * @param fieldNodeIter arrow field node iterator
      * @param bufferInfoIter arrow buffer info iterator
-     * @param outChunk       the returned chunk from an earlier record batch
-     * @param outOffset      the offset to start writing into {@code outChunk}
-     * @param totalRows      the total known rows for this column; if known (else 0)
-     * @param is             data input stream
-     * @param <T>            the result type
-     * @return               the resulting chunk of the buffer that is read
+     * @param outChunk the returned chunk from an earlier record batch
+     * @param outOffset the offset to start writing into {@code outChunk}
+     * @param totalRows the total known rows for this column; if known (else 0)
+     * @param is data input stream
+     * @param <T> the result type
+     * @return the resulting chunk of the buffer that is read
      */
     static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
             final int elementSize,

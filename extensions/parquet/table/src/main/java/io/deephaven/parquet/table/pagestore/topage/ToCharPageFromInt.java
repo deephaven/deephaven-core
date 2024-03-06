@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
@@ -17,7 +17,7 @@ public class ToCharPageFromInt<ATTR extends Any> implements ToPage<ATTR, char[]>
 
     public static <ATTR extends Any> ToCharPageFromInt<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || char.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 
@@ -47,8 +47,8 @@ public class ToCharPageFromInt<ATTR extends Any> implements ToPage<ATTR, char[]>
     @Override
     @NotNull
     public final char[] convertResult(Object result) {
-        int [] from = (int []) result;
-        char [] to = new char [from.length];
+        int[] from = (int[]) result;
+        char[] to = new char[from.length];
 
         for (int i = 0; i < from.length; ++i) {
             to[i] = (char) from[i];
