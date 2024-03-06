@@ -3,8 +3,6 @@
  */
 package io.deephaven.chunk;
 
-// @formatter:off
-
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 

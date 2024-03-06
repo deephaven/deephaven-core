@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ReplicateVectors {
-    private static final String TASK = "replicateVector";
+    private static final String TASK = "replicateVectors";
 
     @SuppressWarnings("AutoBoxing")
     public static void main(String[] args) throws IOException {

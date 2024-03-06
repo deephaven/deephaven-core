@@ -12,7 +12,6 @@ import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.chunk.util.hashing.ChunkHasher.scrambleHash;
 
-// @formatter:off
 public class CharChunkHasher implements ChunkHasher {
     public static CharChunkHasher INSTANCE = new CharChunkHasher();
 
