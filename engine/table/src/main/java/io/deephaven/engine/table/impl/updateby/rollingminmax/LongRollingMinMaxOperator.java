@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingMinMaxOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
 import io.deephaven.base.ringbuffer.AggregatingLongRingBuffer;
@@ -39,7 +41,7 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
                     } else if (b == NULL_LONG) {
                         return a;
                     }
-                    return (long)Math.max(a, b);
+                    return (long) Math.max(a, b);
                 });
             } else {
                 aggMinMax = new AggregatingLongRingBuffer(BUFFER_INITIAL_CAPACITY, Long.MAX_VALUE, (a, b) -> {
@@ -48,7 +50,7 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
                     } else if (b == NULL_LONG) {
                         return a;
                     }
-                    return (long)Math.min(a, b);
+                    return (long) Math.min(a, b);
                 });
             }
             curVal = isMax ? Long.MIN_VALUE : Long.MAX_VALUE;
@@ -102,7 +104,7 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
                 if (val == NULL_LONG) {
                     nullCount--;
                 } else {
-                    // Only revaluate if we pop something equal to our current value.  Otherwise we have perfect
+                    // Only revaluate if we pop something equal to our current value. Otherwise we have perfect
                     // confidence that the min/max is still in the window.
                     if (curVal == val) {
                         evaluationNeeded = true;
@@ -144,8 +146,8 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isMax
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.isMax = isMax;
@@ -162,8 +164,8 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 isMax
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

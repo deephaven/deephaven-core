@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSortKernelBenchmark and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSortKernelBenchmark and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.benchmark.engine.sort.timsort;
 
 import io.deephaven.engine.table.impl.sort.timsort.BaseTestDoubleTimSortKernel;
@@ -35,8 +34,7 @@ public class DoubleSortKernelBenchmark {
     private Runnable doSort;
 
     @TearDown(Level.Trial)
-    public void finishTrial() {
-    }
+    public void finishTrial() {}
 
     @Setup(Level.Iteration)
     public void setupIteration() {
@@ -70,19 +68,20 @@ public class DoubleSortKernelBenchmark {
                 doSort = () -> stuffToSort.sort(javaComparator);
                 break;
             case "javaarray":
-                final double [] javaArray = new double[stuffToSort.size()];
+                final double[] javaArray = new double[stuffToSort.size()];
                 for (int ii = 0; ii < javaArray.length; ++ii) {
                     javaArray[ii] = stuffToSort.get(ii).getFirstElement();
                 }
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestDoubleTimSortKernel.DoubleLongSortKernelStuff sortStuff
-                        = new BaseTestDoubleTimSortKernel.DoubleLongSortKernelStuff(stuffToSort);
+                final BaseTestDoubleTimSortKernel.DoubleLongSortKernelStuff sortStuff =
+                        new BaseTestDoubleTimSortKernel.DoubleLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":
-                final BaseTestDoubleTimSortKernel.DoubleMergeStuff mergeStuff = new BaseTestDoubleTimSortKernel.DoubleMergeStuff(stuffToSort);
+                final BaseTestDoubleTimSortKernel.DoubleMergeStuff mergeStuff =
+                        new BaseTestDoubleTimSortKernel.DoubleMergeStuff(stuffToSort);
                 doSort = mergeStuff::run;
                 break;
         }

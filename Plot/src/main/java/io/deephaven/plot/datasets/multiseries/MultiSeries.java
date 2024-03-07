@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.Series;
@@ -39,6 +39,7 @@ public interface MultiSeries extends Series {
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
+// @formatter:off
 
     <COLOR extends io.deephaven.gui.color.Paint> MultiSeries pointColor(final groovy.lang.Closure<COLOR> pointColor, final Object... multiSeriesKey);
 

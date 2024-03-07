@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRegionBinarySearchKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRegionBinarySearchKernel and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.SortColumn;
@@ -22,16 +21,16 @@ import org.jetbrains.annotations.NotNull;
 
 public class ObjectRegionBinarySearchKernel {
     /**
-     * Performs a binary search on a given column region to find the positions (row keys) of specified sorted keys.
-     * The method returns the RowSet containing the matched row keys.
+     * Performs a binary search on a given column region to find the positions (row keys) of specified sorted keys. The
+     * method returns the RowSet containing the matched row keys.
      *
-     * @param region         The column region in which the search will be performed.
-     * @param firstKey       The first key in the column region to consider for the search.
-     * @param lastKey        The last key in the column region to consider for the search.
-     * @param sortColumn     A {@link SortColumn} object representing the sorting order of the column.
-     * @param searchValues   An array of keys to find within the column region.
+     * @param region The column region in which the search will be performed.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.
+     * @param searchValues An array of keys to find within the column region.
      *
-     * @return               A {@link RowSet} containing the row keys where the sorted keys were found.
+     * @return A {@link RowSet} containing the row keys where the sorted keys were found.
      */
     public static RowSet binarySearchMatch(
             ColumnRegionObject<?, ?> region,
@@ -43,12 +42,12 @@ public class ObjectRegionBinarySearchKernel {
         
         if (order == SortColumn.Order.DESCENDING) {
             try (final ObjectTimsortDescendingKernel.ObjectSortKernelContext<Any> context =
-                         ObjectTimsortDescendingKernel.createContext(searchValues.length)) {
+                    ObjectTimsortDescendingKernel.createContext(searchValues.length)) {
                 context.sort(WritableObjectChunk.writableChunkWrap(searchValues));
             }
         } else {
             try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =
-                         ObjectTimsortKernel.createContext(searchValues.length)) {
+                    ObjectTimsortKernel.createContext(searchValues.length)) {
                 context.sort(WritableObjectChunk.writableChunkWrap(searchValues));
             }
         }
@@ -68,11 +67,11 @@ public class ObjectRegionBinarySearchKernel {
     /**
      * Find the extents of the range containing the key to find, returning the last index found.
      *
-     * @param builder       the builder to accumulate into
-     * @param firstKey      the key to start searching
-     * @param lastKey       the key to end searching
+     * @param builder the builder to accumulate into
+     * @param firstKey the key to start searching
+     * @param lastKey the key to end searching
      * @param sortDirection the sort direction of the column
-     * @param toFind        the element to find
+     * @param toFind the element to find
      * @return the last key in the found range.
      */
     private static long binarySearchSingle(
@@ -90,7 +89,7 @@ public class ObjectRegionBinarySearchKernel {
 
         // Now we have to locate the actual start and end of the range.
         long matchEnd = matchStart;
-        if (matchStart < lastKey && ObjectComparisons.eq(region.getObject(matchStart + 1),toFind)) {
+        if (matchStart < lastKey && ObjectComparisons.eq(region.getObject(matchStart + 1), toFind)) {
             matchEnd = binarySearchRange(region, toFind, matchStart + 1, lastKey, sortDirection, 1);
         }
 
@@ -99,18 +98,18 @@ public class ObjectRegionBinarySearchKernel {
     }
 
     /**
-     * Performs a binary search on a specified column region to find a Object within a given range.
-     * The method returns the row key where the Object was found. If the Object is not found, it returns -1.
+     * Performs a binary search on a specified column region to find a Object within a given range. The method returns the
+     * row key where the Object was found. If the Object is not found, it returns -1.
      *
-     * @param region          The column region in which the search will be performed.
-     * @param toFind          The Object to find within the column region.
-     * @param start           The first row key in the column region to consider for the search.
-     * @param end             The last row key in the column region to consider for the search.
-     * @param sortDirection   An enum specifying the sorting direction of the column.
-     * @param rangeDirection  An integer indicating the direction of the range search. Positive for forward search,
-     *                        negative for backward search.
+     * @param region The column region in which the search will be performed.
+     * @param toFind The Object to find within the column region.
+     * @param start The first row key in the column region to consider for the search.
+     * @param end The last row key in the column region to consider for the search.
+     * @param sortDirection An enum specifying the sorting direction of the column.
+     * @param rangeDirection An integer indicating the direction of the range search. Positive for forward search,
+     *        negative for backward search.
      *
-     * @return                The row key where the specified Object was found. If not found, returns -1.
+     * @return The row key where the specified Object was found. If not found, returns -1.
      */
     private static long binarySearchRange(
             @NotNull final ColumnRegionObject<?, ?> region,

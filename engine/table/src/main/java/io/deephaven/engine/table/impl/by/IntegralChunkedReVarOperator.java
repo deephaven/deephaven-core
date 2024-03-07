@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.ChunkSource;
@@ -27,7 +27,8 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
     private final DoubleChunkedSumOperator sum2Sum;
     private final LongChunkedSumOperator nncSum;
 
-    IntegralChunkedReVarOperator(String name, boolean std, DoubleChunkedSumOperator sumSum, DoubleChunkedSumOperator sum2sum, LongChunkedSumOperator nncSum) {
+    IntegralChunkedReVarOperator(String name, boolean std, DoubleChunkedSumOperator sumSum,
+            DoubleChunkedSumOperator sum2sum, LongChunkedSumOperator nncSum) {
         this.name = name;
         this.std = std;
         this.sumSum = sumSum;
@@ -37,49 +38,67 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        doBucketedUpdate((ReVarContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        doBucketedUpdate((ReVarContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        doBucketedUpdate((ReVarContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return updateResult(destination);
     }
 
-    private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+    private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationSeq, stateModified);
         }
     }
 
-    private void updateResult(ReVarContext reVarContext, RowSequence destinationOk, WritableBooleanChunk<Values> stateModified) {
-        final DoubleChunk<Values> sumSumChunk = sumSum.getChunk(reVarContext.sumSumContext, destinationOk).asDoubleChunk();
-        final DoubleChunk<Values> sum2SumChunk = sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asDoubleChunk();
-        final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
+    private void updateResult(ReVarContext reVarContext, RowSequence destinationOk,
+            WritableBooleanChunk<Values> stateModified) {
+        final DoubleChunk<Values> sumSumChunk =
+                sumSum.getChunk(reVarContext.sumSumContext, destinationOk).asDoubleChunk();
+        final DoubleChunk<Values> sum2SumChunk =
+                sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asDoubleChunk();
+        final LongChunk<? extends Values> nncSumChunk =
+                nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reVarContext.keyIndices.size();
         final boolean ordered = reVarContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
-            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii));
+            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii),
+                    sum2SumChunk.get(ii), nncSumChunk.get(ii));
             stateModified.set(ordered ? ii : reVarContext.statePositions.get(ii), changed);
         }
     }
@@ -97,7 +116,7 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
             return !Double.isNaN(resultColumn.getAndSetUnsafe(destination, Double.NaN));
         } else {
             final double variance = (newSum2 - (newSum * newSum / nonNullCount)) / (nonNullCount - 1);
-            final double newValue =  std ? Math.sqrt(variance) : variance;
+            final double newValue = std ? Math.sqrt(variance) : variance;
             return resultColumn.getAndSetUnsafe(destination, newValue) != newValue;
         }
     }

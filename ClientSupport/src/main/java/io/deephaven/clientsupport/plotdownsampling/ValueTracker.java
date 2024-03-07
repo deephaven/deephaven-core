@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.chunk.attributes.Values;
@@ -17,26 +17,25 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Wraps all values in a given Y column when downsampling and apply operations consistently to supported
- * column types. Each operation includes an offset, which is the BucketState.offset value - internally
- * this is transformed to the position in the array sources.
+ * Wraps all values in a given Y column when downsampling and apply operations consistently to supported column types.
+ * Each operation includes an offset, which is the BucketState.offset value - internally this is transformed to the
+ * position in the array sources.
  *
- * Each tracker maintains 6 pieces of data/metadata on all possible buckets, spread across 3 array sources:
- *   o  the min and max value
- *   o  the indexes of those min and max values in the original table
- *   o  a flag indicating whether or not the each min and max are presently valid - these must always be true
- *      except when a shift aware update is currently being processed.
+ * Each tracker maintains 6 pieces of data/metadata on all possible buckets, spread across 3 array sources: o the min
+ * and max value o the indexes of those min and max values in the original table o a flag indicating whether or not the
+ * each min and max are presently valid - these must always be true except when a shift aware update is currently being
+ * processed.
  *
- * It is possible that there are gaps in the data - this is not understood directly by the ValueTracker, but
- * instead by the fact that no BucketState exists with a corresponding offset.
+ * It is possible that there are gaps in the data - this is not understood directly by the ValueTracker, but instead by
+ * the fact that no BucketState exists with a corresponding offset.
  */
 public abstract class ValueTracker {
 
     /**
      * Creates a set of value trackers to share across a given RunChartDownsample's BucketState instances.
+     * 
      * @param valueColumnSources the Y columns being downsampled and tracked
-     * @param bucketCount the initial size to allocate in each tracker, usually the number of pixels
-     *                        to be displayed
+     * @param bucketCount the initial size to allocate in each tracker, usually the number of pixels to be displayed
      * @return an array of correctly typed and sizes value trackers for use with the given Y value column sources
      */
     public static ValueTracker[] of(final List<ColumnSource<?>> valueColumnSources, final int bucketCount) {
@@ -100,23 +99,25 @@ public abstract class ValueTracker {
      * this becomes the new max or the new min, mark that position as being valid, indicating that we are confident that
      * we have the largest or smallest value at that offset.
      *
-     * Implementations must take care to check if the value is null. If so, if {@code nulls} is present, the current
-     * row key should be added to it. If the
+     * Implementations must take care to check if the value is null. If so, if {@code nulls} is present, the current row
+     * key should be added to it. If the
      *
      * @param offset the offset of the bucket state to use - use this with minValuePosition/maxValuePosition to compute
-     *               the actual position in the underlying array sources
+     *        the actual position in the underlying array sources
      * @param rowKey the row key in the original table of the specified value. If the current given value is interesting
-     *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table row set later
+     *        in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled table row
+     *        set later
      * @param valuesChunk the chunk that we're currently examining
      * @param indexInChunk the index in the chunk that we're currently examining
      */
-    public abstract void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls);
+    public abstract void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable WritableRowSet nulls);
 
     /**
      * Indicates that a row was removed from the original table being downsampled. If that row key was previously
      * considered to be interesting, mark this offset as invalid, so that we can rescan later to find the next
      * interesting value.
+     * 
      * @param offset the offset of the bucket state to use
      * @param rowKey the row key in the original table.
      */
@@ -137,35 +138,35 @@ public abstract class ValueTracker {
      * There are three cases to consider for each min and max, so six cases in total. Here is the summary for the three
      * "max" cases, the opposite must be likewise done for the min cases:
      *
-     * If the updated row was the old max, then we cover two of the cases:
-     *   o  if the new value is greater than the old value, record the new value, but we are still the max and still
-     *      valid.
-     *   o  if the new value is less than the old value, invalidate this row but keep the old max, we may need to
-     *      rescan later
+     * If the updated row was the old max, then we cover two of the cases: o if the new value is greater than the old
+     * value, record the new value, but we are still the max and still valid. o if the new value is less than the old
+     * value, invalidate this row but keep the old max, we may need to rescan later
      *
      * Otherwise, if the new value is greater than the old max, then the current row is now the new max, and are now
      * valid.
      *
      * @param offset the offset of the bucket state to use - use this with minValuePosition/maxValuePosition to compute
-     *               the actual position in the underlying array sources
+     *        the actual position in the underlying array sources
      * @param rowKey the row key in the original table of the specified value. If the current given value is interesting
-     *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table row set later
+     *        in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled table row
+     *        set later
      * @param valuesChunk the chunk that we're currently examining
      * @param chunkIndex the index in the chunk that we're currently examining
      */
-    public abstract void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int chunkIndex, @Nullable WritableRowSet nulls);
+    public abstract void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int chunkIndex,
+            @Nullable WritableRowSet nulls);
 
     /**
-     * Transforms the given BucketState.offset into the position in the array sources that represents the min value
-     * of that bucket state.
+     * Transforms the given BucketState.offset into the position in the array sources that represents the min value of
+     * that bucket state.
      */
     protected final long minValuePosition(final int offset) {
         return 2 * offset;
     }
+
     /**
-     * Transforms the given BucketState.offset into the position in the array sources that represents the max value
-     * of that bucket state.
+     * Transforms the given BucketState.offset into the position in the array sources that represents the max value of
+     * that bucket state.
      */
     protected final long maxValuePosition(final int offset) {
         return 2 * offset + 1;
@@ -174,6 +175,7 @@ public abstract class ValueTracker {
     protected final long minIndex(final int offset) {
         return indexes.getUnsafe(minValuePosition(offset));
     }
+
     protected final long maxIndex(final int offset) {
         return indexes.getUnsafe(maxValuePosition(offset));
     }
@@ -181,6 +183,7 @@ public abstract class ValueTracker {
     protected final void setMinIndex(final int offset, final long minIndex) {
         indexes.set(minValuePosition(offset), minIndex);
     }
+
     protected final void setMaxIndex(final int offset, final long maxIndex) {
         indexes.set(maxValuePosition(offset), maxIndex);
     }
@@ -188,6 +191,7 @@ public abstract class ValueTracker {
     protected final void minValueValid(final int offset, final boolean isValid) {
         valid.set(minValuePosition(offset), isValid);
     }
+
     protected final void maxValueValid(final int offset, final boolean isValid) {
         valid.set(maxValuePosition(offset), isValid);
     }
@@ -195,6 +199,7 @@ public abstract class ValueTracker {
     protected final boolean minValueValid(final int offset) {
         return valid.get(minValuePosition(offset));
     }
+
     protected final boolean maxValueValid(final int offset) {
         return valid.get(maxValuePosition(offset));
     }
@@ -209,7 +214,8 @@ public abstract class ValueTracker {
      * Scan the given chunk and confirm that whichever values are currently selected as max and min are correct, and
      * that the current data is now valid.
      */
-    public abstract void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls);
+    public abstract void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable RowSet nulls);
 
     public final void shiftMaxIndex(final int offset, final RowSetShiftData shiftData) {
         final long maxIndex = maxIndex(offset);

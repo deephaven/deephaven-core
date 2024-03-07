@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPercentileTypeHelper and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharPercentileTypeHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -49,7 +48,7 @@ public class LongPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
                 ssmLo.moveBackToFront(ssmHi, loSize - targetLo);
             }
 
-            return setResult(destination, ((LongSegmentedSortedMultiset)ssmLo).getMaxLong());
+            return setResult(destination, ((LongSegmentedSortedMultiset) ssmLo).getMaxLong());
         }
     }
 
@@ -64,16 +63,18 @@ public class LongPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
+            IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
         final LongChunk<? extends Values> asLongChunk = valueCopy.asLongChunk();
-        final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset)segmentedSortedMultiSet;
+        final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
         final long hiValue = ssmLo.getMaxLong();
 
         final int result = upperBound(asLongChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && LongComparisons.eq(asLongChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int)(counts.get(result - 1) - hiCount));
+        if (result > startPosition && LongComparisons.eq(asLongChunk.get(result - 1), hiValue)
+                && counts.get(result - 1) > hiCount) {
+            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
         } else {
             leftOvers.setValue(0);
         }
@@ -82,9 +83,10 @@ public class LongPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
+            IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
         final LongChunk<? extends Values> asLongChunk = valueCopy.asLongChunk();
-        final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset)segmentedSortedMultiSet;
+        final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
         final long hiValue = ssmLo.getMaxLong();
 
         final int result = upperBound(asLongChunk, startPosition, startPosition + runLength, hiValue);

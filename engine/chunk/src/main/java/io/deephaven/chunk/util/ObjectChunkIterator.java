@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -20,7 +20,8 @@ public class ObjectChunkIterator<TYPE> implements Iterator<TYPE> {
         this(chunk, 0, chunk.size());
     }
 
-    public ObjectChunkIterator(@NotNull final ObjectChunk<TYPE, ? extends Any> chunk, final int offset, final int length) {
+    public ObjectChunkIterator(@NotNull final ObjectChunk<TYPE, ? extends Any> chunk, final int offset,
+            final int length) {
         this.chunk = chunk;
         this.next = offset;
         this.limit = offset + length;

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -61,10 +61,11 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
         removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
-    //region Bucketed Updates
+    // region Bucketed Updates
     @NotNull
-    private BucketSsmDistinctContext getAndUpdateContext(Chunk<? extends Values> values, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, BucketedContext bucketedContext) {
-        final BucketSsmDistinctContext context = (BucketSsmDistinctContext)bucketedContext;
+    private BucketSsmDistinctContext getAndUpdateContext(Chunk<? extends Values> values,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, BucketedContext bucketedContext) {
+        final BucketSsmDistinctContext context = (BucketSsmDistinctContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
@@ -72,12 +73,16 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts, startPositions, context.lengthCopy, countNull);
+        CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
+                startPositions, context.lengthCopy, countNull);
         return context;
     }
 
     @Override
-    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
@@ -89,14 +94,19 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             final long destination = destinations.get(startPosition);
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             stateModified.set(ii, ssm.insert(valueSlice, countSlice));
         }
     }
 
     @Override
-    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -108,8 +118,10 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             final long destination = destinations.get(startPosition);
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             stateModified.set(ii, ssm.remove(removeContext, valueSlice, countSlice));
             if (ssm.size() == 0) {
                 clearSsm(destination);
@@ -118,8 +130,12 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     }
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctContext context = getAndUpdateContext(preValues, startPositions, length, bucketedContext);
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmDistinctContext context =
+                getAndUpdateContext(preValues, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, startPositions.size(), false);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -131,8 +147,10 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             final long destination = destinations.get(startPosition);
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 context.ssmsToMaybeClear.set(ii, true);
@@ -157,28 +175,32 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             }
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.insert(valueSlice, countSlice);
 
             stateModified.set(ii, ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0);
         }
     }
-    //endregion
+    // endregion
 
-    //region Singleton Updates
+    // region Singleton Updates
     @NotNull
     private SsmDistinctContext getAndUpdateContext(Chunk<? extends Values> values, SingletonContext singletonContext) {
         final SsmDistinctContext context = (SsmDistinctContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts, countNull);
+        CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
+                countNull);
         return context;
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
         final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
@@ -189,7 +211,8 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     }
 
     @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
         if (context.valueCopy.size() == 0) {
             return false;
@@ -204,7 +227,8 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(preValues, singletonContext);
         if (context.valueCopy.size() > 0) {
             CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
@@ -226,9 +250,9 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
 
         return ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0;
     }
-    //endregion
+    // endregion
 
-    //region IterativeOperator / DistinctAggregationOperator
+    // region IterativeOperator / DistinctAggregationOperator
     @Override
     public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
@@ -240,7 +264,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     }
 
     private static void flushPrevious(CharChunkedDistinctOperator op) {
-        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
+        if (op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 
@@ -255,10 +279,11 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        if(exposeInternal) {
+        if (exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, externalResult);
-            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, internalResult.getUnderlyingSource());
+            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX,
+                    internalResult.getUnderlyingSource());
             return columns;
         }
 
@@ -268,19 +293,20 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     @Override
     public void startTrackingPrevValues() {
         internalResult.startTrackingPrevValues();
-        if(exposeInternal) {
+        if (exposeInternal) {
             if (prevFlusher != null) {
                 throw new IllegalStateException("startTrackingPrevValues must only be called once");
             }
 
-            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), CharChunkedDistinctOperator::flushPrevious);
+            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                    CharChunkedDistinctOperator::flushPrevious);
             touchedStates = RowSetFactory.empty();
         }
     }
 
-    //endregion
+    // endregion
 
-    //region Contexts
+    // region Contexts
     @Override
     public BucketedContext makeBucketedContext(int size) {
         return new BucketSsmDistinctContext(ChunkType.Char, size);
@@ -290,9 +316,9 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     public SingletonContext makeSingletonContext(int size) {
         return new SsmDistinctContext(ChunkType.Char, size);
     }
-    //endregion
+    // endregion
 
-    //region Private Helpers
+    // region Private Helpers
     private CharSegmentedSortedMultiset ssmForSlot(long destination) {
         return internalResult.getOrCreate(destination);
     }
@@ -300,5 +326,5 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     private void clearSsm(long destination) {
         internalResult.clear(destination);
     }
-    //endregion
+    // endregion
 }

@@ -80,8 +80,7 @@ public class ReplicateStampKernel {
         // Skip, re-add file header
         lines = Stream.concat(
                 ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))
-        ).collect(Collectors.toList());
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         return globalReplacements(lines, className, newName);
     }

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingformula;
 
 import io.deephaven.base.ringbuffer.ObjectRingBuffer;
@@ -52,10 +55,12 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
             windowValues = new ObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
-            final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
+            final FormulaColumn formulaCopy = (FormulaColumn) formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            final SingleValueColumnSource<ObjectVector<?>> formulaInputSource = (SingleValueColumnSource<ObjectVector<?>>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
+            final SingleValueColumnSource<ObjectVector<?>> formulaInputSource =
+                    (SingleValueColumnSource<ObjectVector<?>>) SingleValueColumnSource
+                            .getSingleValueColumnSource(inputVectorType);
             formulaInputSource.set(new ObjectRingBufferVectorWrapper(windowValues, inputVectorType));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
@@ -155,7 +160,8 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
+                paramToken, formulaColumnMap, tableDef);
     }
 
     protected ObjectRollingFormulaOperator(
@@ -167,7 +173,8 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
             final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType,
+                formulaColumnMap, tableDef);
     }
 
     @Override

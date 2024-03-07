@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ToCharPageFromInt and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ToCharPageFromInt and run "./gradlew replicateToPage" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
@@ -22,7 +21,7 @@ public class ToShortPageFromInt<ATTR extends Any> implements ToPage<ATTR, short[
 
     public static <ATTR extends Any> ToShortPageFromInt<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || short.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 
@@ -52,8 +51,8 @@ public class ToShortPageFromInt<ATTR extends Any> implements ToPage<ATTR, short[
     @Override
     @NotNull
     public final short[] convertResult(Object result) {
-        int [] from = (int []) result;
-        short [] to = new short [from.length];
+        int[] from = (int[]) result;
+        short[] to = new short[from.length];
 
         for (int i = 0; i < from.length; ++i) {
             to[i] = (short) from[i];

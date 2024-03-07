@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -15,12 +14,12 @@ public class DoubleChunkChunk<ATTR extends Any> extends ChunkChunkBase<ATTR> imp
     private static final DoubleChunkChunk EMPTY = new DoubleChunkChunk<>(new DoubleChunk[0], 0, 0);
 
     public static <ATTR extends Any> DoubleChunkChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
     public static <ATTR extends Any> DoubleChunk<ATTR>[] makeArray(int capacity) {
-        //noinspection unchecked
+        // noinspection unchecked
         return new DoubleChunk[capacity];
     }
 
@@ -62,7 +61,7 @@ public class DoubleChunkChunk<ATTR extends Any> extends ChunkChunkBase<ATTR> imp
         for (int ii = newCapacity; ii < oldCapacity; ++ii) {
             // Be friendly to the garbage collector
             innerData[ii] = null;
-            innerOffsets[ii] = 0;  // to be nice
+            innerOffsets[ii] = 0; // to be nice
         }
     }
 

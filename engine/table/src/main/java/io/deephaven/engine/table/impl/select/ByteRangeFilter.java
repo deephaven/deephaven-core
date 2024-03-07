@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRangeFilter and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRangeFilter and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -43,7 +42,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
 
     public ByteRangeFilter(String columnName, byte val1, byte val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-        if(ByteComparisons.gt(val1, val2)) {
+        if (ByteComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
         } else {
@@ -75,7 +74,8 @@ public class ByteRangeFilter extends AbstractRangeFilter {
 
         final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
-            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
+                    + tableDefinition.getColumnNames());
         }
 
         final Class<?> colClass = TypeUtils.getUnboxedTypeIfBoxed(def.getDataType());
@@ -116,22 +116,25 @@ public class ByteRangeFilter extends AbstractRangeFilter {
             return selection.copy();
         }
 
-        //noinspection unchecked
-        final ColumnSource<Byte> byteColumnSource = (ColumnSource<Byte>)columnSource;
+        // noinspection unchecked
+        final ColumnSource<Byte> byteColumnSource = (ColumnSource<Byte>) columnSource;
 
         final byte startValue = reverse ? upper : lower;
         final byte endValue = reverse ? lower : upper;
         final boolean startInclusive = reverse ? upperInclusive : lowerInclusive;
         final boolean endInclusive = reverse ? lowerInclusive : upperInclusive;
-        final int compareSign = reverse ? - 1 : 1;
+        final int compareSign = reverse ? -1 : 1;
 
-        long lowerBoundMin = bound(selection, usePrev, byteColumnSource, 0, selection.size(), startValue, startInclusive, compareSign, false);
-        long upperBoundMin = bound(selection, usePrev, byteColumnSource, lowerBoundMin, selection.size(), endValue, endInclusive, compareSign, true);
+        long lowerBoundMin = bound(selection, usePrev, byteColumnSource, 0, selection.size(), startValue,
+                startInclusive, compareSign, false);
+        long upperBoundMin = bound(selection, usePrev, byteColumnSource, lowerBoundMin, selection.size(), endValue,
+                endInclusive, compareSign, true);
 
         return selection.subSetByPositionRange(lowerBoundMin, upperBoundMin);
     }
 
-    private long bound(RowSet selection, boolean usePrev, ColumnSource<Byte> longColumnSource, long minPosition, long maxPosition, byte targetValue, boolean inclusive, int compareSign, boolean end) {
+    private long bound(RowSet selection, boolean usePrev, ColumnSource<Byte> longColumnSource, long minPosition,
+            long maxPosition, byte targetValue, boolean inclusive, int compareSign, boolean end) {
         while (minPosition < maxPosition) {
             final long midPos = (minPosition + maxPosition) / 2;
             final long midIdx = selection.get(midPos);

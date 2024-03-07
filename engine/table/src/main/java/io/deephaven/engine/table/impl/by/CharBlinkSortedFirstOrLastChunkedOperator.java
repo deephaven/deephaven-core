@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -62,12 +62,12 @@ public class CharBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBl
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
-                         @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                         @NotNull final IntChunk<RowKeys> destinations,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> length,
-                         @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations,
+            @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length,
+            @NotNull final WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> typedValues = values.asCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -79,18 +79,18 @@ public class CharBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBl
 
     @Override
     public boolean addChunk(final SingletonContext singletonContext, // Unused
-                            final int chunkSize,
-                            @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                            final long destination) {
+            final int chunkSize,
+            @NotNull final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            final long destination) {
         return addChunk(values.asCharChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
     private boolean addChunk(@NotNull final CharChunk<? extends Values> values,
-                             @NotNull final LongChunk<? extends RowKeys> indices,
-                             final int start,
-                             final int length,
-                             final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> indices,
+            final int start,
+            final int length,
+            final long destination) {
         if (length == 0) {
             return false;
         }
@@ -144,7 +144,8 @@ public class CharBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBl
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.
-        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.build() : downstream.modified().union(downstream.added())) {
+        try (final RowSequence changedDestinations =
+                isCombo ? changedDestinationsBuilder.build() : downstream.modified().union(downstream.added())) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

@@ -1,6 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharNoExactReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl.join.stamp;
 
 import io.deephaven.chunk.*;
@@ -11,14 +16,17 @@ import io.deephaven.engine.rowset.RowSequence;
 
 public class CharNoExactReverseStampKernel implements StampKernel {
     static final CharNoExactReverseStampKernel INSTANCE = new CharNoExactReverseStampKernel();
+
     private CharNoExactReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
+            LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asCharChunk(), rightStamps.asCharChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(CharChunk<Values> leftStamps, CharChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    static private void computeRedirections(CharChunk<Values> leftStamps, CharChunk<Values> rightStamps,
+            LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
@@ -32,7 +40,7 @@ public class CharNoExactReverseStampKernel implements StampKernel {
 
         final int maxRightIdx = rightSize - 1;
 
-        for (int li = 0; li < leftSize; ) {
+        for (int li = 0; li < leftSize;) {
             final char leftValue = leftStamps.get(li);
             if (leq(leftValue, rightLowValue)) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
@@ -68,6 +76,7 @@ public class CharNoExactReverseStampKernel implements StampKernel {
             }
         }
     }
+
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(char lhs, char rhs) {

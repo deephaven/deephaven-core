@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollupUniqueOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollupUniqueOperator and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
 import java.time.Instant;
@@ -39,8 +38,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * This operator computes the single unique value of a particular aggregated state.  If there are no values at all
- * the 'no value key' is used.  If there are more than one values for the state,  the 'non unique key' is used.
+ * This operator computes the single unique value of a particular aggregated state. If there are no values at all the
+ * 'no value key' is used. If there are more than one values for the state, the 'non unique key' is used.
  *
  * it is intended to be used at the second, and higher levels of rollup.
  */
@@ -59,13 +58,13 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     private WritableRowSet touchedStates;
 
     public LongRollupUniqueOperator(
-                                    // region Constructor
+            // region Constructor
             Class<?> type,
-                                    // endregion Constructor
-                                    String name,
-                                    boolean countNulls,
-                                    long onlyNullsSentinel,
-                                    long nonUniqueSentinel) {
+            // endregion Constructor
+            String name,
+            boolean countNulls,
+            long onlyNullsSentinel,
+            long nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
         this.nonUniqueSentinel = nonUniqueSentinel;
@@ -86,32 +85,32 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
         removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
-    //region Bucketed Updates
+    // region Bucketed Updates
     private BucketSsmDistinctRollupContext updateAddValues(BucketSsmDistinctRollupContext bucketedContext,
-                                                           Chunk<? extends Values> inputs,
-                                                           IntChunk<ChunkPositions> starts,
-                                                           IntChunk<ChunkLengths> lengths) {
+            Chunk<? extends Values> inputs,
+            IntChunk<ChunkPositions> starts,
+            IntChunk<ChunkLengths> lengths) {
         final ObjectChunk<LongSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
         bucketedContext.lengthCopy.setSize(lengths.size());
         bucketedContext.starts.setSize(lengths.size());
-        if(bucketedContext.valueCopy.get() != null) {
+        if (bucketedContext.valueCopy.get() != null) {
             bucketedContext.valueCopy.get().setSize(0);
             bucketedContext.counts.get().setSize(0);
         }
 
         // Now fill the valueCopy set with the expanded underlying SSMs
         int currentPos = 0;
-        for(int ii = 0; ii< starts.size(); ii++) {
+        for (int ii = 0; ii < starts.size(); ii++) {
             bucketedContext.starts.set(ii, currentPos);
 
             final int startPos = starts.get(ii);
             final int curLength = lengths.get(ii);
             int newLength = 0;
-            for(int kk = startPos; kk < startPos + curLength; kk++) {
+            for (int kk = startPos; kk < startPos + curLength; kk++) {
                 final LongSegmentedSortedMultiset ssm = inputValues.get(kk);
                 final int size;
-                if(ssm == null || (size = ssm.intSize()) == 0) {
+                if (ssm == null || (size = ssm.intSize()) == 0) {
                     continue;
                 }
 
@@ -119,15 +118,16 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 ssm.fillKeyChunk(bucketedContext.valueCopy.get(), currentPos + newLength);
 
                 newLength += size;
-                //we have to do this every time otherwise ensureCapacityPreserve will not do anything.
+                // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
                 bucketedContext.valueCopy.get().setSize(currentPos + newLength);
             }
 
             // If we wrote anything into values, compact and count them, and recompute the updated length
-            if(newLength > 0) {
+            if (newLength > 0) {
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
-                newLength = LongCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableLongChunk(), bucketedContext.counts.get(), currentPos, newLength, countNull);
+                newLength = LongCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableLongChunk(),
+                        bucketedContext.counts.get(), currentPos, newLength, countNull);
             }
 
             bucketedContext.lengthCopy.set(ii, newLength);
@@ -138,8 +138,12 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
-    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctRollupContext context = updateAddValues((BucketSsmDistinctRollupContext)bucketedContext, values, startPositions, length);
+    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmDistinctRollupContext context =
+                updateAddValues((BucketSsmDistinctRollupContext) bucketedContext, values, startPositions, length);
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
@@ -152,8 +156,10 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             final long destination = destinations.get(origStartPos);
 
             final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             final boolean anyAdded = ssm.insert(valueSlice, countSlice);
             updateResult(ssm, destination);
             stateModified.set(ii, anyAdded);
@@ -161,30 +167,30 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     private BucketSsmDistinctRollupContext updateRemoveValues(BucketSsmDistinctRollupContext context,
-                                                              Chunk<? extends Values> inputs,
-                                                              IntChunk<ChunkPositions> starts,
-                                                              IntChunk<ChunkLengths> lengths) {
+            Chunk<? extends Values> inputs,
+            IntChunk<ChunkPositions> starts,
+            IntChunk<ChunkLengths> lengths) {
         final ObjectChunk<LongSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
         context.lengthCopy.setSize(lengths.size());
         context.starts.setSize(lengths.size());
-        if(context.valueCopy.get() != null) {
+        if (context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
             context.counts.get().setSize(0);
         }
 
         // Now fill the valueCopy set with the expanded underlying SSMs
         int currentPos = 0;
-        for(int ii = 0; ii< starts.size(); ii++) {
+        for (int ii = 0; ii < starts.size(); ii++) {
             context.starts.set(ii, currentPos);
 
             final int startPos = starts.get(ii);
             final int curLength = lengths.get(ii);
             int newLength = 0;
-            for(int kk = startPos; kk < startPos + curLength; kk++) {
+            for (int kk = startPos; kk < startPos + curLength; kk++) {
                 final LongSegmentedSortedMultiset ssm = inputValues.get(kk);
                 final int size;
-                if(ssm == null || (size = ssm.getRemovedSize()) == 0) {
+                if (ssm == null || (size = ssm.getRemovedSize()) == 0) {
                     continue;
                 }
 
@@ -192,15 +198,16 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 ssm.fillRemovedChunk(context.valueCopy.get().asWritableLongChunk(), currentPos + newLength);
 
                 newLength += size;
-                //we have to do this every time otherwise ensureCapacityPreserve will not do anything.
+                // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
                 context.valueCopy.get().setSize(currentPos + newLength);
             }
 
             // If we wrote anything into values, compact and count them, and recompute the updated length
-            if(newLength > 0) {
+            if (newLength > 0) {
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
-                newLength = LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(), currentPos, newLength, countNull);
+                newLength = LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(),
+                        context.counts.get(), currentPos, newLength, countNull);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -211,8 +218,12 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
-    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctRollupContext context = updateRemoveValues((BucketSsmDistinctRollupContext)bucketedContext, values, startPositions, length);
+    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmDistinctRollupContext context =
+                updateRemoveValues((BucketSsmDistinctRollupContext) bucketedContext, values, startPositions, length);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -226,8 +237,10 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             final long destination = destinations.get(origStartPos);
 
             final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 clearSsm(destination);
@@ -239,30 +252,30 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     private void updateModifyAddValues(BucketSsmDistinctRollupContext context,
-                                       Chunk<? extends Values> inputs,
-                                       IntChunk<ChunkPositions> starts,
-                                       IntChunk<ChunkLengths> lengths) {
+            Chunk<? extends Values> inputs,
+            IntChunk<ChunkPositions> starts,
+            IntChunk<ChunkLengths> lengths) {
         final ObjectChunk<LongSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
         context.lengthCopy.setSize(lengths.size());
         context.starts.setSize(lengths.size());
-        if(context.valueCopy.get() != null) {
+        if (context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
             context.counts.get().setSize(0);
         }
 
         // Now fill the valueCopy set with the expanded underlying SSMs
         int currentPos = 0;
-        for(int ii = 0; ii< starts.size(); ii++) {
+        for (int ii = 0; ii < starts.size(); ii++) {
             context.starts.set(ii, currentPos);
 
             final int startPos = starts.get(ii);
             final int curLength = lengths.get(ii);
             int newLength = 0;
-            for(int kk = startPos; kk < startPos + curLength; kk++) {
+            for (int kk = startPos; kk < startPos + curLength; kk++) {
                 final LongSegmentedSortedMultiset ssm = inputValues.get(kk);
                 final int size;
-                if(ssm == null || (size = ssm.getAddedSize()) == 0) {
+                if (ssm == null || (size = ssm.getAddedSize()) == 0) {
                     continue;
                 }
 
@@ -270,15 +283,16 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 ssm.fillAddedChunk(context.valueCopy.get().asWritableLongChunk(), currentPos + newLength);
 
                 newLength += size;
-                //we have to do this every time otherwise ensureCapacityPreserve will not do anything.
+                // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
                 context.valueCopy.get().setSize(currentPos + newLength);
             }
 
             // If we wrote anything into values, compact and count them, and recompute the updated length
-            if(newLength > 0) {
+            if (newLength > 0) {
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
-                newLength = LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(), currentPos, newLength, countNull);
+                newLength = LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(),
+                        context.counts.get(), currentPos, newLength, countNull);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -287,8 +301,12 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctRollupContext context = updateRemoveValues((BucketSsmDistinctRollupContext)bucketedContext, preValues, startPositions, length);
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmDistinctRollupContext context =
+                updateRemoveValues((BucketSsmDistinctRollupContext) bucketedContext, preValues, startPositions, length);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
@@ -302,8 +320,10 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             final long destination = destinations.get(origStartPosition);
 
             final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 context.ssmsToMaybeClear.set(ii, true);
@@ -329,104 +349,111 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 continue;
             }
 
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.insert(valueSlice, countSlice);
             updateResult(ssm, destination);
             stateModified.set(ii, ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0);
         }
     }
-    //endregion
+    // endregion
 
-    //region Singleton Updates
+    // region Singleton Updates
     private SsmDistinctRollupContext updateAddValues(SsmDistinctRollupContext context,
-                                                     Chunk<? extends Values> inputs) {
+            Chunk<? extends Values> inputs) {
         final ObjectChunk<LongSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
-        if(context.valueCopy.get() != null) {
+        if (context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
             context.counts.get().setSize(0);
         }
 
-        if(values.size() == 0) {
+        if (values.size() == 0) {
             return context;
         }
 
         int currentPos = 0;
-        for(int ii = 0; ii < values.size(); ii++) {
+        for (int ii = 0; ii < values.size(); ii++) {
             final LongSegmentedSortedMultiset ssm = values.get(ii);
             final int size;
-            if(ssm == null || (size = ssm.intSize()) == 0) {
+            if (ssm == null || (size = ssm.intSize()) == 0) {
                 continue;
             }
             context.valueCopy.ensureCapacityPreserve(currentPos + size);
             ssm.fillKeyChunk(context.valueCopy.get(), currentPos);
             currentPos += size;
-            //we have to do this every time otherwise ensureCapacityPreserve will not do anything.
+            // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
             context.valueCopy.get().setSize(currentPos);
         }
 
-        if(currentPos > 0) {
+        if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(), countNull);
+            LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(),
+                    countNull);
         }
         return context;
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final SsmDistinctRollupContext context = updateAddValues((SsmDistinctRollupContext)singletonContext, values);
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+        final SsmDistinctRollupContext context = updateAddValues((SsmDistinctRollupContext) singletonContext, values);
         final WritableChunk<? extends Values> updatedValues = context.valueCopy.get();
         if (updatedValues == null || updatedValues.size() == 0) {
             return false;
         }
 
         final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        final boolean anyAdded =ssm.insert(updatedValues, context.counts.get());
+        final boolean anyAdded = ssm.insert(updatedValues, context.counts.get());
         updateResult(ssm, destination);
 
         return anyAdded;
     }
 
     private SsmDistinctRollupContext updateRemoveValues(SsmDistinctRollupContext context,
-                                                        Chunk<? extends Values> inputs) {
+            Chunk<? extends Values> inputs) {
         final ObjectChunk<LongSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
-        if(context.valueCopy.get() != null) {
+        if (context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
             context.counts.get().setSize(0);
         }
-        if(values.size() == 0) {
+        if (values.size() == 0) {
             return context;
         }
 
         int currentPos = 0;
-        for(int ii = 0; ii < values.size(); ii++) {
+        for (int ii = 0; ii < values.size(); ii++) {
             final LongSegmentedSortedMultiset ssm = values.get(ii);
             final int size;
-            if(ssm == null || (size = ssm.getRemovedSize()) == 0) {
+            if (ssm == null || (size = ssm.getRemovedSize()) == 0) {
                 continue;
             }
 
             context.valueCopy.ensureCapacityPreserve(currentPos + size);
             ssm.fillRemovedChunk(context.valueCopy.get().asWritableLongChunk(), currentPos);
             currentPos += size;
-            //we have to do this every time otherwise ensureCapacityPreserve will not do anything.
+            // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
             context.valueCopy.get().setSize(currentPos);
         }
 
-        if(currentPos > 0) {
+        if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(), countNull);
+            LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(),
+                    countNull);
         }
         return context;
     }
 
     @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final SsmDistinctRollupContext context = updateRemoveValues((SsmDistinctRollupContext)singletonContext, values);
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+        final SsmDistinctRollupContext context =
+                updateRemoveValues((SsmDistinctRollupContext) singletonContext, values);
         final WritableChunk<? extends Values> updatedValues = context.valueCopy.get();
         if (updatedValues == null || updatedValues.size() == 0) {
             return false;
@@ -443,42 +470,45 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     private void updateModifyAddValues(SsmDistinctRollupContext context,
-                                       Chunk<? extends Values> inputs) {
+            Chunk<? extends Values> inputs) {
         final ObjectChunk<LongSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
-        if(context.valueCopy.get() != null) {
+        if (context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
             context.counts.get().setSize(0);
         }
-        if(values.size() == 0) {
+        if (values.size() == 0) {
             return;
         }
 
         int currentPos = 0;
-        for(int ii = 0; ii < values.size(); ii++) {
+        for (int ii = 0; ii < values.size(); ii++) {
             final LongSegmentedSortedMultiset ssm = values.get(ii);
             final int size;
-            if(ssm == null || (size = ssm.getAddedSize()) == 0) {
+            if (ssm == null || (size = ssm.getAddedSize()) == 0) {
                 continue;
             }
 
             context.valueCopy.ensureCapacityPreserve(currentPos + size);
             ssm.fillAddedChunk(context.valueCopy.get().asWritableLongChunk(), currentPos);
             currentPos += size;
-            //we have to do this every time otherwise ensureCapacityPreserve will not do anything.
+            // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
             context.valueCopy.get().setSize(currentPos);
         }
 
-        if(currentPos > 0) {
+        if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(), countNull);
+            LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(),
+                    countNull);
         }
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        final SsmDistinctRollupContext context = updateRemoveValues((SsmDistinctRollupContext)singletonContext, preValues);
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+        final SsmDistinctRollupContext context =
+                updateRemoveValues((SsmDistinctRollupContext) singletonContext, preValues);
         LongSegmentedSortedMultiset ssm = null;
         WritableChunk<? extends Values> updatedValues = context.valueCopy.get();
         if (updatedValues != null && updatedValues.size() > 0) {
@@ -501,9 +531,9 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
         updateResult(ssm, destination);
         return ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0;
     }
-    //endregion
+    // endregion
 
-    //region IterativeOperator / DistinctAggregationOperator
+    // region IterativeOperator / DistinctAggregationOperator
     @Override
     public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
@@ -524,37 +554,39 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         columns.put(name, externalResult);
-        columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+        columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX,
+                ssms.getUnderlyingSource());
         return columns;
     }
 
     @Override
     public void startTrackingPrevValues() {
-        if(prevFlusher != null) {
+        if (prevFlusher != null) {
             throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
 
-        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), LongRollupUniqueOperator::flushPrevious);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                LongRollupUniqueOperator::flushPrevious);
         touchedStates = RowSetFactory.empty();
         ssms.startTrackingPrevValues();
         internalResult.startTrackingPrevValues();
     }
 
     private static void flushPrevious(LongRollupUniqueOperator op) {
-        if(op.touchedStates == null || op.touchedStates.isEmpty()) {
+        if (op.touchedStates == null || op.touchedStates.isEmpty()) {
             return;
         }
 
         op.ssms.clearDeltas(op.touchedStates);
         op.touchedStates.clear();
     }
-    //endregion
+    // endregion
 
-    //region Private Helpers
+    // region Private Helpers
     private void updateResult(LongSegmentedSortedMultiset ssm, long destination) {
-        if(ssm.isEmpty()) {
+        if (ssm.isEmpty()) {
             internalResult.set(destination, onlyNullsSentinel);
-        } else if(ssm.size() == 1) {
+        } else if (ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
             internalResult.set(destination, nonUniqueSentinel);
@@ -568,7 +600,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     private void clearSsm(long destination) {
         ssms.clear(destination);
     }
-    //endregion
+    // endregion
 
     // region Contexts
     @Override
@@ -581,5 +613,5 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
         return new SsmDistinctRollupContext(ChunkType.Long);
     }
 
-    //endregion
+    // endregion
 }

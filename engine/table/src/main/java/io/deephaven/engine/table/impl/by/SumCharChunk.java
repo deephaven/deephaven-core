@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.Any;
@@ -40,14 +40,15 @@ public class SumCharChunk {
     /**
      * Produce the sum and sum of squares of a character chunk, as doubles.
      */
-    static double sum2CharChunk(CharChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
+    static double sum2CharChunk(CharChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount,
+            MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
             final char value = values.get(ii);
             if (value != QueryConstants.NULL_CHAR) {
-                //noinspection UnnecessaryLocalVariable
+                // noinspection UnnecessaryLocalVariable
                 final double doubleValue = value;
                 sum += doubleValue;
                 sum2 += doubleValue * doubleValue;
@@ -63,13 +64,14 @@ public class SumCharChunk {
         if (val == QueryConstants.NULL_CHAR) {
             return val;
         } else if (val < 0) {
-            return (char)-val;
+            return (char) -val;
         } else {
             return val;
         }
     }
 
-    static long sumCharChunkAbs(CharChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumCharChunkAbs(CharChunk<? extends Any> values, int chunkStart, int chunkSize,
+            MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

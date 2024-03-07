@@ -175,7 +175,8 @@ public class ReplicateSortKernel {
     private static void invertSense(String path, String descendingPath) throws IOException {
         final File file = new File(path);
 
-        final List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
+        final List<String> lines =
+                ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
 
         FileUtils.writeLines(new File(descendingPath), invertComparisons(lines));
     }
@@ -186,8 +187,7 @@ public class ReplicateSortKernel {
         // Skip, re-add file header
         lines = Stream.concat(
                 ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(sourceFile)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))
-        ).collect(Collectors.toList());
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         return globalReplacements(lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
                 "LongMegaMergeDescendingKernel");

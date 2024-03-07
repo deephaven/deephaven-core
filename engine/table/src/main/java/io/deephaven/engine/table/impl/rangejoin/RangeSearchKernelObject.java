@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RangeSearchKernelChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit RangeSearchKernelChar and run "./gradlew replicateRangeSearchKernels" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.RangeEndRule;

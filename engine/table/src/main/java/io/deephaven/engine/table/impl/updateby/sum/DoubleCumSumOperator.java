@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatCumSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatCumSumOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -46,7 +48,7 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
     }
 
     public DoubleCumSumOperator(@NotNull final MatchPair pair) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
     }
 
     @Override

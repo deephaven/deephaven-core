@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.prod;
 
 import io.deephaven.base.verify.Assert;
@@ -42,10 +45,10 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
 
     public ShortCumProdOperator(
             @NotNull final MatchPair pair
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         // endregion constructor
     }
@@ -54,8 +57,8 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
     public UpdateByOperator copy() {
         return new ShortCumProdOperator(
                 pair
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

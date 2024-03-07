@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -34,7 +34,8 @@ public abstract class AbstractPartitionedTableHandleMultiSeries<SERIES extends D
      * @param byColumns columns forming the keys of the partitioned table
      */
     AbstractPartitionedTableHandleMultiSeries(final AxesImpl axes, final int id, final Comparable name,
-                                      final TableBackedPartitionedTableHandle partitionedTableHandle, final String x, final String y, final String[] byColumns) {
+            final TableBackedPartitionedTableHandle partitionedTableHandle, final String x, final String y,
+            final String[] byColumns) {
         super(axes, id, name, byColumns);
         this.partitionedTableHandle = partitionedTableHandle;
         this.x = x;
@@ -49,7 +50,8 @@ public abstract class AbstractPartitionedTableHandleMultiSeries<SERIES extends D
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    AbstractPartitionedTableHandleMultiSeries(final AbstractPartitionedTableHandleMultiSeries series, final AxesImpl axes) {
+    AbstractPartitionedTableHandleMultiSeries(final AbstractPartitionedTableHandleMultiSeries series,
+            final AxesImpl axes) {
         super(series, axes);
         this.partitionedTableHandle = series.partitionedTableHandle;
         this.namingFunction = series.namingFunction;
@@ -90,7 +92,8 @@ public abstract class AbstractPartitionedTableHandleMultiSeries<SERIES extends D
     public void applyTransform(final String columnName, final String update, final Class[] classesToImport,
             final Map<String, Object> params, boolean columnTypesPreserved) {
         ArgumentValidations.assertNull(partitionedTable, "partitionedTable must be null", getPlotInfo());
-        Arrays.stream(classesToImport).forEach(aClass -> ExecutionContext.getContext().getQueryLibrary().importClass(aClass));
+        Arrays.stream(classesToImport)
+                .forEach(aClass -> ExecutionContext.getContext().getQueryLibrary().importClass(aClass));
         params.forEach(QueryScope::addParam);
         partitionedTableHandle.addColumn(columnName);
 

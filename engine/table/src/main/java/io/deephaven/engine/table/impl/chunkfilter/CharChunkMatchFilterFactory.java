@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
@@ -11,15 +11,15 @@ import gnu.trove.set.hash.TCharHashSet;
 /**
  * Creates chunk filters for char values.
  *
- * The strategy is that for one, two, or three values we have specialized
- * classes that will do the appropriate simple equality check.
+ * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
+ * equality check.
  *
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class CharChunkMatchFilterFactory {
     private CharChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.CharChunkFilter makeFilter(boolean invertMatch, char ... values) {
+    public static ChunkFilter.CharChunkFilter makeFilter(boolean invertMatch, char... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueCharChunkFilter(values[0]);
@@ -53,7 +53,8 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -71,7 +72,8 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -91,7 +93,8 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -112,7 +115,8 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -135,7 +139,8 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -158,7 +163,8 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -172,12 +178,13 @@ public class CharChunkMatchFilterFactory {
     private static class MultiValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
         private final TCharHashSet values;
 
-        private MultiValueCharChunkFilter(char ... values) {
+        private MultiValueCharChunkFilter(char... values) {
             this.values = new TCharHashSet(values);
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -191,12 +198,13 @@ public class CharChunkMatchFilterFactory {
     private static class InverseMultiValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
         private final TCharHashSet values;
 
-        private InverseMultiValueCharChunkFilter(char ... values) {
+        private InverseMultiValueCharChunkFilter(char... values) {
             this.values = new TCharHashSet(values);
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);

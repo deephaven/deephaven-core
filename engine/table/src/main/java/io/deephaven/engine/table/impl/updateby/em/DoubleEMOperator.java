@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatEMOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatEMOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.BadDataBehavior;
@@ -119,19 +121,19 @@ public class DoubleEMOperator extends BasePrimitiveEMOperator {
     /**
      * An operator that computes an EMA from a double column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public DoubleEMOperator(@NotNull final MatchPair pair,
-                           @NotNull final String[] affectingColumns,
-                           @NotNull final OperationControl control,
-                           @Nullable final String timestampColumnName,
-                           final double windowScaleUnits,
-                           @NotNull final EmFunction aggFunction
-    ) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits,
+            @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, aggFunction);
     }
 

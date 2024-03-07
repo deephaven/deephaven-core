@@ -146,8 +146,7 @@ public class ReplicateSegmentedSortedArray {
         // Skip, re-add file header
         lines = Stream.concat(
                 ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))
-        ).collect(Collectors.toList());
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp") || path.contains("SsaChecker")) {
             lines = globalReplacements(lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
@@ -177,8 +176,7 @@ public class ReplicateSegmentedSortedArray {
         // Skip, re-add file header
         lines = Stream.concat(
                 ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))
-        ).collect(Collectors.toList());
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         lines = globalReplacements(lines, oldName, newName);
         FileUtils.writeLines(new File(path), lines);
@@ -192,8 +190,7 @@ public class ReplicateSegmentedSortedArray {
         // Skip, re-add file header
         lines = Stream.concat(
                 ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))
-        ).collect(Collectors.toList());
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         return globalReplacements(lines, className, newName);
     }

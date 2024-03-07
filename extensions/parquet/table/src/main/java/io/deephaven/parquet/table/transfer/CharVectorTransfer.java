@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
@@ -13,7 +13,7 @@ import java.nio.IntBuffer;
 
 final class CharVectorTransfer extends PrimitiveVectorTransfer<CharVector, IntBuffer> {
     CharVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                       final int targetPageSizeInBytes) {
+            final int targetPageSizeInBytes) {
         // We encode primitive chars as primitive ints
         super(columnSource, tableRowSet, targetPageSizeInBytes / Integer.BYTES, targetPageSizeInBytes,
                 IntBuffer.allocate(targetPageSizeInBytes / Integer.BYTES), Integer.BYTES);

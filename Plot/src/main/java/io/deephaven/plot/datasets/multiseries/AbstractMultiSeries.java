@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.base.verify.Assert;
@@ -184,7 +184,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
      * @param resultClass The expected result type of {@code function}
      */
     protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function,
-                                        final String columnName, final String functionInput, final Class<R> resultClass) {
+            final String columnName, final String functionInput, final Class<R> resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         final Map<String, Object> params = new HashMap<>();
@@ -283,6 +283,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
+// @formatter:off
 
     @Override public <COLOR extends io.deephaven.gui.color.Paint> AbstractMultiSeries<SERIES> pointColor(final groovy.lang.Closure<COLOR> pointColor, final Object... multiSeriesKey) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColor for arguments [groovy.lang.Closure<COLOR>]. If you think this method should work, try placing your multiSeriesKey into an Object array", this);

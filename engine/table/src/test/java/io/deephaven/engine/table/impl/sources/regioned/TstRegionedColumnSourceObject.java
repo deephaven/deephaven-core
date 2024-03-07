@@ -1,17 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
 import org.junit.Test;
 
 /**
-* Base class for tests of {@link RegionedColumnSourceObject} implementations.
-*/
+ * Base class for tests of {@link RegionedColumnSourceObject} implementations.
+ */
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
-public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegionedColumnSourcePrimitive<DATA_TYPE, Values,
-        ColumnRegionObject<DATA_TYPE, Values>, ColumnRegionObject<DATA_TYPE, Values>> {
+public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends
+        TstRegionedColumnSourcePrimitive<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>, ColumnRegionObject<DATA_TYPE, Values>> {
 
     TstRegionedColumnSourceObject(Value<?>[] values) {
         super(ColumnRegionObject.class);
@@ -35,17 +35,19 @@ public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegion
     private static final Value<?> NULL_VALUE = new Value<>(null, new byte[0], 0L);
 
     private void assertLookup(final long elementIndex,
-                              final int expectedRegionIndex,
-                              final Value<?> output,
-                              final boolean prev) {
-        checking(new Expectations() {{
-            atMost(1).of(cr[expectedRegionIndex]).getObject(with(elementIndex));
-            will(returnValue(output.decoded));
-            if (elementIndex != 0) {
-                atMost(1).of(cr[expectedRegionIndex]).getObject(with(elementIndex - 1));
+            final int expectedRegionIndex,
+            final Value<?> output,
+            final boolean prev) {
+        checking(new Expectations() {
+            {
+                atMost(1).of(cr[expectedRegionIndex]).getObject(with(elementIndex));
                 will(returnValue(output.decoded));
+                if (elementIndex != 0) {
+                    atMost(1).of(cr[expectedRegionIndex]).getObject(with(elementIndex - 1));
+                    will(returnValue(output.decoded));
+                }
             }
-        }});
+        });
         assertEquals(output.decoded, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         assertIsSatisfied();
     }

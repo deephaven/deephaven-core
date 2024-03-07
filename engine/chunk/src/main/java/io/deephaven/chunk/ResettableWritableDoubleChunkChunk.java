@@ -1,16 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableWritableCharChunkChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableWritableCharChunkChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
+
 import io.deephaven.chunk.attributes.Any;
 
 
-public class ResettableWritableDoubleChunkChunk<ATTR extends Any> extends WritableDoubleChunkChunk<ATTR> implements ResettableWritableChunkChunk<ATTR> {
+public class ResettableWritableDoubleChunkChunk<ATTR extends Any> extends WritableDoubleChunkChunk<ATTR>
+        implements ResettableWritableChunkChunk<ATTR> {
 
     public static <ATTR extends Any> ResettableWritableDoubleChunkChunk<ATTR> makeResettableChunk() {
         return new ResettableWritableDoubleChunkChunk<>();
@@ -37,8 +38,8 @@ public class ResettableWritableDoubleChunkChunk<ATTR extends Any> extends Writab
 
     @Override
     public final void resetFromArray(Object array, int offset, int capacity) {
-        //noinspection unchecked
-        final WritableDoubleChunk<ATTR>[] typedArray = (WritableDoubleChunk<ATTR>[])array;
+        // noinspection unchecked
+        final WritableDoubleChunk<ATTR>[] typedArray = (WritableDoubleChunk<ATTR>[]) array;
         resetFromTypedArray(typedArray, offset, capacity);
     }
 

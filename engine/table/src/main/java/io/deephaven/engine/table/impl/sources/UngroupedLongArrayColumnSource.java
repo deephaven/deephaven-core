@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit UngroupedCharArrayColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit UngroupedCharArrayColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -13,7 +12,8 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class UngroupedLongArrayColumnSource extends UngroupedColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
+public class UngroupedLongArrayColumnSource extends UngroupedColumnSource<Long>
+        implements MutableColumnSourceGetDefaults.ForLong {
     private ColumnSource<long[]> innerSource;
 
     @Override
@@ -32,10 +32,10 @@ public class UngroupedLongArrayColumnSource extends UngroupedColumnSource<Long> 
         if (rowKey < 0) {
             return NULL_LONG;
         }
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         long[] array = innerSource.get(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return NULL_LONG;
         }
         return array[offset];
@@ -47,9 +47,9 @@ public class UngroupedLongArrayColumnSource extends UngroupedColumnSource<Long> 
             return NULL_LONG;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         long[] array = innerSource.getPrev(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return NULL_LONG;
         }
         return array[offset];

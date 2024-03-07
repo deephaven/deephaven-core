@@ -1,11 +1,10 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit GenerateArrowColumnSourceTests and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Run GenerateArrowColumnSourceTests or "./gradlew generateArrowColumnTestSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.extensions.arrow;
 
 import io.deephaven.chunk.WritableDoubleChunk;

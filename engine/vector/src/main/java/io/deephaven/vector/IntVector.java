@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVector and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
@@ -154,10 +153,8 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
         if (size == 0) {
             return true;
         }
-        // @formatter:off
         try (final CloseablePrimitiveIteratorOfInt aIterator = aVector.iterator();
-             final CloseablePrimitiveIteratorOfInt bIterator = bVector.iterator()) {
-            // @formatter:on
+                final CloseablePrimitiveIteratorOfInt bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
                 if (aIterator.nextInt() != bIterator.nextInt()) {

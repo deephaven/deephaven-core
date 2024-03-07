@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.minmax;
 
 import io.deephaven.base.verify.Assert;
@@ -49,10 +52,10 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
     public ShortCumMinMaxOperator(
             @NotNull final MatchPair pair,
             final boolean isMax
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         this.isMax = isMax;
         // region constructor
         // endregion constructor
@@ -63,8 +66,8 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
         return new ShortCumMinMaxOperator(
                 pair,
                 isMax
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
 import io.deephaven.engine.table.WritableColumnSource;
@@ -26,7 +26,7 @@ public class BooleanSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = null;
         } else {
             final ObjectSegmentedSortedMultiset objectSsm = (ObjectSegmentedSortedMultiset) ssm;
-            newResult = (Boolean)(minimum ? objectSsm.getMinObject() : objectSsm.getMaxObject());
+            newResult = (Boolean) (minimum ? objectSsm.getMinObject() : objectSsm.getMaxObject());
         }
         return setResult(destination, newResult);
     }

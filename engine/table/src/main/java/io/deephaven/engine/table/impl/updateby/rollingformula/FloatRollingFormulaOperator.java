@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingFormulaOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingFormulaOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingformula;
 
 import io.deephaven.base.ringbuffer.FloatRingBuffer;
@@ -58,10 +60,12 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
             floatWindowValues = new FloatRingBuffer(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
-            final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
+            final FormulaColumn formulaCopy = (FormulaColumn) formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            final SingleValueColumnSource<FloatVector> formulaInputSource = (SingleValueColumnSource<FloatVector>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
+            final SingleValueColumnSource<FloatVector> formulaInputSource =
+                    (SingleValueColumnSource<FloatVector>) SingleValueColumnSource
+                            .getSingleValueColumnSource(inputVectorType);
             formulaInputSource.set(new FloatRingBufferVectorWrapper(floatWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
@@ -160,10 +164,11 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
+                paramToken, formulaColumnMap, tableDef);
         // region constructor
         // endregion constructor
     }
@@ -177,10 +182,11 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
             final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType,
+                formulaColumnMap, tableDef);
         // region constructor
         // endregion constructor
     }
@@ -195,8 +201,8 @@ public class FloatRollingFormulaOperator extends BaseRollingFormulaOperator {
                 inputVectorType,
                 formulaColumnMap,
                 tableDef
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

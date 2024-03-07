@@ -132,8 +132,7 @@ public class ReplicateDupCompactKernel {
         // Skip, re-add file header
         lines = Stream.concat(
                 ReplicationUtils.fileHeaderStream("replicateDupCompactKernel", ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))
-        ).collect(Collectors.toList());
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
 
         return globalReplacements(lines, className, newName);
     }

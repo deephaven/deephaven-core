@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -22,16 +22,29 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         super(keySourcesForErrorMessages);
     }
 
-    public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources, final IntegerArraySource leftHashSlots);
-    public abstract void buildFromRightSide(final Table rightTable, ColumnSource<?> [] rightSources);
-    public abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections);
-    public abstract void decorateWithRightSide(Table rightTable, ColumnSource<?> [] rightSources);
+    public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources,
+            final IntegerArraySource leftHashSlots);
 
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, IntegerArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType);
+    public abstract void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
 
-    protected WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongUnaryOperator groupPositionToRightSide, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
+    public abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources,
+            final LongArraySource leftRedirections);
+
+    public abstract void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources);
+
+    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+            IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
+
+    public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+            LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
+
+    public abstract WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
+            long groupingSize, IntegerArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
+            JoinControl.RedirectionType redirectionType);
+
+    protected WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
+            long groupingSize, LongUnaryOperator groupPositionToRightSide, ArrayBackedColumnSource<RowSet> leftIndices,
+            JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -62,7 +75,8 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 return new LongColumnSourceWritableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                final WritableRowRedirection rowRedirection =
+                        WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
@@ -80,16 +94,19 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size, LongUnaryOperator groupPositionToRightSide, LongUnaryOperator firstLeftKey) {
+    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size,
+            LongUnaryOperator groupPositionToRightSide, LongUnaryOperator firstLeftKey) {
         for (int ii = 0; ii < size; ++ii) {
             final long rightSide = groupPositionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
-                throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
+                throw new IllegalStateException("Natural Join found duplicate right key for "
+                        + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
             }
         }
     }
 
-    public void errorOnDuplicatesGrouped(IntegerArraySource leftHashSlots, long size, ObjectArraySource<RowSet> rowSetSource) {
+    public void errorOnDuplicatesGrouped(IntegerArraySource leftHashSlots, long size,
+            ObjectArraySource<RowSet> rowSetSource) {
         throw new UnsupportedOperationException();
     }
 

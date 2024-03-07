@@ -267,14 +267,14 @@ public class ReplicateHashTable {
             iterator.remove();
         }
         rewrittenLines.addAll(0, Arrays.asList("//",
-                        "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
-                        "//",
-                        "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                        "// ****** Edit " + ReplicationUtils.className(sourceClassJavaFile)
-                                + " and run \"./gradlew replicateHashTable\" to regenerate",
-                        "//",
-                        "// @formatter:off",
-                        ""));
+                "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                "//",
+                "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                "// ****** Edit " + ReplicationUtils.className(sourceClassJavaFile)
+                        + " and run \"./gradlew replicateHashTable\" to regenerate",
+                "//",
+                "// @formatter:off",
+                ""));
 
         FileUtils.writeLines(destinationFile, rewrittenLines);
         System.out.println("Wrote: " + destinationClassJavaFile);
