@@ -21,6 +21,7 @@ import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -46,6 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.*;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
@@ -54,7 +56,7 @@ import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
  * API for writing DH tables in parquet format
  */
 public class ParquetTableWriter {
-    public static final String METADATA_KEY = "deephaven";
+    static final String METADATA_KEY = "deephaven";
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
@@ -92,14 +94,15 @@ public class ParquetTableWriter {
      * @param t The table to write
      * @param definition Table definition
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destFile The destination to write the parquet file
+     * @param destPathName The destination path
      * @param metadataFilePath The destination path to store in the metadata files. This can be different from
      *        {@code destFile} if we are writing the parquet file to a shadow location first since the metadata should
      *        always hold the accurate path.
      * @param incomingMeta A map of metadata values to be stores in the file footer
      * @param groupingColumnsWritingInfoMap A map of grouping column names to their respective info used for writing
      *        grouping files
-     * @param metadataFileWriter The writer for the _metadata and _common_metadata files
+     * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
      * @param computedCache When we need to perform some computation depending on column data to make a decision
      *        impacting both schema and written data, we store results in computedCache to avoid having to calculate
      *        twice. An example is the necessary precision and scale for a BigDecimal column written as a decimal
@@ -111,7 +114,7 @@ public class ParquetTableWriter {
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final File destFile,
+            @NotNull final String destPathName,
             @NotNull final File metadataFilePath,
             @NotNull final Map<String, String> incomingMeta,
             @Nullable final Map<String, GroupingColumnWritingInfo> groupingColumnsWritingInfoMap,
@@ -123,7 +126,7 @@ public class ParquetTableWriter {
         try {
             if (groupingColumnsWritingInfoMap != null) {
                 cleanupFiles = new ArrayList<>(groupingColumnsWritingInfoMap.size());
-                final Path destDirPath = destFile.toPath().getParent();
+                final Path destDirPath = Paths.get(destPathName).getParent();
                 for (final Map.Entry<String, GroupingColumnWritingInfo> entry : groupingColumnsWritingInfoMap
                         .entrySet()) {
                     final String groupingColumnName = entry.getKey();
@@ -135,12 +138,13 @@ public class ParquetTableWriter {
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(metadataGroupingFilePath.toPath()).toString()));
                     // We don't accumulate metadata from grouping files into the main metadata file
-                    write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions, groupingDestFile,
+                    write(auxiliaryTable, auxiliaryTable.getDefinition(), writeInstructions,
+                            groupingDestFile.getAbsolutePath(),
                             metadataGroupingFilePath, Collections.emptyMap(), TableInfo.builder(),
                             NullParquetMetadataFileWriter.INSTANCE, computedCache);
                 }
             }
-            write(t, definition, writeInstructions, destFile, metadataFilePath, incomingMeta, tableInfoBuilder,
+            write(t, definition, writeInstructions, destPathName, metadataFilePath, incomingMeta, tableInfoBuilder,
                     metadataFileWriter, computedCache);
         } catch (Exception e) {
             if (cleanupFiles != null) {
@@ -162,13 +166,14 @@ public class ParquetTableWriter {
      * @param table The table to write
      * @param definition The table definition
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destFile The destination path
+     * @param path The destination path
      * @param metadataFilePath The destination path to store in the metadata files. This can be different from
      *        {@code destFile} if we are writing the parquet file to a shadow location first since the metadata should
      *        always hold the accurate path.
      * @param tableMeta A map of metadata values to be stores in the file footer
      * @param tableInfoBuilder A partially constructed builder for the metadata object
-     * @param metadataFileWriter The writer for the _metadata and _common_metadata files
+     * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
      * @param computedCache Per column cache tags
      * @throws IOException For file writing related errors
      */
@@ -176,7 +181,7 @@ public class ParquetTableWriter {
             @NotNull final Table table,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final File destFile,
+            @NotNull final String path,
             @NotNull final File metadataFilePath,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
@@ -187,7 +192,7 @@ public class ParquetTableWriter {
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
             final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
-                    columnSourceMap, destFile, metadataFilePath, writeInstructions, tableMeta, tableInfoBuilder,
+                    columnSourceMap, path, metadataFilePath, writeInstructions, tableMeta, tableInfoBuilder,
                     metadataFileWriter);
             // Given the transformation, do not use the original table's "definition" for writing
             write(t, writeInstructions, parquetFileWriter, computedCache);
@@ -295,14 +300,15 @@ public class ParquetTableWriter {
      * @param definition the writable definition
      * @param tableRowSet the row set being written
      * @param columnSourceMap the columns of the table
-     * @param destFile the destination to write to
+     * @param path the destination to write to
      * @param metadataFilePath The destination path to store in the metadata files. This can be different from
      *        {@code destFile} if we are writing the parquet file to a shadow location first since the metadata should
      *        always hold the accurate path.
      * @param writeInstructions write instructions for the file
      * @param tableMeta metadata to include in the parquet metadata
      * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
-     * @param metadataFileWriter The writer for the _metadata and _common_metadata files
+     * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
      *
      * @return a new file writer
      */
@@ -312,7 +318,7 @@ public class ParquetTableWriter {
             @NotNull final TableDefinition definition,
             @NotNull final RowSet tableRowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> columnSourceMap,
-            @NotNull final File destFile,
+            @NotNull final String path,
             @NotNull final File metadataFilePath,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final Map<String, String> tableMeta,
@@ -359,8 +365,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(destFile, metadataFilePath,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(destFile.getPath()), null),
+        return new ParquetFileWriter(path, metadataFilePath,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(path), null),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);

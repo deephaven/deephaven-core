@@ -6,7 +6,8 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Used to write _metadata and _common_metadata files for Parquet.
+ * Used to write {@value ParquetUtils#METADATA_FILE_NAME} and {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files for
+ * Parquet.
  */
 public interface ParquetMetadataFileWriter {
 
@@ -22,8 +23,8 @@ public interface ParquetMetadataFileWriter {
     /**
      * Write the combined metadata files for all metadata accumulated so far and clear the list.
      *
-     * @param metadataFile The destination file for the _metadata file
-     * @param commonMetadataFile The destination file for the _common_metadata file
+     * @param metadataFile The destination for the {@value ParquetUtils#METADATA_FILE_NAME} file
+     * @param commonMetadataFile The destination for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
      */
     void writeMetadataFiles(File metadataFile, File commonMetadataFile) throws IOException;
 

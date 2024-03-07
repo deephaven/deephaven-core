@@ -7,11 +7,9 @@ import java.io.File;
 /**
  * A no-op implementation of MetadataFileWriterBase when we don't want to write metadata files for Parquet files.
  */
-public final class NullParquetMetadataFileWriter implements ParquetMetadataFileWriter {
+public enum NullParquetMetadataFileWriter implements ParquetMetadataFileWriter {
 
-    public static final NullParquetMetadataFileWriter INSTANCE = new NullParquetMetadataFileWriter();
-
-    private NullParquetMetadataFileWriter() {}
+    INSTANCE;
 
     @Override
     public void addParquetFileMetadata(final File parquetFile, final ParquetMetadata metadata) {}
@@ -22,4 +20,3 @@ public final class NullParquetMetadataFileWriter implements ParquetMetadataFileW
     @Override
     public void clear() {}
 }
-

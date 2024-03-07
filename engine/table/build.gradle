@@ -65,6 +65,7 @@ dependencies {
     testImplementation project(':BenchmarkSupport')
     testImplementation project(':extensions-csv')
     testImplementation project(':extensions-parquet-table')
+    testImplementation project(':extensions-parquet-base')
     testImplementation project(':extensions-source-support')
     testImplementation project(':Numerics')
     testImplementation project(':extensions-suanshu')

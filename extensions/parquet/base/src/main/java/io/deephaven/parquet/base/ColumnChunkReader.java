@@ -36,10 +36,9 @@ public interface ColumnChunkReader {
     boolean hasOffsetIndex();
 
     /**
-     * Get the offset index for a column chunk.
-     *
      * @param context The channel context to use for reading the offset index.
-     *
+     * @return Get the offset index for a column chunk.
+     * @throws UnsupportedOperationException If the column chunk does not have an offset index.
      */
     OffsetIndex getOffsetIndex(final SeekableChannelContext context);
 

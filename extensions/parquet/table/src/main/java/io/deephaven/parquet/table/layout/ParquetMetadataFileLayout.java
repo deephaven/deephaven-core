@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.locations.util.PartitionParser;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.base.ParquetFileReader;
@@ -36,8 +37,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.deephaven.parquet.table.ParquetUtils.COMMON_METADATA_FILE_NAME;
-import static io.deephaven.parquet.table.ParquetUtils.METADATA_FILE_NAME;
+import static io.deephaven.parquet.base.ParquetUtils.COMMON_METADATA_FILE_NAME;
+import static io.deephaven.parquet.base.ParquetUtils.METADATA_FILE_NAME;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -47,12 +48,13 @@ import static java.util.stream.Collectors.toMap;
  * <p>
  * Note that we expect to find the following files:
  * <ul>
- * <li>{@code _metadata} - A file containing Parquet metadata for all {@link RowGroup row groups} in all
- * {@code .parquet} files for the entire data set, including schema information non-partitioning columns and key-value
- * metadata</li>
- * <li>{@code _common_metadata} <i>(optional)</i> - A file containing Parquet metadata with schema information that
- * applies to the entire data set, including partitioning columns that are inferred from file paths rather than
- * explicitly written in {@link org.apache.parquet.format.ColumnChunk column chunks} within {@code .parquet} files</li>
+ * <li>{@value ParquetUtils#METADATA_FILE_NAME} - A file containing Parquet metadata for all {@link RowGroup row groups}
+ * in all {@code .parquet} files for the entire data set, including schema information non-partitioning columns and
+ * key-value metadata</li>
+ * <li>{@value ParquetUtils#COMMON_METADATA_FILE_NAME} <i>(optional)</i> - A file containing Parquet metadata with
+ * schema information that applies to the entire data set, including partitioning columns that are inferred from file
+ * paths rather than explicitly written in {@link org.apache.parquet.format.ColumnChunk column chunks} within
+ * {@code .parquet} files</li>
  * </ul>
  */
 public class ParquetMetadataFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {

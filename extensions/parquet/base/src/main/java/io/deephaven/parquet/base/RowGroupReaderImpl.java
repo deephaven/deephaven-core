@@ -62,6 +62,7 @@ final class RowGroupReaderImpl implements RowGroupReader {
     }
 
     @Override
+    @Nullable
     public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path) {
         final String key = path.toString();
         final ColumnChunk columnChunk = chunkMap.get(key);
@@ -69,16 +70,7 @@ final class RowGroupReaderImpl implements RowGroupReader {
         if (columnChunk == null) {
             return null;
         }
-
-        final URI columnChunkURI;
-        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
-            columnChunkURI = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
-        } else {
-            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
-            columnChunkURI = rootURI;
-        }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, columnChunkURI, type, fieldTypes, numRows(),
-                version);
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootURI, type, fieldTypes, numRows(), version);
     }
 
     @Override

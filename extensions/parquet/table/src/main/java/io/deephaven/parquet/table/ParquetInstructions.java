@@ -8,6 +8,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
@@ -167,7 +168,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract boolean isRefreshing();
 
     /**
-     * @return should we generate _meteadata and _common_metadata files while writing parquet files?
+     * @return should we generate {@value ParquetUtils#METADATA_FILE_NAME} and
+     *         {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files while writing parquet files?
      */
     public abstract boolean generateMetadataFiles();
 
@@ -668,14 +670,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Set whether to generate _metadata and _common_metadata files while writing parquet files.
+         * Set whether to generate {@value ParquetUtils#METADATA_FILE_NAME} and
+         * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files while writing parquet files. On setting this parameter,
          * <ul>
-         * <li>When writing a single parquet file, metadata files are generated in the same parent directory as the
+         * <li>When writing a single parquet file, metadata files will be generated in the same parent directory as the
          * parquet file.
-         * <li>When writing multiple parquet files in a single write call, metadata files are only generated if all
-         * parquet files are written to the same parent directory. The metadata files will also be written to the same
-         * parent directory.
-         * <li>When writing key-value partitioned parquet files, metadata files are generated in the root directory of
+         * <li>When writing multiple parquet files in a single write call, the writing code insists that all parquet
+         * files should be written to the same parent directory, and only then metadata files will be generated in the
+         * same parent directory.
+         * <li>When writing key-value partitioned parquet data, metadata files are generated in the root directory of
          * the partitioned parquet files.
          * </ul>
          */

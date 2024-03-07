@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
-import io.deephaven.parquet.table.ParquetUtils;
+import io.deephaven.parquet.base.ParquetUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

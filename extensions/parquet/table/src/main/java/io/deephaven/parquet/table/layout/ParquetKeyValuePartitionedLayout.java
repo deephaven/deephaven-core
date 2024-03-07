@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
-import io.deephaven.parquet.table.ParquetUtils;
+import io.deephaven.parquet.base.ParquetUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

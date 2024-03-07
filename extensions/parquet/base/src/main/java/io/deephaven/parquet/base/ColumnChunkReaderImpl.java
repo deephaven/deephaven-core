@@ -27,10 +27,12 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -54,11 +56,10 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
      */
     private final String version;
 
-    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, URI columnChunkURI,
+    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, URI rootURI,
             MessageType type, List<Type> fieldTypes, final long numRows, final String version) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
-        this.columnChunkURI = columnChunkURI;
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
@@ -72,6 +73,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
         this.numRows = numRows;
         this.version = version;
+        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
+            this.columnChunkURI = Path.of(rootURI).resolve(columnChunk.getFile_path()).toUri();
+        } else {
+            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
+            this.columnChunkURI = rootURI;
+        }
         // Construct the reader object but don't read the offset index yet
         this.offsetIndexReader = (columnChunk.isSetOffset_index_offset())
                 ? new OffsetIndexReaderImpl(channelsProvider, columnChunk, columnChunkURI)
@@ -100,7 +107,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public OffsetIndex getOffsetIndex(final SeekableChannelContext context) {
-        // Read the offset index if it hasn't been read yet
+        // Reads and caches the offset index if it hasn't been read yet. Throws an exception if the offset index cannot
+        // be read from this source
         return offsetIndexReader.getOffsetIndex(context);
     }
 

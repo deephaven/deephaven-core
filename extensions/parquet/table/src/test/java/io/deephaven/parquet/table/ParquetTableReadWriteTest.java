@@ -574,6 +574,34 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void flatPartitionedParquetWithBigDecimalMetadataTest() throws IOException {
+        final File parentDir = new File(rootFile, "tempDir");
+
+        // Both tables have different precision for big decimal column
+        final Table firstTable = TableTools.emptyTable(5).update("bdColumn = java.math.BigDecimal.valueOf((double)ii)");
+        final Table secondTable =
+                TableTools.emptyTable(5).update("bdColumn = java.math.BigDecimal.valueOf((double)(ii*0.001))");
+        final File firstDataFile = new File(parentDir, "data1.parquet");
+        final File secondDataFile = new File(parentDir, "data2.parquet");
+
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        final Table[] sources = new Table[] {firstTable, secondTable};
+        writeParquetTables(sources, firstTable.getDefinition(), writeInstructions,
+                new File[] {firstDataFile, secondDataFile}, null);
+
+        // Merge the tables and compute the precision and scale as per the union of the two tables
+        final Table expected =
+                maybeFixBigDecimal(PartitionedTableFactory.ofTables(firstTable.getDefinition(), sources).merge());
+
+        final Table fromDisk = readTable(parentDir).select();
+        assertTableEquals(expected, fromDisk);
+        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata"));
+        assertTableEquals(expected, fromDiskWithMetadata);
+    }
+
+    @Test
     public void writeKeyValuePartitionedDataWithIntegerPartitionsTest() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
@@ -702,7 +730,7 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
                 ColumnDefinition.ofLong("I"));
         final Table inputData = ((QueryTable) TableTools.emptyTable(10)
-                .updateView("PC1 = (ii%2==1)? null : (int)(ii%3)",
+                .updateView("PC1 = (ii%2==0)? null : (int)(ii%2)",
                         "I = ii"))
                 .withDefinitionUnsafe(definition);
         final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
@@ -710,11 +738,11 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        try {
-            writeKeyValuePartitionedTable(partitionedTable, parentDir, "data", writeInstructions);
-            fail("Expected exception when writing the partitioned table with null keys");
-        } catch (final RuntimeException expected) {
-        }
+        writeKeyValuePartitionedTable(partitionedTable, parentDir, "data", writeInstructions);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata")).select();
+        assertTableEquals(inputData.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
     }
 
     @Test
@@ -836,20 +864,20 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofInt("data"));
 
         final Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView(
-                "PC1 =  (ii%2 == 0) ? `AA` : `BB`",
-                "PC2 = (ii % 2 == 0)",
-                "PC3 = (char)(65 + (ii % 2))",
-                "PC4 = (byte)(ii % 2)",
-                "PC5 = (short)(ii % 2)",
-                "PC6 = (int)(ii%3)",
-                "PC7 = (long)(ii%2)",
-                "PC8 = (float)(ii % 2)",
-                "PC9 = (double)(ii % 2)",
-                "PC10 = java.math.BigInteger.valueOf(ii)",
-                "PC11 = (ii%2 == 0) ? java.math.BigDecimal.valueOf((double)ii) : java.math.BigDecimal.valueOf((double)(ii*0.001))",
-                "PC12 = java.time.Instant.ofEpochSecond(ii)",
-                "PC13 = java.time.LocalDate.ofEpochDay(ii)",
-                "PC14 = java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                "PC1 =  (ii%2 == 0) ? null: ((ii%3 == 0) ? `AA` : `BB`)",
+                "PC2 = (ii%2 == 0) ? null : (ii % 3 == 0)",
+                "PC3 = (ii%2 == 0) ? null : (char)(65 + (ii % 2))",
+                "PC4 = (ii%2 == 0) ? null : (byte)(ii % 2)",
+                "PC5 = (ii%2 == 0) ? null : (short)(ii % 2)",
+                "PC6 = (ii%2 == 0) ? null : (int)(ii%3)",
+                "PC7 = (ii%2 == 0) ? null : (long)(ii%2)",
+                "PC8 = (ii%2 == 0) ? null : (float)(ii % 2)",
+                "PC9 = (ii%2 == 0) ? null : (double)(ii % 2)",
+                "PC10 = (ii%2 == 0) ? null : java.math.BigInteger.valueOf(ii)",
+                "PC11 = (ii%2 == 0) ? null : ((ii%3 == 0) ? java.math.BigDecimal.valueOf((double)ii) : java.math.BigDecimal.valueOf((double)(ii*0.001)))",
+                "PC12 = (ii%2 == 0) ? null : java.time.Instant.ofEpochSecond(ii)",
+                "PC13 = (ii%2 == 0) ? null : java.time.LocalDate.ofEpochDay(ii)",
+                "PC14 = (ii%2 == 0) ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
                 "data = (int)(ii)"))
                 .withDefinitionUnsafe(definition);
 

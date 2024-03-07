@@ -12,7 +12,7 @@ import io.deephaven.engine.table.impl.util.TableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
-import static io.deephaven.parquet.table.ParquetUtils.PARQUET_FILE_EXTENSION;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
 
 import java.io.File;
 import java.io.IOException;

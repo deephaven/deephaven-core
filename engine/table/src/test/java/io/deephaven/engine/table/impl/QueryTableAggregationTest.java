@@ -74,7 +74,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
-import static io.deephaven.parquet.table.ParquetUtils.PARQUET_FILE_EXTENSION;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {

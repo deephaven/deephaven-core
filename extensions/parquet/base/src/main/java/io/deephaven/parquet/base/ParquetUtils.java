@@ -1,5 +1,6 @@
-package io.deephaven.parquet.table;
+package io.deephaven.parquet.base;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 public final class ParquetUtils {
@@ -7,6 +8,13 @@ public final class ParquetUtils {
     public static final String METADATA_FILE_NAME = "_metadata";
     public static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
+    private static final String MAGIC_STR = "PAR1";
+    public static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
+
+    /**
+     * The number of bytes to buffer before flushing while writing parquet files and metadata files.
+     */
+    public static final int PARQUET_OUTPUT_BUFFER_SIZE = 1 << 18;
 
     /**
      * Used as a filter to select relevant parquet files while reading all files in a directory.

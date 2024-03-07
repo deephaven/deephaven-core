@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static io.deephaven.parquet.table.ParquetUtils.PARQUET_FILE_EXTENSION;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.

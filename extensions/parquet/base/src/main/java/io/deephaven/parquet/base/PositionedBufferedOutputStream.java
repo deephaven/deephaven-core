@@ -1,5 +1,7 @@
 package io.deephaven.parquet.base;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -9,12 +11,7 @@ public final class PositionedBufferedOutputStream extends BufferedOutputStream {
 
     private final SeekableByteChannel writeChannel;
 
-    public PositionedBufferedOutputStream(final SeekableByteChannel writeChannel) {
-        super(Channels.newOutputStream(writeChannel));
-        this.writeChannel = writeChannel;
-    }
-
-    PositionedBufferedOutputStream(final SeekableByteChannel writeChannel, final int size) {
+    public PositionedBufferedOutputStream(@NotNull final SeekableByteChannel writeChannel, final int size) {
         super(Channels.newOutputStream(writeChannel), size);
         this.writeChannel = writeChannel;
     }

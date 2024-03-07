@@ -9,14 +9,16 @@ import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 public interface OffsetIndexReader {
 
     /**
-     * Get the offset index for a column chunk.
-     *
      * @param context The channel context to use for reading the offset index.
+     * @return Reads, caches, and returns the offset index for a column chunk.
+     * @throws UnsupportedOperationException If the offset index cannot be read from this source.
      */
     OffsetIndex getOffsetIndex(SeekableChannelContext context);
 
     /**
-     * A null implementation of the offset index reader.
+     * A null implementation of the offset index reader which always throws an exception when called.
      */
-    OffsetIndexReader NULL = context -> null;
+    OffsetIndexReader NULL = context -> {
+        throw new UnsupportedOperationException("Cannot read offset index from this source.");
+    };
 }
