@@ -160,7 +160,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
                 en);
     }
 
-    protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
+    public static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

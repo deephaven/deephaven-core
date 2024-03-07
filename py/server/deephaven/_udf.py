@@ -2,8 +2,6 @@
 #     Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
-from __future__ import annotations
-
 import inspect
 import re
 import sys
@@ -113,12 +111,12 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
     """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
-    # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get the type
-    # when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature, so that
-    # annotation is already a type, and we can remove this line.
-    t = eval(t) if isinstance(t, str) else t
-    
     p_param.orig_types.add(t)
+
+    # if the annotation is a DH DType instance, we'll use its numpy type
+    if isinstance(t, dtypes.DType):
+        t = t.np_type
+
     tc = _encode_param_type(t)
     if "[" in tc:
         p_param.has_array = True
@@ -157,6 +155,11 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
             t = annotation.__args__[0]
         elif annotation.__args__[0] == type(None):  # noqa: E721
             t = annotation.__args__[1]
+
+    # if the annotation is a DH DType instance, we'll use its numpy type
+    if isinstance(t, dtypes.DType):
+        t = t.np_type
+
     component_char = _component_np_dtype_char(t)
     if component_char:
         pra.encoded_type = "[" + component_char
@@ -250,10 +253,16 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
             sig = inspect.signature(fn, eval_str=True)
         else:
             sig = inspect.signature(fn)
-        for n, p in sig.parameters.items():
-            p_sig.params.append(_parse_param(n, p.annotation))
 
-        p_sig.ret_annotation = _parse_return_annotation(sig.return_annotation)
+        for n, p in sig.parameters.items():
+            # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get the type
+            # when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature, so that
+            # annotation is already a type, and we can skip this step.
+            t = eval(p.annotation, fn.__globals__) if isinstance(p.annotation, str) else p.annotation
+            p_sig.params.append(_parse_param(n, t))
+
+        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation, str) else sig.return_annotation
+        p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
 

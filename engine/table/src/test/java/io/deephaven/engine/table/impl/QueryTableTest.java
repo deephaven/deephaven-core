@@ -664,6 +664,25 @@ public class QueryTableTest extends QueryTableTestBase {
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.renameColumns("O = Int", "O = Int");
+        });
+
+        // Check what happens when we override a column by name
+        final Table override = table.renameColumns("Double = Int");
+        Assert.assertEquals(override.getColumnSource("Double").getType(), int.class);
+        Assert.assertFalse(override.getColumnSourceMap().containsKey("Int"));
+        // Check that ordering of source columns does not matter
+        final Table override2 = table.renameColumns("Int = Double");
+        Assert.assertEquals(override2.getColumnSource("Int").getType(), double.class);
+        Assert.assertFalse(override2.getColumnSourceMap().containsKey("Double"));
+
+        // Validate that we can swap two columns simultaneously
+        final Table swapped = table.renameColumns("Double = Int", "Int = Double");
+        Assert.assertEquals(swapped.getColumnSource("Double").getType(), int.class);
+        Assert.assertEquals(swapped.getColumnSource("Int").getType(), double.class);
     }
 
     public void testRenameColumnsIncremental() {
@@ -680,13 +699,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.renameColumns(List.of())),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym")),
-                EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym", "Symbols=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Sym2=Sym", "intCol2=intCol", "doubleCol2=doubleCol")),
         };
-
-        // Verify our assumption that columns can be renamed at most once.
-        Assert.assertTrue(queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbols"));
-        Assert.assertFalse(queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbol"));
 
         final int steps = 100;
         for (int i = 0; i < steps; i++) {
@@ -695,6 +709,175 @@ public class QueryTableTest extends QueryTableTestBase {
             }
             simulateShiftAwareStep("step == " + i, size, random, queryTable, columnInfo, en);
         }
+    }
+
+    public void testMoveColumnsUp() {
+        final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
+
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "A = 1", "B = 2", "D = 4", "E = 5"),
+                table.moveColumnsUp("C"));
+
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "B = 2", "A = 1", "D = 4", "E = 5"),
+                table.moveColumnsUp("C", "B"));
+
+        assertTableEquals(
+                emptyTable(1).update("D = 4", "A = 1", "C = 3", "B = 2", "E = 5"),
+                table.moveColumnsUp("D", "A", "C"));
+
+        // test trivial do nothing case
+        assertTableEquals(table, table.moveColumnsUp());
+
+        // Can't move a column up twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsUp("C", "C");
+        });
+
+        // Can't rename a source column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsUp("A1 = A", "A2 = A");
+        });
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsUp("O = A", "O = B");
+        });
+
+        assertTableEquals(
+                emptyTable(1).update("B = 3", "A = 1", "D = 4", "E = 5"),
+                table.moveColumnsUp("B = C"));
+        assertTableEquals(
+                emptyTable(1).update("B = 1", "C = 3", "D = 4", "E = 5"),
+                table.moveColumnsUp("B = A"));
+        assertTableEquals(
+                emptyTable(1).update("B = 1", "A = 2", "C = 3", "D = 4", "E = 5"),
+                table.moveColumnsUp("B = A", "A = B"));
+    }
+
+    public void testMoveColumnsDown() {
+        final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "E = 5", "C = 3"),
+                table.moveColumnsDown("C"));
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumnsDown("C", "B"));
+
+        assertTableEquals(
+                emptyTable(1).update("B = 2", "E = 5", "D = 4", "A = 1", "C = 3"),
+                table.moveColumnsDown("D", "A", "C"));
+
+        // test trivial do nothing case
+        assertTableEquals(table, table.moveColumnsDown());
+
+        // Can't move a column down twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsDown("C", "C");
+        });
+
+        // Can't rename a source column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsDown("A1 = A", "A2 = A");
+        });
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsDown("O = A", "O = B");
+        });
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "B = 3"),
+                table.moveColumnsDown("B = C"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "E = 5", "B = 1"),
+                table.moveColumnsDown("B = A"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "E = 5", "B = 1", "A = 2"),
+                table.moveColumnsDown("B = A", "A = B"));
+    }
+
+    public void testMoveColumns() {
+        final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
+
+        // single column
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "A = 1", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(-1, "C"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "A = 1", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(0, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "C = 3", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(1, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5"),
+                table.moveColumns(2, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "C = 3", "E = 5"),
+                table.moveColumns(3, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "E = 5", "C = 3"),
+                table.moveColumns(4, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "E = 5", "C = 3"),
+                table.moveColumns(10, "C"));
+
+        // two columns
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "B = 2", "A = 1", "D = 4", "E = 5"),
+                table.moveColumns(-1, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "B = 2", "A = 1", "D = 4", "E = 5"),
+                table.moveColumns(0, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "C = 3", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(1, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "C = 3", "B = 2", "E = 5"),
+                table.moveColumns(2, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumns(3, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumns(4, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumns(10, "C", "B"));
+
+        // test trivial do nothing case
+        for (int ii = -1; ii < 10; ++ii) {
+            assertTableEquals(table, table.moveColumns(ii));
+        }
+
+        // Can't move a column down twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumns(2, "C", "C");
+        });
+
+        // Can't rename a source column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumns(2, "A1 = A", "A2 = A");
+        });
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumns(2, "O = A", "O = B");
+        });
+
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "B = 3", "E = 5"),
+                table.moveColumns(2, "B = C"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "B = 1", "E = 5"),
+                table.moveColumns(2, "B = A"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "B = 1", "A = 2", "E = 5"),
+                table.moveColumns(2, "B = A", "A = B"));
     }
 
     public static WhereFilter stringContainsFilter(

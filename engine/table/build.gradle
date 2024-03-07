@@ -34,6 +34,7 @@ dependencies {
     implementation 'com.tdunning:t-digest:3.2'
     implementation 'com.squareup:javapoet:1.13.0'
     implementation 'io.github.classgraph:classgraph:4.8.165'
+    implementation 'it.unimi.dsi:fastutil:8.5.13'
 
     implementation project(':plugin')
     implementation depCommonsLang3

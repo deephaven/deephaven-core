@@ -46,11 +46,6 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    void finalizeWindowBucket(UpdateByWindowBucketContext context) {
-        super.finalizeWindowBucket(context);
-    }
-
-    @Override
     UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,

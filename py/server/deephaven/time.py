@@ -4,8 +4,6 @@
 
 """ This module defines functions for handling Deephaven date/time data. """
 
-from __future__ import annotations
-
 import datetime
 from typing import Union, Optional, Literal
 

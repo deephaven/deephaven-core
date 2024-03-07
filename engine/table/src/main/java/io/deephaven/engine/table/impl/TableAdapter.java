@@ -219,7 +219,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
+    default Table moveColumns(int index, String... columnsToMove) {
         return throwUnsupported();
     }
 
