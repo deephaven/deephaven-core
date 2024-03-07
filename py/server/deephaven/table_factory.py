@@ -231,49 +231,13 @@ class DynamicTableWriter(JObjectWrapper):
 
 
 class InputTable(Table):
-    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it. There are two
-    types of InputTable - append-only and keyed.
+    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it."""
 
-    The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
-    not permitted.
-
-    The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
-    """
-
-    def __init__(self, col_defs: Dict[str, DType] = None, init_table: Table = None,
-                 key_cols: Union[str, Sequence[str]] = None):
-        """Creates an InputTable instance from either column definitions or initial table. When key columns are
-        provided, the InputTable will be keyed, otherwise it will be append-only.
-
-        Args:
-            col_defs (Dict[str, DType]): the column definitions
-            init_table (Table): the initial table
-            key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
-
-        Raises:
-            DHError
-        """
-        try:
-            if col_defs is None and init_table is None:
-                raise ValueError("either column definitions or init table should be provided.")
-            elif col_defs and init_table:
-                raise ValueError("both column definitions and init table are provided.")
-
-            if col_defs:
-                j_arg_1 = _JTableDefinition.of(
-                    [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
-            else:
-                j_arg_1 = init_table.j_table
-
-            key_cols = to_sequence(key_cols)
-            if key_cols:
-                super().__init__(_JKeyedArrayBackedInputTable.make(j_arg_1, key_cols))
-            else:
-                super().__init__(_JAppendOnlyArrayBackedInputTable.make(j_arg_1))
-            self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
-            self.key_columns = key_cols
-        except Exception as e:
-            raise DHError(e, "failed to create a InputTable.") from e
+    def __init__(self, source_table: Table):
+        super().__init__(source_table)
+        self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
+        if not self.j_input_table:
+            raise DHError("the provided table input is not suitable for input tables.")
 
     def add(self, table: Table) -> None:
         """Writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
@@ -292,7 +256,7 @@ class InputTable(Table):
 
     def delete(self, table: Table) -> None:
         """Deletes the keys contained in the provided table from this keyed input table. If this method is called on an
-        append-only input table, a PermissionError will be raised.
+        append-only input table, an error will be raised.
 
         Args:
             table (Table): the table with the keys to delete
@@ -301,17 +265,37 @@ class InputTable(Table):
             DHError
         """
         try:
-            if not self.key_columns:
-                raise PermissionError("deletion on an append-only input table is not allowed.")
             self.j_input_table.delete(table.j_table)
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
 
+    def get_key_names(self):
+        """Gets the names of the key columns.
+
+        Returns:
+            a list with the names of the key columns of this input table
+        """
+        return self.j_input_table.getKeyNames()
+
+    def get_value_names(self):
+        """Gets the names of the value columns. By default, any column not marked as a key column is a value column.
+
+        Returns: a list with the names of the value columns of this input table
+        """
+        return self.j_input_table.getValueNames()
+
 
 def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
                 key_cols: Union[str, Sequence[str]] = None) -> InputTable:
-    """Creates an InputTable from either column definitions or initial table. When key columns are
+    """Creates an in-memory InputTable from either column definitions or initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
+
+    There are two types of in-memory InputTable - append-only and keyed.
+
+    The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
+    not permitted.
+
+    The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
 
     Args:
         col_defs (Dict[str, DType]): the column definitions
@@ -324,7 +308,28 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
     Raises:
         DHError
     """
-    return InputTable(col_defs=col_defs, init_table=init_table, key_cols=key_cols)
+
+    try:
+        if col_defs is None and init_table is None:
+            raise ValueError("either column definitions or init table should be provided.")
+        elif col_defs and init_table:
+            raise ValueError("both column definitions and init table are provided.")
+
+        if col_defs:
+            j_arg_1 = _JTableDefinition.of(
+                [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
+        else:
+            j_arg_1 = init_table.j_table
+
+        key_cols = to_sequence(key_cols)
+        if key_cols:
+            source_table = _JKeyedArrayBackedInputTable.make(j_arg_1, key_cols)
+        else:
+            source_table = _JAppendOnlyArrayBackedInputTable.make(j_arg_1)
+    except Exception as e:
+        raise DHError(e, "failed to create an in-memory InputTable.") from e
+
+    return InputTable(source_table)
 
 
 def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
