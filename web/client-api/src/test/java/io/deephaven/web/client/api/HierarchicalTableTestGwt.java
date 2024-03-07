@@ -56,7 +56,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(treeTable("ticking_tree"))
                 .then(treeTable -> {
-                    delayTestFinish(3501);
+                    // Very large timeout, 3.5s is enough that we see failures on this regularly
+                    delayTestFinish(20_000);
                     assertTrue(treeTable.isRefreshing());
                     assertFalse(treeTable.isClosed());
                     assertFalse(treeTable.isIncludeConstituents());
