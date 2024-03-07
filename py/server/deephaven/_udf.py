@@ -7,7 +7,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Callable, List, Any, Union, Tuple, _GenericAlias
+from typing import Callable, List, Any, Union, Tuple, _GenericAlias, Set
 
 from deephaven._dep import soft_dependency
 
@@ -34,8 +34,8 @@ _SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O
 @dataclass
 class _ParsedParam:
     name: Union[str, int] = field(init=True)
-    orig_types: set[type] = field(default_factory=set)
-    encoded_types: set[str] = field(default_factory=set)
+    orig_types: Set[type] = field(default_factory=set)
+    encoded_types: Set[str] = field(default_factory=set)
     none_allowed: bool = False
     has_array: bool = False
     int_char: str = None
@@ -266,7 +266,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return p_sig
 
 
-def _is_from_np_type(param_types: set[type], np_type_char: str) -> bool:
+def _is_from_np_type(param_types: Set[type], np_type_char: str) -> bool:
     """ Determine if the given numpy type char comes for a numpy type in the given set of parameter type annotations"""
     for t in param_types:
         if issubclass(t, np.generic) and np.dtype(t).char == np_type_char:
