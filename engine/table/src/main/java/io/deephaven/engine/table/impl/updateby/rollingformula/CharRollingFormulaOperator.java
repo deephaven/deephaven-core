@@ -164,8 +164,8 @@ public class CharRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final TableDefinition tableDef,
             @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
                 paramToken, formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);

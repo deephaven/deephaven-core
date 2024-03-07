@@ -1,10 +1,12 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.context.util;
 
 import javax.tools.FileObject;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
