@@ -83,34 +83,9 @@ dependencies {
 
 spotless {
     java {
-        targetExclude(
-                '**/generated/**',
-                '**/*Boolean*.java',
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java',
-                '**/*StateManager.java',
-                '**/incagg/gen/*.java',
-                '**/incopenagg/gen/*.java',
-                '**/staticagg/gen/*.java',
-                '**/staticopenagg/gen/*.java',
-                '**/naturaljoin/typed/staticopen/gen/*.java',
-                '**/naturaljoin/typed/incopen/gen/*.java',
-                '**/naturaljoin/typed/rightincopen/gen/*.java',
-                '**/asofjoin/typed/rightincopen/gen/*.java',
-                '**/asofjoin/typed/staticopen/gen/*.java',
-                '**/updateby/hashing/typed/open/gen/*.java',
-                '**/multijoin/typed/staticopen/gen/*.java',
-                '**/multijoin/typed/incopen/gen/*.java',
-                'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
-                'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
-                'src/test/java/**/*Sample.java'
-        )
+        // Exclude these codegen sample files from here so we don't even need a comment to disable formatting
+        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/FilterKernel*Sample.java',
+                'src/test/java/io/deephaven/engine/table/impl/select/Formula*Sample.java'
     }
 }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import java.io.IOException;
@@ -8,6 +8,8 @@ import java.io.IOException;
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateParquetTransferObjects {
+    private static final String TASK = "replicateParquetTransferObjects";
+
     private static final String PARQUET_TRANSFER_DIR =
             "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/transfer/";
     private static final String PARQUET_CHAR_TRANSFER_PATH = PARQUET_TRANSFER_DIR + "CharTransfer.java";
@@ -40,15 +42,16 @@ public class ReplicateParquetTransferObjects {
     private static final String[] NO_EXCEPTIONS = new String[0];
 
     public static void main(String[] args) throws IOException {
-        charToShortAndByte(PARQUET_CHAR_TRANSFER_PATH);
-        charToShortAndByte(PARQUET_CHAR_ARRAY_TRANSFER_PATH);
-        charToShortAndByte(PARQUET_CHAR_VECTOR_TRANSFER_PATH);
+        charToShortAndByte(TASK, PARQUET_CHAR_TRANSFER_PATH);
+        charToShortAndByte(TASK, PARQUET_CHAR_ARRAY_TRANSFER_PATH);
+        charToShortAndByte(TASK, PARQUET_CHAR_VECTOR_TRANSFER_PATH);
 
-        intToLongAndFloatingPoints(PARQUET_INT_TRANSFER_PATH, "int targetPageSizeInBytes", "int targetElementsPerPage",
+        intToLongAndFloatingPoints(TASK, PARQUET_INT_TRANSFER_PATH, "int targetPageSizeInBytes",
+                "int targetElementsPerPage",
                 "Math.toIntExact");
-        intToLongAndFloatingPoints(PARQUET_INT_ARRAY_TRANSFER_PATH, "int targetPageSizeInBytes", "int length",
+        intToLongAndFloatingPoints(TASK, PARQUET_INT_ARRAY_TRANSFER_PATH, "int targetPageSizeInBytes", "int length",
                 "int getSize");
-        intToLongAndFloatingPoints(PARQUET_INT_VECTOR_TRANSFER_PATH, "int targetPageSizeInBytes", "int length");
+        intToLongAndFloatingPoints(TASK, PARQUET_INT_VECTOR_TRANSFER_PATH, "int targetPageSizeInBytes", "int length");
 
         String[][] pairs = new String[][] {
                 {"InstantArrayTransfer", "DateArrayTransfer"},
@@ -59,8 +62,10 @@ public class ReplicateParquetTransferObjects {
                 {"Long", "Integer"},
                 {"long", "int"},
         };
-        replaceAll(PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_DATE_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
-        replaceAll(PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_DATE_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_DATE_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
+        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_DATE_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
 
         pairs = new String[][] {
                 {"InstantArrayTransfer", "TimeArrayTransfer"},
@@ -68,8 +73,10 @@ public class ReplicateParquetTransferObjects {
                 {"DateTimeUtils.epochNanos", "DateTimeUtils.nanosOfDay"},
                 {"Instant", "LocalTime"}
         };
-        replaceAll(PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_TIME_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
-        replaceAll(PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_TIME_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_TIME_ARRAY_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
+        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_TIME_VECTOR_TRANSFER_PATH, null, NO_EXCEPTIONS,
+                pairs);
 
         pairs = new String[][] {
                 {"io.deephaven.time.DateTimeUtils", "io.deephaven.parquet.table.util.TransferUtils"},
@@ -78,9 +85,9 @@ public class ReplicateParquetTransferObjects {
                 {"DateTimeUtils.epochNanos", "TransferUtils.epochNanosUTC"},
                 {"Instant", "LocalDateTime"}
         };
-        replaceAll(PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_ARRAY_TRANSFER_PATH, null,
+        replaceAll(TASK, PARQUET_INSTANT_ARRAY_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_ARRAY_TRANSFER_PATH, null,
                 NO_EXCEPTIONS, pairs);
-        replaceAll(PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_VECTOR_TRANSFER_PATH, null,
+        replaceAll(TASK, PARQUET_INSTANT_VECTOR_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_VECTOR_TRANSFER_PATH, null,
                 NO_EXCEPTIONS, pairs);
 
         pairs = new String[][] {
@@ -89,7 +96,7 @@ public class ReplicateParquetTransferObjects {
                 {"LocalTime", "LocalDateTime"},
                 {"DateTimeUtils.nanosOfDay", "TransferUtils.epochNanosUTC"}
         };
-        replaceAll(PARQUET_TIME_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, PARQUET_TIME_TRANSFER_PATH, PARQUET_LOCAL_DATE_TIME_TRANSFER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // Additional differences can be generated by Spotless
     }

@@ -16,6 +16,8 @@ import java.util.Map;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateUpdateBy {
+    private static final String TASK = "replicateUpdateBy";
+
     public static void main(String[] args) throws IOException {
         final String[] exemptions = new String[] {
                 "long singletonGroup = QueryConstants.NULL_LONG",
@@ -28,7 +30,7 @@ public class ReplicateUpdateBy {
                 "long getFirstReprocessKey"
         };
 
-        List<String> files = ReplicatePrimitiveCode.charToAllButBoolean(
+        List<String> files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -39,13 +41,13 @@ public class ReplicateUpdateBy {
                 fixupByteBase(f);
             }
         }
-        String objectResult = ReplicatePrimitiveCode.charToObject(
+        String objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java");
         fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true,
                 "this\\(pair, affectingColumns, null, 0, 0, false\\);",
                 "this(pair, affectingColumns, null, 0, 0, false, colType);");
 
-        files = ReplicatePrimitiveCode.charToAll(
+        files = ReplicatePrimitiveCode.charToAll(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/fill/CharFillByOperator.java");
         for (final String f : files) {
             if (f.contains("Int")) {
@@ -59,7 +61,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        objectResult = ReplicatePrimitiveCode.charToObject(
+        objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/fill/CharFillByOperator.java");
         fixupStandardObject(objectResult, "ObjectFillByOperator", false,
                 "super\\(pair, new String\\[\\] \\{ pair.rightColumn \\}\\);",
@@ -68,7 +70,7 @@ public class ReplicateUpdateBy {
                 "public ObjectChunk<Object,", "public ObjectChunk<T,");
 
 
-        files = ReplicatePrimitiveCode.charToIntegers(
+        files = ReplicatePrimitiveCode.charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/CharCumSumOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -79,10 +81,10 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/FloatCumSumOperator.java");
 
-        files = ReplicatePrimitiveCode.shortToAllNumericals(
+        files = ReplicatePrimitiveCode.shortToAllNumericals(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/ShortCumMinMaxOperator.java",
                 null);
         for (final String f : files) {
@@ -101,7 +103,7 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/ShortCumProdOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
 
-        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/CharEMOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
@@ -111,10 +113,10 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/FloatEMOperator.java");
 
-        files = ReplicatePrimitiveCode.charToIntegers(
+        files = ReplicatePrimitiveCode.charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/CharRollingAvgOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -125,10 +127,10 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingminmax/CharRollingMinMaxOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -139,7 +141,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToIntegers(
+        files = ReplicatePrimitiveCode.charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/CharRollingSumOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -150,11 +152,11 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
 
 
-        files = ReplicatePrimitiveCode.charToIntegers(
+        files = ReplicatePrimitiveCode.charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -162,11 +164,11 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/FloatRollingProductOperator.java");
 
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/delta/CharDeltaOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -175,7 +177,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingcount/CharRollingCountOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
@@ -187,7 +189,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingstd/CharRollingStdOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
@@ -198,7 +200,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingwavg/CharRollingWAvgOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
@@ -206,7 +208,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToIntegers(
+        files = ReplicatePrimitiveCode.charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emstd/CharEmStdOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -218,10 +220,10 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emstd/FloatEmStdOperator.java");
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingformula/ringbuffervectorwrapper/CharRingBufferVectorWrapper.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
@@ -229,7 +231,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingformula/CharRollingFormulaOperator.java");
         for (final String f : files) {
             if (f.contains("Int")) {
@@ -241,7 +243,7 @@ public class ReplicateUpdateBy {
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
             throws IOException {
-        for (final String f : ReplicatePrimitiveCode.shortToAllIntegralTypes(shortClass)) {
+        for (final String f : ReplicatePrimitiveCode.shortToAllIntegralTypes(TASK, shortClass)) {
             if (f.contains("Int")) {
                 fixupInteger(f);
             }
@@ -255,7 +257,7 @@ public class ReplicateUpdateBy {
             }
         }
 
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(floatClass);
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK, floatClass);
     }
 
     private static void fixupByteBase(String byteResult) throws IOException {

@@ -44,11 +44,3 @@ configurations {
 artifacts {
     tests jarTests
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/ringbuffer/Aggregating*RingBuffer*.java'
-        )
-    }
-}

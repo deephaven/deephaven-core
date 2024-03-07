@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -19,6 +19,7 @@ public class ReplicateParquetChunkedWriters {
     public static void main(String[] args) throws IOException {
 
         ReplicatePrimitiveCode.intToLongAndFloatingPoints(
+                "replicateParquetChunkedWriters",
                 "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/PlainIntChunkedWriter.java",
                 "int pageSize",
                 "IntBuffer.allocate\\(4\\)",

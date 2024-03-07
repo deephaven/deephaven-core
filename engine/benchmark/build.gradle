@@ -27,22 +27,6 @@ dependencies {
     testRuntimeOnly project(path: ':test-configs')
 }
 
-spotless {
-    java {
-        targetExclude(
-                '**/Boolean*Benchmark.java',
-                '**/Byte*Benchmark.java',
-                '**/Char*Benchmark.java',
-                '**/Short*Benchmark.java',
-                '**/Int*Benchmark.java',
-                '**/Long*Benchmark.java',
-                '**/Float*Benchmark.java',
-                '**/Double*Benchmark.java',
-                '**/Object*Benchmark.java',
-        )
-    }
-}
-
 task jmhRun(type: JavaExec)  {
     new File("$rootDir/tmp/workspace").mkdirs()
     new File("$rootDir/tmp/logs").mkdirs()

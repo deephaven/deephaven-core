@@ -4,6 +4,17 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    cpp {
+        target '**/*.cc', '**/*.h'
+        targetExclude '**/Barrage_generated.h', '**/third_party/**', '**/*.pb.*'
+        licenseHeader '''/*
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ */'''
+    }
 }
 
 // We use the cpp-clients-multi-base image instead of the cpp-client-base,

@@ -3,8 +3,6 @@
  */
 package io.deephaven.chunk;
 
-// @formatter:off
-
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
@@ -22,8 +20,6 @@ import java.nio.CharBuffer;
 // endregion BufferImports
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
-
-// @formatter:on
 
 /**
  * {@link WritableChunk} implementation for char data.

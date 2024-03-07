@@ -11,3 +11,9 @@ dependencies {
 
     Classpaths.inheritGuava(project)
 }
+
+spotless {
+    java {
+        targetExclude '**/*'
+    }
+}

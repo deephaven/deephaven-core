@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import org.apache.commons.io.FileUtils;
@@ -21,11 +21,11 @@ public class ReplicateRangeSearchKernels {
             "engine/table/src/main/java/io/deephaven/engine/table/impl/rangejoin/RangeSearchKernelChar.java";
 
     public static void main(@NotNull final String... args) throws IOException {
-        charToAllButBooleanAndFloats(CHAR_PATH);
+        charToAllButBooleanAndFloats("replicateRangeSearchKernels", CHAR_PATH);
 
-        fixupDouble(charToDouble(CHAR_PATH, Collections.emptyMap()));
-        fixupFloat(charToFloat(CHAR_PATH, Collections.emptyMap()));
-        fixupObject(charToObject(CHAR_PATH));
+        fixupDouble(charToDouble("replicateRangeSearchKernels", CHAR_PATH, Collections.emptyMap()));
+        fixupFloat(charToFloat("replicateRangeSearchKernels", CHAR_PATH, Collections.emptyMap()));
+        fixupObject(charToObject("replicateRangeSearchKernels", CHAR_PATH));
     }
 
     private static void fixupDouble(@NotNull final String doublePath) throws IOException {

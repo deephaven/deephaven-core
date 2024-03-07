@@ -27,13 +27,6 @@ dependencies {
 def generatedFiles = []
 
 
-spotless {
-    java {
-        targetExclude generatedFiles
-    }
-}
-
-
 //////////////// Code Generation ////////////////
 
 // task to clean up generated files
@@ -51,6 +44,12 @@ def gencode = { name, template, output ->
         args = [template, output]
         inputs.file template
         outputs.file output
+    }
+    tasks.named('spotlessJava').configure {
+        mustRunAfter gen
+    }
+    tasks.named('spotlessJavaCheck').configure {
+        mustRunAfter gen
     }
 
     [sourceSets.main.compileJavaTaskName, sourceSets.main.sourcesJarTaskName, sourceSets.main.javadocTaskName].each {

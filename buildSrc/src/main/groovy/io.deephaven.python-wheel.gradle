@@ -1,12 +1,22 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
+    id 'com.diffplug.spotless'
 }
 
 import io.deephaven.python.PythonWheelExtension
 
 project.extensions.create('wheel', PythonWheelExtension, project.objects)
 
+spotless {
+    python {
+        target '**/*.py'
+        targetExclude '**/proto/*_pb2*', '**/setup.py', 'docs/**'
+        licenseHeader '#\n' +
+                '# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending\n' +
+                '#', '[^#]'
+    }
+}
 configurations {
     pythonWheel
     getByName(Dependency.DEFAULT_CONFIGURATION).extendsFrom(pythonWheel)

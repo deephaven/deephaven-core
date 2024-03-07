@@ -198,7 +198,9 @@ public class GenerateMultiSeries {
             final String header3 =
                     headerSpace + headerComment + " AND THEN RUN GenerateFigureImmutable " + headerComment;
 
-            code.append(String.join("\n", header, header2, header3)).append("\n\n");
+            code.append(String.join("\n", header, header2, header3))
+                    .append("\n// @formatter:off\n\n");
+
 
             code.append(generateClasses(skip));
 
