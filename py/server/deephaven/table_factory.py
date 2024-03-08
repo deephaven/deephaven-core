@@ -33,6 +33,7 @@ _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
+_JInputTableStatusListener = jpy.get_type("io.deephaven.engine.util.input.InputTableStatusListener")
 
 
 def empty_table(size: int) -> Table:
@@ -240,7 +241,7 @@ class InputTable(Table):
             raise DHError("the provided table input is not suitable for input tables.")
 
     def add(self, table: Table) -> None:
-        """Writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
+        """Synchronously writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
         that match existing rows will replace those rows.
 
         Args:
@@ -254,8 +255,24 @@ class InputTable(Table):
         except Exception as e:
             raise DHError(e, "add to InputTable failed.") from e
 
+    def add_async(self, table: Table, j_listener: jpy.JType = _JInputTableStatusListener.DEFAULT) -> None:
+        """Asynchronously  writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
+        that match existing rows will replace those rows.
+
+        Args:
+            table (Table): the table that provides the rows to write
+            j_listener (jpy.JType): the listener for asynchronous results
+
+        Raises:
+            DHError
+        """
+        try:
+            self.j_input_table.addAsync(table.j_table, j_listener)
+        except Exception as e:
+            raise DHError(e, "addAsync to InputTable failed.") from e
+
     def delete(self, table: Table) -> None:
-        """Deletes the keys contained in the provided table from this keyed input table. If this method is called on an
+        """Synchronously  deletes the keys contained in the provided table from this keyed input table. If this method is called on an
         append-only input table, an error will be raised.
 
         Args:
@@ -266,6 +283,22 @@ class InputTable(Table):
         """
         try:
             self.j_input_table.delete(table.j_table)
+        except Exception as e:
+            raise DHError(e, "delete data in the InputTable failed.") from e
+
+    def delete_async(self, table: Table, j_listener: jpy.JType = _JInputTableStatusListener.DEFAULT) -> None:
+        """Asynchronously  deletes the keys contained in the provided table from this keyed input table. If this method is called on an
+        append-only input table, an error will be raised.
+
+        Args:
+            table (Table): the table with the keys to delete
+            j_listener (jpy.JType): The listener for asynchronous results
+
+        Raises:
+            DHError
+        """
+        try:
+            self.j_input_table.deleteAsync(table.j_table, j_listener)
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
 
