@@ -146,7 +146,7 @@ public class SeekRow implements Function<Table, Long> {
      * @param table the table to check for sorted-ness
      * @param start the starting index to search
      * @param end the ending index to search
-     * @param findFirst whether to find the first or last occurence (false for last)
+     * @param findFirst whether to find the first or last occurrence (false for last)
      * @param isAscending whether the table is sorted in ascending order (false for descending)
      * @return the index of the first/last occurence of the target value, -1 if not found
      */
