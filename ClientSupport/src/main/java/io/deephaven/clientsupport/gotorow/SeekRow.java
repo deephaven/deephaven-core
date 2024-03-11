@@ -141,7 +141,7 @@ public class SeekRow implements Function<Table, Long> {
     }
 
     /**
-     * Finds the first/last occurence of the target value by using binary search
+     * Finds the first/last occurrence of the target value by using binary search
      *
      * @param table the table to check for sorted-ness
      * @param start the starting index to search
