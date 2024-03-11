@@ -183,7 +183,7 @@ def read(
             elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
                 j_table = _JParquetTools.readFlatPartitionedTable(path, read_instructions, j_table_definition)
             elif file_layout == ParquetFileLayout.KV_PARTITIONED:
-                j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions, j_table_definition)
+                j_table = _JParquetTools.readKeyValuePartitionedTable(path, read_instructions, j_table_definition)
             elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
                 raise DHError(f"file_layout={ParquetFileLayout.METADATA_PARTITIONED} with table_definition not currently supported")
             else:
@@ -196,7 +196,7 @@ def read(
             elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
                 j_table = _JParquetTools.readFlatPartitionedTable(path, read_instructions)
             elif file_layout == ParquetFileLayout.KV_PARTITIONED:
-                j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions)
+                j_table = _JParquetTools.readKeyValuePartitionedTable(path, read_instructions)
             elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
                 j_table = _JParquetTools.readPartitionedTableWithMetadata(_JFile(path), read_instructions)
             else:

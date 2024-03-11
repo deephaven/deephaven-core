@@ -25,7 +25,8 @@ import static io.deephaven.parquet.table.layout.ParquetFileHelper.fileNameMatche
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private static ParquetTableLocationKey locationKey(URI uri, @NotNull final ParquetInstructions readInstructions) {
+    private static ParquetTableLocationKey locationKey(@NotNull final URI uri,
+            @NotNull final ParquetInstructions readInstructions) {
         return new ParquetTableLocationKey(uri, 0, null, readInstructions);
     }
 

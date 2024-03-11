@@ -60,8 +60,17 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException {
+    public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+            throws IOException {
         try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
+            childFileStream.map(Path::toUri).forEach(processor);
+        }
+    }
+
+    @Override
+    public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+            throws IOException {
+        try (final Stream<Path> childFileStream = Files.walk(Path.of(directoryURI))) {
             childFileStream.map(Path::toUri).forEach(processor);
         }
     }

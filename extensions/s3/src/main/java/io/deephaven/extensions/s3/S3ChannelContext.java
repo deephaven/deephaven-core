@@ -102,7 +102,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         return size;
     }
 
-    public int fill(final long position, ByteBuffer dest) throws IOException {
+    int fill(final long position, ByteBuffer dest) throws IOException {
         final int destRemaining = dest.remaining();
         if (destRemaining == 0) {
             return 0;

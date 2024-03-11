@@ -110,13 +110,27 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
+        applyToChildURIsHelper(directoryURI, processor, false);
+    }
+
+    @Override
+    public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+            throws IOException {
+        applyToChildURIsHelper(directoryURI, processor, true);
+    }
+
+    private void applyToChildURIsHelper(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor,
+            final boolean isRecursive) throws IOException {
         final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directoryURI);
         final String bucketName = s3DirectoryURI.bucket().orElseThrow();
         final String directoryKey = s3DirectoryURI.key().orElseThrow();
         final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                 .bucket(bucketName)
-                .prefix(s3DirectoryURI.key().orElseThrow())
-                .delimiter("/");
+                .prefix(s3DirectoryURI.key().orElseThrow());
+        if (!isRecursive) {
+            // Add a delimiter to the request if we don't want to fetch all files recursively
+            requestBuilder.delimiter("/");
+        }
         String continuationToken = null;
         final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
         ListObjectsV2Response response;

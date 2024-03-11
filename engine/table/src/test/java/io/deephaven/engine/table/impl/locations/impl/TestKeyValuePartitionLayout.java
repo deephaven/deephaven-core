@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
-import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout.LocationTableBuilder;
+import io.deephaven.engine.table.impl.locations.local.LocationTableBuilder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;

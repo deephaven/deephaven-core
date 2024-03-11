@@ -111,9 +111,15 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor)
+    public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
         wrappedProvider.applyToChildURIs(directoryURI, processor);
+    }
+
+    @Override
+    public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+            throws IOException {
+        wrappedProvider.applyToChildURIsRecursively(directoryURI, processor);
     }
 
     @Nullable

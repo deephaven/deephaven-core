@@ -4,32 +4,37 @@ import io.deephaven.csv.CsvTools;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
+import io.deephaven.engine.table.impl.locations.local.LocationTableBuilder;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * {@link KeyValuePartitionLayout.LocationTableBuilder LocationTableBuilder} implementation that uses the default
- * Deephaven CSV parser for type inference and coercion.
+ * {@link LocationTableBuilder LocationTableBuilder} implementation that uses the default Deephaven CSV parser for type
+ * inference and coercion.
  */
-public final class LocationTableBuilderCsv implements KeyValuePartitionLayout.LocationTableBuilder {
+public final class LocationTableBuilderCsv implements LocationTableBuilder {
 
     private static final String LS = System.lineSeparator();
 
-    private final File tableRootDirectory;
+    private final URI tableRootDirectory;
 
     private List<String> partitionKeys;
     private StringBuilder csvBuilder;
     private int locationCount;
 
     public LocationTableBuilderCsv(@NotNull final File tableRootDirectory) {
+        this(tableRootDirectory.toURI());
+    }
+
+    LocationTableBuilderCsv(@NotNull final URI tableRootDirectory) {
         this.tableRootDirectory = tableRootDirectory;
     }
 

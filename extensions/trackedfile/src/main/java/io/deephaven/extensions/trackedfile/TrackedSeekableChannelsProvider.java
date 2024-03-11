@@ -82,6 +82,14 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         }
     }
 
+    @Override
+    public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+            throws IOException {
+        try (final Stream<Path> childFileStream = Files.walk(Path.of(directoryURI))) {
+            childFileStream.map(Path::toUri).forEach(processor);
+        }
+    }
+
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {
 
         private static final AtomicIntegerFieldUpdater<TruncateOnceFileCreator> FIRST_TIME_UPDATER =

@@ -37,42 +37,6 @@ import java.util.function.Supplier;
  */
 public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements TableLocationKeyFinder<TLK> {
 
-    /**
-     * Interface for implementations to perform type coercion and specify a table of partition values for observed table
-     * locations.
-     */
-    public interface LocationTableBuilder {
-
-        /**
-         * Register an ordered collection of {@link String strings} representing partition keys. This should be called
-         * exactly once, and before any calls to {@link #acceptLocation(Collection) acceptLocation}.
-         *
-         * @param partitionKeys The partition keys to register
-         */
-        void registerPartitionKeys(@NotNull Collection<String> partitionKeys);
-
-        /**
-         * Accept an ordered collection of {@link String strings} representing partition values for a particular table
-         * location, parallel to a previously-registered collection of partition keys. Should be called after a single
-         * call to {@link #registerPartitionKeys(Collection) registerPartitionKeys}.
-         * 
-         * @param partitionValueStrings The partition values to accept. Must have the same length as the
-         *        previously-registered partition keys.
-         */
-        void acceptLocation(@NotNull Collection<String> partitionValueStrings);
-
-        /**
-         * Build a {@link Table} with one column per partition key specified in
-         * {@link #registerPartitionKeys(Collection) registerPartitionKeys}, and one row per location provided via
-         * {@link #acceptLocation(Collection) acceptLocation}, with cell values parallel to that location's partition
-         * values after any appropriate conversion has been applied. The implementation is responsible for determining
-         * the appropriate column types.
-         *
-         * @return The {@link Table}
-         */
-        Table build();
-    }
-
     private final File tableRootDirectory;
     private final Predicate<Path> pathFilter;
     private final Supplier<LocationTableBuilder> locationTableBuilderFactory;
@@ -180,7 +144,24 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
         }
 
         final Table locationTable = locationTableBuilder.build();
+        buildLocationKeys(locationTable, targetFiles, locationKeyObserver, keyFactory);
+    }
 
+    /**
+     * Build location keys from a location table and a collection of target files.
+     *
+     * @param <TABLE_LOCATION_KEY> The type of the location key
+     * @param <TARGET_FILE_TYPE> The type of the target files
+     * @param locationTable The location table
+     * @param targetFiles The target files
+     * @param locationKeyObserver A consumer which will receive the location keys
+     * @param keyFactory A factory for creating location keys
+     */
+    public static <TABLE_LOCATION_KEY extends TableLocationKey, TARGET_FILE_TYPE> void buildLocationKeys(
+            @NotNull final Table locationTable,
+            @NotNull final Deque<TARGET_FILE_TYPE> targetFiles,
+            @NotNull final Consumer<TABLE_LOCATION_KEY> locationKeyObserver,
+            final BiFunction<TARGET_FILE_TYPE, Map<String, Comparable<?>>, TABLE_LOCATION_KEY> keyFactory) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
         // Note that we allow the location table to define partition priority order.
         final String[] partitionKeys = locationTable.getDefinition().getColumnNamesArray();

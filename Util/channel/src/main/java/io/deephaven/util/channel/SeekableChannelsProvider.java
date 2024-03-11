@@ -116,5 +116,15 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @param processor A method to apply to the URIs in the directory
      */
     void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
+    // TODO where should this code be kept, because it doesn't have anything to do with the channel provider
+    // but it does need the s3 stuff, like how to build a client, etc. that is present here. Also, what should I name
+    // it?
 
+    /**
+     * Applies the supplied action on the list of file URIs contained inside the given directory recursively.
+     *
+     * @param directoryURI The URI of the directory to list
+     * @param processor A method to apply to the URIs in the directory
+     */
+    void applyToChildURIsRecursively(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
 }
