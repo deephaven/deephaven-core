@@ -41,12 +41,12 @@ public final class ParquetFileWriter {
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
-    private final File metadataFilePath;
+    private final String destFilePathForMetadata;
     private final ParquetMetadataFileWriter metadataFileWriter;
 
     public ParquetFileWriter(
-            final String filePath,
-            final File metadataFilePath,
+            final String destFilePath,
+            final String destFilePathForMetadata,
             final SeekableChannelsProvider channelsProvider,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
@@ -57,12 +57,12 @@ public final class ParquetFileWriter {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        bufferedOutput = new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(filePath, false),
+        bufferedOutput = new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(destFilePath, false),
                 PARQUET_OUTPUT_BUFFER_SIZE);
         bufferedOutput.write(MAGIC);
         this.type = type;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
-        this.metadataFilePath = metadataFilePath;
+        this.destFilePathForMetadata = destFilePathForMetadata;
         this.metadataFileWriter = metadataFileWriter;
     }
 
@@ -80,7 +80,7 @@ public final class ParquetFileWriter {
         final ParquetMetadata footer =
                 new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
         serializeFooter(footer, bufferedOutput);
-        metadataFileWriter.addParquetFileMetadata(metadataFilePath, footer);
+        metadataFileWriter.addParquetFileMetadata(destFilePathForMetadata, footer);
         // Flush any buffered data and close the channel
         bufferedOutput.close();
         compressorAdapter.close();

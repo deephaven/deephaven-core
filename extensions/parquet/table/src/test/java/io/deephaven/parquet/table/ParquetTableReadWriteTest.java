@@ -606,8 +606,8 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
                 ColumnDefinition.ofInt("PC2").withPartitioning(),
-                ColumnDefinition.ofLong("I"));
-        final Table inputData = ((QueryTable) TableTools.emptyTable(20)
+                ColumnDefinition.ofLong("I").withGrouping());
+        final Table inputData = ((QueryTable) TableTools.emptyTable(1_000_000)
                 .updateView("PC1 = (int)(ii%3)",
                         "PC2 = (int)(ii%2)",
                         "I = ii"))
@@ -630,10 +630,12 @@ public final class ParquetTableReadWriteTest {
         }
 
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        fromDisk.where("I == 3").select();
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
         final Table fromDiskWithMetadata = readTable(commonMetadata);
+        fromDiskWithMetadata.where("I == 3").select();
         assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
     }
 

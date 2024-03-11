@@ -37,7 +37,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     final PageCache<ATTR> pageCache;
-    private final ColumnChunkReader columnChunkReader;
+    final ColumnChunkReader columnChunkReader;
     private final long mask;
     private final ToPage<ATTR, ?> toPage;
 

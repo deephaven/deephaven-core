@@ -866,7 +866,7 @@ public class ParquetTools {
                     shadowFiles.add(shadowDestFiles[tableIdx]);
                     final Table source = sources[tableIdx];
                     ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
-                            destinations[tableIdx], Collections.emptyMap(),
+                            destinations[tableIdx].getPath(), Collections.emptyMap(),
                             (Map<String, ParquetTableWriter.GroupingColumnWritingInfo>) null, metadataFileWriter,
                             computedCache);
                 }
@@ -890,7 +890,7 @@ public class ParquetTools {
 
                     final Table sourceTable = sources[tableIdx];
                     ParquetTableWriter.write(sourceTable, definition, writeInstructions,
-                            shadowDestFiles[tableIdx].getPath(), tableDestination, Collections.emptyMap(),
+                            shadowDestFiles[tableIdx].getPath(), tableDestination.getPath(), Collections.emptyMap(),
                             groupingColumnWritingInfoMap, metadataFileWriter, computedCache);
                 }
             }
@@ -904,7 +904,8 @@ public class ParquetTools {
                 commonMetadataDestFile = new File(metadataRootDir, COMMON_METADATA_FILE_NAME);
                 shadowCommonMetadataFile = ParquetTools.getShadowFile(commonMetadataDestFile);
                 shadowFiles.add(shadowCommonMetadataFile);
-                metadataFileWriter.writeMetadataFiles(shadowMetadataFile, shadowCommonMetadataFile);
+                metadataFileWriter.writeMetadataFiles(shadowMetadataFile.getAbsolutePath(),
+                        shadowCommonMetadataFile.getAbsolutePath());
             } else {
                 metadataDestFile = shadowMetadataFile = commonMetadataDestFile = shadowCommonMetadataFile = null;
             }
@@ -917,7 +918,7 @@ public class ParquetTools {
                     final Map<String, ParquetTableWriter.GroupingColumnWritingInfo> gcwim =
                             groupingColumnWritingInfoMaps.get(tableIdx);
                     for (final ParquetTableWriter.GroupingColumnWritingInfo gfwi : gcwim.values()) {
-                        final File indexDestFile = gfwi.metadataFilePath;
+                        final File indexDestFile = gfwi.destFileForMetadata;
                         final File shadowIndexFile = gfwi.destFile;
                         destFiles.add(indexDestFile);
                         installShadowFile(indexDestFile, shadowIndexFile);
