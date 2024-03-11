@@ -64,7 +64,7 @@ public class SeekRow implements Function<Table, Long> {
                     }
                 }
                 // no values before, loop back around and find the last value
-                return findEdgeOccurence(table, index, startingRow, index.size() - 1, false,
+                return findEdgeOccurrence(table, index, startingRow, index.size() - 1, false,
                         order.get() == SortingOrder.Ascending);
             } else {
                 // check next row
@@ -76,7 +76,7 @@ public class SeekRow implements Function<Table, Long> {
                     }
                 }
                 // no values after, loop back around and find the first value
-                return findEdgeOccurence(table, index, 0, startingRow, true, order.get() == SortingOrder.Ascending);
+                return findEdgeOccurrence(table, index, 0, startingRow, true, order.get() == SortingOrder.Ascending);
             }
         }
 
@@ -148,7 +148,7 @@ public class SeekRow implements Function<Table, Long> {
      * @param end the ending index to search
      * @param findFirst whether to find the first or last occurrence (false for last)
      * @param isAscending whether the table is sorted in ascending order (false for descending)
-     * @return the index of the first/last occurence of the target value, -1 if not found
+     * @return the index of the first/last occurrence of the target value, -1 if not found
      */
     private long findEdgeOccurrence(Table table, RowSet index, long start, long end, boolean findFirst,
             boolean isAscending) {
