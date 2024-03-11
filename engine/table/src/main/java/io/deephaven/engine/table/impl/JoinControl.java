@@ -206,7 +206,7 @@ public class JoinControl {
     }
 
     boolean useSymbolTables(long leftSize, long leftSymbolSize, long rightSize, long rightSymbolSize) {
-        final long proposedSymbolSize = Math.min(rightSymbolSize, leftSymbolSize);
+        final long proposedSymbolSize = Math.min(leftSymbolSize, rightSymbolSize);
         return proposedSymbolSize <= leftSize / 2 || proposedSymbolSize <= rightSize / 2;
     }
 
