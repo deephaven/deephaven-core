@@ -58,7 +58,7 @@ public class SeekRow implements Function<Table, Long> {
                 // check prev row
                 if (startingRow != 0) {
                     final Comparable prevValue =
-                            (Comparable) table.getColumnSource(columnName).get((int) index.get((int) startingRow - 1));
+                            (Comparable) table.getColumnSource(columnName).get(index.get(startingRow - 1));
                     if (nullSafeCompare(prevValue, (Comparable) seekValue) == 0) {
                         return startingRow - 1;
                     }
@@ -70,7 +70,7 @@ public class SeekRow implements Function<Table, Long> {
                 // check next row
                 if (startingRow != index.size() - 1) {
                     final Comparable nextValue =
-                            (Comparable) table.getColumnSource(columnName).get((int) index.get((int) startingRow + 1));
+                            (Comparable) table.getColumnSource(columnName).get(index.get(startingRow + 1));
                     if (nullSafeCompare(nextValue, (Comparable) seekValue) == 0) {
                         return startingRow + 1;
                     }
