@@ -150,7 +150,7 @@ public class SeekRow implements Function<Table, Long> {
      * @param isAscending whether the table is sorted in ascending order (false for descending)
      * @return the index of the first/last occurence of the target value, -1 if not found
      */
-    private long findEdgeOccurence(Table table, RowSet index, long start, long end, boolean findFirst,
+    private long findEdgeOccurrence(Table table, RowSet index, long start, long end, boolean findFirst,
             boolean isAscending) {
         long result = -1;
 
