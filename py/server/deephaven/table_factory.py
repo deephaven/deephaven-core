@@ -231,10 +231,13 @@ class DynamicTableWriter(JObjectWrapper):
 
 
 class InputTable(Table):
-    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it."""
+    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it.
 
-    def __init__(self, source_table: Table):
-        super().__init__(source_table)
+    Users should always create InputTables through factory methods rather than directly from the constructor.
+    """
+
+    def __init__(self, j_table: jpy.JType):
+        super().__init__(j_table)
         self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
         if not self.j_input_table:
             raise DHError("the provided table input is not suitable for input tables.")
@@ -323,13 +326,13 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
 
         key_cols = to_sequence(key_cols)
         if key_cols:
-            source_table = _JKeyedArrayBackedInputTable.make(j_arg_1, key_cols)
+            j_table = _JKeyedArrayBackedInputTable.make(j_arg_1, key_cols)
         else:
-            source_table = _JAppendOnlyArrayBackedInputTable.make(j_arg_1)
+            j_table = _JAppendOnlyArrayBackedInputTable.make(j_arg_1)
     except Exception as e:
         raise DHError(e, "failed to create an in-memory InputTable.") from e
 
-    return InputTable(source_table)
+    return InputTable(j_table)
 
 
 def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
