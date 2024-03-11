@@ -144,8 +144,7 @@ public class ParquetTableWriter {
                 }
             }
             write(t, definition, writeInstructions, destFilePath, destFilePathForMetadata, incomingMeta,
-                    tableInfoBuilder,
-                    metadataFileWriter, computedCache);
+                    tableInfoBuilder, metadataFileWriter, computedCache);
         } catch (Exception e) {
             if (cleanupFiles != null) {
                 for (final File cleanupFile : cleanupFiles) {
@@ -193,8 +192,7 @@ public class ParquetTableWriter {
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
             final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
                     columnSourceMap, destFilePath, destFilePathForMetadata, writeInstructions, tableMeta,
-                    tableInfoBuilder,
-                    metadataFileWriter);
+                    tableInfoBuilder, metadataFileWriter);
             // Given the transformation, do not use the original table's "definition" for writing
             write(t, writeInstructions, parquetFileWriter, computedCache);
         }
