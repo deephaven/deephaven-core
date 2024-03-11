@@ -460,11 +460,6 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                             // managed by the appropriate scope for the caller's own use. Further validation is deferred
                             // as in add.
                             dataIndex = dataIndexFactory.get();
-                            // if (!isValidAndLive(dataIndex)) {
-                            // throw new IllegalArgumentException(String.format(
-                            // "Computed an index %s for key columns %s that is invalid or no longer live",
-                            // dataIndex, keyColumns));
-                            // }
                             cache.dataIndexReference = new WeakReference<>(dataIndex);
                         }
                     }

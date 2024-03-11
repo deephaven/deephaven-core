@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.BooleanUtils;
@@ -41,8 +42,10 @@ class BucketingContext implements SafeCloseable {
 
     final Table leftDataIndexTable;
     final ColumnSource<?>[] leftDataIndexSources;
+    final ColumnSource<RowSet> leftDataIndexRowSetSource;
     final Table rightDataIndexTable;
     final ColumnSource<?>[] rightDataIndexSources;
+    final ColumnSource<RowSet> rightDataIndexRowSetSource;
 
     final JoinControl.BuildParameters buildParameters;
 
@@ -87,26 +90,31 @@ class BucketingContext implements SafeCloseable {
         if (leftDataIndex == null) {
             leftDataIndexTable = null;
             leftDataIndexSources = null;
+            leftDataIndexRowSetSource = null;
         } else {
             leftDataIndexTable = leftDataIndex.table();
             leftDataIndexSources = Arrays.stream(columnsToMatch)
                     .map(mp -> leftDataIndexTable.getColumnSource(mp.leftColumn))
                     .toArray(ColumnSource[]::new);
+            leftDataIndexRowSetSource = leftDataIndex.rowSetColumn();
         }
         if (uniqueRightValues) {
             rightDataIndexTable = null;
             rightDataIndexSources = null;
+            rightDataIndexRowSetSource = null;
             buildParameters = control.buildParametersForUniqueRights(leftTable, leftDataIndexTable, rightTable);
         } else {
             final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
             if (rightDataIndex == null) {
                 rightDataIndexTable = null;
                 rightDataIndexSources = null;
+                rightDataIndexRowSetSource = null;
             } else {
                 rightDataIndexTable = rightDataIndex.table();
                 rightDataIndexSources = Arrays.stream(columnsToMatch)
                         .map(mp -> rightDataIndexTable.getColumnSource(mp.rightColumn))
                         .toArray(ColumnSource[]::new);
+                rightDataIndexRowSetSource = rightDataIndex.rowSetColumn();
             }
             buildParameters = control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
         }
