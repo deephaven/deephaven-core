@@ -16,8 +16,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn, Column
 from deephaven.dtypes import DType, Duration, Instant
 from deephaven.execution_context import ExecutionContext
-from deephaven.jcompat import j_lambda
-from deephaven.jcompat import to_sequence
+from deephaven.jcompat import j_lambda, j_list_to_list, to_sequence
 from deephaven.table import Table
 from deephaven.update_graph import auto_locking_ctx
 
