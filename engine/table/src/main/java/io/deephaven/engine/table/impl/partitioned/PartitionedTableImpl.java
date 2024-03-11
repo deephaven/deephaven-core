@@ -286,6 +286,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final UnaryOperator<Table> transformer,
             final boolean expectRefreshingResults,
             @NotNull final Dependency... dependencies) {
+        // TODO-RWC: We have a dependency issue if we use data indexes in transforms.
         final PartitionedTable resultPartitionedTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();

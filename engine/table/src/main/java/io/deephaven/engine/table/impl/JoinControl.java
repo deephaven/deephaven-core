@@ -3,15 +3,20 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.*;
 
 @VisibleForTesting
 public class JoinControl {
@@ -46,7 +51,31 @@ public class JoinControl {
     @Nullable
     DataIndex dataIndexToUse(Table table, ColumnSource<?>[] sources) {
         final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
-        return indexer == null ? null : indexer.getDataIndex(sources);
+        if (indexer == null) {
+            return null;
+        }
+        // TODO-RWC: Get this right. I'm not sure it's the right approach from a processing thread
+        final DataIndex dataIndex = LivenessScopeStack.computeEnclosed(
+                // DataIndexer will only give us valid, live data indexes.
+                () -> indexer.getDataIndex(sources),
+                // Ensure that we use an enclosing scope to manage the data index if needed.
+                table::isRefreshing,
+                // Don't keep the data index managed. Joins hold the update graph lock, so the index can't go stale,
+                // and we'll only use it during instantiation.
+                di -> false);
+        if (dataIndex == null || !dataIndex.isRefreshing()) {
+            return dataIndex;
+        }
+        final UpdateGraph updateGraph = table.getUpdateGraph();
+        Assert.eq(updateGraph, "table.getUpdateGraph()",
+                dataIndex.table().getUpdateGraph(), "dataIndex.table().getUpdateGraph()");
+        if (updateGraph.currentThreadProcessesUpdates()
+                && !dataIndex.table().satisfied(updateGraph.clock().currentStep())) {
+            // We're trying to use a data index without proper dependency management, probably from a partitioned
+            // table transform.
+            return null;
+        }
+        return dataIndex;
     }
 
     static final class BuildParameters {
@@ -95,84 +124,100 @@ public class JoinControl {
     BuildParameters buildParameters(
             @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
             @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+
+        // If we're going to do our initial build from a data index, choose the hash table size accordingly.
+        // Else, choose our default initial size.
+        final int leftBuildSize = leftDataIndexTable != null
+                ? tableSize(leftDataIndexTable.size())
+                : initialBuildSize();
+        final int rightBuildSize = rightDataIndexTable != null
+                ? tableSize(rightDataIndexTable.size())
+                : initialBuildSize();
+
         final BuildParameters.From firstBuildFrom;
+        final int hashTableSize;
         if (leftTable.isRefreshing()) {
             if (rightTable.isRefreshing()) {
                 // Both refreshing: build from largest available data index, or largest table if no indexes
                 if (leftDataIndexTable != null) {
                     if (rightDataIndexTable != null) {
                         if (leftDataIndexTable.size() >= rightDataIndexTable.size()) {
-                            firstBuildFrom = BuildParameters.From.LeftDataIndex;
+                            firstBuildFrom = LeftDataIndex;
                         } else {
-                            firstBuildFrom = BuildParameters.From.RightDataIndex;
+                            firstBuildFrom = RightDataIndex;
                         }
                     } else {
-                        firstBuildFrom = BuildParameters.From.LeftDataIndex;
+                        firstBuildFrom = LeftDataIndex;
                     }
                 } else if (rightDataIndexTable != null) {
-                    firstBuildFrom = BuildParameters.From.RightDataIndex;
+                    firstBuildFrom = RightDataIndex;
                 } else if (leftTable.size() >= rightTable.size()) {
-                    firstBuildFrom = BuildParameters.From.LeftInput;
+                    firstBuildFrom = LeftInput;
                 } else {
-                    firstBuildFrom = BuildParameters.From.RightInput;
+                    firstBuildFrom = RightInput;
                 }
+
+                // We need to hold states from both sides. We'll need a table at least big enough for the largest side.
+                hashTableSize = Math.max(leftBuildSize, rightBuildSize);
             } else {
                 // Left refreshing, right static: build from right data index if available, else right table
                 if (rightDataIndexTable != null) {
-                    firstBuildFrom = BuildParameters.From.RightDataIndex;
+                    firstBuildFrom = RightDataIndex;
                 } else {
-                    firstBuildFrom = BuildParameters.From.RightInput;
+                    firstBuildFrom = RightInput;
                 }
+
+                // We need to hold states from right, only.
+                hashTableSize = rightBuildSize;
             }
         } else if (rightTable.isRefreshing()) {
             // Left static, right refreshing: build from left data index if available, else left table
             if (leftDataIndexTable != null) {
-                firstBuildFrom = BuildParameters.From.LeftDataIndex;
+                firstBuildFrom = LeftDataIndex;
             } else {
-                firstBuildFrom = BuildParameters.From.LeftInput;
+                firstBuildFrom = LeftInput;
             }
+
+            // We need to hold states from left, only.
+            hashTableSize = leftBuildSize;
         } else {
             // Both static: build from smallest available data index or smallest table; ties go to smallest table
             if (leftDataIndexTable != null) {
                 if (rightDataIndexTable != null) {
                     if (leftDataIndexTable.size() <= rightDataIndexTable.size()) {
-                        firstBuildFrom = BuildParameters.From.LeftDataIndex;
+                        firstBuildFrom = LeftDataIndex;
                     } else {
-                        firstBuildFrom = BuildParameters.From.RightDataIndex;
+                        firstBuildFrom = RightDataIndex;
                     }
                 } else if (leftDataIndexTable.size() < rightTable.size()) {
-                    firstBuildFrom = BuildParameters.From.LeftDataIndex;
+                    firstBuildFrom = LeftDataIndex;
                 } else {
-                    firstBuildFrom = BuildParameters.From.RightInput;
+                    firstBuildFrom = RightInput;
                 }
             } else if (rightDataIndexTable != null) {
                 if (leftTable.size() <= rightDataIndexTable.size()) {
-                    firstBuildFrom = BuildParameters.From.LeftInput;
+                    firstBuildFrom = LeftInput;
                 } else {
-                    firstBuildFrom = BuildParameters.From.RightDataIndex;
+                    firstBuildFrom = RightDataIndex;
                 }
             } else if (leftTable.size() <= rightTable.size()) {
-                firstBuildFrom = BuildParameters.From.LeftInput;
+                firstBuildFrom = LeftInput;
             } else {
-                firstBuildFrom = BuildParameters.From.RightInput;
+                firstBuildFrom = RightInput;
             }
-        }
-        // If we're going to do our initial build from a data index, choose the hash table size accordingly.
-        // Else, choose our default initial size.
-        final int hashTableSize;
-        switch (firstBuildFrom) {
-            case LeftDataIndex:
-                hashTableSize = tableSize(leftDataIndexTable.size());
-                break;
-            case RightDataIndex:
-                hashTableSize = tableSize(rightDataIndexTable.size());
-                break;
-            case LeftInput:
-            case RightInput:
-                hashTableSize = initialBuildSize();
-                break;
-            default:
-                throw new IllegalStateException("Unexpected first build from " + firstBuildFrom);
+
+            switch (firstBuildFrom) {
+                case LeftDataIndex: // Fall through
+                case LeftInput:
+                    hashTableSize = leftBuildSize;
+                    break;
+                case RightDataIndex: // Fall through
+                case RightInput:
+                    hashTableSize = rightBuildSize;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected first build from " + firstBuildFrom);
+            }
         }
         return new BuildParameters(firstBuildFrom, hashTableSize);
     }
@@ -183,11 +228,25 @@ public class JoinControl {
      */
     BuildParameters buildParametersForUniqueRights(
             @NotNull final Table leftTable, @Nullable Table leftDataIndexTable, @NotNull final Table rightTable) {
-        final BuildParameters result = buildParameters(leftTable, leftDataIndexTable, rightTable, rightTable);
-        if (result.firstBuildFrom() == BuildParameters.From.RightDataIndex) {
-            return new BuildParameters(BuildParameters.From.RightInput, result.hashTableSize());
-        }
-        return result;
+        /*
+         * The "ideal" logic is probably to treat rightTable as its own data index table, and then fix up the
+         * firstBuildFrom to not be RightDataIndex:
+         * @formatter:off
+         *     final BuildParameters result = buildParameters(leftTable, leftDataIndexTable, rightTable, rightTable);
+         *     if (result.firstBuildFrom() == BuildParameters.From.RightDataIndex) {
+         *         return new BuildParameters(BuildParameters.From.RightInput, result.hashTableSize());
+         *     }
+         * @formatter:on
+         * That said, the existing logic always builds from the right, so we codify that here for consistency.
+         * Meanwhile, the existing static state manager implementations always build state even during left probes, so
+         * we take left sizes into account for the initial hash table size as well.
+         */
+        final int leftBuildSize = leftDataIndexTable != null
+                ? tableSize(leftDataIndexTable.size())
+                : initialBuildSize();
+        final int rightBuildSize = tableSize(rightTable.size());
+        final int hashTableSize = Math.max(leftBuildSize, rightBuildSize);
+        return new BuildParameters(RightInput, hashTableSize);
     }
 
     boolean considerSymbolTables(

@@ -25,9 +25,6 @@ import java.util.Map;
 
 class NaturalJoinHelper {
 
-    /** The fraction threshold for an index table to be used instead of the source table. */
-    private static double INDEX_THRESHOLD_FRACTION = 0.5;
-
     private NaturalJoinHelper() {} // static use only
 
     static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
@@ -57,8 +54,8 @@ class NaturalJoinHelper {
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
-        try (final BucketingContext bucketingContext =
-                new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
+        try (final BucketingContext bucketingContext = new BucketingContext("naturalJoin",
+                leftTable, rightTable, columnsToMatch, columnsToAdd, control, true)) {
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
@@ -77,11 +74,11 @@ class NaturalJoinHelper {
                         leftRedirections, control.getRedirectionType(leftTable));
 
                 final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
-
-                leftTable
-                        .addUpdateListener(new LeftTickingListener(bucketingContext.listenerDescription, columnsToMatch,
-                                columnsToAdd, leftTable, result, rowRedirection, jsm, bucketingContext.leftSources));
-
+                if (leftTable.isRefreshing()) {
+                    leftTable.addUpdateListener(new LeftTickingListener(
+                            bucketingContext.listenerDescription, columnsToMatch, columnsToAdd, leftTable,
+                            result, rowRedirection, jsm, bucketingContext.leftSources));
+                }
                 return result;
             }
 
@@ -91,45 +88,23 @@ class NaturalJoinHelper {
             }
 
             final WritableRowRedirection rowRedirection;
-            final DataIndexer leftDataIndexer = DataIndexer.existingOf(leftTable.getRowSet());
-            final boolean useIndex;
-            if (bucketingContext.useLeftIndex) {
-                final DataIndex leftDataIndex =
-                        leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
-                // Using the index has overhead, so make sure the payoff is sufficient.
-                useIndex = leftDataIndex.table().size() <= leftTable.size() * INDEX_THRESHOLD_FRACTION;
-            } else {
-                useIndex = false;
-            }
 
             if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
-                // the right side is unique, so we should have a state for it; the left side can have many
-                // duplicates so we would prefer to use the smaller table
-                final int tableSize = control.tableSizeForRightBuild(rightTable);
-
                 final BothIncrementalNaturalJoinStateManager jsm =
                         TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
                                 bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                tableSize, control.getMaximumLoadFactor(),
+                                bucketingContext.buildParameters.hashTableSize(), control.getMaximumLoadFactor(),
                                 control.getTargetLoadFactor());
                 jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
 
                 try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
                         jsm.makeInitialBuildContext()) {
 
-                    if (useIndex) {
-                        final DataIndex leftDataIndex =
-                                leftDataIndexer.getDataIndex(bucketingContext.originalLeftSources);
-                        final Table leftIndexTable = leftDataIndex.table();
-                        final ColumnSource<RowSet> rowSetSource = leftDataIndex.rowSetColumn();
-                        final ColumnSource<?>[] indexKeySources =
-                                leftDataIndex.indexKeyColumns(bucketingContext.originalLeftSources);
-                        final ColumnSource<?>[] reinterpretedIndexKeySources =
-                                ReinterpretUtils.maybeConvertToPrimitive(indexKeySources);
-
-                        jsm.decorateLeftSide(leftIndexTable.getRowSet(), reinterpretedIndexKeySources, ibc);
+                    if (bucketingContext.leftDataIndexTable != null) {
+                        jsm.decorateLeftSide(bucketingContext.leftDataIndexTable.getRowSet(),
+                                bucketingContext.leftDataIndexSources, ibc);
                         rowRedirection = jsm.buildGroupedRowRedirection(
-                                leftTable, exactMatch, ibc, rowSetSource,
+                                leftTable, exactMatch, ibc, bucketingContext.leftDataIndexRowSetSource,
                                 control.getRedirectionType(leftTable));
                     } else {
                         jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, ibc);
@@ -148,9 +123,8 @@ class NaturalJoinHelper {
 
                 final ChunkedMergedJoinListener mergedJoinListener = new ChunkedMergedJoinListener(
                         leftTable, rightTable, bucketingContext.leftSources, bucketingContext.rightSources,
-                        columnsToMatch,
-                        columnsToAdd, leftRecorder, rightRecorder, result, rowRedirection, jsm, exactMatch,
-                        bucketingContext.listenerDescription);
+                        columnsToMatch, columnsToAdd, leftRecorder, rightRecorder, result, rowRedirection, jsm,
+                        exactMatch, bucketingContext.listenerDescription);
                 leftRecorder.setMergedListener(mergedJoinListener);
                 rightRecorder.setMergedListener(mergedJoinListener);
 
@@ -403,7 +377,7 @@ class NaturalJoinHelper {
                         });
             }
         } else if (rightTable.isRefreshing()) {
-            if (leftTable.size() > 0) {
+            if (!leftTable.isEmpty()) {
                 rightTable.addUpdateListener(
                         new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                             @Override
@@ -433,7 +407,7 @@ class NaturalJoinHelper {
 
     private static boolean updateRightRedirection(QueryTable rightTable, SingleValueRowRedirection rowRedirection) {
         final boolean changed;
-        if (rightTable.size() == 0) {
+        if (rightTable.isEmpty()) {
             changed = rowRedirection.getValue() != RowSequence.NULL_ROW_KEY;
             if (changed) {
                 rowRedirection.writableSingleValueCast().setValue(RowSequence.NULL_ROW_KEY);
@@ -449,11 +423,11 @@ class NaturalJoinHelper {
     }
 
     private static void checkRightTableSizeZeroKeys(final Table leftTable, final Table rightTable, boolean exactMatch) {
-        if (leftTable.size() != 0) {
+        if (!leftTable.isEmpty()) {
             if (rightTable.size() > 1) {
                 throw new RuntimeException(
                         "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
-            } else if (rightTable.size() == 0 && exactMatch) {
+            } else if (rightTable.isEmpty() && exactMatch) {
                 throw new RuntimeException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
