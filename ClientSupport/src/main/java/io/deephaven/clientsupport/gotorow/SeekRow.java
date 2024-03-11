@@ -53,7 +53,7 @@ public class SeekRow implements Function<Table, Long> {
         final Optional<SortingOrder> order = SortedColumnsAttribute.getOrderForColumn(table, columnName);
         final RowSet index = table.getRowSet();
 
-        if (!order.isEmpty()) {
+        if (order.isPresent()) {
             if (isBackward) {
                 // check prev row
                 if (startingRow != 0) {
