@@ -275,21 +275,18 @@ class InputTable(Table):
 
     @property
     def key_names(self) -> List[str]:
-        """The names of the key columns of the InputTable.
-        """
+        """The names of the key columns of the InputTable."""
         return j_list_to_list(self.j_input_table.getKeyNames())
 
     @property
     def value_names(self) -> List[str]:
-        """The names of the value columns. By default, any column not marked as a key column is a value column.
-
-        """
+        """The names of the value columns. By default, any column not marked as a key column is a value column."""
         return j_list_to_list(self.j_input_table.getValueNames())
 
 
 def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
                 key_cols: Union[str, Sequence[str]] = None) -> InputTable:
-    """Creates an in-memory InputTable from either column definitions or initial table. When key columns are
+    """Creates an in-memory InputTable from either column definitions or an initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
 
     There are two types of in-memory InputTable - append-only and keyed.
