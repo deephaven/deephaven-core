@@ -2547,7 +2547,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
      */
@@ -2570,7 +2570,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
      */
@@ -2613,7 +2613,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the top of the day
      */
@@ -2636,7 +2636,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the top of the day
      */
@@ -2675,7 +2675,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the top of the day
      */
@@ -2698,7 +2698,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the top of the day
      */
@@ -2737,7 +2737,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the top of the day
      */
@@ -2760,7 +2760,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the top of the day
      */
@@ -2799,7 +2799,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
      *         elapsed since the top of the day
      */
@@ -2822,7 +2822,7 @@ public class DateTimeUtils {
      *                  On days when daylight savings time events occur, results may be different from what is expected
      *                  based upon the local time. For example, on daylight savings time change days, 9:30AM may be
      *                  earlier or later in the day based upon if the daylight savings time adjustment is
-     *                  forwards or backwards.
+     *                  forwards or backwards.  On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
      *         elapsed since the top of the day
      */
