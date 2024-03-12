@@ -123,21 +123,17 @@ public class JoinControl {
         if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
             // Both refreshing: build from largest available data index, or largest table if no indexes
             if (leftDataIndexTable != null && rightDataIndexTable != null) {
-                if (leftDataIndexTable.size() >= rightDataIndexTable.size()) {
-                    firstBuildFrom = LeftDataIndex;
-                } else {
-                    firstBuildFrom = RightDataIndex;
-                }
+                firstBuildFrom = leftDataIndexTable.size() >= rightDataIndexTable.size()
+                        ? LeftDataIndex
+                        : RightDataIndex;
             } else if (leftDataIndexTable != null) {
                 firstBuildFrom = LeftDataIndex;
             } else if (rightDataIndexTable != null) {
                 firstBuildFrom = RightDataIndex;
             } else {
-                if (leftTable.size() >= rightTable.size()) {
-                    firstBuildFrom = LeftInput;
-                } else {
-                    firstBuildFrom = RightInput;
-                }
+                firstBuildFrom = leftTable.size() >= rightTable.size()
+                        ? LeftInput
+                        : RightInput;
             }
 
             // We need to hold states from both sides. We'll need a table at least big enough for the largest side.
@@ -145,22 +141,18 @@ public class JoinControl {
 
         } else if (leftTable.isRefreshing()) {
             // Left refreshing, right static: build from right data index if available, else right table
-            if (rightDataIndexTable != null) {
-                firstBuildFrom = RightDataIndex;
-            } else {
-                firstBuildFrom = RightInput;
-            }
+            firstBuildFrom = rightDataIndexTable != null
+                    ? RightDataIndex
+                    : RightInput;
 
             // We need to hold states from right, only.
             hashTableSize = rightBuildSize;
 
         } else if (rightTable.isRefreshing()) {
             // Left static, right refreshing: build from left data index if available, else left table
-            if (leftDataIndexTable != null) {
-                firstBuildFrom = LeftDataIndex;
-            } else {
-                firstBuildFrom = LeftInput;
-            }
+            firstBuildFrom = leftDataIndexTable != null
+                    ? LeftDataIndex
+                    : LeftInput;
 
             // We need to hold states from left, only.
             hashTableSize = leftBuildSize;
@@ -168,29 +160,21 @@ public class JoinControl {
         } else {
             // Both static: build from smallest available data index or smallest table; ties go to smallest table
             if (leftDataIndexTable != null && rightDataIndexTable != null) {
-                if (leftDataIndexTable.size() <= rightDataIndexTable.size()) {
-                    firstBuildFrom = LeftDataIndex;
-                } else {
-                    firstBuildFrom = RightDataIndex;
-                }
+                firstBuildFrom = leftDataIndexTable.size() <= rightDataIndexTable.size()
+                        ? LeftDataIndex
+                        : RightDataIndex;
             } else if (leftDataIndexTable != null) {
-                if (leftDataIndexTable.size() < rightTable.size()) {
-                    firstBuildFrom = LeftDataIndex;
-                } else {
-                    firstBuildFrom = RightInput;
-                }
+                firstBuildFrom = leftDataIndexTable.size() < rightTable.size()
+                        ? LeftDataIndex
+                        : RightInput;
             } else if (rightDataIndexTable != null) {
-                if (leftTable.size() <= rightDataIndexTable.size()) {
-                    firstBuildFrom = LeftInput;
-                } else {
-                    firstBuildFrom = RightDataIndex;
-                }
+                firstBuildFrom = leftTable.size() <= rightDataIndexTable.size()
+                        ? LeftInput
+                        : RightDataIndex;
             } else {
-                if (leftTable.size() <= rightTable.size()) {
-                    firstBuildFrom = LeftInput;
-                } else {
-                    firstBuildFrom = RightInput;
-                }
+                firstBuildFrom = leftTable.size() <= rightTable.size()
+                        ? LeftInput
+                        : RightInput;
             }
 
             switch (firstBuildFrom) {
@@ -216,46 +200,10 @@ public class JoinControl {
     BuildParameters buildParametersForUniqueRights(
             @NotNull final Table leftTable, @Nullable Table leftDataIndexTable, @NotNull final Table rightTable) {
         // Treat rightTable as its own data index table, and then fix up the firstBuildFrom to not be RightDataIndex.
-        // Also, we always build right when both sides are refreshing, so we might as well codify that.
         final BuildParameters result = buildParameters(leftTable, leftDataIndexTable, rightTable, rightTable);
-        if (result.firstBuildFrom() == BuildParameters.From.RightDataIndex) {
-            return new BuildParameters(BuildParameters.From.RightInput, result.hashTableSize());
-        }
-        return result;
-        /*
-         * The "ideal" logic is probably to treat rightTable as its own data index table, and then fix up the
-         * firstBuildFrom to not be RightDataIndex:
-         * @formatter:off
-         *     final BuildParameters result = buildParameters(leftTable, leftDataIndexTable, rightTable, rightTable);
-         *     if (result.firstBuildFrom() == BuildParameters.From.RightDataIndex) {
-         *         return new BuildParameters(BuildParameters.From.RightInput, result.hashTableSize());
-         *     }
-         * @formatter:on
-         * That said, the existing logic for natural join makes different assumptions, which can be summarized as:
-         *   1. Both refreshing: build right, then left
-         *   2. Left static, right refreshing: build left, then probe right
-         *   3. Left refreshing, right static: build right, then probe left
-         *   4. Both static: build smaller, probe larger
-         * We codify those assumptions here for consistency.
-         */
-
-        final int leftBuildSize = leftDataIndexTable != null
-                ? tableSize(leftDataIndexTable.size())
-                : initialBuildSize();
-        final int rightBuildSize = tableSize(rightTable.size());
-        if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
-            return new BuildParameters(RightInput, Math.max(leftBuildSize, rightBuildSize));
-        }
-        if (rightTable.isRefreshing()) {
-            return new BuildParameters(leftDataIndexTable != null ? LeftDataIndex : LeftInput, leftBuildSize);
-        }
-        if (leftTable.isRefreshing()) {
-            return new BuildParameters(RightInput, rightBuildSize);
-        }
-        if (leftBuildSize > rightBuildSize) {
-            return new BuildParameters(RightInput, rightBuildSize);
-        }
-        return new BuildParameters(leftDataIndexTable != null ? LeftDataIndex : LeftInput, leftBuildSize);
+        return result.firstBuildFrom() == RightDataIndex
+                ? new BuildParameters(RightInput, result.hashTableSize())
+                : result;
     }
 
     boolean considerSymbolTables(

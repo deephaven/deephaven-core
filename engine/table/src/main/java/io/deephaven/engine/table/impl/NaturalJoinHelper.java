@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.LeftInput;
+
 class NaturalJoinHelper {
 
     private NaturalJoinHelper() {} // static use only
@@ -55,9 +57,6 @@ class NaturalJoinHelper {
 
         try (final BucketingContext bucketingContext = new BucketingContext("naturalJoin",
                 leftTable, rightTable, columnsToMatch, columnsToAdd, control, true)) {
-            // We only know how to build from right.
-            Assert.eq(bucketingContext.buildParameters.firstBuildFrom(), "buildParameters.firstBuildFrom()",
-                    JoinControl.BuildParameters.From.RightInput);
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
@@ -92,6 +91,8 @@ class NaturalJoinHelper {
             final WritableRowRedirection rowRedirection;
 
             if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
+                // We always build right first, regardless of the build parameters. This is probably irrelevant.
+
                 final BothIncrementalNaturalJoinStateManager jsm =
                         TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
                                 bucketingContext.leftSources, bucketingContext.originalLeftSources,
@@ -136,7 +137,9 @@ class NaturalJoinHelper {
                 result.addParentReference(mergedJoinListener);
 
                 return result;
-            } else if (leftTable.isRefreshing()) { // left refreshing, right static
+            }
+
+            if (leftTable.isRefreshing()) {
                 final LongArraySource leftRedirections = new LongArraySource();
                 final StaticHashedNaturalJoinStateManager jsm =
                         TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
@@ -170,7 +173,9 @@ class NaturalJoinHelper {
                                 jsm,
                                 bucketingContext.leftSources));
                 return result;
-            } else if (rightTable.isRefreshing()) { // left static, right refreshing
+            }
+
+            if (rightTable.isRefreshing()) {
                 final RightIncrementalNaturalJoinStateManager jsm =
                         TypedHasherFactory.make(RightIncrementalNaturalJoinStateManagerTypedBase.class,
                                 bucketingContext.leftSources, bucketingContext.originalLeftSources,
@@ -213,40 +218,52 @@ class NaturalJoinHelper {
                                 bucketingContext.rightSources,
                                 exactMatch));
                 return result;
-            } else { // both are static
-                if (bucketingContext.leftDataIndexTable != null) {
-                    final StaticHashedNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftDataIndexSources,
-                                    bucketingContext.originalLeftDataIndexSources,
-                                    bucketingContext.buildParameters.hashTableSize(),
-                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-
-                    final IntegerArraySource leftHashSlots = new IntegerArraySource();
-                    jsm.buildFromLeftSide(bucketingContext.leftDataIndexTable, bucketingContext.leftDataIndexSources,
-                            leftHashSlots);
-                    jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
-                    rowRedirection = jsm.buildGroupedRowRedirectionFromHashSlots(leftTable, exactMatch,
-                            bucketingContext.leftDataIndexTable.getRowSet(), leftHashSlots,
-                            bucketingContext.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
-                } else {
-                    final StaticHashedNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                    bucketingContext.buildParameters.hashTableSize(),
-                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-                    final IntegerArraySource leftHashSlots = new IntegerArraySource();
-                    jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, leftHashSlots);
-                    try {
-                        jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
-                    } catch (DuplicateRightRowDecorationException e) {
-                        jsm.errorOnDuplicatesSingle(leftHashSlots, leftTable.size(), leftTable.getRowSet());
-                    }
-                    rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
-                            control.getRedirectionType(leftTable));
-                }
-                return makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, false);
             }
+
+            if (bucketingContext.leftDataIndexTable != null) {
+                final StaticHashedNaturalJoinStateManager jsm =
+                        TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
+                                bucketingContext.leftDataIndexSources,
+                                bucketingContext.originalLeftDataIndexSources,
+                                bucketingContext.buildParameters.hashTableSize(),
+                                control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+
+                final IntegerArraySource leftHashSlots = new IntegerArraySource();
+                jsm.buildFromLeftSide(bucketingContext.leftDataIndexTable, bucketingContext.leftDataIndexSources,
+                        leftHashSlots);
+                jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                rowRedirection = jsm.buildGroupedRowRedirectionFromHashSlots(leftTable, exactMatch,
+                        bucketingContext.leftDataIndexTable.getRowSet(), leftHashSlots,
+                        bucketingContext.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
+            } else if (bucketingContext.buildParameters.firstBuildFrom() == LeftInput) {
+                final StaticHashedNaturalJoinStateManager jsm =
+                        TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
+                                bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                bucketingContext.buildParameters.hashTableSize(),
+                                control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+                final IntegerArraySource leftHashSlots = new IntegerArraySource();
+                jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, leftHashSlots);
+                try {
+                    jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
+                } catch (DuplicateRightRowDecorationException e) {
+                    jsm.errorOnDuplicatesSingle(leftHashSlots, leftTable.size(), leftTable.getRowSet());
+                }
+                rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
+                        control.getRedirectionType(leftTable));
+            } else {
+                final LongArraySource leftRedirections = new LongArraySource();
+                final StaticHashedNaturalJoinStateManager jsm =
+                        TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
+                                bucketingContext.leftSources, bucketingContext.originalLeftSources,
+                                bucketingContext.buildParameters.hashTableSize(),
+                                control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+
+                jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
+                jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, leftRedirections);
+                rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, leftRedirections,
+                        control.getRedirectionType(leftTable));
+            }
+            return makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, false);
         }
     }
 
