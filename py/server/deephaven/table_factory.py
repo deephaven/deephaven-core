@@ -32,7 +32,6 @@ _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
-_JInputTableStatusListener = jpy.get_type("io.deephaven.engine.util.input.InputTableStatusListener")
 
 
 def empty_table(size: int) -> Table:
