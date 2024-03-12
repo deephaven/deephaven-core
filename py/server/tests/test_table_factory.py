@@ -327,8 +327,8 @@ class TableFactoryTestCase(BaseTestCase):
         col_defs = {c.name: c.data_type for c in t.columns}
         with self.subTest("from table definition"):
             append_only_input_table = input_table(col_defs=col_defs)
-            self.assertEqual(append_only_input_table.get_key_names(), [])
-            self.assertEqual(append_only_input_table.get_value_names(), [col.name for col in cols])
+            self.assertEqual(append_only_input_table.key_names, [])
+            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)

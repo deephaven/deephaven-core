@@ -272,18 +272,16 @@ class InputTable(Table):
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
 
+    @property
     def get_key_names(self) -> List[str]:
-        """Gets the names of the key columns.
-
-        Returns:
-            a list with the names of the key columns of this input table
+        """The names of the key columns of the InputTable.
         """
         return j_list_to_list(self.j_input_table.getKeyNames())
 
-    def get_value_names(self) -> List[str]:
-        """Gets the names of the value columns. By default, any column not marked as a key column is a value column.
+    @property
+    def value_names(self) -> List[str]:
+        """The names of the value columns. By default, any column not marked as a key column is a value column.
 
-        Returns: a list with the names of the value columns of this input table
         """
         return j_list_to_list(self.j_input_table.getValueNames())
 
