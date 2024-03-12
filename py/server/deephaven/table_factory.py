@@ -23,6 +23,7 @@ from deephaven.update_graph import auto_locking_ctx
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
+_JBaseArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.BaseArrayBackedInputTable")
 _JAppendOnlyArrayBackedInputTable = jpy.get_type(
     "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
 _JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
@@ -32,7 +33,6 @@ _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
-_JInputTableStatusListener = jpy.get_type("io.deephaven.engine.util.input.InputTableStatusListener")
 
 
 def empty_table(size: int) -> Table:
@@ -235,6 +235,7 @@ class InputTable(Table):
 
     Users should always create InputTables through factory methods rather than directly from the constructor.
     """
+    j_object_type = _JBaseArrayBackedInputTable
 
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
