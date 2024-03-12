@@ -56,7 +56,7 @@ class NaturalJoinHelper {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         try (final BucketingContext bc = new BucketingContext("naturalJoin",
-                leftTable, rightTable, columnsToMatch, columnsToAdd, control, true)) {
+                leftTable, rightTable, columnsToMatch, columnsToAdd, control, true, true)) {
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!

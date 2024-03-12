@@ -63,7 +63,8 @@ class BucketingContext implements SafeCloseable {
             @NotNull final MatchPair[] columnsToMatch,
             @NotNull final MatchPair[] columnsToAdd,
             @NotNull final JoinControl control,
-            final boolean uniqueRightValues) {
+            final boolean uniqueRightValues,
+            final boolean useDataIndexes) {
 
         final Set<String> leftColumnNames = leftTable.getDefinition().getColumnNameSet();
         final List<String> conflicts = Arrays.stream(columnsToAdd)
@@ -88,7 +89,7 @@ class BucketingContext implements SafeCloseable {
 
         keyColumnCount = leftSources.length;
 
-        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final DataIndex leftDataIndex = useDataIndexes ? control.dataIndexToUse(leftTable, originalLeftSources) : null;
         leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
         final DataIndex rightDataIndex;
 
@@ -97,7 +98,7 @@ class BucketingContext implements SafeCloseable {
             rightDataIndexTable = null;
             buildParameters = control.buildParametersForUniqueRights(leftTable, leftDataIndexTable, rightTable);
         } else {
-            rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+            rightDataIndex = useDataIndexes ? control.dataIndexToUse(rightTable, originalRightSources) : null;
             rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
             buildParameters = control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
         }
