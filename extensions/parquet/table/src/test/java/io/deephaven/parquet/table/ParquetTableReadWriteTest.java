@@ -69,6 +69,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -108,6 +109,7 @@ import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
@@ -874,6 +876,31 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
+    @Test
+    public void readFromDirTest() {
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
+        final File firstPartition = new File(parentDir, "X=A");
+        final File firstDataFile = new File(firstPartition, "data.parquet");
+        writeTable(someTable, firstDataFile);
+        final File secondPartition = new File(parentDir, "X=B");
+        final File secondDataFile = new File(secondPartition, "data.parquet");
+        writeTable(someTable, secondDataFile);
+
+        final Table expected = readKeyValuePartitionedTable(parentDir, ParquetInstructions.EMPTY);
+
+        String filePath = parentDir.getAbsolutePath();
+        Table fromDisk = ParquetTools.readTable(filePath);
+        assertTableEquals(expected, fromDisk);
+
+        // Read with a trailing slash
+        assertTrue(!filePath.endsWith("/"));
+        filePath = filePath + "/";
+        fromDisk = ParquetTools.readTable(filePath);
+        assertTableEquals(expected, fromDisk);
+    }
+
     /**
      * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
      * directory after we finish writing.
@@ -927,7 +954,7 @@ public final class ParquetTableReadWriteTest {
         final String filename = "basicWriteTests.parquet";
         final File destFile = new File(rootFile, filename);
         final String absolutePath = destFile.getAbsolutePath();
-        final URI fileURI = destFile.toURI();
+        final URI fileURI = convertFileToURI(destFile);
         ParquetTools.writeTable(tableToSave, absolutePath);
 
         // Read from file URI
@@ -1204,7 +1231,8 @@ public final class ParquetTableReadWriteTest {
         writeTable(someTable, firstDataFile);
         writeTable(someTable, secondDataFile);
 
-        Table partitionedTable = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+        final URI parentURI = convertFileToURI(parentDir);
+        final Table partitionedTable = readTable(parentURI.toString()).select();
         final Set<String> columnsSet = partitionedTable.getDefinition().getColumnNameSet();
         assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));
 
@@ -1214,14 +1242,14 @@ public final class ParquetTableReadWriteTest {
         final File dotDir = new File(firstPartition, ".dotDir");
         assertTrue(dotDir.mkdir());
         writeTable(someTable, new File(dotDir, "data.parquet"));
-        Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        Table fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
 
         // Add a dot parquet file in one of the partitions directory
         final Table anotherTable = TableTools.emptyTable(5).update("B=(int)i");
         final File pqDotFile = new File(secondPartition, ".dotFile.parquet");
         writeTable(anotherTable, pqDotFile);
-        fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
     }
 

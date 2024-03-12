@@ -55,6 +55,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -961,7 +962,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(file.toURI(), readInstructions);
+        return readSingleFileTable(convertFileToURI(file), readInstructions);
     }
 
     /**
@@ -1007,7 +1008,7 @@ public class ParquetTools {
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readSingleFileTable(file.toURI(), readInstructions, tableDefinition);
+        return readSingleFileTable(convertFileToURI(file), readInstructions, tableDefinition);
     }
 
     /**
@@ -1145,7 +1146,7 @@ public class ParquetTools {
     public static ParquetFileReader getParquetFileReaderChecked(
             @NotNull final File parquetFile,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
-        return getParquetFileReaderChecked(parquetFile.toURI(), readInstructions);
+        return getParquetFileReaderChecked(convertFileToURI(parquetFile), readInstructions);
     }
 
     /**

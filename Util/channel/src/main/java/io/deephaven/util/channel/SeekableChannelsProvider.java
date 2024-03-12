@@ -18,24 +18,67 @@ import java.nio.file.Paths;
 public interface SeekableChannelsProvider extends SafeCloseable {
 
     /**
-     * Take the file source path or URI and convert it to a URI object.
+     * Take the file source path or URI string and convert it to a URI object.
      *
      * @param source The file source path or URI
      * @return The URI object
      */
     static URI convertToURI(final String source) {
+        if (source.isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty source to URI");
+        }
         final URI uri;
         try {
             uri = new URI(source);
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return new File(source).toURI();
+            return convertFileToURI(new File(source));
         }
         if (uri.getScheme() == null) {
-            // Need to convert to a "file" URI
-            return new File(source).toURI();
+            // Convert to a "file" URI
+            return convertFileToURI(new File(source));
         }
         return uri;
+    }
+
+    /**
+     * Takes a file and convert it to a URI object. We should use this method instead of {@link File#toURI()} because
+     * {@link File#toURI()} internally calls {@link File#isDirectory()}, which can lead to disk access.
+     *
+     * @param file The file
+     * @return The URI object
+     */
+    static URI convertFileToURI(final File file) {
+        String absPath = file.getAbsolutePath();
+        if (absPath.isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert file with empty path to URI: " + file);
+        }
+        if (File.separatorChar != '/') {
+            absPath = absPath.replace(File.separatorChar, '/');
+        }
+        if (absPath.charAt(0) != '/') {
+            absPath = "/" + absPath;
+        }
+        if (absPath.startsWith("//")) {
+            absPath = "//" + absPath;
+        }
+        try {
+            return new URI("file", null, absPath, null);
+        } catch (final URISyntaxException e) {
+            throw new IllegalArgumentException("Failed to convert file to URI: " + file, e);
+        }
+    }
+
+    /**
+     * Takes a path and convert it to a URI object. We should use this method instead of {@link Path#toUri()} because
+     * {@link Path#toUri()} internally does a {@code stat} system call to extract information whether file is a
+     * directory.
+     *
+     * @param path The path
+     * @return The URI object
+     */
+    static URI convertPathToURI(final Path path) {
+        return convertFileToURI(path.toFile());
     }
 
     /**

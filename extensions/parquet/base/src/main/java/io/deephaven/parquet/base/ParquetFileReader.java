@@ -10,14 +10,15 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.*;
 
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
@@ -49,7 +50,7 @@ public class ParquetFileReader {
         this.channelsProvider = channelsProvider;
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
-            rootURI = Path.of(parquetFileURI).getParent().toUri();
+            rootURI = convertFileToURI(new File(parquetFileURI).getParentFile());
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;
