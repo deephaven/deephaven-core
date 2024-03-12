@@ -419,6 +419,26 @@ class TableFactoryTestCase(BaseTestCase):
         self.wait_ticking_table_update(t5, row_count=1, timeout=5)
         self.assertEqual(t5.size, 1)
 
+    def test_input_table_empty_data(self):
+        from deephaven import update_graph as ugp
+        from deephaven import execution_context as ec
+
+        ug = ec.get_exec_ctx().update_graph
+        cm = ugp.exclusive_lock(ug)
+
+        with cm:
+            t = time_table("PT1s", blink_table=True)
+            it = input_table({c.name: c.data_type for c in t.columns}, key_cols="Timestamp")
+            it.add(t)
+            self.assertEqual(it.size, 0)
+            it.delete(t)
+            self.assertEqual(it.size, 0)
+
+        t = empty_table(0).update("Timestamp=nowSystem()")
+        it.add(t)
+        self.assertEqual(it.size, 0)
+        it.delete(t)
+        self.assertEqual(it.size, 0)
 
 if __name__ == '__main__':
     unittest.main()
