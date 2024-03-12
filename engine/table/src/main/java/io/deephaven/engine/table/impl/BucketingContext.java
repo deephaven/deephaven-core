@@ -42,9 +42,11 @@ class BucketingContext implements SafeCloseable {
 
     final Table leftDataIndexTable;
     final ColumnSource<?>[] leftDataIndexSources;
+    final ColumnSource<?>[] originalLeftDataIndexSources;
     final ColumnSource<RowSet> leftDataIndexRowSetSource;
     final Table rightDataIndexTable;
     final ColumnSource<?>[] rightDataIndexSources;
+    final ColumnSource<?>[] originalRightDataIndexSources;
     final ColumnSource<RowSet> rightDataIndexRowSetSource;
 
     final JoinControl.BuildParameters buildParameters;
@@ -87,36 +89,41 @@ class BucketingContext implements SafeCloseable {
         keyColumnCount = leftSources.length;
 
         final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
-        if (leftDataIndex == null) {
-            leftDataIndexTable = null;
+        leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
+        final DataIndex rightDataIndex;
+
+        if (uniqueRightValues) {
+            rightDataIndex = null;
+            rightDataIndexTable = null;
+            buildParameters = control.buildParametersForUniqueRights(leftTable, leftDataIndexTable, rightTable);
+        } else {
+            rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+            rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
+            buildParameters = control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
+        }
+
+        if (leftDataIndexTable == null) {
             leftDataIndexSources = null;
+            originalLeftDataIndexSources = null;
             leftDataIndexRowSetSource = null;
         } else {
-            leftDataIndexTable = leftDataIndex.table();
             leftDataIndexSources = Arrays.stream(columnsToMatch)
                     .map(mp -> leftDataIndexTable.getColumnSource(mp.leftColumn))
                     .toArray(ColumnSource[]::new);
+            originalLeftDataIndexSources = Arrays.copyOf(leftDataIndexSources, leftDataIndexSources.length);
             leftDataIndexRowSetSource = leftDataIndex.rowSetColumn();
         }
-        if (uniqueRightValues) {
-            rightDataIndexTable = null;
+
+        if (rightDataIndexTable == null) {
             rightDataIndexSources = null;
+            originalRightDataIndexSources = null;
             rightDataIndexRowSetSource = null;
-            buildParameters = control.buildParametersForUniqueRights(leftTable, leftDataIndexTable, rightTable);
         } else {
-            final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
-            if (rightDataIndex == null) {
-                rightDataIndexTable = null;
-                rightDataIndexSources = null;
-                rightDataIndexRowSetSource = null;
-            } else {
-                rightDataIndexTable = rightDataIndex.table();
-                rightDataIndexSources = Arrays.stream(columnsToMatch)
-                        .map(mp -> rightDataIndexTable.getColumnSource(mp.rightColumn))
-                        .toArray(ColumnSource[]::new);
-                rightDataIndexRowSetSource = rightDataIndex.rowSetColumn();
-            }
-            buildParameters = control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
+            rightDataIndexSources = Arrays.stream(columnsToMatch)
+                    .map(mp -> rightDataIndexTable.getColumnSource(mp.rightColumn))
+                    .toArray(ColumnSource[]::new);
+            originalRightDataIndexSources = Arrays.copyOf(rightDataIndexSources, rightDataIndexSources.length);
+            rightDataIndexRowSetSource = rightDataIndex.rowSetColumn();
         }
 
         boolean localUniqueValues = false;
