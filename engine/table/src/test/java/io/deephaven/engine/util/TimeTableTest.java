@@ -269,13 +269,13 @@ public class TimeTableTest extends RefreshingTableTestCase {
                                     .build());
             final Table indexTable = dataIndex.table();
 
-            //noinspection unchecked
+            // noinspection unchecked
             final ColumnSource<Long> reinterpretedColumn =
                     (ColumnSource<Long>) ReinterpretUtils.maybeConvertToPrimitive(dtColumn);
 
             Assert.assertEquals(indexTable.size(), 10);
             try (final CloseableIterator<Long> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
-                 final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+                    final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
                 while (keyIt.hasNext()) {
                     final Long key = keyIt.next();
                     final RowSet rs = rsIt.next();
@@ -299,8 +299,8 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
             Assert.assertEquals(longIndexTable.size(), 10);
             try (final CloseableIterator<Long> keyIt = longIndexTable.columnIterator(longDataIndex.keyColumnNames()[0]);
-                 final CloseableIterator<RowSet> rsIt =
-                         longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {
+                    final CloseableIterator<RowSet> rsIt =
+                            longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {
                 while (keyIt.hasNext()) {
                     final Long key = keyIt.next();
                     final RowSet rs = rsIt.next();

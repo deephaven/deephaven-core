@@ -165,7 +165,7 @@ public class CrossJoinHelper {
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                    //noinspection resource
+                    // noinspection resource
                     final WritableRowSet resultRowSet = bucketingContext.buildParameters.firstBuildFrom() == LeftInput
                             ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
                                     bucketingContext.rightSources)
@@ -188,7 +188,7 @@ public class CrossJoinHelper {
                 jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                //noinspection resource
+                // noinspection resource
                 final TrackingWritableRowSet resultRowSet =
                         jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).toTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
@@ -289,7 +289,7 @@ public class CrossJoinHelper {
             jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
             jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-            //noinspection resource
+            // noinspection resource
             final TrackingWritableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
@@ -1044,7 +1044,7 @@ public class CrossJoinHelper {
                 });
                 crossJoinState.setRightEmpty(false);
             }
-            //noinspection resource
+            // noinspection resource
             resultRowSet = builder.build().toTracking();
         }
 

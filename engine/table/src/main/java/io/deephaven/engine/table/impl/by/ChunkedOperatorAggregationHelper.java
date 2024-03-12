@@ -126,7 +126,8 @@ public class ChunkedOperatorAggregationHelper {
         // If the table is refreshing and using an index, include the index table in the snapshot control.
         final DataIndex dataIndex;
         final DataIndexer dataIndexer = DataIndexer.existingOf((input.getRowSet()));
-        if (control.considerIndexing(input, keySources) && dataIndexer != null && DataIndexer.hasDataIndex(input, keyNames)) {
+        if (control.considerIndexing(input, keySources) && dataIndexer != null
+                && DataIndexer.hasDataIndex(input, keyNames)) {
             dataIndex = DataIndexer.getDataIndex(input, keyNames);
             if (dataIndex != null) {
                 final Table dataIndexTable = dataIndex.table();
