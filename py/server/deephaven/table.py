@@ -30,7 +30,7 @@ from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 
 # Table
-_J_Table = jpy.get_type("io.deephaven.engine.table.Table")
+_JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -426,7 +426,7 @@ class Table(JObjectWrapper):
     data ingestion operations, queries, aggregations, joins, etc.
 
     """
-    j_object_type = _J_Table
+    j_object_type = _JTable
 
     def __init__(self, j_table: jpy.JType):
         self.j_table = jpy.cast(j_table, self.j_object_type)
