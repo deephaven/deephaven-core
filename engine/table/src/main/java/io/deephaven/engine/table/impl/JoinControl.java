@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -11,7 +10,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,11 +49,7 @@ public class JoinControl {
     @Nullable
     DataIndex dataIndexToUse(Table table, ColumnSource<?>[] sources) {
         final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
-        if (indexer == null) {
-            return null;
-        }
-        // TODO-RWC: Get this right. I'm not sure it's the right approach from a processing thread
-        final DataIndex dataIndex = LivenessScopeStack.computeEnclosed(
+        return indexer == null ? null : LivenessScopeStack.computeEnclosed(
                 // DataIndexer will only give us valid, live data indexes.
                 () -> indexer.getDataIndex(sources),
                 // Ensure that we use an enclosing scope to manage the data index if needed.
@@ -63,19 +57,6 @@ public class JoinControl {
                 // Don't keep the data index managed. Joins hold the update graph lock, so the index can't go stale,
                 // and we'll only use it during instantiation.
                 di -> false);
-        if (dataIndex == null || !dataIndex.isRefreshing()) {
-            return dataIndex;
-        }
-        final UpdateGraph updateGraph = table.getUpdateGraph();
-        Assert.eq(updateGraph, "table.getUpdateGraph()",
-                dataIndex.table().getUpdateGraph(), "dataIndex.table().getUpdateGraph()");
-        if (updateGraph.currentThreadProcessesUpdates()
-                && !dataIndex.table().satisfied(updateGraph.clock().currentStep())) {
-            // We're trying to use a data index without proper dependency management, probably from a partitioned
-            // table transform.
-            return null;
-        }
-        return dataIndex;
     }
 
     static final class BuildParameters {

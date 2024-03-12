@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +43,6 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return The DataIndexer for {@code rowSet}, or null if none exists
      */
     public static DataIndexer existingOf(@NotNull final TrackingRowSet rowSet) {
-        // TODO-RWC: Audit all usages of "of"; we should be using static methods or existingOf where possible
         return rowSet.indexer();
     }
 
@@ -303,7 +303,28 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         if (isInvalid(dataIndex)) {
             return null;
         }
-        return !dataIndex.isRefreshing() || LivenessScopeStack.peek().tryManage(dataIndex) ? dataIndex : null;
+        if (!dataIndex.isRefreshing()) {
+            return dataIndex;
+        }
+        /*
+         * If we're looking up a data index from an update graph thread, this means we're almost certainly in a listener
+         * and instantiating a new table operation. This could be a listener created directly by a user, or a
+         * PartitionedTable transform (either from a PartitionedTable.Proxy or an explicit transform function). In any
+         * case, if the data index isn't already satisfied, we would not want the operation being instantiated to wait
+         * for it to become satisfied from an update graph thread. Consequently, it's best to pretend we don't have a
+         * valid, live data index in this case. If a user or engine developer really wants to use a data index from an
+         * update graph thread, they should have already looked it up and made their listener's Notification.canExecute
+         * dependent on the data index table's satisfaction.
+         */
+        final UpdateGraph updateGraph = dataIndex.table().getUpdateGraph();
+        if (updateGraph.currentThreadProcessesUpdates()
+                && !dataIndex.table().satisfied(updateGraph.clock().currentStep())) {
+            return null;
+        }
+        if (!LivenessScopeStack.peek().tryManage(dataIndex)) {
+            return null;
+        }
+        return dataIndex;
     }
 
     /**
