@@ -273,7 +273,7 @@ class InputTable(Table):
             raise DHError(e, "delete data in the InputTable failed.") from e
 
     @property
-    def get_key_names(self) -> List[str]:
+    def key_names(self) -> List[str]:
         """The names of the key columns of the InputTable.
         """
         return j_list_to_list(self.j_input_table.getKeyNames())
