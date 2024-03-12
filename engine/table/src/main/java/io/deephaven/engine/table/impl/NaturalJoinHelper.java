@@ -549,8 +549,7 @@ class NaturalJoinHelper {
 
             final boolean addedRightColumnsChanged;
 
-            final int maxSize =
-                    UpdateSizeCalculator.chunkSize(upstream, JoinControl.CHUNK_SIZE);
+            final int maxSize = UpdateSizeCalculator.chunkSize(upstream, JoinControl.CHUNK_SIZE);
             if (maxSize == 0) {
                 Assert.assertion(upstream.empty(), "upstream.empty()");
                 return;
@@ -568,23 +567,18 @@ class NaturalJoinHelper {
                 }
 
                 if (upstream.shifted().nonempty()) {
-                    final RowSet previousToShift;
-
-                    if (rightKeysChanged) {
-                        previousToShift =
-                                getParent().getRowSet().copyPrev().minus(modifiedPreShift)
-                                        .minus(upstream.removed());
-                    } else {
-                        previousToShift = getParent().getRowSet().copyPrev().minus(upstream.removed());
-                    }
-
-                    final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
-                    while (sit.hasNext()) {
-                        sit.next();
-                        final RowSet shiftedRowSet =
-                                previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())
-                                        .shift(sit.shiftDelta());
-                        jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(), modifiedSlotTracker);
+                    try (final WritableRowSet previousToShift =
+                            getParent().getRowSet().prev().minus(upstream.removed())) {
+                        if (rightKeysChanged) {
+                            previousToShift.remove(modifiedPreShift);
+                        }
+                        upstream.shifted().apply((long beginRange, long endRange, long shiftDelta) -> {
+                            try (final WritableRowSet shiftedRowSet =
+                                    previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                shiftedRowSet.shiftInPlace(shiftDelta);
+                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta, modifiedSlotTracker);
+                            }
+                        });
                     }
                 }
 
@@ -794,22 +788,19 @@ class NaturalJoinHelper {
                     }
 
                     if (rightShifted.nonempty()) {
-                        final WritableRowSet previousToShift = rightRecorder.getParent().getRowSet().copyPrev();
-                        previousToShift.remove(rightRemoved);
-
-                        if (rightKeysModified) {
-                            previousToShift.remove(modifiedPreShift);
-                        }
-
-                        final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
-                        while (sit.hasNext()) {
-                            sit.next();
-                            try (final WritableRowSet shiftedRowSet =
-                                    previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
-                                shiftedRowSet.shiftInPlace(sit.shiftDelta());
-                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(),
-                                        modifiedSlotTracker);
+                        try (final WritableRowSet previousToShift =
+                                rightRecorder.getParent().getRowSet().prev().minus(rightRemoved)) {
+                            if (rightKeysModified) {
+                                previousToShift.remove(modifiedPreShift);
                             }
+                            rightShifted.apply((long beginRange, long endRange, long shiftDelta) -> {
+                                try (final WritableRowSet shiftedRowSet =
+                                        previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                    shiftedRowSet.shiftInPlace(shiftDelta);
+                                    jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
+                                            modifiedSlotTracker);
+                                }
+                            });
                         }
                     }
 
