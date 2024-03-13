@@ -75,8 +75,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
                 if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                     return localCoalesced;
                 }
-                coalesced = doCoalesce();
-                return coalesced;
+                return coalesced = doCoalesce();
             }
         }
     }

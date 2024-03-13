@@ -6,7 +6,6 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**

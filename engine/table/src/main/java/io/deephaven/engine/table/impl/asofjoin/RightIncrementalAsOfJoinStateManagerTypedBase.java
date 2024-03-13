@@ -678,7 +678,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                 stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_EMPTY));
                 rs.close();
             } else if (rs.size() == 1) {
-                // Copy the index's row set, since it can be modified or replaced.
+                // Set a copy of the RowSet into the row set source because the original is owned by the index.
                 rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
                 stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
             } else {
@@ -704,7 +704,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                 stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_EMPTY));
                 rs.close();
             } else if (rs.size() == 1) {
-                // Copy the index's row set, since it can be modified or replaced.
+                // Set a copy of the RowSet into the row set source because the original is owned by the index.
                 leftRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
                 stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
             } else {

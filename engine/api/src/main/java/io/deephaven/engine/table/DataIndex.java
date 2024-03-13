@@ -61,18 +61,22 @@ public interface DataIndex extends BasicDataIndex {
             return rowKeyLookup();
         }
 
-        final ColumnSource<?>[] indexSourceColumns = keyColumnMap().keySet().toArray(ColumnSource[]::new);
+        // Get the source columns of the index in the order of the index key columns.
+        final Map<String, ColumnSource<?>> reverseMap = new HashMap<>(keyColumnMap().size());
+        keyColumnMap().forEach((k, v) -> reverseMap.put(v, k));
+        final ColumnSource<?>[] indexSourceColumns = Arrays.stream(keyColumnNames()).map(reverseMap::get)
+                .toArray(ColumnSource[]::new);
+
         if (Arrays.equals(lookupSources, indexSourceColumns)) {
             // Order matches, so we can use the default lookup function.
             return rowKeyLookup();
         }
 
-        // We need to wrap the lookup function with a key remapping function.
-
-        // Maps index keys -> user-supplied keys
+        // We will need to create an appropriately mapped lookup key for each user-supplied key. Let's create an int[]
+        // storing the index of the user-supplied key array that is correct for the lookup function key.
         final int[] indexToUserMapping = new int[lookupSources.length];
 
-        // Build an intermediate map (N^2 loop but N is small and this is called rarely).
+        // Build an intermediate map (N^2 loop but N is small and this is called only at creation).
         for (int ii = 0; ii < indexSourceColumns.length; ++ii) {
             boolean found = false;
             for (int jj = 0; jj < lookupSources.length; ++jj) {
@@ -88,11 +92,13 @@ public interface DataIndex extends BasicDataIndex {
         }
 
         return (key, usePrev) -> {
-            // This is the key provided by the caller.
+            // This is the complex key provided by the caller.
             final Object[] keys = (Object[]) key;
-            // This is the key we need to provide to the lookup function.
+
+            // This is the complex key we need to provide to the lookup function.
             final Object[] remappedKey = new Object[keys.length];
 
+            // Assign the user-supplied keys to the lookup function key in the appropriate order.
             for (int ii = 0; ii < remappedKey.length; ++ii) {
                 remappedKey[ii] = keys[indexToUserMapping[ii]];
             }
