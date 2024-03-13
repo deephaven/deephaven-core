@@ -318,13 +318,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
                                 MatchPairFactory.getExpressions("I1"),
-                                MatchPairFactory.getExpressions("LI1=I1", "LC1=C1", "LC2=C2"), false, control);
+                                MatchPairFactory.getExpressions("RI1=I1", "RC1=C1", "RC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
-                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("LC2=C2"),
+                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("RC2=C2"),
                                 false, control);
                     }
                 },

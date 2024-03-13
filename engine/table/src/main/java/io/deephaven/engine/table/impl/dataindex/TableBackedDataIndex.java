@@ -100,6 +100,9 @@ public class TableBackedDataIndex extends BaseDataIndex {
 
                         return indexTableWrapper(groupedTable, EXPOSED_GROUP_ROW_SETS.name(), ROW_SET_COLUMN_NAME);
                     });
+            if (isRefreshing()) {
+                manage(indexTable);
+            }
         }
         return indexTable;
     }
