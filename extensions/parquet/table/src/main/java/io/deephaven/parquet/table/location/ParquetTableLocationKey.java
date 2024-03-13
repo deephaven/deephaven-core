@@ -73,7 +73,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     private static URI validateParquetFile(@NotNull final File file) {
-        return validateParquetFile(convertFileToURI(file));
+        return validateParquetFile(convertFileToURI(file, false));
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
@@ -192,7 +192,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
             final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null || convertToURI(filePath).equals(uri);
+            return filePath == null || convertToURI(filePath, false).equals(uri);
         }).toArray();
     }
 

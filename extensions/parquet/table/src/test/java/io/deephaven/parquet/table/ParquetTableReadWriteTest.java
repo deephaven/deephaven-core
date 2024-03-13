@@ -954,7 +954,7 @@ public final class ParquetTableReadWriteTest {
         final String filename = "basicWriteTests.parquet";
         final File destFile = new File(rootFile, filename);
         final String absolutePath = destFile.getAbsolutePath();
-        final URI fileURI = convertFileToURI(destFile);
+        final URI fileURI = convertFileToURI(destFile, false);
         ParquetTools.writeTable(tableToSave, absolutePath);
 
         // Read from file URI
@@ -1231,7 +1231,7 @@ public final class ParquetTableReadWriteTest {
         writeTable(someTable, firstDataFile);
         writeTable(someTable, secondDataFile);
 
-        final URI parentURI = convertFileToURI(parentDir);
+        final URI parentURI = convertFileToURI(parentDir, true);
         final Table partitionedTable = readTable(parentURI.toString()).select();
         final Set<String> columnsSet = partitionedTable.getDefinition().getColumnNameSet();
         assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));

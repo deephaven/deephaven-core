@@ -40,17 +40,29 @@ public class ParquetFileReader {
     private final URI rootURI;
     private final MessageType type;
 
+    /**
+     * Create a new ParquetFileReader for the provided source.
+     *
+     * @param source The source path or URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     */
     public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
             throws IOException {
-        this(convertToURI(source), channelsProvider);
+        this(convertToURI(source, false), channelsProvider);
     }
 
+    /**
+     * Create a new ParquetFileReader for the provided source.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     */
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this.channelsProvider = channelsProvider;
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
-            rootURI = convertFileToURI(new File(parquetFileURI).getParentFile());
+            rootURI = convertFileToURI(new File(parquetFileURI).getParentFile(), true);
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;

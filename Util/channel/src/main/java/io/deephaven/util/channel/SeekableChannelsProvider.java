@@ -21,9 +21,10 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * Take the file source path or URI string and convert it to a URI object.
      *
      * @param source The file source path or URI
+     * @param isDirectory Whether the source is a directory
      * @return The URI object
      */
-    static URI convertToURI(final String source) {
+    static URI convertToURI(final String source, final boolean isDirectory) {
         if (source.isEmpty()) {
             throw new IllegalArgumentException("Cannot convert empty source to URI");
         }
@@ -32,11 +33,11 @@ public interface SeekableChannelsProvider extends SafeCloseable {
             uri = new URI(source);
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return convertFileToURI(new File(source));
+            return convertFileToURI(new File(source), isDirectory);
         }
         if (uri.getScheme() == null) {
             // Convert to a "file" URI
-            return convertFileToURI(new File(source));
+            return convertFileToURI(new File(source), isDirectory);
         }
         return uri;
     }
@@ -46,9 +47,10 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * {@link File#toURI()} internally calls {@link File#isDirectory()}, which can lead to disk access.
      *
      * @param file The file
+     * @param isDirectory Whether the source file is a directory
      * @return The URI object
      */
-    static URI convertFileToURI(final File file) {
+    static URI convertFileToURI(final File file, final boolean isDirectory) {
         String absPath = file.getAbsolutePath();
         if (absPath.isEmpty()) {
             throw new IllegalArgumentException("Cannot convert file with empty path to URI: " + file);
@@ -59,13 +61,16 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         if (absPath.charAt(0) != '/') {
             absPath = "/" + absPath;
         }
+        if (absPath.charAt(absPath.length() - 1) != '/' && isDirectory) {
+            absPath = absPath + "/";
+        }
         if (absPath.startsWith("//")) {
             absPath = "//" + absPath;
         }
         try {
             return new URI("file", null, absPath, null);
         } catch (final URISyntaxException e) {
-            throw new IllegalArgumentException("Failed to convert file to URI: " + file, e);
+            throw new IllegalStateException("Failed to convert file to URI: " + file, e);
         }
     }
 
@@ -75,17 +80,18 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * directory.
      *
      * @param path The path
+     * @param isDirectory Whether the file is a directory
      * @return The URI object
      */
-    static URI convertPathToURI(final Path path) {
-        return convertFileToURI(path.toFile());
+    static URI convertPathToURI(final Path path, final boolean isDirectory) {
+        return convertFileToURI(path.toFile(), isDirectory);
     }
 
     /**
      * Wraps {@link SeekableChannelsProvider#getInputStream(SeekableByteChannel)} to ensure the channel's position is
      * incremented the exact amount that has been consumed from the resulting input stream. To remain valid, the caller
      * must ensure that the resulting input stream isn't re-wrapped by any downstream code in a way that would adversely
-     * effect the position (such as re-wrapping the resulting input stream with buffering).
+     * affect the position (such as re-wrapping the resulting input stream with buffering).
      *
      * <p>
      * Equivalent to {@code ChannelPositionInputStream.of(ch, provider.getInputStream(ch))}.
@@ -122,7 +128,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
 
     default SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull String uriStr)
             throws IOException {
-        return getReadChannel(channelContext, convertToURI(uriStr));
+        return getReadChannel(channelContext, convertToURI(uriStr, false));
     }
 
     SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri)

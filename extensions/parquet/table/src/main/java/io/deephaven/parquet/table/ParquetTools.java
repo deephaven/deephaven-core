@@ -55,6 +55,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+import static io.deephaven.parquet.table.layout.ParquetFileHelper.convertParquetSourceToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
@@ -98,7 +99,7 @@ public class ParquetTools {
      * @see ParquetFlatPartitionedLayout
      */
     public static Table readTable(@NotNull final String source) {
-        return readTableInternal(convertToURI(source), ParquetInstructions.EMPTY);
+        return readTableInternal(convertParquetSourceToURI(source), ParquetInstructions.EMPTY);
     }
 
     /**
@@ -129,7 +130,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableInternal(convertToURI(source), readInstructions);
+        return readTableInternal(convertParquetSourceToURI(source), readInstructions);
     }
 
     /**
@@ -962,7 +963,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(convertFileToURI(file), readInstructions);
+        return readSingleFileTable(convertFileToURI(file, false), readInstructions);
     }
 
     /**
@@ -981,7 +982,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(convertToURI(source), readInstructions);
+        return readSingleFileTable(convertToURI(source, false), readInstructions);
     }
 
     private static Table readSingleFileTable(
@@ -1008,7 +1009,7 @@ public class ParquetTools {
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readSingleFileTable(convertFileToURI(file), readInstructions, tableDefinition);
+        return readSingleFileTable(convertFileToURI(file, false), readInstructions, tableDefinition);
     }
 
     /**
@@ -1026,7 +1027,7 @@ public class ParquetTools {
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readSingleFileTable(convertToURI(source), readInstructions, tableDefinition);
+        return readSingleFileTable(convertToURI(source, false), readInstructions, tableDefinition);
     }
 
     private static Table readSingleFileTable(
@@ -1106,7 +1107,7 @@ public class ParquetTools {
      * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
      * {@link TableDataException}.
      *
-     * @param parquetFile The {@link File} to read
+     * @param parquetFile The parquet file or the parquet metadata file
      * @param readInstructions the instructions for customizations while reading
      * @return The new {@link ParquetFileReader}
      */
@@ -1123,7 +1124,7 @@ public class ParquetTools {
      * Make a {@link ParquetFileReader} for the supplied {@link URI}. Wraps {@link IOException} as
      * {@link TableDataException}.
      *
-     * @param parquetFileURI The {@link URI} to read
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
      * @param readInstructions the instructions for customizations while reading
      * @return The new {@link ParquetFileReader}
      */
@@ -1139,20 +1140,20 @@ public class ParquetTools {
     /**
      * Make a {@link ParquetFileReader} for the supplied {@link File}.
      *
-     * @param parquetFile The {@link File} to read
+     * @param parquetFile The parquet file or the parquet metadata file
      * @return The new {@link ParquetFileReader}
      * @throws IOException if an IO exception occurs
      */
     public static ParquetFileReader getParquetFileReaderChecked(
             @NotNull final File parquetFile,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
-        return getParquetFileReaderChecked(convertFileToURI(parquetFile), readInstructions);
+        return getParquetFileReaderChecked(convertFileToURI(parquetFile, false), readInstructions);
     }
 
     /**
      * Make a {@link ParquetFileReader} for the supplied {@link URI}.
      *
-     * @param parquetFileURI The {@link URI} to read
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
      * @return The new {@link ParquetFileReader}
      * @throws IOException if an IO exception occurs
      */
