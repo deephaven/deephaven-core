@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.LeftInput;
+import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.*;
 
 class NaturalJoinHelper {
 
@@ -57,6 +57,8 @@ class NaturalJoinHelper {
 
         try (final BucketingContext bc = new BucketingContext("naturalJoin",
                 leftTable, rightTable, columnsToMatch, columnsToAdd, control, true, true)) {
+            final JoinControl.BuildParameters.From firstBuildFrom = bc.buildParameters.firstBuildFrom();
+            final int initialHashTableSize = bc.buildParameters.hashTableSize();
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
@@ -92,7 +94,7 @@ class NaturalJoinHelper {
 
                 final BothIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.make(
                         IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        bc.buildParameters.hashTableSize(), control.getMaximumLoadFactor(),
+                        initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
 
@@ -133,10 +135,12 @@ class NaturalJoinHelper {
             }
 
             if (leftTable.isRefreshing()) {
+                Assert.eq(firstBuildFrom, "firstBuildFrom", RightInput);
+
                 final LongArraySource leftRedirections = new LongArraySource();
                 final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
                         StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        bc.buildParameters.hashTableSize(), control.getMaximumLoadFactor(),
+                        initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
@@ -167,14 +171,18 @@ class NaturalJoinHelper {
             }
 
             if (rightTable.isRefreshing()) {
+                Assert.assertion(firstBuildFrom == LeftInput || firstBuildFrom == LeftDataIndex,
+                        "firstBuildFrom == LeftInput || firstBuildFrom == LeftDataIndex");
+
                 final RightIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.make(
                         RightIncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        bc.buildParameters.hashTableSize(), control.getMaximumLoadFactor(),
+                        initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
                 final RightIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
                         jsm.makeInitialBuildContext(leftTable);
 
-                if (bc.leftDataIndexTable != null) {
+                if (firstBuildFrom == LeftDataIndex) {
+                    Assert.neqNull(bc.leftDataIndexTable, "leftDataIndexTable");
                     jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources, ibc);
                     jsm.convertLeftDataIndex(bc.leftDataIndexTable.intSize(), ibc, bc.leftDataIndexRowSetSource);
                 } else {
@@ -183,7 +191,7 @@ class NaturalJoinHelper {
 
                 jsm.addRightSide(rightTable.getRowSet(), bc.rightSources);
 
-                if (bc.leftDataIndexTable != null) {
+                if (firstBuildFrom == LeftDataIndex) {
                     rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable,
                             bc.leftDataIndexRowSetSource, bc.leftDataIndexTable.intSize(),
                             exactMatch, ibc, control.getRedirectionType(leftTable));
@@ -208,10 +216,11 @@ class NaturalJoinHelper {
                 return result;
             }
 
-            if (bc.leftDataIndexTable != null) {
+            if (firstBuildFrom == LeftDataIndex) {
+                Assert.neqNull(bc.leftDataIndexTable, "leftDataIndexTable");
                 final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
                         StaticNaturalJoinStateManagerTypedBase.class, bc.leftDataIndexSources,
-                        bc.originalLeftDataIndexSources, bc.buildParameters.hashTableSize(),
+                        bc.originalLeftDataIndexSources, initialHashTableSize,
                         control.getMaximumLoadFactor(), control.getTargetLoadFactor());
 
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
@@ -221,11 +230,13 @@ class NaturalJoinHelper {
                 rowRedirection = jsm.buildGroupedRowRedirectionFromHashSlots(leftTable, exactMatch,
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
-            } else if (bc.buildParameters.firstBuildFrom() == LeftInput) {
+            } else if (firstBuildFrom == LeftInput) {
                 final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
                         StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        bc.buildParameters.hashTableSize(), control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
+                        // The static state manager doesn't allow rehashing, so we must allocate a big enough hash
+                        // table for the possibility that all left rows will have unique keys.
+                        control.tableSize(leftTable.size()),
+                        control.getMaximumLoadFactor(), control.getTargetLoadFactor());
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
                 jsm.buildFromLeftSide(leftTable, bc.leftSources, leftHashSlots);
                 try {
@@ -239,7 +250,7 @@ class NaturalJoinHelper {
                 final LongArraySource leftRedirections = new LongArraySource();
                 final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
                         StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        bc.buildParameters.hashTableSize(), control.getMaximumLoadFactor(),
+                        initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
