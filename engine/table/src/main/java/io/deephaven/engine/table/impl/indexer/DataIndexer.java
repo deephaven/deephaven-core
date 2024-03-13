@@ -108,6 +108,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return Whether {@code table} has a DataIndexer with a {@link DataIndex} for the given key columns
      */
     public static boolean hasDataIndex(@NotNull Table table, @NotNull final String... keyColumnNames) {
+        if (keyColumnNames.length == 0) {
+            return false;
+        }
         table = table.coalesce();
         final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
         if (indexer == null) {
@@ -137,6 +140,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return Whether this DataIndexer has a {@link DataIndex} for the given key columns
      */
     public boolean hasDataIndex(@NotNull final Collection<ColumnSource<?>> keyColumns) {
+        if (keyColumns.isEmpty()) {
+            return false;
+        }
         return rootCache.contains(pathFor(keyColumns));
     }
 
@@ -150,6 +156,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return The {@link DataIndex}, or {@code null} if one does not exist
      */
     public static DataIndex getDataIndex(@NotNull Table table, final String... keyColumnNames) {
+        if (keyColumnNames.length == 0) {
+            return null;
+        }
         table = table.coalesce();
         final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
         if (indexer == null) {
@@ -177,6 +186,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @return The {@link DataIndex}, or {@code null} if one does not exist
      */
     public DataIndex getDataIndex(@NotNull final Collection<ColumnSource<?>> keyColumns) {
+        if (keyColumns.isEmpty()) {
+            return null;
+        }
         return rootCache.get(pathFor(keyColumns));
     }
 
@@ -193,6 +205,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     @Nullable
     public static DataIndex getOptimalPartialIndex(Table table, final String... keyColumnNames) {
         // TODO-RWC: Consider whether this is really safe to use
+        if (keyColumnNames.length == 0) {
+            return null;
+        }
         if (table.isRefreshing()) {
             table.getUpdateGraph().checkInitiateSerialTableOperation();
         }
@@ -225,6 +240,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     public static DataIndex getOrCreateDataIndex(
             @NotNull final Table table,
             @NotNull final String... keyColumnNames) {
+        if (keyColumnNames.length == 0) {
+            throw new IllegalArgumentException("Cannot create a DataIndex without any key columns");
+        }
         final QueryTable tableToUse = (QueryTable) table.coalesce();
         final DataIndexer dataIndexer = DataIndexer.of(tableToUse.getRowSet());
         return dataIndexer.rootCache.computeIfAbsent(dataIndexer.pathFor(getColumnSources(tableToUse, keyColumnNames)),
@@ -238,6 +256,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @throws IllegalStateException If a valid, live {@link DataIndex} already exists for the given key columns
      */
     public void addDataIndex(@NotNull final DataIndex dataIndex) {
+        if (dataIndex.keyColumnMap().isEmpty()) {
+            throw new IllegalArgumentException("DataIndex must have at least one key column");
+        }
         if (!rootCache.add(pathFor(dataIndex.keyColumnMap().keySet()), dataIndex)) {
             throw new IllegalStateException(String.format("Attempted to add a duplicate index %s for key columns %s",
                     dataIndex, dataIndex.keyColumnMap().keySet()));
