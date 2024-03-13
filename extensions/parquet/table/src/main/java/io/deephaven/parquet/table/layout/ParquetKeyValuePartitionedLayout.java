@@ -3,7 +3,6 @@
  */
 package io.deephaven.parquet.table.layout;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -33,7 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout.buildLocationKeys;
-import static io.deephaven.parquet.table.layout.ParquetFileHelper.fileNameMatches;
+import static io.deephaven.parquet.table.layout.ParquetFileHelper.isNonHiddenParquetURI;
 
 /**
  * Key-Value partitioned layout for Parquet data.
@@ -105,17 +104,13 @@ public class ParquetKeyValuePartitionedLayout implements TableLocationKeyFinder<
             final boolean[] registered = {false}; // Hack to make the variable final
             try {
                 provider.applyToChildURIsRecursively(tableRootDirectory, uri -> {
-                    if (!fileNameMatches(uri)) {
+                    if (!isNonHiddenParquetURI(uri)) {
                         // Skip non-parquet URIs
                         return;
                     }
                     final Collection<String> partitionValues = new ArrayList<>();
                     final String fileRelativePath = uri.getPath().substring(tableRootDirectory.getPath().length());
                     getPartitions(fileRelativePath, partitionKeys, partitionValues, takenNames, registered[0]);
-                    if (partitionValues.isEmpty()) {
-                        // Found no valid partitioning levels, skip the file
-                        return;
-                    }
                     if (!registered[0]) {
                         locationTableBuilder.registerPartitionKeys(partitionKeys);
                         registered[0] = true;
@@ -137,58 +132,49 @@ public class ParquetKeyValuePartitionedLayout implements TableLocationKeyFinder<
             @NotNull final Collection<String> partitionValues,
             @NotNull final Set<String> takenNames,
             final boolean registered) {
-        int columnIndex = 0;
+        int partitioningColumnIndex = 0;
         int start = 0;
-        boolean parsedFirstKeyValuePair = false;
+        // TODO Should I just do a split instead of iteration
         for (int i = 0; i < path.length(); i++) {
             // Find the next directory name delimited by "/" or end of the string
-            if (path.charAt(i) == '/') {
-                if (start < i) { // Ignore empty directory names
-                    final String dirName = path.substring(start, i);
-                    if (dirName.charAt(0) == '.') {
-                        // Skip files inside dot directories
-                        partitionValues.clear();
-                        return;
-                    }
-                    final int eqIndex = dirName.indexOf('=');
-                    // If '=' is not the first or last character and there is exactly one "=" in the directory name
-                    if (eqIndex > 0 && eqIndex < dirName.length() - 1 &&
-                            dirName.indexOf('=', eqIndex + 1) == -1) {
-                        if (columnIndex == maxPartitioningLevels) {
-                            throw new TableDataException("Too many partitioning levels at " + path + ", maximum " +
-                                    "expected partitioning levels are " + maxPartitioningLevels);
-                        }
-                        // TODO Is this legalizing adding any value? There is also a comment in the class description
-                        final String columnKey =
-                                NameValidator.legalizeColumnName(dirName.substring(0, eqIndex), takenNames);
-                        if (registered) {
-                            // We have already seen encountered another parquet file in the tree, so compare the
-                            // partitioning levels against the previous ones
-                            if (columnIndex >= partitionKeys.size()) {
-                                throw new TableDataException("Too many partitioning levels at " + path + " (expected "
-                                        + partitionKeys.size() + ") based on earlier parquet files in the tree.");
-                            }
-                            if (!partitionKeys.get(columnIndex).equals(columnKey)) {
-                                throw new TableDataException(String.format(
-                                        "Column name mismatch at column index %d: expected %s found %s at %s",
-                                        columnIndex, partitionKeys.get(columnIndex), columnKey, path));
-                            }
-                        } else {
-                            // This is the first parquet file in the tree, so accumulate the partitioning levels
-                            partitionKeys.add(columnKey);
-                        }
-                        partitionValues.add(dirName.substring(eqIndex + 1));
-                        columnIndex++;
-                        parsedFirstKeyValuePair = true;
-                    } else if (parsedFirstKeyValuePair) {
-                        // All key-value pairs must be at the end of the path before the filename
-                        throw new TableDataException("Unexpected directory name format (not key=value) at " + path);
-                    }
-                }
-                start = i + 1; // Move start to the character after "/"
+            if (path.charAt(i) != '/') {
+                continue;
             }
+            if (start < i) { // Ignore empty directory names
+                final String dirName = path.substring(start, i);
+                final String[] components = dirName.split("=");
+                if (components.length != 2) {
+                    throw new TableDataException("Unexpected directory name format (not key=value) at "
+                            + new File(tableRootDirectory.getPath(), path));
+                }
+                if (partitioningColumnIndex == maxPartitioningLevels) {
+                    throw new TableDataException("Too many partitioning levels at " + path + ", maximum " +
+                            "expected partitioning levels are " + maxPartitioningLevels);
+                }
+                // TODO Is this legalizing adding any value? There is also a comment in the class description
+                final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
+                if (registered) {
+                    // We have already seen another parquet file in the tree, so compare the
+                    // partitioning levels against the previous ones
+                    if (partitioningColumnIndex >= partitionKeys.size()) {
+                        throw new TableDataException("Too many partitioning levels at " + path + " (expected "
+                                + partitionKeys.size() + ") based on earlier parquet files in the tree.");
+                    }
+                    if (!partitionKeys.get(partitioningColumnIndex).equals(columnKey)) {
+                        throw new TableDataException(String.format(
+                                "Column name mismatch at column index %d: expected %s found %s at %s",
+                                partitioningColumnIndex, partitionKeys.get(partitioningColumnIndex), columnKey,
+                                path));
+                    }
+                } else {
+                    // This is the first parquet file in the tree, so accumulate the partitioning levels
+                    partitionKeys.add(columnKey);
+                }
+                final String columnValue = components[1];
+                partitionValues.add(columnValue);
+                partitioningColumnIndex++;
+            }
+            start = i + 1;
         }
     }
-
-
 }

@@ -122,7 +122,7 @@ public final class ParquetTableReadWriteTest {
     // TODO(deephaven-core#5064): Add support for local S3 testing
     // The following tests are disabled by default, as they require a AWS access key and secret key to be set
     private static final boolean ENABLE_S3_TESTING =
-            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
+            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", true);
 
     private static File rootFile;
 
@@ -661,7 +661,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readFlatPartitionedParquetFromS3() {
-        // Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
                 .readAheadCount(1)
@@ -675,6 +675,25 @@ public final class ParquetTableReadWriteTest {
                 .setSpecialInstructions(s3Instructions)
                 .build();
         ParquetTools.readFlatPartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
+                readInstructions).select();
+    }
+
+    @Test
+    public void readFlatPartitionedDataAsKeyValuePartitionedParquetFromS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.defaultCredentials())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
                 readInstructions).select();
     }
 
@@ -714,7 +733,7 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition ookla_table_definition = TableDefinition.of(
                 ColumnDefinition.ofInt("quarter").withPartitioning(),
                 ColumnDefinition.ofString("quadkey"));
-        ParquetTools.readKeyValuePartitionedTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023/",
+        ParquetTools.readKeyValuePartitionedTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
                 readInstructions, ookla_table_definition).head(10).select();
     }
 
