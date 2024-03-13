@@ -165,6 +165,46 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # region Conversions: Python To Java
 
+def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo, offset: datetime.timedelta) -> TimeZone:
+    """
+    Converts a Python time zone to a Java TimeZone.
+
+    Args:
+        tzi: time zone info
+        offset: UTC offset
+
+    Returns:
+        Java TimeZone
+    """
+    if not tzi:
+        return None
+
+    # Try to get the time zone from the zone name
+    try:
+        return _JDateTimeUtils.parseTimeZone(str(tzi))
+    except Exception:
+        pass
+
+    # Try to get the time zone from the UTC offset
+
+    if not offset:
+        raise ValueError("Unable to determine the time zone UTC offset")
+
+    if offset.microseconds != 0 or offset.seconds%60 != 0:
+        raise ValueError(f"Unsupported time zone offset contains fractions of a minute: {offset}")
+
+    ts = offset.total_seconds()
+
+    if ts >= 0:
+        sign = "+"
+    else:
+        sign = "-"
+        ts = -ts
+
+    hours = int(ts / 3600)
+    minutes = int((ts % 3600) / 60)
+    return _JDateTimeUtils.parseTimeZone(f"UTC{sign}{hours:02d}:{minutes:02d}")
+
 
 def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]) -> \
         Optional[TimeZone]:
@@ -192,12 +232,15 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
         elif isinstance(tz, datetime.tzinfo):
-            return _JDateTimeUtils.parseTimeZone(str(tz))
+            return _tzinfo_to_j_time_zone(tz, tz.utcoffset(None) if tz else None)
         elif isinstance(tz, datetime.datetime):
-            if not tz.tzname():
-                return _JDateTimeUtils.parseTimeZone(tz.astimezone().tzname())
+            tzi = tz.tzinfo
+            rst = _tzinfo_to_j_time_zone(tzi, tzi.utcoffset(tz) if tzi else None)
 
-            return _JDateTimeUtils.parseTimeZone(tz.tzname())
+            if not rst:
+                raise ValueError("datetime is not time zone aware")
+
+            return rst
         else:
             raise TypeError("Unsupported conversion: " + str(type(tz)) + " -> TimeZone")
     except TypeError as e:
