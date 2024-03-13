@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.

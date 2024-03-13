@@ -45,7 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * API for writing DH tables in parquet format

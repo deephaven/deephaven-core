@@ -54,8 +54,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
+import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 

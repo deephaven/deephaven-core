@@ -32,8 +32,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
+import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 

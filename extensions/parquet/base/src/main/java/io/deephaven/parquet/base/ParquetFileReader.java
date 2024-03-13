@@ -18,7 +18,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,

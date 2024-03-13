@@ -88,6 +88,7 @@ import org.junit.experimental.categories.Category;
 
 import javax.annotation.Nullable;
 
+import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
@@ -108,7 +109,6 @@ import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
