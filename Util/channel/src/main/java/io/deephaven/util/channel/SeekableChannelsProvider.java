@@ -33,11 +33,11 @@ public interface SeekableChannelsProvider extends SafeCloseable {
             uri = new URI(source);
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return convertFileToURI(new File(source), isDirectory);
+            return convertToURI(new File(source), isDirectory);
         }
         if (uri.getScheme() == null) {
             // Convert to a "file" URI
-            return convertFileToURI(new File(source), isDirectory);
+            return convertToURI(new File(source), isDirectory);
         }
         return uri;
     }
@@ -50,7 +50,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @param isDirectory Whether the source file is a directory
      * @return The URI object
      */
-    static URI convertFileToURI(final File file, final boolean isDirectory) {
+    static URI convertToURI(final File file, final boolean isDirectory) {
         String absPath = file.getAbsolutePath();
         if (absPath.isEmpty()) {
             throw new IllegalArgumentException("Cannot convert file with empty path to URI: " + file);
@@ -61,7 +61,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         if (absPath.charAt(0) != '/') {
             absPath = "/" + absPath;
         }
-        if (absPath.charAt(absPath.length() - 1) != '/' && isDirectory) {
+        if (isDirectory && absPath.charAt(absPath.length() - 1) != '/') {
             absPath = absPath + "/";
         }
         if (absPath.startsWith("//")) {
@@ -83,8 +83,8 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @param isDirectory Whether the file is a directory
      * @return The URI object
      */
-    static URI convertPathToURI(final Path path, final boolean isDirectory) {
-        return convertFileToURI(path.toFile(), isDirectory);
+    static URI convertToURI(final Path path, final boolean isDirectory) {
+        return convertToURI(path.toFile(), isDirectory);
     }
 
     /**

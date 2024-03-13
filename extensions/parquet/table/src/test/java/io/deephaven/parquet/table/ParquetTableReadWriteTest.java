@@ -69,7 +69,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -109,7 +108,7 @@ import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
@@ -954,7 +953,7 @@ public final class ParquetTableReadWriteTest {
         final String filename = "basicWriteTests.parquet";
         final File destFile = new File(rootFile, filename);
         final String absolutePath = destFile.getAbsolutePath();
-        final URI fileURI = convertFileToURI(destFile, false);
+        final URI fileURI = convertToURI(destFile, false);
         ParquetTools.writeTable(tableToSave, absolutePath);
 
         // Read from file URI
@@ -1231,7 +1230,7 @@ public final class ParquetTableReadWriteTest {
         writeTable(someTable, firstDataFile);
         writeTable(someTable, secondDataFile);
 
-        final URI parentURI = convertFileToURI(parentDir, true);
+        final URI parentURI = convertToURI(parentDir, true);
         final Table partitionedTable = readTable(parentURI.toString()).select();
         final Set<String> columnsSet = partitionedTable.getDefinition().getColumnNameSet();
         assertTrue(columnsSet.size() == 2 && columnsSet.contains("A") && columnsSet.contains("X"));

@@ -18,7 +18,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
@@ -62,7 +61,7 @@ public class ParquetFileReader {
         this.channelsProvider = channelsProvider;
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
-            rootURI = convertFileToURI(new File(parquetFileURI).getParentFile(), true);
+            rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
@@ -73,7 +72,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     private static URI validateParquetFile(@NotNull final File file) {
-        return validateParquetFile(convertFileToURI(file, false));
+        return validateParquetFile(convertToURI(file, false));
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {

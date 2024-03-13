@@ -55,8 +55,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.parquet.table.layout.ParquetFileHelper.convertParquetSourceToURI;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertFileToURI;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
@@ -186,6 +184,19 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
         return readTableInternal(sourceFile, readInstructions);
+    }
+
+    /**
+     * Convert a parquet source to a URI.
+     *
+     * @param source The path or URI of parquet file or directory to examine
+     * @return The URI
+     */
+    private static URI convertParquetSourceToURI(@NotNull final String source) {
+        if (source.endsWith(".parquet")) {
+            return convertToURI(source, false);
+        }
+        return convertToURI(source, true);
     }
 
     /**
@@ -963,7 +974,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(convertFileToURI(file, false), readInstructions);
+        return readSingleFileTable(convertToURI(file, false), readInstructions);
     }
 
     /**
@@ -1009,7 +1020,7 @@ public class ParquetTools {
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readSingleFileTable(convertFileToURI(file, false), readInstructions, tableDefinition);
+        return readSingleFileTable(convertToURI(file, false), readInstructions, tableDefinition);
     }
 
     /**
@@ -1147,7 +1158,7 @@ public class ParquetTools {
     public static ParquetFileReader getParquetFileReaderChecked(
             @NotNull final File parquetFile,
             @NotNull final ParquetInstructions readInstructions) throws IOException {
-        return getParquetFileReaderChecked(convertFileToURI(parquetFile, false), readInstructions);
+        return getParquetFileReaderChecked(convertToURI(parquetFile, false), readInstructions);
     }
 
     /**

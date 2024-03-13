@@ -33,7 +33,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertPathToURI;
+import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -121,7 +121,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             return uri;
         }
         if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
-            return uri = convertPathToURI(Path.of(rootURI).resolve(columnChunk.getFile_path()), false);
+            return uri = convertToURI(Path.of(rootURI).resolve(columnChunk.getFile_path()), false);
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             return uri = rootURI;
