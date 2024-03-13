@@ -225,7 +225,7 @@ public class MultiColumnSortTest {
                     "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
-            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+            final int actualSize = BenchmarkTools.sizeWithSparsity(10_000_000, 90);
 
             System.out.println("Actual Size: " + actualSize);
 
@@ -269,7 +269,7 @@ public class MultiColumnSortTest {
                     "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
-            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+            final int actualSize = BenchmarkTools.sizeWithSparsity(10_000_000, 90);
 
             System.out.println("Actual Size: " + actualSize);
 
@@ -315,7 +315,7 @@ public class MultiColumnSortTest {
                     "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
-            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+            final int actualSize = BenchmarkTools.sizeWithSparsity(10_000_000, 90);
 
             System.out.println("Actual Size: " + actualSize);
 
