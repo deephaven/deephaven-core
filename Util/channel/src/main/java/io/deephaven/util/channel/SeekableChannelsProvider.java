@@ -43,8 +43,9 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     }
 
     /**
-     * Takes a file and convert it to a URI object. We should use this method instead of {@link File#toURI()} because
-     * {@link File#toURI()} internally calls {@link File#isDirectory()}, which can lead to disk access.
+     * Takes a file and convert it to a URI object. This method is preferred instead of {@link File#toURI()} because
+     * {@link File#toURI()} internally calls {@link File#isDirectory()}, which typically invokes the {@code stat} system
+     * call, resulting in filesystem metadata access.
      *
      * @param file The file
      * @param isDirectory Whether the source file is a directory
@@ -52,9 +53,6 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     static URI convertToURI(final File file, final boolean isDirectory) {
         String absPath = file.getAbsolutePath();
-        if (absPath.isEmpty()) {
-            throw new IllegalArgumentException("Cannot convert file with empty path to URI: " + file);
-        }
         if (File.separatorChar != '/') {
             absPath = absPath.replace(File.separatorChar, '/');
         }
@@ -75,9 +73,8 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     }
 
     /**
-     * Takes a path and convert it to a URI object. We should use this method instead of {@link Path#toUri()} because
-     * {@link Path#toUri()} internally does a {@code stat} system call to extract information whether file is a
-     * directory.
+     * Takes a path and convert it to a URI object. This method is preferred instead of {@link Path#toUri()} because
+     * {@link Path#toUri()} internally invokes the {@code stat} system call, resulting in filesystem metadata access.
      *
      * @param path The path
      * @param isDirectory Whether the file is a directory
