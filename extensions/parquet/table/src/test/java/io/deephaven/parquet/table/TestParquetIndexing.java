@@ -25,20 +25,19 @@ public class TestParquetIndexing extends RefreshingTableTestCase {
         try {
             directory.mkdirs();
 
-            Integer data[] = new Integer[80_000 * 4];
+            final int[] data = new int[80_000 * 4];
             for (int i = 0; i < data.length; i++) {
                 data[i] = i / 4;
             }
 
-            final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v"));
-            final Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
+            final Table table = TableTools.newTable(TableTools.intCol("v", data));
             DataIndexer.getOrCreateDataIndex(table, "v");
 
             final ParquetInstructions instructions = ParquetInstructions.builder()
                     .addColumnNameMapping("V", "v")
                     .build();
             final File dest = new File(directory, "testOverflow.parquet");
-            ParquetTools.writeTable(table, dest, tableDefinition, instructions);
+            ParquetTools.writeTable(table, dest, instructions);
 
             final Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
