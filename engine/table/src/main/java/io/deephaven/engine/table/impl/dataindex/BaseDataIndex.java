@@ -60,7 +60,7 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
      *
      * @return true if the index is potentially usable, false otherwise
      */
-    public abstract boolean validate();
+    public abstract boolean isValid();
 
     /**
      * Return a copy of {@code parent} with the row set column replaced with a {@link RowSetColumnSourceWrapper wrapper}

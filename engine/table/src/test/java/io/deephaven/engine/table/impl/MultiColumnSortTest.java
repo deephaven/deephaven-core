@@ -90,19 +90,17 @@ public class MultiColumnSortTest {
 
         if (indexType == IndexType.FULL) {
             // Create full indexes for every possible column subset.
-            final DataIndexer dataIndexer = DataIndexer.of(table.getRowSet());
             for (Set<String> keyColumnSubset : keyColumnPowerSet) {
                 if (keyColumnSubset.isEmpty() || keyColumnSubset.size() == columnNames.size()) {
                     // Won't consider the empty or full set.
                     continue;
                 }
-                dataIndexer.createDataIndex(table, keyColumnSubset.toArray(String[]::new));
+                DataIndexer.getOrCreateDataIndex(table, keyColumnSubset.toArray(String[]::new));
             }
         } else if (indexType == IndexType.PARTIAL) {
             // Only create single-column indexes
-            final DataIndexer dataIndexer = DataIndexer.of(table.getRowSet());
             for (String keyColumn : columnNames) {
-                dataIndexer.createDataIndex(table, keyColumn);
+                DataIndexer.getOrCreateDataIndex(table, keyColumn);
             }
         }
 
@@ -227,7 +225,7 @@ public class MultiColumnSortTest {
                     "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
-            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+            final int actualSize = BenchmarkTools.sizeWithSparsity(10_000_000, 90);
 
             System.out.println("Actual Size: " + actualSize);
 
@@ -271,7 +269,7 @@ public class MultiColumnSortTest {
                     "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
-            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+            final int actualSize = BenchmarkTools.sizeWithSparsity(10_000_000, 90);
 
             System.out.println("Actual Size: " + actualSize);
 
@@ -291,7 +289,7 @@ public class MultiColumnSortTest {
             final long startGen = System.currentTimeMillis();
             System.out.println(new Date(startGen) + " Generating Table.");
             final Table table = bmTable.getTable();
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "Enum1", "L1");
+            DataIndexer.getOrCreateDataIndex(table, "Enum1", "L1");
 
             final long endGen = System.currentTimeMillis();
             System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");
@@ -317,7 +315,7 @@ public class MultiColumnSortTest {
                     "Enum2", 1000, 6, 6, 0xF00DF00DL);
 
             final BenchmarkTableBuilder builder;
-            final int actualSize = BenchmarkTools.sizeWithSparsity(25000000, 90);
+            final int actualSize = BenchmarkTools.sizeWithSparsity(10_000_000, 90);
 
             System.out.println("Actual Size: " + actualSize);
 
@@ -337,7 +335,7 @@ public class MultiColumnSortTest {
             final long startGen = System.currentTimeMillis();
             System.out.println(new Date(startGen) + " Generating Table.");
             final Table table = bmTable.getTable();
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "Enum1");
+            DataIndexer.getOrCreateDataIndex(table, "Enum1");
 
             final long endGen = System.currentTimeMillis();
             System.out.println(new Date(endGen) + " Completed generate in " + (endGen - startGen) + "ms");

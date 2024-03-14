@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -18,10 +17,7 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
 public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
 
@@ -40,12 +36,12 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         return result;
     }
 
-    static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
+    protected static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
         private final RowSet.Iterator iterator;
         private final ColumnSource<Instant> columnSource;
-        Instant lastTime;
-        long lastIndex;
+        protected Instant lastTime;
+        protected long lastIndex;
         public final long pos;
 
         private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<Instant> columnSource, long pos) {
@@ -56,7 +52,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
             lastTime = columnSource.get(lastIndex);
         }
 
-        IteratorsAndNextTime next() {
+        protected IteratorsAndNextTime next() {
             if (iterator.hasNext()) {
                 lastIndex = iterator.nextLong();
                 lastTime = columnSource.get(lastIndex);
@@ -75,21 +71,20 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         }
     }
 
-    protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn, Replayer replayer, WritableRowRedirection rowRedirection, String[] groupingColumns) {
+    protected QueryReplayGroupedTable(
+            Table source,
+            String timeColumn,
+            Replayer replayer,
+            WritableRowRedirection rowRedirection,
+            String[] groupingColumns) {
 
-        super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
+        super(RowSetFactory.empty().toTracking(), getResultSources(source.getColumnSourceMap(), rowRedirection));
         this.rowRedirection = rowRedirection;
 
-        final ColumnSource<?>[] columnSources =
-                Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
-
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        final BasicDataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
+        final BasicDataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, groupingColumns);
         final Table indexTable = dataIndex.table();
 
-        // noinspection unchecked
-        ColumnSource<Instant> timeSource = (ColumnSource<Instant>) input.get(timeColumn);
+        ColumnSource<Instant> timeSource = source.getColumnSource(timeColumn, Instant.class);
         int pos = 0;
         try (final CloseableIterator<RowSet> it = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
             while (it.hasNext()) {
@@ -99,7 +94,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
                 }
             }
         }
-        Require.requirement(replayer != null, "replayer != null");
+        Require.neqNull(replayer, "replayer");
         setRefreshing(true);
         this.replayer = replayer;
         run();

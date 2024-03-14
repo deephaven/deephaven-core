@@ -132,13 +132,12 @@ public class ParquetTableWriter {
             if (indexInfoList != null) {
                 cleanupFiles = new ArrayList<>(indexInfoList.size());
                 final Path destDirPath = Paths.get(destPathName).getParent();
-                final DataIndexer dataIndexer = DataIndexer.of(t.getRowSet());
                 for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                     try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
                         // This will retrieve an existing index if one exists, or create a new one if not
                         final BasicDataIndex dataIndex = Optional
-                                .ofNullable(dataIndexer.getDataIndex(t, info.indexColumnNames))
-                                .or(() -> Optional.of(dataIndexer.createDataIndex(t, info.indexColumnNames)))
+                                .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
+                                .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
                                 .get()
                                 .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                         final Table indexTable = dataIndex.table();

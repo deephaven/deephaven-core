@@ -34,7 +34,6 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     private static final int KEY_NOT_FOUND = -1;
 
     private final String keyColumnName;
-    private final RegionedColumnSourceManager columnSourceManager;
 
     private final Map<ColumnSource<?>, String> keyColumnMap;
 
@@ -70,7 +69,6 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
             @NotNull final ColumnSource<KEY_TYPE> keySource,
             @NotNull final RegionedColumnSourceManager columnSourceManager) {
         this.keyColumnName = keyColumnName;
-        this.columnSourceManager = columnSourceManager;
 
         keyColumnMap = Map.of(keySource, keyColumnName);
 
@@ -264,7 +262,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
     }
 
     @Override
-    public boolean validate() {
+    public boolean isValid() {
         return true;
     }
 }

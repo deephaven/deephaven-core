@@ -49,16 +49,17 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         testTable = TstUtils.getTable(INITIAL_SIZE, new Random(0), columnInfo);
         testTable.setRefreshing(true);
 
-        // Add some data indexes.
-        final DataIndexer dataIndexer = DataIndexer.of(testTable.getRowSet());
-        dataIndexer.createDataIndex(testTable, "Sym");
-        dataIndexer.createDataIndex(testTable, "Sym2");
-        dataIndexer.createDataIndex(testTable, "Sym", "Sym2");
-
+        // Add some data indexes; they will be retained by our parent class's LivenessScope
         dataIndexes = new ArrayList<>();
-        dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym"));
-        dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym2"));
-        dataIndexes.add(dataIndexer.getDataIndex(testTable, "Sym", "Sym2"));
+        dataIndexes.add(DataIndexer.getOrCreateDataIndex(testTable, "Sym"));
+        dataIndexes.add(DataIndexer.getOrCreateDataIndex(testTable, "Sym2"));
+        dataIndexes.add(DataIndexer.getOrCreateDataIndex(testTable, "Sym", "Sym2"));
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        dataIndexes = null;
     }
 
     @Test
@@ -96,13 +97,13 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         final Random random = new Random(0);
         final DataIndexer dataIndexer = DataIndexer.of(testTable.getRowSet());
 
-        final DataIndex dataIndex = dataIndexer.getDataIndex(testTable, "Sym", "Sym2");
+        final DataIndex dataIndex = DataIndexer.getDataIndex(testTable, "Sym", "Sym2");
         Assert.neqNull(dataIndex, "dataIndex");
 
         // Make sure the index is found with the re-ordered column names.
-        Assert.eqTrue(dataIndexer.hasDataIndex(testTable, "Sym2", "Sym"),
+        Assert.eqTrue(DataIndexer.hasDataIndex(testTable, "Sym2", "Sym"),
                 "dataIndexer.hasDataIndex(testTable, \"Sym2\", \"Sym\")");
-        final DataIndex tmp1 = dataIndexer.getDataIndex(testTable, "Sym2", "Sym");
+        final DataIndex tmp1 = DataIndexer.getDataIndex(testTable, "Sym2", "Sym");
         Assert.eq(dataIndex, "dataIndex", tmp1, "tmp1");
 
         final ColumnSource<?>[] columnsReordered = new ColumnSource<?>[] {

@@ -91,7 +91,7 @@ public class TestPartitioningColumns {
                 null);
 
         for (String colName : partitionKeys) {
-            final DataIndex fullIndex = DataIndexer.of(result.getRowSet()).getDataIndex(result, colName);
+            final DataIndex fullIndex = DataIndexer.getDataIndex(result, colName);
             Assert.neqNull(fullIndex, "fullIndex");
 
             final ColumnSource<?>[] columns = new ColumnSource<?>[] {result.getColumnSource(colName)};

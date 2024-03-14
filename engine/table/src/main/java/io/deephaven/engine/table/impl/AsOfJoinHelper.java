@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.asofjoin.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.asofjoin.ZeroKeyChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
@@ -63,7 +62,7 @@ public class AsOfJoinHelper {
 
         checkColumnConflicts(leftTable, columnsToAdd);
 
-        if (!leftTable.isRefreshing() && leftTable.size() == 0) {
+        if (!leftTable.isRefreshing() && leftTable.isEmpty()) {
             return makeResult(leftTable, rightTable, new SingleValueRowRedirection(RowSequence.NULL_ROW_KEY),
                     columnsToAdd, false);
         }
@@ -104,21 +103,16 @@ public class AsOfJoinHelper {
         if (rightTable.isRefreshing()) {
             if (leftTable.isRefreshing()) {
                 return bothIncrementalAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
-                        disallowExactMatch, stampPair,
-                        originalLeftSources, leftSources, originalRightSources, rightSources, leftStampSource,
-                        originalRightStampSource,
-                        rightStampSource, rowRedirection);
+                        disallowExactMatch, stampPair, originalLeftSources, leftSources, originalRightSources,
+                        rightSources, leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
             }
             return rightTickingLeftStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                     disallowExactMatch, stampPair, originalLeftSources, leftSources, originalRightSources, rightSources,
-                    leftStampSource,
-                    originalRightStampSource, rightStampSource,
-                    rowRedirection);
+                    leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
         } else {
             return rightStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                     disallowExactMatch, stampPair, originalLeftSources, leftSources, originalRightSources, rightSources,
-                    leftStampSource,
-                    originalRightStampSource, rightStampSource, rowRedirection);
+                    leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
         }
     }
 
@@ -140,109 +134,72 @@ public class AsOfJoinHelper {
             ColumnSource<?> rightStampSource,
             WritableRowRedirection rowRedirection) {
 
-        final IntegerArraySource slots = new IntegerArraySource();
-        final int slotCount;
-
-        final boolean buildLeft;
-        final int size;
+        // region This block is mostly copied to other entry points
+        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final Table leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
+        final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final Table rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
+        final JoinControl.BuildParameters buildParameters =
+                control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
 
         final RowSet leftRowSetToUse;
         final ColumnSource<?>[] leftSourcesToUse;
-        final DataIndex leftDataIndex;
         final RowSet rightRowSetToUse;
         final ColumnSource<?>[] rightSourcesToUse;
-        final DataIndex rightDataIndex;
 
-        if (control.useDataIndex(leftTable, originalLeftSources)) {
-            leftDataIndex = DataIndexer.of(leftTable.getRowSet()).getDataIndex(originalLeftSources);
-            final Table leftIndexTable = leftDataIndex.table();
-            leftRowSetToUse = leftIndexTable.getRowSet();
+        if (leftDataIndexTable != null) {
+            Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
+            leftRowSetToUse = leftDataIndexTable.getRowSet();
             leftSourcesToUse =
                     ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.indexKeyColumns(originalLeftSources));
-
-            if (control.useDataIndex(rightTable, rightSources)) {
-                rightDataIndex = DataIndexer.of(rightTable.getRowSet()).getDataIndex(originalRightSources);
-                final Table rightIndexTable = rightDataIndex.table();
-
-                rightRowSetToUse = rightIndexTable.getRowSet();
-                rightSourcesToUse =
-                        ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
-
-                buildLeft = leftIndexTable.size() < rightIndexTable.size();
-                size = buildLeft ? control.tableSize(leftIndexTable.size())
-                        : control.tableSize(rightIndexTable.size());
-            } else {
-                buildLeft = true;
-                size = control.tableSize(leftIndexTable.size());
-                rightRowSetToUse = rightTable.getRowSet();
-                rightSourcesToUse = rightSources;
-                rightDataIndex = null;
-            }
-        } else if (control.useDataIndex(rightTable, originalRightSources)) {
-            rightDataIndex = DataIndexer.of(rightTable.getRowSet()).getDataIndex(originalRightSources);
-            final Table rightIndexTable = rightDataIndex.table();
-            rightRowSetToUse = rightIndexTable.getRowSet();
+        } else {
+            leftRowSetToUse = leftTable.getRowSet();
+            leftSourcesToUse = leftSources;
+        }
+        if (rightDataIndexTable != null) {
+            Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.RightInput);
+            rightRowSetToUse = rightDataIndexTable.getRowSet();
             rightSourcesToUse =
                     ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
-
-            leftRowSetToUse = leftTable.getRowSet();
-            leftSourcesToUse = leftSources;
-            leftDataIndex = null;
-
-            buildLeft = leftTable.size() < rightIndexTable.size();
-            size = control.tableSize(Math.min(leftTable.size(), rightIndexTable.size()));
         } else {
-            buildLeft = control.buildLeft(leftTable, rightTable);
-            size = control.initialBuildSize();
-
-            leftRowSetToUse = leftTable.getRowSet();
-            leftSourcesToUse = leftSources;
-            leftDataIndex = null;
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
-            rightDataIndex = null;
+        }
+        // endregion This block is mostly copied to other entry points
+
+        final StaticHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
+                StaticAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
+                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+        final IntegerArraySource slots = new IntegerArraySource();
+
+        final int slotCount;
+        switch (buildParameters.firstBuildFrom()) {
+            case LeftInput:
+            case LeftDataIndex:
+                slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);
+                asOfJoinStateManager.probeRight(rightRowSetToUse, rightSourcesToUse);
+                break;
+            case RightInput:
+            case RightDataIndex:
+                slotCount = asOfJoinStateManager.buildFromRightSide(rightRowSetToUse, rightSourcesToUse, slots);
+                asOfJoinStateManager.probeLeft(leftRowSetToUse, leftSourcesToUse);
+                break;
+            default:
+                // noinspection DataFlowIssue
+                throw Assert.statementNeverExecuted("Unknown build from " + buildParameters.firstBuildFrom());
         }
 
-        final StaticHashedAsOfJoinStateManager asOfJoinStateManager;
-        asOfJoinStateManager =
-                TypedHasherFactory.make(StaticAsOfJoinStateManagerTypedBase.class,
-                        leftSources, originalLeftSources, size,
-                        control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-
-        if (buildLeft) {
-            slotCount = asOfJoinStateManager.buildFromLeftSide(
-                    leftRowSetToUse,
-                    leftSourcesToUse,
-                    slots);
-            asOfJoinStateManager.probeRight(rightRowSetToUse, rightSourcesToUse);
+        if (rightDataIndex != null) {
+            asOfJoinStateManager.populateRightRowSetsFromIndexTable(slots, slotCount, rightDataIndex.rowSetColumn());
         } else {
-            slotCount = asOfJoinStateManager.buildFromRightSide(rightRowSetToUse,
-                    rightSourcesToUse,
-                    slots);
-            asOfJoinStateManager.probeLeft(leftRowSetToUse, leftSourcesToUse);
+            asOfJoinStateManager.convertRightBuildersToRowSet(slots, slotCount);
         }
-
-        final ArrayValuesCache arrayValuesCache;
-        if (leftTable.isRefreshing()) {
-            if (rightDataIndex != null) {
-                // noinspection unchecked
-                asOfJoinStateManager.populateRightRowSetsFromIndexTable(slots, slotCount,
-                        rightDataIndex.rowSetColumn());
-            } else {
-                asOfJoinStateManager.convertRightBuildersToRowSet(slots, slotCount);
-            }
-            arrayValuesCache = new ArrayValuesCache(asOfJoinStateManager.getTableSize());
-        } else {
-            arrayValuesCache = null;
-            if (rightDataIndex != null) {
-                // noinspection unchecked
-                asOfJoinStateManager.populateRightRowSetsFromIndexTable(slots, slotCount,
-                        rightDataIndex.rowSetColumn());
-            } else {
-                asOfJoinStateManager.convertRightBuildersToRowSet(slots, slotCount);
-            }
-        }
-
+        final ArrayValuesCache arrayValuesCache = leftTable.isRefreshing()
+                ? new ArrayValuesCache(asOfJoinStateManager.getTableSize())
+                : null;
+        final ColumnSource<RowSet> leftDataIndexRowSetColumn = leftDataIndexTable != null
+                ? leftDataIndex.rowSetColumn()
+                : null;
         try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                 rightStampSource, originalRightStampSource);
                 final ResettableWritableLongChunk<RowKeys> keyChunk =
@@ -261,11 +218,9 @@ public class AsOfJoinHelper {
                     continue;
                 }
 
-                if (leftDataIndex != null) {
-                    if (leftRowSet.size() != 1) {
-                        throw new IllegalStateException("Groupings should have exactly one row key!");
-                    }
-                    leftRowSet = leftDataIndex.rowSetColumn().get(leftRowSet.get(0));
+                if (leftDataIndexRowSetColumn != null) {
+                    Assert.eq(leftRowSet.size(), "Indexed left row set size", 1);
+                    leftRowSet = leftDataIndexRowSetColumn.get(leftRowSet.get(0));
                 }
 
                 if (arrayValuesCache != null) {
@@ -407,7 +362,6 @@ public class AsOfJoinHelper {
             keyChunk.resetFromTypedArray(keyIndices, 0, rightSize);
             valuesChunk.resetFromArray(rightStampArray, 0, rightSize);
 
-            // noinspection unchecked
             stampContext.getAndCompactStamps(rightRowSet, keyChunk, valuesChunk);
 
             if (keyChunk.size() < rightSize) {
@@ -428,7 +382,6 @@ public class AsOfJoinHelper {
             valuesChunk.resetFromArray(arrayValuesCache.getValues(slot), 0, rightStampKeys.length);
         }
 
-        // noinspection unchecked
         stampContext.processEntry(leftRowSet, valuesChunk, keyChunk, rowRedirection);
     }
 
@@ -460,13 +413,10 @@ public class AsOfJoinHelper {
             keyChunk.resetFromTypedArray(keyIndices, 0, leftSize);
             valuesChunk.resetFromArray(leftStampArray, 0, leftSize);
 
-            // noinspection unchecked
             leftRowSet.fillRowKeyChunk(keyChunk);
 
-            // noinspection unchecked
             leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftRowSet);
 
-            // noinspection unchecked
             sortContext.ensureCapacity(leftSize).sort(keyChunk, valuesChunk);
 
             arrayValuesCache.setKeysAndValues(slot, keyIndices, leftStampArray);
@@ -519,57 +469,43 @@ public class AsOfJoinHelper {
                 SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
         final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
 
-        final int tableSize = control.initialBuildSize();
+        // region This block is mostly copied from rightStaticAj
+        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final Table leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
+        final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final Table rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
+        final JoinControl.BuildParameters buildParameters =
+                control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
 
-        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
-                TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
-                        leftSources, originalLeftSources, tableSize,
-                        control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-
-        final IntegerArraySource slots = new IntegerArraySource();
         final RowSet leftRowSetToUse;
         final ColumnSource<?>[] leftSourcesToUse;
-        final DataIndex leftDataIndex;
         final RowSet rightRowSetToUse;
         final ColumnSource<?>[] rightSourcesToUse;
-        final DataIndex rightDataIndex;
 
-        if (control.useDataIndex(leftTable, originalLeftSources)) {
-            leftDataIndex = DataIndexer.of(leftTable.getRowSet()).getDataIndex(originalLeftSources);
-            final Table leftIndexTable = leftDataIndex.table();
-            leftRowSetToUse = leftIndexTable.getRowSet();
+        if (leftDataIndexTable != null) {
+            Assert.eq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftDataIndex);
+            leftRowSetToUse = leftDataIndexTable.getRowSet();
             leftSourcesToUse =
                     ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.indexKeyColumns(originalLeftSources));
-
-            if (control.useDataIndex(rightTable, rightSources)) {
-                rightDataIndex = DataIndexer.of(rightTable.getRowSet()).getDataIndex(originalRightSources);
-                final Table rightIndexTable = rightDataIndex.table();
-                rightRowSetToUse = rightIndexTable.getRowSet();
-                rightSourcesToUse =
-                        ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
-            } else {
-                rightRowSetToUse = rightTable.getRowSet();
-                rightSourcesToUse = rightSources;
-                rightDataIndex = null;
-            }
-        } else if (control.useDataIndex(rightTable, originalRightSources)) {
-            rightDataIndex = DataIndexer.of(rightTable.getRowSet()).getDataIndex(originalRightSources);
-            final Table rightIndexTable = rightDataIndex.table();
-            rightRowSetToUse = rightIndexTable.getRowSet();
+        } else {
+            Assert.eq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
+            leftRowSetToUse = leftTable.getRowSet();
+            leftSourcesToUse = leftSources;
+        }
+        if (rightDataIndexTable != null) {
+            rightRowSetToUse = rightDataIndexTable.getRowSet();
             rightSourcesToUse =
                     ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
-
-            leftRowSetToUse = leftTable.getRowSet();
-            leftSourcesToUse = leftSources;
-            leftDataIndex = null;
         } else {
-            leftRowSetToUse = leftTable.getRowSet();
-            leftSourcesToUse = leftSources;
-            leftDataIndex = null;
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
-            rightDataIndex = null;
         }
+        // endregion This block is mostly copied from rightStaticAj
+
+        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
+                RightIncrementalAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
+                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+        final IntegerArraySource slots = new IntegerArraySource();
 
         final int slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);
         asOfJoinStateManager.probeRightInitial(rightRowSetToUse, rightSourcesToUse);
@@ -601,7 +537,7 @@ public class AsOfJoinHelper {
                 final int slot = slots.getInt(slotIndex);
                 final RowSet leftRowSet = asOfJoinStateManager.getAndClearLeftRowSet(slot);
                 assert leftRowSet != null;
-                assert leftRowSet.size() > 0;
+                assert leftRowSet.isNonempty();
 
                 final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot, (rightRowSet) -> {
                     final SegmentedSortedArray ssa = ssaFactory.get();
@@ -626,7 +562,6 @@ public class AsOfJoinHelper {
                 final WritableLongChunk<RowKeys> rightKeysForLeftChunk =
                         rightKeysForLeft.ensureCapacity(leftRowSet.intSize());
 
-                // noinspection unchecked
                 chunkSsaStamp.processEntry(leftValuesChunk, leftKeyChunk, rightSsa, rightKeysForLeftChunk,
                         disallowExactMatch);
 
@@ -721,7 +656,6 @@ public class AsOfJoinHelper {
 
                         rightSsa.removeAndGetPrior(rightValues.get(), rightKeyIndices.get(), priorRedirections.get());
 
-                        // noinspection unchecked
                         chunkSsaStamp.processRemovals(leftValuesChunk, leftKeyChunk, rightValues.get(),
                                 rightKeyIndices.get(), priorRedirections.get(), rowRedirection, modifiedBuilder,
                                 disallowExactMatch);
@@ -778,14 +712,12 @@ public class AsOfJoinHelper {
                                                     rightValues.get());
 
                                             if (sit.polarityReversed()) {
-                                                // noinspection unchecked
                                                 chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
                                                         rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
                                                         rowRedirection, disallowExactMatch);
                                                 rightSsa.applyShiftReverse(rightValues.get(), rightKeyIndices.get(),
                                                         sit.shiftDelta());
                                             } else {
-                                                // noinspection unchecked
                                                 chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
                                                         rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
                                                         rowRedirection, disallowExactMatch);
@@ -895,7 +827,6 @@ public class AsOfJoinHelper {
                                         leftStampFillContext, sortContext, leftKeyChunk, leftValuesChunk,
                                         leftValuesCache, slot);
 
-                                // noinspection unchecked
                                 chunkSsaStamp.findModified(0, leftValuesChunk, leftKeyChunk, rowRedirection,
                                         rightValues.get(), rightKeyIndices.get(), modifiedBuilder, disallowExactMatch);
                             }
@@ -953,58 +884,43 @@ public class AsOfJoinHelper {
                 SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
 
-        final int tableSize = control.initialBuildSize();
-
-        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
-                TypedHasherFactory.make(RightIncrementalAsOfJoinStateManagerTypedBase.class,
-                        leftSources, originalLeftSources, tableSize,
-                        control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-
-        final IntegerArraySource slots = new IntegerArraySource();
+        // region This block is mostly copied from rightStaticAj
+        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final Table leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
+        final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final Table rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
+        final JoinControl.BuildParameters buildParameters =
+                control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
 
         final RowSet leftRowSetToUse;
         final ColumnSource<?>[] leftSourcesToUse;
-        final DataIndex leftDataIndex;
         final RowSet rightRowSetToUse;
         final ColumnSource<?>[] rightSourcesToUse;
-        final DataIndex rightDataIndex;
 
-        if (control.useDataIndex(leftTable, originalLeftSources)) {
-            leftDataIndex = DataIndexer.of(leftTable.getRowSet()).getDataIndex(originalLeftSources);
-            final Table leftIndexTable = leftDataIndex.table();
-            leftRowSetToUse = leftIndexTable.getRowSet();
+        if (leftDataIndexTable != null) {
+            Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
+            leftRowSetToUse = leftDataIndexTable.getRowSet();
             leftSourcesToUse =
                     ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.indexKeyColumns(originalLeftSources));
-
-            if (control.useDataIndex(rightTable, rightSources)) {
-                rightDataIndex = DataIndexer.of(rightTable.getRowSet()).getDataIndex(originalRightSources);
-                final Table rightIndexTable = rightDataIndex.table();
-                rightRowSetToUse = rightIndexTable.getRowSet();
-                rightSourcesToUse =
-                        ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
-            } else {
-                rightRowSetToUse = rightTable.getRowSet();
-                rightSourcesToUse = rightSources;
-                rightDataIndex = null;
-            }
-        } else if (control.useDataIndex(rightTable, originalRightSources)) {
-            rightDataIndex = DataIndexer.of(rightTable.getRowSet()).getDataIndex(originalRightSources);
-            final Table rightIndexTable = rightDataIndex.table();
-            rightRowSetToUse = rightIndexTable.getRowSet();
-            rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
-
-            leftRowSetToUse = leftTable.getRowSet();
-            leftSourcesToUse = leftSources;
-            leftDataIndex = null;
         } else {
             leftRowSetToUse = leftTable.getRowSet();
             leftSourcesToUse = leftSources;
-            leftDataIndex = null;
+        }
+        if (rightDataIndexTable != null) {
+            Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.RightInput);
+            rightRowSetToUse = rightDataIndexTable.getRowSet();
+            rightSourcesToUse =
+                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
+        } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
-            rightDataIndex = null;
         }
+        // endregion This block is mostly copied from rightStaticAj
+
+        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
+                RightIncrementalAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
+                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+        final IntegerArraySource slots = new IntegerArraySource();
 
         int slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);
         slotCount = asOfJoinStateManager.buildFromRightSide(rightRowSetToUse, rightSourcesToUse, slots, slotCount);
@@ -1520,7 +1436,6 @@ public class AsOfJoinHelper {
                 rightStampSource.getChunkType().makeWritableChunk(rightRowSet.intSize());
 
         try (final SafeCloseableList chunksToClose = new SafeCloseableList(rightStampKeys, rightStampValues)) {
-            final Supplier<String> keyStringSupplier = () -> "[] (zero key columns)";
             try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                     rightStampSource, originalRightStampSource)) {
                 stampContext.getAndCompactStamps(rightRowSet, rightStampKeys, rightStampValues);

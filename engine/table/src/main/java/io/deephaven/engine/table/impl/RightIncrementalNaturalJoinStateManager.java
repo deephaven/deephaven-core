@@ -22,7 +22,7 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
     public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?> [] rightSources);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable, ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch, InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable, ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch, InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
 
     // modification probes
     public abstract void applyRightShift(Context pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);

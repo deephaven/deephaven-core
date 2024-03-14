@@ -309,7 +309,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
         if (indexed) {
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "z");
+            DataIndexer.getOrCreateDataIndex(table, "z");
         }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
@@ -407,7 +407,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
         if (sourceIndexed) {
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "z");
+            DataIndexer.getOrCreateDataIndex(table, "z");
         }
         final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                 col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
@@ -415,11 +415,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("x", 4, 3), col("y", "d", "c"), col("z", true, true));
         final QueryTable whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
         if (setIndexed) {
-            DataIndexer.of(whereTable.getRowSet()).createDataIndex(whereTable, "z");
+            DataIndexer.getOrCreateDataIndex(whereTable, "z");
         }
 
-        final DynamicWhereFilter filter = updateGraph.exclusiveLock().computeLocked(
-                () -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
+        final DynamicWhereFilter filter = updateGraph.sharedLock().computeLocked(
+                () -> {
+                    final DynamicWhereFilter result =
+                            new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z"));
+                    result.initializeDataIndex(table);
+                    return result;
+                });
 
         updateGraph.startCycleForUnitTests(false);
 
@@ -452,12 +457,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testSortInternal(true);
     }
 
-    public void testSortInternal(final boolean indexed)
+    private void testSortInternal(final boolean indexed)
             throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
         if (indexed) {
-            DataIndexer.of(table.getRowSet()).createDataIndex(table, "x");
+            DataIndexer.getOrCreateDataIndex(table, "x");
         }
 
         final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).toTracking(),

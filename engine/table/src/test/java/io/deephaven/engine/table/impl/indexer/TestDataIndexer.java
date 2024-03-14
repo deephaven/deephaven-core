@@ -30,6 +30,11 @@ import static io.deephaven.engine.testutil.GenerateTableUpdates.generateTableUpd
 @Category(OutOfBandTest.class)
 public class TestDataIndexer extends RefreshingTableTestCase {
 
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
         final ArrayList<ArrayList<String>> setList = new ArrayList<>();
         Set<Set<String>> powerSet = Sets.powerSet(originalSet);
@@ -68,55 +73,38 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         final QueryTable queryTable = TstUtils.getTable(size, random, columnInfo);
         queryTable.setRefreshing(true);
 
-        // Create indexes for every column combination
-        final DataIndexer dataIndexer = DataIndexer.of(queryTable.getRowSet());
+        // Create indexes for every column combination; they will be retained by our parent class's LivenessScope
         for (final ArrayList<String> set : powerSet(queryTable.getColumnSourceMap().keySet())) {
-            if (set.size() == 0) {
+            if (set.isEmpty()) {
                 continue;
             }
             System.out.println("Creating index for " + set);
-            dataIndexer.createDataIndex(queryTable, set.toArray(String[]::new));
+            DataIndexer.getOrCreateDataIndex(queryTable, set.toArray(String[]::new));
         }
 
         addIndexValidator(queryTable, "queryTable");
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.head(0));
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.head(1));
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.update("intCol2 = intCol + 1"));
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.update("intCol2 = intCol + 1").select());
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.view("Sym", "intCol2 = intCol + 1"));
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.avgBy("Sym").sort("Sym"));
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.groupBy("Sym", "intCol")
-                                    .sort("Sym", "intCol")
-                                    .view("doubleCol=max(doubleCol)"));
-                }),
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> queryTable.avgBy("Sym", "doubleCol")
-                                    .sort("Sym", "doubleCol")
-                                    .view("intCol=min(intCol)"));
-                }),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.head(0))),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.head(1))),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.update("intCol2 = intCol + 1"))),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.update("intCol2 = intCol + 1").select())),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.view("Sym", "intCol2 = intCol + 1"))),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.avgBy("Sym").sort("Sym"))),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.groupBy("Sym", "intCol")
+                                .sort("Sym", "intCol")
+                                .view("doubleCol=max(doubleCol)"))),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> queryTable.avgBy("Sym", "doubleCol")
+                                .sort("Sym", "doubleCol")
+                                .view("intCol=min(intCol)"))),
         };
 
         for (int ii = 0; ii < en.length; ++ii) {
@@ -207,11 +195,11 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));
         assertFalse(indexer.hasDataIndex(intColumnSource, symColumnSource, doubleColumnSource));
 
-        // Add the multi-column indexes.
-        indexer.createDataIndex(countingTable, "intCol", "Sym");
-        indexer.createDataIndex(countingTable, "intCol", "Sym", "Sym2");
-        indexer.createDataIndex(countingTable, "intCol", "Sym", "doubleCol");
-        indexer.createDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol");
+        // Add the multi-column indexes; they will be retained by our parent class's LivenessScope
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym");
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2");
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "doubleCol");
+        DataIndexer.getOrCreateDataIndex(countingTable, "intCol", "Sym", "Sym2", "doubleCol");
 
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource));
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource));

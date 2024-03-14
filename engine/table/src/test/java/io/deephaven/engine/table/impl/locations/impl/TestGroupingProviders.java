@@ -88,7 +88,7 @@ public class TestGroupingProviders {
 
         // Create a local index for each partition
         for (final Table t : partitions) {
-            DataIndexer.of(t.getRowSet()).createDataIndex(t, "Sym");
+            DataIndexer.getOrCreateDataIndex(t, "Sym");
         }
 
         if (missingGroups) {
@@ -165,12 +165,11 @@ public class TestGroupingProviders {
         TstUtils.assertTableEquals(expected, actual);
 
         // Make sure we have the partitioning column index
-        Assert.eqTrue(DataIndexer.of(actual.getRowSet()).hasDataIndex(actual, "Part"),
-                "DataIndexer.of(actual.getRowSet()).hasDataIndex(actual, \"Sym\")");
+        Assert.eqTrue(DataIndexer.hasDataIndex(actual, "Part"),
+                "DataIndexer.hasDataIndex(actual, \"Part\")");
 
         // Without
-        TestCase.assertEquals(!missingGroups,
-                DataIndexer.of(actual.getRowSet()).hasDataIndex(actual.getColumnSource("Sym")));
+        TestCase.assertEquals(!missingGroups, DataIndexer.hasDataIndex(actual, "Sym"));
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }

@@ -138,7 +138,7 @@ public class MatchFilter extends WhereFilterImpl {
     public List<DataIndex> getDataIndexes(final Table sourceTable) {
         if (sourceDataIndex == null) {
             // We can only use this index on initialization, so after use it must be cleared.
-            sourceDataIndex = DataIndexer.of(sourceTable.getRowSet()).getDataIndex(sourceTable, columnName);
+            sourceDataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
         }
         if (sourceDataIndex == null) {
             return Collections.emptyList();

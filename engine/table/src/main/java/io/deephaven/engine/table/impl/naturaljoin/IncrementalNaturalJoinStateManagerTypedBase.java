@@ -401,7 +401,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
-    public WritableRowRedirection buildGroupedRowRedirection(
+    public WritableRowRedirection buildIndexedRowRedirection(
             QueryTable leftTable,
             boolean exactMatch,
             InitialBuildContext ibc,

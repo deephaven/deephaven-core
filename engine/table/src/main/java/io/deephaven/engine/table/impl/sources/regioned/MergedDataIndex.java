@@ -206,7 +206,7 @@ class MergedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public boolean validate() {
+    public boolean isValid() {
         if (isCorrupt) {
             return false;
         }

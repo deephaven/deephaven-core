@@ -197,10 +197,10 @@ public class QueryTableAjTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
 
         if (leftIndexed) {
-            DataIndexer.of(left.getRowSet()).createDataIndex(left, "BucketA", "BucketB");
+            DataIndexer.getOrCreateDataIndex(left, "BucketA", "BucketB");
         }
         if (rightIndexed) {
-            DataIndexer.of(right.getRowSet()).createDataIndex(right, "BucketA", "BucketB");
+            DataIndexer.getOrCreateDataIndex(right, "BucketA", "BucketB");
         }
 
         System.out.println("Left");
@@ -879,23 +879,13 @@ public class QueryTableAjTest {
                                             rightSize, joinIncrement, true, true, false, false, true, false,
                                             new JoinControl() {
                                                 @Override
-                                                int tableSizeForRightBuild(Table rightTable) {
-                                                    return 1 << 2;
-                                                }
-
-                                                @Override
-                                                int tableSizeForLeftBuild(Table leftTable) {
+                                                int initialBuildSize() {
                                                     return 1 << 2;
                                                 }
 
                                                 @Override
                                                 double getMaximumLoadFactor() {
                                                     return 0.75;
-                                                }
-
-                                                @Override
-                                                int initialBuildSize() {
-                                                    return 1 << 3;
                                                 }
 
                                                 @Override
@@ -1089,7 +1079,7 @@ public class QueryTableAjTest {
                         leftStampGenerator,
                         new IntGenerator(10_000_000, 10_010_000)));
         if (leftIndexing) {
-            DataIndexer.of(leftTable.getRowSet()).createDataIndex(leftTable, "Bucket");
+            DataIndexer.getOrCreateDataIndex(leftTable, "Bucket");
         }
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
@@ -1102,7 +1092,7 @@ public class QueryTableAjTest {
         final QueryTable rightSorted = sortRight ? (QueryTable) rightTable.sort("RightStamp") : rightTable;
         if (rightIndexing) {
             // Indexing doesn't currently survive sorting.
-            DataIndexer.of(rightSorted.getRowSet()).createDataIndex(rightSorted, "Bucket");
+            DataIndexer.getOrCreateDataIndex(rightSorted, "Bucket");
         }
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left: ");
@@ -1137,7 +1127,7 @@ public class QueryTableAjTest {
         final QueryTable rightReversed = (QueryTable) rightSorted.reverse();
         if (rightIndexing) {
             // Indexing doesn't currently survive reversal.
-            DataIndexer.of(rightReversed.getRowSet()).createDataIndex(rightReversed, "Bucket");
+            DataIndexer.getOrCreateDataIndex(rightReversed, "Bucket");
         }
 
         final EvalNuggetInterface[] en = Stream.concat(Stream.concat(!withZeroKeys ? Stream.empty()

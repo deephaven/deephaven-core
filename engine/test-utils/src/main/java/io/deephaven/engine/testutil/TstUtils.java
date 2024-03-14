@@ -576,10 +576,11 @@ public class TstUtils {
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
 
         // Add grouping indexes for the grouping columns.
-        final DataIndexer dataIndexer = DataIndexer.of(rowSet);
-        for (int i = 0; i < columnHolders.length; i++) {
-            if (columnHolders[i].grouped) {
-                dataIndexer.createDataIndex(queryTable, columnHolders[i].name);
+        for (ColumnHolder<?> columnHolder : columnHolders) {
+            if (columnHolder.grouped) {
+                // This mechanism is only safe in a reachability/liveness sense if we're enclosed in a LivenessScope
+                // that enforces strong reachability.
+                DataIndexer.getOrCreateDataIndex(queryTable, columnHolder.name);
             }
         }
 

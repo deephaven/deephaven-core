@@ -24,7 +24,21 @@ public class ColumnInfo<T, U> {
     final static ColAttributes[] ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY = new ColAttributes[0];
 
     public enum ColAttributes {
-        None, Immutable, Grouped
+        /**
+         * This attribute has no effect.
+         */
+        None,
+        /**
+         * This attribute indicates that the column is immutable.
+         */
+        Immutable,
+        /**
+         * This attribute indicates that the column is grouped, and should be indexed. Only use this when enclosed by a
+         * {@link io.deephaven.engine.liveness.LivenessScope} that was constructed with
+         * {@code enforceStrongReachability == true}.
+         */
+        Grouped
+
     }
 
     public ColumnInfo(TestDataGenerator<T, U> generator, String name, ColAttributes... colAttributes) {

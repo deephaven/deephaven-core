@@ -170,14 +170,13 @@ public class TestParquetTools {
                 ColumnDefinition.ofString("aString")),
                 col("anInt", 1, 2, 3),
                 col("aString", "ab", "ab", "bc"));
-        DataIndexer.of(test.getRowSet()).createDataIndex(test, "aString");
 
+        DataIndexer.getOrCreateDataIndex(test, "aString");
         path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);
-        test2 = ParquetTools.readTable(new File(path));
 
-        final DataIndexer indexer = DataIndexer.of(test2.getRowSet());
-        assertTrue(indexer.hasDataIndex(test2, "aString"));
+        test2 = ParquetTools.readTable(new File(path));
+        assertTrue(DataIndexer.hasDataIndex(test2, "aString"));
         test2.close();
     }
 

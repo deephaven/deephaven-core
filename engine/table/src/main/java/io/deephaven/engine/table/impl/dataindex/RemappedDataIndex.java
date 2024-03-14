@@ -60,7 +60,7 @@ public class RemappedDataIndex extends BaseDataIndex {
     }
 
     @Override
-    public boolean validate() {
-        return sourceIndex.validate();
+    public boolean isValid() {
+        return sourceIndex.isValid();
     }
 }
