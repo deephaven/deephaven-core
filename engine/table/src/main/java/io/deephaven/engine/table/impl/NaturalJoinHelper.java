@@ -103,7 +103,7 @@ class NaturalJoinHelper {
 
                     if (bc.leftDataIndexTable != null) {
                         jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, ibc);
-                        rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, ibc,
+                        rowRedirection = jsm.buildIndexedRowRedirection(leftTable, exactMatch, ibc,
                                 bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
                     } else {
                         jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, ibc);
@@ -146,7 +146,7 @@ class NaturalJoinHelper {
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 if (bc.leftDataIndexTable != null) {
                     jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, leftRedirections);
-                    rowRedirection = jsm.buildGroupedRowRedirectionFromRedirections(leftTable, exactMatch,
+                    rowRedirection = jsm.buildIndexedRowRedirectionFromRedirections(leftTable, exactMatch,
                             bc.leftDataIndexTable.getRowSet(), leftRedirections, bc.leftDataIndexRowSetSource,
                             control.getRedirectionType(leftTable));
                 } else {
@@ -192,7 +192,7 @@ class NaturalJoinHelper {
                 jsm.addRightSide(rightTable.getRowSet(), bc.rightSources);
 
                 if (firstBuildFrom == LeftDataIndex) {
-                    rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable,
+                    rowRedirection = jsm.buildRowRedirectionFromHashSlotIndexed(leftTable,
                             bc.leftDataIndexRowSetSource, bc.leftDataIndexTable.intSize(),
                             exactMatch, ibc, control.getRedirectionType(leftTable));
                 } else {
@@ -227,7 +227,7 @@ class NaturalJoinHelper {
                 jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources,
                         leftHashSlots);
                 jsm.decorateWithRightSide(rightTable, bc.rightSources);
-                rowRedirection = jsm.buildGroupedRowRedirectionFromHashSlots(leftTable, exactMatch,
+                rowRedirection = jsm.buildIndexedRowRedirectionFromHashSlots(leftTable, exactMatch,
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
             } else if (firstBuildFrom == LeftInput) {

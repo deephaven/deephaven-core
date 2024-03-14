@@ -284,7 +284,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
+    public WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
             ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);

@@ -29,10 +29,10 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
     public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildGroupedRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongArraySource leftRedirections, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildGroupedRowRedirectionFromHashSlots(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, IntegerArraySource leftHashSlots, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildIndexedRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongArraySource leftRedirections, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, IntegerArraySource leftHashSlots, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    protected WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets, JoinControl.RedirectionType redirectionType) {
+    protected WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets, JoinControl.RedirectionType redirectionType) {
         final int rowSetCount = indexTableRowSet.intSize();
         switch (redirectionType) {
             case Contiguous: {
@@ -82,16 +82,16 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size, LongUnaryOperator groupPositionToRightSide, LongUnaryOperator firstLeftKey) {
+    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size, LongUnaryOperator indexPositionToRightSide, LongUnaryOperator firstLeftKey) {
         for (int ii = 0; ii < size; ++ii) {
-            final long rightSide = groupPositionToRightSide.applyAsLong(ii);
+            final long rightSide = indexPositionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
                 throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
             }
         }
     }
 
-    public void errorOnDuplicatesGrouped(IntegerArraySource leftHashSlots, long size, ObjectArraySource<RowSet> rowSetSource) {
+    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size, ObjectArraySource<RowSet> rowSetSource) {
         throw new UnsupportedOperationException();
     }
 
