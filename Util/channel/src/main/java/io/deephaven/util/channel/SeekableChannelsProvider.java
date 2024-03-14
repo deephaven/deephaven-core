@@ -6,43 +6,22 @@ package io.deephaven.util.channel;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public interface SeekableChannelsProvider extends SafeCloseable {
+import static io.deephaven.base.FileUtils.convertToURI;
 
-    /**
-     * Take the file source path or URI and convert it to a URI object.
-     *
-     * @param source The file source path or URI
-     * @return The URI object
-     */
-    static URI convertToURI(final String source) {
-        final URI uri;
-        try {
-            uri = new URI(source);
-        } catch (final URISyntaxException e) {
-            // If the URI is invalid, assume it's a file path
-            return new File(source).toURI();
-        }
-        if (uri.getScheme() == null) {
-            // Need to convert to a "file" URI
-            return new File(source).toURI();
-        }
-        return uri;
-    }
+public interface SeekableChannelsProvider extends SafeCloseable {
 
     /**
      * Wraps {@link SeekableChannelsProvider#getInputStream(SeekableByteChannel)} to ensure the channel's position is
      * incremented the exact amount that has been consumed from the resulting input stream. To remain valid, the caller
      * must ensure that the resulting input stream isn't re-wrapped by any downstream code in a way that would adversely
-     * effect the position (such as re-wrapping the resulting input stream with buffering).
+     * affect the position (such as re-wrapping the resulting input stream with buffering).
      *
      * <p>
      * Equivalent to {@code ChannelPositionInputStream.of(ch, provider.getInputStream(ch))}.
@@ -79,7 +58,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
 
     default SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull String uriStr)
             throws IOException {
-        return getReadChannel(channelContext, convertToURI(uriStr));
+        return getReadChannel(channelContext, convertToURI(uriStr, false));
     }
 
     SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri)
