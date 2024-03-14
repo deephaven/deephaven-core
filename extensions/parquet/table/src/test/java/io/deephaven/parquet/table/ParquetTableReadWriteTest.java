@@ -572,7 +572,7 @@ public final class ParquetTableReadWriteTest {
         final Collection<SelectColumn> arrayToVectorFormulas = new ArrayList<>();
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             final String columnName = columnDefinition.getName();
-            //noinspection unchecked
+            // noinspection unchecked
             final Class<Object> sourceDataType = (Class<Object>) columnDefinition.getDataType();
             if (!sourceDataType.isArray()) {
                 continue;
