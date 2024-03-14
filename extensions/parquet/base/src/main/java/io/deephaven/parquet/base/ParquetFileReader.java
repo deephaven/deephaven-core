@@ -10,15 +10,15 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.*;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,
@@ -39,17 +39,29 @@ public class ParquetFileReader {
     private final URI rootURI;
     private final MessageType type;
 
+    /**
+     * Create a new ParquetFileReader for the provided source.
+     *
+     * @param source The source path or URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     */
     public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
             throws IOException {
-        this(convertToURI(source), channelsProvider);
+        this(convertToURI(source, false), channelsProvider);
     }
 
+    /**
+     * Create a new ParquetFileReader for the provided source.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     */
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this.channelsProvider = channelsProvider;
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
-            rootURI = Path.of(parquetFileURI).getParent().toUri();
+            rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;
