@@ -304,3 +304,24 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         s = pd.Series(data=np_array, copy=False)
 
     return s
+
+
+class SafeCloseable:
+    """A context manager wrapper of Java SafeCloseable to emulate Java try-with-resources."""
+    def __init__(self, j_safe_closeable):
+        self._j_safe_closeable = j_safe_closeable
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def close(self):
+        if not self.closed:
+            self.closed = True
+            self._j_safe_closeable.close()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def __del__(self):
+        self.close()
