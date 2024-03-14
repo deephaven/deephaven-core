@@ -16,7 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class TestParquetGrouping extends RefreshingTableTestCase {
+public class TestParquetIndexing extends RefreshingTableTestCase {
 
     public void testOverflow() throws IOException {
         // TODO: Figure out why this is called testOverflow

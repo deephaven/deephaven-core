@@ -10,8 +10,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SimpleSourceTable;
@@ -23,8 +21,6 @@ import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvide
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
-import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.internal.log.LoggerFactory;
@@ -37,9 +33,6 @@ import io.deephaven.parquet.table.layout.ParquetSingleFileLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.parquet.table.metadata.DataIndexInfo;
-import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
-import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.SimpleTypeMap;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -1287,108 +1280,6 @@ public class ParquetTools {
     public static final ParquetInstructions UNCOMPRESSED =
             ParquetInstructions.builder().setCompressionCodecName("UNCOMPRESSED").build();
 
-    public static class IndexFileMetaData {
-        public String filename;
-        public GroupingColumnInfo groupingColumnInfo;
-        public DataIndexInfo dataIndexInfo;
-
-        IndexFileMetaData(String filename, GroupingColumnInfo groupingColumnInfo, DataIndexInfo dataIndexInfo) {
-            this.filename = filename;
-            this.groupingColumnInfo = groupingColumnInfo;
-            this.dataIndexInfo = dataIndexInfo;
-        }
-    }
-
-    public static IndexFileMetaData getIndexFileMetaData(
-            @NotNull final File tableFile,
-            @NotNull TableInfo info,
-            @NotNull final String... keyColumnNames) {
-        final Path parentPath = tableFile.toPath().getParent();
-
-        if (keyColumnNames.length == 1) {
-            // If there's only one key column, there might be (legacy) grouping info
-            final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
-            if (groupingColumnInfo != null) {
-                return new IndexFileMetaData(
-                        parentPath.resolve(groupingColumnInfo.groupingTablePath()).toString(),
-                        groupingColumnInfo,
-                        null);
-            }
-        }
-
-        // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
-        // DataIndex.
-        final DataIndexInfo dataIndexInfo = info.dataIndexes().stream()
-                .filter(item -> item.matchesColumns(keyColumnNames))
-                .findFirst()
-                .orElse(null);
-
-        if (dataIndexInfo != null) {
-            return new IndexFileMetaData(
-                    parentPath.resolve(dataIndexInfo.indexTablePath()).toString(),
-                    null,
-                    dataIndexInfo);
-        }
-
-        // We have no index metadata. We intentionally do not fall back to the legacy path from pre-metadata versions
-        // of this codee, as it's not expected that such tables exist in the wild.
-        return null;
-    }
-
-    // region Indexing
-    /**
-     * Read a Data Index table from disk.
-     *
-     * @param tableFile The path to the base table
-     * @param info A {@link TableInfo} object to assist in locating files
-     * @param keyColumnNames The names of the key columns
-     *
-     * @return The data index table for the specified key columns or {@code null} if none was found
-     */
-    @Nullable
-    public static Table readDataIndexTable(
-            @NotNull final File tableFile,
-            @NotNull final TableInfo info,
-            @NotNull final String... keyColumnNames) {
-        final IndexFileMetaData metaData = getIndexFileMetaData(tableFile, info, keyColumnNames);
-
-        if (metaData == null) {
-            throw new TableDataException(
-                    String.format(
-                            "No index metadata for table %s with index key columns %s was present in TableInfo",
-                            tableFile,
-                            Arrays.toString(keyColumnNames)));
-        }
-
-        if (metaData.groupingColumnInfo != null) {
-            final Table indexTable = ParquetTools.readTable(metaData.filename, ParquetInstructions.EMPTY);
-            if (indexTable.hasColumns(
-                    GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME)) {
-                // Legacy grouping tables are written with a key, start position, and end position. We must convert
-                // the ranges to RowSets.
-                return indexTable.view(List.of(
-                        new SourceColumn(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0]),
-                        // Using this lets us avoid a compilation or boxing, but does force us to do single-cell access
-                        // rather than using chunks.
-                        new MultiSourceFunctionalColumn<>(
-                                List.of(GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
-                                INDEX_ROW_SET_COLUMN_NAME,
-                                RowSet.class,
-                                (final long rowKey, final ColumnSource<?>[] sources) -> RowSetFactory
-                                        .fromRange(sources[0].getLong(rowKey), sources[1].getLong(rowKey) - 1))));
-            } else {
-                throw new TableDataException(String.format(
-                        "Index table %s for table %s was not in the expected format. Expected columns [%s] but encountered [%s]",
-                        metaData.filename,
-                        tableFile,
-                        String.join(", ",
-                                GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
-                        indexTable.getDefinition().getColumnNamesAsString()));
-            }
-        }
-
-        return readTable(metaData.filename, ParquetInstructions.EMPTY);
-    }
     // endregion
 
     /**

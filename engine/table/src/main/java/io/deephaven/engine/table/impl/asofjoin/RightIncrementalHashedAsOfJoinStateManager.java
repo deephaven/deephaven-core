@@ -94,9 +94,6 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
     public abstract int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
-    public abstract int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
-            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
-
     public abstract int gatherShiftRowSet(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
