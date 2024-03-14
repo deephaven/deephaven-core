@@ -1,6 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit LeftOnlyIncrementalChunkedCrossJoinStateManager and run "./gradlew replicateHashTable" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
@@ -45,9 +50,9 @@ import static io.deephaven.util.SafeCloseable.closeAll;
 // region class visibility
 // endregion class visibility
 class StaticChunkedCrossJoinStateManager
-    // region extensions
-    extends CrossJoinShiftState
-    implements CrossJoinStateManager
+        // region extensions
+        extends CrossJoinShiftState
+        implements CrossJoinStateManager
     // endregion extensions
 {
     // region constants
@@ -69,7 +74,7 @@ class StaticChunkedCrossJoinStateManager
          * Invoke a callback that will allow external trackers to record changes to states in build or probe calls.
          *
          * @param stateSlot The state slot (in main table space)
-         * @param rowKey     The probed row key
+         * @param rowKey The probed row key
          */
         void invoke(long stateSlot, long rowKey);
     }
@@ -176,10 +181,8 @@ class StaticChunkedCrossJoinStateManager
     // endregion constructor visibility
     StaticChunkedCrossJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
-                                       // region constructor arguments
-                                       , JoinControl control
-                                       , QueryTable leftTable
-                                       , boolean leftOuterJoin
+    // region constructor arguments
+            , JoinControl control, QueryTable leftTable, boolean leftOuterJoin
                                               // endregion constructor arguments
     ) {
         // region super
@@ -260,9 +263,9 @@ class StaticChunkedCrossJoinStateManager
     // region build wrappers
     @NotNull
     WritableRowSet buildFromRight(@NotNull final QueryTable leftTable,
-                                  @NotNull final ColumnSource<?>[] leftKeys,
-                                  @NotNull final QueryTable rightTable,
-                                  @NotNull final ColumnSource<?>[] rightKeys) {
+            @NotNull final ColumnSource<?>[] leftKeys,
+            @NotNull final QueryTable rightTable,
+            @NotNull final ColumnSource<?>[] rightKeys) {
         final boolean ignoreMissing = false;
         if (!rightTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
@@ -313,9 +316,9 @@ class StaticChunkedCrossJoinStateManager
 
     @NotNull
     WritableRowSet buildFromLeft(@NotNull final QueryTable leftTable,
-                                 @NotNull final ColumnSource<?>[] leftKeys,
-                                 @NotNull final QueryTable rightTable,
-                                 @NotNull final ColumnSource<?>[] rightKeys) {
+            @NotNull final ColumnSource<?>[] leftKeys,
+            @NotNull final QueryTable rightTable,
+            @NotNull final ColumnSource<?>[] rightKeys) {
         if (!leftTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(leftKeys, leftTable.size())) {
                 buildTable(bc, leftTable.getRowSet(), leftKeys, (slot, rowKey) -> {
@@ -483,7 +486,7 @@ class StaticChunkedCrossJoinStateManager
 
         private BuildContext(ColumnSource<?>[] buildSources,
                             int chunkSize
-                             // region build context constructor args
+        // region build context constructor args
                             // endregion build context constructor args
                             ) {
             Assert.gtZero(chunkSize, "chunkSize");
@@ -611,11 +614,11 @@ class StaticChunkedCrossJoinStateManager
 
     public BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
                                   long maxSize
-                                  // region makeBuildContext args
+    // region makeBuildContext args
                                   // endregion makeBuildContext args
     ) {
         return new BuildContext(buildSources, (int)Math.min(CHUNK_SIZE, maxSize)
-                // region makeBuildContext arg pass
+        // region makeBuildContext arg pass
                 // endregion makeBuildContext arg pass
         );
     }
@@ -623,7 +626,7 @@ class StaticChunkedCrossJoinStateManager
     private void buildTable(final BuildContext bc,
                             final RowSequence buildRows,
                             ColumnSource<?>[] buildSources
-                            // region extra build arguments
+            // region extra build arguments
             , final StateTrackingCallback trackingCallback
                             // endregion extra build arguments
     ) {
@@ -632,7 +635,7 @@ class StaticChunkedCrossJoinStateManager
         // endregion build start
 
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator();
-             // region build initialization try
+        // region build initialization try
              // endregion build initialization try
         ) {
             // region build initialization
@@ -861,7 +864,8 @@ class StaticChunkedCrossJoinStateManager
 
                             // region build overflow insert
                             final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
-                            trackingCallback.invoke(overflowLocationToHashLocation(allocatedOverflowLocation), keyToAdd);
+                            trackingCallback.invoke(overflowLocationToHashLocation(allocatedOverflowLocation),
+                                    keyToAdd);
                             // endregion build overflow insert
 
                             // mixin rehash
@@ -899,7 +903,8 @@ class StaticChunkedCrossJoinStateManager
                                 // region build overflow duplicate
                                 final long keyToAdd = bc.sourceRowKeys.get(chunkPosition);
                                 // we match the first element, so should use the overflow slow we allocated for it
-                                trackingCallback.invoke(overflowLocationToHashLocation(insertedOverflowLocation), keyToAdd);
+                                trackingCallback.invoke(overflowLocationToHashLocation(insertedOverflowLocation),
+                                        keyToAdd);
                                 // endregion build overflow duplicate
                             } else {
                                 // we need to try this element again in the next round
@@ -930,20 +935,20 @@ class StaticChunkedCrossJoinStateManager
 
     // mixin rehash
     public void doRehash(BuildContext bc
-                          // region extra rehash arguments
+    // region extra rehash arguments
                           // endregion extra rehash arguments
     ) {
         long firstBackingChunkLocation;
         long lastBackingChunkLocation;// mixin rehash
-                    // region rehash start
+        // region rehash start
         // endregion rehash start
         while (rehashRequired()) {
-                        // region rehash loop start
+            // region rehash loop start
             // endregion rehash loop start
             if (tableHashPivot == tableSize) {
                 tableSize *= 2;
                 ensureCapacity(tableSize);
-                            // region rehash ensure capacity
+                // region rehash ensure capacity
                 // endregion rehash ensure capacity
             }
 
@@ -1088,7 +1093,7 @@ class StaticChunkedCrossJoinStateManager
                         }
                         bc.sourcePositions.add(ii);
                         bc.destinationLocationPositionInWriteThrough.add((int)(tableLocation - firstBackingChunkLocation));
-                                    // region promotion move
+                        // region promotion move
                         // endregion promotion move
                     }
                 }
@@ -1112,10 +1117,10 @@ class StaticChunkedCrossJoinStateManager
             }
 
             tableHashPivot += bucketsToAdd;
-                        // region rehash loop end
+            // region rehash loop end
             // endregion rehash loop end
         }
-                    // region rehash final
+        // region rehash final
         // endregion rehash final
     }
 
@@ -1398,7 +1403,7 @@ class StaticChunkedCrossJoinStateManager
 
         private ProbeContext(ColumnSource<?>[] probeSources,
                              int chunkSize
-                             // region probe context constructor args
+        // region probe context constructor args
                              // endregion probe context constructor args
                             ) {
             Assert.gtZero(chunkSize, "chunkSize");
@@ -1480,11 +1485,11 @@ class StaticChunkedCrossJoinStateManager
 
     public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
                                   long maxSize
-                                  // region makeProbeContext args
+    // region makeProbeContext args
                                   // endregion makeProbeContext args
     ) {
         return new ProbeContext(probeSources, (int)Math.min(maxSize, CHUNK_SIZE)
-                // region makeProbeContext arg pass
+        // region makeProbeContext arg pass
                 // endregion makeProbeContext arg pass
         );
     }
@@ -1492,8 +1497,8 @@ class StaticChunkedCrossJoinStateManager
     private void decorationProbe(ProbeContext pc
                                 , RowSequence probeRows
                                 , final ColumnSource<?>[] probeSources
-                                 // region additional probe arguments
-                                , final StateTrackingCallback trackingCallback
+    // region additional probe arguments
+            , final StateTrackingCallback trackingCallback
                                  // endregion additional probe arguments
     )  {
         // region probe start
@@ -1501,7 +1506,7 @@ class StaticChunkedCrossJoinStateManager
         long hashSlotOffset = 0;
 
         try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator();
-             // region probe additional try resources
+        // region probe additional try resources
              // endregion probe additional try resources
             ) {
             //noinspection unchecked
@@ -1670,7 +1675,7 @@ class StaticChunkedCrossJoinStateManager
 
     /**
      * For the result we do not need to maintain the hash table, we only need to have the densely packed set of right
-     * indices and the redirection from the left table to the corresponding RowSet.  By returning this simple state
+     * indices and the redirection from the left table to the corresponding RowSet. By returning this simple state
      * manager instead of preserving the full StaticChunkedCrossJoinStateManager we can drop the intermediate table.
      */
     static class ResultOnlyCrossJoinStateManager extends CrossJoinShiftState implements CrossJoinStateManager {
@@ -1689,7 +1694,8 @@ class StaticChunkedCrossJoinStateManager
 
         @Override
         public TrackingRowSet getRightRowSetFromLeftRow(long leftRowSlot) {
-            return StaticChunkedCrossJoinStateManager.getRightRowSetFromLeftRowKey(leftRowSetToSlot, rightRowSetSource, leftRowSlot);
+            return StaticChunkedCrossJoinStateManager.getRightRowSetFromLeftRowKey(leftRowSetToSlot, rightRowSetSource,
+                    leftRowSlot);
         }
 
         @Override
@@ -1709,7 +1715,8 @@ class StaticChunkedCrossJoinStateManager
     }
 
     @NotNull
-    private static TrackingRowSet getRightRowSetForSlot(ObjectArraySource<TrackingWritableRowSet> rightRowSetSource, long rowSetSlot) {
+    private static TrackingRowSet getRightRowSetForSlot(ObjectArraySource<TrackingWritableRowSet> rightRowSetSource,
+            long rowSetSlot) {
         final TrackingRowSet retVal = rightRowSetSource.getUnsafe(rowSetSlot);
         if (retVal != null) {
             return retVal;
@@ -1724,7 +1731,8 @@ class StaticChunkedCrossJoinStateManager
 
     @NotNull
     private static TrackingRowSet getRightRowSetFromLeftRowKey(
-            RowRedirection leftRowSetToSlot, ObjectArraySource<TrackingWritableRowSet> rightRowSetSource, long leftRowKey) {
+            RowRedirection leftRowSetToSlot, ObjectArraySource<TrackingWritableRowSet> rightRowSetSource,
+            long leftRowKey) {
         long slot = leftRowSetToSlot.get(leftRowKey);
         if (slot == RowSet.NULL_ROW_KEY) {
             return EMPTY_ROWSET;
@@ -1745,7 +1753,8 @@ class StaticChunkedCrossJoinStateManager
         final int minRightBits = getNumShiftBits();
         if (minLeftBits + minRightBits > 63) {
             throw new OutOfKeySpaceException("join out of rowSet space (left reqBits + right reqBits > 63): "
-                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxRowKey: " + leftLastKey + " reqBits: " + minLeftBits + "}) X "
+                    + "(left table: {size: " + leftTable.getRowSet().size() + " maxRowKey: " + leftLastKey
+                    + " reqBits: " + minLeftBits + "}) X "
                     + "(right table: {maxRowKey: " + rightLastKey + " reqBits: " + minRightBits + "})"
                     + " exceeds Long.MAX_VALUE. Consider flattening left table if possible.");
         }

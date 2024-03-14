@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -17,19 +16,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for byte data.
  */
-public final class ResettableByteChunk<ATTR_UPPER extends Any>
+public class ResettableByteChunk<ATTR_UPPER extends Any>
         extends ByteChunk<ATTR_UPPER>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableByteChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getByteChunkPool().takeResettableByteChunk();
+            return MultiChunkPool.forThisThread().takeResettableByteChunk();
         }
         return new ResettableByteChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableByteChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableByteChunk<>();
+        return new ResettableByteChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableByteChunk(this);
+            }
+        };
     }
 
     private ResettableByteChunk(byte[] data, int offset, int capacity) {
@@ -47,7 +51,8 @@ public final class ResettableByteChunk<ATTR_UPPER extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_UPPER> ByteChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> ByteChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asByteChunk(), offset, capacity);
     }
 
@@ -68,7 +73,8 @@ public final class ResettableByteChunk<ATTR_UPPER extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_UPPER> ByteChunk<ATTR> resetFromTypedChunk(ByteChunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> ByteChunk<ATTR> resetFromTypedChunk(ByteChunk<? extends ATTR> other, int offset,
+            int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -83,9 +89,5 @@ public final class ResettableByteChunk<ATTR_UPPER extends Any>
     }
 
     @Override
-    public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getByteChunkPool().giveResettableByteChunk(this);
-        }
-    }
+    public void close() {}
 }

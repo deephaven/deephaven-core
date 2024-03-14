@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -10,10 +10,11 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.math.BigInteger;
 
-class SumBigIntegerChunk  {
+class SumBigIntegerChunk {
     private SumBigIntegerChunk() {} // static use only
 
-    static BigInteger sumBigIntegerChunk(ObjectChunk<BigInteger, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNonNull) {
+    static BigInteger sumBigIntegerChunk(ObjectChunk<BigInteger, ? extends Values> values, int chunkStart,
+            int chunkSize, MutableInt chunkNonNull) {
         BigInteger partialSum = BigInteger.ZERO;
 
         for (int ii = chunkStart; ii < chunkStart + chunkSize; ++ii) {
@@ -26,7 +27,8 @@ class SumBigIntegerChunk  {
         return partialSum;
     }
 
-    static BigInteger sumBigIntegerChunkAbs(ObjectChunk<BigInteger, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNonNull) {
+    static BigInteger sumBigIntegerChunkAbs(ObjectChunk<BigInteger, ? extends Values> values, int chunkStart,
+            int chunkSize, MutableInt chunkNonNull) {
         BigInteger partialSum = BigInteger.ZERO;
 
         for (int ii = chunkStart; ii < chunkStart + chunkSize; ++ii) {
@@ -39,7 +41,8 @@ class SumBigIntegerChunk  {
         return partialSum;
     }
 
-    static BigInteger sum2BigIntegerChunk(ObjectChunk<BigInteger, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNonNull, MutableObject<BigInteger> sum2out) {
+    static BigInteger sum2BigIntegerChunk(ObjectChunk<BigInteger, ? extends Values> values, int chunkStart,
+            int chunkSize, MutableInt chunkNonNull, MutableObject<BigInteger> sum2out) {
         final int end = chunkStart + chunkSize;
         BigInteger sum = BigInteger.ZERO;
         BigInteger sum2 = BigInteger.ZERO;

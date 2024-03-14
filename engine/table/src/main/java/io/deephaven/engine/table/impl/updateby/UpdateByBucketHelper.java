@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
@@ -282,7 +285,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             }
             if (ts < lastTimestamp.longValue()) {
                 throw (new TableDataException(
-                        "updateBy time-based operators require non-descending timestamp values"));
+                        "Timestamp values in UpdateBy operators must not decrease"));
             }
 
             ssaValues.add(ts);

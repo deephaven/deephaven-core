@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
@@ -18,6 +18,7 @@ import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.DeephavenChannelImpl;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.auth.CommunityAuthorizationProvider;
+import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
@@ -58,7 +59,8 @@ public abstract class DeephavenApiServerTestBase {
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
             JsPluginNoopConsumerModule.class,
-            SchedulerDelegatingImplModule.class
+            SchedulerDelegatingImplModule.class,
+            CalendarsFromConfigurationModule.class
     })
     public interface TestComponent {
 
@@ -86,7 +88,8 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private ExecutionContext executionContext;
+    @Inject
+    ExecutionContext executionContext;
     private SafeCloseable executionContextCloseable;
 
     private LogBuffer logBuffer;
@@ -129,7 +132,6 @@ public abstract class DeephavenApiServerTestBase {
                 .injectFields(this);
 
         final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
-        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph);
         executionContextCloseable = executionContext.open();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();

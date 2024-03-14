@@ -1,6 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSsaChecker and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+//
+// @formatter:off
+
+
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.Assert;
@@ -21,16 +27,18 @@ public class CharReverseSsaChecker implements SsaChecker {
     private CharReverseSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
-        checkSsa((CharReverseSegmentedSortedArray)ssa, valueChunk.asCharChunk(), tableIndexChunk);
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk) {
+        checkSsa((CharReverseSegmentedSortedArray) ssa, valueChunk.asCharChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(CharReverseSegmentedSortedArray ssa, CharChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(CharReverseSegmentedSortedArray ssa, CharChunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
-        //noinspection unchecked
+        // noinspection unchecked
         try (final WritableCharChunk<Values> resultChunk = (WritableCharChunk) ssa.asCharChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
+                final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

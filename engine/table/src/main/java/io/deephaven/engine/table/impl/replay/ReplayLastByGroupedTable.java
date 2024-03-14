@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -15,7 +15,8 @@ import java.time.Instant;
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
 
     public ReplayLastByGroupedTable(Table source, String timeColumn, Replayer replayer, String[] groupingColumns) {
-        super(source, timeColumn, replayer, WritableRowRedirection.FACTORY.createRowRedirection(100), groupingColumns);
+        super("ReplayLastByGroupedTable", source, timeColumn, replayer,
+                WritableRowRedirection.FACTORY.createRowRedirection(100), groupingColumns);
         replayer.registerTimeSource(source.getRowSet(), source.getColumnSource(timeColumn, Instant.class));
     }
 
@@ -46,7 +47,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         }
         final RowSet added = addedBuilder.build();
         final RowSet modified = modifiedBuilder.build();
-        if (added.size() > 0 || modified.size() > 0) {
+        if (!added.isEmpty() || !modified.isEmpty()) {
             getRowSet().writableCast().insert(added);
             notifyListeners(added, RowSetFactory.empty(), modified);
         }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -34,7 +34,10 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigInteger, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -44,7 +47,10 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigInteger, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -54,16 +60,19 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
-    public boolean addChunk(ObjectChunk<BigInteger, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    public boolean addChunk(ObjectChunk<BigInteger, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigInteger chunkSum = SumBigIntegerChunk.sumBigIntegerChunk(values, chunkStart, chunkSize, chunkNonNull);
 
@@ -80,12 +89,14 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
             newSum = oldSum.add(chunkSum);
         }
         runningSum.set(destination, newSum);
-        resultColumn.set(destination, new BigDecimal(newSum).divide(BigDecimal.valueOf(newCount), BigDecimal.ROUND_HALF_UP));
+        resultColumn.set(destination,
+                new BigDecimal(newSum).divide(BigDecimal.valueOf(newCount), BigDecimal.ROUND_HALF_UP));
 
         return true;
     }
 
-    public boolean removeChunk(ObjectChunk<BigInteger, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    public boolean removeChunk(ObjectChunk<BigInteger, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigInteger chunkSum = SumBigIntegerChunk.sumBigIntegerChunk(values, chunkStart, chunkSize, chunkNonNull);
 
@@ -101,10 +112,12 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
             final BigInteger oldSum = runningSum.getUnsafe(destination);
             final BigInteger newSum = oldSum.subtract(chunkSum);
             runningSum.set(destination, newSum);
-            resultColumn.set(destination, new BigDecimal(newSum).divide(BigDecimal.valueOf(newCount), BigDecimal.ROUND_HALF_UP));
+            resultColumn.set(destination,
+                    new BigDecimal(newSum).divide(BigDecimal.valueOf(newCount), BigDecimal.ROUND_HALF_UP));
         }
         return true;
     }
+
     @Override
     public void ensureCapacity(long tableSize) {
         nonNullCount.ensureCapacity(tableSize);

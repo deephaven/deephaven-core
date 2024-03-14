@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RawString;
@@ -13,23 +13,24 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.verify.TableAssertions;
-import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.sources.RowKeySource;
+import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
+import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
@@ -282,120 +283,6 @@ public abstract class QueryTableWhereTest {
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(103), col("A", 5), col("B", 8));
             setTable.notifyListeners(i(103), i(), i());
-
-            TestCase.assertFalse(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // this will do the notification for table; which should first fire the recorder for setTable1
-            updateGraph.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the recorder for setTable2
-            updateGraph.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the merged listener for 1
-            boolean flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            // to get table 1 satisfied we need to still fire a notification for the filter execution, then the combined
-            // execution
-            if (QueryTable.FORCE_PARALLEL_WHERE) {
-                // the merged notification for table 2 goes first
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-
-                log.debug().append("Flushing parallel notifications for setTable1").endl();
-                TestCase.assertFalse(setTable1.satisfied(updateGraph.clock().currentStep()));
-                // we need to flush our intermediate notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-                // and our final notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            }
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            if (!QueryTable.FORCE_PARALLEL_WHERE) {
-                // the next notification should be the merged listener for setTable2
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            } else {
-                log.debug().append("Flushing parallel notifications for setTable2").endl();
-                // we need to flush our intermediate notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-                // and our final notification
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            }
-
-            log.debug().append("Set Tables should be satisfied.").end();
-
-            // now we have the two set table's filtered we are ready to make sure nothing else is satisfied
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            log.debug().append("Flushing DynamicFilter Notifications.").endl();
-
-            // the dynamicFilter1 updates
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // the dynamicFilter2 updates
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            log.debug().append("Flushed DynamicFilter Notifications.").endl();
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-
-            log.debug().append("Checking Composed.").endl();
-
-            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // now that both filters are complete, we can run the merged listener
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-            if (QueryTable.FORCE_PARALLEL_WHERE) {
-                TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
-
-                // and the filter execution
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-                // and the combination
-                flushed = updateGraph.flushOneNotificationForUnitTests();
-                TestCase.assertTrue(flushed);
-            }
-
-            log.debug().append("Composed flushed.").endl();
-
-            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
-
-            // and we are done
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            TestCase.assertFalse(flushed);
         });
 
         TableTools.show(composed);
@@ -894,12 +781,15 @@ public abstract class QueryTableWhereTest {
 
         // we want to make sure we can push something through the thread pool and are not hogging it
         final CountDownLatch latch = new CountDownLatch(1);
-        ExecutionContext.getContext().getInitializer().submit(latch::countDown);
+        ExecutionContext.getContext().getOperationInitializer().submit(latch::countDown);
         waitForLatch(latch);
 
         assertEquals(0, fastCounter.invokes.get());
-        assertNotNull(caught.getValue());
-        assertEquals(CancellationException.class, caught.getValue().getClass());
+        Throwable err = caught.getValue();
+        assertNotNull(err);
+        assertEquals(TableInitializationException.class, err.getClass());
+        err = err.getCause();
+        assertEquals(CancellationException.class, err.getClass());
 
         QueryScope.addParam("slowCounter", null);
         QueryScope.addParam("fastCounter", null);
@@ -1209,7 +1099,7 @@ public abstract class QueryTableWhereTest {
     public void testBigTable() {
         final Table source = new QueryTable(
                 RowSetFactory.flat(10_000_000L).toTracking(),
-                Collections.singletonMap("A", RowKeySource.INSTANCE));
+                Collections.singletonMap("A", RowKeyColumnSource.INSTANCE));
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(0, 1000000L);
         final Table filtered = source.where(incrementalReleaseFilter);
         final Table result = filtered.where("A >= 6_000_000L", "A < 7_000_000L");
@@ -1228,7 +1118,7 @@ public abstract class QueryTableWhereTest {
     public void testBigTableInitial() {
         final Table source = new QueryTable(
                 RowSetFactory.flat(10_000_000L).toTracking(),
-                Collections.singletonMap("A", RowKeySource.INSTANCE));
+                Collections.singletonMap("A", RowKeyColumnSource.INSTANCE));
         final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
 
         assertEquals(1_000_000, result.size());
@@ -1253,5 +1143,49 @@ public abstract class QueryTableWhereTest {
 
         Assert.geq(DataAccessHelpers.getColumn(sorted, "A").getLong(0), "lowest value", 600, "600");
         Assert.leq(DataAccessHelpers.getColumn(sorted, "A").getLong(result.size() - 1), "highest value", 699, "699");
+    }
+
+    @Test
+    public void testFilterErrorInitial() {
+        final QueryTable table = testRefreshingTable(
+                i(2, 4, 6, 8).toTracking(),
+                col("x", 1, 2, 3, 4),
+                col("y", "a", "b", "c", null));
+
+        try {
+            final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+            Assert.statementNeverExecuted("Expected exception not thrown.");
+        } catch (Throwable e) {
+            Assert.eqTrue(e instanceof TableInitializationException,
+                    "TableInitializationException expected.");
+            e = e.getCause();
+            Assert.eqTrue(e instanceof FormulaEvaluationException
+                    && e.getCause() != null && e.getCause() instanceof NullPointerException,
+                    "NPE causing FormulaEvaluationException expected.");
+        }
+    }
+
+    @Test
+    public void testFilterErrorUpdate() {
+        final QueryTable table = testRefreshingTable(
+                i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3),
+                col("y", "a", "b", "c"));
+
+        final QueryTable whereResult = (QueryTable) table.where("y.length() > 0");
+
+        Assert.eqFalse(table.isFailed(), "table.isFailed()");
+        Assert.eqFalse(whereResult.isFailed(), "whereResult.isFailed()");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(8), col("x", 5), col("y", (String) null));
+            table.notifyListeners(i(8), i(), i());
+        });
+
+        Assert.eqFalse(table.isFailed(), "table.isFailed()");
+
+        // The where result should have failed, because the filter expression is invalid for the new data.
+        Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
     }
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
@@ -393,7 +393,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         errorNotification.reset();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(SUT::refresh);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            SUT.refresh();
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }, false);
         assertIsSatisfied();
         errorNotification.assertInvoked();
 

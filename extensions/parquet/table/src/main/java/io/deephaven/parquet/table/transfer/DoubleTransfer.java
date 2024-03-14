@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit IntTransfer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit IntTransfer and run "./gradlew replicateParquetTransferObjects" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.chunk.WritableDoubleChunk;
@@ -19,8 +18,9 @@ import java.nio.DoubleBuffer;
 
 final class DoubleTransfer extends FillingPrimitiveTransfer<WritableDoubleChunk<Values>, DoubleBuffer> {
     static DoubleTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSizeInBytes) {
-        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Double.BYTES));
+            final int targetPageSizeInBytes) {
+        final int targetElementsPerPage =
+                Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Double.BYTES));
         final double[] backingArray = new double[targetElementsPerPage];
         return new DoubleTransfer(
                 columnSource,

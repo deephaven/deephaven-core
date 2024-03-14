@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import io.deephaven.api.ColumnName;
@@ -299,6 +302,19 @@ class UpdateByBuilder {
                             .setWeightColumn(rs.weightCol());
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingWavg(builder.build())
+                    .build();
+        }
+
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingFormulaSpec rs) {
+            final UpdateByRollingFormula.Builder builder =
+                    UpdateByRollingFormula.newBuilder()
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()))
+                            .setFormula(rs.formula())
+                            .setParamToken(rs.paramToken());
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setRollingFormula(builder.build())
                     .build();
         }
     }

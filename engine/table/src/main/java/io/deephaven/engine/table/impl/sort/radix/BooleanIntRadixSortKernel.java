@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BooleanLongRadixSortKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit BooleanLongRadixSortKernel and run "./gradlew replicateSortKernel" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.radix;
 
 import io.deephaven.chunk.attributes.Any;
@@ -17,8 +16,7 @@ import io.deephaven.chunk.*;
 
 public class BooleanIntRadixSortKernel {
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
-    IntSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> IntSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
             int size,
             SortingOrder order,
             boolean preserveValues) {
@@ -61,7 +59,8 @@ public class BooleanIntRadixSortKernel {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 nullKeys.setSize(0);
                 falseKeys.setSize(0);
-                doSortAscending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
+                doSortAscending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii),
+                        lengthsIn.get(ii));
             }
         }
 
@@ -108,8 +107,7 @@ public class BooleanIntRadixSortKernel {
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 
     private static class BooleanIntSortDescendingKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
@@ -144,7 +142,8 @@ public class BooleanIntRadixSortKernel {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 trueKeys.setSize(0);
                 falseKeys.setSize(0);
-                doSortDescending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
+                doSortDescending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii),
+                        lengthsIn.get(ii));
             }
         }
 
@@ -193,7 +192,6 @@ public class BooleanIntRadixSortKernel {
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 }

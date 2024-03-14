@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit JsonNodeCharFieldCopier and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit JsonNodeCharFieldCopier and run "./gradlew replicateKafka" to regenerate
+//
+// @formatter:off
 package io.deephaven.kafka.ingest;
 
 import com.fasterxml.jackson.core.JsonPointer;
@@ -25,8 +24,7 @@ public class JsonNodeDoubleFieldCopier implements FieldCopier {
     @Override
     public void copyField(
             final ObjectChunk<Object, Values> inputChunk, final WritableChunk<Values> publisherChunk,
-            final int sourceOffset, final int destOffset, final int length
-    ) {
+            final int sourceOffset, final int destOffset, final int length) {
         final WritableDoubleChunk<Values> output = publisherChunk.asWritableDoubleChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);

@@ -4,7 +4,17 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
-    id 'license'
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    cpp {
+        target '**/*.cc', '**/*.h'
+        targetExclude '**/Barrage_generated.h', '**/third_party/**', '**/*.pb.*'
+        licenseHeader '''/*
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ */'''
+    }
 }
 
 // We use the cpp-clients-multi-base image instead of the cpp-client-base,
@@ -22,7 +32,9 @@ dependencies {
 def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.cpp
-    actualContents.set protoSourceDir
+    actualContents {
+        directory protoSourceDir
+    }
     generateTask.set ':cpp-client:updateProtobuf'
 }
 // fail a "check" build if these are out of date
@@ -33,23 +45,6 @@ tasks.register('updateProtobuf', Sync) {
     from configurations.cpp
     into protoSourceDir
 }
-
-license {
-    header rootProject.file('license-header')
-    include '**/*.h'
-    include '**/*.cc'
-    strictCheck true
-    useDefaultMappings true
-    ignoreFailures true
-}
-tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven']
-})
-tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven']
-})
-
-project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
@@ -69,6 +64,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
+            include 'build-dependencies.sh'
             include 'deephaven/CMakeLists.txt'
             include 'deephaven/dhcore/**'
             include 'deephaven/dhclient/**'
@@ -94,8 +90,11 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
         copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
+        copyFile('build-dependencies.sh', "/tmp")
         runCommand("PREFIX=${prefix}; " +
                    '''set -eux; \\
+                      cmp /tmp/build-dependencies.sh ${PREFIX}/build-dependencies.sh; \\
+                      rm -f /tmp/build-dependencies.sh; \\
                       rm -fr ${PREFIX}/src/deephaven/build; \\
                       mkdir -p ${PREFIX}/src/deephaven/build; \\
                       cd ${PREFIX}/src/deephaven/build; \\

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.arrow;
 
 import com.google.rpc.Code;
@@ -102,7 +102,7 @@ public class ArrowFlightUtil {
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
                                 fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
-                                        table.getDefinition(), table.getAttributes())));
+                                        table.getDefinition(), table.getAttributes(), table.isFlat())));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
@@ -519,7 +519,7 @@ public class ArrowFlightUtil {
                                     listener.onNext(streamGeneratorFactory.getSchemaView(
                                             fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
                                                     snapshotOptAdapter.adapt(snapshotRequest),
-                                                    table.getDefinition(), table.getAttributes())));
+                                                    table.getDefinition(), table.getAttributes(), table.isFlat())));
 
                                     // collect the viewport and columnsets (if provided)
                                     final boolean hasColumns = snapshotRequest.columnsVector() != null;

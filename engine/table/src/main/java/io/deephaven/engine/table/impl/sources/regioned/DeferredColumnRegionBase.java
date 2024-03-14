@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Require;
@@ -98,15 +98,5 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     @Override
     public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getResultRegion().getChunk(context, firstKey, lastKey);
-    }
-
-    @Override
-    public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-        return getResultRegion().makeFillContext(chunkCapacity, sharedContext);
-    }
-
-    @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
-        return getResultRegion().makeGetContext(chunkCapacity, sharedContext);
     }
 }

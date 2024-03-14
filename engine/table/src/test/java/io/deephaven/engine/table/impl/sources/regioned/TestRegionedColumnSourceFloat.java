@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestRegionedColumnSourceChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestRegionedColumnSourceChar and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
@@ -16,8 +15,8 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * Test class for {@link RegionedColumnSourceFloat}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimitive<
-        Float, Values, ColumnRegionFloat<Values>, ColumnRegionFloat<Values>> {
+public class TestRegionedColumnSourceFloat extends
+        TstRegionedColumnSourcePrimitive<Float, Values, ColumnRegionFloat<Values>, ColumnRegionFloat<Values>> {
 
     public TestRegionedColumnSourceFloat() {
         super(ColumnRegionFloat.class);
@@ -25,14 +24,16 @@ public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimit
 
     @SuppressWarnings("AutoBoxing")
     private void assertLookup(final long elementIndex,
-                              final int expectedRegionIndex,
-                              final float output,
-                              final boolean prev,
-                              final boolean boxed) {
-        checking(new Expectations() {{
-            oneOf(cr[expectedRegionIndex]).getFloat(elementIndex);
-            will(returnValue(output));
-        }});
+            final int expectedRegionIndex,
+            final float output,
+            final boolean prev,
+            final boolean boxed) {
+        checking(new Expectations() {
+            {
+                oneOf(cr[expectedRegionIndex]).getFloat(elementIndex);
+                will(returnValue(output));
+            }
+        });
         if (boxed) {
             assertEquals(output == NULL_FLOAT ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {

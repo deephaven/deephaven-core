@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
-    id 'me.champeau.jmh' version '0.6.7'
+    id 'me.champeau.jmh' version '0.7.2'
 }
 
 description 'Engine Table: Implementation and closely-coupled utilities'
@@ -33,7 +33,8 @@ dependencies {
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation 'com.tdunning:t-digest:3.2'
     implementation 'com.squareup:javapoet:1.13.0'
-    implementation 'io.github.classgraph:classgraph:4.8.154'
+    implementation 'io.github.classgraph:classgraph:4.8.165'
+    implementation 'it.unimi.dsi:fastutil:8.5.13'
 
     implementation project(':plugin')
     implementation depCommonsLang3
@@ -57,6 +58,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
     testImplementation TestTools.projectDependency(project, 'engine-context')
+    testImplementation TestTools.projectDependency(project, 'engine-time')
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-rowset-test-utils')
     testImplementation project(':engine-test-utils')
@@ -81,34 +83,9 @@ dependencies {
 
 spotless {
     java {
-        targetExclude(
-                '**/generated/**',
-                '**/*Boolean*.java',
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java',
-                '**/*StateManager.java',
-                '**/incagg/gen/*.java',
-                '**/incopenagg/gen/*.java',
-                '**/staticagg/gen/*.java',
-                '**/staticopenagg/gen/*.java',
-                '**/naturaljoin/typed/staticopen/gen/*.java',
-                '**/naturaljoin/typed/incopen/gen/*.java',
-                '**/naturaljoin/typed/rightincopen/gen/*.java',
-                '**/asofjoin/typed/rightincopen/gen/*.java',
-                '**/asofjoin/typed/staticopen/gen/*.java',
-                '**/updateby/hashing/typed/open/gen/*.java',
-                '**/multijoin/typed/staticopen/gen/*.java',
-                '**/multijoin/typed/incopen/gen/*.java',
-                'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
-                'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
-                'src/test/java/**/*Sample.java'
-        )
+        // Exclude these codegen sample files from here so we don't even need a comment to disable formatting
+        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/FilterKernel*Sample.java',
+                'src/test/java/io/deephaven/engine/table/impl/select/Formula*Sample.java'
     }
 }
 

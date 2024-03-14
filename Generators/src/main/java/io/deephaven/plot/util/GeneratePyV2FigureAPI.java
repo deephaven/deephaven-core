@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.util;
 
 import io.deephaven.base.Pair;
-import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
+import io.deephaven.gen.GenUtils;
+import io.deephaven.gen.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -73,10 +74,8 @@ public class GeneratePyV2FigureAPI {
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(figureWrapperOutput)));
-            if (!pyCode.equals(oldCode)) {
-                throw new RuntimeException(
-                        "Change in generated code.  Run GeneratePyV2FigureAPI or \"./gradlew :Generators:generatePythonFigureWrapper\" to regenerate\n");
-            }
+            GenUtils.assertGeneratedCodeSame(GeneratePyV2FigureAPI.class, ":Generators:generatePythonFigureWrapper",
+                    oldCode, pyCode);
         } else {
             try (final PrintWriter out = new PrintWriter(pythonFile)) {
                 out.print(pyCode);

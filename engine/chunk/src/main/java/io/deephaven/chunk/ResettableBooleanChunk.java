@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -17,19 +16,24 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for boolean data.
  */
-public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
+public class ResettableBooleanChunk<ATTR_UPPER extends Any>
         extends BooleanChunk<ATTR_UPPER>
         implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeResettableBooleanChunk();
+            return MultiChunkPool.forThisThread().takeResettableBooleanChunk();
         }
         return new ResettableBooleanChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableBooleanChunk<>();
+        return new ResettableBooleanChunk<>() {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().giveResettableBooleanChunk(this);
+            }
+        };
     }
 
     private ResettableBooleanChunk(boolean[] data, int offset, int capacity) {
@@ -47,7 +51,8 @@ public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_UPPER> BooleanChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> BooleanChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asBooleanChunk(), offset, capacity);
     }
 
@@ -68,7 +73,8 @@ public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_UPPER> BooleanChunk<ATTR> resetFromTypedChunk(BooleanChunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> BooleanChunk<ATTR> resetFromTypedChunk(BooleanChunk<? extends ATTR> other, int offset,
+            int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -83,9 +89,5 @@ public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
     }
 
     @Override
-    public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getBooleanChunkPool().giveResettableBooleanChunk(this);
-        }
-    }
+    public void close() {}
 }

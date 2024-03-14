@@ -1,774 +1,2170 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time.calendar;
 
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
+import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
+
+import java.time.*;
+import java.util.*;
+
+import static io.deephaven.util.QueryConstants.*;
 
 /**
- * A business calendar. Calendar is extended with the concept of business and non-business time.
- *
- * To comply with the ISO-8601 standard for dates, Strings should be of the form "yyyy-MM-dd",
+ * A business calendar, with the concept of business and non-business time.
+ * <p>
+ * Date strings must be in a format that can be parsed by {@code DateTimeUtils#parseDate}. Methods that accept strings
+ * can be slower than methods written explicitly for {@code Instant}, {@code ZonedDateTime}, or {@code LocalDate}.
  */
-public interface BusinessCalendar extends Calendar {
+public class BusinessCalendar extends Calendar {
+
+    private final LocalDate firstValidDate;
+    private final LocalDate lastValidDate;
+    private final CalendarDay<LocalTime> standardBusinessDay;
+    private final Set<DayOfWeek> weekendDays;
+    private final Map<LocalDate, CalendarDay<Instant>> holidays;
+
+    // region Exceptions
 
     /**
-     * Gets the business periods for the default days.
-     *
-     * @return a list of strings with a comma separating open and close times
+     * A runtime exception that is thrown when a date is invalid.
      */
-    List<String> getDefaultBusinessPeriods();
+    public static class InvalidDateException extends RuntimeException {
+        /**
+         * Creates a new exception.
+         *
+         * @param message exception message.
+         */
+        private InvalidDateException(final String message) {
+            super(message);
+        }
+
+        /**
+         * Creates a new exception.
+         *
+         * @param message exception message.
+         * @param cause cause of the exception.
+         */
+        public InvalidDateException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    // endregion
+
+    // region Cache
+
+    private final Map<LocalDate, CalendarDay<Instant>> cachedSchedules = new HashMap<>();
+    private final Map<Integer, YearData> cachedYearData = new HashMap<>();
+
+    private void populateSchedules() {
+        LocalDate date = firstValidDate;
+
+        while (!date.isAfter(lastValidDate)) {
+
+            final CalendarDay<Instant> s = holidays.get(date);
+
+            if (s != null) {
+                cachedSchedules.put(date, s);
+            } else if (weekendDays.contains(date.getDayOfWeek())) {
+                cachedSchedules.put(date, CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone()));
+            } else {
+                cachedSchedules.put(date, CalendarDay.toInstant(standardBusinessDay, date, timeZone()));
+            }
+
+            date = date.plusDays(1);
+        }
+    }
+
+    private static class YearData {
+        private final Instant start;
+        private final Instant end;
+        private final long businessTimeNanos;
+
+        public YearData(final Instant start, final Instant end, final long businessTimeNanos) {
+            this.start = start;
+            this.end = end;
+            this.businessTimeNanos = businessTimeNanos;
+        }
+    }
+
+    private void populateCachedYearData() {
+        // Only cache complete years, since incomplete years can not be fully computed.
+
+        final int yearStart =
+                firstValidDate.getDayOfYear() == 1 ? firstValidDate.getYear() : firstValidDate.getYear() + 1;
+        final int yearEnd = ((lastValidDate.isLeapYear() && lastValidDate.getDayOfYear() == 366)
+                || lastValidDate.getDayOfYear() == 365) ? lastValidDate.getYear() : lastValidDate.getYear() - 1;
+
+        for (int year = yearStart; year <= yearEnd; year++) {
+            final LocalDate startDate = LocalDate.ofYearDay(year, 1);
+            final LocalDate endDate = LocalDate.ofYearDay(year + 1, 1);
+            final ZonedDateTime start = startDate.atTime(0, 0).atZone(timeZone());
+            final ZonedDateTime end = endDate.atTime(0, 0).atZone(timeZone());
+
+            LocalDate date = startDate;
+            long businessTimeNanos = 0;
+
+            while (date.isBefore(endDate)) {
+                final CalendarDay<Instant> bs = this.calendarDay(date);
+                businessTimeNanos += bs.businessNanos();
+                date = date.plusDays(1);
+            }
+
+            final YearData yd = new YearData(start.toInstant(), end.toInstant(), businessTimeNanos);
+            cachedYearData.put(year, yd);
+        }
+    }
+
+    private YearData getYearData(final int year) {
+        final YearData yd = cachedYearData.get(year);
+
+        if (yd == null) {
+            throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
+        }
+
+        return yd;
+    }
+
+    // endregion
+
+    // region Constructors
 
     /**
-     * Gets business schedules for dates that are different from the defaults. This returns all dates that are defined
-     * as a holiday for the calendar.
+     * Creates a new business calendar.
      *
-     * @return a map of dates and to their business periods
+     * @param name calendar name.
+     * @param description calendar description.
+     * @param timeZone calendar time zone.
+     * @param firstValidDate first valid date for the business calendar.
+     * @param lastValidDate last valid date for the business calendar.
+     * @param standardBusinessDay business day schedule for a standard business day
+     * @param weekendDays weekend days
+     * @param holidays holidays. Business day schedules for all holidays. A holiday is a date that has a schedule that
+     *        is different from the schedule for a standard business day or weekend.
+     * @throws RequirementFailure if any argument is null.
      */
-    Map<LocalDate, BusinessSchedule> getHolidays();
+    public BusinessCalendar(final String name, final String description, final ZoneId timeZone,
+            final LocalDate firstValidDate, final LocalDate lastValidDate,
+            final CalendarDay<LocalTime> standardBusinessDay, final Set<DayOfWeek> weekendDays,
+            final Map<LocalDate, CalendarDay<Instant>> holidays) {
+        super(name, description, timeZone);
+        this.firstValidDate = Require.neqNull(firstValidDate, "firstValidDate");
+        this.lastValidDate = Require.neqNull(lastValidDate, "lastValidDate");
+        this.standardBusinessDay = Require.neqNull(standardBusinessDay, "standardBusinessDay");
+        this.weekendDays = Set.copyOf(Require.neqNull(weekendDays, "weekendDays"));
+        this.holidays = Map.copyOf(Require.neqNull(holidays, "holidays"));
+        populateSchedules();
+        populateCachedYearData();
+    }
+
+    // endregion
+
+    // region Getters
 
     /**
-     * Gets today's business schedule.
+     * Returns the first valid date for the business calendar.
      *
-     * @return today's business schedule
+     * @return first valid date for the business calendar.
      */
-    default BusinessSchedule currentBusinessSchedule() {
-        return getBusinessSchedule(currentDay());
+    public LocalDate firstValidDate() {
+        return firstValidDate;
     }
 
     /**
-     * Is the current day a business day?
+     * Returns the last valid date for the business calendar.
      *
-     * @return true if the current day is a business day; false otherwise.
+     * @return last valid date for the business calendar.
      */
-    default boolean isBusinessDay() {
-        return isBusinessDay(currentDay());
+    public LocalDate lastValidDate() {
+        return lastValidDate;
+    }
+
+
+    // endregion
+
+    // region Business Schedule
+
+    /**
+     * Returns the days that make up a weekend.
+     *
+     * @return days that make up a weekend.
+     */
+    public Set<DayOfWeek> weekendDays() {
+        return this.weekendDays;
     }
 
     /**
-     * Is the day of the week a business day? A business day is a day that has a business schedule with one or more
-     * business periods defined.
+     * Business day schedule for a standard business day.
+     *
+     * @return business day schedule for a standard business day.
+     */
+    public CalendarDay<LocalTime> standardBusinessDay() {
+        return standardBusinessDay;
+    }
+
+    /**
+     * Length of a standard business day in nanoseconds.
+     *
+     * @return length of a standard business day in nanoseconds
+     */
+    public long standardBusinessNanos() {
+        return standardBusinessDay.businessNanos();
+    }
+
+    /**
+     * Length of a standard business day.
+     *
+     * @return length of a standard business day
+     */
+    public Duration standardBusinessDuration() {
+        return standardBusinessDay.businessDuration();
+    }
+
+    /**
+     * Business day schedules for all holidays. A holiday is a date that has a schedule that is different from the
+     * schedule for a standard business day or weekend.
+     *
+     * @return a map of holiday dates and their calendar days
+     */
+    public Map<LocalDate, CalendarDay<Instant>> holidays() {
+        return holidays;
+    }
+
+    /**
+     * Returns the {@link CalendarDay} for a date.
+     *
+     * @param date date
+     * @return the corresponding {@link CalendarDay} of {@code date}. {@code null} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public CalendarDay<Instant> calendarDay(final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+
+        if (date.isBefore(firstValidDate)) {
+            throw new InvalidDateException("Date is before the first valid business calendar date:  date=" + date
+                    + " firstValidDate=" + firstValidDate);
+        } else if (date.isAfter(lastValidDate)) {
+            throw new InvalidDateException("Date is after the last valid business calendar date:  date=" + date
+                    + " lastValidDate=" + lastValidDate);
+        }
+
+        return cachedSchedules.get(date);
+    }
+
+    /**
+     * Returns the {@link CalendarDay} for a date.
+     *
+     * @param time time
+     * @return the corresponding {@link CalendarDay} of {@code date}. {@code null} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public CalendarDay<Instant> calendarDay(final ZonedDateTime time) {
+        if (time == null) {
+            return null;
+        }
+
+        return calendarDay(time.withZoneSameInstant(timeZone()).toLocalDate());
+    }
+
+    /**
+     * Returns the {@link CalendarDay} for a date.
+     *
+     * @param time time
+     * @return the corresponding {@link CalendarDay} of {@code date}. {@code null} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public CalendarDay<Instant> calendarDay(final Instant time) {
+        if (time == null) {
+            return null;
+        }
+
+        return calendarDay(time.atZone(timeZone()));
+    }
+
+    /**
+     * Returns the {@link CalendarDay} for a date.
+     *
+     * @param date date
+     * @return the corresponding {@link CalendarDay} of {@code date}. {@code null} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public CalendarDay<Instant> calendarDay(final String date) {
+        if (date == null) {
+            return null;
+        }
+
+        return this.calendarDay(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Returns the {@link CalendarDay} for a date.
+     *
+     * @return today's business day schedule
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public CalendarDay<Instant> calendarDay() {
+        return this.calendarDay(calendarDate());
+    }
+
+    // endregion
+
+    // region Business Day
+
+    /**
+     * Is the date a business day?
+     *
+     * @param date date
+     * @return true if the date is a business day; false otherwise. False if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessDay(final LocalDate date) {
+        if (date == null) {
+            return false;
+        }
+
+        return this.calendarDay(date).isBusinessDay();
+    }
+
+    /**
+     * Is the date a business day?
+     *
+     * @param date date
+     * @return true if the date is a business day; false otherwise. False if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public boolean isBusinessDay(final String date) {
+        if (date == null) {
+            return false;
+        }
+
+        return calendarDay(date).isBusinessDay();
+    }
+
+    /**
+     * Is the time on a business day?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule. To determine if a time is within the business day schedule, use
+     * {@link #isBusinessTime(ZonedDateTime)}.
+     *
+     * @param time time
+     * @return true if the date is a business day; false otherwise. False if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessDay(final ZonedDateTime time) {
+        if (time == null) {
+            return false;
+        }
+
+        return this.calendarDay(time).isBusinessDay();
+    }
+
+    /**
+     * Is the time on a business day?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule. To determine if a time is within the business day schedule, use
+     * {@link #isBusinessTime(Instant)}.
+     *
+     * @param time time
+     * @return true if the date is a business day; false otherwise. False if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessDay(final Instant time) {
+        if (time == null) {
+            return false;
+        }
+
+        return this.calendarDay(time).isBusinessDay();
+    }
+
+    /**
+     * Is the day of the week a normal business day?
      *
      * @param day a day of the week
-     * @return true if the day is a business day; false otherwise.
+     * @return true if the day is a business day; false otherwise. False if the input is {@code null}.
      */
-    boolean isBusinessDay(DayOfWeek day);
+    public boolean isBusinessDay(final DayOfWeek day) {
+        if (day == null) {
+            return false;
+        }
 
-    /**
-     * Does time occur on a business day?
-     *
-     * @param time time
-     * @return true if the date is a business day; false otherwise.
-     */
-    boolean isBusinessDay(final Instant time);
-
-    /**
-     * Is the date a business day?
-     *
-     * @param date date
-     * @return true if the date is a business day; false otherwise.
-     */
-    boolean isBusinessDay(final String date);
-
-    /**
-     * Is the date a business day?
-     *
-     * @param date date
-     * @return true if the date is a business day; false otherwise.
-     */
-    boolean isBusinessDay(final LocalDate date);
-
-    /**
-     * Determines if the specified time is a business time. If the time falls between business periods, false will be
-     * returned.
-     *
-     * @param time time
-     * @return true if the specified time is a business time; otherwise, false.
-     */
-    boolean isBusinessTime(final Instant time);
-
-    /**
-     * Gets the previous business day.
-     *
-     * @return previous business day
-     */
-    default String previousBusinessDay() {
-        return previousBusinessDay(currentDay());
+        return !weekendDays.contains(day);
     }
 
     /**
-     * Gets the business date {@code days} business days before the current day. If {@code days} is zero and today is
-     * not a business day, null is returned.
+     * Is the current day a business day? As long as the current time occurs on a business day, it is considered a
+     * business day. The time does not have to be within the business day schedule.
      *
-     * @param days number of days
-     * @return the business date {@code days} business days before the current day
+     * @return true if the current day is a business day; false otherwise
      */
-    default String previousBusinessDay(int days) {
-        return previousBusinessDay(currentDay(), days);
-    }
-
-    /**
-     * Gets the previous business day.
-     *
-     * @param time time; if null, return null
-     * @return the most recent business day before {@code time}
-     */
-    String previousBusinessDay(final Instant time);
-
-    /**
-     * Gets the business date {@code days} business days before input {@code time}. If {@code days} is zero and the day
-     * is not a business day, null is returned.
-     *
-     * @param time time; if null, return null
-     * @param days number of days
-     * @return the business date {@code days} business days before input {@code time}
-     */
-    String previousBusinessDay(final Instant time, int days);
-
-    /**
-     * Gets the previous business day.
-     *
-     * @param date date; if null, return null
-     * @return the most recent business day before {@code date}
-     */
-    String previousBusinessDay(String date);
-
-    /**
-     * Gets the business date {@code days} business days before input {@code date}. If {@code days} is zero and the day
-     * is not a business day, null is returned.
-     *
-     * @param date date; if null, return null
-     * @param days number of days
-     * @return the business date {@code days} business days before input {@code date}
-     */
-    String previousBusinessDay(String date, int days);
-
-
-    /**
-     * Gets the previous business schedule.
-     *
-     * @return previous business schedule
-     */
-    default BusinessSchedule previousBusinessSchedule() {
-        return previousBusinessSchedule(currentDay());
-    }
-
-    /**
-     * Gets the business schedule {@code days} days before the current day.
-     *
-     * Assumes implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param days number of days
-     * @return the business schedule {@code days} days before the current day
-     */
-    default BusinessSchedule previousBusinessSchedule(int days) {
-        return previousBusinessSchedule(currentDay(), days);
-    }
-
-    /**
-     * Gets the previous business schedule before input {@code time}.
-     *
-     * Assumes implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param time time; if null, return null
-     * @return the most recent business schedule before {@code time}
-     */
-    BusinessSchedule previousBusinessSchedule(final Instant time);
-
-    /**
-     * Gets the business schedule {@code days} days before input {@code time}.
-     *
-     * Assumes implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param time time; if null, return null
-     * @param days number of days
-     */
-    BusinessSchedule previousBusinessSchedule(final Instant time, int days);
-
-    /**
-     * Gets the business schedule before input {@code date}.
-     *
-     * Assumes implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param date date; if null, return null
-     * @return the most recent business schedule before {@code date}
-     */
-    BusinessSchedule previousBusinessSchedule(String date);
-
-    /**
-     * Gets the business schedule {@code days} days before input {@code date}.
-     *
-     * Assumes implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param date date; if null, return null
-     * @param days number of days
-     * @return the business schedule {@code days} days before input {@code date}
-     */
-    BusinessSchedule previousBusinessSchedule(String date, int days);
-
-    /**
-     * Gets the previous non-business day.
-     *
-     * @return the most recent non-business day before the current day
-     */
-    default String previousNonBusinessDay() {
-        return previousNonBusinessDay(currentDay());
-    }
-
-    /**
-     * Gets the non-business date {@code days} non-business days before the current day. If {@code days} is zero and the
-     * day is a business day, null is returned.
-     *
-     * @param days number of days
-     * @return the non-business date {@code days} non-business days before the current day
-     */
-    default String previousNonBusinessDay(int days) {
-        return previousNonBusinessDay(currentDay(), days);
-    }
-
-    /**
-     * Gets the previous non-business day.
-     *
-     * @param time time; if null, return null
-     * @return the most recent non-business day before {@code time}
-     */
-    String previousNonBusinessDay(final Instant time);
-
-    /**
-     * Gets the non-business date {@code days} non-business days before input {@code time}. If {@code days} is zero and
-     * the day is a business day, null is returned.
-     *
-     * @param time time; if null, return null
-     * @param days number of days
-     * @return the non-business date {@code days} non-business days before input {@code time}
-     */
-    String previousNonBusinessDay(final Instant time, int days);
-
-    /**
-     * Gets the previous non-business day.
-     *
-     * @param date date; if null, return null
-     * @return the most recent non-business day before {@code date}
-     */
-    String previousNonBusinessDay(String date);
-
-    /**
-     * Gets the non-business date {@code days} non-business days before input {@code date}. If {@code days} is zero and
-     * the day is a business day, null is returned.
-     *
-     * @param date date; if null, return null
-     * @param days number of days
-     * @return the non-business date {@code days} non-business days before input {@code date}
-     */
-    String previousNonBusinessDay(String date, int days);
-
-    /**
-     * Gets the next business day.
-     *
-     * @return next business day
-     */
-    default String nextBusinessDay() {
-        return nextBusinessDay(currentDay());
-    }
-
-    /**
-     * Gets the business date {@code days} business days after the current day. If {@code days} is zero and today is not
-     * a business day, null is returned.
-     *
-     * @param days number of days
-     * @return the business date {@code days} business days after the current day
-     */
-    default String nextBusinessDay(int days) {
-        return nextBusinessDay(currentDay(), days);
-    }
-
-    /**
-     * Gets the next business day.
-     *
-     * @param time time; if null, return null
-     * @return the next business day after {@code time}
-     */
-    String nextBusinessDay(final Instant time);
-
-    /**
-     * Gets the business date {@code days} business days after input {@code time}. If {@code days} is zero and the day
-     * is not a business day, null is returned.
-     *
-     * @param time time; if null, return null
-     * @param days number of days
-     * @return the next business day after {@code time}
-     */
-    String nextBusinessDay(final Instant time, int days);
-
-    /**
-     * Gets the next business day.
-     *
-     * @param date date; if null, return null
-     * @return the next business day after {@code date}
-     */
-    String nextBusinessDay(String date);
-
-    /**
-     * Gets the business date {@code days} business days after input {@code date}. If {@code days} is zero and the day
-     * is not a business day, null is returned.
-     *
-     * @param date date; if null, return null
-     * @param days number of days
-     * @return the business date {@code days} business days after input {@code date}
-     */
-    String nextBusinessDay(String date, int days);
-
-    /**
-     * Gets the next business schedule.
-     *
-     * @return next business schedule
-     */
-    default BusinessSchedule nextBusinessSchedule() {
-        return nextBusinessSchedule(currentDay());
-    }
-
-    /**
-     * Gets the business schedule {@code days} days after the current day.
-     *
-     * If the current day is null, assumes the implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param days number of days
-     * @return the next closest business schedule after the current day
-     */
-    default BusinessSchedule nextBusinessSchedule(int days) {
-        return nextBusinessSchedule(currentDay(), days);
-    }
-
-    /**
-     * Gets the next business schedule.
-     *
-     * @param time time; if null, return null
-     * @return the next closest business schedule after {@code time}
-     */
-    BusinessSchedule nextBusinessSchedule(final Instant time);
-
-    /**
-     * Gets the business schedule {@code days} days after input {@code time}.
-     *
-     * If {@code date} is null, assumes the implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param time time; if null, return null
-     * @param days number of days
-     * @return the business schedule {@code days} after {@code time}
-     */
-    BusinessSchedule nextBusinessSchedule(final Instant time, int days);
-
-    /**
-     * Gets the next business schedule after input {@code date}.
-     *
-     * Assumes implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param date date; if null, return null
-     * @return the next closest business schedule after {@code date}
-     */
-    BusinessSchedule nextBusinessSchedule(String date);
-
-    /**
-     * Gets the business schedule {@code days} days after input {@code date}.
-     *
-     * If {@code date} is null, assumes the implementation of getBusinessSchedule(null) returns null.
-     *
-     * @param date date; if null, return null
-     * @param days number of days
-     * @return the business schedule {@code days} after {@code date}
-     */
-    BusinessSchedule nextBusinessSchedule(String date, int days);
-
-    /**
-     * Gets the next non-business day.
-     *
-     * @return the next non-business day after the current day
-     */
-    default String nextNonBusinessDay() {
-        return nextNonBusinessDay(currentDay());
-    }
-
-    /**
-     * Gets the non-business date {@code days} non-business days after the current day. If {@code days} is zero and the
-     * day is a business day, null is returned.
-     *
-     * @param days number of days
-     * @return the non-business date {@code days} non-business days after the current day
-     */
-    default String nextNonBusinessDay(int days) {
-        return nextNonBusinessDay(currentDay(), days);
-    }
-
-    /**
-     * Gets the next non-business day.
-     *
-     * @param time time; if null, return null
-     * @return the next non-business day after {@code time}
-     */
-    String nextNonBusinessDay(final Instant time);
-
-    /**
-     * Gets the non-business date {@code days} non-business days after input {@code time}. If {@code days} is zero and
-     * the day is a business day, null is returned.
-     *
-     * @param time time; if null, return null
-     * @param days number of days
-     * @return the non-business date {@code days} non-business days after input {@code time}
-     */
-    String nextNonBusinessDay(final Instant time, int days);
-
-    /**
-     * Gets the next non-business day.
-     *
-     * @param date date; if null, return null
-     * @return the next non-business day after {@code date}
-     */
-    String nextNonBusinessDay(String date);
-
-    /**
-     * Gets the non-business date {@code days} non-business days after input {@code date}. If {@code days} is zero and
-     * the day is a business day, null is returned.
-     *
-     * @param date date; if null, return null
-     * @param days number of days
-     * @return the most recent business day before {@code time}
-     */
-    String nextNonBusinessDay(String date, int days);
-
-    /**
-     * Returns the business days between {@code start} and {@code end}, inclusive.
-     *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive business days between {@code start} and {@code end}
-     */
-    String[] businessDaysInRange(final Instant start, final Instant end);
-
-    /**
-     * Returns the business days between {@code start} and {@code end}, inclusive.
-     *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive business days between {@code start} and {@code end}
-     */
-    String[] businessDaysInRange(String start, String end);
-
-    /**
-     * Returns the non-business days between {@code start} and {@code end}, inclusive.
-     *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are non-business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive non-business days between {@code start} and {@code end}
-     */
-    String[] nonBusinessDaysInRange(final Instant start, final Instant end);
-
-    /**
-     * Returns the non-business days between {@code start} and {@code end}, inclusive.
-     *
-     * Because no time information (e.g., hours, minutes, seconds) is returned, the corresponding days for {@code start}
-     * and {@code end} will be included if they are non-business days.
-     *
-     * @param start start time; if null, return empty array
-     * @param end end time; if null, return empty array
-     * @return inclusive non-business days between {@code start} and {@code end}
-     */
-    String[] nonBusinessDaysInRange(String start, String end);
-
-    /**
-     * Returns the length of a standard business day in nanoseconds.
-     *
-     * @return length of a standard business day in nanoseconds.
-     */
-    long standardBusinessDayLengthNanos();
-
-    /**
-     * Returns the amount of business time in nanoseconds between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of business time in nanoseconds between the {@code start} and {@code end}
-     */
-    long diffBusinessNanos(Instant start, Instant end);
-
-    /**
-     * Returns the amount of non-business time in nanoseconds between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of non-business time in nanoseconds between the {@code start} and {@code end}
-     */
-    long diffNonBusinessNanos(final Instant start, final Instant end);
-
-    /**
-     * Returns the amount of business time in standard business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of business time in standard business days between the {@code start} and {@code end}
-     */
-    double diffBusinessDay(final Instant start, final Instant end);
-
-    /**
-     * Returns the amount of non-business time in standard business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @return the amount of non-business time in standard business days between the {@code start} and {@code end}
-     */
-    double diffNonBusinessDay(final Instant start, final Instant end);
-
-    /**
-     * Returns the number of business years between {@code start} and {@code end}.
-     *
-     * @param start start; if null, return null
-     * @param end end; if null, return null
-     * @return the amount of business time in business years between the {@code start} and {@code end}
-     */
-    double diffBusinessYear(Instant start, Instant end);
-
-    /**
-     * Returns the number of business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @return number of business days between the {@code start} and {@code end}, inclusive and exclusive respectively.
-     */
-    int numberOfBusinessDays(Instant start, Instant end);
-
-    /**
-     * Returns the number of business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
-     */
-    int numberOfBusinessDays(Instant start, Instant end, final boolean endInclusive);
-
-    /**
-     * Returns the number of business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @return number of business days between the {@code start} and {@code end}, inclusive and exclusive respectively.
-     */
-    int numberOfBusinessDays(String start, String end);
-
-    /**
-     * Returns the number of business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
-     */
-    int numberOfBusinessDays(String start, String end, final boolean endInclusive);
-
-    /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @return number of business days between the {@code start} and {@code end}, inclusive and exclusive respectively.
-     */
-    int numberOfNonBusinessDays(Instant start, Instant end);
-
-    /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_LONG
-     * @param end end time; if null, return NULL_LONG
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
-     */
-    int numberOfNonBusinessDays(Instant start, Instant end, final boolean endInclusive);
-
-    /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @return number of non-business days between the {@code start} and {@code end}, inclusive.
-     */
-    int numberOfNonBusinessDays(final String start, final String end);
-
-    /**
-     * Returns the number of non-business days between {@code start} and {@code end}.
-     *
-     * @param start start time; if null, return NULL_INT
-     * @param end end time; if null, return NULL_INT
-     * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return number of non-business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
-     *         respectively.
-     */
-    int numberOfNonBusinessDays(final String start, final String end, final boolean endInclusive);
-
-    /**
-     * Returns the ratio of the current day's business day length and the standard business day length. For example, a
-     * holiday has zero business time and will therefore return 0.0. A normal business day will be of the standard
-     * length and will therefore return 1.0. A half day holiday will return 0.5.
-     *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @return ratio of the business day length and the standard business day length for the current day
-     */
-    default double fractionOfStandardBusinessDay() {
-        return fractionOfStandardBusinessDay(currentDay());
-    }
-
-    /**
-     * For the given date, returns the ratio of the business day length and the standard business day length. For
-     * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
-     * standard length and will therefore return 1.0. A half day holiday will return 0.5.
-     *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @param time time; if null, return 0
-     * @return ratio of the business day length and the standard business day length for the date
-     */
-    double fractionOfStandardBusinessDay(final Instant time);
-
-    /**
-     * For the given date, returns the ratio of the business day length and the standard business day length. For
-     * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
-     * standard length and will therefore return 1.0. A half day holiday will return 0.5.
-     *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
-     * @param date date; if null, return 0
-     * @return ratio of the business day length and the standard business day length for the date
-     */
-    double fractionOfStandardBusinessDay(final String date);
-
-    /**
-     * Returns the fraction of the business day remaining after the given time.
-     *
-     * @param time time
-     * @return the fraction of the day left after {@code time}; NULL_DOUBLE if time is null
-     */
-    double fractionOfBusinessDayRemaining(final Instant time);
-
-    /**
-     * Returns the fraction of the business day complete by the given time.
-     *
-     * @param time time
-     * @return the fraction of the day complete by {@code time}; NULL_DOUBLE if time is null
-     */
-    double fractionOfBusinessDayComplete(final Instant time);
-
-    /**
-     * Is the time on the last business day of the month with business time remaining?
-     *
-     * @param time time
-     * @return true if {@code time} is on the last business day of the month with business time remaining; false
-     *         otherwise.
-     */
-    boolean isLastBusinessDayOfMonth(final Instant time);
-
-    /**
-     * Is the current day the last business day of the month?
-     *
-     * @return true if {@code date} is on the last business day of the month; false otherwise.
-     */
-    default boolean isLastBusinessDayOfMonth() {
-        return isLastBusinessDayOfMonth(currentDay());
+    public boolean isBusinessDay() {
+        return isBusinessDay(calendarDate());
     }
 
     /**
      * Is the date the last business day of the month?
      *
      * @param date date
-     * @return true if {@code date} is on the last business day of the month; false otherwise.
+     * @return true if {@code date} is the last business day of the month; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    boolean isLastBusinessDayOfMonth(final String date);
+    boolean isLastBusinessDayOfMonth(final LocalDate date) {
+        if (date == null || !isBusinessDay(date)) {
+            return false;
+        }
 
-    /**
-     * Is the current day the last business day of the week?
-     *
-     * @return true if {@code date} is on the last business day of the week; false otherwise.
-     */
-    default boolean isLastBusinessDayOfWeek() {
-        return isLastBusinessDayOfWeek(currentDay());
+        final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
+        assert nextBusAfterDate != null;
+        return date.getMonth() != nextBusAfterDate.getMonth();
     }
 
     /**
-     * Is the time on the last business day of the week with business time remaining?
+     * Is the time on the last business day of the month?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule.
      *
      * @param time time
-     * @return true if {@code time} is on the last business day of the week with business time remaining; false
-     *         otherwise.
+     * @return true if {@code time} is on the last business day of the month; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    boolean isLastBusinessDayOfWeek(final Instant time);
+    public boolean isLastBusinessDayOfMonth(final ZonedDateTime time) {
+        if (time == null) {
+            return false;
+        }
+
+        Require.neqNull(time, "time");
+        return isLastBusinessDayOfMonth(DateTimeUtils.toLocalDate(time.withZoneSameInstant(timeZone())));
+    }
+
+    /**
+     * Is the time on the last business day of the month?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule.
+     *
+     * @param time time
+     * @return true if {@code time} is on the last business day of the month; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isLastBusinessDayOfMonth(final Instant time) {
+        if (time == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfMonth(DateTimeUtils.toLocalDate(time, timeZone()));
+    }
+
+    /**
+     * Is the date the last business day of the month?
+     *
+     * @param date date
+     * @return true if {@code time} is on the last business day of the month; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public boolean isLastBusinessDayOfMonth(final String date) {
+        if (date == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfMonth(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Is the current date the last business day of the month?
+     *
+     * @return true if the current date is the last business day of the month; false otherwise.
+     */
+    public boolean isLastBusinessDayOfMonth() {
+        return isLastBusinessDayOfMonth(calendarDate());
+    }
 
     /**
      * Is the date the last business day of the week?
      *
      * @param date date
-     * @return true if {@code date} is on the last business day of the week; false otherwise.
+     * @return true if {@code date} is on the last business day of the week; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    boolean isLastBusinessDayOfWeek(final String date);
+    public boolean isLastBusinessDayOfWeek(final LocalDate date) {
+        if (date == null || !isBusinessDay(date)) {
+            return false;
+        }
+
+        final LocalDate nextBusinessDay = plusBusinessDays(date, 1);
+        return date.getDayOfWeek().compareTo(nextBusinessDay.getDayOfWeek()) > 0
+                || numberCalendarDates(date, nextBusinessDay) > 6;
+    }
 
     /**
-     * Gets the indicated business day.
+     * Is the time on the last business day of the week?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule.
      *
      * @param time time
-     * @return the corresponding BusinessSchedule of {@code time}; null if time is null
+     * @return true if {@code time} is on the last business day of the week; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    @Deprecated
-    BusinessSchedule getBusinessDay(final Instant time);
+    public boolean isLastBusinessDayOfWeek(final ZonedDateTime time) {
+        if (time == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfWeek(time.withZoneSameInstant(timeZone()).toLocalDate());
+    }
 
     /**
-     * Gets the indicated business day.
+     * Is the time on the last business day of the week?
      *
-     * @param date date
-     * @return the corresponding BusinessSchedule of {@code date}
-     */
-    @Deprecated
-    BusinessSchedule getBusinessDay(String date);
-
-    /**
-     * Gets the indicated business day.
-     *
-     * @param date date
-     * @return the corresponding BusinessSchedule of {@code date}
-     */
-    @Deprecated
-    BusinessSchedule getBusinessDay(final LocalDate date);
-
-    /**
-     * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule.
      *
      * @param time time
-     * @return the corresponding BusinessSchedule of {@code time}; null if time is null
+     * @return true if {@code time} is on the last business day of the week; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    BusinessSchedule getBusinessSchedule(final Instant time);
+    public boolean isLastBusinessDayOfWeek(final Instant time) {
+        if (time == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfWeek(DateTimeUtils.toLocalDate(time, timeZone()));
+    }
 
     /**
-     * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
+     * Is the date is last business day of the week?
      *
      * @param date date
-     * @return the corresponding BusinessSchedule of {@code date}
+     * @return true if {@code date} is the last business day of the week; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
-    BusinessSchedule getBusinessSchedule(String date);
+    public boolean isLastBusinessDayOfWeek(final String date) {
+        if (date == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfWeek(DateTimeUtils.parseLocalDate(date));
+    }
 
     /**
-     * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.
+     * Is the current date the last business day of the week?
+     *
+     * @return true if the current date is the last business day of the week; false otherwise.
+     */
+    public boolean isLastBusinessDayOfWeek() {
+        return isLastBusinessDayOfWeek(calendarDate());
+    }
+
+    /**
+     * Is the date the last business day of the year?
      *
      * @param date date
-     * @return the corresponding BusinessSchedule of {@code date}
+     * @return true if {@code date} is the last business day of the year; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
      */
-    BusinessSchedule getBusinessSchedule(final LocalDate date);
+    boolean isLastBusinessDayOfYear(final LocalDate date) {
+        if (date == null || !isBusinessDay(date)) {
+            return false;
+        }
+
+        final LocalDate nextBusAfterDate = plusBusinessDays(date, 1);
+        assert nextBusAfterDate != null;
+        return date.getYear() != nextBusAfterDate.getYear();
+    }
+
+    /**
+     * Is the time on the last business day of the year?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule.
+     *
+     * @param time time
+     * @return true if {@code time} is on the last business day of the year; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isLastBusinessDayOfYear(final ZonedDateTime time) {
+        if (time == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfYear(DateTimeUtils.toLocalDate(time.withZoneSameInstant(timeZone())));
+    }
+
+    /**
+     * Is the time on the last business day of the year?
+     *
+     * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
+     * within the business day schedule.
+     *
+     * @param time time
+     * @return true if {@code time} is on the last business day of the year; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isLastBusinessDayOfYear(final Instant time) {
+        if (time == null) {
+            return false;
+        }
+
+        return isLastBusinessDayOfYear(DateTimeUtils.toLocalDate(time, timeZone()));
+    }
+
+    /**
+     * Is the date the last business day of the year?
+     *
+     * @param date date
+     * @return true if {@code time} is on the last business day of the year; false otherwise. False if the input is
+     *         {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    boolean isLastBusinessDayOfYear(final String date) {
+        if (date == null) {
+            return false;
+        }
+
+        Require.neqNull(date, "date");
+        return isLastBusinessDayOfYear(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Is the current date the last business day of the year?
+     *
+     * As long as the current time occurs on a business day, it is considered a business day. The time does not have to
+     * be within the business day schedule.
+     *
+     * @return true if the current date is the last business day of the year; false otherwise.
+     */
+    public boolean isLastBusinessDayOfYear() {
+        return isLastBusinessDayOfYear(calendarDate());
+    }
+
+    // endregion
+
+    // region Business Time
+
+    /**
+     * Determines if the specified time is a business time. Business times fall within business time ranges of the day's
+     * business schedule.
+     *
+     * @param time time
+     * @return true if the specified time is a business time; otherwise, false. False if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessTime(final ZonedDateTime time) {
+        if (time == null) {
+            return false;
+        }
+
+        return this.calendarDay(time).isBusinessTime(time.toInstant());
+    }
+
+    /**
+     * Determines if the specified time is a business time. Business times fall within business time ranges of the day's
+     * business schedule.
+     *
+     * @param time time
+     * @return true if the specified time is a business time; otherwise, false. False if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessTime(final Instant time) {
+        if (time == null) {
+            return false;
+        }
+
+        return this.calendarDay(time).isBusinessTime(time);
+    }
+
+    /**
+     * Determines if the current time according to the Deephaven system clock is a business time. Business times fall
+     * within business time ranges of the day's business schedule.
+     *
+     * @return true if the specified time is a business time; otherwise, false.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public boolean isBusinessTime() {
+        return isBusinessTime(DateTimeUtils.now());
+    }
+
+    /**
+     * Returns the ratio of the business day length and the standard business day length. For example, a holiday has
+     * zero business time and will therefore return 0.0. A normal business day will be of the standard length and will
+     * therefore return 1.0. A NYSE half day holiday will return 0.538 (3.5 hours open, over a standard 6.5 hour day).
+     *
+     * @param date date
+     * @return ratio of the business day length and the standard business day length for the date.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionStandardBusinessDay(final LocalDate date) {
+        if (date == null) {
+            return NULL_DOUBLE;
+        }
+
+        final CalendarDay<Instant> schedule = this.calendarDay(date);
+        return (double) schedule.businessNanos() / (double) standardBusinessNanos();
+    }
+
+    /**
+     * Returns the ratio of the business day length and the standard business day length. For example, a holiday has
+     * zero business time and will therefore return 0.0. A normal business day will be of the standard length and will
+     * therefore return 1.0. A half day holiday will return 0.5.
+     *
+     * @param date date
+     * @return ratio of the business day length and the standard business day length for the date.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public double fractionStandardBusinessDay(final String date) {
+        if (date == null) {
+            return NULL_DOUBLE;
+        }
+
+        return fractionStandardBusinessDay(DateTimeUtils.parseLocalDate(date));
+    }
+
+    /**
+     * Returns the ratio of the business day length and the standard business day length. For example, a holiday has
+     * zero business time and will therefore return 0.0. A normal business day will be of the standard length and will
+     * therefore return 1.0. A half day holiday will return 0.5.
+     *
+     * @param time time
+     * @return ratio of the business day length and the standard business day length for the date.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionStandardBusinessDay(final Instant time) {
+        if (time == null) {
+            return NULL_DOUBLE;
+        }
+
+        return fractionStandardBusinessDay(DateTimeUtils.toLocalDate(time, timeZone()));
+    }
+
+    /**
+     * Returns the ratio of the business day length and the standard business day length. For example, a holiday has
+     * zero business time and will therefore return 0.0. A normal business day will be of the standard length and will
+     * therefore return 1.0. A half day holiday will return 0.5.
+     *
+     * @param time time
+     * @return ratio of the business day length and the standard business day length for the date.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionStandardBusinessDay(final ZonedDateTime time) {
+        if (time == null) {
+            return NULL_DOUBLE;
+        }
+
+        return fractionStandardBusinessDay(DateTimeUtils.toLocalDate(time.toInstant(), timeZone()));
+    }
+
+    /**
+     * Returns the ratio of the business day length and the standard business day length. For example, a holiday has
+     * zero business time and will therefore return 0.0. A normal business day will be of the standard length and will
+     * therefore return 1.0. A half day holiday will return 0.5.
+     *
+     * @return ratio of the business day length and the standard business day length for the date
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionStandardBusinessDay() {
+        return fractionStandardBusinessDay(calendarDate());
+    }
+
+    /**
+     * Fraction of the business day complete.
+     *
+     * @param time time
+     * @return the fraction of the business day complete, or 1.0 if the day is not a business day.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionBusinessDayComplete(final Instant time) {
+        if (time == null) {
+            return NULL_DOUBLE;
+        }
+
+        final CalendarDay<Instant> schedule = this.calendarDay(time);
+
+        if (!schedule.isBusinessDay()) {
+            return 1.0;
+        }
+
+        final long businessDaySoFar = schedule.businessNanosElapsed(time);
+        return (double) businessDaySoFar / (double) schedule.businessNanos();
+    }
+
+    /**
+     * Fraction of the business day complete.
+     *
+     * @param time time
+     * @return the fraction of the business day complete, or 1.0 if the day is not a business day.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionBusinessDayComplete(final ZonedDateTime time) {
+        if (time == null) {
+            return NULL_DOUBLE;
+        }
+
+        return fractionBusinessDayComplete(time.toInstant());
+    }
+
+    /**
+     * Fraction of the current business day complete.
+     *
+     * @return the fraction of the business day complete, or 1.0 if the day is not a business day
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionBusinessDayComplete() {
+        return fractionBusinessDayComplete(DateTimeUtils.now());
+    }
+
+    /**
+     * Fraction of the business day remaining.
+     *
+     * @param time time
+     * @return the fraction of the business day complete, or 0.0 if the day is not a business
+     *         day.{@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionBusinessDayRemaining(final Instant time) {
+        if (time == null) {
+            return NULL_DOUBLE;
+        }
+
+        return 1.0 - fractionBusinessDayComplete(time);
+    }
+
+    /**
+     * Fraction of the business day remaining.
+     *
+     * @param time time
+     * @return the fraction of the business day complete, or 0.0 if the day is not a business day.
+     *         {@link io.deephaven.util.QueryConstants#NULL_DOUBLE} if the input is {@code null}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionBusinessDayRemaining(final ZonedDateTime time) {
+        if (time == null) {
+            return NULL_DOUBLE;
+        }
+
+        return 1.0 - fractionBusinessDayComplete(time);
+    }
+
+    /**
+     * Fraction of the business day remaining.
+     *
+     * @return the fraction of the business day complete, or 0.0 if the day is not a business day
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public double fractionBusinessDayRemaining() {
+        return fractionBusinessDayRemaining(DateTimeUtils.now());
+    }
+
+    // endregion
+
+    // region Ranges
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if any
+     *         input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        int days = 0;
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if (!skip && isBusinessDay(day)) {
+                days++;
+            }
+        }
+
+        return days;
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if any
+     *         input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberBusinessDates(final String start, final String end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end),
+                startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if any
+     *         input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(),
+                end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if any
+     *         input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final Instant start, final Instant end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()),
+                DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final LocalDate start, final LocalDate end) {
+        return numberBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberBusinessDates(final String start, final String end) {
+        return numberBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberBusinessDates(final Instant start, final Instant end) {
+        return numberBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if
+     *         any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberCalendarDates(start, end, startInclusive, endInclusive)
+                - numberBusinessDates(start, end, startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if
+     *         any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberNonBusinessDates(final String start, final String end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberNonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end),
+                startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if
+     *         any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberNonBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(),
+                end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of non-business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if
+     *         any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final Instant start, final Instant end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return NULL_INT;
+        }
+
+        return numberNonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()),
+                DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and
+     *         {@code end}. {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final LocalDate start, final LocalDate end) {
+        return numberNonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and
+     *         {@code end}. {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public int numberNonBusinessDates(final String start, final String end) {
+        return numberNonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and
+     *         {@code end}. {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return numberNonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the number of non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return number of non-business dates between {@code start} and {@code end}; including {@code start} and
+     *         {@code end}. {@link QueryConstants#NULL_INT} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public int numberNonBusinessDates(final Instant start, final Instant end) {
+        return numberNonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        List<LocalDate> dateList = new ArrayList<>();
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if (!skip && isBusinessDay(day)) {
+                dateList.add(day);
+            }
+        }
+
+        return dateList.toArray(new LocalDate[0]);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String[] businessDates(final String start, final String end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        final LocalDate[] dates =
+                businessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
+                        endInclusive);
+        return dates == null ? null : Arrays.stream(dates).map(DateTimeUtils::formatDate).toArray(String[]::new);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return businessDates(start.withZoneSameInstant(timeZone()).toLocalDate(),
+                end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final Instant start, final Instant end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return businessDates(DateTimeUtils.toLocalDate(start, timeZone()), DateTimeUtils.toLocalDate(end, timeZone()),
+                startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final LocalDate start, final LocalDate end) {
+        return businessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String[] businessDates(final String start, final String end) {
+        return businessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return businessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] businessDates(final Instant start, final Instant end) {
+        return businessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        List<LocalDate> dateList = new ArrayList<>();
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if (!skip && !isBusinessDay(day)) {
+                dateList.add(day);
+            }
+        }
+
+        return dateList.toArray(new LocalDate[0]);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String[] nonBusinessDates(final String start, final String end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        final LocalDate[] dates =
+                nonBusinessDates(DateTimeUtils.parseLocalDate(start), DateTimeUtils.parseLocalDate(end), startInclusive,
+                        endInclusive);
+        return dates == null ? null : Arrays.stream(dates).map(DateTimeUtils::formatDate).toArray(String[]::new);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end,
+            final boolean startInclusive, final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return nonBusinessDates(start.withZoneSameInstant(timeZone()).toLocalDate(),
+                end.withZoneSameInstant(timeZone()).toLocalDate(), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return non-business dates between {@code start} and {@code end}. {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final Instant start, final Instant end, final boolean startInclusive,
+            final boolean endInclusive) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return nonBusinessDates(DateTimeUtils.toLocalDate(start, timeZone()),
+                DateTimeUtils.toLocalDate(end, timeZone()), startInclusive, endInclusive);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final LocalDate start, final LocalDate end) {
+        return nonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String[] nonBusinessDates(final String start, final String end) {
+        return nonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final ZonedDateTime start, final ZonedDateTime end) {
+        return nonBusinessDates(start, end, true, true);
+    }
+
+    /**
+     * Returns the non-business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return non-business dates between {@code start} and {@code end}; including {@code start} and {@code end}.
+     *         {@code null} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public LocalDate[] nonBusinessDates(final Instant start, final Instant end) {
+        return nonBusinessDates(start, end, true, true);
+    }
+
+    // endregion
+
+    // region Differences
+
+    /**
+     * Returns the amount of business time in nanoseconds between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time in nanoseconds between {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_LONG} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public long diffBusinessNanos(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return NULL_LONG;
+        }
+
+        if (DateTimeUtils.isAfter(start, end)) {
+            return -diffBusinessNanos(end, start);
+        }
+
+        final LocalDate startDate = DateTimeUtils.toLocalDate(start, timeZone());
+        final LocalDate endDate = DateTimeUtils.toLocalDate(end, timeZone());
+
+        assert startDate != null;
+        assert endDate != null;
+
+        if (startDate.equals(endDate)) {
+            final CalendarDay<Instant> schedule = this.calendarDay(startDate);
+            return schedule.businessNanosElapsed(end) - schedule.businessNanosElapsed(start);
+        }
+
+        long rst = this.calendarDay(startDate).businessNanosRemaining(start)
+                + this.calendarDay(endDate).businessNanosElapsed(end);
+
+        for (LocalDate d = startDate.plusDays(1); d.isBefore(endDate); d = d.plusDays(1)) {
+            rst += this.calendarDay(d).businessNanos();
+        }
+
+        return rst;
+    }
+
+    /**
+     * Returns the amount of business time in nanoseconds between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time in nanoseconds between {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_LONG} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public long diffBusinessNanos(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return NULL_LONG;
+        }
+
+        return diffBusinessNanos(start.toInstant(), end.toInstant());
+    }
+
+    /**
+     * Returns the amount of non-business time in nanoseconds between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of nonbusiness time in nanoseconds between {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_LONG} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public long diffNonBusinessNanos(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return NULL_LONG;
+        }
+
+        return DateTimeUtils.diffNanos(start, end) - diffBusinessNanos(start, end);
+    }
+
+    /**
+     * Returns the amount of non-business time in nanoseconds between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of non-business time in nanoseconds between {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_LONG} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public long diffNonBusinessNanos(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return NULL_LONG;
+        }
+
+        return diffNonBusinessNanos(start.toInstant(), end.toInstant());
+    }
+
+    /**
+     * Returns the amount of business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time between {@code start} and {@code end}. {@code null} if any input is
+     *         {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffBusinessDuration(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return Duration.ofNanos(diffBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time between {@code start} and {@code end}. {@code null} if any input is
+     *         {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffBusinessDuration(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return Duration.ofNanos(diffBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of non-business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of non-business time between {@code start} and {@code end}. {@code null} if any input is
+     *         {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffNonBusinessDuration(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return Duration.ofNanos(diffNonBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of non-business time between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of non-business time between {@code start} and {@code end}. {@code null} if any input is
+     *         {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public Duration diffNonBusinessDuration(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return null;
+        }
+
+        return Duration.ofNanos(diffNonBusinessNanos(start, end));
+    }
+
+    /**
+     * Returns the amount of business time in standard business days between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time in standard business days between {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_DOUBLE} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public double diffBusinessDays(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return NULL_DOUBLE;
+        }
+
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessNanos();
+    }
+
+    /**
+     * Returns the amount of business time in standard business days between two times.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @return the amount of business time in standard business days between {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_DOUBLE} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public double diffBusinessDays(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return NULL_DOUBLE;
+        }
+
+        return (double) diffBusinessNanos(start, end) / (double) standardBusinessNanos();
+    }
+
+    /**
+     * Returns the number of business years between {@code start} and {@code end}.
+     *
+     * @param start start; if null, return null
+     * @param end end; if null, return null
+     * @return the amount of business time in business years between the {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_DOUBLE} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public double diffBusinessYears(final Instant start, final Instant end) {
+        if (start == null || end == null) {
+            return NULL_DOUBLE;
+        }
+
+        final int yearStart = DateTimeUtils.year(start, timeZone());
+        final int yearEnd = DateTimeUtils.year(end, timeZone());
+
+        if (yearStart == yearEnd) {
+            return (double) diffBusinessNanos(start, end) / (double) getYearData(yearStart).businessTimeNanos;
+        }
+
+        final YearData yearDataStart = getYearData(yearStart);
+        final YearData yearDataEnd = getYearData(yearEnd);
+
+        return (double) diffBusinessNanos(start, yearDataStart.end) / (double) yearDataStart.businessTimeNanos +
+                (double) diffBusinessNanos(yearDataEnd.start, end) / (double) yearDataEnd.businessTimeNanos +
+                yearEnd - yearStart - 1;
+    }
+
+    /**
+     * Returns the number of business years between {@code start} and {@code end}.
+     *
+     * @param start start; if null, return null
+     * @param end end; if null, return null
+     * @return the amount of business time in business years between the {@code start} and {@code end}.
+     *         {@link QueryConstants#NULL_DOUBLE} if any input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
+    public double diffBusinessYears(final ZonedDateTime start, final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return NULL_DOUBLE;
+        }
+
+        return diffBusinessYears(start.toInstant(), end.toInstant());
+    }
+
+    // endregion
+
+    // region Arithmetic
+
+    /**
+     * Adds a specified number of business days to an input date. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} business days after {@code date}. {@code }null} if {@code date} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate plusBusinessDays(final LocalDate date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        if (days == 0) {
+            return isBusinessDay(date) ? date : null;
+        }
+
+        final int step = days > 0 ? 1 : -1;
+        LocalDate d = date;
+        int count = 0;
+
+        while (count != days) {
+            d = d.plusDays(step);
+            count += isBusinessDay(d) ? step : 0;
+        }
+
+        return d;
+    }
+
+    /**
+     * Adds a specified number of business days to an input date. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} business days after {@code date}. {@code null} if {@code date} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String plusBusinessDays(final String date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        final LocalDate d = plusBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        return d == null ? null : d.toString();
+    }
+
+    /**
+     * Adds a specified number of business days to an input time. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} business days after {@code time}. {@code null} if {@code time} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public Instant plusBusinessDays(final Instant time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        final ZonedDateTime zdt = plusBusinessDays(DateTimeUtils.toZonedDateTime(time, timeZone()), days);
+        return zdt == null ? null : zdt.toInstant();
+    }
+
+    /**
+     * Adds a specified number of business days to an input time. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} business days after {@code time}. {@code null} if {@code time} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public ZonedDateTime plusBusinessDays(final ZonedDateTime time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        final ZonedDateTime zdt = time.withZoneSameInstant(timeZone());
+        final LocalDate pbd = plusBusinessDays(zdt.toLocalDate(), days);
+        return pbd == null ? null
+                : pbd
+                        .atTime(zdt.toLocalTime())
+                        .atZone(timeZone());
+    }
+
+    /**
+     * Subtracts a specified number of business days from an input date. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code date}. {@code null} if {@code date} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate minusBusinessDays(final LocalDate date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusBusinessDays(date, -days);
+    }
+
+    /**
+     * Subtracts a specified number of business days from an input date. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code date}. {@code null} if {@code date} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String minusBusinessDays(final String date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusBusinessDays(date, -days);
+    }
+
+    /**
+     * Subtracts a specified number of business days from an input time. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code time}. {@code null} if {@code time} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public Instant minusBusinessDays(final Instant time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusBusinessDays(time, -days);
+    }
+
+    /**
+     * Subtracts a specified number of business days from an input time. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * Day subtraction are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} business days before {@code time}. {@code null} if {@code time} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public ZonedDateTime minusBusinessDays(final ZonedDateTime time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusBusinessDays(time, -days);
+    }
+
+    /**
+     * Adds a specified number of non-business days to an input date. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} non-business days after {@code date}. {@code null} if {@code date} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate plusNonBusinessDays(final LocalDate date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        if (days == 0) {
+            return isBusinessDay(date) ? null : date;
+        }
+
+        final int step = days > 0 ? 1 : -1;
+        LocalDate d = date;
+        int count = 0;
+
+        while (count != days) {
+            d = d.plusDays(step);
+            count += isBusinessDay(d) ? 0 : step;
+        }
+
+        return d;
+    }
+
+    /**
+     * Adds a specified number of non-business days to an input date. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} non-business days after {@code date}. {@code null} if {@code date} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String plusNonBusinessDays(final String date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        final LocalDate d = this.plusNonBusinessDays(DateTimeUtils.parseLocalDate(date), days);
+        return d == null ? null : d.toString();
+    }
+
+    /**
+     * Adds a specified number of non-business days to an input time. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} non-business days after {@code time}. {@code null} if {@code time} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public Instant plusNonBusinessDays(final Instant time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        final ZonedDateTime zdt = plusNonBusinessDays(DateTimeUtils.toZonedDateTime(time, timeZone()), days);
+        return zdt == null ? null : zdt.toInstant();
+    }
+
+    /**
+     * Adds a specified number of non-business days to an input time. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} non-business days after {@code time}. {@code null} if {@code time} is not a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public ZonedDateTime plusNonBusinessDays(final ZonedDateTime time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        final ZonedDateTime zdt = time.withZoneSameInstant(timeZone());
+        final LocalDate pbd = plusNonBusinessDays(zdt.toLocalDate(), days);
+        return pbd == null ? null
+                : pbd
+                        .atTime(zdt.toLocalTime())
+                        .atZone(timeZone());
+    }
+
+    /**
+     * Subtracts a specified number of non-business days to an input date. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code date}. {@code null} if {@code date} is a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate minusNonBusinessDays(final LocalDate date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        return this.plusNonBusinessDays(date, -days);
+    }
+
+    /**
+     * Subtracts a specified number of non-business days to an input date. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * @param date date
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code date}. {@code null} if {@code date} is a business day and
+     *         {@code days} is zero.
+     * @throws InvalidDateException if the date is not in the valid range
+     * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
+     */
+    public String minusNonBusinessDays(final String date, final int days) {
+        if (date == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusNonBusinessDays(date, -days);
+    }
+
+    /**
+     * Subtracts a specified number of non-business days to an input time. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code time}. {@code null} if {@code time} is a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public Instant minusNonBusinessDays(final Instant time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusNonBusinessDays(time, -days);
+    }
+
+    /**
+     * Subtracts a specified number of non-business days to an input time. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
+     * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
+     * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
+     * is a 25-hour difference.
+     *
+     * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
+     * the input {@link ZonedDateTime}.
+     *
+     * @param time time
+     * @param days number of days to add.
+     * @return {@code days} non-business days before {@code time}. {@code null} if {@code time} is a business day and
+     *         {@code days} is zero. {@code null} if inputs are {@code null} or {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public ZonedDateTime minusNonBusinessDays(final ZonedDateTime time, final int days) {
+        if (time == null || days == NULL_INT) {
+            return null;
+        }
+
+        return plusNonBusinessDays(time, -days);
+    }
+
+    /**
+     * Adds a specified number of business days to the current date. Adding negative days is equivalent to subtracting
+     * days.
+     *
+     * @param days number of days to add.
+     * @return {@code days} business days after the current date. {@code null} if the current date is not a business day
+     *         and {@code days} is zero. {@code null} if input is {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate futureBusinessDate(final int days) {
+        if (days == NULL_INT) {
+            return null;
+        }
+
+        return plusBusinessDays(calendarDate(), days);
+    }
+
+    /**
+     * Subtracts a specified number of business days from the current date. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * @param days number of days to subtract.
+     * @return {@code days} business days before the current date. {@code null} if the current date is not a business
+     *         day and {@code days} is zero. {@code null} if input is {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate pastBusinessDate(final int days) {
+        if (days == NULL_INT) {
+            return null;
+        }
+
+        return minusBusinessDays(calendarDate(), days);
+    }
+
+    /**
+     * Adds a specified number of non-business days to the current date. Adding negative days is equivalent to
+     * subtracting days.
+     *
+     * @param days number of days to add.
+     * @return {@code days} non-business days after the current date. {@code null} if the current date is a business day
+     *         and {@code days} is zero. {@code null} if input is {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate futureNonBusinessDate(final int days) {
+        if (days == NULL_INT) {
+            return null;
+        }
+
+        return this.plusNonBusinessDays(calendarDate(), days);
+    }
+
+    /**
+     * Subtracts a specified number of non-business days to the current date. Subtracting negative days is equivalent to
+     * adding days.
+     *
+     * @param days number of days to subtract.
+     * @return {@code days} non-business days before the current date. {@code null} if the current date is a business
+     *         day and {@code days} is zero. {@code null} if input is {@link QueryConstants#NULL_INT}.
+     * @throws InvalidDateException if the date is not in the valid range
+     */
+    public LocalDate pastNonBusinessDate(final int days) {
+        if (days == NULL_INT) {
+            return null;
+        }
+
+        return minusNonBusinessDays(calendarDate(), days);
+    }
+
+    // endregion
+
 }

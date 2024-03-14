@@ -1,15 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
 
@@ -17,7 +18,7 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
 
     public static <ATTR extends Any> ToPage<ATTR, String[]> create(
             final Class<?> nativeType,
-            final Supplier<Dictionary> dictionarySupplier) {
+            final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (nativeType == null || String.class.equals(nativeType)) {
             // noinspection unchecked
             return dictionarySupplier == null ? (ToPage<ATTR, String[]>) INSTANCE

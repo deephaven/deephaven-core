@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.SortColumn;
@@ -330,10 +330,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             return null;
         }
         ExecutionContext current = ExecutionContext.getContext();
-        if (!provided.getInitializer().canParallelize()) {
+        if (!provided.getOperationInitializer().canParallelize()) {
             return provided;
         }
-        if (current.getInitializer() != provided.getInitializer()) {
+        if (current.getOperationInitializer() != provided.getOperationInitializer()) {
             return provided;
         }
 

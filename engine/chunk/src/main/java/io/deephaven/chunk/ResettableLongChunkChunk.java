@@ -1,15 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableCharChunkChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableCharChunkChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
+
 import io.deephaven.chunk.attributes.Any;
 
-public class ResettableLongChunkChunk<ATTR extends Any> extends LongChunkChunk<ATTR> implements ResettableChunkChunk<ATTR> {
+public class ResettableLongChunkChunk<ATTR extends Any> extends LongChunkChunk<ATTR>
+        implements ResettableChunkChunk<ATTR> {
 
     public static <ATTR extends Any> ResettableLongChunkChunk<ATTR> makeResettableChunk() {
         return new ResettableLongChunkChunk<>();
@@ -36,8 +37,8 @@ public class ResettableLongChunkChunk<ATTR extends Any> extends LongChunkChunk<A
 
     @Override
     public final void resetFromArray(Object array, int offset, int capacity) {
-        //noinspection unchecked
-        final LongChunk<ATTR>[] typedArray = (LongChunk<ATTR>[])array;
+        // noinspection unchecked
+        final LongChunk<ATTR>[] typedArray = (LongChunk<ATTR>[]) array;
         resetFromTypedArray(typedArray, offset, capacity);
     }
 

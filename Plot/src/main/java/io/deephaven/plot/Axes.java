@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot;
 
 import io.deephaven.plot.axisformatters.AxisFormat;
@@ -1368,6 +1368,7 @@ public interface Axes extends Serializable {
 
     /**
      * Creates a treemap plot. Required columns are ids and parents, the rest can be null.
+     * 
      * @param seriesName name of the created dataset
      * @param t table
      * @param ids column in {@code t} holding ID data
@@ -1378,11 +1379,13 @@ public interface Axes extends Serializable {
      * @param colors column in {@code t} holding color data
      * @return dataset created for plot
      */
-    CategoryDataSeries treemapPlot(Comparable seriesName, Table t, String ids, String parents, @Nullable String values, @Nullable String labels, @Nullable String hoverTexts, @Nullable String colors);
+    CategoryDataSeries treemapPlot(Comparable seriesName, Table t, String ids, String parents, @Nullable String values,
+            @Nullable String labels, @Nullable String hoverTexts, @Nullable String colors);
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateAxesPlotMethods //////////////////////////////
     ////////////////////////////// AND THEN RUN GeneratePlottingConvenience //////////////////////////////
+// @formatter:off
 
 
 

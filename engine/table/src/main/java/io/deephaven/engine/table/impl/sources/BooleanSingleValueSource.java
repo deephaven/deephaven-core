@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSingleValueSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharacterSingleValueSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -31,7 +30,8 @@ import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
+public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean>
+        implements MutableColumnSourceGetDefaults.ForBoolean {
 
     private Boolean current;
     private transient Boolean prev;
@@ -89,7 +89,8 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
     }
 
     @Override
-    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
+    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull RowSequence rowSequence) {
         if (rowSequence.size() == 0) {
             return;
         }
@@ -99,7 +100,8 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

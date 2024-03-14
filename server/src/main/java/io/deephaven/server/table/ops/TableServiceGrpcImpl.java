@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
@@ -14,51 +14,9 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
-import io.deephaven.proto.backplane.grpc.AggregateRequest;
-import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
-import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
-import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
-import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
-import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
-import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
-import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchTableRequest;
-import io.deephaven.proto.backplane.grpc.FilterTableRequest;
-import io.deephaven.proto.backplane.grpc.FlattenRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.Literal;
-import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
-import io.deephaven.proto.backplane.grpc.MetaTableRequest;
-import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowResponse;
-import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
-import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
-import io.deephaven.proto.backplane.grpc.SortTableRequest;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.TimeTableRequest;
-import io.deephaven.proto.backplane.grpc.UngroupRequest;
-import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
-import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.grpc.GrpcErrorHelper;
@@ -76,6 +34,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
+import java.lang.Object;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -100,15 +59,20 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     private final TableServiceContextualAuthWiring authWiring;
     private final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap;
 
+    private final ExportedTableUpdateListener.Factory exportedTableUpdateListenerFactory;
+
     @Inject
-    public TableServiceGrpcImpl(final TicketRouter ticketRouter,
+    public TableServiceGrpcImpl(
+            final TicketRouter ticketRouter,
             final SessionService sessionService,
             final TableServiceContextualAuthWiring authWiring,
-            final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap) {
+            final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap,
+            final ExportedTableUpdateListener.Factory exportedTableUpdateListenerFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authWiring;
         this.operationMap = operationMap;
+        this.exportedTableUpdateListenerFactory = exportedTableUpdateListenerFactory;
     }
 
     private <T> GrpcTableOperation<T> getOp(final BatchTableRequest.Operation.OpCase op) {
@@ -344,6 +308,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final AjRajTablesRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RAJ, request, responseObserver);
+    }
+
+    @Override
+    public void multiJoinTables(MultiJoinTablesRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.MULTI_JOIN, request, responseObserver);
     }
 
     @Override
@@ -609,7 +579,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
         authWiring.checkPermissionExportedTableUpdates(session.getAuthContext(), request, Collections.emptyList());
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
+        final ExportedTableUpdateListener listener =
+                exportedTableUpdateListenerFactory.create(session, responseObserver);
         session.addExportListener(listener);
         ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
                 () -> session.removeExportListener(listener));

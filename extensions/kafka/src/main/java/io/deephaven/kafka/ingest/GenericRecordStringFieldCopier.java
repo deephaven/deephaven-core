@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -27,7 +27,7 @@ public class GenericRecordStringFieldCopier extends GenericRecordFieldCopier {
             final int length) {
         final WritableObjectChunk<Object, Values> output = publisherChunk.asWritableObjectChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord record = (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Object value = GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, value == null ? null : Objects.toString(value));
         }

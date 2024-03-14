@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.Values;
@@ -13,10 +13,10 @@ class SumFloatChunk {
     private SumFloatChunk() {} // static use only
 
     static double sumFloatChunk(FloatChunk<? extends Values> values, int chunkStart, int chunkSize,
-                                MutableInt chunkNormalCount,
-                                MutableInt chunkNanCount,
-                                MutableInt chunkInfinityCount,
-                                MutableInt chunkMinusInfinityCount) {
+            MutableInt chunkNormalCount,
+            MutableInt chunkNanCount,
+            MutableInt chunkInfinityCount,
+            MutableInt chunkMinusInfinityCount) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -37,11 +37,11 @@ class SumFloatChunk {
     }
 
     static double sum2FloatChunk(FloatChunk<? extends Values> values, int chunkStart, int chunkSize,
-                                 MutableInt chunkNormalCount,
-                                 MutableInt chunkNanCount,
-                                 MutableInt chunkInfinityCount,
-                                 MutableInt chunkMinusInfinityCount,
-                                 MutableDouble sum2out) {
+            MutableInt chunkNormalCount,
+            MutableInt chunkNanCount,
+            MutableInt chunkInfinityCount,
+            MutableInt chunkMinusInfinityCount,
+            MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
@@ -69,9 +69,9 @@ class SumFloatChunk {
     }
 
     static double sumFloatChunkAbs(FloatChunk<? extends Values> values, int chunkStart, int chunkSize,
-                                   MutableInt chunkNormalCount,
-                                   MutableInt chunkNanCount,
-                                   MutableInt chunkInfinityCount) {
+            MutableInt chunkNormalCount,
+            MutableInt chunkNanCount,
+            MutableInt chunkInfinityCount) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

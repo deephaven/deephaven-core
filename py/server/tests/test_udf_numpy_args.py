@@ -1,5 +1,5 @@
 #
-#     Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import typing
 from typing import Optional, Union, Any
@@ -337,7 +337,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f3(null, Y )"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f31(p1: Optional[np.ndarray[bool]], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -352,7 +352,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f1(Y)"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f11(p1: Union[str, None], p2=None) -> bool:
                 return p1 is None
@@ -366,7 +366,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f2(Y)"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
                 return p1 is None
@@ -380,7 +380,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f3(Y)"])
-            self.assertRegex(str(cm.exception), "Argument None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])
             t1 = t.update(["X1 = f3(Y)"])
@@ -392,6 +392,41 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t2 = t.update(["X1 = f31(null, Y)"])
             self.assertEqual(10, t2.to_string("X1").count("true"))
 
+    def test_non_np_typehints(self):
+        py_types = {"int", "float"}
+
+        for p_type in py_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                t = empty_table(1).update(["X = i", f"Y = f(({p_type})X)"])
+                self.assertEqual(1, t.to_string(cols="Y").count("true"))
+
+
+        np_int_types = {"np.int8", "np.int16", "np.int32", "np.int64"}
+        for p_type in np_int_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                t = empty_table(1).update(["X = i", f"Y = f(X)"])
+                self.assertEqual(1, t.to_string(cols="Y").count("true"))
+
+        np_floating_types = {"np.float32", "np.float64"}
+        for p_type in np_floating_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                t = empty_table(1).update(["X = i", f"Y = f((float)X)"])
+                self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
 if __name__ == "__main__":
     unittest.main()

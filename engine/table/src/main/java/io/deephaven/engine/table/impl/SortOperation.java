@@ -1,27 +1,27 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
-import io.deephaven.engine.table.iterators.LongColumnIterator;
-import io.deephaven.util.datastructures.hash.HashMapK4V4;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.LongChunkColumnSource;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
+import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
-
+import io.deephaven.util.datastructures.hash.HashMapK4V4;
+import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -147,7 +147,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @NotNull
-    private Result<QueryTable> streamSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
+    private Result<QueryTable> blinkTableSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
         final LongChunkColumnSource initialInnerRedirectionSource = new LongChunkColumnSource();
         if (initialSortedKeys.size() > 0) {
             initialInnerRedirectionSource
@@ -195,7 +195,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
                         final SortHelpers.SortMapping updateSortedKeys =
                                 SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, null,
-                                        upstream.added(), false);
+                                        upstream.added(), false, false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
                         final LongChunkColumnSource updateInnerRedirectSource =
@@ -241,10 +241,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (parent.isBlink()) {
             try (final RowSet prevRowSet = usePrev ? parent.getRowSet().copyPrev() : null) {
                 final RowSet rowSetToUse = usePrev ? prevRowSet : parent.getRowSet();
-                final SortHelpers.SortMapping sortedKeys =
-                        SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToUse,
-                                usePrev);
-                return streamSort(sortedKeys);
+                final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(
+                        sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToUse, usePrev);
+                return blinkTableSort(sortedKeys);
             }
         }
 

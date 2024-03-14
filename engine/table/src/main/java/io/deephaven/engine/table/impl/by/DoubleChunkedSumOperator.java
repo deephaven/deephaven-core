@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatChunkedSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatChunkedSumOperator and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -31,7 +30,8 @@ import java.util.Map;
 /**
  * Incremental sum operator.
  */
-final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implements IterativeChunkedAggregationOperator, ChunkSource<Values> {
+final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter
+        implements IterativeChunkedAggregationOperator, ChunkSource<Values> {
     private final String name;
     // instead of using states, we maintain parallel arrays, which are going to be more efficient
     // memory wise than one state per output row
@@ -47,7 +47,10 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final DoubleChunk<? extends Values> asDoubleChunk = values.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -57,7 +60,10 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final DoubleChunk<? extends Values> asDoubleChunk = values.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -67,28 +73,35 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final DoubleChunk<? extends Values> preAsDoubleChunk = previousValues.asDoubleChunk();
         final DoubleChunk<? extends Values> postAsDoubleChunk = newValues.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, modifyChunk(preAsDoubleChunk, postAsDoubleChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii,
+                    modifyChunk(preAsDoubleChunk, postAsDoubleChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asDoubleChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asDoubleChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return modifyChunk(previousValues.asDoubleChunk(), newValues.asDoubleChunk(), destination, 0, newValues.size());
     }
 
@@ -98,19 +111,24 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
         final MutableInt chunkInfinityCount = new MutableInt(0);
         final MutableInt chunkMinusInfinityCount = new MutableInt(0);
 
-        final double sum = doSum(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount, chunkMinusInfinityCount);
+        final double sum = doSum(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount,
+                chunkMinusInfinityCount);
 
         final long totalNanCount = updateNanCount(destination, chunkNanCount.intValue());
         final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.intValue());
-        final long totalNegativeInfinityCount = updateNegativeInfinityCount(destination, chunkMinusInfinityCount.intValue());
+        final long totalNegativeInfinityCount =
+                updateNegativeInfinityCount(destination, chunkMinusInfinityCount.intValue());
 
         if (chunkNormalCount.intValue() > 0) {
             final long totalNormalCount = nonNullCount.addNonNullUnsafe(destination, chunkNormalCount.intValue());
             final double newSum = NullSafeAddition.plusDouble(runningSum.getUnsafe(destination), sum);
             runningSum.set(destination, newSum);
-            resultColumn.set(destination, currentValueWithSum(totalNormalCount, totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount, newSum));
-        } else if (chunkNanCount.intValue() > 0 || chunkInfinityCount.intValue() > 0 || chunkMinusInfinityCount.intValue() > 0) {
-            resultColumn.set(destination, currentValueNoSum(totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount));
+            resultColumn.set(destination, currentValueWithSum(totalNormalCount, totalNanCount,
+                    totalPositiveInfinityCount, totalNegativeInfinityCount, newSum));
+        } else if (chunkNanCount.intValue() > 0 || chunkInfinityCount.intValue() > 0
+                || chunkMinusInfinityCount.intValue() > 0) {
+            resultColumn.set(destination,
+                    currentValueNoSum(totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount));
         }
 
         return true;
@@ -123,11 +141,14 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
         final MutableInt chunkInfinityCount = new MutableInt(0);
         final MutableInt chunkMinusInfinityCount = new MutableInt(0);
 
-        final double sum = doSum(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount, chunkMinusInfinityCount);
+        final double sum = doSum(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount,
+                chunkMinusInfinityCount);
 
         final long totalNanCount = updateNanCount(destination, -chunkNanCount.intValue());
-        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
-        final long totalNegativeInfinityCount = updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.intValue());
+        final long totalPositiveInfinityCount =
+                updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
+        final long totalNegativeInfinityCount =
+                updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.intValue());
 
         if (chunkNormalCount.intValue() > 0) {
             final long totalNormalCount = nonNullCount.addNonNullUnsafe(destination, -chunkNormalCount.intValue());
@@ -139,11 +160,14 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
                 newSum = NullSafeAddition.plusDouble(runningSum.getUnsafe(destination), -sum);
                 runningSum.set(destination, newSum);
             }
-            resultColumn.set(destination, currentValueWithSum(totalNormalCount, totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount, newSum));
+            resultColumn.set(destination, currentValueWithSum(totalNormalCount, totalNanCount,
+                    totalPositiveInfinityCount, totalNegativeInfinityCount, newSum));
             return true;
-        } else if (chunkNanCount.intValue() > 0 || chunkInfinityCount.intValue() > 0 || chunkMinusInfinityCount.intValue() > 0) {
+        } else if (chunkNanCount.intValue() > 0 || chunkInfinityCount.intValue() > 0
+                || chunkMinusInfinityCount.intValue() > 0) {
             // if we can still determine what our result is based just on the nans and infinities, use it
-            final double possibleResult = currentValueNoSum(totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount);
+            final double possibleResult =
+                    currentValueNoSum(totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount);
             if (possibleResult != QueryConstants.NULL_DOUBLE) {
                 resultColumn.set(destination, possibleResult);
             } else {
@@ -151,10 +175,9 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
                 if (totalNormalCount == 0) {
                     // no normal values left, so we must set to null double
                     resultColumn.set(destination, QueryConstants.NULL_DOUBLE);
-                }
-                else {
+                } else {
                     // determine our running sum, and use that as the answer because we have no more non-normals
-                    resultColumn.set(destination, (double)runningSum.getUnsafe(destination));
+                    resultColumn.set(destination, (double) runningSum.getUnsafe(destination));
                 }
             }
             return true;
@@ -163,38 +186,43 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
         }
     }
 
-    private boolean modifyChunk(DoubleChunk<? extends Values> preValues, DoubleChunk<? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
+    private boolean modifyChunk(DoubleChunk<? extends Values> preValues, DoubleChunk<? extends Values> postValues,
+            long destination, int chunkStart, int chunkSize) {
         final MutableInt preChunkNormalCount = new MutableInt(0);
         final MutableInt preChunkNanCount = new MutableInt(0);
         final MutableInt preChunkInfinityCount = new MutableInt(0);
         final MutableInt preChunkMinusInfinityCount = new MutableInt(0);
 
-        final double preSum = doSum(preValues, chunkStart, chunkSize, preChunkNormalCount, preChunkNanCount, preChunkInfinityCount, preChunkMinusInfinityCount);
+        final double preSum = doSum(preValues, chunkStart, chunkSize, preChunkNormalCount, preChunkNanCount,
+                preChunkInfinityCount, preChunkMinusInfinityCount);
 
         final MutableInt postChunkNormalCount = new MutableInt(0);
         final MutableInt postChunkNanCount = new MutableInt(0);
         final MutableInt postChunkInfinityCount = new MutableInt(0);
         final MutableInt postChunkMinusInfinityCount = new MutableInt(0);
 
-        final double postSum = doSum(postValues, chunkStart, chunkSize, postChunkNormalCount, postChunkNanCount, postChunkInfinityCount, postChunkMinusInfinityCount);
+        final double postSum = doSum(postValues, chunkStart, chunkSize, postChunkNormalCount, postChunkNanCount,
+                postChunkInfinityCount, postChunkMinusInfinityCount);
 
         final boolean normalCountChange = preChunkNormalCount.intValue() != postChunkNormalCount.intValue();
         final boolean nanChange = preChunkNanCount.intValue() != postChunkNanCount.intValue();
         final boolean posInfinityChange = preChunkInfinityCount.intValue() != postChunkInfinityCount.intValue();
-        final boolean negInfinityChange = preChunkMinusInfinityCount.intValue() != postChunkMinusInfinityCount.intValue();
+        final boolean negInfinityChange =
+                preChunkMinusInfinityCount.intValue() != postChunkMinusInfinityCount.intValue();
 
-        final boolean unchangedResult = !nanChange &&          // The number of NaNs stayed the same
-                                        !posInfinityChange &&  // The number of +inf stayed the same
-                                        !negInfinityChange &&  // The number of -inf stayed the same
-                                        (postSum == preSum);   // The sum of the chunk being replaced == the sum of the new chunk
+        final boolean unchangedResult = !nanChange && // The number of NaNs stayed the same
+                !posInfinityChange && // The number of +inf stayed the same
+                !negInfinityChange && // The number of -inf stayed the same
+                (postSum == preSum); // The sum of the chunk being replaced == the sum of the new chunk
 
         final long preUpdateNonNullCount = nonNullCount.getCountUnsafe(destination);
         boolean changedToSingleValueOrEmpty = false;
         final long totalNormalCount;
         if (normalCountChange) {
-            totalNormalCount = nonNullCount.addNonNullUnsafe(destination, postChunkNormalCount.intValue() - preChunkNormalCount.intValue());
+            totalNormalCount = nonNullCount.addNonNullUnsafe(destination,
+                    postChunkNormalCount.intValue() - preChunkNormalCount.intValue());
 
-            if(totalNormalCount == 0 || preUpdateNonNullCount == 0) {
+            if (totalNormalCount == 0 || preUpdateNonNullCount == 0) {
                 changedToSingleValueOrEmpty = true;
             }
         } else {
@@ -204,17 +232,21 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
             totalNormalCount = nonNullCount.getCountUnsafe(destination);
         }
 
-        final long totalNanCount = updateNanCount(destination, preChunkNanCount.intValue(), postChunkNanCount.intValue());
-        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, preChunkInfinityCount.intValue(), postChunkInfinityCount.intValue());
-        final long totalNegativeInfinityCount = updateNegativeInfinityCount(destination, preChunkMinusInfinityCount.intValue(), postChunkMinusInfinityCount.intValue());
+        final long totalNanCount =
+                updateNanCount(destination, preChunkNanCount.intValue(), postChunkNanCount.intValue());
+        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination,
+                preChunkInfinityCount.intValue(), postChunkInfinityCount.intValue());
+        final long totalNegativeInfinityCount = updateNegativeInfinityCount(destination,
+                preChunkMinusInfinityCount.intValue(), postChunkMinusInfinityCount.intValue());
 
-        final double possibleResult = currentValueNoSum(totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount);
+        final double possibleResult =
+                currentValueNoSum(totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount);
 
         final double newSum;
         if ((preSum != postSum) || changedToSingleValueOrEmpty) {
             if (totalNormalCount == 0) {
                 newSum = 0.0;
-            } else if(preUpdateNonNullCount == 0) {
+            } else if (preUpdateNonNullCount == 0) {
                 newSum = postSum;
             } else {
                 newSum = NullSafeAddition.plusDouble(runningSum.getUnsafe(destination), postSum - preSum);
@@ -232,13 +264,14 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
         } else if (totalNormalCount == 0) {
             newValue = QueryConstants.NULL_DOUBLE;
         } else {
-            newValue = (double)newSum;
+            newValue = (double) newSum;
         }
         final double oldValue = resultColumn.getAndSetUnsafe(destination, newValue);
         return !DoubleComparisons.eq(oldValue, newValue);
     }
 
-    private double currentValueWithSum(long totalNormalCount, long totalNanCount, long totalPositiveInfinityCount, long totalNegativeInfinityCount, double newSum) {
+    private double currentValueWithSum(long totalNormalCount, long totalNanCount, long totalPositiveInfinityCount,
+            long totalNegativeInfinityCount, double newSum) {
         if (totalNanCount > 0 || (totalPositiveInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
             return Double.NaN;
         }
@@ -251,10 +284,11 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
         if (totalNormalCount == 0) {
             return QueryConstants.NULL_DOUBLE;
         }
-        return (double)newSum;
+        return (double) newSum;
     }
 
-    private double currentValueNoSum(long totalNanCount, long totalPositiveInfinityCount, long totalNegativeInfinityCount) {
+    private double currentValueNoSum(long totalNanCount, long totalPositiveInfinityCount,
+            long totalNegativeInfinityCount) {
         if (totalNanCount > 0 || (totalPositiveInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
             return Double.NaN;
         }
@@ -267,12 +301,16 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
         return QueryConstants.NULL_DOUBLE;
     }
 
-    private double doSum(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNormalCount, MutableInt chunkNanCount, MutableInt chunkInfinityCount, MutableInt chunkMinusInfinityCount) {
+    private double doSum(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
+            MutableInt chunkNormalCount, MutableInt chunkNanCount, MutableInt chunkInfinityCount,
+            MutableInt chunkMinusInfinityCount) {
         final double sum;
         if (isAbsolute) {
-            sum = SumDoubleChunk.sumDoubleChunkAbs(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount);
+            sum = SumDoubleChunk.sumDoubleChunkAbs(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
+                    chunkInfinityCount);
         } else {
-            sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount, chunkMinusInfinityCount);
+            sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
+                    chunkInfinityCount, chunkMinusInfinityCount);
         }
         return sum;
     }
@@ -319,7 +357,8 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         resultColumn.fillChunk(context, destination, rowSequence);
     }
 

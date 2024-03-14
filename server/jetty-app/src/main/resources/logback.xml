@@ -25,6 +25,10 @@
 
   <logger name="io.deephaven.sql.SqlAdapter" level="DEBUG"/>
 
+  <!-- See https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/logging-slf4j.html for additional logging options -->
+  <!-- <logger name="io.deephaven.extensions.s3" level="DEBUG" /> -->
+  <!-- <logger name="software.amazon.awssdk" level="DEBUG" /> -->
+
   <root level="info">
     <appender-ref ref="STDOUT" />
     <appender-ref ref="LOGBUFFER" />

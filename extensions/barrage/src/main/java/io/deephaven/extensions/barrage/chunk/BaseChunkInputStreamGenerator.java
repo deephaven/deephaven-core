@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.attributes.Values;
@@ -22,10 +22,11 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
     // Ensure that we clean up chunk only after all copies of the update are released.
     private volatile int refCount = 1;
 
-    // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for each instance.
+    // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
+    // each instance.
     @SuppressWarnings("rawtypes")
-    protected static final AtomicIntegerFieldUpdater<BaseChunkInputStreamGenerator> REFERENCE_COUNT_UPDATER
-            = AtomicIntegerFieldUpdater.newUpdater(BaseChunkInputStreamGenerator.class, "refCount");
+    protected static final AtomicIntegerFieldUpdater<BaseChunkInputStreamGenerator> REFERENCE_COUNT_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BaseChunkInputStreamGenerator.class, "refCount");
 
     protected final T chunk;
     protected final int elementSize;
@@ -84,7 +85,8 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
 
         BaseChunkInputStream(final T chunk, final StreamReaderOptions options, final RowSet subset) {
             this.options = options;
-            this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
+            this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY
+                    : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
             // ignore the empty chunk as these are intentionally empty generators that should work for any subset
             if (chunk.size() > 0 && this.subset.lastRowKey() >= chunk.size()) {
@@ -116,12 +118,11 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
         }
 
         /**
-         * There are two cases we don't send a validity buffer:
-         * - the simplest case is following the arrow flight spec, which says that if there are no nulls present,
-         *   the buffer is optional.
-         * - Our implementation of nullCount() for primitive types will return zero if the useDeephavenNulls flag is
-         *   set, so the buffer will also be omitted in that case. The client's marshaller does not need to be aware of
-         *   deephaven nulls but in this mode we assume the consumer understands which value is the assigned NULL.
+         * There are two cases we don't send a validity buffer: - the simplest case is following the arrow flight spec,
+         * which says that if there are no nulls present, the buffer is optional. - Our implementation of nullCount()
+         * for primitive types will return zero if the useDeephavenNulls flag is set, so the buffer will also be omitted
+         * in that case. The client's marshaller does not need to be aware of deephaven nulls but in this mode we assume
+         * the consumer understands which value is the assigned NULL.
          */
         protected boolean sendValidityBuffer() {
             return nullCount() != 0;

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
@@ -18,6 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
 
@@ -322,6 +324,22 @@ public class MatchFilter extends WhereFilterImpl {
                             }
                         }
                         return str.charAt(0);
+                    }
+                };
+            }
+            if (cls == BigDecimal.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        return new BigDecimal(str);
+                    }
+                };
+            }
+            if (cls == BigInteger.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        return new BigInteger(str);
                     }
                 };
             }

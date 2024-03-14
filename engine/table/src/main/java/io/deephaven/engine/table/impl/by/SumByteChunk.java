@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit SumCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit SumCharChunk and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.Any;
@@ -45,14 +44,15 @@ public class SumByteChunk {
     /**
      * Produce the sum and sum of squares of a byteacter chunk, as doubles.
      */
-    static double sum2ByteChunk(ByteChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
+    static double sum2ByteChunk(ByteChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount,
+            MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
             final byte value = values.get(ii);
             if (value != QueryConstants.NULL_BYTE) {
-                //noinspection UnnecessaryLocalVariable
+                // noinspection UnnecessaryLocalVariable
                 final double doubleValue = value;
                 sum += doubleValue;
                 sum2 += doubleValue * doubleValue;
@@ -68,13 +68,14 @@ public class SumByteChunk {
         if (val == QueryConstants.NULL_BYTE) {
             return val;
         } else if (val < 0) {
-            return (byte)-val;
+            return (byte) -val;
         } else {
             return val;
         }
     }
 
-    static long sumByteChunkAbs(ByteChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumByteChunkAbs(ByteChunk<? extends Any> values, int chunkStart, int chunkSize,
+            MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil.testcase;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
@@ -136,7 +136,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         } finally {
             setExpectError(original);
         }
-        if (!errorsAcceptable.test(errors)) {
+        if (errors != null && !errorsAcceptable.test(errors)) {
             TestCase.fail("Unacceptable errors: " + errors);
         }
         return retval;
@@ -160,7 +160,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
                 en);
     }
 
-    protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
+    public static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

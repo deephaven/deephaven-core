@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.generic.page;
 
 import io.deephaven.base.verify.Assert;
@@ -43,19 +43,19 @@ public class ChunkHolderPageChar<ATTR extends Any>
     }
 
     @Override
-    public final long maxRow(final long row) {
-        return (row & ~mask()) | (firstRowOffset() + storage.length - 1);
+    public final long maxRow(final long rowKey) {
+        return (rowKey & ~mask()) | (firstRowOffset() + storage.length - 1);
     }
 
     /**
-     * @return The offset into the chunk for this row
+     * @return The offset into the chunk for this row key
      * @apiNote This function is for convenience over {@link #getRowOffset(long)}, so the caller doesn't have to cast to
      *          an int.
-     * @implNote This page is known to be backed by chunk, so {@code currentView.size()} is an int, and so is the
+     * @implNote This page is known to be backed by a chunk, so {@code currentView.size()} is an int, and so is the
      *           offset.
      */
-    private int getChunkOffset(final long row) {
-        return (int) getRowOffset(row);
+    private int getChunkOffset(final long rowKey) {
+        return (int) getRowOffset(rowKey);
     }
 
     @Override

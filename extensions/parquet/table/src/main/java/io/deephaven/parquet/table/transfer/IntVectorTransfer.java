@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
@@ -13,7 +13,7 @@ import java.nio.IntBuffer;
 
 final class IntVectorTransfer extends PrimitiveVectorTransfer<IntVector, IntBuffer> {
     IntVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSizeInBytes) {
+            final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes / Integer.BYTES, targetPageSizeInBytes,
                 IntBuffer.allocate(targetPageSizeInBytes / Integer.BYTES), Integer.BYTES);
     }

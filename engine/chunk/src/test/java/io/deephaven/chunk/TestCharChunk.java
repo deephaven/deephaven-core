@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.util.hashing.CharChunkEquals;
@@ -87,7 +87,7 @@ public class TestCharChunk {
         final ChunkType ct = ChunkType.Char;
 
         // array
-        char[] ca = (char[])ct.makeArray(12);
+        char[] ca = (char[]) ct.makeArray(12);
         Chunk[] cca = ct.makeChunkArray(12);
 
         Chunk<Values> c;
@@ -169,8 +169,8 @@ public class TestCharChunk {
         TestCase.assertEquals(0, c.size());
         TestCase.assertEquals(0, cc.size());
 
-        TestCase.assertEquals(0, c.capacity);  // internal state
-        TestCase.assertEquals(0, cc.capacity);  // internal state
+        TestCase.assertEquals(0, c.capacity); // internal state
+        TestCase.assertEquals(0, cc.capacity); // internal state
     }
 
     @Test
@@ -181,12 +181,12 @@ public class TestCharChunk {
 
         final CharChunk<Values> c0 = CharChunk.chunkWrap(data0);
         TestCase.assertEquals(data0.length, c0.size());
-        TestCase.assertEquals(data0.length, c0.capacity);  // internal state
+        TestCase.assertEquals(data0.length, c0.capacity); // internal state
         verifyChunkEqualsArray(c0, data0, 0, data0.length);
 
         final CharChunk<Values> c0Slice = CharChunk.chunkWrap(data0, 6, 3);
         TestCase.assertEquals(3, c0Slice.size());
-        TestCase.assertEquals(3, c0Slice.capacity);  // internal state
+        TestCase.assertEquals(3, c0Slice.capacity); // internal state
         verifyChunkEqualsArray(c0Slice, data0, 6, 3);
 
         final CharChunk<Values> c1 = CharChunk.chunkWrap(data1);
@@ -194,14 +194,14 @@ public class TestCharChunk {
 
         final CharChunkChunk<Values> cc = CharChunkChunk.chunkWrap(ccData);
         TestCase.assertEquals(ccData.length, cc.size());
-        TestCase.assertEquals(ccData.length, cc.capacity);  // internal state
+        TestCase.assertEquals(ccData.length, cc.capacity); // internal state
 
         TestCase.assertSame(cc.get(0), c0);
         TestCase.assertSame(cc.get(1), c1);
 
         final CharChunkChunk<Values> ccSlice = CharChunkChunk.chunkWrap(ccData, 1, 2);
         TestCase.assertEquals(2, ccSlice.size());
-        TestCase.assertEquals(2, ccSlice.capacity);  // internal state
+        TestCase.assertEquals(2, ccSlice.capacity); // internal state
 
         TestCase.assertSame(ccSlice.get(0), c1);
         TestCase.assertSame(ccSlice.get(1), c0);
@@ -216,12 +216,12 @@ public class TestCharChunk {
         final CharChunk<Values> c0 = CharChunk.chunkWrap(data0);
         final CharChunk<Values> c0Slice = c0.slice(5, 4);
         TestCase.assertEquals(4, c0Slice.size());
-        TestCase.assertEquals(4, c0Slice.capacity);  // internal state
+        TestCase.assertEquals(4, c0Slice.capacity); // internal state
         verifyChunkEqualsArray(c0Slice, data0, 5, 4);
 
         final CharChunk<Values> c0SliceSlice = c0Slice.slice(2, 2);
         TestCase.assertEquals(2, c0SliceSlice.size());
-        TestCase.assertEquals(2, c0SliceSlice.capacity);  // internal state
+        TestCase.assertEquals(2, c0SliceSlice.capacity); // internal state
         verifyChunkEqualsArray(c0SliceSlice, data0, 7, 2);
 
         final CharChunk<Values> c1 = CharChunk.chunkWrap(data1);
@@ -230,13 +230,13 @@ public class TestCharChunk {
         final CharChunkChunk<Values> ccSlice = cc.slice(1, 2);
 
         TestCase.assertEquals(2, ccSlice.size());
-        TestCase.assertEquals(2, ccSlice.capacity);  // internal state
+        TestCase.assertEquals(2, ccSlice.capacity); // internal state
         TestCase.assertSame(ccSlice.get(0), c1);
         TestCase.assertSame(ccSlice.get(1), c0);
 
         final CharChunkChunk<Values> ccSliceSlice = ccSlice.slice(1, 1);
         TestCase.assertEquals(1, ccSliceSlice.size());
-        TestCase.assertEquals(1, ccSliceSlice.capacity);  // internal state
+        TestCase.assertEquals(1, ccSliceSlice.capacity); // internal state
         TestCase.assertSame(ccSliceSlice.get(0), c0);
     }
 
@@ -291,11 +291,11 @@ public class TestCharChunk {
         TestCase.assertEquals(data0[3], rc1.get(0));
 
         TestCase.assertEquals(2, rc1.size());
-        TestCase.assertEquals(2, rc1.capacity);  // internal state
+        TestCase.assertEquals(2, rc1.capacity); // internal state
 
-        rc1.resetFromChunk(rc1, 1, 1);  // Reset from itself
+        rc1.resetFromChunk(rc1, 1, 1); // Reset from itself
         TestCase.assertEquals(1, rc1.size());
-        TestCase.assertEquals(1, rc1.capacity);  // internal state
+        TestCase.assertEquals(1, rc1.capacity); // internal state
         TestCase.assertEquals(data0[4], rc1.get(0));
 
         // WritableChunks are inherently resettable
@@ -308,11 +308,11 @@ public class TestCharChunk {
         TestCase.assertEquals(data0[3], rwc1.get(0));
 
         TestCase.assertEquals(2, rwc1.size());
-        TestCase.assertEquals(2, rwc1.capacity);  // internal state
+        TestCase.assertEquals(2, rwc1.capacity); // internal state
 
-        rwc1.resetFromChunk(wc0, 1, 1);  // Reset from self
+        rwc1.resetFromChunk(wc0, 1, 1); // Reset from self
         TestCase.assertEquals(1, rwc1.size());
-        TestCase.assertEquals(1, rwc1.capacity);  // internal state
+        TestCase.assertEquals(1, rwc1.capacity); // internal state
         TestCase.assertEquals(data0[1], rwc1.get(0));
     }
 
@@ -328,14 +328,14 @@ public class TestCharChunk {
         rcc1.resetFromArray(ccData, 0, ccData.length);
         TestCase.assertSame(ccData[0], rcc1.get(0));
 
-        rcc1.resetFromChunk(rcc1, 1, 2);  // Reset from self
+        rcc1.resetFromChunk(rcc1, 1, 2); // Reset from self
         TestCase.assertSame(ccData[1], rcc1.get(0));
         TestCase.assertEquals(2, rcc1.size());
-        TestCase.assertEquals(2, rcc1.capacity);  // internal state
+        TestCase.assertEquals(2, rcc1.capacity); // internal state
 
-        rcc1.resetFromChunk(rcc1, 1, 1);  // Reset from self again
+        rcc1.resetFromChunk(rcc1, 1, 1); // Reset from self again
         TestCase.assertEquals(1, rcc1.size());
-        TestCase.assertEquals(1, rcc1.capacity);  // internal state
+        TestCase.assertEquals(1, rcc1.capacity); // internal state
         TestCase.assertSame(ccData[2], rcc1.get(0));
 
         // WritableChunks are inherently resettable
@@ -346,14 +346,14 @@ public class TestCharChunk {
         rwcc.resetFromArray(wccData, 0, wccData.length);
         TestCase.assertSame(wccData[0], rwcc.get(0));
 
-        rwcc.resetFromChunk(rwcc, 1, 2);  // Reset from self
+        rwcc.resetFromChunk(rwcc, 1, 2); // Reset from self
         TestCase.assertSame(wccData[1], rwcc.get(0));
         TestCase.assertEquals(2, rwcc.size());
-        TestCase.assertEquals(2, rwcc.capacity);  // internal state
+        TestCase.assertEquals(2, rwcc.capacity); // internal state
 
-        rwcc.resetFromChunk(rwcc, 1, 1);  // Reset from self again
+        rwcc.resetFromChunk(rwcc, 1, 1); // Reset from self again
         TestCase.assertEquals(1, rwcc.size());
-        TestCase.assertEquals(1, rwcc.capacity);  // internal state
+        TestCase.assertEquals(1, rwcc.capacity); // internal state
         TestCase.assertSame(wccData[2], rwcc.get(0));
     }
 
@@ -365,27 +365,33 @@ public class TestCharChunk {
         expectException(IllegalArgumentException.class, () -> CharChunk.chunkWrap(data0, 0, data0.length + 1));
         expectException(IllegalArgumentException.class, () -> CharChunk.chunkWrap(data0, data0.length - 1, 2));
         expectException(IllegalArgumentException.class, () -> CharChunk.chunkWrap(data0, data0.length, 1));
-        CharChunk.chunkWrap(data0, data0.length, 0);  // Should succeed
+        CharChunk.chunkWrap(data0, data0.length, 0); // Should succeed
 
         expectException(IllegalArgumentException.class, () -> WritableCharChunk.writableChunkWrap(data0, -1, 2));
-        expectException(IllegalArgumentException.class, () -> WritableCharChunk.writableChunkWrap(data0, 0, data0.length + 1));
-        expectException(IllegalArgumentException.class, () -> WritableCharChunk.writableChunkWrap(data0, data0.length - 1, 2));
-        expectException(IllegalArgumentException.class, () -> WritableCharChunk.writableChunkWrap(data0, data0.length, 1));
-        WritableCharChunk.chunkWrap(data0, data0.length, 0);  // Should succeed
+        expectException(IllegalArgumentException.class,
+                () -> WritableCharChunk.writableChunkWrap(data0, 0, data0.length + 1));
+        expectException(IllegalArgumentException.class,
+                () -> WritableCharChunk.writableChunkWrap(data0, data0.length - 1, 2));
+        expectException(IllegalArgumentException.class,
+                () -> WritableCharChunk.writableChunkWrap(data0, data0.length, 1));
+        WritableCharChunk.chunkWrap(data0, data0.length, 0); // Should succeed
 
         final CharChunk[] ccData = new CharChunk[4];
         expectException(IllegalArgumentException.class, () -> CharChunkChunk.chunkWrap(ccData, -1, 2));
         expectException(IllegalArgumentException.class, () -> CharChunkChunk.chunkWrap(ccData, 0, ccData.length + 1));
         expectException(IllegalArgumentException.class, () -> CharChunkChunk.chunkWrap(ccData, ccData.length - 1, 2));
         expectException(IllegalArgumentException.class, () -> CharChunkChunk.chunkWrap(ccData, ccData.length, 1));
-        CharChunkChunk.chunkWrap(ccData, ccData.length, 0);  // Should succeed
+        CharChunkChunk.chunkWrap(ccData, ccData.length, 0); // Should succeed
 
         final WritableCharChunk[] wccData = new WritableCharChunk[4];
         expectException(IllegalArgumentException.class, () -> WritableCharChunkChunk.writableChunkWrap(wccData, -1, 2));
-        expectException(IllegalArgumentException.class, () -> WritableCharChunkChunk.writableChunkWrap(wccData, 0, ccData.length + 1));
-        expectException(IllegalArgumentException.class, () -> WritableCharChunkChunk.writableChunkWrap(wccData, ccData.length - 1, 2));
-        expectException(IllegalArgumentException.class, () -> WritableCharChunkChunk.writableChunkWrap(wccData, ccData.length, 1));
-        WritableCharChunkChunk.writableChunkWrap(wccData, ccData.length, 0);  // Should succeed
+        expectException(IllegalArgumentException.class,
+                () -> WritableCharChunkChunk.writableChunkWrap(wccData, 0, ccData.length + 1));
+        expectException(IllegalArgumentException.class,
+                () -> WritableCharChunkChunk.writableChunkWrap(wccData, ccData.length - 1, 2));
+        expectException(IllegalArgumentException.class,
+                () -> WritableCharChunkChunk.writableChunkWrap(wccData, ccData.length, 1));
+        WritableCharChunkChunk.writableChunkWrap(wccData, ccData.length, 0); // Should succeed
     }
 
     @Test
@@ -397,14 +403,14 @@ public class TestCharChunk {
         expectException(IllegalArgumentException.class, () -> c0.slice(0, data0.length + 1));
         expectException(IllegalArgumentException.class, () -> c0.slice(data0.length - 1, 2));
         expectException(IllegalArgumentException.class, () -> c0.slice(data0.length, 1));
-        c0.slice(data0.length, 0);  // Should succeed
+        c0.slice(data0.length, 0); // Should succeed
 
         final WritableCharChunk<Values> wc0 = WritableCharChunk.writableChunkWrap(data0);
         expectException(IllegalArgumentException.class, () -> wc0.slice(-1, 2));
         expectException(IllegalArgumentException.class, () -> wc0.slice(0, data0.length + 1));
         expectException(IllegalArgumentException.class, () -> wc0.slice(data0.length - 1, 2));
         expectException(IllegalArgumentException.class, () -> wc0.slice(data0.length, 1));
-        wc0.slice(data0.length, 0);  // Should succeed
+        wc0.slice(data0.length, 0); // Should succeed
 
         final CharChunk[] ccData = new CharChunk[4];
         final CharChunkChunk<Values> cc0 = CharChunkChunk.chunkWrap(ccData);
@@ -412,7 +418,7 @@ public class TestCharChunk {
         expectException(IllegalArgumentException.class, () -> cc0.slice(0, ccData.length + 1));
         expectException(IllegalArgumentException.class, () -> cc0.slice(ccData.length - 1, 2));
         expectException(IllegalArgumentException.class, () -> cc0.slice(ccData.length, 1));
-        cc0.slice(ccData.length, 0);  // Should succeed
+        cc0.slice(ccData.length, 0); // Should succeed
 
         final WritableCharChunk[] wccData = new WritableCharChunk[4];
         final WritableCharChunkChunk<Values> wcc0 = WritableCharChunkChunk.writableChunkWrap(wccData);
@@ -420,7 +426,7 @@ public class TestCharChunk {
         expectException(IllegalArgumentException.class, () -> cc0.slice(0, ccData.length + 1));
         expectException(IllegalArgumentException.class, () -> cc0.slice(ccData.length - 1, 2));
         expectException(IllegalArgumentException.class, () -> cc0.slice(ccData.length, 1));
-        cc0.slice(ccData.length, 0);  // Should succeed
+        cc0.slice(ccData.length, 0); // Should succeed
     }
 
     @Test
@@ -438,16 +444,16 @@ public class TestCharChunk {
         // This is the test we are trying to do (imagine a-z and A-Z being variables holding random values)
         // destChunk is at offset 9, length 10
         // srcChunk is at offset 2 length 5
-        // destData:  abcdefghijklmnopqrstuvwxyz
-        // destChunk:          ^^^^^^^^^^
+        // destData: abcdefghijklmnopqrstuvwxyz
+        // destChunk: ^^^^^^^^^^
 
-        // srcData:   ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        // srcChunk:    ^^^^^^
+        // srcData: ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        // srcChunk: ^^^^^^
 
         // Copy 3 elements from srcChunk offset 1 to destChunk offset 3
         //
         // That would be....DEFG goes on top of mnop, so
-        // destData:  abcdefghijklDEFGqrstuvwxyz
+        // destData: abcdefghijklDEFGqrstuvwxyz
 
         final Random rng = new Random(124374349);
         final char[] destData = ReplicatorHelpers.randomChars(rng, 26);
@@ -464,10 +470,12 @@ public class TestCharChunk {
         final int srcCopyOffset = 3;
         final int copyLength = 4;
 
-        final WritableCharChunk<Values> destChunk = WritableCharChunk.writableChunkWrap(destData, destChunkOffset, destChunkCapacity);
+        final WritableCharChunk<Values> destChunk =
+                WritableCharChunk.writableChunkWrap(destData, destChunkOffset, destChunkCapacity);
         final CharChunk<Values> srcChunk = CharChunk.chunkWrap(srcData, srcChunkOffset, srcChunkCapacity);
         destChunk.copyFromChunk(srcChunk, srcCopyOffset, destCopyOffset, copyLength);
-        System.arraycopy(srcData,srcChunkOffset + srcCopyOffset, manualData,destChunkOffset + destCopyOffset, copyLength);
+        System.arraycopy(srcData, srcChunkOffset + srcCopyOffset, manualData, destChunkOffset + destCopyOffset,
+                copyLength);
         final CharChunk<Values> manualChunk = CharChunk.chunkWrap(manualData, destChunkOffset, destChunkCapacity);
         final boolean same = CharChunkEquals.equalReduce(destChunk, manualChunk);
         TestCase.assertTrue("Chunks are not the same", same);
@@ -490,7 +498,7 @@ public class TestCharChunk {
         // Visually, "data' is a square matrix.
         // Make a bunch of chunks that are the upper diagonal half of that matrix.
 
-        //noinspection unchecked
+        // noinspection unchecked
         CharChunk<Values>[] chunks = new CharChunk[SIZE];
         for (int ii = 0; ii < SIZE; ++ii) {
             chunks[ii] = CharChunk.chunkWrap(data[ii], ii, SIZE - ii);
@@ -516,13 +524,13 @@ public class TestCharChunk {
         final char value1 = valueData[1];
 
         final int SIZE = 100;
-        final int CHOFF = 10;  // chunk offset
+        final int CHOFF = 10; // chunk offset
         char[][] data = new char[SIZE][SIZE];
 
         // Visually, "data' is a square matrix.
         // Make a bunch of chunks that are the upper diagonal half of that matrix.
 
-        //noinspection unchecked
+        // noinspection unchecked
         WritableCharChunk<Values>[] chunks = new WritableCharChunk[SIZE];
         for (int ii = 0; ii < SIZE; ++ii) {
             chunks[ii] = WritableCharChunk.writableChunkWrap(data[ii], ii, SIZE - ii);
@@ -563,7 +571,8 @@ public class TestCharChunk {
         // replace a chunk somewhere in the middle
         final int MIDCHOFF = 12;
         char[] replacementData = new char[SIZE];
-        WritableCharChunk<Values> replacementChunk = WritableCharChunk.writableChunkWrap(replacementData, MIDCHOFF, MIDCHOFF);
+        WritableCharChunk<Values> replacementChunk =
+                WritableCharChunk.writableChunkWrap(replacementData, MIDCHOFF, MIDCHOFF);
         cc.setWritableChunk(3, replacementChunk);
 
         // set the array, check that the values appear in the chunk, using both the 1D and 2D APIs
@@ -624,7 +633,8 @@ public class TestCharChunk {
     }
     // endregion testArray
 
-    private static <ATTR extends Values> void verifyChunkEqualsArray(CharChunk<ATTR> chunk, char[] data, int offset, int size) {
+    private static <ATTR extends Values> void verifyChunkEqualsArray(CharChunk<ATTR> chunk, char[] data, int offset,
+            int size) {
         for (int ii = 0; ii < size; ++ii) {
             TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));
         }

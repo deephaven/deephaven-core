@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -12,27 +13,29 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
+import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
+import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
+import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
+import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.GroupedWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
-import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
-import io.deephaven.engine.table.impl.sort.LongSortKernel;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.annotations.VisibleForTesting;
-
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -243,7 +246,7 @@ public class SortHelpers {
             final RowSet rowSetToSort,
             final boolean usePrev,
             final boolean allowSymbolTable) {
-        if (rowSetToSort.size() == 0) {
+        if (rowSetToSort.isEmpty()) {
             return EMPTY_SORT_MAPPING;
         }
 
@@ -308,7 +311,9 @@ public class SortHelpers {
             return lookupTable[region][id];
         }
 
-        private static SparseSymbolMapping createMapping(LongChunk originalSymbol, IntChunk mappedIndex) {
+        private static SparseSymbolMapping createMapping(
+                @NotNull final LongChunk<Values> originalSymbol,
+                @NotNull final LongChunk<Values> mappedIndex) {
             // figure out what the maximum region is, and determine how many bits of it there are
             int maxUpperPart = 0;
             int minTrailing = 32;
@@ -338,7 +343,7 @@ public class SortHelpers {
                 final long symTabId = originalSymbol.get(ii);
                 final int region = (int) (symTabId >> (32 + minTrailing));
                 final int id = (int) symTabId;
-                final int mappedId = mappedIndex.get(ii);
+                final int mappedId = Math.toIntExact(mappedIndex.get(ii));
                 maxMapping = Math.max(maxMapping, mappedId);
                 lookupTable[region][id] = mappedId;
             }
@@ -348,14 +353,13 @@ public class SortHelpers {
     }
 
     private static final String SORTED_INDEX_COLUMN_NAME = "SortedIndex";
-    private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
     private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
             RowSet rowSet, boolean usePrev) {
         final int sortSize = rowSet.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
-        final Table symbolTable = ((SymbolTableSource) columnSource).getStaticSymbolTable(rowSet, true);
+        final Table symbolTable = ((SymbolTableSource<?>) columnSource).getStaticSymbolTable(rowSet, true);
 
         if (symbolTable.size() >= sortSize) {
             // the very first thing we will do is sort the symbol table, using a regular sort; if it is larger than the
@@ -363,8 +367,16 @@ public class SortHelpers {
             return getSortMappingOne(order, columnSource, rowSet, usePrev);
         }
 
-        final Table idMapping = symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
-                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).update(SORTED_INDEX_COLUMN_UPDATE).ungroup()
+        final QueryTable groupedSymbols = (QueryTable) symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
+                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).coalesce();
+        final Map<String, ColumnSource<?>> extraColumn;
+        if (groupedSymbols.isFlat()) {
+            extraColumn = Map.of(SORTED_INDEX_COLUMN_NAME, RowKeyColumnSource.INSTANCE);
+        } else {
+            extraColumn = Map.of(SORTED_INDEX_COLUMN_NAME, new RowPositionColumnSource(groupedSymbols.getRowSet()));
+        }
+        final Table idMapping = groupedSymbols.withAdditionalColumns(extraColumn)
+                .ungroup()
                 .view(SymbolTableSource.ID_COLUMN_NAME, SORTED_INDEX_COLUMN_NAME);
 
         final int symbolEntries = idMapping.intSize();
@@ -372,13 +384,13 @@ public class SortHelpers {
         final SparseSymbolMapping mapping;
 
         try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
-                final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
-            final ColumnSource idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
+                final WritableLongChunk<Values> mappedIndex = WritableLongChunk.makeWritableChunk(symbolEntries)) {
+            final ColumnSource<?> idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
             try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
                 idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
             }
 
-            final ColumnSource sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
+            final ColumnSource<?> sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
             try (final ColumnSource.FillContext sortedIndexContext =
                     sortedRowSetSource.makeFillContext(symbolEntries)) {
                 sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());

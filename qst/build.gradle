@@ -6,6 +6,7 @@ plugins {
 description = 'The Deephaven Query Syntax Tree POJOs'
 
 dependencies {
+    api project(':qst-type')
     api project(':table-api')
     implementation project(':engine-query-constants')
 
@@ -14,6 +15,7 @@ dependencies {
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {

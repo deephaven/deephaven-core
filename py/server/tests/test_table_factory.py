@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -136,8 +136,68 @@ class TableFactoryTestCase(BaseTestCase):
             jobj_col(name="JObj", data=[jobj1, jobj2]),
         ]
 
-        t = new_table(cols=cols)
-        self.assertEqual(t.size, 2)
+    def test_new_table_dict(self):
+        jobj1 = JArrayList()
+        jobj1.add(1)
+        jobj1.add(-1)
+        jobj2 = JArrayList()
+        jobj2.add(2)
+        jobj2.add(-2)
+        bool_cols = {
+            "Boolean": [True, False],
+        }
+        integer_cols = {
+            "Byte": (1, -1),
+            "Short": [1, -1],
+            "Int": [1, -1],
+            "Long": [1, -1],
+        }
+        float_cols = {
+            "Float": [1.01, -1.01],
+            "Double": [1.01, -1.01],
+        }
+        string_cols = {
+            "String": np.array(["foo", "bar"]),
+        }
+        datetime_cols = {
+            "Datetime": np.array([1, -1], dtype=np.dtype("datetime64[ns]"))
+        }
+
+        obj_cols = {
+            "PyObj": [CustomClass(1, "1"), CustomClass(-1, "-1")],
+            "PyObj1": [[1, 2, 3], CustomClass(-1, "-1")],
+            "PyObj2": [False, 'False'],
+            "JObj": [jobj1, jobj2],
+        }
+
+        dtype_cols_map = {
+            dtypes.bool_: bool_cols,
+            dtypes.int64: integer_cols,
+            dtypes.float64: float_cols,
+            dtypes.string: string_cols,
+            dtypes.Instant: datetime_cols,
+            dtypes.PyObject: obj_cols
+        }
+
+        for dtype, cols in dtype_cols_map.items():
+            with self.subTest(f"Testing {dtype}"):
+                t = new_table(cols=cols)
+                self.assertEqual(t.size, 2)
+                for c in t.columns:
+                    self.assertEqual(c.data_type, dtype)
+
+        dtype_np_cols_map = {
+            dtypes.int8: np.array([1, -1], dtype=np.int8),
+            dtypes.int16: np.array([1, -1], dtype=np.int16),
+            dtypes.int32: np.array([1, -1], dtype=np.int32),
+            dtypes.int64: np.array([1, -1], dtype=np.int64),
+            dtypes.float32: np.array([1.01, -1.01], dtype=np.float32),
+            dtypes.float64: np.array([1.01, -1.01], dtype=np.float64),
+        }
+        d_cols = {dtype.j_name.capitalize(): cols for dtype, cols in dtype_np_cols_map.items()}
+        t = new_table(cols=d_cols)
+        for tc, dtype in zip(t.columns, dtype_np_cols_map.keys()):
+            self.assertEqual(tc.data_type, dtype)
 
     def test_new_table_nulls(self):
         null_cols = [
@@ -154,6 +214,7 @@ class TableFactoryTestCase(BaseTestCase):
         ]
         t = new_table(cols=null_cols)
         self.assertEqual(t.to_string().count("null"), len(null_cols))
+
 
     def test_input_column_error(self):
         j_al = JArrayList()
@@ -266,12 +327,16 @@ class TableFactoryTestCase(BaseTestCase):
         col_defs = {c.name: c.data_type for c in t.columns}
         with self.subTest("from table definition"):
             append_only_input_table = input_table(col_defs=col_defs)
+            self.assertEqual(append_only_input_table.key_names, [])
+            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(col_defs=col_defs, key_cols="String")
+            self.assertEqual(keyed_input_table.key_names, ["String"])
+            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
@@ -279,11 +344,15 @@ class TableFactoryTestCase(BaseTestCase):
 
         with self.subTest("from init table"):
             append_only_input_table = input_table(init_table=t)
+            self.assertEqual(append_only_input_table.key_names, [])
+            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(init_table=t, key_cols="String")
+            self.assertEqual(keyed_input_table.key_names, ["String"])
+            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
@@ -294,9 +363,11 @@ class TableFactoryTestCase(BaseTestCase):
             append_only_input_table = input_table(init_table=t)
             with self.assertRaises(DHError) as cm:
                 append_only_input_table.delete(t)
-            self.assertIn("not allowed.", str(cm.exception))
+            self.assertIn("doesn\'t support delete operation", str(cm.exception))
 
             keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
+            self.assertEqual(keyed_input_table.key_names, ["String", "Double"])
+            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String" and col.name != "Double"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
@@ -358,6 +429,26 @@ class TableFactoryTestCase(BaseTestCase):
         self.wait_ticking_table_update(t5, row_count=1, timeout=5)
         self.assertEqual(t5.size, 1)
 
+    def test_input_table_empty_data(self):
+        from deephaven import update_graph as ugp
+        from deephaven import execution_context as ec
+
+        ug = ec.get_exec_ctx().update_graph
+        cm = ugp.exclusive_lock(ug)
+
+        with cm:
+            t = time_table("PT1s", blink_table=True)
+            it = input_table({c.name: c.data_type for c in t.columns}, key_cols="Timestamp")
+            it.add(t)
+            self.assertEqual(it.size, 0)
+            it.delete(t)
+            self.assertEqual(it.size, 0)
+
+        t = empty_table(0).update("Timestamp=nowSystem()")
+        it.add(t)
+        self.assertEqual(it.size, 0)
+        it.delete(t)
+        self.assertEqual(it.size, 0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -22,7 +22,7 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         implements ColumnSourceGetDefaults.ForChar /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceChar(@NotNull final ColumnRegionChar<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
+            @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
         super(nullRegion, char.class, makeDeferred);
     }
 
@@ -34,8 +34,8 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionChar<Values>> {
         @Override
         default ColumnRegionChar<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionChar(columnDefinition);
             }
@@ -62,13 +62,15 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
 
         @Override
         public ColumnRegionChar<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Character.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Character.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
             return new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
         }

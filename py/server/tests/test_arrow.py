@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import os
 import unittest
@@ -17,6 +17,7 @@ from deephaven.column import byte_col, char_col, short_col, int_col, long_col, f
     string_col, datetime_col, bool_col
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
+
 
 class ArrowTestCase(BaseTestCase):
     test_table: Table

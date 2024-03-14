@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import io.deephaven.api.updateby.BadDataBehavior;
@@ -296,6 +299,25 @@ public class UpdateBySpecBuilderTest {
                                                     .setColumn("Timestamp").setNanos(1).build())
                                             .build())
                                     .setWeightColumn("Weight")
+                                    .build())
+                    .build();
+        }
+
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingFormulaSpec spec) {
+            return UpdateByColumn.UpdateBySpec
+                    .newBuilder().setRollingFormula(
+                            UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                    .setReverseWindowScale(UpdateByWindowScale.newBuilder()
+                                            .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
+                                                    .setColumn("Timestamp").setNanos(1).build())
+                                            .build())
+                                    .setForwardWindowScale(UpdateByWindowScale.newBuilder()
+                                            .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
+                                                    .setColumn("Timestamp").setNanos(1).build())
+                                            .build())
+                                    .setFormula("sum(x)")
+                                    .setParamToken("x")
                                     .build())
                     .build();
         }
@@ -609,6 +631,29 @@ public class UpdateBySpecBuilderTest {
                                 .setReverseWindowScale(ticks(42L))
                                 .setForwardWindowScale(ticks(43L))
                                 .setWeightColumn("Weight")
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingFormula() {
+        check(RollingFormulaSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2), "sum(x)", "x"),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                .setReverseWindowScale(time("Timestamp", 1))
+                                .setForwardWindowScale(time("Timestamp", 2))
+                                .setFormula("sum(x)")
+                                .setParamToken("x")
+                                .build())
+                        .build());
+
+        check(RollingFormulaSpec.ofTicks(42L, 43L, "sum(x)", "x"),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingFormula(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.newBuilder()
+                                .setReverseWindowScale(ticks(42L))
+                                .setForwardWindowScale(ticks(43L))
+                                .setFormula("sum(x)")
+                                .setParamToken("x")
                                 .build())
                         .build());
     }

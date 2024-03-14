@@ -22,7 +22,6 @@ import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.util.ConfigureUtil
 
 /**
  * Tools to make some common tasks in docker easier to use in gradle
@@ -72,13 +71,18 @@ class Docker {
     /**
      * DSL object to describe a docker task
      */
-    static class DockerTaskConfig {
+    abstract static class DockerTaskConfig {
 
         private Action<? super CopySpec> copyIn;
         private Action<? super Sync> copyOut;
         private File dockerfileFile;
         private Action<? super Dockerfile> dockerfileAction;
-        private TaskDependencies containerDependencies = new TaskDependencies();
+
+        /**
+         * Declares tasks that this group of tasks should depend on or be
+         * finalized by.
+         */
+        TaskDependencies containerDependencies = new TaskDependencies();
 
         /**
          * Files that need to be copied in to the image.
@@ -87,12 +91,6 @@ class Docker {
             copyIn = action;
             return this;
         }
-        /**
-         * Files that need to be copied in to the image.
-         */
-        DockerTaskConfig copyIn(Closure closure) {
-            return copyIn(ConfigureUtil.configureUsing(closure))
-        }
 
         /**
          * Resulting files to copy out from the containerOutPath.
@@ -100,12 +98,6 @@ class Docker {
         DockerTaskConfig copyOut(Action<? super Sync> action) {
             copyOut = action;
             return this;
-        }
-        /**
-         * Resulting files to copy out from the containerOutPath.
-         */
-        DockerTaskConfig copyOut(Closure closure) {
-            return copyOut(ConfigureUtil.configureUsing(closure))
         }
 
         /**
@@ -121,12 +113,6 @@ class Docker {
         DockerTaskConfig dockerfile(Action<? super Dockerfile> action) {
             this.dockerfileAction = action;
             return this;
-        }
-        /**
-         * Dockerfile to use. If not set, it is assumed that a dockerfile will be included in copyIn.
-         */
-        DockerTaskConfig dockerfile(Closure closure) {
-            dockerfile(ConfigureUtil.configureUsing(closure));
         }
 
         /**
@@ -208,7 +194,12 @@ class Docker {
      * @return a task provider for the Sync task that will produce the requested output
      */
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Closure closure) {
-        return registerDockerTask(project, taskName, ConfigureUtil.configureUsing(closure))
+        return registerDockerTask(project, taskName, new Action<DockerTaskConfig>() {
+            @Override
+            void execute(DockerTaskConfig dockerTaskConfig) {
+                project.configure(dockerTaskConfig, closure)
+            }
+        })
     }
 
     /**
@@ -221,7 +212,7 @@ class Docker {
      */
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Action<? super DockerTaskConfig> action) {
         // create instance, assign defaults
-        DockerTaskConfig cfg = new DockerTaskConfig();
+        DockerTaskConfig cfg = project.objects.newInstance(DockerTaskConfig);
         cfg.imageName = "deephaven/${taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase()}:${LOCAL_BUILD_TAG}"
 
         // ask for more configuration
@@ -576,7 +567,12 @@ class Docker {
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Closure closure) {
-        return registerDockerTwoPhaseImage(project, baseName, intermediate, ConfigureUtil.configureUsing(closure))
+        return registerDockerTwoPhaseImage(project, baseName, intermediate, new Action<DockerBuildImage>() {
+            @Override
+            void execute(DockerBuildImage dockerBuildImage) {
+                project.configure(dockerBuildImage, closure)
+            }
+        })
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Action<? super DockerBuildImage> action) {
@@ -598,7 +594,12 @@ class Docker {
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Closure closure) {
-        return registerDockerImage(project, taskName, ConfigureUtil.configureUsing(closure))
+        return registerDockerImage(project, taskName, new Action<DockerBuildImage>() {
+            @Override
+            void execute(DockerBuildImage dockerBuildImage) {
+                project.configure(dockerBuildImage, closure)
+            }
+        })
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Action<? super DockerBuildImage> action) {

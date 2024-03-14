@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortChunkedNumericalStats and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ShortChunkedNumericalStats and run "./gradlew replicateColumnStats" to regenerate
+//
+// @formatter:off
 package io.deephaven.server.table.stats;
 
 import io.deephaven.chunk.LongChunk;

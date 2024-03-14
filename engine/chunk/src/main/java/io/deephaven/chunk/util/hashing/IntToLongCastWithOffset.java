@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharToLongCastWithOffset and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharToLongCastWithOffset and run "./gradlew replicateHashing" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.attributes.Any;
@@ -38,9 +37,9 @@ public class IntToLongCastWithOffset<T extends Any> implements ToLongFunctor<T> 
         return result;
     }
 
-    public static <T2 extends Any>  void castInto(IntChunk<T2> input, WritableLongChunk<T2> result, long offset) {
+    public static <T2 extends Any> void castInto(IntChunk<T2> input, WritableLongChunk<T2> result, long offset) {
         for (int ii = 0; ii < input.size(); ++ii) {
-            result.set(ii, (long)input.get(ii) + offset);
+            result.set(ii, (long) input.get(ii) + offset);
         }
         result.setSize(input.size());
     }

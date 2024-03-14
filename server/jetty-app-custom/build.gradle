@@ -46,6 +46,18 @@ if (!hasProperty('excludeClockImpl')) {
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
+if (!hasProperty('excludeSql')) {
+    dependencies {
+        runtimeOnly project(':engine-sql')
+    }
+}
+
+if (!hasProperty('excludeS3')) {
+    dependencies {
+        runtimeOnly project(':extensions-s3')
+    }
+}
+
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {
     extraJvmArgs += [
             '-Dhttp.port=8443',
@@ -87,8 +99,10 @@ tasks.withType(CreateStartScripts).configureEach {
     defaultJvmOpts += extraJvmArgs
 }
 
-applicationName = 'start'
-mainClassName = 'io.deephaven.server.custom.CustomMain'
+application {
+    applicationName = 'start'
+    mainClass = 'io.deephaven.server.custom.CustomMain'
+}
 
 artifacts {
     applicationDist project.tasks.findByName('distTar')

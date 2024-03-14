@@ -1,11 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.context;
 
 public class QueryScopeParam<T> {
-
-    public static final QueryScopeParam<?>[] ZERO_LENGTH_PARAM_ARRAY = new QueryScopeParam[0];
 
     private final String name;
     private final T value;

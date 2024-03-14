@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -18,21 +18,38 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
 import java.util.function.LongUnaryOperator;
 
 public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJoinStateManager {
+
     protected StaticHashedNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
         super(keySourcesForErrorMessages);
     }
 
-    public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources, final IntegerArraySource leftHashSlots);
-    public abstract void buildFromRightSide(final Table rightTable, ColumnSource<?> [] rightSources);
-    public abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections);
-    public abstract void decorateWithRightSide(Table rightTable, ColumnSource<?> [] rightSources);
+    public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources,
+            final IntegerArraySource leftHashSlots);
 
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildIndexedRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongArraySource leftRedirections, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
-    public abstract WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, IntegerArraySource leftHashSlots, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+    public abstract void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
 
-    protected WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, boolean exactMatch, RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets, JoinControl.RedirectionType redirectionType) {
+    public abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources,
+            final LongArraySource leftRedirections);
+
+    public abstract void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources);
+
+    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+            IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
+
+    public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+            LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
+
+    public abstract WritableRowRedirection buildIndexedRowRedirectionFromRedirections(QueryTable leftTable,
+            boolean exactMatch, RowSet indexTableRowSet, LongArraySource leftRedirections,
+            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+
+    public abstract WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(QueryTable leftTable,
+            boolean exactMatch, RowSet indexTableRowSet, IntegerArraySource leftHashSlots,
+            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+
+    protected WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, boolean exactMatch,
+            RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets,
+            JoinControl.RedirectionType redirectionType) {
         final int rowSetCount = indexTableRowSet.intSize();
         switch (redirectionType) {
             case Contiguous: {
@@ -64,7 +81,8 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 return new LongColumnSourceWritableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                final WritableRowRedirection rowRedirection =
+                        WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
                 for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
@@ -82,16 +100,19 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size, LongUnaryOperator indexPositionToRightSide, LongUnaryOperator firstLeftKey) {
+    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size,
+            LongUnaryOperator indexPositionToRightSide, LongUnaryOperator firstLeftKey) {
         for (int ii = 0; ii < size; ++ii) {
             final long rightSide = indexPositionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
-                throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
+                throw new IllegalStateException("Natural Join found duplicate right key for "
+                        + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
             }
         }
     }
 
-    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size, ObjectArraySource<RowSet> rowSetSource) {
+    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size,
+            ObjectArraySource<RowSet> rowSetSource) {
         throw new UnsupportedOperationException();
     }
 
