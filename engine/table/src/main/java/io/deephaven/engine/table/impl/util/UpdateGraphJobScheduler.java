@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutput;
@@ -9,6 +12,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
@@ -17,8 +21,12 @@ public class UpdateGraphJobScheduler implements JobScheduler {
 
     private final UpdateGraph updateGraph;
 
-    public UpdateGraphJobScheduler(final UpdateGraph updateGraph) {
+    public UpdateGraphJobScheduler(@NotNull final UpdateGraph updateGraph) {
         this.updateGraph = updateGraph;
+    }
+
+    public UpdateGraphJobScheduler() {
+        this(ExecutionContext.getContext().getUpdateGraph());
     }
 
     @Override

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.ArrayUtil;
@@ -51,6 +54,15 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
         }
     }
 
+    @Override
+    UpdateByWindow copy() {
+        final UpdateByOperator[] copiedOperators = new UpdateByOperator[this.operators.length];
+        for (int ii = 0; ii < copiedOperators.length; ii++) {
+            copiedOperators[ii] = this.operators[ii].copy();
+        }
+
+        return new UpdateByWindowRollingTicks(copiedOperators, operatorInputSourceSlots, prevUnits, fwdUnits);
+    }
 
     @Override
     void finalizeWindowBucket(UpdateByWindowBucketContext context) {

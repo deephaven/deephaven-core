@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -69,8 +72,7 @@ public class BaseUpdateByTest {
                 new ShortGenerator((short) -6000, (short) 65535, .1),
                 new IntGenerator(10, 100, .1),
                 new LongGenerator(10, 100, .1),
-                // TODO (deephaven-core#4743) verify this change in range
-                new FloatGenerator(0, 100, .1),
+                new FloatGenerator(10.1F, 20.1F, .1),
                 new DoubleGenerator(10.1, 20.1, .1),
                 new BooleanGenerator(.5, .1),
                 new BigIntegerGenerator(new BigInteger("-10"), new BigInteger("10"), .1),

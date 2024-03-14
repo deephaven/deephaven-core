@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
@@ -233,6 +233,84 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
         // match zero of one item
         f = WhereFilterFactory.getExpression("Timestamp in '" + wed + "'");
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(0, idx.size());
+    }
+
+    public void testBigDecimal() {
+        BigDecimal a = new BigDecimal("-914.9539"); // not in the table
+
+        BigDecimal b = new BigDecimal("618.2686");
+        BigDecimal c = new BigDecimal("89.3824");
+        BigDecimal d = new BigDecimal("-471.0881");
+        Table t = TableTools.newTable(TableTools.col("BigDecimal", b, c, d));
+        // match one item
+        WhereFilter f = WhereFilterFactory.getExpression("BigDecimal = " + b);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(1, idx.size());
+        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        // match one of two items
+        f = WhereFilterFactory.getExpression("BigDecimal in " + a + ", " + b);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(1, idx.size());
+        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+
+        // match two of two items
+        f = WhereFilterFactory.getExpression("BigDecimal in " + c + ", " + d);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(2, idx.size());
+        assertEquals(c, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(d, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
+
+        // match zero of one item
+        f = WhereFilterFactory.getExpression("BigDecimal == " + a);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(0, idx.size());
+    }
+
+    public void testBigIntegerl() {
+        BigInteger a = new BigInteger("-914"); // not in the table
+
+        BigInteger b = new BigInteger("618");
+        BigInteger c = new BigInteger("89");
+        BigInteger d = new BigInteger("-471");
+        Table t = TableTools.newTable(TableTools.col("BigInteger", b, c, d));
+        // match one item
+        WhereFilter f = WhereFilterFactory.getExpression("BigInteger = " + b);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(1, idx.size());
+        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        // match one of two items
+        f = WhereFilterFactory.getExpression("BigInteger in " + a + ", " + b);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(1, idx.size());
+        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+
+        // match two of two items
+        f = WhereFilterFactory.getExpression("BigInteger in " + c + ", " + d);
+        f.init(t.getDefinition());
+        assertEquals(MatchFilter.class, f.getClass());
+        idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+        assertEquals(2, idx.size());
+        assertEquals(c, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(d, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
+
+        // match zero of one item
+        f = WhereFilterFactory.getExpression("BigInteger == " + a);
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);

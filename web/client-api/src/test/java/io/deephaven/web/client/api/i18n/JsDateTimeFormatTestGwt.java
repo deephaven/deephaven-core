@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.i18n.shared.DateTimeFormat;
@@ -90,6 +90,6 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
 
     @Override
     public String getModuleName() {
-        return "io.deephaven.web.DhApiDev";
+        return "io.deephaven.web.DeephavenUnitTest";
     }
 }

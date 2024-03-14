@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.lang.impl;
 
 import com.google.auto.service.AutoService;
@@ -22,6 +22,7 @@ import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.function.*;
 import io.deephaven.gui.color.Color;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.Calendars;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -119,6 +120,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Color.class,
                 ColorUtilImpl.class,
                 TableAssertions.class,
+                Calendars.class,
                 StaticCalendarMethods.class));
     }
 }

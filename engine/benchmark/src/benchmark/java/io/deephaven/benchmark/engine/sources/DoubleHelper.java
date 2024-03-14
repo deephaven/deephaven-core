@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharHelper and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharHelper and run "./gradlew replicateColumnSourceFillBenchmark" to regenerate
+//
+// @formatter:off
 package io.deephaven.benchmark.engine.sources;
 
 import io.deephaven.chunk.LongChunk;

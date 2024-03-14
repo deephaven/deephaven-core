@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.ChunkType;
@@ -15,11 +15,13 @@ import java.util.Objects;
 // Note: this is not being auto-generated ATM
 final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[], ObjectRingChunkSource<T>> {
     public static <T> RingColumnSource<T> columnSource(Class<T> type, int capacity) {
-        return new RingColumnSource<>(type, new ObjectRingChunkSource<>(type, capacity), new ObjectRingChunkSource<>(type, capacity));
+        return new RingColumnSource<>(type, new ObjectRingChunkSource<>(type, capacity),
+                new ObjectRingChunkSource<>(type, capacity));
     }
 
     public static <T> RingColumnSource<T> columnSource(Class<T> type, Class<?> componentType, int capacity) {
-        return new RingColumnSource<>(type, componentType, new ObjectRingChunkSource<>(type, capacity), new ObjectRingChunkSource<>(type, capacity));
+        return new RingColumnSource<>(type, componentType, new ObjectRingChunkSource<>(type, capacity),
+                new ObjectRingChunkSource<>(type, capacity));
     }
 
     public ObjectRingChunkSource(Class<T> type, int capacity) {
@@ -37,10 +39,11 @@ final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[]
             return null;
         }
         if (STRICT_KEYS && !containsKey(key)) {
-            throw new IllegalArgumentException(String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
+            throw new IllegalArgumentException(
+                    String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
         }
-        //noinspection unchecked
-        return (T)ring[keyToRingIndex(key)];
+        // noinspection unchecked
+        return (T) ring[keyToRingIndex(key)];
     }
 
     @Override
@@ -57,14 +60,14 @@ final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[]
 
         @Override
         protected void copyFromRing(int srcRingIx, int destOffset) {
-            //noinspection unchecked
-            dest.set(destOffset, (T)ring[srcRingIx]);
+            // noinspection unchecked
+            dest.set(destOffset, (T) ring[srcRingIx]);
         }
 
         @Override
         protected void copyFromRing(int srcRingIx, int destOffset, int size) {
-            //noinspection unchecked
-            dest.copyFromTypedArray((T[])ring, srcRingIx, destOffset, size);
+            // noinspection unchecked
+            dest.copyFromTypedArray((T[]) ring, srcRingIx, destOffset, size);
         }
 
         @Override

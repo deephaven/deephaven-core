@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPartitionKernelBenchmark and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharPartitionKernelBenchmark and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.benchmark.engine.partition;
 
 import io.deephaven.tuple.generated.IntLongTuple;
@@ -45,8 +44,7 @@ public class IntPartitionKernelBenchmark {
     private Runnable doPartition;
 
     @TearDown(Level.Trial)
-    public void finishTrial() {
-    }
+    public void finishTrial() {}
 
     @Setup(Level.Iteration)
     public void setupIteration() {
@@ -83,7 +81,9 @@ public class IntPartitionKernelBenchmark {
         } else {
             numPartitionsValue = Integer.parseInt(numPartitions);
         }
-        final BaseTestIntTimSortKernel.IntPartitionKernelStuff partitionStuff = new BaseTestIntTimSortKernel.IntPartitionKernelStuff(stuffToSort, rowSet, chunkSize, numPartitionsValue, preserveEquality);
+        final BaseTestIntTimSortKernel.IntPartitionKernelStuff partitionStuff =
+                new BaseTestIntTimSortKernel.IntPartitionKernelStuff(stuffToSort, rowSet, chunkSize,
+                        numPartitionsValue, preserveEquality);
         doPartition = partitionStuff::run;
     }
 

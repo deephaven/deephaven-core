@@ -1,13 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.util;
 
 import javax.lang.model.SourceVersion;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

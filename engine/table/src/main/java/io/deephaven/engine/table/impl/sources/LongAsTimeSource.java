@@ -1,6 +1,9 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+                                                * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+                                                */
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -72,7 +75,7 @@ public abstract class LongAsTimeSource<TIME_TYPE> extends AbstractColumnSource<T
     @Override
     public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
-        //noinspection unchecked
+        // noinspection unchecked
         return alternateDataType == alternateColumnSource.getType()
                 ? (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource
                 : alternateColumnSource.reinterpret(alternateDataType);

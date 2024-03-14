@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -134,8 +134,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
                 readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
-                processNewLocationsUpdateRoot = new InstrumentedUpdateSource(
-                        result.getUpdateGraph(),
+                processNewLocationsUpdateRoot = new InstrumentedTableUpdateSource(
+                        result,
                         SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
                                 + "-processPendingLocations") {
                     @Override
@@ -171,7 +171,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (refreshCombiner != null) {
-                result.getUpdateGraph().addSource(refreshCombiner);
+                refreshCombiner.install();
             }
         }
 

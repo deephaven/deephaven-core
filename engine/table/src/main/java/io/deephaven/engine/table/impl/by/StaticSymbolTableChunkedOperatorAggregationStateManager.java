@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.LongChunk;
@@ -54,7 +57,8 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     }
 
     @Override
-    public void add(final SafeCloseable bc, final RowSequence rowSequence, final ColumnSource<?>[] sources, final MutableInt nextOutputPosition, final WritableIntChunk<RowKeys> outputPositions) {
+    public void add(final SafeCloseable bc, final RowSequence rowSequence, final ColumnSource<?>[] sources,
+            final MutableInt nextOutputPosition, final WritableIntChunk<RowKeys> outputPositions) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -64,9 +68,9 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
         final int maxChunkSize = Math.min(rowSequence.intSize(), CHUNK_SIZE);
 
         try (final RowSequence.Iterator rsIt = rowSequence.getRowSequenceIterator();
-             final ChunkSource.FillContext fillContext = mappedKeySource.makeFillContext(maxChunkSize);
-             final WritableLongChunk<RowKeys> symbolTableValues = WritableLongChunk.makeWritableChunk(tableSize);
-             final WritableIntChunk<Values> symbolLookupChunk = WritableIntChunk.makeWritableChunk(maxChunkSize)) {
+                final ChunkSource.FillContext fillContext = mappedKeySource.makeFillContext(maxChunkSize);
+                final WritableLongChunk<RowKeys> symbolTableValues = WritableLongChunk.makeWritableChunk(tableSize);
+                final WritableIntChunk<Values> symbolLookupChunk = WritableIntChunk.makeWritableChunk(maxChunkSize)) {
 
             symbolTableValues.setSize(0);
 
@@ -74,7 +78,8 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
 
             while (rsIt.hasMore()) {
                 final RowSequence nextKeys = rsIt.getNextRowSequenceWithLength(maxChunkSize);
-                final LongChunk<Values> symbolSourceChunk = mappedKeySource.fillChunkWithSymbolSource(fillContext, symbolLookupChunk, nextKeys);
+                final LongChunk<Values> symbolSourceChunk =
+                        mappedKeySource.fillChunkWithSymbolSource(fillContext, symbolLookupChunk, nextKeys);
 
                 final int chunkSize = symbolLookupChunk.size();
                 for (int ii = 0; ii < chunkSize; ii++) {
@@ -104,7 +109,8 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
         nextOutputPosition.setValue(nextPosition);
     }
 
-    private void updateKeyHashTableSources(final WritableLongChunk<RowKeys> symbolTableValues, final int firstNewPosition) {
+    private void updateKeyHashTableSources(final WritableLongChunk<RowKeys> symbolTableValues,
+            final int firstNewPosition) {
         keyColumn.ensureCapacity(nextPosition);
 
         final ColumnSource<?> symbolColumnSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
@@ -126,7 +132,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
 
     @Override
     public ColumnSource<?>[] getKeyHashTableSources() {
-        return new ColumnSource[]{keyColumn};
+        return new ColumnSource[] {keyColumn};
     }
 
     @Override

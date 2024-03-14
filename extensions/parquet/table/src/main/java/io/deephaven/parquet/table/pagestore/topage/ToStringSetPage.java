@@ -1,9 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.stringset.LongBitmapStringSet;
@@ -98,8 +99,9 @@ public class ToStringSetPage<ATTR extends Any, STRING_ARRAY>
 
         @Override
         @NotNull
-        public final Object getResult(ColumnPageReader columnPageReader) throws IOException {
-            return toPage.getDictionaryKeysToPage().getResult(columnPageReader);
+        public Object getResult(ColumnPageReader columnPageReader,
+                SeekableChannelContext channelContext) throws IOException {
+            return toPage.getDictionaryKeysToPage().getResult(columnPageReader, channelContext);
         }
 
         @Override

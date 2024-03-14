@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.protobuf;
 
 import com.google.protobuf.ByteString;
@@ -20,18 +20,18 @@ import io.deephaven.qst.type.BoxedIntType;
 import io.deephaven.qst.type.BoxedLongType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.Type;
-import io.deephaven.functions.ToBooleanFunction;
-import io.deephaven.functions.ToByteFunction;
-import io.deephaven.functions.ToCharFunction;
-import io.deephaven.functions.ToDoubleFunction;
-import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToIntFunction;
-import io.deephaven.functions.ToLongFunction;
-import io.deephaven.functions.ToObjectFunction;
-import io.deephaven.functions.ToPrimitiveFunction;
-import io.deephaven.functions.ToShortFunction;
-import io.deephaven.functions.TypedFunction;
-import io.deephaven.functions.TypedFunction.Visitor;
+import io.deephaven.function.ToBooleanFunction;
+import io.deephaven.function.ToByteFunction;
+import io.deephaven.function.ToCharFunction;
+import io.deephaven.function.ToDoubleFunction;
+import io.deephaven.function.ToFloatFunction;
+import io.deephaven.function.ToIntFunction;
+import io.deephaven.function.ToLongFunction;
+import io.deephaven.function.ToObjectFunction;
+import io.deephaven.function.ToPrimitiveFunction;
+import io.deephaven.function.ToShortFunction;
+import io.deephaven.function.TypedFunction;
+import io.deephaven.function.TypedFunction.Visitor;
 import io.deephaven.util.QueryConstants;
 
 import java.lang.reflect.Array;

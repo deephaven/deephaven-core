@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
@@ -11,8 +11,8 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
  * Test class for {@link RegionedColumnSourceChar}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceChar extends TstRegionedColumnSourcePrimitive<
-        Character, Values, ColumnRegionChar<Values>, ColumnRegionChar<Values>> {
+public class TestRegionedColumnSourceChar extends
+        TstRegionedColumnSourcePrimitive<Character, Values, ColumnRegionChar<Values>, ColumnRegionChar<Values>> {
 
     public TestRegionedColumnSourceChar() {
         super(ColumnRegionChar.class);
@@ -20,14 +20,16 @@ public class TestRegionedColumnSourceChar extends TstRegionedColumnSourcePrimiti
 
     @SuppressWarnings("AutoBoxing")
     private void assertLookup(final long elementIndex,
-                              final int expectedRegionIndex,
-                              final char output,
-                              final boolean prev,
-                              final boolean boxed) {
-        checking(new Expectations() {{
-            oneOf(cr[expectedRegionIndex]).getChar(elementIndex);
-            will(returnValue(output));
-        }});
+            final int expectedRegionIndex,
+            final char output,
+            final boolean prev,
+            final boolean boxed) {
+        checking(new Expectations() {
+            {
+                oneOf(cr[expectedRegionIndex]).getChar(elementIndex);
+                will(returnValue(output));
+            }
+        });
         if (boxed) {
             assertEquals(output == NULL_CHAR ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {

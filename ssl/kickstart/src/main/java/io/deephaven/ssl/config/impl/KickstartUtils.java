@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.ssl.config.impl;
 
 import io.deephaven.ssl.config.Ciphers;
@@ -24,6 +24,7 @@ import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.Trust;
 import io.deephaven.ssl.config.TrustAll;
 import io.deephaven.ssl.config.TrustCertificates;
+import io.deephaven.ssl.config.TrustCustom;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.TrustList;
 import io.deephaven.ssl.config.TrustProperties;
@@ -87,6 +88,12 @@ public class KickstartUtils {
             @Override
             public Void visit(TrustSystem system) {
                 builder.withSystemTrustMaterial();
+                return null;
+            }
+
+            @Override
+            public Void visit(TrustCustom custom) {
+                builder.withTrustMaterial(custom.certificates());
                 return null;
             }
 

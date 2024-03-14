@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import org.apache.parquet.column.values.ValuesReader;
@@ -10,13 +10,8 @@ import org.apache.parquet.schema.PrimitiveType;
 import java.util.Arrays;
 
 interface PageMaterializer {
-    interface Factory {
-        PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues);
 
-        PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues);
-    }
-
-    Factory IntFactory = new Factory() {
+    PageMaterializerFactory IntFactory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new IntMaterializer(dataReader, (int) nullValue, numValues);
@@ -28,7 +23,7 @@ interface PageMaterializer {
         }
     };
 
-    Factory LongFactory = new Factory() {
+    PageMaterializerFactory LongFactory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LongMaterializer(dataReader, (long) nullValue, numValues);
@@ -40,7 +35,7 @@ interface PageMaterializer {
         }
     };
 
-    Factory FloatFactory = new Factory() {
+    PageMaterializerFactory FloatFactory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new FloatMaterializer(dataReader, (float) nullValue, numValues);
@@ -52,7 +47,7 @@ interface PageMaterializer {
         }
     };
 
-    Factory DoubleFactory = new Factory() {
+    PageMaterializerFactory DoubleFactory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new DoubleMaterializer(dataReader, (double) nullValue, numValues);
@@ -64,7 +59,7 @@ interface PageMaterializer {
         }
     };
 
-    Factory BoolFactory = new Factory() {
+    PageMaterializerFactory BoolFactory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new BoolMaterializer(dataReader, (byte) nullValue, numValues);
@@ -76,7 +71,7 @@ interface PageMaterializer {
         }
     };
 
-    Factory BlobFactory = new Factory() {
+    PageMaterializerFactory BlobFactory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new BlobMaterializer(dataReader, (Binary) nullValue, numValues);
@@ -88,7 +83,7 @@ interface PageMaterializer {
         }
     };
 
-    static Factory factoryForType(PrimitiveType.PrimitiveTypeName primitiveTypeName) {
+    static PageMaterializerFactory factoryForType(PrimitiveType.PrimitiveTypeName primitiveTypeName) {
         switch (primitiveTypeName) {
             case INT32:
                 return IntFactory;

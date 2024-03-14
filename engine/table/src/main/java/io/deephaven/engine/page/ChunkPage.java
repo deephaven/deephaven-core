@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.page;
 
 import io.deephaven.chunk.Chunk;
@@ -26,8 +26,8 @@ public interface ChunkPage<ATTR extends Any> extends Page.WithDefaults<ATTR>, Ch
 
     @Override
     @FinalDefault
-    default long maxRow(final long row) {
-        return lastRow(row);
+    default long maxRow(final long rowKey) {
+        return lastRow(rowKey);
     }
 
     /**

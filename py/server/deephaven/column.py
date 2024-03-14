@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 """ This module implements the Column class and functions that work with Columns. """
@@ -71,7 +71,7 @@ class InputColumn(Column):
                 else:
                     self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
         except Exception as e:
-            raise DHError(e, "failed to create an InputColumn.") from e
+            raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:

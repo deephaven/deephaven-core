@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -18,10 +18,10 @@ public class ReplicateSegmentedSortedArrayTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedArray.main(args);
 
-        charToAllButBoolean(
+        charToAllButBoolean("replicateSegmentedSortedArrayTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         final String objectSsaTest =
-                charToObject(
+                charToObject("replicateSegmentedSortedArrayTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         fixupObjectSsaTest(objectSsaTest);
     }

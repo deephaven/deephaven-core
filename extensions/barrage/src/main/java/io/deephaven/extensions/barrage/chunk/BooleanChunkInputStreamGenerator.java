@@ -1,9 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -23,6 +22,7 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -58,7 +58,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             super(chunk, options, subset);
         }
 
-        private int cachedNullCount = - 1;
+        private int cachedNullCount = -1;
 
         @Override
         public int nullCount() {
@@ -113,7 +113,8 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
                 try {
                     dos.writeLong(context.accumulator);
                 } catch (final IOException e) {
-                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ",
+                            e);
                 }
                 context.accumulator = 0;
                 context.count = 0;
@@ -156,13 +157,14 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
     @FunctionalInterface
     public interface ByteConversion {
         byte apply(byte in);
+
         ByteConversion IDENTITY = (byte a) -> a;
     }
 
     static WritableChunk<Values> extractChunkFromInputStream(
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
@@ -175,15 +177,15 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             final StreamReaderOptions options,
             final ByteConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.nextLong();
+        final long payloadBuffer = bufferInfoIter.nextLong();
 
         final WritableByteChunk<Values> chunk;
         if (outChunk != null) {
@@ -214,7 +216,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             }
             // consumed entire validity buffer by here
 
-            final int numPayloadBytesNeeded = (int)((nodeInfo.numElements + 7L) / 8L);
+            final int numPayloadBytesNeeded = (int) ((nodeInfo.numElements + 7L) / 8L);
             if (payloadBuffer < numPayloadBytesNeeded) {
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }

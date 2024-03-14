@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -21,6 +21,7 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
     private final ArrayConverter arrayConverter;
+
     public GenericRecordArrayFieldCopier(
             final String fieldPathStr,
             final Pattern separator,
@@ -30,7 +31,8 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
         arrayConverter = ArrayConverter.makeFor(componentType);
     }
 
-    private static <T> T[] convertObjectArray(final GenericArray<?> ga, final T[] emptyArray, final Class<T> componentType) {
+    private static <T> T[] convertObjectArray(final GenericArray<?> ga, final T[] emptyArray,
+            final Class<T> componentType) {
         final int gaSize = ga.size();
         if (gaSize == 0) {
             return emptyArray;
@@ -46,6 +48,7 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
 
     private interface ArrayConverter {
         Object convert(final GenericArray<?> genericArray);
+
         static ArrayConverter makeFor(Class<?> componentType) {
             if (componentType.equals(byte.class)) {
                 return (GenericArray<?> ga) -> {

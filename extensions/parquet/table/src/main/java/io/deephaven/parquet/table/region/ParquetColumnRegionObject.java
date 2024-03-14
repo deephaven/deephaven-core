@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.region;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -11,18 +11,17 @@ import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.engine.page.ChunkPage;
-import io.deephaven.engine.page.Page;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
 
 /**
- * {@link ColumnRegionObject} implementation for regions that support fetching objects from
- * {@link ColumnChunkPageStore column chunk page stores}.
+ * {@link ColumnRegionObject} implementation for regions that support fetching objects from {@link ColumnChunkPageStore
+ * column chunk page stores}.
  */
 public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
-        implements ColumnRegionObject<DATA_TYPE, ATTR>, ParquetColumnRegion<ATTR>, Page<ATTR> {
+        implements ColumnRegionObject<DATA_TYPE, ATTR>, ParquetColumnRegion<ATTR> {
 
     private volatile Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier;
     private volatile Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier;
@@ -31,8 +30,8 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
     private ColumnRegionObject<DATA_TYPE, ATTR> dictionaryValuesRegion;
 
     public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
-                                     @NotNull final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier,
-                                     @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier) {
+            @NotNull final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier,
+            @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier) {
         super(columnChunkPageStore.mask(), columnChunkPageStore);
         this.dictionaryKeysRegionSupplier = dictionaryKeysRegionSupplier;
         this.dictionaryValuesRegionSupplier = dictionaryValuesRegionSupplier;
@@ -43,7 +42,8 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
         try {
             return page.<DATA_TYPE>asObjectChunk().get(page.getChunkOffset(rowKey));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving object at Object row key " + rowKey + " from a parquet table", e);
+            throw new TableDataException(
+                    "Error retrieving object at Object row key " + rowKey + " from a parquet table", e);
         }
     }
 

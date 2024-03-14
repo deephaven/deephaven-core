@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.AxesImpl;
@@ -41,21 +41,24 @@ public class MultiXYErrorBarSeries extends AbstractPartitionedTableHandleMultiSe
      * @param byColumns column(s) in {@code t} that holds the grouping data
      */
     public MultiXYErrorBarSeries(final AxesImpl axes, final int id, final Comparable name,
-                                 final TableBackedPartitionedTableHandle partitionedTableHandle, final String x, final String xLow, final String xHigh,
-                                 final String y, final String yLow, final String yHigh, final String[] byColumns, final boolean drawXError,
-                                 final boolean drawYError) {
+            final TableBackedPartitionedTableHandle partitionedTableHandle, final String x, final String xLow,
+            final String xHigh,
+            final String y, final String yLow, final String yHigh, final String[] byColumns, final boolean drawXError,
+            final boolean drawYError) {
         super(axes, id, name, partitionedTableHandle, x, y, byColumns);
         ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), x, getPlotInfo());
         ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), y, getPlotInfo());
 
         if (drawXError) {
             ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xLow, getPlotInfo());
-            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xHigh, getPlotInfo());
+            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xHigh,
+                    getPlotInfo());
         }
 
         if (drawYError) {
             ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yLow, getPlotInfo());
-            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yHigh, getPlotInfo());
+            ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yHigh,
+                    getPlotInfo());
         }
 
         this.x = x;
@@ -134,6 +137,7 @@ public class MultiXYErrorBarSeries extends AbstractPartitionedTableHandleMultiSe
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
+// @formatter:off
 
     @Override public void initializeSeries(XYErrorBarDataSeriesInternal series) {
         $$initializeSeries$$(series);

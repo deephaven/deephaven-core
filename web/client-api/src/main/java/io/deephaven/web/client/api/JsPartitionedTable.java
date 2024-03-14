@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
@@ -22,17 +25,14 @@ import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
-import io.deephaven.web.shared.fu.JsConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents a set of Tables each corresponding to some key. The keys are available locally, but a call must be made to
@@ -59,14 +59,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private JsTable keys;
     private TableSubscription subscription;
 
-    /*
-     * Represents the sorta-kinda memoized results, tables that we've already locally fetched from the partitioned
-     * table, and if all references to a table are released, entries here will be replaced with unresolved instances so
-     * we don't leak server references or memory. Keys are Object[], even with one element, so that we can easily hash
-     * without an extra wrapper object. Since columns are consistent with a PartitionedTable, we will not worry about
-     * "foo" vs ["foo"] as being different entries.
-     */
-    private final Map<List<Object>, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
+    private final Set<List<Object>> knownKeys = new HashSet<>();
 
     private Column[] keyColumns;
 
@@ -95,19 +88,21 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
             ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
             Column[] columns = new Column[0];
-            Column[] keyColumns = new Column[0];
             for (int i = 0; i < columnDefinitions.length; i++) {
                 ColumnDefinition columnDefinition = columnDefinitions[i];
                 Column column = columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
                 columns[columns.length] = column;
-                if (descriptor.getKeyColumnNamesList().indexOf(columnDefinition.getName()) != -1) {
-                    keyColumnTypes.add(columnDefinition.getType());
-                    keyColumns[keyColumns.length] = column;
-                }
+            }
+            Column[] keyColumns = new Column[0];
+            JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
+            for (int i = 0; i < keyColumnNames.length; i++) {
+                String name = keyColumnNames.getAt(i);
+                ColumnDefinition columnDefinition = tableDefinition.getColumnsByName().get(false).get(name);
+                keyColumnTypes.add(columnDefinition.getType());
+                keyColumns[keyColumns.length] = columns[columnDefinition.getColumnIndex()];
             }
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
-
             return w.getExportedObjects()[0].fetch();
         }).then(result -> {
             keys = (JsTable) result;
@@ -158,70 +153,57 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
             JsArray<Object> key = eventData.getColumns().map((c, p1, p2) -> eventData.getData(index, c));
-            populateLazyTable(key.asList());
-            CustomEventInit init = CustomEventInit.create();
+            knownKeys.add(key.asList());
+            CustomEventInit<JsArray<Object>> init = CustomEventInit.create();
             init.setDetail(key);
             fireEvent(EVENT_KEYADDED, init);
         });
     }
 
-    private void populateLazyTable(List<Object> key) {
-        tables.put(key, JsLazy.of(() -> {
-            // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
-            final ClientTableState entry = connection.newState((c, cts, metadata) -> {
-                // TODO deephaven-core#2529 parallelize this
-                connection.newTable(
-                        descriptor.getKeyColumnNamesList().asArray(new String[0]),
-                        keyColumnTypes.toArray(new String[0]),
-                        key.stream().map(item -> new Object[] {item}).toArray(Object[][]::new),
-                        null,
-                        this)
-                        .then(table -> {
-                            GetTableRequest getTableRequest = new GetTableRequest();
-                            getTableRequest.setPartitionedTable(widget.getTicket());
-                            getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
-                            getTableRequest.setResultId(cts.getHandle().makeTicket());
-                            connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
-                                    (error, success) -> {
-                                        table.close();
-                                        c.apply(error, success);
-                                    });
-                            return null;
-                        });
-            },
-                    "partitioned table key " + key);
-
-            // later, when the CTS is released, remove this "table" from the map and replace with an unresolved JsLazy
-            entry.onRunning(
-                    JsConsumer.doNothing(),
-                    JsConsumer.doNothing(),
-                    () -> populateLazyTable(key));
-
-            // we'll make a table to return later, this func here just produces the JsLazy of the CTS
-            return entry.refetch(this, connection.metadata());
-        }));
-    }
-
     /**
-     * Fetch the table with the given key.
+     * Fetch the table with the given key. If the key does not exist, returns `null`.
      *
      * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
-     * @return Promise of dh.Table
+     * @return Promise of dh.Table, or `null` if the key does not exist.
      */
-    public Promise<JsTable> getTable(Object key) {
+    public Promise<@JsNullable JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
         if (!JsArray.isArray(key)) {
             key = JsArray.of(key);
         }
-        List<Object> keyList = Js.<JsArray<Object>>uncheckedCast(key).asList();
-        // Every caller gets a fresh table instance, and when all are closed, the CTS will be released.
-        // See #populateLazyTable for how that is tracked.
-        final JsLazy<Promise<ClientTableState>> entry = tables.get(keyList);
-        if (entry == null) {
+        final List<Object> keyList = Js.<JsArray<Object>>uncheckedCast(key).asList();
+        if (!knownKeys.contains(keyList)) {
             // key doesn't even exist, just hand back a null table
             return Promise.resolve((JsTable) null);
         }
-        return entry.get().then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
+        final String[] columnNames = descriptor.getKeyColumnNamesList().asArray(new String[0]);
+        final String[] columnTypes = keyColumnTypes.toArray(new String[0]);
+        final Object[][] keysData = keyList.stream().map(item -> new Object[] {item}).toArray(Object[][]::new);
+        final ClientTableState entry = connection.newState((c, cts, metadata) -> {
+            // TODO deephaven-core#2529 parallelize this
+            connection.newTable(
+                    columnNames,
+                    columnTypes,
+                    keysData,
+                    null,
+                    this)
+                    .then(table -> {
+                        GetTableRequest getTableRequest = new GetTableRequest();
+                        getTableRequest.setPartitionedTable(widget.getTicket());
+                        getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
+                        getTableRequest.setResultId(cts.getHandle().makeTicket());
+                        connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
+                                (error, success) -> {
+                                    table.close();
+                                    c.apply(error, success);
+                                });
+                        return null;
+                    });
+        },
+                "partitioned table key " + key);
+
+        return entry.refetch(this, connection.metadata())
+                .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
 
     /**
@@ -249,9 +231,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      */
     public JsSet<Object> getKeys() {
         if (subscription.getColumns().length == 1) {
-            return new JsSet<>(tables.keySet().stream().map(list -> list.get(0)).toArray());
+            return new JsSet<>(knownKeys.stream().map(list -> list.get(0)).toArray());
         }
-        return new JsSet<>(tables.keySet().stream().map(List::toArray).toArray());
+        return new JsSet<>(knownKeys.stream().map(List::toArray).toArray());
     }
 
     /**
@@ -261,7 +243,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      */
     @JsProperty(name = "size")
     public int size() {
-        return tables.size();
+        return knownKeys.size();
     }
 
     /**

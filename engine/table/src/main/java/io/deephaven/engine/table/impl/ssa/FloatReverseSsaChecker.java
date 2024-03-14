@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsaChecker and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatSsaChecker and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+//
+// @formatter:off
+
+
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.util.compare.FloatComparisons;
@@ -28,16 +29,18 @@ public class FloatReverseSsaChecker implements SsaChecker {
     private FloatReverseSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
-        checkSsa((FloatReverseSegmentedSortedArray)ssa, valueChunk.asFloatChunk(), tableIndexChunk);
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk) {
+        checkSsa((FloatReverseSegmentedSortedArray) ssa, valueChunk.asFloatChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(FloatReverseSegmentedSortedArray ssa, FloatChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(FloatReverseSegmentedSortedArray ssa, FloatChunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
-        //noinspection unchecked
+        // noinspection unchecked
         try (final WritableFloatChunk<Values> resultChunk = (WritableFloatChunk) ssa.asFloatChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
+                final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

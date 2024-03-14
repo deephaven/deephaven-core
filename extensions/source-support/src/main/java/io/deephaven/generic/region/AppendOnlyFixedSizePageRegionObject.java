@@ -1,12 +1,13 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit AppendOnlyFixedSizePageRegionChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit AppendOnlyFixedSizePageRegionChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.generic.region;
 
 import io.deephaven.base.MathUtil;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.PageStore;
@@ -15,6 +16,7 @@ import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject;
 import io.deephaven.engine.table.impl.sources.regioned.GenericColumnRegionBase;
 import io.deephaven.generic.page.ChunkHolderPageObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
@@ -58,7 +60,9 @@ public class AppendOnlyFixedSizePageRegionObject<T, ATTR extends Any>
 
     @Override
     @NotNull
-    public final ChunkHolderPageObject<T, ATTR> getPageContaining(final FillContext fillContext, final long rowKey) {
+    public final ChunkHolderPageObject<T, ATTR> getPageContaining(
+            @Nullable final FillContext fillContext,
+            final long rowKey) {
         return getPageContaining(rowKey);
     }
 

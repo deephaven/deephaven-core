@@ -24,7 +24,8 @@ dependencies {
     implementation project(':grpc-java:grpc-mtls')
 
     testImplementation project(':server-test')
-    testImplementation TestTools.projectDependency(project, ':server')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

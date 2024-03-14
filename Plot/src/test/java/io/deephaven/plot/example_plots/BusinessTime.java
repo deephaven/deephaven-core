@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.example_plots;
 
 import io.deephaven.time.DateTimeUtils;
@@ -32,7 +32,7 @@ public class BusinessTime {
         Figure fig = FigureFactory.figure(2, 1);
         Figure cht = fig.newChart(0)
                 .chartTitle("Business");
-        Figure axs = cht.newAxes().xTransform(new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE")))
+        Figure axs = cht.newAxes().xTransform(new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE")))
                 .xTicksVisible(false)
                 .xLabel("X")
                 .yLabel("Y")

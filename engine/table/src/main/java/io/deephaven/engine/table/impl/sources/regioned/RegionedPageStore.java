@@ -1,17 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.page.PageStore;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
         extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
@@ -86,13 +86,8 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     @Override
     @NotNull
     @FinalDefault
-    default REGION_TYPE getPageContaining(final FillContext fillContext, final long row) {
-        return lookupRegion(row);
-    }
-
-    @Override
-    default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new RegionContextHolder(chunkCapacity, sharedContext);
+    default REGION_TYPE getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        return lookupRegion(rowKey);
     }
 
     /**

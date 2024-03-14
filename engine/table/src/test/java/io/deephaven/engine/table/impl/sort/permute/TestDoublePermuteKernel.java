@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharPermuteKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharPermuteKernel and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.permute;
 
 import io.deephaven.chunk.WritableDoubleChunk;
@@ -34,7 +33,7 @@ public class TestDoublePermuteKernel {
 
         DoublePermuteKernel.permute(inputValues, destinations, outputValues);
 
-        double value = (double)(startingValue() + 9);
+        double value = (double) (startingValue() + 9);
         for (int ii = 0; ii < 10; ++ii) {
             TestCase.assertEquals(value, outputValues.get(ii));
             value--;
@@ -100,8 +99,7 @@ public class TestDoublePermuteKernel {
         for (int ii = 0; ii < outputValues.size(); ++ii) {
             if (ii % 2 == 1) {
                 TestCase.assertEquals(uninitializedValue(), outputValues.get(ii));
-            }
-            else if (ii / 2 < half) {
+            } else if (ii / 2 < half) {
                 TestCase.assertEquals(startingValue() + ii, outputValues.get(ii));
             } else {
                 TestCase.assertEquals(startingValue() + (ii / 2 - half) * 2 + 1, outputValues.get(ii));
@@ -117,7 +115,8 @@ public class TestDoublePermuteKernel {
 
     // region defaultValue
     @SuppressWarnings("MismatchedReadAndWriteOfArray")
-    private static final double [] uninitializedValue = new double[1];
+    private static final double[] uninitializedValue = new double[1];
+
     private double uninitializedValue() {
         return uninitializedValue[0];
     }

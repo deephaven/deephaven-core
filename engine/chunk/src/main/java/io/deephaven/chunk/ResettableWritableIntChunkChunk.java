@@ -1,16 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableWritableCharChunkChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableWritableCharChunkChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
+
 import io.deephaven.chunk.attributes.Any;
 
 
-public class ResettableWritableIntChunkChunk<ATTR extends Any> extends WritableIntChunkChunk<ATTR> implements ResettableWritableChunkChunk<ATTR> {
+public class ResettableWritableIntChunkChunk<ATTR extends Any> extends WritableIntChunkChunk<ATTR>
+        implements ResettableWritableChunkChunk<ATTR> {
 
     public static <ATTR extends Any> ResettableWritableIntChunkChunk<ATTR> makeResettableChunk() {
         return new ResettableWritableIntChunkChunk<>();
@@ -37,8 +38,8 @@ public class ResettableWritableIntChunkChunk<ATTR extends Any> extends WritableI
 
     @Override
     public final void resetFromArray(Object array, int offset, int capacity) {
-        //noinspection unchecked
-        final WritableIntChunk<ATTR>[] typedArray = (WritableIntChunk<ATTR>[])array;
+        // noinspection unchecked
+        final WritableIntChunk<ATTR>[] typedArray = (WritableIntChunk<ATTR>[]) array;
         resetFromTypedArray(typedArray, offset, capacity);
     }
 

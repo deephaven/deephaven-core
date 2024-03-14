@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import unittest
 from types import SimpleNamespace
@@ -50,12 +50,12 @@ class TableTestCase(BaseTestCase):
             sum_(["aggSum=var"]),
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
+            weighted_avg("var", ["weights"]),
         ]
         self.aggs_not_for_rollup = [group(["aggGroup=var"]),
                                     partition("aggPartition"),
                                     median(["aggMed=var"]),
                                     pct(0.20, ["aggPct=var"]),
-                                    weighted_avg("var", ["weights"]),
                                     ]
         self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
         self.test_update_graph = get_exec_ctx().update_graph

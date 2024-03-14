@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorColumnWrapper and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorColumnWrapper and run "./gradlew replicateVectorColumnWrappers" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.base.ClampUtil;
@@ -157,7 +156,8 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
-                return new ChunkedByteColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+                return new ChunkedByteColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
+                        rowSet.firstRowKey(), rowSetSize);
             } else {
                 return new SerialByteColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
             }
@@ -192,10 +192,11 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
                 ? repeat(NULL_BYTE, includedInitialNulls)
                 : null;
         final CloseablePrimitiveIteratorOfByte rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
-                ? new ChunkedByteColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                ? new ChunkedByteColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+                        includedRows)
                 : includedRows > 0
-                ? new SerialByteColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
-                : null;
+                        ? new SerialByteColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
+                        : null;
         final CloseablePrimitiveIteratorOfByte finalNullsIterator = remaining > 0
                 ? repeat(NULL_BYTE, remaining)
                 : null;

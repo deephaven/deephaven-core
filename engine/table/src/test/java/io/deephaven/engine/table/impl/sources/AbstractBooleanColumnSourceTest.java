@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit AbstractCharacterColumnSourceTest and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit AbstractCharacterColumnSourceTest and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -63,7 +62,7 @@ public abstract class AbstractBooleanColumnSourceTest {
         final WritableColumnSource<Boolean> source = makeTestSource();
 
         try (final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
-             final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize)) {
+                final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize)) {
 
             source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
             for (int ii = 0; ii < 1024; ++ii) {
@@ -86,10 +85,12 @@ public abstract class AbstractBooleanColumnSourceTest {
             }
 
             // before we have the previous tracking enabled, prev should just fall through to get
-            for (boolean usePrev : new boolean[]{false, true}) {
+            for (boolean usePrev : new boolean[] {false, true}) {
                 checkRangeFill(chunkSize, source, fillContext, dest, expectations, 0, expectations.length - 1, usePrev);
-                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, expectations.length - 100, usePrev);
-                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 200, expectations.length - 1124, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, expectations.length - 100,
+                        usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 200, expectations.length - 1124,
+                        usePrev);
                 checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, 700, usePrev);
                 checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, 1024, usePrev);
                 checkRangeFill(chunkSize, source, fillContext, dest, expectations, 250, 250, usePrev);
@@ -122,17 +123,18 @@ public abstract class AbstractBooleanColumnSourceTest {
         assertEquals(emptyResult.size(), 0);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final ObjectChunk<Boolean, ? extends Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asObjectChunk();
+        final ObjectChunk<Boolean, ? extends Values> result =
+                source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asObjectChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_BOOLEAN, result.get(ii));
         }
 
         final int expectedBlockSize = 1024;
-        final byte [] expectations = new byte[getSourceSize()];
+        final byte[] expectations = new byte[getSourceSize()];
         // region arrayFill
         Arrays.fill(expectations, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
         // endregion arrayFill
-        final byte [] randomBooleans = ArrayGenerator.randomBooleans(random, expectations.length / 2);
+        final byte[] randomBooleans = ArrayGenerator.randomBooleans(random, expectations.length / 2);
         for (int ii = 0; ii < expectations.length; ++ii) {
             final int block = ii / expectedBlockSize;
             if (block % 2 == 0) {
@@ -143,7 +145,7 @@ public abstract class AbstractBooleanColumnSourceTest {
         }
 
         // before we have the previous tracking enabled, prev should just fall through to get
-        for (boolean usePrev : new boolean[]{false, true}) {
+        for (boolean usePrev : new boolean[] {false, true}) {
             checkRangeGet(chunkSize, source, getContext, expectations, 0, expectations.length - 1, usePrev);
             checkRangeGet(chunkSize, source, getContext, expectations, 100, expectations.length - 100, usePrev);
             checkRangeGet(chunkSize, source, getContext, expectations, 200, expectations.length - 1124, usePrev);
@@ -168,7 +170,7 @@ public abstract class AbstractBooleanColumnSourceTest {
             int lastKey;
             if (random.nextBoolean()) {
                 final int length = Math.min(random.nextInt(runLength) + 1, maxsize - nextKey);
-                lastKey =  nextKey + length - 1;
+                lastKey = nextKey + length - 1;
                 builder.appendRange(nextKey, lastKey);
             } else {
                 builder.appendKey(lastKey = nextKey);
@@ -191,9 +193,10 @@ public abstract class AbstractBooleanColumnSourceTest {
         return result;
     }
 
-    private void checkRandomFill(int chunkSize, WritableColumnSource<Boolean> source, ColumnSource.FillContext fillContext,
-                                 WritableObjectChunk<Boolean, Values> dest, byte[] expectations, RowSet rowSet, boolean usePrev) {
-        for (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator(); rsIt.hasMore(); ) {
+    private void checkRandomFill(int chunkSize, WritableColumnSource<Boolean> source,
+            ColumnSource.FillContext fillContext,
+            WritableObjectChunk<Boolean, Values> dest, byte[] expectations, RowSet rowSet, boolean usePrev) {
+        for (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator(); rsIt.hasMore();) {
             final RowSequence nextOk = rsIt.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
@@ -205,15 +208,16 @@ public abstract class AbstractBooleanColumnSourceTest {
             int ii = 0;
             for (final RowSet.Iterator indexIt = nextOk.asRowSet().iterator(); indexIt.hasNext(); ii++) {
                 final long next = indexIt.nextLong();
-                checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int)next], dest.get(ii));
+                checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int) next],
+                        dest.get(ii));
             }
         }
     }
 
     private void checkRandomFillUnordered(WritableColumnSource<Boolean> source, ColumnSource.FillContext fillContext,
-                                          WritableObjectChunk<Boolean, Values> dest, byte[] expectations, LongChunk<RowKeys> keys, boolean usePrev) {
-        //noinspection unchecked
-        final FillUnordered<Values> fillUnordered = (FillUnordered<Values>)source;
+            WritableObjectChunk<Boolean, Values> dest, byte[] expectations, LongChunk<RowKeys> keys, boolean usePrev) {
+        // noinspection unchecked
+        final FillUnordered<Values> fillUnordered = (FillUnordered<Values>) source;
         if (usePrev) {
             fillUnordered.fillChunkUnordered(fillContext, dest, keys);
         } else {
@@ -227,17 +231,19 @@ public abstract class AbstractBooleanColumnSourceTest {
                 checkFromValues("null vs. dest[" + ii + "]", BooleanUtils.NULL_BOOLEAN_AS_BYTE, dest.get(ii));
                 // endregion null unordered check
             } else {
-                checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int) next], dest.get(ii));
+                checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int) next],
+                        dest.get(ii));
             }
         }
     }
 
-    private void checkRangeFill(int chunkSize, WritableColumnSource<Boolean> source, ColumnSource.FillContext fillContext,
-                                WritableObjectChunk<Boolean, Values> dest, byte[] expectations, int firstKey, int lastKey, boolean usePrev) {
+    private void checkRangeFill(int chunkSize, WritableColumnSource<Boolean> source,
+            ColumnSource.FillContext fillContext,
+            WritableObjectChunk<Boolean, Values> dest, byte[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
-        for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
+        for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore();) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             if (usePrev) {
@@ -250,11 +256,12 @@ public abstract class AbstractBooleanColumnSourceTest {
         }
     }
 
-    private void checkRangeGet(int chunkSize, ColumnSource<Boolean> source, ColumnSource.GetContext getContext, byte[] expectations, int firstKey, int lastKey, boolean usePrev) {
+    private void checkRangeGet(int chunkSize, ColumnSource<Boolean> source, ColumnSource.GetContext getContext,
+            byte[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
-        for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
+        for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore();) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
             final ObjectChunk<Boolean, ? extends Values> result;
@@ -270,9 +277,11 @@ public abstract class AbstractBooleanColumnSourceTest {
         }
     }
 
-    private void checkRangeResults(byte[] expectations, int offset, RowSequence nextOk, ObjectChunk<Boolean, ? extends Values> result) {
+    private void checkRangeResults(byte[] expectations, int offset, RowSequence nextOk,
+            ObjectChunk<Boolean, ? extends Values> result) {
         for (int ii = 0; ii < nextOk.size(); ++ii) {
-            checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]", expectations[ii + offset], result.get(ii));
+            checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]",
+                    expectations[ii + offset], result.get(ii));
         }
     }
 
@@ -307,7 +316,7 @@ public abstract class AbstractBooleanColumnSourceTest {
         src.startTrackingPrevValues();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
-             final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
+                final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
@@ -325,7 +334,7 @@ public abstract class AbstractBooleanColumnSourceTest {
         final WritableColumnSource<Boolean> source = makeTestSource();
 
         try (final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
-             final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize)) {
+                final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize)) {
 
             source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
             for (int ii = 0; ii < 1024; ++ii) {
@@ -348,11 +357,12 @@ public abstract class AbstractBooleanColumnSourceTest {
             }
 
             // before we have the previous tracking enabled, prev should just fall through to get
-            for (boolean usePrev : new boolean[]{false, true}) {
+            for (boolean usePrev : new boolean[] {false, true}) {
                 // lets make a few random indices
                 for (int seed = 0; seed < 100; ++seed) {
                     int count = random.nextInt(chunkSize);
-                    try (final WritableLongChunk<RowKeys> rowKeys = generateRandomKeys(random, count, expectations.length)) {
+                    try (final WritableLongChunk<RowKeys> rowKeys =
+                            generateRandomKeys(random, count, expectations.length)) {
                         checkRandomFillUnordered(source, fillContext, dest, expectations, rowKeys, usePrev);
                     }
                 }

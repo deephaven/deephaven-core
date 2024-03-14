@@ -11,7 +11,7 @@ dependencies {
 }
 
 application {
-	mainClassName = 'io.deephaven.internal.example.LogExampleMain'
+	mainClass.set 'io.deephaven.internal.example.LogExampleMain'
 	applicationDefaultJvmArgs = [
 		'-Dio.deephaven.internal.log.LoggerFactoryStream.stream=OUT',
 		'-Dio.deephaven.internal.log.LoggerFactoryStream.level=DEBUG'

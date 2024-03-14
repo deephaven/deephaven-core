@@ -33,7 +33,7 @@ sourceSets {
 
 // TODO (core#116): Gradle test fixtures
 task jarTests(type: Jar, dependsOn: testClasses) {
-    classifier = 'tests'
+    archiveClassifier = 'tests'
     from sourceSets.test.output
 }
 configurations {
@@ -43,12 +43,4 @@ configurations {
 }
 artifacts {
     tests jarTests
-}
-
-spotless {
-    java {
-        targetExclude(
-                '**/ringbuffer/Aggregating*RingBuffer*.java'
-        )
-    }
 }

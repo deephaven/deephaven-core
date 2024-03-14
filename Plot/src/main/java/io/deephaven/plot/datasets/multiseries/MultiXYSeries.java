@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.plot.AxesImpl;
@@ -34,8 +34,8 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
      * @param byColumns column(s) in {@code t} that holds the grouping data
      */
     public MultiXYSeries(final AxesImpl axes, final int id, final Comparable name,
-                         final TableBackedPartitionedTableHandle partitionedTableHandle, final String xCol, final String yCol,
-                         final String[] byColumns) {
+            final TableBackedPartitionedTableHandle partitionedTableHandle, final String xCol, final String yCol,
+            final String[] byColumns) {
         super(axes, id, name, partitionedTableHandle, xCol, yCol, byColumns);
         ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), xCol, getPlotInfo());
         ArgumentValidations.assertIsNumericOrTime(partitionedTableHandle.getTableDefinition(), yCol, getPlotInfo());
@@ -79,6 +79,7 @@ public class MultiXYSeries extends AbstractPartitionedTableHandleMultiSeries<XYD
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
+// @formatter:off
 
     @Override public void initializeSeries(XYDataSeriesInternal series) {
         $$initializeSeries$$(series);

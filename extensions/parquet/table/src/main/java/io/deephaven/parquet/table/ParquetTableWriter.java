@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table;
 
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -22,11 +22,11 @@ import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.transfer.ArrayAndVectorTransfer;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.parquet.table.transfer.TransferObject;
-import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
@@ -42,6 +42,8 @@ import java.nio.IntBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * API for writing DH tables in parquet format
@@ -61,28 +63,28 @@ public class ParquetTableWriter {
     /**
      * Helper struct used to pass information about where to write the index files
      */
-    public static class IndexWritingInfo {
+    static class IndexWritingInfo {
         /**
          * Names of the indexing key columns
          */
-        public final String[] indexColumnNames;
+        final String[] indexColumnNames;
         /**
          * Parquet names of the indexing key columns
          */
-        public final String[] parquetColumnNames;
+        final String[] parquetColumnNames;
         /**
          * File path to be added in the index metadata of main parquet file
          */
-        public final File metadataFilePath;
+        final File metadataFilePath;
 
         /**
          * Destination path for writing the index file. The two filenames can differ because we write index files to
          * shadow file paths first and then place them at the final path once the write is complete. The metadata should
          * always hold the accurate path.
          */
-        public final File destFile;
+        final File destFile;
 
-        public IndexWritingInfo(
+        IndexWritingInfo(
                 final String[] indexColumnNames,
                 final String[] parquetColumnNames,
                 final File metadataFilePath,
@@ -108,7 +110,7 @@ public class ParquetTableWriter {
      *         unsupported types)
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
@@ -341,7 +343,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(),
+        return new ParquetFileWriter(path,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(path, false), null),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData);

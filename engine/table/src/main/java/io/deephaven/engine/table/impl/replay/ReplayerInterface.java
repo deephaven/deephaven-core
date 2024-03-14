@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.base.clock.Clock;
@@ -27,10 +27,8 @@ public interface ReplayerInterface {
 
     /**
      * Shuts down the replayer.
-     *
-     * @throws IOException problem shutting down the replayer.
      */
-    void shutdown() throws IOException;
+    void shutdown();
 
     /**
      * Wait a specified interval for the replayer to complete. If the replayer has not completed by the end of the

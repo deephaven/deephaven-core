@@ -1,10 +1,13 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -17,7 +20,10 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -53,7 +59,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param source the source table
      * @param preservedColumns columns from the source table that are unchanged in the result table
      * @param resultSources the result sources
-     * @param byColumns the columns to use for the bucket keys
+     * @param byColumnNames the columns to use for the bucket keys
      * @param timestampColumnName the column to use for all time-aware operators
      * @param rowRedirection the row redirection for dense output sources
      * @param control the control object.
@@ -64,7 +70,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final QueryTable source,
             @NotNull final String[] preservedColumns,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @NotNull final Collection<? extends ColumnName> byColumns,
+            @NotNull final String[] byColumnNames,
             @Nullable final String timestampColumnName,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -72,8 +78,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
-
-        final String[] byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
 
         final Table transformedTable = LivenessScopeStack.computeEnclosed(() -> {
             final PartitionedTable partitioned = source.partitionedAggBy(List.of(), true, null, byColumnNames);
@@ -102,12 +106,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         }, source::isRefreshing, DynamicNode::isRefreshing);
 
         if (source.isRefreshing()) {
-            // this is a refreshing source, we will need a listener
-            sourceListener = newUpdateByListener();
-            source.addUpdateListener(sourceListener);
-            // result will depend on listener
-            result.addParentReference(sourceListener);
-
             // create input and output modified column sets
             forAllOperators(op -> {
                 op.createInputModifiedColumnSet(source);
@@ -121,6 +119,12 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             transformFailureListener = new TransformFailureListener(transformedTable);
             transformedTable.addUpdateListener(transformFailureListener);
             result.addParentReference(transformFailureListener);
+
+            // this is a refreshing source, we will need a listener
+            sourceListener = newUpdateByListener();
+            source.addUpdateListener(sourceListener);
+            // result will depend on listener
+            result.addParentReference(sourceListener);
         } else {
             sourceListener = null;
             mcsTransformer = null;
@@ -144,12 +148,9 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while initializing bucketed updateBy");
         } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            } else {
-                // rethrow the error
-                throw new UncheckedDeephavenException("Failure while initializing bucketed updateBy", e.getCause());
-            }
+            throw new TableInitializationException(result.getDescription(),
+                    "an exception occurred while initializing bucketed updateBy",
+                    e.getCause());
         }
     }
 

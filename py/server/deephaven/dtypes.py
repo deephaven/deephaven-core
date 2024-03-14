@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 """ This module defines the data types supported by the Deephaven engine.
@@ -122,6 +122,8 @@ Period = DType(j_name="java.time.Period")
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
 TimeZone = DType(j_name="java.time.ZoneId")
 """Time zone type."""
+BusinessCalendar = DType(j_name='io.deephaven.time.calendar.BusinessCalendar')
+"""Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
@@ -410,6 +412,9 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     component_type = None
     if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
         component_type = t.__args__[0]
+        # if the component type is a DType, get its numpy type
+        if isinstance(component_type, DType):
+            component_type = component_type.np_type
 
     if not component_type:
         component_type = _np_ndarray_component_type(t)

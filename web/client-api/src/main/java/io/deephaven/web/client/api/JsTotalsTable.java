@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
@@ -161,6 +161,27 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     @JsMethod
     public Column[] findColumns(String[] keys) {
         return wrappedTable.findColumns(keys);
+    }
+
+    /**
+     * True if this table may receive updates from the server, including size changed events, updated events after
+     * initial snapshot.
+     *
+     * @return boolean
+     */
+    @JsProperty(name = "isRefreshing")
+    public boolean isRefreshing() {
+        return wrappedTable.isRefreshing();
+    }
+
+    /**
+     * True if this table has been closed.
+     *
+     * @return boolean
+     */
+    @JsProperty(name = "isClosed")
+    public boolean isClosed() {
+        return wrappedTable.isClosed();
     }
 
     /**

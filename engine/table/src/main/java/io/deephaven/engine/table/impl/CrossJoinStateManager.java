@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -11,8 +11,11 @@ public interface CrossJoinStateManager {
     TrackingRowSet getRightRowSetFromPrevLeftRow(long leftIndex);
 
     long getShifted(long rowKey);
+
     long getPrevShifted(long rowKey);
+
     long getMasked(long rowKey);
+
     long getPrevMasked(long rowKey);
 
     /**

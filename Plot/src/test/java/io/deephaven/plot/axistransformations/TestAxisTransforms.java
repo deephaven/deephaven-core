@@ -1,10 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.axistransformations;
 
 import io.deephaven.time.calendar.BusinessCalendar;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.Calendars;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -27,6 +29,11 @@ public class TestAxisTransforms {
     final double d8 = -d3;
     final double d9 = -d4;
     private final double delta = 0.00001;
+
+    @Before
+    public void setUp() {
+        CalendarInit.init();
+    }
 
     @Test
     public void testLog() {
@@ -73,7 +80,7 @@ public class TestAxisTransforms {
         assertTrue(names.length > 2);
         assertTrue(nameSet.contains("LOG"));
         assertTrue(nameSet.contains("SQRT"));
-        assertTrue(nameSet.contains("USNYSE"));
+        assertTrue(nameSet.contains("USNYSE_EXAMPLE"));
     }
 
     @Test
@@ -83,9 +90,9 @@ public class TestAxisTransforms {
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("sqrt"));
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("SQRT"));
 
-        final BusinessCalendar cal = Calendars.calendar("USNYSE");
+        final BusinessCalendar cal = Calendars.calendar("USNYSE_EXAMPLE");
         final AxisTransformBusinessCalendar at1 =
-                (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE");
+                (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE_EXAMPLE");
         assertEquals(cal, at1.getBusinessCalendar());
     }
 }

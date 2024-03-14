@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import io.deephaven.api.Pair;
 import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
@@ -299,13 +300,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.allOf(CopyAttributeOperation.class));
 
+        // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
-
+        // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(APPEND_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
@@ -339,6 +341,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.PartitionBy));
 
+        // Note: The logic applying this attribute for select/update/view/updateView is in SelectAndViewAnalyzerWrapper.
         tempMap.put(BLINK_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Filter,
@@ -347,8 +350,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Preview,
-                CopyAttributeOperation.View, // and Select, if added
-                CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Join,
@@ -1034,7 +1035,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         destination.setSortableColumns(currentSortableColumns.stream().filter(shouldCopy).collect(Collectors.toList()));
     }
 
-    void copySortableColumns(BaseTable<?> destination, MatchPair[] renamedColumns) {
+    void copySortableColumns(BaseTable<?> destination, Collection<Pair> renamedColumns) {
         final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
@@ -1047,9 +1048,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // b) The original column exists, and has not been replaced by another. For example
         // T1 = [ Col1, Col2, Col3 ]; T1.renameColumns(Col1=Col3, Col2];
         if (renamedColumns != null) {
-            for (MatchPair mp : renamedColumns) {
+            for (final Pair pair : renamedColumns) {
                 // Only the last grouping matters.
-                columnMapping.forcePut(mp.leftColumn(), mp.rightColumn());
+                columnMapping.forcePut(pair.output().name(), pair.input().name());
             }
         }
 
@@ -1158,7 +1159,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * @param destination the table which shall possibly have a column-description attribute created
      * @param renamedColumns an array of the columns which have been renamed
      */
-    void maybeCopyColumnDescriptions(final BaseTable<?> destination, final MatchPair[] renamedColumns) {
+    void maybeCopyColumnDescriptions(
+            final BaseTable<?> destination,
+            final Collection<Pair> renamedColumns) {
         // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1168,11 +1171,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
         final Map<String, String> sourceDescriptions = new HashMap<>(oldDescriptions);
 
-        if (renamedColumns != null && renamedColumns.length != 0) {
-            for (final MatchPair mp : renamedColumns) {
-                final String desc = sourceDescriptions.remove(mp.rightColumn());
+        if (renamedColumns != null) {
+            for (final Pair pair : renamedColumns) {
+                final String desc = sourceDescriptions.remove(pair.input().name());
                 if (desc != null) {
-                    sourceDescriptions.put(mp.leftColumn(), desc);
+                    sourceDescriptions.put(pair.output().name(), desc);
+                } else {
+                    sourceDescriptions.remove(pair.output().name());
                 }
             }
         }

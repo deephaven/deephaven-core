@@ -1,10 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
+
 import io.deephaven.chunk.attributes.Any;
 
-public class ResettableCharChunkChunk<ATTR extends Any> extends CharChunkChunk<ATTR> implements ResettableChunkChunk<ATTR> {
+public class ResettableCharChunkChunk<ATTR extends Any> extends CharChunkChunk<ATTR>
+        implements ResettableChunkChunk<ATTR> {
 
     public static <ATTR extends Any> ResettableCharChunkChunk<ATTR> makeResettableChunk() {
         return new ResettableCharChunkChunk<>();
@@ -31,8 +33,8 @@ public class ResettableCharChunkChunk<ATTR extends Any> extends CharChunkChunk<A
 
     @Override
     public final void resetFromArray(Object array, int offset, int capacity) {
-        //noinspection unchecked
-        final CharChunk<ATTR>[] typedArray = (CharChunk<ATTR>[])array;
+        // noinspection unchecked
+        final CharChunk<ATTR>[] typedArray = (CharChunk<ATTR>[]) array;
         resetFromTypedArray(typedArray, offset, capacity);
     }
 

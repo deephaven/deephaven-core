@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.locations.local;
 
 import io.deephaven.base.log.LogOutput;
@@ -68,7 +68,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     /**
      * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
      * {@code partitions}, then compares {@code file}.
-     * 
+     *
      * @inheritDoc
      */
     @Override

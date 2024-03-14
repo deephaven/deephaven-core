@@ -1,0 +1,28 @@
+version: "3.4"
+
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server-slim:${VERSION:-latest}
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
+    volumes:
+      - ./data:/data
+    environment:
+      - START_OPTS=-Xmx4g
+
+  redpanda:
+    command:
+    - redpanda
+    - start
+    - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+    - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+    - --smp 1
+    - --memory 1G
+    - --mode dev-container
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.18
+    ports:
+    - 8081:8081
+    - 18081:18081
+    - 9092:9092
+    - 19092:19092

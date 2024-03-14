@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import java.io.IOException;
@@ -15,11 +15,11 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolea
 public class ReplicateRegionAndRegionedSourceTests {
 
     public static void main(String... args) throws IOException {
-        charToAllButBoolean(
+        charToAllButBoolean("replicateRegionAndRegionedSourceTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
-        charToAllButBooleanAndByte(
+        charToAllButBooleanAndByte("replicateRegionAndRegionedSourceTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TstColumnRegionChar.java");
-        charToAllButBoolean(
+        charToAllButBoolean("replicateRegionAndRegionedSourceTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharRegionBinarySearchKernelTest.java");
     }
 }

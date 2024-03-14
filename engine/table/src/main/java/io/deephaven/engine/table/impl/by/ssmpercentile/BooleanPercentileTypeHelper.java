@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -44,7 +44,7 @@ public class BooleanPercentileTypeHelper implements SsmChunkedPercentileOperator
                 ssmLo.moveBackToFront(ssmHi, loSize - targetLo);
             }
 
-            return setResult(destination, (Boolean)((ObjectSegmentedSortedMultiset)ssmLo).getMaxObject());
+            return setResult(destination, (Boolean) ((ObjectSegmentedSortedMultiset) ssmLo).getMaxObject());
         }
     }
 
@@ -60,16 +60,17 @@ public class BooleanPercentileTypeHelper implements SsmChunkedPercentileOperator
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
+            IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
         final ObjectChunk<Object, ? extends Values> asObjectChunk = valueCopy.asObjectChunk();
-        final ObjectSegmentedSortedMultiset ssmLo = (ObjectSegmentedSortedMultiset)segmentedSortedMultiSet;
+        final ObjectSegmentedSortedMultiset ssmLo = (ObjectSegmentedSortedMultiset) segmentedSortedMultiSet;
         final Object hiValue = ssmLo.getMaxObject();
 
         final int result = upperBound(asObjectChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && asObjectChunk.get(result - 1) == hiValue && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int)(counts.get(result - 1) - hiCount));
+            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
         } else {
             leftOvers.setValue(0);
         }
@@ -78,9 +79,10 @@ public class BooleanPercentileTypeHelper implements SsmChunkedPercentileOperator
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
+            IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
         final ObjectChunk<Object, ? extends Values> asObjectChunk = valueCopy.asObjectChunk();
-        final ObjectSegmentedSortedMultiset ssmLo = (ObjectSegmentedSortedMultiset)segmentedSortedMultiSet;
+        final ObjectSegmentedSortedMultiset ssmLo = (ObjectSegmentedSortedMultiset) segmentedSortedMultiSet;
         final Object hiValue = ssmLo.getMaxObject();
 
         final int result = upperBound(asObjectChunk, startPosition, startPosition + runLength, hiValue);
@@ -97,7 +99,8 @@ public class BooleanPercentileTypeHelper implements SsmChunkedPercentileOperator
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(ObjectChunk<Object, ? extends Values> valuesToSearch, int lo, int hi, Object searchValue) {
+    private static int upperBound(ObjectChunk<Object, ? extends Values> valuesToSearch, int lo, int hi,
+            Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch.get(mid);

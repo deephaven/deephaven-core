@@ -1,7 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.base.log.LogOutput;
@@ -57,8 +56,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      */
     @Nullable
     public static PerformanceEntry createUpdatePerformanceEntry(
-            final UpdateGraph updateGraph,
-            final String description) {
+            @Nullable final UpdateGraph updateGraph,
+            @Nullable final String description) {
         if (updateGraph instanceof BaseUpdateGraph) {
             final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
             if (bug.updatePerformanceTracker != null) {
@@ -574,6 +573,16 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                 }
             }
             if (outstandingCountAtStart == 0 && nothingBecameSatisfied) {
+                if (!printDependencyInformation) {
+                    // Let's drop some breadcrumbs here, because this is a very bad state to be in and hard to debug.
+                    log.error().append(Thread.currentThread().getName())
+                            .append(": No outstanding notifications, yet notification queue size=")
+                            .append(pendingToEvaluate.size()).endl();
+                    for (final Notification notification : pendingToEvaluate) {
+                        log.error().append(Thread.currentThread().getName()).append(": Unmet dependencies for ")
+                                .append(notification).endl();
+                    }
+                }
                 throw new IllegalStateException(
                         "No outstanding notifications, yet the notification queue is not empty!");
             }

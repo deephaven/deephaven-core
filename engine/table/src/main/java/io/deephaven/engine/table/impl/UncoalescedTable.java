@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.AsOfJoinMatch;
@@ -271,8 +271,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
-        return coalesce().moveColumns(index, moveToEnd, columnsToMove);
+    public Table moveColumns(int index, String... columnsToMove) {
+        return coalesce().moveColumns(index, columnsToMove);
     }
 
     @Override

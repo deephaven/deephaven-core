@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
@@ -141,6 +144,14 @@ abstract class UpdateByWindow {
                     operators[0].getFwdWindowUnits());
         }
     }
+
+
+    /**
+     * Create a new window by copying .
+     *
+     * @return a new {@link UpdateByWindow window} copied from this one
+     */
+    abstract UpdateByWindow copy();
 
     abstract void prepareWindowBucket(UpdateByWindowBucketContext context);
 

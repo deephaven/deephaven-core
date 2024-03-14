@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -1495,7 +1495,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (pendingError != null) {
             StatusRuntimeException ex = errorTransformer.transform(pendingError);
             for (final Subscription subscription : activeSubscriptions) {
-                // TODO (core#801): effective error reporting to api clients
                 GrpcUtil.safelyError(subscription.listener, ex);
             }
         }
@@ -1603,7 +1602,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
                             fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options,
-                                    parent.getDefinition(), parent.getAttributes())));
+                                    parent.getDefinition(), parent.getAttributes(), parent.isFlat())));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set

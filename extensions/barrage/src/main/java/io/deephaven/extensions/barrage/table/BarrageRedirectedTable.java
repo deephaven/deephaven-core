@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.table;
 
 import io.deephaven.base.verify.Assert;
@@ -55,9 +54,13 @@ public class BarrageRedirectedTable extends BarrageTable {
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection rowRedirection,
             final Map<String, Object> attributes,
+            final boolean isFlat,
             @Nullable final ViewportChangedCallback vpCallback) {
         super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
         this.rowRedirection = rowRedirection;
+        if (isFlat) {
+            setFlat();
+        }
     }
 
     private UpdateCoalescer processUpdate(final BarrageMessage update, final UpdateCoalescer coalescer) {

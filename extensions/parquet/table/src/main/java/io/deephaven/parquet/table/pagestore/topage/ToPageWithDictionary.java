@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
@@ -51,14 +52,14 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
     @Override
     @NotNull
-    public final Object getResult(@NotNull final ColumnPageReader columnPageReader)
-            throws IOException {
-        if (columnPageReader.getDictionary() == ColumnChunkReader.NULL_DICTIONARY) {
-            return ToPage.super.getResult(columnPageReader);
+    public final Object getResult(@NotNull final ColumnPageReader columnPageReader,
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
+        if (columnPageReader.getDictionary(channelContext) == ColumnChunkReader.NULL_DICTIONARY) {
+            return ToPage.super.getResult(columnPageReader, channelContext);
         }
 
         final int[] keys = new int[columnPageReader.numValues()];
-        final IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT);
+        final IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT, channelContext);
 
         return offsets == null ? keys : new DataWithOffsets(offsets, keys);
     }
@@ -115,9 +116,10 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
             }
 
             @Override
-            public Object getResult(@NotNull final ColumnPageReader columnPageReader)
+            public Object getResult(@NotNull final ColumnPageReader columnPageReader,
+                    @NotNull final SeekableChannelContext channelContext)
                     throws IOException {
-                return ToPageWithDictionary.this.getResult(columnPageReader);
+                return ToPageWithDictionary.this.getResult(columnPageReader, channelContext);
             }
 
             @Override

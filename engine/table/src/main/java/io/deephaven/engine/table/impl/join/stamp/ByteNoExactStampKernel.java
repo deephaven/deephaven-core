@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharNoExactStampKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharNoExactStampKernel and run "./gradlew replicateStampKernel" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.join.stamp;
 
 import io.deephaven.chunk.*;
@@ -16,14 +15,17 @@ import io.deephaven.engine.rowset.RowSequence;
 
 public class ByteNoExactStampKernel implements StampKernel {
     static final ByteNoExactStampKernel INSTANCE = new ByteNoExactStampKernel();
+
     private ByteNoExactStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
+            LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asByteChunk(), rightStamps.asByteChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(ByteChunk<Values> leftStamps, ByteChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    static private void computeRedirections(ByteChunk<Values> leftStamps, ByteChunk<Values> rightStamps,
+            LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
@@ -37,7 +39,7 @@ public class ByteNoExactStampKernel implements StampKernel {
 
         final int maxRightIdx = rightSize - 1;
 
-        for (int li = 0; li < leftSize; ) {
+        for (int li = 0; li < leftSize;) {
             final byte leftValue = leftStamps.get(li);
             if (leq(leftValue, rightLowValue)) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
@@ -73,6 +75,7 @@ public class ByteNoExactStampKernel implements StampKernel {
             }
         }
     }
+
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
         return Byte.compare(lhs, rhs);

@@ -51,6 +51,12 @@ if (!hasProperty('excludeSql')) {
     }
 }
 
+if (!hasProperty('excludeS3')) {
+    dependencies {
+        runtimeOnly project(':extensions-s3')
+    }
+}
+
 def authHandlers = []
 def authConfigs = ['AuthHandlers']
 if (hasProperty('anonymous')) {
@@ -137,8 +143,10 @@ tasks.withType(CreateStartScripts).configureEach {
     defaultJvmOpts += extraJvmArgs
 }
 
-applicationName = 'start'
-mainClassName = 'io.deephaven.server.jetty.JettyMain'
+application {
+    applicationName = 'start'
+    mainClass = 'io.deephaven.server.jetty.JettyMain'
+}
 
 artifacts {
     applicationDist project.tasks.findByName('distTar')

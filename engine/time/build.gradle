@@ -13,10 +13,12 @@ dependencies {
     api project(':Base')
     api project(':Util')
 
+    implementation project(':table-api')
     implementation project(':engine-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation depJdom2
+    Classpaths.inheritDagger(project)
 
     testImplementation TestTools.projectDependency(project, 'Base')
 

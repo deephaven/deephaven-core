@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit UngroupedBoxedCharArrayColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit UngroupedBoxedCharArrayColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -21,7 +20,8 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  *
  * (C-har is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<Float> implements MutableColumnSourceGetDefaults.ForObject<Float> {
+public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<Float>
+        implements MutableColumnSourceGetDefaults.ForObject<Float> {
     private ColumnSource<Float[]> innerSource;
 
     @Override
@@ -38,7 +38,7 @@ public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<
     @Override
     public Float get(long rowKey) {
         final float result = getFloat(rowKey);
-        return (result == NULL_FLOAT?null:result);
+        return (result == NULL_FLOAT ? null : result);
     }
 
 
@@ -47,8 +47,8 @@ public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<
         if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         Float[] array = innerSource.get(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_FLOAT;
@@ -60,7 +60,7 @@ public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<
     @Override
     public Float getPrev(long rowKey) {
         final float result = getPrevFloat(rowKey);
-        return (result == NULL_FLOAT?null:result);
+        return (result == NULL_FLOAT ? null : result);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<
             return NULL_FLOAT;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         Float[] array = innerSource.getPrev(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_FLOAT;

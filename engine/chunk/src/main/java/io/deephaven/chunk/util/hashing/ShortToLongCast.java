@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharToLongCast and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharToLongCast and run "./gradlew replicateHashing" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.*;
@@ -33,9 +32,9 @@ public class ShortToLongCast<T extends Any> implements ToLongFunctor<T> {
         return result;
     }
 
-    public static <T2 extends Any>  void castInto(ShortChunk<? extends T2> input, WritableLongChunk<? super T2> result) {
+    public static <T2 extends Any> void castInto(ShortChunk<? extends T2> input, WritableLongChunk<? super T2> result) {
         for (int ii = 0; ii < input.size(); ++ii) {
-            result.set(ii, (long)input.get(ii));
+            result.set(ii, (long) input.get(ii));
         }
         result.setSize(input.size());
     }

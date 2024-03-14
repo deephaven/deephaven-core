@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.Assert;
@@ -21,16 +21,18 @@ public class CharSsaChecker implements SsaChecker {
     private CharSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
-        checkSsa((CharSegmentedSortedArray)ssa, valueChunk.asCharChunk(), tableIndexChunk);
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk) {
+        checkSsa((CharSegmentedSortedArray) ssa, valueChunk.asCharChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(CharSegmentedSortedArray ssa, CharChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(CharSegmentedSortedArray ssa, CharChunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
-        //noinspection unchecked
+        // noinspection unchecked
         try (final WritableCharChunk<Values> resultChunk = (WritableCharChunk) ssa.asCharChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
+                final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

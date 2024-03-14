@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.WeakReferenceManager;
@@ -21,6 +21,14 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
 
     public UpdateSourceCombiner(final UpdateGraph updateGraph) {
         this.updateGraph = updateGraph;
+    }
+
+    /**
+     * Add this UpdateSourceCombiner to the {@link UpdateGraph update graph} passed at construction. This should only be
+     * done once.
+     */
+    public void install() {
+        updateGraph.addSource(this);
     }
 
     @Override

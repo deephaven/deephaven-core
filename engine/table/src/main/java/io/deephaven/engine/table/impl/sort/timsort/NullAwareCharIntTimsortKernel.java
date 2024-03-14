@@ -1,14 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharIntTimsortKernel and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharLongTimsortKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharIntTimsortKernel and run "./gradlew replicateSortKernel" to regenerate
+//
+// @formatter:off
+
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharLongTimsortKernel and run "./gradlew replicateSortKernel" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.util.QueryConstants;
@@ -75,8 +79,8 @@ public class NullAwareCharIntTimsortKernel {
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
-    CharIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            int size) {
         return new CharIntSortKernelContext<>(size);
     }
 
@@ -371,8 +375,7 @@ public class NullAwareCharIntTimsortKernel {
 
         ii = mergeStartPosition;
 
-        nodataleft:
-        while (ii < mergeEndExclusive) {
+        nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
 
@@ -483,8 +486,7 @@ public class NullAwareCharIntTimsortKernel {
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
 
-        nodataleft:
-        while (ii >= mergeStartPosition) {
+        nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
 
@@ -656,111 +658,114 @@ public class NullAwareCharIntTimsortKernel {
         valuesToSort.set(b, tempChar);
     }
 
-//    private static void doCheck(Chunk.IntChunk valuesToPermute, Chunk.CharChunk valuesToSort, int startCheck, int mergeEnd) {
-//        char lastCheck;
-//        lastCheck = valuesToSort.get(startCheck);
-//        for (int jj = startCheck + 1; jj < mergeEnd; ++jj) {
-//            final char newCheck = valuesToSort.get(jj);
-//            if (newCheck < lastCheck) {
-//                dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad loop at " + jj);
-//                throw new IllegalStateException();
-//            }
-//            else if (newCheck == lastCheck) {
-//                if (valuesToPermute.get(jj) < valuesToPermute.get(jj - 1)) {
-//                    dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
-//                    dumpKeys(valuesToPermute, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
-//                    throw new IllegalStateException();
-//                }
-//            }
-//            lastCheck = newCheck;
-//        }
-//        final StackTraceElement [] calls = new Exception().getStackTrace();
-//        System.out.println("CHECK OK at " + calls[1]);
-//        System.out.println();
-//    }
+    // private static void doCheck(Chunk.IntChunk valuesToPermute, Chunk.CharChunk valuesToSort, int startCheck, int
+    // mergeEnd) {
+    // char lastCheck;
+    // lastCheck = valuesToSort.get(startCheck);
+    // for (int jj = startCheck + 1; jj < mergeEnd; ++jj) {
+    // final char newCheck = valuesToSort.get(jj);
+    // if (newCheck < lastCheck) {
+    // dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad loop at " + jj);
+    // throw new IllegalStateException();
+    // }
+    // else if (newCheck == lastCheck) {
+    // if (valuesToPermute.get(jj) < valuesToPermute.get(jj - 1)) {
+    // dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
+    // dumpKeys(valuesToPermute, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
+    // throw new IllegalStateException();
+    // }
+    // }
+    // lastCheck = newCheck;
+    // }
+    // final StackTraceElement [] calls = new Exception().getStackTrace();
+    // System.out.println("CHECK OK at " + calls[1]);
+    // System.out.println();
+    // }
 
-//    private static void dumpValues(Chunk.CharChunk valuesToSort, int start1, int length1, int start2, int length2, String msg) {
-//        System.out.println(msg + " merge (" + start1 + ", " + length1 + ") -> (" + start2 + ", " + length2 + ")");
-//        char last = valuesToSort.get(start1);
-//        System.out.print("[" + format(last));
-//        for (int ii = start1 + 1; ii < start2 + length2; ++ii) {
-//            final char current = valuesToSort.get(ii);
-//            if (current < last) {
-//                System.out.println("****");
-//            }
-//            last = current;
-//            System.out.print(", " + last);
-//        }
-//        System.out.println("]");
-//    }
+    // private static void dumpValues(Chunk.CharChunk valuesToSort, int start1, int length1, int start2, int length2,
+    // String msg) {
+    // System.out.println(msg + " merge (" + start1 + ", " + length1 + ") -> (" + start2 + ", " + length2 + ")");
+    // char last = valuesToSort.get(start1);
+    // System.out.print("[" + format(last));
+    // for (int ii = start1 + 1; ii < start2 + length2; ++ii) {
+    // final char current = valuesToSort.get(ii);
+    // if (current < last) {
+    // System.out.println("****");
+    // }
+    // last = current;
+    // System.out.print(", " + last);
+    // }
+    // System.out.println("]");
+    // }
 
-//    private static void dumpValues(Chunk.CharChunk valuesToSort, int start1, int length1, String msg) {
-//        dumpValues(valuesToSort, start1, length1, msg, -1);
-//    }
-//
-//    private static void dumpValues(Chunk.CharChunk valuesToSort, int start1, int length1, String msg, int highlight) {
-//        System.out.println(msg + " (" + start1 + ", " + length1 + ")");
-//        char last = valuesToSort.get(start1);
-//        System.out.print(String.format("%04d", start1) + "   ");
-//
-//        System.out.print(format(last, highlight == start1));
-//        boolean doComma = true;
-//        for (int ii = start1 + 1; ii < start1 + length1; ) {
-//            final char current = valuesToSort.get(ii);
-//            if (current < last) {
-//                System.out.println("****");
-//            }
-//            last = current;
-//            System.out.print((doComma ? ", " : "") + format(last, highlight == ii));
-//            doComma = true;
-//            ++ii;
-//            if ((ii - start1) % 20 == 0) {
-//                System.out.println();
-//                System.out.print(String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            } else if ((ii - start1) % 10 == 0) {
-//                System.out.print("   " + String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            }
-//        }
-//        System.out.println();
-//    }
-//    private static void dumpKeys(Chunk.IntChunk keysToSort, int start1, int length1, String msg) {
-//        System.out.println(msg + " (" + start1 + ", " + length1 + ")");
-//        int last = keysToSort.get(start1);
-//        System.out.print(String.format("%04d", start1) + "   ");
-//
-//        System.out.print(format(last));
-//        boolean doComma = true;
-//        for (int ii = start1 + 1; ii < start1 + length1; ) {
-//            last = keysToSort.get(ii);
-//            System.out.print((doComma ? ", " : "") + format(last));
-//            doComma = true;
-//            ++ii;
-//            if ((ii - start1) % 20 == 0) {
-//                System.out.println();
-//                System.out.print(String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            } else if ((ii - start1) % 10 == 0) {
-//                System.out.print("   " + String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            }
-//        }
-//        System.out.println();
-//    }
-//
-//    private static String format(char last) {
-//        if (last >= 'A' && last <= 'Z') {
-//            return Character.toString(last);
-//        }
-//        return String.format("0x%04x", (int) last);
-//    }
-//
-//    private static String format(char last, boolean highlight) {
-//        return highlight ? "/" + format(last) + "/" : format(last);
-//    }
-//
-//    private static String format(int last) {
-//        return String.format("0x%04d", last);
-//    }
+    // private static void dumpValues(Chunk.CharChunk valuesToSort, int start1, int length1, String msg) {
+    // dumpValues(valuesToSort, start1, length1, msg, -1);
+    // }
+    //
+    // private static void dumpValues(Chunk.CharChunk valuesToSort, int start1, int length1, String msg, int highlight)
+    // {
+    // System.out.println(msg + " (" + start1 + ", " + length1 + ")");
+    // char last = valuesToSort.get(start1);
+    // System.out.print(String.format("%04d", start1) + " ");
+    //
+    // System.out.print(format(last, highlight == start1));
+    // boolean doComma = true;
+    // for (int ii = start1 + 1; ii < start1 + length1; ) {
+    // final char current = valuesToSort.get(ii);
+    // if (current < last) {
+    // System.out.println("****");
+    // }
+    // last = current;
+    // System.out.print((doComma ? ", " : "") + format(last, highlight == ii));
+    // doComma = true;
+    // ++ii;
+    // if ((ii - start1) % 20 == 0) {
+    // System.out.println();
+    // System.out.print(String.format("%04d", ii) + " ");
+    // doComma = false;
+    // } else if ((ii - start1) % 10 == 0) {
+    // System.out.print(" " + String.format("%04d", ii) + " ");
+    // doComma = false;
+    // }
+    // }
+    // System.out.println();
+    // }
+    // private static void dumpKeys(Chunk.IntChunk keysToSort, int start1, int length1, String msg) {
+    // System.out.println(msg + " (" + start1 + ", " + length1 + ")");
+    // int last = keysToSort.get(start1);
+    // System.out.print(String.format("%04d", start1) + " ");
+    //
+    // System.out.print(format(last));
+    // boolean doComma = true;
+    // for (int ii = start1 + 1; ii < start1 + length1; ) {
+    // last = keysToSort.get(ii);
+    // System.out.print((doComma ? ", " : "") + format(last));
+    // doComma = true;
+    // ++ii;
+    // if ((ii - start1) % 20 == 0) {
+    // System.out.println();
+    // System.out.print(String.format("%04d", ii) + " ");
+    // doComma = false;
+    // } else if ((ii - start1) % 10 == 0) {
+    // System.out.print(" " + String.format("%04d", ii) + " ");
+    // doComma = false;
+    // }
+    // }
+    // System.out.println();
+    // }
+    //
+    // private static String format(char last) {
+    // if (last >= 'A' && last <= 'Z') {
+    // return Character.toString(last);
+    // }
+    // return String.format("0x%04x", (int) last);
+    // }
+    //
+    // private static String format(char last, boolean highlight) {
+    // return highlight ? "/" + format(last) + "/" : format(last);
+    // }
+    //
+    // private static String format(int last) {
+    // return String.format("0x%04d", last);
+    // }
 }

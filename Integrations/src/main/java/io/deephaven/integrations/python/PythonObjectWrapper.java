@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.integrations.python;
 
 import org.jpy.PyModule;
@@ -12,6 +12,11 @@ import org.jpy.PyObject;
  */
 public class PythonObjectWrapper {
     private static final PyModule PY_WRAPPER_MODULE = PyModule.importModule("deephaven._wrapper");
+
+    /**
+     * Ensure that the class initializer runs.
+     */
+    public static void init() {}
 
     /**
      * Unwrap a Python object to return the wrapped Java object.

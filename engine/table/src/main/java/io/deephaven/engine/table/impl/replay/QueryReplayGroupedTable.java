@@ -1,25 +1,27 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.replay;
 
 
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.PriorityQueue;
 
-public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
+public abstract class QueryReplayGroupedTable extends ReplayTableBase implements Runnable {
 
 
     protected final WritableRowRedirection rowRedirection;
@@ -72,14 +74,18 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     }
 
     protected QueryReplayGroupedTable(
-            Table source,
-            String timeColumn,
-            Replayer replayer,
-            WritableRowRedirection rowRedirection,
-            String[] groupingColumns) {
+            @NotNull final String description,
+            @NotNull final Table source,
+            @NotNull final String timeColumn,
+            @NotNull final Replayer replayer,
+            @NotNull final WritableRowRedirection rowRedirection,
+            @NotNull final String[] groupingColumns) {
 
-        super(RowSetFactory.empty().toTracking(), getResultSources(source.getColumnSourceMap(), rowRedirection));
+        super(description, RowSetFactory.empty().toTracking(),
+                getResultSources(source.getColumnSourceMap(), rowRedirection));
         this.rowRedirection = rowRedirection;
+        this.replayer = Objects.requireNonNull(replayer, "replayer");
+
 
         final BasicDataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, groupingColumns);
         final Table indexTable = dataIndex.table();
@@ -94,9 +100,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
                 }
             }
         }
-        Require.neqNull(replayer, "replayer");
-        setRefreshing(true);
-        this.replayer = replayer;
+
         run();
     }
 }

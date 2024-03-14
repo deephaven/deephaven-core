@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -44,7 +44,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
             validateColumnDefinition(columnDefinitionMap);
         } else {
             returnedType = dcf.getReturnedType();
-            applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()));
+            applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()), Map.of());
             formulaFactory = createKernelFormulaFactory(this);
         }
 

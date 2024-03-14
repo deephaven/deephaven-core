@@ -1,18 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.console;
 
 import com.google.common.base.Throwables;
 import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -61,8 +62,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final boolean REMOTE_CONSOLE_DISABLED =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
 
+    private static final String DISABLE_AUTOCOMPLETE_FLAG = "deephaven.console.autocomplete.disable";
     public static final boolean AUTOCOMPLETE_DISABLED =
-            Configuration.getInstance().getBooleanWithDefault("deephaven.console.autocomplete.disable", false);
+            Configuration.getInstance().getBooleanWithDefault(DISABLE_AUTOCOMPLETE_FLAG, false);
+
 
     public static final boolean QUIET_AUTOCOMPLETE_ERRORS =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.autocomplete.quiet", true);
@@ -74,6 +77,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     public static final int SUBSCRIBE_TO_LOGS_BUFFER_SIZE =
             Configuration.getInstance().getIntegerWithDefault(SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP, 32768);
+
+    private static final AtomicBoolean ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE = new AtomicBoolean();
 
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
@@ -279,13 +284,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             exportBuilder.submit(() -> {
-                ScriptSession scriptSession =
-                        exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
+                QueryScope queryScope = exportedConsole != null ? exportedConsole.get().getQueryScope()
+                        : ExecutionContext.getContext().getQueryScope();
+
                 Table table = exportedTable.get();
-                scriptSession.setVariable(request.getVariableName(), table);
-                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
-                    scriptSession.manage(table);
-                }
+                queryScope.putParam(request.getVariableName(), table);
                 responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
                 responseObserver.onCompleted();
             });
@@ -296,7 +299,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(
             @NotNull final StreamObserver<AutoCompleteResponse> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
-        if (AUTOCOMPLETE_DISABLED) {
+        if (AUTOCOMPLETE_DISABLED || ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE.get()) {
             return new NoopAutoCompleteObserver(session, responseObserver);
         }
         if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
@@ -305,9 +308,15 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 final ScriptSession scriptSession = scriptSessionProvider.get();
                 scriptSession.evaluateScript(
                         "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
+                settings[0] = scriptSession.getQueryScope().readParamValue("jedi_settings");
             } catch (Exception err) {
-                log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                if (!ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE.getAndSet(true)) {
+                    log.error().append("Autocomplete package not found; disabling autocomplete.").endl();
+                    log.error().append("Do you need to install the autocomplete package?").endl();
+                    log.error().append("    pip install deephaven-core[autocomplete]==<version>").endl();
+                    log.error().append("Add the jvm flag '-D").append(DISABLE_AUTOCOMPLETE_FLAG)
+                            .append("=true' to disable this message.").endl();
+                }
             }
             boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
             log.info().append(canJedi ? "Using jedi for python autocomplete"

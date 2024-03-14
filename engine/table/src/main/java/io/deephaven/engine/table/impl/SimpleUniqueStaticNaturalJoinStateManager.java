@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -32,7 +32,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
 
     private final LongArraySource rightRowSetSource = new LongArraySource();
 
-    SimpleUniqueStaticNaturalJoinStateManager(ColumnSource<?>[] tableKeySources, int tableSize, ToIntFunctor<Values> transform) {
+    SimpleUniqueStaticNaturalJoinStateManager(ColumnSource<?>[] tableKeySources, int tableSize,
+            ToIntFunctor<Values> transform) {
         super(tableKeySources);
         this.tableSize = Require.gtZero(tableSize, "tableSize");
         this.transform = transform;
@@ -44,8 +45,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
 
     void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource) {
         try (final RowSequence.Iterator rsIt = rightRowSet.getRowSequenceIterator();
-             final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, rightRowSet.size()))
-        ) {
+                final ColumnSource.GetContext getContext =
+                        valueSource.makeGetContext((int) Math.min(CHUNK_SIZE, rightRowSet.size()))) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
@@ -72,7 +73,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @Override
-    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
+    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] valueSources,
+            LongArraySource leftRedirections) {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -81,8 +83,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         final ColumnSource<?> valueSource = valueSources[0];
 
         try (final RowSequence.Iterator rsIt = leftRowSet.getRowSequenceIterator();
-             final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, leftRowSet.size()))
-        ) {
+                final ColumnSource.GetContext getContext =
+                        valueSource.makeGetContext((int) Math.min(CHUNK_SIZE, leftRowSet.size()))) {
             long offset = 0;
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -98,7 +100,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     final long existingRight = rightRowSetSource.getLong(tableLocation);
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new IllegalStateException(":Natural Join found duplicate right key for " + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
+                        throw new IllegalStateException(":Natural Join found duplicate right key for "
+                                + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);
                 }
@@ -109,7 +112,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @NotNull
-    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch,
+            LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 }

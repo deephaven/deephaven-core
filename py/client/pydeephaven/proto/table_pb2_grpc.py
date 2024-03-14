@@ -160,6 +160,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.MultiJoinTables = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/MultiJoinTables',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.MultiJoinTablesRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.RangeJoinTables = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.RangeJoinTablesRequest.SerializeToString,
@@ -475,6 +480,14 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def MultiJoinTables(self, request, context):
+        """
+        Returns the result of a multi-join operation.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def RangeJoinTables(self, request, context):
         """
         Returns the result of a range join operation.
@@ -763,6 +776,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'RajTables': grpc.unary_unary_rpc_method_handler(
                     servicer.RajTables,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'MultiJoinTables': grpc.unary_unary_rpc_method_handler(
+                    servicer.MultiJoinTables,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.MultiJoinTablesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'RangeJoinTables': grpc.unary_unary_rpc_method_handler(
@@ -1339,6 +1357,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/RajTables',
             deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MultiJoinTables(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/MultiJoinTables',
+            deephaven_dot_proto_dot_table__pb2.MultiJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

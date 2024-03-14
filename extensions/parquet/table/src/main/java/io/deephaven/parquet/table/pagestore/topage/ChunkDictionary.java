@@ -1,24 +1,25 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
 import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
  * Chunk-backed dictionary for use by {@link ToPage} implementations.
  */
-public class ChunkDictionary<T, ATTR extends Any>
-        implements LongBitmapStringSet.ReversibleLookup<T> {
+public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet.ReversibleLookup<T> {
 
     @FunctionalInterface
     public interface Lookup<T> {
@@ -34,9 +35,6 @@ public class ChunkDictionary<T, ATTR extends Any>
         T lookup(@NotNull final Dictionary dictionary, final int key);
     }
 
-    private final Lookup<T> lookup;
-    private final Supplier<Dictionary> dictionarySupplier;
-
     private final Supplier<ObjectChunk<T, ATTR>> valuesSupplier;
     private final Supplier<TObjectIntMap<T>> reverseMapSupplier;
 
@@ -48,11 +46,10 @@ public class ChunkDictionary<T, ATTR extends Any>
      */
     ChunkDictionary(
             @NotNull final Lookup<T> lookup,
-            @NotNull final Supplier<Dictionary> dictionarySupplier) {
-        this.lookup = lookup;
-        this.dictionarySupplier = dictionarySupplier;
+            @NotNull final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
-            final Dictionary dictionary = dictionarySupplier.get();
+            // We use NULL channel context here and rely on materialization logic to provide the correct context
+            final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelContext.NULL);
             final T[] values = ObjectChunk.makeArray(dictionary.getMaxId() + 1);
             for (int ki = 0; ki < values.length; ++ki) {
                 values[ki] = lookup.lookup(dictionary, ki);

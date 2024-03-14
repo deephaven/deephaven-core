@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'The Deephaven QST Types'
+
+dependencies {
+    Classpaths.inheritImmutables(project)
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}

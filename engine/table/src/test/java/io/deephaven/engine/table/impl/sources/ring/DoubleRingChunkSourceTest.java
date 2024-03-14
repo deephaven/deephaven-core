@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -16,7 +16,7 @@ public class DoubleRingChunkSourceTest extends RingChunkSourceTestBase {
         DATA = new DoubleArraySource();
         DATA.ensureCapacity(1024);
         for (int i = 0; i < 1024; ++i) {
-            DATA.set(i, (double)i);
+            DATA.set(i, (double) i);
         }
     }
 
@@ -54,7 +54,7 @@ public class DoubleRingChunkSourceTest extends RingChunkSourceTestBase {
         checkRange(source, expectedFirst, expectedSize);
         for (long i = 0; i < expectedSize; ++i) {
             final long key = expectedFirst + i;
-            assertThat(source.getDouble(key)).isEqualTo((double)key);
+            assertThat(source.getDouble(key)).isEqualTo((double) key);
         }
     }
 

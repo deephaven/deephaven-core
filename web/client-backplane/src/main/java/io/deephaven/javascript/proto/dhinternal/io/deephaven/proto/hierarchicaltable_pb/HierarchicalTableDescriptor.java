@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb;
 
 import elemental2.core.Uint8Array;
@@ -112,6 +112,12 @@ public class HierarchicalTableDescriptor {
         HierarchicalTableDescriptor.ToObjectReturnType.GetSnapshotSchemaUnionType getSnapshotSchema();
 
         @JsProperty
+        boolean isIsStatic();
+
+        @JsProperty
+        void setIsStatic(boolean isStatic);
+
+        @JsProperty
         void setSnapshotSchema(
                 HierarchicalTableDescriptor.ToObjectReturnType.GetSnapshotSchemaUnionType snapshotSchema);
 
@@ -170,6 +176,12 @@ public class HierarchicalTableDescriptor {
         HierarchicalTableDescriptor.ToObjectReturnType0.GetSnapshotSchemaUnionType getSnapshotSchema();
 
         @JsProperty
+        boolean isIsStatic();
+
+        @JsProperty
+        void setIsStatic(boolean isStatic);
+
+        @JsProperty
         void setSnapshotSchema(
                 HierarchicalTableDescriptor.ToObjectReturnType0.GetSnapshotSchemaUnionType snapshotSchema);
 
@@ -199,6 +211,8 @@ public class HierarchicalTableDescriptor {
     public static native HierarchicalTableDescriptor.ToObjectReturnType toObject(
             boolean includeInstance, HierarchicalTableDescriptor msg);
 
+    public native boolean getIsStatic();
+
     public native HierarchicalTableDescriptor.GetSnapshotSchemaUnionType getSnapshotSchema();
 
     public native String getSnapshotSchema_asB64();
@@ -206,6 +220,8 @@ public class HierarchicalTableDescriptor {
     public native Uint8Array getSnapshotSchema_asU8();
 
     public native Uint8Array serializeBinary();
+
+    public native void setIsStatic(boolean value);
 
     public native void setSnapshotSchema(
             HierarchicalTableDescriptor.SetSnapshotSchemaValueUnionType value);

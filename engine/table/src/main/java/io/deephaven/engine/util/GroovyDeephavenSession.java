@@ -1,13 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
-import groovy.lang.MissingPropertyException;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.DeltaControl;
@@ -16,13 +15,9 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.*;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -32,6 +27,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableFactory;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.util.TableLoggers;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.internal.log.LoggerFactory;
@@ -39,9 +35,9 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.github.classgraph.ClassGraph;
@@ -73,6 +69,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -135,6 +132,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
 
     private final Set<String> dynamicClasses = new HashSet<>();
+    private final Map<String, Object> bindingBackingMap = Collections.synchronizedMap(new LinkedHashMap<>());
     private final GroovyShell groovyShell;
 
     private int counter;
@@ -146,20 +144,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory,
+            final OperationInitializer operationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             final RunScripts runScripts) throws IOException {
-        this(updateGraph, threadInitializationFactory, objectTypeLookup, null, runScripts);
+        this(updateGraph, operationInitializer, objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
             final UpdateGraph updateGraph,
-            final ThreadInitializationFactory threadInitializationFactory,
+            final OperationInitializer operationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts)
             throws IOException {
-        super(updateGraph, threadInitializationFactory, objectTypeLookup, changeListener);
+        super(updateGraph, operationInitializer, objectTypeLookup, changeListener);
 
         addDefaultImports(consoleImports);
         if (INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY) {
@@ -177,8 +175,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         consoleConfig.getCompilationCustomizers().add(consoleImports);
         consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
 
-
-        groovyShell = new GroovyShell(scriptClassLoader, consoleConfig) {
+        Binding binding = new Binding(bindingBackingMap);
+        groovyShell = new GroovyShell(scriptClassLoader, binding, consoleConfig) {
             protected synchronized String generateScriptName() {
                 return GroovyDeephavenSession.this.generateScriptName();
             }
@@ -241,16 +239,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 DateTimeUtils.class.getName(),
                 QueryLanguageFunctionUtils.class.getName(),
                 Aggregation.class.getName(),
-                UpdateByOperation.class.getName());
+                UpdateByOperation.class.getName(),
+                io.deephaven.time.calendar.Calendars.class.getName(),
+                StaticCalendarMethods.class.getName());
     }
 
     private String generateScriptName() {
         return script + "_" + (++counter) + ".groovy";
-    }
-
-    @Override
-    public QueryScope newQueryScope() {
-        return new SynchronizedScriptSessionQueryScope(this);
     }
 
     public static InputStream findScript(String relativePath) throws IOException {
@@ -281,23 +276,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         executedScripts.add(script);
     }
 
-    @NotNull
     @Override
-    public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        try {
-            return groovyShell.getContext().getVariable(name);
-        } catch (MissingPropertyException mpe) {
-            throw new QueryScope.MissingVariableException("No binding for: " + name, mpe);
-        }
-    }
-
-    @Override
-    public <T> T getVariable(String name, T defaultValue) {
-        try {
-            // noinspection unchecked
-            return (T) getVariable(name);
-        } catch (QueryScope.MissingVariableException e) {
-            return defaultValue;
+    protected <T> T getVariable(String name) {
+        synchronized (bindingBackingMap) {
+            if (bindingBackingMap.containsKey(name)) {
+                // noinspection unchecked
+                return (T) bindingBackingMap.get(name);
+            }
+            throw new QueryScope.MissingVariableException("Missing variable " + name);
         }
     }
 
@@ -568,7 +554,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private static boolean packageIsVisibleToClassGraph(String packageImport) {
-        try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
+        try (ScanResult scanResult =
+                new ClassGraph().enableClassInfo().enableSystemJarsAndModules().acceptPackages(packageImport).scan()) {
             final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
             // force load the class so that the jvm is aware of the package
             firstClassFound.ifPresent(ClassInfo::loadClass);
@@ -710,12 +697,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    public Map<String, Object> getVariables() {
-        // noinspection unchecked
-        return Collections.unmodifiableMap(groovyShell.getContext().getVariables());
-    }
-
-    @Override
     protected GroovySnapshot emptySnapshot() {
         return new GroovySnapshot(Collections.emptyMap());
     }
@@ -760,23 +741,51 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    public Set<String> getVariableNames() {
-        // noinspection unchecked
-        return Collections.unmodifiableSet(groovyShell.getContext().getVariables().keySet());
+    @Override
+    protected Set<String> getVariableNames() {
+        synchronized (bindingBackingMap) {
+            return new HashSet<>(bindingBackingMap.keySet());
+        }
     }
 
     @Override
-    public boolean hasVariableName(String name) {
-        return groovyShell.getContext().hasVariable(name);
+    protected boolean hasVariable(String name) {
+        return bindingBackingMap.containsKey(name);
     }
 
     @Override
-    public void setVariable(String name, @Nullable Object newValue) {
-        groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), newValue);
+    protected Object setVariable(String name, @Nullable Object newValue) {
+        Object oldValue = bindingBackingMap.put(name, newValue);
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
         // other threads)
         observeScopeChanges();
+        return oldValue;
+    }
+
+    @Override
+    protected <T> Map<String, T> getAllValues(
+            @Nullable final Function<Object, T> valueMapper,
+            @NotNull final QueryScope.ParamFilter<T> filter) {
+        final Map<String, T> result = new HashMap<>();
+
+        synchronized (bindingBackingMap) {
+            for (final Map.Entry<String, Object> entry : bindingBackingMap.entrySet()) {
+                final String name = entry.getKey();
+                Object value = entry.getValue();
+                if (valueMapper != null) {
+                    value = valueMapper.apply(value);
+                }
+
+                // noinspection unchecked
+                if (filter.accept(name, (T) value)) {
+                    // noinspection unchecked
+                    result.put(name, (T) value);
+                }
+            }
+        }
+
+        return result;
     }
 
     public Binding getBinding() {

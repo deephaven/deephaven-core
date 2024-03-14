@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.prod;
 
 import io.deephaven.base.verify.Assert;
@@ -7,11 +10,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
     // region extra-fields
@@ -41,14 +42,23 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
         }
     }
 
-    public FloatCumProdOperator(@NotNull final MatchPair pair,
-                                @Nullable final RowRedirection rowRedirection
-                                // region extra-constructor-args
-                                // endregion extra-constructor-args
+    public FloatCumProdOperator(
+            @NotNull final MatchPair pair
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new FloatCumProdOperator(
+                pair
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 
     @NotNull

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.FileUtils;
@@ -158,7 +158,8 @@ public class TestGroupingProviders {
         final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other");
 
         final Table actual = ParquetTools.readPartitionedTable(
-                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
+                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP"),
+                        ParquetInstructions.EMPTY),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition).coalesce();
 

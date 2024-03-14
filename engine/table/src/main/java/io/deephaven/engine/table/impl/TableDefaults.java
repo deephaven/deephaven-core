@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
@@ -240,14 +240,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table moveColumnsDown(String... columnsToMove) {
-        return moveColumns(numColumns() - columnsToMove.length, true, columnsToMove);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table moveColumns(int index, String... columnsToMove) {
-        return moveColumns(index, false, columnsToMove);
+        return moveColumns(numColumns() - columnsToMove.length, columnsToMove);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
