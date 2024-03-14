@@ -33,8 +33,8 @@ public interface ReplayerInterface {
     void shutdown() throws IOException;
 
     /**
-     * Wait a specified interval for the replayer to complete.  If the replayer has not completed by the
-     * end of the interval, the method returns.
+     * Wait a specified interval for the replayer to complete. If the replayer has not completed by the end of the
+     * interval, the method returns.
      *
      * @param maxTimeMillis maximum number of milliseconds to wait.
      * @throws IOException problems encountered
@@ -65,12 +65,12 @@ public interface ReplayerInterface {
      * @param timeColumn column in the table containing timestamps
      * @return dynamic, replayed version of the table.
      */
-    Table replay(Table dataSource,String timeColumn) throws IOException;
+    Table replay(Table dataSource, String timeColumn) throws IOException;
 
     /**
-     * Prepares a grouped historical table for replaying.  This method can be faster than the ungrouped replay, but
-     * the performance increase comes with a cost.  Within a group, the data ordering is maintained.  Between groups,
-     * data ordering is not maintained for a time interval.
+     * Prepares a grouped historical table for replaying. This method can be faster than the ungrouped replay, but the
+     * performance increase comes with a cost. Within a group, the data ordering is maintained. Between groups, data
+     * ordering is not maintained for a time interval.
      *
      * @param dataSource historical table to replay
      * @param timeColumn column in the table containing timestamps

@@ -213,8 +213,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (dataSource.isRefreshing()) {
             dataSource = dataSource.snapshot();
         }
-        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getRowSet(),
-                dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
+        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource, timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
             updateGraph.addSource(result);
@@ -235,8 +234,8 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (dataSource.isRefreshing()) {
             dataSource = dataSource.snapshot();
         }
-        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getRowSet(),
-                dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
+        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource, timeColumn, this,
+                groupingColumns);
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
             updateGraph.addSource(result);
