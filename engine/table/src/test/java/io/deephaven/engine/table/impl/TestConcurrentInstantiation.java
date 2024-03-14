@@ -418,8 +418,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             DataIndexer.getOrCreateDataIndex(whereTable, "z");
         }
 
-        final DynamicWhereFilter filter = updateGraph.exclusiveLock().computeLocked(
-                () -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
+        final DynamicWhereFilter filter = updateGraph.sharedLock().computeLocked(
+                () -> {
+                    final DynamicWhereFilter result =
+                            new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z"));
+                    result.initializeDataIndex(table);
+                    return result;
+                });
 
         updateGraph.startCycleForUnitTests(false);
 
