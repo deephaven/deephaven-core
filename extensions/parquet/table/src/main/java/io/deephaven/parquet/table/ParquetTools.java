@@ -820,9 +820,10 @@ public class ParquetTools {
                 lastKey.getFileReader().getSchema(),
                 lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructions);
+        final Set<String> partitionKeys = lastKey.getPartitionKeys();
         final List<ColumnDefinition<?>> allColumns =
-                new ArrayList<>(lastKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
-        for (final String partitionKey : lastKey.getPartitionKeys()) {
+                new ArrayList<>(partitionKeys.size() + schemaInfo.getFirst().size());
+        for (final String partitionKey : partitionKeys) {
             final Comparable<?> partitionValue = lastKey.getPartitionValue(partitionKey);
             if (partitionValue == null) {
                 throw new IllegalArgumentException(String.format(
@@ -836,7 +837,11 @@ public class ParquetTools {
             allColumns.add(ColumnDefinition.fromGenericType(partitionKey, dataType, null,
                     ColumnDefinition.ColumnType.Partitioning));
         }
-        allColumns.addAll(schemaInfo.getFirst());
+        // Only read non-partitioning columns from the parquet files
+        final List<ColumnDefinition<?>> columnDefinitionsFromParquetFile = schemaInfo.getFirst();
+        columnDefinitionsFromParquetFile.stream()
+                .filter(columnDefinition -> !partitionKeys.contains(columnDefinition.getName()))
+                .forEach(allColumns::add);
         return new Pair<>(TableDefinition.of(allColumns), schemaInfo.getSecond());
     }
 

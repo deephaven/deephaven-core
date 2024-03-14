@@ -1304,6 +1304,31 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(fromDisk, partitionedTable);
     }
 
+    @Test
+    public void partitionedParquetWithDuplicateDataTest() throws IOException {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        // Writing the partitioning column "X" in the file itself
+        final Table firstTable = TableTools.emptyTable(5).update("X='A'", "Y=(int)i");
+        final File firstPartition = new File(parentDir, "X=A");
+        final File firstDataFile = new File(firstPartition, "data.parquet");
+
+        final File secondPartition = new File(parentDir, "X=B");
+        final File secondDataFile = new File(secondPartition, "data.parquet");
+        final Table secondTable = TableTools.emptyTable(5).update("X='B'", "Y=(int)i");
+
+        writeTable(firstTable, firstDataFile);
+        writeTable(secondTable, secondDataFile);
+
+        final Table partitionedTable = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+
+        final Table combinedTable = merge(firstTable, secondTable);
+        assertTableEquals(partitionedTable, combinedTable);
+    }
+
     /**
      * These are tests for writing multiple parquet tables with grouping columns.
      */
