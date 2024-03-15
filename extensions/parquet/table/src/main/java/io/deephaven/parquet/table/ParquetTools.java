@@ -474,6 +474,25 @@ public class ParquetTools {
      * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
      * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
      * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns of provided
+     * table. The parquet files generated will have names of the format {@code "uuid.parquet"} where "uuid" is a random
+     * UUID. To provide custom file names, use
+     * {@link #writeKeyValuePartitionedTable(Table, File, String, ParquetInstructions)} instead.
+     *
+     * @param sourceTable The table to partition and write
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
+            @NotNull final File destinationDir,
+            @NotNull final ParquetInstructions writeInstructions) {
+        writeKeyValuePartitionedTable(sourceTable, destinationDir, "{uuid}", writeInstructions);
+    }
+
+    /**
+     * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
+     * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
+     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns of provided
      * table.
      *
      * @param sourceTable The table to partition and write
@@ -499,6 +518,27 @@ public class ParquetTools {
             @NotNull final ParquetInstructions writeInstructions) {
         writeKeyValuePartitionedTable(sourceTable, sourceTable.getDefinition(), destinationDir, baseName,
                 writeInstructions);
+    }
+
+    /**
+     * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
+     * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
+     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns in the provided
+     * table definition. The parquet files generated will have names of the format {@code "uuid.parquet"} where "uuid"
+     * is a random UUID. To provide custom file names, use
+     * {@link #writeKeyValuePartitionedTable(Table, TableDefinition, File, String, ParquetInstructions)} instead.
+     *
+     * @param sourceTable The table to partition and write
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
+            @NotNull final TableDefinition definition,
+            @NotNull final File destinationDir,
+            @NotNull final ParquetInstructions writeInstructions) {
+        writeKeyValuePartitionedTable(sourceTable, definition, destinationDir, "{uuid}", writeInstructions);
     }
 
     /**
@@ -548,6 +588,24 @@ public class ParquetTools {
     /**
      * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
      * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
+     * {@link Table#partitionBy(String...) partitionBy} on the required columns. The parquet files generated will have
+     * names of the format {@code "uuid.parquet"} where "uuid" is a random UUID. To provide custom file names, use
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, File, String, ParquetInstructions)} instead.
+     *
+     * @param partitionedTable The partitioned table to write
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
+            @NotNull final File destinationDir,
+            @NotNull final ParquetInstructions writeInstructions) {
+        writeKeyValuePartitionedTable(partitionedTable, destinationDir, "{uuid}", writeInstructions);
+    }
+
+    /**
+     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
+     * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
      * {@link Table#partitionBy(String...) partitionBy} on the required columns.
      *
      * @param partitionedTable The partitioned table to write
@@ -580,6 +638,27 @@ public class ParquetTools {
                 partitionedTable.constituentDefinition());
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
                 baseName, writeInstructions);
+    }
+
+    /**
+     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
+     * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
+     * {@link Table#partitionBy(String...) partitionBy} on the required columns. The parquet files generated will have
+     * names of the format {@code "uuid.parquet"} where "uuid" is a random UUID. To provide custom file names, use
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, TableDefinition, File, String, ParquetInstructions)}
+     * instead.
+     *
+     * @param partitionedTable The partitioned table to write
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param destinationDir The destination root directory to store partitioned data in nested format. Non-existing
+     *        directories are created.
+     * @param writeInstructions Write instructions for customizations while writing
+     */
+    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
+            @NotNull final TableDefinition definition,
+            @NotNull final File destinationDir,
+            @NotNull final ParquetInstructions writeInstructions) {
+        writeKeyValuePartitionedTable(partitionedTable, definition, destinationDir, "{uuid}", writeInstructions);
     }
 
     /**
@@ -646,6 +725,12 @@ public class ParquetTools {
             throw new IllegalArgumentException(
                     "Cannot write a partitioned parquet table with non-unique keys without " +
                             "{i} or {uuid} in the base name because there can be multiple partitions with the same key values");
+        }
+        if (writeInstructions.generateMetadataFiles()) {
+            if (!hasUUIDInName && !(hasIndexInName && hasPartitionInName)) {
+                throw new IllegalArgumentException("For generating metadata files, file names for generated parquet " +
+                        "files should be unique. Try passing tokens like {uuid} in the file base name");
+            }
         }
         // Note that there can be multiple constituents with the same key values, so cannot directly use the
         // partitionedTable.constituentFor(keyValues) method, and we need to group them together
@@ -796,7 +881,7 @@ public class ParquetTools {
         final File metadataRootDir;
         if (writeInstructions.generateMetadataFiles()) {
             // We insist on writing the metadata file in the same directory as the destination files, thus all
-            // destination files are in the same directory.
+            // destination files should be in the same directory. This also ensures that the file names would be unique.
             final String firstDestinationDir = destinations[0].getParentFile().getAbsolutePath();
             for (int i = 1; i < destinations.length; i++) {
                 if (!firstDestinationDir.equals(destinations[i].getParentFile().getAbsolutePath())) {

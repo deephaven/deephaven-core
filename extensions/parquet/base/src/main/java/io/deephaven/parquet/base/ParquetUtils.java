@@ -30,10 +30,9 @@ public final class ParquetUtils {
     }
 
     /**
-     * @return the key value for storing each file's metadata in the common metadata file.
+     * @return the key value derived from the file name, used for storing each file's metadata in the metadata files.
      */
-    public static String getKeyForFilePath(final Path path) {
-        final String fileName = path.getFileName().toString();
+    public static String getKeyForFile(final String fileName) {
         return "deephaven_per_file_" + fileName;
     }
 }

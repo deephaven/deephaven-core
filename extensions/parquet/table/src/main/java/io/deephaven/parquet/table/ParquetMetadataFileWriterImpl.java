@@ -1,7 +1,6 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetUtils;
@@ -29,7 +28,7 @@ import java.util.Map;
 
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
-import static io.deephaven.parquet.base.ParquetUtils.getKeyForFilePath;
+import static io.deephaven.parquet.base.ParquetUtils.getKeyForFile;
 import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
@@ -119,7 +118,10 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     }
 
     /**
-     * Added parquet metadata for provided parquet file.
+     * Add parquet metadata for the provided parquet file the combined metadata file. We store deephaven-specific
+     * metadata for each file individually inside the key-value metadata of the combined metadata file, with keys being
+     * derived from the file names and values being the metadata for the file. Therefore, the provided parquet files
+     * must have unique names.
      *
      * @param parquetFilePath The parquet file destination path
      * @param metadata The parquet metadata
@@ -168,6 +170,11 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             mergeKeyValueMetaData(parquetFileMetadata);
             mergeBlocksInto(parquetFileMetadata, metadataRootDirAbsPath, mergedBlocks);
             mergedCreatedBy.add(fileMetaData.getCreatedBy());
+        }
+        if (mergedKeyValueMetaData.size() != parquetFileMetadataList.size()) {
+            throw new IllegalStateException("We should have one entry for each file in the merged key-value metadata, "
+                    + "but we have " + mergedKeyValueMetaData.size() + " entries for " + parquetFileMetadataList.size()
+                    + " files.");
         }
         // Add table info to the merged key-value metadata
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder().addAllColumnTypes(mergedColumnTypes);
@@ -222,9 +229,13 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                 });
             } else {
                 // Add a separate entry for each file
-                final String fileKey = getKeyForFilePath(Path.of(parquetFileMetadata.filePath));
+                final String fileKey = getKeyForFile(new File(parquetFileMetadata.filePath).getName());
                 // Assuming the keys are unique for each file because file names are unique, verified in the constructor
-                Assert.eqNull(mergedKeyValueMetaData.get(fileKey), "mergedKeyValueMetaData.get(fileKey)");
+                if (mergedKeyValueMetaData.containsKey(fileKey)) {
+                    throw new UncheckedDeephavenException("Could not merge metadata for for file " +
+                            parquetFileMetadata.filePath + " because has conflicting file name with another file. For "
+                            + " generating metadata files, file names should be unique");
+                }
                 mergedKeyValueMetaData.put(fileKey, entry.getValue());
 
                 // Also, process and accumulate the relevant fields:

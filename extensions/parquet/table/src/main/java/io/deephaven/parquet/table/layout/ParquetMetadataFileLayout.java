@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.parquet.base.ParquetUtils.COMMON_METADATA_FILE_NAME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_FILE_NAME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
-import static io.deephaven.parquet.base.ParquetUtils.getKeyForFilePath;
+import static io.deephaven.parquet.base.ParquetUtils.getKeyForFile;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -220,7 +220,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     private static ParquetMetadata getParquetMetadataForFile(@NotNull final File parquetFile,
             @NotNull final ParquetMetadata metadataFileMetadata) {
         final String fileMetadataString = metadataFileMetadata.getFileMetaData().getKeyValueMetaData()
-                .get(getKeyForFilePath(parquetFile.toPath()));
+                .get(getKeyForFile(parquetFile.getName()));
         final ParquetMetadata fileMetadata;
         if (fileMetadataString != null) {
             // Create a new file metadata object using the key-value metadata for that file
