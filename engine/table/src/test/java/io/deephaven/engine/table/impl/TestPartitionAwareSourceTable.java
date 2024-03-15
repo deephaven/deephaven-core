@@ -382,7 +382,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 will(new CustomAction("check exception") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        assertEquals(exception, ((Exception) invocation.getParameter(0)).getCause());
+                        assertEquals(exception, invocation.getParameter(0));
                         return errorNotification;
                     }
                 });
