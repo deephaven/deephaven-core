@@ -107,6 +107,17 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("UTC-5"))
         self.assertEqual(to_j_time_zone(dt), to_j_time_zone("UTC-5"))
 
+        dttz = datetime.timezone(offset=-datetime.timedelta(hours=5, microseconds=10), name="XYZ")
+        dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+
+        with self.assertRaises(DHError):
+            to_j_time_zone(dttz)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            to_j_time_zone(dt)
+            self.fail("Expected DHError")
+
         with self.assertRaises(TypeError):
             to_j_time_zone(False)
             self.fail("Expected TypeError")
