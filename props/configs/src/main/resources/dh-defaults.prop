@@ -55,7 +55,7 @@ authentication.anonymous.warn=true
 authentication.client.configuration.list=AuthHandlers
 
 # List of configuration properties to provide to authenticated clients, so they can interact with the server.
-client.configuration.list=java.version,deephaven.version,barrage.version,http.session.durationMs
+client.configuration.list=java.version,deephaven.version,barrage.version,http.session.durationMs,file.separator
 # Version list to add to the configuration property list. Each `=`-delimited pair denotes a short name for a versioned
 # jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
 # as <key>.version.
