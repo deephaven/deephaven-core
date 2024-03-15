@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from deephaven import dtypes, DHError
-from deephaven._wrapper import unwrap, wrap_j_object
+from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
 from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, _J_ARRAY_NP_TYPE_MAP
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
@@ -306,7 +306,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
     return s
 
 
-class SafeCloseable:
+class SafeCloseable(JObjectWrapper):
     """A context manager wrapper of Java SafeCloseable to emulate Java try-with-resources."""
     def __init__(self, j_safe_closeable):
         self._j_safe_closeable = j_safe_closeable
@@ -325,3 +325,7 @@ class SafeCloseable:
 
     def __del__(self):
         self.close()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_safe_closeable
