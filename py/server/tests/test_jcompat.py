@@ -33,7 +33,7 @@ class JCompatTestCase(BaseTestCase):
     def test_safe_closeable(self):
         safe_closeable = SafeCloseable(_JSharedContext.makeSharedContext())
         with safe_closeable:
-            pass
+            self.assertEqual(safe_closeable.closed, False)
         self.assertEqual(safe_closeable.closed, True)
 
 
