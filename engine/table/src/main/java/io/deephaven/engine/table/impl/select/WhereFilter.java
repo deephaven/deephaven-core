@@ -14,6 +14,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -108,21 +109,26 @@ public interface WhereFilter extends Filter {
     void init(TableDefinition tableDefinition);
 
     /**
+     * Perform any operation-level initialization necessary using the {@link Table} that will be filtered with this
+     * WhereFilter, e.g. gathering {@link DataIndex data indexes}. This method will always be called exactly once,
+     * before gathering any dependencies or filtering data.
+     *
+     * @param sourceTable The {@link Table} that will be filtered with this WhereFilter
+     * @return A {@link SafeCloseable} that will be {@link SafeCloseable#close() closed} when the operation is complete,
+     *         whether successful or not
+     */
+    default SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        return () -> {
+        };
+    }
+
+    /**
      * Validate that this {@code WhereFilter} is safe to use in the context of the provided sourceTable.
      *
      * @param sourceTable the source table
      */
     default void validateSafeForRefresh(final BaseTable<?> sourceTable) {
         // nothing to validate by default
-    }
-
-    /**
-     * Get all the {@link DataIndex data indexes} that will be used by this filter when executed.
-     *
-     * @param sourceTable the table to filter
-     */
-    default List<DataIndex> getDataIndexes(final Table sourceTable) {
-        return List.of();
     }
 
     /**
@@ -233,9 +239,10 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Set the RecomputeListener that should be notified if results based on this filter must be recomputed.
+     * Set the {@link RecomputeListener} that should be notified if results based on this WhereFilter must be
+     * recomputed.
      *
-     * @param result the listener to notify.
+     * @param result The {@link RecomputeListener} to notify
      */
     void setRecomputeListener(RecomputeListener result);
 

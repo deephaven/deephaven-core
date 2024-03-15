@@ -418,11 +418,27 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             DataIndexer.getOrCreateDataIndex(whereTable, "z");
         }
 
+        // This is something of a silly test, so we've "hacked" the DynamicWhereFilter instance to let us initialize
+        // its DataIndex ahead of the operation so that that the where can proceed without a lock.
+        // Normally, DynamicWhereFilter is only used from whereIn and whereNotIn, which are not concurrent operations.
         final DynamicWhereFilter filter = updateGraph.sharedLock().computeLocked(
                 () -> {
                     final DynamicWhereFilter result =
-                            new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z"));
-                    result.initializeDataIndex(table);
+                            new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")) {
+                                private boolean begun;
+
+                                @Override
+                                public SafeCloseable beginOperation(@NotNull Table sourceTable) {
+                                    if (!begun) {
+                                        begun = true;
+                                        return super.beginOperation(sourceTable);
+                                    }
+                                    return () -> {
+                                    };
+                                }
+                            };
+                    // noinspection resource
+                    result.beginOperation(table);
                     return result;
                 });
 
@@ -431,7 +447,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Future<Table> future1 = dualPool.submit(() -> table.where(filter));
         try {
             future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            fail("Filtering should be blocked on UGP");
+            fail("Filtering should be blocked on UGP because DynamicWhereFilter does not support previous filtering,"
+                    + " and so the first where will eventually try to do a locked snapshot");
         } catch (TimeoutException ignored) {
         }
         TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));

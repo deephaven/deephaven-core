@@ -39,24 +39,20 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     private final MatchPair[] matchPairs;
     private final boolean inclusion;
-    private final ChunkSource.WithPrev<Values> setKeySource;
 
     private final DataIndexKeySet liveValues;
-    private boolean liveValuesArrayValid = false;
-    private boolean kernelValid = false;
-    private Object[] liveValuesArray = null;
-    private SetInclusionKernel setInclusionKernel = null;
 
-
+    private final QueryTable setTable;
+    private final ChunkSource.WithPrev<Values> setKeySource;
     @SuppressWarnings("FieldCanBeLocal")
     @ReferentialIntegrity
     private final InstrumentedTableUpdateListener setUpdateListener;
 
-    /**
-     * The source table to be filtered. Recorded when initializing data indexes
-     */
-    @ReferentialIntegrity
-    private Table sourceTable;
+    private boolean liveValuesArrayValid;
+    private boolean kernelValid;
+    private Object[] liveValuesArray;
+    private SetInclusionKernel setInclusionKernel;
+
     /**
      * The optimal data index for this filter.
      */
@@ -66,7 +62,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private RecomputeListener listener;
     private QueryTable resultTable;
 
-    public DynamicWhereFilter(final QueryTable setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
+    public DynamicWhereFilter(
+            @NotNull final QueryTable setTable,
+            final boolean inclusion,
+            final MatchPair... setColumnsNames) {
         if (setTable.isRefreshing()) {
             updateGraph.checkInitiateSerialTableOperation();
         }
@@ -90,6 +89,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             final String[] setColumnNames =
                     Arrays.stream(matchPairs).map(MatchPair::rightColumn).toArray(String[]::new);
             final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
+            this.setTable = setTable;
             setUpdateListener = new InstrumentedTableUpdateListenerAdapter(
                     "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", setTable, false) {
 
@@ -177,7 +177,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
             manage(setUpdateListener);
         } else {
+            this.setTable = null;
             setKeySource = null;
+            setUpdateListener = null;
             if (setTable.getRowSet().isNonempty()) {
                 final ChunkSource.WithPrev<Values> tmpKeySource = DataIndexUtils.makeBoxedKeySource(setColumns);
                 try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
@@ -185,10 +187,22 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
                 }
             }
-            kernelValid = liveValuesArrayValid = false;
-            setInclusionKernel = null;
-            setUpdateListener = null;
         }
+    }
+
+    /**
+     * "Copy constructor" for DynamicWhereFilter's with static set tables.
+     */
+    private DynamicWhereFilter(
+            @NotNull final DataIndexKeySet liveValues,
+            final boolean inclusion,
+            final MatchPair... setColumnsNames) {
+        this.liveValues = liveValues;
+        this.matchPairs = setColumnsNames;
+        this.inclusion = inclusion;
+        setTable = null;
+        setKeySource = null;
+        setUpdateListener = null;
     }
 
     @Override
@@ -219,28 +233,25 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     /**
-     * Initializes the data index for this filter, if not already initialized. It is an error to call this method with
-     * more than one distinct {@code sourceTable}. If {@sourceTable} is refreshing, this method must only be invoked
-     * when it's {@link UpdateGraph#checkInitiateSerialTableOperation() safe} to initialize serial table operations.
-     *
-     * @param sourceTable The table that this DynamicWhereFilter will be used to filter
+     * {@inheritDoc}
+     * <p>
+     * If {@code sourceTable#isRefreshing()}, this method must only be invoked when it's
+     * {@link UpdateGraph#checkInitiateSerialTableOperation() safe} to initialize serial table operations.
      */
-    public void initializeDataIndex(@NotNull final Table sourceTable) {
-        if (this.sourceTable != null) {
-            if (this.sourceTable == sourceTable) {
-                return;
-            }
-            throw new IllegalStateException(String.format(
-                    "Data indexes already initialized with source table %s, cannot reinitialize with %s",
-                    this.sourceTable, sourceTable));
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        if (sourceDataIndex != null) {
+            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
-        this.sourceTable = sourceTable;
+        getUpdateGraph(this, sourceTable);
         try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
             sourceDataIndex = optimalIndex(matchPairs, sourceTable);
             if (sourceDataIndex != null && sourceDataIndex.isRefreshing()) {
                 manage(sourceDataIndex);
             }
         }
+        return () -> {
+        };
     }
 
     /**
@@ -267,12 +278,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @Override
     public List<String> getColumnArrays() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public List<DataIndex> getDataIndexes(final Table sourceTable) {
-        initializeDataIndex(sourceTable);
-        return sourceDataIndex == null ? List.of() : List.of(sourceDataIndex);
     }
 
     @Override
@@ -528,7 +533,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     @Override
     public DynamicWhereFilter copy() {
-        throw new UnsupportedOperationException("DynamicWhereFilter cannot be copied");
+        if (setTable == null) {
+            return new DynamicWhereFilter(liveValues, inclusion, matchPairs);
+        }
+        return new DynamicWhereFilter(setTable, inclusion, matchPairs);
     }
 
     @Override

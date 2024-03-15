@@ -10,6 +10,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 
 /**
  * {@link SafeCloseable} that will close an internal list of other {@link SafeCloseable}s.
@@ -57,4 +63,35 @@ public class SafeCloseableList implements SafeCloseable {
         }
         list.clear();
     }
+
+    public static final Collector<SafeCloseable, SafeCloseableList, SafeCloseableList> COLLECTOR = new Collector<>() {
+
+        @Override
+        public Supplier<SafeCloseableList> supplier() {
+            return SafeCloseableList::new;
+        }
+
+        @Override
+        public BiConsumer<SafeCloseableList, SafeCloseable> accumulator() {
+            return SafeCloseableList::add;
+        }
+
+        @Override
+        public BinaryOperator<SafeCloseableList> combiner() {
+            return (left, right) -> {
+                left.addAll(right.list);
+                return left;
+            };
+        }
+
+        @Override
+        public Function<SafeCloseableList, SafeCloseableList> finisher() {
+            return a -> a;
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return Set.of(Characteristics.IDENTITY_FINISH);
+        }
+    };
 }

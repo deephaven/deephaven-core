@@ -55,6 +55,7 @@ import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.util.TableTools;
@@ -63,6 +64,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -90,6 +92,7 @@ import java.util.stream.Stream;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
+import static java.lang.Boolean.TRUE;
 
 /**
  * Primary coalesced table implementation.
@@ -141,8 +144,20 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         String getLogPrefix();
 
-        default OperationSnapshotControl newSnapshotControl(final QueryTable queryTable) {
-            return new OperationSnapshotControl(queryTable);
+        /**
+         * Perform pre-instantiation work.
+         *
+         * @param parent The parent table for the operation
+         * @return A {@link SafeCloseable} that will be {@link SafeCloseable#close() closed} when the operation is
+         *         complete, whether successful or not
+         */
+        default SafeCloseable beginOperation(@NotNull final QueryTable parent) {
+            return () -> {
+            };
+        }
+
+        default OperationSnapshotControl newSnapshotControl(final QueryTable parent) {
+            return new OperationSnapshotControl(parent);
         }
 
         /**
@@ -1181,7 +1196,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (dataIndexer != null
                     && !(filter instanceof ReindexingFilter)
                     && filter.isSimpleFilter()
-                    && dataIndexer.hasDataIndex(this, filter.getColumns().toArray(ZERO_LENGTH_STRING_ARRAY))) {
+                    && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(ZERO_LENGTH_STRING_ARRAY))) {
                 priorityFilterIndexes.set(fi);
             }
         }
@@ -1267,93 +1282,99 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        // Request the data indexes from the filters so we can include any index tables in the
-                        // snapshot control.
-                        final List<DataIndex> dataIndexList = new ArrayList<>();
-                        Arrays.stream(filters).forEach(filter -> dataIndexList.addAll(filter.getDataIndexes(this)));
-                        final NotificationStepSource[] dataIndexTables = dataIndexList.stream()
-                                .map(di -> (NotificationStepSource) di.table())
-                                .toArray(NotificationStepSource[]::new);
+                        try (final SafeCloseable ignored = Arrays.stream(filters)
+                                .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
+                            final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
+                                    (final BaseTable<?> parent) -> {
+                                        /*
+                                         * Note that the dependencies for instantiation may be different from the
+                                         * dependencies for the WhereListener. Do not refactor to share this array with
+                                         * the WhereListener unless you ensure that this no longer holds, i.e. if
+                                         * MatchFilter starts applying data indexes during update processing.
+                                         */
+                                        final NotificationQueue.Dependency[] filterDependencies =
+                                                WhereListener.extractDependencies(filters)
+                                                        .toArray(NotificationQueue.Dependency[]::new);
+                                        getUpdateGraph(filterDependencies);
+                                        return filterDependencies.length > 0
+                                                ? new OperationSnapshotControlEx(parent, filterDependencies)
+                                                : new OperationSnapshotControl(parent);
+                                    });
 
-                        final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
-                                (final BaseTable<?> parent) -> dataIndexTables.length > 0
-                                        ? new OperationSnapshotControlEx(parent, dataIndexTables)
-                                        : new OperationSnapshotControl(parent));
+                            final Mutable<QueryTable> result = new MutableObject<>();
+                            initializeWithSnapshot("where", snapshotControl,
+                                    (prevRequested, beforeClock) -> {
+                                        final boolean usePrev = prevRequested && isRefreshing();
+                                        final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
 
-                        final Mutable<QueryTable> result = new MutableObject<>();
-                        initializeWithSnapshot("where", snapshotControl,
-                                (prevRequested, beforeClock) -> {
-                                    final boolean usePrev = prevRequested && isRefreshing();
-                                    final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
+                                        final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
+                                                new CompletableFuture<>();
+                                        final InitialFilterExecution initialFilterExecution =
+                                                new InitialFilterExecution(this, filters, rowSetToUse.copy(), usePrev);
+                                        final TrackingWritableRowSet currentMapping;
+                                        initialFilterExecution.scheduleCompletion((adds, mods) -> {
+                                            currentMappingFuture.complete(adds.writableCast().toTracking());
+                                        }, currentMappingFuture::completeExceptionally);
 
-                                    final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
-                                            new CompletableFuture<>();
-
-                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
-                                            this, filters, rowSetToUse.copy(), usePrev);
-                                    final TrackingWritableRowSet currentMapping;
-                                    initialFilterExecution.scheduleCompletion((adds, mods) -> {
-                                        currentMappingFuture.complete(adds.writableCast().toTracking());
-                                    }, currentMappingFuture::completeExceptionally);
-
-                                    try {
-                                        currentMapping = currentMappingFuture.get();
-                                    } catch (ExecutionException | InterruptedException e) {
-                                        if (e instanceof InterruptedException) {
-                                            throw new CancellationException("interrupted while filtering");
+                                        try {
+                                            currentMapping = currentMappingFuture.get();
+                                        } catch (ExecutionException | InterruptedException e) {
+                                            if (e instanceof InterruptedException) {
+                                                throw new CancellationException("interrupted while filtering");
+                                            }
+                                            throw new TableInitializationException(whereDescription,
+                                                    "an exception occurred while performing the initial filter",
+                                                    e.getCause());
+                                        } finally {
+                                            // account for work done in alternative threads
+                                            final BasePerformanceEntry basePerformanceEntry =
+                                                    initialFilterExecution.getBasePerformanceEntry();
+                                            if (basePerformanceEntry != null) {
+                                                QueryPerformanceRecorder.getInstance().getEnclosingNugget()
+                                                        .accumulate(basePerformanceEntry);
+                                            }
                                         }
-                                        throw new TableInitializationException(whereDescription,
-                                                "an exception occurred while performing the initial filter",
-                                                e.getCause());
-                                    } finally {
-                                        // account for work done in alternative threads
-                                        final BasePerformanceEntry basePerformanceEntry =
-                                                initialFilterExecution.getBasePerformanceEntry();
-                                        if (basePerformanceEntry != null) {
-                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget()
-                                                    .accumulate(basePerformanceEntry);
-                                        }
-                                    }
-                                    currentMapping.initializePreviousValue();
+                                        currentMapping.initializePreviousValue();
 
-                                    final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
+                                        final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
-                                    for (final WhereFilter filter : filters) {
-                                        filter.setRecomputeListener(filteredTable);
-                                    }
-                                    final boolean refreshingFilters =
-                                            Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
-                                    copyAttributes(filteredTable, CopyAttributeOperation.Filter);
-                                    // as long as filters do not change, we can propagate add-only/append-only attrs
-                                    if (!refreshingFilters) {
-                                        if (isAddOnly()) {
-                                            filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        for (final WhereFilter filter : filters) {
+                                            filter.setRecomputeListener(filteredTable);
                                         }
-                                        if (isAppendOnly()) {
-                                            filteredTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        final boolean refreshingFilters =
+                                                Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
+                                        copyAttributes(filteredTable, CopyAttributeOperation.Filter);
+                                        // as long as filters do not change, we can propagate add-only/append-only attrs
+                                        if (!refreshingFilters) {
+                                            if (isAddOnly()) {
+                                                filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, TRUE);
+                                            }
+                                            if (isAppendOnly()) {
+                                                filteredTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, TRUE);
+                                            }
                                         }
-                                    }
 
-                                    if (snapshotControl != null) {
-                                        final ListenerRecorder recorder = new ListenerRecorder(
-                                                whereDescription, QueryTable.this,
-                                                filteredTable);
-                                        final WhereListener whereListener = new WhereListener(
-                                                log, this, recorder, filteredTable, filters);
-                                        filteredTable.setWhereListener(whereListener);
-                                        recorder.setMergedListener(whereListener);
-                                        snapshotControl.setListenerAndResult(recorder, filteredTable);
-                                        filteredTable.addParentReference(whereListener);
-                                    } else if (refreshingFilters) {
-                                        final WhereListener whereListener = new WhereListener(
-                                                log, this, null, filteredTable, filters);
-                                        filteredTable.setWhereListener(whereListener);
-                                        filteredTable.addParentReference(whereListener);
-                                    }
-                                    result.setValue(filteredTable);
-                                    return true;
-                                });
-                        return result.getValue();
+                                        if (snapshotControl != null) {
+                                            final ListenerRecorder recorder = new ListenerRecorder(
+                                                    whereDescription, QueryTable.this,
+                                                    filteredTable);
+                                            final WhereListener whereListener = new WhereListener(
+                                                    log, this, recorder, filteredTable, filters);
+                                            filteredTable.setWhereListener(whereListener);
+                                            recorder.setMergedListener(whereListener);
+                                            snapshotControl.setListenerAndResult(recorder, filteredTable);
+                                            filteredTable.addParentReference(whereListener);
+                                        } else if (refreshingFilters) {
+                                            final WhereListener whereListener = new WhereListener(
+                                                    log, this, null, filteredTable, filters);
+                                            filteredTable.setWhereListener(whereListener);
+                                            filteredTable.addParentReference(whereListener);
+                                        }
+                                        result.setValue(filteredTable);
+                                        return true;
+                                    });
+                            return result.getValue();
+                        }
                     });
                 });
     }
@@ -3709,28 +3730,30 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(operation.getDescription(), sizeForInstrumentation(), () -> {
             final Mutable<T> resultTable = new MutableObject<>();
 
-            final OperationSnapshotControl snapshotControl;
-            if (isRefreshing() && operation.snapshotNeeded()) {
-                snapshotControl = operation.newSnapshotControl(this);
-            } else {
-                snapshotControl = null;
+            try (final SafeCloseable ignored = operation.beginOperation(this)) {
+                final OperationSnapshotControl snapshotControl;
+                if (isRefreshing() && operation.snapshotNeeded()) {
+                    snapshotControl = operation.newSnapshotControl(this);
+                } else {
+                    snapshotControl = null;
+                }
+
+                initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
+                    final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);
+                    if (result == null) {
+                        return false;
+                    }
+
+                    resultTable.setValue(result.resultNode);
+                    if (snapshotControl != null) {
+                        snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
+                    }
+
+                    return true;
+                });
+
+                return resultTable.getValue();
             }
-
-            initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
-                final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);
-                if (result == null) {
-                    return false;
-                }
-
-                resultTable.setValue(result.resultNode);
-                if (snapshotControl != null) {
-                    snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
-                }
-
-                return true;
-            });
-
-            return resultTable.getValue();
         });
     }
 
@@ -3770,7 +3793,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table wouldMatch(WouldMatchPair... matchers) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return getResult(new WouldMatchOperation(this, matchers));
+            final WouldMatchOperation wouldMatchOperation = new WouldMatchOperation(this, matchers);
+            return getResult(wouldMatchOperation);
         }
     }
 
