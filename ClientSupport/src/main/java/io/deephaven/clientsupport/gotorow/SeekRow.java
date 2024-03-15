@@ -4,20 +4,23 @@
 package io.deephaven.clientsupport.gotorow;
 
 import java.time.Instant;
-import java.util.function.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.*;
 
-public class SeekRow implements Function<Table, Long> {
+public class SeekRow {
     private final long startingRow;
     private final String columnName;
     private final Object seekValue;
@@ -27,8 +30,10 @@ public class SeekRow implements Function<Table, Long> {
 
     private Comparable closestUpperValueYet;
     private Comparable closestLowerValueYet;
+    private ColumnSource columnSource;
     private long closestUpperRowYet = -1;
     private long closestLowerRowYet = -1;
+    private boolean usePrev;
 
     private static final Logger log = LoggerFactory.getLogger(SeekRow.class);
 
@@ -42,143 +47,166 @@ public class SeekRow implements Function<Table, Long> {
         this.isBackward = isBackward;
     }
 
-    @Override
-    public Long apply(Table table) {
-        final Optional<SortingOrder> order = SortedColumnsAttribute.getOrderForColumn(table, columnName);
-        final RowSet rowSet = table.getRowSet();
-        log.info().append("starting row: ").append(startingRow).endl();
+    public long seek(Table table) {
+        final Mutable<Long> result = new MutableObject<>(-1L);
 
-        if (order.isPresent()) {
-            final Comparable currValue =
-                    (Comparable) table.getColumnSource(columnName).get(rowSet.get(startingRow));
-            int compareResult = nullSafeCompare(currValue, (Comparable) seekValue);
+        ConstructSnapshot.callDataSnapshotFunction("SeekRow",
+                ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), (NotificationStepSource) table),
+                ((nestedUsePrev, beforeClockValue) -> {
+                    final Optional<SortingOrder> order = SortedColumnsAttribute.getOrderForColumn(table, columnName);
+                    final RowSet rowSet = table.getRowSet();
+                    columnSource = table.getColumnSource(columnName);
+                    usePrev = nestedUsePrev;
 
-            if (isBackward) {
-                // current row is seek value, check prev row
-                if (compareResult == 0 && startingRow > 0) {
-                    final Comparable prevValue =
-                            (Comparable) table.getColumnSource(columnName).get(rowSet.get(startingRow - 1));
-                    if (nullSafeCompare(prevValue, (Comparable) seekValue) == 0) {
-                        return startingRow - 1;
+                    if (order.isPresent()) {
+                        final Comparable currValue = (Comparable) columnSourceGet(rowSet.get(startingRow));
+                        int compareResult = nullSafeCompare(currValue, (Comparable) seekValue);
+
+                        if (isBackward) {
+                            // current row is seek value, check prev row
+                            if (compareResult == 0 && startingRow > 0) {
+                                final Comparable prevValue = (Comparable) columnSourceGet(rowSet.get(startingRow - 1));
+                                if (nullSafeCompare(prevValue, (Comparable) seekValue) == 0) {
+                                    result.setValue(startingRow - 1);
+                                    return true;
+                                }
+                                // prev row is not the seek value, loop to back and find the last value
+                                // algorithm is the same as if seek value is below the current row
+                            } else if ((compareResult > 0 && order.get() == SortingOrder.Ascending)
+                                    || (compareResult < 0 && order.get() == SortingOrder.Descending)) {
+                                // current row is greater than seek value and ascending
+                                // current row is less than seek value and descending
+                                // which means seek value is above the current row, find the last occurrence
+                                result.setValue(findEdgeOccurrence(rowSet, 0, startingRow, false,
+                                        order.get() == SortingOrder.Ascending));
+                                return true;
+                            }
+                            // seek value is below the current row
+                            // loop to back and find the last value
+                            result.setValue(findEdgeOccurrence(rowSet, startingRow, rowSet.size() - 1, false,
+                                    order.get() == SortingOrder.Ascending));
+                            return true;
+
+                        } else {
+                            // current row is seek value, check next row
+                            if (compareResult == 0 && startingRow < rowSet.size() - 1) {
+                                final Comparable nextValue = (Comparable) columnSourceGet(rowSet.get(startingRow + 1));
+                                if (nullSafeCompare(nextValue, (Comparable) seekValue) == 0) {
+                                    result.setValue(startingRow + 1);
+                                    return true;
+                                }
+                                // next row is not the seek value, loop to start and find the first value
+                                // algorithm is the same as if seek value is above the current row
+                            } else if ((compareResult < 0 && order.get() == SortingOrder.Ascending)
+                                    || (compareResult > 0 && order.get() == SortingOrder.Descending)) {
+                                // current row is less than seek value and ascending
+                                // current row is greater than seek value and descending
+                                // which means seek value is below the current row, find the first occurrence
+                                result.setValue(
+                                        findEdgeOccurrence(rowSet, startingRow, rowSet.size() - 1, true,
+                                                order.get() == SortingOrder.Ascending));
+                                return true;
+                            }
+                            // seek value is above the current row
+                            // loop to start and find the first value
+                            result.setValue(findEdgeOccurrence(rowSet, 0, startingRow, true,
+                                    order.get() == SortingOrder.Ascending));
+                            return true;
+                        }
                     }
-                    // prev row is not the seek value, loop to back and find the last value
-                    // algorithm is the same as if seek value is below the current row
-                } else if ((compareResult > 0 && order.get() == SortingOrder.Ascending)
-                        || (compareResult < 0 && order.get() == SortingOrder.Descending)) {
-                    // current row is greater than seek value and ascending
-                    // current row is less than seek value and descending
-                    // which means seek value is above the current row, find the last occurrence
-                    return findEdgeOccurrence(table, rowSet, 0, startingRow - 1, false,
-                            order.get() == SortingOrder.Ascending);
-                }
-                // seek value is below the current row
-                // loop to back and find the last value
-                return findEdgeOccurrence(table, rowSet, startingRow, rowSet.size() - 1, false,
-                        order.get() == SortingOrder.Ascending);
 
-            } else {
-                // current row is seek value, check next row
-                if (compareResult == 0 && startingRow < rowSet.size() - 1) {
-                    final Comparable nextValue =
-                            (Comparable) table.getColumnSource(columnName).get(rowSet.get(startingRow + 1));
-                    if (nullSafeCompare(nextValue, (Comparable) seekValue) == 0) {
-                        return startingRow + 1;
+                    long row;
+                    if (isBackward) {
+                        row = findRow(rowSet, 0, (int) startingRow);
+                        if (row >= 0) {
+                            result.setValue(row);
+                            return true;
+                        }
+                        row = findRow(rowSet, (int) startingRow, (int) rowSet.size());
+                        if (row >= 0) {
+                            result.setValue(row);
+                            return true;
+                        }
+                    } else {
+                        row = findRow(rowSet, (int) startingRow + 1, (int) rowSet.size());
+                        if (row >= 0) {
+                            result.setValue(row);
+                            return true;
+                        }
+                        row = findRow(rowSet, 0, (int) startingRow + 1);
+                        if (row >= 0) {
+                            result.setValue(row);
+                            return true;
+                        }
                     }
-                    // next row is not the seek value, loop to start and find the first value
-                    // algorithm is the same as if seek value is above the current row
-                } else if ((compareResult < 0 && order.get() == SortingOrder.Ascending)
-                        || (compareResult > 0 && order.get() == SortingOrder.Descending)) {
-                    // current row is less than seek value and ascending
-                    // current row is greater than seek value and descending
-                    // which means seek value is below the current row, find the first occurrence
-                    return findEdgeOccurrence(table, rowSet, startingRow + 1, rowSet.size() - 1, true,
-                            order.get() == SortingOrder.Ascending);
-                }
-                // seek value is above the current row
-                // loop to start and find the first value
-                return findEdgeOccurrence(table, rowSet, 0, startingRow - 1, true,
-                        order.get() == SortingOrder.Ascending);
-            }
-        }
 
-        long row;
-        if (isBackward) {
-            row = findRow(table, rowSet, 0, (int) startingRow);
-            if (row >= 0) {
-                return row;
-            }
-            row = findRow(table, rowSet, (int) startingRow, (int) rowSet.size());
-            if (row >= 0) {
-                return row;
-            }
-        } else {
-            row = findRow(table, rowSet, (int) startingRow + 1, (int) rowSet.size());
-            if (row >= 0) {
-                return row;
-            }
-            row = findRow(table, rowSet, 0, (int) startingRow + 1);
-            if (row >= 0) {
-                return row;
-            }
-        }
+                    // just go to the closest value
+                    if (closestLowerValueYet == null && closestUpperValueYet == null) {
+                        result.setValue(-1L);
+                        return true;
+                    } else if (closestLowerValueYet == null) {
+                        result.setValue(rowSet.find(closestUpperRowYet));
+                        return true;
+                    } else if (closestUpperValueYet == null) {
+                        result.setValue(rowSet.find(closestUpperRowYet));
+                        return true;
+                    } else {
+                        // we need to decide between the two
+                        Class columnType = columnSource.getType();
+                        if (Number.class.isAssignableFrom(columnType)) {
+                            double nu = ((Number) closestUpperValueYet).doubleValue();
+                            double nl = ((Number) closestLowerRowYet).doubleValue();
+                            double ns = ((Number) seekValue).doubleValue();
+                            double du = Math.abs(nu - ns);
+                            double dl = Math.abs(nl - ns);
+                            log.info().append("Using numerical distance (").appendDouble(dl).append(", ")
+                                    .appendDouble(du)
+                                    .append(")").endl();
+                            result.setValue(rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet));
+                            return true;
+                        } else if (Instant.class.isAssignableFrom(columnType)) {
+                            long nu = DateTimeUtils.epochNanos(((Instant) closestUpperValueYet));
+                            long nl = DateTimeUtils.epochNanos(((Instant) closestLowerValueYet));
+                            long ns = DateTimeUtils.epochNanos(((Instant) seekValue));
+                            long du = Math.abs(nu - ns);
+                            long dl = Math.abs(nl - ns);
+                            log.info().append("Using nano distance (").append(dl).append(", ").append(du).append(")")
+                                    .endl();
+                            result.setValue(rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet));
+                            return true;
+                        } else {
+                            long nu = rowSet.find(closestUpperRowYet);
+                            long nl = rowSet.find(closestLowerRowYet);
+                            long ns = startingRow;
+                            long du = Math.abs(nu - ns);
+                            long dl = Math.abs(nl - ns);
+                            log.info().append("Using index distance (").append(dl).append(", ").append(du).append(")")
+                                    .endl();
+                            result.setValue(du < dl ? nu : nl);
+                            return true;
+                        }
+                    }
+                }));
 
-        // just go to the closest value
-        if (closestLowerValueYet == null && closestUpperValueYet == null) {
-            return -1L;
-        } else if (closestLowerValueYet == null) {
-            return rowSet.find(closestUpperRowYet);
-        } else if (closestUpperValueYet == null) {
-            return rowSet.find(closestLowerRowYet);
-        } else {
-            // we need to decide between the two
-            Class columnType = table.getColumnSource(columnName).getType();
-            if (Number.class.isAssignableFrom(columnType)) {
-                double nu = ((Number) closestUpperValueYet).doubleValue();
-                double nl = ((Number) closestLowerRowYet).doubleValue();
-                double ns = ((Number) seekValue).doubleValue();
-                double du = Math.abs(nu - ns);
-                double dl = Math.abs(nl - ns);
-                log.info().append("Using numerical distance (").appendDouble(dl).append(", ").appendDouble(du)
-                        .append(")").endl();
-                return rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet);
-            } else if (Instant.class.isAssignableFrom(columnType)) {
-                long nu = DateTimeUtils.epochNanos(((Instant) closestUpperValueYet));
-                long nl = DateTimeUtils.epochNanos(((Instant) closestLowerValueYet));
-                long ns = DateTimeUtils.epochNanos(((Instant) seekValue));
-                long du = Math.abs(nu - ns);
-                long dl = Math.abs(nl - ns);
-                log.info().append("Using nano distance (").append(dl).append(", ").append(du).append(")").endl();
-                return rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet);
-            } else {
-                long nu = rowSet.find(closestUpperRowYet);
-                long nl = rowSet.find(closestLowerRowYet);
-                long ns = startingRow;
-                long du = Math.abs(nu - ns);
-                long dl = Math.abs(nl - ns);
-                log.info().append("Using index distance (").append(dl).append(", ").append(du).append(")").endl();
-                return du < dl ? nu : nl;
-            }
-        }
+        return result.getValue();
     }
 
     /**
      * Finds the first/last occurrence of the target value by using binary search
      *
-     * @param table the table to check for sorted-ness
      * @param start the starting index to search
      * @param end the ending index to search
      * @param findFirst whether to find the first or last occurrence (false for last)
      * @param isAscending whether the table is sorted in ascending order (false for descending)
      * @return the index of the first/last occurrence of the target value, -1 if not found
      */
-    private long findEdgeOccurrence(Table table, RowSet index, long start, long end, boolean findFirst,
+    private long findEdgeOccurrence(RowSet index, long start, long end, boolean findFirst,
             boolean isAscending) {
         long result = -1;
 
         while (start <= end) {
             long mid = start + (end - start) / 2;
-            Comparable midValue =
-                    (Comparable) table.getColumnSource(columnName).get((int) index.get((int) mid));
+            Comparable midValue = (Comparable) columnSourceGet((int) index.get((int) mid));
             int compareResult = nullSafeCompare(midValue, (Comparable) seekValue);
 
             if (compareResult == 0) {
@@ -198,6 +226,8 @@ public class SeekRow implements Function<Table, Long> {
                 end = mid - 1;
             }
         }
+        log.info().append("searching from ").append(start).append(" to ").append(end).append(": ").append(result)
+                .endl();
         return result;
     }
 
@@ -218,11 +248,11 @@ public class SeekRow implements Function<Table, Long> {
         return c1.compareTo(c2);
     }
 
-    String nullSafeToString(Object o) {
-        return o == null ? "(null)" : o.toString();
+    private Object columnSourceGet(long rowKey) {
+        return usePrev ? columnSource.getPrev(rowKey) : columnSource.get(rowKey);
     }
 
-    private long findRow(Table table, RowSet index, int start, int end) {
+    private long findRow(RowSet index, int start, int end) {
         final RowSet subIndex = index.subSetByPositionRange(start, end);
 
         final RowSet.Iterator it;
@@ -232,8 +262,6 @@ public class SeekRow implements Function<Table, Long> {
             it = subIndex.iterator();
         }
 
-        final ColumnSource columnSource = table.getColumnSource(columnName);
-
         final boolean isComparable = !contains
                 && (Comparable.class.isAssignableFrom(columnSource.getType()) || columnSource.getType().isPrimitive());
 
@@ -242,7 +270,7 @@ public class SeekRow implements Function<Table, Long> {
 
         for (; it.hasNext();) {
             long key = it.nextLong();
-            Object value = columnSource.get(key);
+            Object value = columnSourceGet(key);
             if (useSeek instanceof String) {
                 value = value == null ? null : value.toString();
                 if (insensitive) {
