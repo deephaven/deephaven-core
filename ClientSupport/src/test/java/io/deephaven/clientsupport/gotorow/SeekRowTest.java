@@ -108,7 +108,7 @@ public class SeekRowTest {
         if (ascending) {
             return t.sort("num");
         } else {
-            return t.sortDescending("n");
+            return t.sortDescending("num");
         }
     }
 }

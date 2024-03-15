@@ -459,7 +459,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         final String columnName = request.getColumnName();
                         final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
                         final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                        final Long result = new SeekRow(
+                        final long result = new SeekRow(
                                 request.getStartingRow(),
                                 columnName,
                                 seekValue,
