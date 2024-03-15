@@ -198,23 +198,24 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             throw new IllegalStateException("Signature should always be available.");
         }
 
-//        List<Class<?>> paramTypes = new ArrayList<>();
-//        for (char numpyTypeChar : signatureString.toCharArray()) {
-//            if (numpyTypeChar != '-') {
-//                Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
-//                if (paramType == null) {
-//                    throw new IllegalStateException(
-//                            "Parameters of vectorized functions should always be of integral, floating point, boolean, String, or Object type: "
-//                                    + numpyTypeChar + " of " + signatureString);
-//                }
-//                paramTypes.add(paramType);
-//            } else {
-//                break;
-//            }
-//        }
-//        this.paramTypes = paramTypes;
+        // List<Class<?>> paramTypes = new ArrayList<>();
+        // for (char numpyTypeChar : signatureString.toCharArray()) {
+        // if (numpyTypeChar != '-') {
+        // Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
+        // if (paramType == null) {
+        // throw new IllegalStateException(
+        // "Parameters of vectorized functions should always be of integral, floating point, boolean, String, or Object
+        // type: "
+        // + numpyTypeChar + " of " + signatureString);
+        // }
+        // paramTypes.add(paramType);
+        // } else {
+        // break;
+        // }
+        // }
+        // this.paramTypes = paramTypes;
         String pyEncodedParamsStr = signatureString.split("->")[0];
-        if (!pyEncodedParamsStr.isEmpty()){
+        if (!pyEncodedParamsStr.isEmpty()) {
             String[] pyEncodedParams = pyEncodedParamsStr.split(",");
             for (int i = 0; i < pyEncodedParams.length; i++) {
                 String[] paramDetail = pyEncodedParams[i].split(":");
@@ -263,13 +264,16 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         String callableName = pyCallable.getAttribute("__name__").toString();
 
         if (argTypes.length != parameters.size()) {
-            throw new IllegalArgumentException(callableName + ": " + "Expected " + parameters.size() + " arguments, got " + argTypes.length);
+            throw new IllegalArgumentException(
+                    callableName + ": " + "Expected " + parameters.size() + " arguments, got " + argTypes.length);
         }
         for (int i = 0; i < argTypes.length; i++) {
             Set<Class<?>> types = parameters.get(i).getPossibleTypes();
-            if (!types.contains(argTypes[i]) && !types.contains(Object.class) && !isSafelyCastable(types, argTypes[i])) {
+            if (!types.contains(argTypes[i]) && !types.contains(Object.class)
+                    && !isSafelyCastable(types, argTypes[i])) {
                 throw new IllegalArgumentException(
-                        callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of " + parameters.get(i).getPossibleTypes() + ", got "
+                        callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of "
+                                + parameters.get(i).getPossibleTypes() + ", got "
                                 + argTypes[i]);
             }
         }
