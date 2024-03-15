@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.lang;
 import io.deephaven.engine.util.PyCallableWrapper;
 import org.jpy.PyObject;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,6 +46,15 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
     }
 
     @Override
+    public List<Parameter> getParameters() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public int getNumParameters() {
+        return 0;
+    }
+
     public List<Class<?>> getParamTypes() {
         return parameterTypes;
     }
@@ -73,6 +83,11 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
     @Override
     public Class<?> getReturnType() {
         return Object.class;
+    }
+
+    @Override
+    public void verifyArguments(Class<?>[] argTypes) {
+
     }
 
     @Override

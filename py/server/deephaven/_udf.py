@@ -64,7 +64,7 @@ class _ParsedSignature:
         then the return type char. If a parameter or the return of the function is not annotated,
         the default 'O' - object type, will be used.
         """
-        param_str = ",".join(["".join(p.encoded_types) for p in self.params])
+        param_str = ",".join([str(p.name) + ":" + "".join(p.encoded_types) for p in self.params])
         # ret_annotation has only one parsed annotation, and it might be Optional which means it contains 'N' in the
         # encoded type. We need to remove it.
         return_type_code = re.sub(r"[N]", "", self.ret_annotation.encoded_type)
@@ -414,7 +414,8 @@ def _py_udf(fn: Callable):
         j_class = real_ret_dtype.qst_type.clazz()
 
     wrapper.return_type = j_class
-    wrapper.signature = sig_str_vectorization
+    # wrapper.signature = sig_str_vectorization
+    wrapper.signature = p_sig.encoded
 
     return wrapper
 

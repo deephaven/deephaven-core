@@ -1939,7 +1939,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @return {@code true} if a conversion from {@code original} to {@code target} is a widening conversion; otherwise,
      *         {@code false}.
      */
-    static boolean isWideningPrimitiveConversion(Class<?> original, Class<?> target) {
+    public static boolean isWideningPrimitiveConversion(Class<?> original, Class<?> target) {
         if (original == null || !original.isPrimitive() || target == null || !target.isPrimitive()
                 || original.equals(void.class) || target.equals(void.class)) {
             throw new IllegalArgumentException("Arguments must be a primitive type (excluding void)!");
@@ -2498,11 +2498,34 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         // Attempt python function call vectorization.
         if (scopeType != null && PyCallableWrapper.class.isAssignableFrom(scopeType)) {
+            verifyPyCallableArguments(n, argTypes);
             tryVectorizePythonCallable(n, scopeType, convertedArgExpressions, argTypes);
         }
 
         return calculateMethodReturnTypeUsingGenerics(scopeType, n.getScope().orElse(null), method, expressionTypes,
                 typeArguments);
+    }
+
+    private void verifyPyCallableArguments(@NotNull MethodCallExpr n, @NotNull Class<?>[] argTypes) {
+        final String invokedMethodName = n.getNameAsString();
+
+        if (GET_ATTRIBUTE_METHOD_NAME.equals(invokedMethodName)) {
+            // Only PyCallableWrapper.getAttribute()/PyCallableWrapper.call() may be invoked from the query language.
+            // UDF type checks are not currently supported for getAttribute() calls.
+            return;
+        }
+        if (!n.containsData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS)) {
+            return;
+        }
+        final PyCallableDetails pyCallableDetails = n.getData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS);
+        final String pyMethodName = pyCallableDetails.pythonMethodName;
+        final Object paramValueRaw = queryScopeVariables.get(pyMethodName);
+        if (!(paramValueRaw instanceof PyCallableWrapper)) {
+            return;
+        }
+        final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
+        pyCallableWrapper.parseSignature();
+        pyCallableWrapper.verifyArguments(argTypes);
     }
 
     private Optional<CastExpr> makeCastExpressionForPyCallable(Class<?> retType, MethodCallExpr callMethodCall) {
@@ -2726,11 +2749,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         }
 
-        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
-        if (paramTypes.size() != expressions.length) {
+        if (pyCallableWrapper.getNumParameters() != expressions.length) {
             // note vectorization doesn't handle Python variadic arguments
             throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
-                    + paramTypes.size() + " vs. " + expressions.length);
+                    + pyCallableWrapper.getNumParameters() + " vs. " + expressions.length);
         }
     }
 
@@ -2739,10 +2761,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Expression[] expressions,
             Class<?>[] argTypes,
             PyCallableWrapper pyCallableWrapper) {
-        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
-        if (paramTypes.size() != expressions.length) {
+        if (pyCallableWrapper.getNumParameters() != expressions.length) {
             throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
-                    + paramTypes.size() + " vs. " + expressions.length);
+                    + pyCallableWrapper.getNumParameters() + " vs. " + expressions.length);
         }
 
         pyCallableWrapper.initializeChunkArguments();
@@ -2764,10 +2785,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 throw new IllegalStateException("Vectorizability check failed: " + n);
             }
 
-            if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
-                throw new PythonCallVectorizationFailure("Python vectorized function argument type mismatch: " + n + " "
-                        + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
-            }
+            // TODO related to core#709, but should be covered by PyCallableWrapper.verifyArguments, needs to verify
+//            if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
+//                throw new PythonCallVectorizationFailure("Python vectorized function argument type mismatch: " + n + " "
+//                        + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
+//            }
         }
     }
 

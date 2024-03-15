@@ -428,5 +428,13 @@ def f(x: {p_type}) -> bool:  # note typing
                 t = empty_table(1).update(["X = i", f"Y = f((float)X)"])
                 self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
+    def test_np_typehints_mismatch(self):
+        def f(x: float) -> bool:
+            return True
+
+        with self.assertRaises(DHError) as cm:
+            t = empty_table(1).update(["X = i", "Y = f(ii)"])
+        self.assertRegex(str(cm.exception), "f: Expect")
+
 if __name__ == "__main__":
     unittest.main()

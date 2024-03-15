@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import org.jpy.PyObject;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by rbasralian on 8/12/23
@@ -19,7 +20,9 @@ public interface PyCallableWrapper {
 
     Object call(Object... args);
 
-    List<Class<?>> getParamTypes();
+    List<Parameter> getParameters();
+
+    int getNumParameters();
 
     boolean isVectorized();
 
@@ -32,6 +35,8 @@ public interface PyCallableWrapper {
     void addChunkArgument(ChunkArgument chunkArgument);
 
     Class<?> getReturnType();
+
+    void verifyArguments(Class<?>[] argTypes);
 
     abstract class ChunkArgument {
         private final Class<?> type;
@@ -88,4 +93,41 @@ public interface PyCallableWrapper {
     }
 
     boolean isVectorizableReturnType();
+
+    class Signature {
+        private final List<Parameter> parameters;
+        private final Class<?> returnType;
+
+        public Signature(List<Parameter> parameters, Class<?> returnType) {
+            this.parameters = parameters;
+            this.returnType = returnType;
+        }
+
+        public List<Parameter> getParameters() {
+            return parameters;
+        }
+
+        public Class<?> getReturnType() {
+            return returnType;
+        }
+    }
+    class Parameter {
+        private final String name;
+        private final Set<Class<?>> possibleTypes;
+
+
+        public Parameter(String name, Set<Class<?>> possibleTypes) {
+            this.name = name;
+            this.possibleTypes = possibleTypes;
+        }
+
+        public Set<Class<?>> getPossibleTypes() {
+            return possibleTypes;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
 }
