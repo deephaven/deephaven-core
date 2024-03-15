@@ -331,4 +331,4 @@ class SafeCloseable(JObjectWrapper):
 
     @property
     def j_object(self) -> jpy.JType:
-        return self.j_safe_closeable
+        return self._j_safe_closeable
