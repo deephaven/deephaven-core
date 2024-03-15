@@ -306,15 +306,15 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
     return s
 
 
-class SafeCloseable(JObjectWrapper):
-    """A context manager wrapper to allow Java SafeCloseable to be used in with statements. 
+class AutoCloseable(JObjectWrapper):
+    """A context manager wrapper to allow Java AutoCloseable to be used in with statements.
     
-    When constructing a new instance, the Java SafeCloseable must not be closed."""
+    When constructing a new instance, the Java AutoCloseable must not be closed."""
 
-    j_object_type = jpy.get_type("io.deephaven.util.SafeCloseable")
+    j_object_type = jpy.get_type("java.lang.AutoCloseable")
 
-    def __init__(self, j_safe_closeable):
-        self._j_safe_closeable = j_safe_closeable
+    def __init__(self, j_auto_closeable):
+        self._j_auto_closeable = j_auto_closeable
         self.closed = False
 
     def __enter__(self):
@@ -323,7 +323,7 @@ class SafeCloseable(JObjectWrapper):
     def close(self):
         if not self.closed:
             self.closed = True
-            self._j_safe_closeable.close()
+            self._j_auto_closeable.close()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
@@ -333,4 +333,4 @@ class SafeCloseable(JObjectWrapper):
 
     @property
     def j_object(self) -> jpy.JType:
-        return self._j_safe_closeable
+        return self._j_auto_closeable

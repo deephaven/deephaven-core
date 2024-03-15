@@ -5,7 +5,7 @@
 import unittest
 
 from deephaven import dtypes
-from deephaven.jcompat import j_function, j_lambda, SafeCloseable
+from deephaven.jcompat import j_function, j_lambda, AutoCloseable
 from tests.testbase import BaseTestCase
 
 import jpy
@@ -30,11 +30,11 @@ class JCompatTestCase(BaseTestCase):
         r = j_func.apply(10)
         self.assertEqual(r, "10")
 
-    def test_safe_closeable(self):
-        safe_closeable = SafeCloseable(_JSharedContext.makeSharedContext())
-        with safe_closeable:
-            self.assertEqual(safe_closeable.closed, False)
-        self.assertEqual(safe_closeable.closed, True)
+    def test_auto_closeable(self):
+        auto_closeable = AutoCloseable(_JSharedContext.makeSharedContext())
+        with auto_closeable:
+            self.assertEqual(auto_closeable.closed, False)
+        self.assertEqual(auto_closeable.closed, True)
 
 
 if __name__ == "__main__":
