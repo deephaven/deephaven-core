@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 """ This module defines functions for handling Deephaven date/time data. """
@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import datetime
+import zoneinfo
+import pytz
 from typing import Union, Optional, Literal
 
 import jpy
@@ -165,45 +167,59 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # region Conversions: Python To Java
 
-def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo, offset: datetime.timedelta) -> TimeZone:
+def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
     """
     Converts a Python time zone to a Java TimeZone.
 
     Args:
         tzi: time zone info
-        offset: UTC offset
 
     Returns:
         Java TimeZone
     """
+
     if not tzi:
         return None
 
-    # Try to get the time zone from the zone name
-    try:
-        return _JDateTimeUtils.parseTimeZone(str(tzi))
-    except Exception:
-        pass
+    # Handle pytz time zones
 
-    # Try to get the time zone from the UTC offset
+    if isinstance(tzi, pytz.tzinfo.BaseTzInfo):
+        return _JDateTimeUtils.parseTimeZone(tzi.zone)
 
-    if not offset:
-        raise ValueError("Unable to determine the time zone UTC offset")
+    # Handle zoneinfo time zones
 
-    if offset.microseconds != 0 or offset.seconds%60 != 0:
-        raise ValueError(f"Unsupported time zone offset contains fractions of a minute: {offset}")
+    if isinstance(tzi, zoneinfo.ZoneInfo):
+        return _JDateTimeUtils.parseTimeZone(tzi.key)
 
-    ts = offset.total_seconds()
+    # Handle constant UTC offset time zones (datetime.timezone)
 
-    if ts >= 0:
-        sign = "+"
-    else:
-        sign = "-"
-        ts = -ts
+    if isinstance(tzi, datetime.timezone):
+        offset = tzi.utcoffset(None)
 
-    hours = int(ts / 3600)
-    minutes = int((ts % 3600) / 60)
-    return _JDateTimeUtils.parseTimeZone(f"UTC{sign}{hours:02d}:{minutes:02d}")
+        if offset is None:
+            raise ValueError("Unable to determine the time zone UTC offset")
+
+        if not offset:
+            return _JDateTimeUtils.parseTimeZone("UTC")
+
+        if offset.microseconds != 0 or offset.seconds%60 != 0:
+            raise ValueError(f"Unsupported time zone offset contains fractions of a minute: {offset}")
+
+        ts = offset.total_seconds()
+
+        if ts >= 0:
+            sign = "+"
+        else:
+            sign = "-"
+            ts = -ts
+
+        hours = int(ts / 3600)
+        minutes = int((ts % 3600) / 60)
+        return _JDateTimeUtils.parseTimeZone(f"UTC{sign}{hours:02d}:{minutes:02d}")
+
+    details = "\n\t".join([f"type={type(tzi).mro()}"] +
+                                [f"obj.{attr}={getattr(tzi, attr)}" for attr in dir(tzi) if not attr.startswith("_")])
+    raise TypeError(f"Unsupported conversion: {str(type(tzi))} -> TimeZone\n\tDetails:\n\t{details}")
 
 
 def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]) -> \
@@ -232,10 +248,10 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
         elif isinstance(tz, datetime.tzinfo):
-            return _tzinfo_to_j_time_zone(tz, tz.utcoffset(None) if tz else None)
+            return _tzinfo_to_j_time_zone(tz)
         elif isinstance(tz, datetime.datetime):
             tzi = tz.tzinfo
-            rst = _tzinfo_to_j_time_zone(tzi, tzi.utcoffset(tz) if tzi else None)
+            rst = _tzinfo_to_j_time_zone(tzi)
 
             if not rst:
                 raise ValueError("datetime is not time zone aware")
