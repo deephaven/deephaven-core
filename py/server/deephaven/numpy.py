@@ -31,8 +31,14 @@ def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     """ Produces a numpy array from the given Java array and the Table column definition.
 
     Args:
-        col_def:
-        j_array:
+        col_def (Column): the column definition
+        j_array (jpy.JType): the Java array
+
+    Returns:
+        np.ndarray
+
+    Raises:
+        DHError
     """
     try:
         return _j_array_to_numpy_array(col_def.data_type, j_array, conv_null=False, type_promotion=False)
