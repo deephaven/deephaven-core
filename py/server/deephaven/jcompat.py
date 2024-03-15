@@ -308,6 +308,9 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
 
 class SafeCloseable(JObjectWrapper):
     """A context manager wrapper of Java SafeCloseable to emulate Java try-with-resources."""
+
+    j_object_type = jpy.get_type("io.deephaven.util.SafeCloseable")
+
     def __init__(self, j_safe_closeable):
         self._j_safe_closeable = j_safe_closeable
         self.closed = False
