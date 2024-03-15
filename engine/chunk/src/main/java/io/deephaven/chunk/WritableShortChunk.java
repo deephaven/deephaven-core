@@ -1,14 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit WritableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-package io.deephaven.chunk;
-
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit WritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
 // @formatter:off
+package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
@@ -28,8 +25,6 @@ import java.nio.ShortBuffer;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
 
-// @formatter:on
-
 /**
  * {@link WritableChunk} implementation for short data.
  */
@@ -39,7 +34,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
     private static final WritableShortChunk[] EMPTY_WRITABLE_SHORT_CHUNK_ARRAY = new WritableShortChunk[0];
 
     static <ATTR extends Any> WritableShortChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_WRITABLE_SHORT_CHUNK_ARRAY;
     }
 
@@ -75,7 +70,9 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         data[offset + index] = value;
     }
 
-    public final void add(short value) { data[offset + size++] = value; }
+    public final void add(short value) {
+        data[offset + size++] = value;
+    }
 
     @Override
     public WritableShortChunk<ATTR> slice(int offset, int capacity) {
@@ -118,7 +115,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
     // region fillWithBoxedValue
     @Override
     public final void fillWithBoxedValue(int offset, int size, Object value) {
-        fillWithValue(offset,size, TypeUtils.unbox((Short) value));
+        fillWithValue(offset, size, TypeUtils.unbox((Short) value));
     }
     // endregion fillWithBoxedValue
 
@@ -150,7 +147,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
 
     @Override
     public final void copyFromArray(Object srcArray, int srcOffset, int destOffset, int length) {
-        final short[] typedArray = (short[])srcArray;
+        final short[] typedArray = (short[]) srcArray;
         copyFromTypedArray(typedArray, srcOffset, destOffset, length);
     }
 
@@ -162,13 +159,13 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
             return;
         }
         if (ChunkHelpers.canCopyForward(src, srcOffset, data, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 data[netDestOffset + ii] = src[srcOffset + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             data[netDestOffset + ii] = src[srcOffset + ii];
         }
@@ -176,22 +173,26 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
 
     // region CopyFromBuffer
     @Override
-    public final void copyFromBuffer(@NotNull final Buffer srcBuffer, final int srcOffset, final int destOffset, final int length) {
+    public final void copyFromBuffer(@NotNull final Buffer srcBuffer, final int srcOffset, final int destOffset,
+            final int length) {
         final ShortBuffer shortSrcBuffer = (ShortBuffer) srcBuffer;
         copyFromTypedBuffer(shortSrcBuffer, srcOffset, destOffset, length);
     }
 
     /**
-     * <p>Fill a sub-range of this WritableShortChunk with values from a {@link ShortBuffer}.
+     * <p>
+     * Fill a sub-range of this WritableShortChunk with values from a {@link ShortBuffer}.
      *
-     * <p>See {@link #copyFromBuffer(Buffer, int, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyFromBuffer(Buffer, int, int, int)} for general documentation.
      *
-     * @param srcBuffer  The source {@link ShortBuffer}
-     * @param srcOffset  The absolute offset into {@code srcBuffer} to start copying from
+     * @param srcBuffer The source {@link ShortBuffer}
+     * @param srcOffset The absolute offset into {@code srcBuffer} to start copying from
      * @param destOffset The offset into this chunk to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyFromTypedBuffer(@NotNull final ShortBuffer srcBuffer, final int srcOffset, final int destOffset, final int length) {
+    public final void copyFromTypedBuffer(@NotNull final ShortBuffer srcBuffer, final int srcOffset,
+            final int destOffset, final int length) {
         if (srcBuffer.hasArray()) {
             copyFromTypedArray(srcBuffer.array(), srcBuffer.arrayOffset() + srcOffset, destOffset, length);
         } else {
@@ -219,12 +220,12 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
     // endregion sort
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableShortChunk<ATTR> upcast(WritableShortChunk<ATTR_DERIV> self) {
-        //noinspection unchecked
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableShortChunk<ATTR> upcast(
+            WritableShortChunk<ATTR_DERIV> self) {
+        // noinspection unchecked
         return (WritableShortChunk<ATTR>) self;
     }
     // endregion downcast

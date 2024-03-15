@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -35,7 +38,7 @@ public class CharCumSumOperator extends BaseLongUpdateByOperator {
             // read the value from the values chunk
             final char currentVal = charValueChunk.get(pos);
 
-            if(curVal == NULL_LONG) {
+            if (curVal == NULL_LONG) {
                 curVal = currentVal == NULL_CHAR ? NULL_LONG : currentVal;
             } else if (currentVal != NULL_CHAR) {
                 curVal += currentVal;
@@ -44,10 +47,10 @@ public class CharCumSumOperator extends BaseLongUpdateByOperator {
     }
 
     public CharCumSumOperator(@NotNull final MatchPair pair
-                              // region extra-constructor-args
-                              // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         // endregion constructor
     }
@@ -55,8 +58,8 @@ public class CharCumSumOperator extends BaseLongUpdateByOperator {
     @Override
     public UpdateByOperator copy() {
         return new CharCumSumOperator(pair
-              // region extra-copy-args
-              // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

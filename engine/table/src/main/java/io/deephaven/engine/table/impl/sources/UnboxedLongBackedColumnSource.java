@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -8,10 +11,11 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 
 /**
- * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link Instant} values
- * as {@code long} values.
+ * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link Instant} values as
+ * {@code long} values.
  */
-public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
+public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long>
+        implements MutableColumnSourceGetDefaults.ForLong {
     private final ColumnSource<T> alternateColumnSource;
 
     public UnboxedLongBackedColumnSource(ColumnSource<T> alternateColumnSource) {
@@ -49,7 +53,7 @@ public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long>
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
         if (alternateDataType == alternateColumnSource.getType()) {
             // this is a trivial return conversion
-            //noinspection unchecked
+            // noinspection unchecked
             return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
         }
         return alternateColumnSource.reinterpret(alternateDataType);

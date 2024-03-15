@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkMatchFilterFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
@@ -16,15 +15,15 @@ import gnu.trove.set.hash.TShortHashSet;
 /**
  * Creates chunk filters for short values.
  *
- * The strategy is that for one, two, or three values we have specialized
- * classes that will do the appropriate simple equality check.
+ * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
+ * equality check.
  *
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class ShortChunkMatchFilterFactory {
     private ShortChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ShortChunkFilter makeFilter(boolean invertMatch, short ... values) {
+    public static ChunkFilter.ShortChunkFilter makeFilter(boolean invertMatch, short... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueShortChunkFilter(values[0]);
@@ -58,7 +57,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -76,7 +76,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -96,7 +97,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -117,7 +119,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -140,7 +143,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -163,7 +167,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -177,12 +182,13 @@ public class ShortChunkMatchFilterFactory {
     private static class MultiValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
         private final TShortHashSet values;
 
-        private MultiValueShortChunkFilter(short ... values) {
+        private MultiValueShortChunkFilter(short... values) {
             this.values = new TShortHashSet(values);
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);
@@ -196,12 +202,13 @@ public class ShortChunkMatchFilterFactory {
     private static class InverseMultiValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
         private final TShortHashSet values;
 
-        private InverseMultiValueShortChunkFilter(short ... values) {
+        private InverseMultiValueShortChunkFilter(short... values) {
             this.values = new TShortHashSet(values);
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short checkValue = values.get(ii);

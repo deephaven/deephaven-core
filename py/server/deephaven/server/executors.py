@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 """
 Support for running operations on JVM server threads, so that they can be given work from python. Initially, there

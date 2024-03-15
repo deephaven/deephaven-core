@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingproduct;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -37,7 +40,7 @@ public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
                         } else if (a == NULL_DOUBLE) {
                             return b;
                         } else if (b == NULL_DOUBLE) {
-                            return  a;
+                            return a;
                         }
                         return a * b;
                     },

@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit IntegerColumnIterator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit IntegerColumnIterator and run "./gradlew replicateColumnIterators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.iterators;
 
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;

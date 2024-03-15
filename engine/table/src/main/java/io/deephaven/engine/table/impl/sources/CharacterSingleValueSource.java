@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.WritableCharChunk;
@@ -26,7 +26,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class CharacterSingleValueSource extends SingleValueColumnSource<Character> implements MutableColumnSourceGetDefaults.ForChar {
+public class CharacterSingleValueSource extends SingleValueColumnSource<Character>
+        implements MutableColumnSourceGetDefaults.ForChar {
 
     private char current;
     private transient char prev;
@@ -95,7 +96,8 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     }
 
     @Override
-    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
+    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull RowSequence rowSequence) {
         if (rowSequence.size() == 0) {
             return;
         }
@@ -105,7 +107,8 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

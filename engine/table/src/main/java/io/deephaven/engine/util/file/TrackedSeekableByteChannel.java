@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util.file;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -14,9 +14,11 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
 
 /**
- * <p>{@link SeekableByteChannel} wrapper around {@link FileHandle} with support for re-opening the handle in case it
- * has been closed asynchronously.
- * <p>Note the applications must be sure to use {@link #read(ByteBuffer)}, {@link #write(ByteBuffer)}, and
+ * <p>
+ * {@link SeekableByteChannel} wrapper around {@link FileHandle} with support for re-opening the handle in case it has
+ * been closed asynchronously.
+ * <p>
+ * Note the applications must be sure to use {@link #read(ByteBuffer)}, {@link #write(ByteBuffer)}, and
  * {@link #position(long)} in a thread safe manner, using external synchronization or other means.
  */
 public final class TrackedSeekableByteChannel extends FileHandleAccessor implements SeekableByteChannel {
@@ -29,10 +31,10 @@ public final class TrackedSeekableByteChannel extends FileHandleAccessor impleme
      * Make a channel for a "local" file.
      *
      * @param fileHandleCreator The function used to make file handles
-     * @param file              The abstract path name to wrap access to
+     * @param file The abstract path name to wrap access to
      */
     public TrackedSeekableByteChannel(@NotNull final FileHandleFactory.FileToHandleFunction fileHandleCreator,
-                                      @NotNull final File file) throws IOException {
+            @NotNull final File file) throws IOException {
         super(fileHandleCreator, file);
         initializePosition();
     }

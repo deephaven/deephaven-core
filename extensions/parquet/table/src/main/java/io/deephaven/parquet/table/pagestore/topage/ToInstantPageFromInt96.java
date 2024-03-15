@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
@@ -19,16 +19,15 @@ import java.time.ZoneId;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * Parquet {@link ToPage} implementation for {@link Instant}s stored as Int96s representing an Impala
- * format Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
+ * Parquet {@link ToPage} implementation for {@link Instant}s stored as Int96s representing an Impala format Timestamp
+ * (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
  *
  */
 public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, long[]> {
     /*
-     * Potential references/points of comparison for this algorithm:
-     *   https://github.com/apache/iceberg/pull/1184/files
-     *   https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h
-     *   (last retrieved as https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
+     * Potential references/points of comparison for this algorithm: https://github.com/apache/iceberg/pull/1184/files
+     * https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h (last retrieved as
+     * https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
      */
     @SuppressWarnings("rawtypes")
     private static final ToInstantPageFromInt96 INSTANCE = new ToInstantPageFromInt96<>();
@@ -36,32 +35,32 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
     private static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
     private static long offset;
     static {
-        final String referenceTimeZone = Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone","UTC");
+        final String referenceTimeZone =
+                Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone", "UTC");
         setReferenceTimeZone(referenceTimeZone);
     }
 
     public static <ATTR extends Any> ToInstantPageFromInt96<ATTR> create(@NotNull Class<?> nativeType) {
         if (Instant.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 
         throw new IllegalArgumentException("The native type foran Instant column is " + nativeType.getCanonicalName());
     }
 
-    private ToInstantPageFromInt96() {
-    }
+    private ToInstantPageFromInt96() {}
 
     /**
-     * Allows overriding the time zone to be used when interpreting Int96 timestamp values.
-     * Default is UTC. Can be set globally with the parameter deephaven.parquet.referenceTimeZone.
-     * Valid values are time zone Strings which would be used in {@link DateTimeUtils#parseInstant(String) parseInstant},
-     * such as NY.
+     * Allows overriding the time zone to be used when interpreting Int96 timestamp values. Default is UTC. Can be set
+     * globally with the parameter deephaven.parquet.referenceTimeZone. Valid values are time zone Strings which would
+     * be used in {@link DateTimeUtils#parseInstant(String) parseInstant}, such as NY.
      *
      * @param timeZone
      */
     public static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone), ZoneId.of("UTC"));
+        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
+                ZoneId.of("UTC"));
     }
 
     @Override
@@ -77,7 +76,9 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
     }
 
     @Override
-    public Object nullValue() { return null;  }
+    public Object nullValue() {
+        return null;
+    }
 
     @Override
     @NotNull
@@ -88,7 +89,7 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
     @Override
     public final long[] convertResult(@NotNull final Object result) {
         // result is delivered as an array of Binary[12]
-        final Binary[] results = (Binary[])result;
+        final Binary[] results = (Binary[]) result;
         final int resultLength = results.length;
         final long[] resultLongs = new long[resultLength];
 

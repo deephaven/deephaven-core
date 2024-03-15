@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSsmBackedSource and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.FloatVector;
@@ -20,27 +19,27 @@ import io.deephaven.engine.rowset.RowSet;
  * A {@link SsmBackedColumnSource} for Floats.
  */
 public class FloatSsmBackedSource extends AbstractColumnSource<FloatVector>
-                                 implements ColumnSourceGetDefaults.ForObject<FloatVector>,
-                                            MutableColumnSourceGetDefaults.ForObject<FloatVector>,
-                                            SsmBackedColumnSource<FloatSegmentedSortedMultiset, FloatVector> {
+        implements ColumnSourceGetDefaults.ForObject<FloatVector>,
+        MutableColumnSourceGetDefaults.ForObject<FloatVector>,
+        SsmBackedColumnSource<FloatSegmentedSortedMultiset, FloatVector> {
     private final ObjectArraySource<FloatSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
-    //region Constructor
+    // region Constructor
     public FloatSsmBackedSource() {
         super(FloatVector.class, float.class);
         underlying = new ObjectArraySource<>(FloatSegmentedSortedMultiset.class, float.class);
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region SsmBackedColumnSource
+    // region SsmBackedColumnSource
     @Override
     public FloatSegmentedSortedMultiset getOrCreate(long key) {
         FloatSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
-        if(ssm == null) {
-            //region CreateNew
+        if (ssm == null) {
+            // region CreateNew
             underlying.set(key, ssm = new FloatSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
-            //endregion CreateNew
+            // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
         return ssm;
@@ -65,7 +64,7 @@ public class FloatSsmBackedSource extends AbstractColumnSource<FloatVector>
     public ObjectArraySource<FloatSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
-    //endregion
+    // endregion
 
     @Override
     public boolean isImmutable() {
@@ -93,7 +92,7 @@ public class FloatSsmBackedSource extends AbstractColumnSource<FloatVector>
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final FloatSegmentedSortedMultiset ssm = getCurrentSsm(key);
-            if(ssm != null) {
+            if (ssm != null) {
                 ssm.clearDeltas();
             }
             return true;

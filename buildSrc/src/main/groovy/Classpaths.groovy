@@ -4,7 +4,6 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import org.gradle.api.plugins.JavaPlatformPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.internal.Actions
 
@@ -118,7 +117,7 @@ class Classpaths {
 
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
-    static final String JETTY11_VERSION = '11.0.19'
+    static final String JETTY11_VERSION = '11.0.20'
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
@@ -19,14 +19,13 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
     private final Class<T> nativeType;
     private final ObjectCodec<T> codec;
 
-    public static <T, ATTR extends Any>
-    ToPage<ATTR, T[]> create(
+    public static <T, ATTR extends Any> ToPage<ATTR, T[]> create(
             final Class<T> nativeType,
             @NotNull final ObjectCodec<T> codec,
             final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (!nativeType.isPrimitive()) {
-            return dictionarySupplier == null ? new ToObjectPage<>(nativeType, codec) :
-                    new ToPageWithDictionary<>(
+            return dictionarySupplier == null ? new ToObjectPage<>(nativeType, codec)
+                    : new ToPageWithDictionary<>(
                             nativeType,
                             new ChunkDictionary<>(
                                     (dictionary, key) -> {
@@ -63,9 +62,10 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
         return convertResult(nativeType, codec, result);
     }
 
-    private static <T2> T2[] convertResult(final Class<T2> nativeType, final ObjectCodec<T2> codec, final Object result) {
+    private static <T2> T2[] convertResult(final Class<T2> nativeType, final ObjectCodec<T2> codec,
+            final Object result) {
         Binary[] from = (Binary[]) result;
-        //noinspection unchecked
+        // noinspection unchecked
         T2[] to = (T2[]) Array.newInstance(nativeType, from.length);
 
         for (int ri = 0; ri < to.length; ++ri) {

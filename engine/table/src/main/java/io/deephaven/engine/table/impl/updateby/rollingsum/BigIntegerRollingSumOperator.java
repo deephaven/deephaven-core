@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.base.RingBuffer;
@@ -99,7 +102,8 @@ public final class BigIntegerRollingSumOperator extends BaseObjectUpdateByOperat
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigInteger.class);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                BigInteger.class);
     }
 
     @Override

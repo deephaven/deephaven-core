@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.util.NameValidator;
@@ -241,9 +241,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         }
         if (sourceTable.isRefreshing() && !AbstractFormulaColumn.ALLOW_UNSAFE_REFRESHING_FORMULAS) {
             // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
-            boolean isUnsafe = !sourceTable.isAppendOnly() && (usesI || usesII);
-            isUnsafe |= !sourceTable.isAddOnly() && usesK;
-            isUnsafe |= !usedColumnArrays.isEmpty();
+            boolean isUnsafe = (usesI || usesII) && !sourceTable.isAppendOnly() && !sourceTable.isBlink();
+            isUnsafe |= usesK && !sourceTable.isAddOnly() && !sourceTable.isBlink();
+            isUnsafe |= !usedColumnArrays.isEmpty() && !sourceTable.isBlink();
             if (isUnsafe) {
                 throw new IllegalArgumentException("Formula '" + formula + "' uses i, ii, k, or column array " +
                         "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +

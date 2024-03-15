@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSortKernelBenchmark and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSortKernelBenchmark and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.benchmark.engine.sort.timsort;
 
 import io.deephaven.engine.table.impl.sort.timsort.BaseTestByteTimSortKernel;
@@ -35,8 +34,7 @@ public class ByteSortKernelBenchmark {
     private Runnable doSort;
 
     @TearDown(Level.Trial)
-    public void finishTrial() {
-    }
+    public void finishTrial() {}
 
     @Setup(Level.Iteration)
     public void setupIteration() {
@@ -70,19 +68,20 @@ public class ByteSortKernelBenchmark {
                 doSort = () -> stuffToSort.sort(javaComparator);
                 break;
             case "javaarray":
-                final byte [] javaArray = new byte[stuffToSort.size()];
+                final byte[] javaArray = new byte[stuffToSort.size()];
                 for (int ii = 0; ii < javaArray.length; ++ii) {
                     javaArray[ii] = stuffToSort.get(ii).getFirstElement();
                 }
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestByteTimSortKernel.ByteLongSortKernelStuff sortStuff
-                        = new BaseTestByteTimSortKernel.ByteLongSortKernelStuff(stuffToSort);
+                final BaseTestByteTimSortKernel.ByteLongSortKernelStuff sortStuff =
+                        new BaseTestByteTimSortKernel.ByteLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":
-                final BaseTestByteTimSortKernel.ByteMergeStuff mergeStuff = new BaseTestByteTimSortKernel.ByteMergeStuff(stuffToSort);
+                final BaseTestByteTimSortKernel.ByteMergeStuff mergeStuff =
+                        new BaseTestByteTimSortKernel.ByteMergeStuff(stuffToSort);
                 doSort = mergeStuff::run;
                 break;
         }

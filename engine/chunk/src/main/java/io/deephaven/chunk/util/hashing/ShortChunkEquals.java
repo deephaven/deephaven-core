@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkEquals and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkEquals and run "./gradlew replicateHashing" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.*;
@@ -15,7 +14,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 // region name
 public class ShortChunkEquals implements ChunkEquals {
     public static ShortChunkEquals INSTANCE = new ShortChunkEquals();
-// endregion name
+    // endregion name
 
     public static boolean equalReduce(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs) {
         if (lhs.size() != rhs.size()) {
@@ -39,7 +38,8 @@ public class ShortChunkEquals implements ChunkEquals {
         return ii;
     }
 
-    private static void equal(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    private static void equal(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs,
+            WritableBooleanChunk destination) {
         for (int ii = 0; ii < lhs.size(); ++ii) {
             destination.set(ii, eq(lhs.get(ii), rhs.get(ii)));
         }
@@ -60,7 +60,8 @@ public class ShortChunkEquals implements ChunkEquals {
         destination.setSize(lhs.size());
     }
 
-    public static void notEqual(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    public static void notEqual(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs,
+            WritableBooleanChunk destination) {
         for (int ii = 0; ii < lhs.size(); ++ii) {
             destination.set(ii, neq(lhs.get(ii), rhs.get(ii)));
         }
@@ -74,14 +75,16 @@ public class ShortChunkEquals implements ChunkEquals {
         destination.setSize(lhs.size());
     }
 
-    private static void andEqual(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    private static void andEqual(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs,
+            WritableBooleanChunk destination) {
         for (int ii = 0; ii < lhs.size(); ++ii) {
             destination.set(ii, destination.get(ii) && eq(lhs.get(ii), rhs.get(ii)));
         }
         destination.setSize(lhs.size());
     }
 
-    private static void andNotEqual(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    private static void andNotEqual(ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs,
+            WritableBooleanChunk destination) {
         for (int ii = 0; ii < lhs.size(); ++ii) {
             destination.set(ii, destination.get(ii) && neq(lhs.get(ii), rhs.get(ii)));
         }
@@ -95,7 +98,8 @@ public class ShortChunkEquals implements ChunkEquals {
         destination.setSize(chunk.size() - 1);
     }
 
-    private static void equalPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, ShortChunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
+    private static void equalPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality,
+            ShortChunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
         final int pairCount = chunkPositionsToCheckForEquality.size() / 2;
         for (int ii = 0; ii < pairCount; ++ii) {
             final int firstPosition = chunkPositionsToCheckForEquality.get(ii * 2);
@@ -106,7 +110,8 @@ public class ShortChunkEquals implements ChunkEquals {
         destinations.setSize(pairCount);
     }
 
-    private static void andEqualPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, ShortChunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
+    private static void andEqualPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality,
+            ShortChunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
         final int pairCount = chunkPositionsToCheckForEquality.size() / 2;
         for (int ii = 0; ii < pairCount; ++ii) {
             if (destinations.get(ii)) {
@@ -118,7 +123,8 @@ public class ShortChunkEquals implements ChunkEquals {
         }
     }
 
-    private static void equalPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions, ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
+    private static void equalPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions,
+            ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
         for (int ii = 0; ii < lhsPositions.size(); ++ii) {
             final int lhsPosition = lhsPositions.get(ii);
             final int rhsPosition = rhsPositions.get(ii);
@@ -128,7 +134,8 @@ public class ShortChunkEquals implements ChunkEquals {
         destinations.setSize(lhsPositions.size());
     }
 
-    private static void andEqualPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions, ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
+    private static void andEqualPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions,
+            ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
         for (int ii = 0; ii < lhsPositions.size(); ++ii) {
             if (destinations.get(ii)) {
                 final int lhsPosition = lhsPositions.get(ii);
@@ -140,7 +147,8 @@ public class ShortChunkEquals implements ChunkEquals {
         destinations.setSize(lhsPositions.size());
     }
 
-    private static void equalLhsPermuted(IntChunk<ChunkPositions> lhsPositions, ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
+    private static void equalLhsPermuted(IntChunk<ChunkPositions> lhsPositions, ShortChunk<? extends Any> lhs,
+            ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
         for (int ii = 0; ii < lhsPositions.size(); ++ii) {
             final int lhsPosition = lhsPositions.get(ii);
             final boolean equals = eq(lhs.get(lhsPosition), rhs.get(ii));
@@ -149,7 +157,8 @@ public class ShortChunkEquals implements ChunkEquals {
         destinations.setSize(lhsPositions.size());
     }
 
-    private static void andEqualLhsPermuted(IntChunk<ChunkPositions> lhsPositions, ShortChunk<? extends Any> lhs, ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
+    private static void andEqualLhsPermuted(IntChunk<ChunkPositions> lhsPositions, ShortChunk<? extends Any> lhs,
+            ShortChunk<? extends Any> rhs, WritableBooleanChunk destinations) {
         for (int ii = 0; ii < lhsPositions.size(); ++ii) {
             if (destinations.get(ii)) {
                 final int lhsPosition = lhsPositions.get(ii);
@@ -190,22 +199,26 @@ public class ShortChunkEquals implements ChunkEquals {
     }
 
     @Override
-    public void equalPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    public void equalPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions,
+            Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
         equalPermuted(lhsPositions, rhsPositions, lhs.asShortChunk(), rhs.asShortChunk(), destination);
     }
 
     @Override
-    public void equalLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    public void equalLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs,
+            Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
         equalLhsPermuted(lhsPositions, lhs.asShortChunk(), rhs.asShortChunk(), destination);
     }
 
     @Override
-    public void andEqualPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    public void andEqualPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions,
+            Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
         andEqualPermuted(lhsPositions, rhsPositions, lhs.asShortChunk(), rhs.asShortChunk(), destination);
     }
 
     @Override
-    public void andEqualLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
+    public void andEqualLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs,
+            Chunk<? extends Any> rhs, WritableBooleanChunk destination) {
         andEqualLhsPermuted(lhsPositions, lhs.asShortChunk(), rhs.asShortChunk(), destination);
     }
 
@@ -224,12 +237,14 @@ public class ShortChunkEquals implements ChunkEquals {
     }
 
     @Override
-    public void equalPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, Chunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
+    public void equalPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, Chunk<? extends Any> valuesChunk,
+            WritableBooleanChunk destinations) {
         equalPairs(chunkPositionsToCheckForEquality, valuesChunk.asShortChunk(), destinations);
     }
 
     @Override
-    public void andEqualPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, Chunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
+    public void andEqualPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality,
+            Chunk<? extends Any> valuesChunk, WritableBooleanChunk destinations) {
         andEqualPairs(chunkPositionsToCheckForEquality, valuesChunk.asShortChunk(), destinations);
     }
 

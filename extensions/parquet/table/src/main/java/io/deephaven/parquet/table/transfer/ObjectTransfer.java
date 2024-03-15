@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.base.verify.Assert;
@@ -25,8 +25,9 @@ abstract class ObjectTransfer<COLUMN_TYPE> extends VariableWidthTransfer<COLUMN_
     private int numBytesBuffered;
 
     ObjectTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                   final int targetPageSizeInBytes) {
-        super(columnSource, tableRowSet, targetPageSizeInBytes, targetPageSizeInBytes, new Binary[targetPageSizeInBytes]);
+            final int targetPageSizeInBytes) {
+        super(columnSource, tableRowSet, targetPageSizeInBytes, targetPageSizeInBytes,
+                new Binary[targetPageSizeInBytes]);
         bufferedDataCount = 0;
         numBytesBuffered = 0;
     }
@@ -66,7 +67,7 @@ abstract class ObjectTransfer<COLUMN_TYPE> extends VariableWidthTransfer<COLUMN_
     final boolean addEncodedDataToBuffer(@NotNull final EncodedData<Binary> data, final boolean force) {
         if (force && bufferedDataCount != 0) {
             // This should never happen, because "force" is only set by the caller when adding the very first object
-            //noinspection ThrowableNotThrown
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
             return false;
         }

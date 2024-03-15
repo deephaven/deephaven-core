@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -17,67 +17,72 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSourceAndChunkTests {
+    private static final String TASK = "replicateSourceAndChunkTests";
+
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
 
-        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java",
                 Collections.emptyMap()));
-        fixupObjectColumnSourceTest(charToObject(
+        fixupObjectColumnSourceTest(charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java"));
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java");
-        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java",
                 Collections.emptyMap()));
-        fixupObjectColumnSourceTest(charToObject(
+        fixupObjectColumnSourceTest(charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java"));
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
-        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java",
                 Collections.emptyMap()));
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterImmutableArraySource.java");
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterImmutable2DArraySource.java");
 
-        charToAllButBoolean("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
-        fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
-        fixupBooleanChunkTest(charToBoolean("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
+        charToAllButBoolean(TASK, "engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
+        fixupChunkTest(charToObject(TASK, "engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
+        fixupBooleanChunkTest(charToBoolean(TASK, "engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
-        fixupBooleanDeltaAwareColumnSourceTest(charToBooleanAsByte(
+        fixupBooleanDeltaAwareColumnSourceTest(charToBooleanAsByte(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java",
                 Collections.emptyMap()));
-        fixupObjectDeltaAwareColumnSourceTest(charToObject(
+        fixupObjectDeltaAwareColumnSourceTest(charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java"));
 
-        charToAllButBoolean("engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java");
-        fixupObjectTestSource(charToObject(
+        charToAllButBoolean(TASK,
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java");
+        fixupObjectTestSource(charToObject(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/CharTestSource.java"));
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/ImmutableCharTestSource.java");
-        fixupObjectTestSource(charToObject(
+        fixupObjectTestSource(charToObject(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/sources/ImmutableCharTestSource.java"));
 
-        charToAllButBooleanAndFloats(
+        charToAllButBooleanAndFloats(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/CharGenerator.java");
-        floatToAllFloatingPoints(
+        floatToAllFloatingPoints(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/FloatGenerator.java");
-        charToAllButBooleanAndFloats(
+        charToAllButBooleanAndFloats(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/UniqueCharGenerator.java");
-        charToLong("engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java");
-        charToInteger("engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
+        charToLong(TASK,
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java");
+        charToInteger(TASK,
+                "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
                 Collections.emptyMap());
-        fixupSortedDoubleGenerator(charToDouble(
+        fixupSortedDoubleGenerator(charToDouble(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
                 Collections.emptyMap()));
     }

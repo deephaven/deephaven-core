@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,26 +12,29 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateStampKernel {
+    private static final String TASK = "replicateStampKernel";
+
     public static void main(String[] args) throws IOException {
         final String charStampPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharStampKernel.java";
         final String charNoExactStampPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharNoExactStampKernel.java";
-        final List<String> stampKernels = charToAllButBoolean(charStampPath);
-        final List<String> noExactStampKernels = charToAllButBoolean(charNoExactStampPath);
+        final List<String> stampKernels = charToAllButBoolean(TASK, charStampPath);
+        final List<String> noExactStampKernels = charToAllButBoolean(TASK, charNoExactStampPath);
 
         stampKernels.addAll(noExactStampKernels);
         stampKernels.add(charStampPath);
         stampKernels.add(charNoExactStampPath);
 
-        final String objectStamp = charToObject(charStampPath);
+        final String objectStamp = charToObject(TASK, charStampPath);
         fixupObjectStamp(objectStamp);
-        final String objectNoExactStamp = charToObject(charNoExactStampPath);
+        final String objectNoExactStamp = charToObject(TASK, charNoExactStampPath);
         fixupObjectStamp(objectNoExactStamp);
 
         stampKernels.add(objectStamp);
@@ -72,8 +76,13 @@ public class ReplicateStampKernel {
     private static List<String> ascendingNameToDescendingName(String path, List<String> lines) {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = className.replace("StampKernel", "ReverseStampKernel");
-        // we should skip the replicate header
-        return globalReplacements(3, lines, className, newName);
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+
+        return globalReplacements(lines, className, newName);
     }
 
     private static void fixupObjectStamp(String objectPath) throws IOException {

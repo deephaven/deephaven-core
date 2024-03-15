@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -9,7 +9,7 @@ import io.deephaven.chunk.attributes.Any;
 public class WritableCharChunkChunk<ATTR extends Any> extends CharChunkChunk<ATTR> implements WritableChunkChunk<ATTR> {
 
     public static <ATTR extends Any> WritableCharChunk<ATTR>[] makeArray(int capacity) {
-        //noinspection unchecked
+        // noinspection unchecked
         return new WritableCharChunk[capacity];
     }
 
@@ -21,7 +21,8 @@ public class WritableCharChunkChunk<ATTR extends Any> extends CharChunkChunk<ATT
         return new WritableCharChunkChunk<>(data, 0, data.length);
     }
 
-    public static <ATTR extends Any> WritableCharChunkChunk<ATTR> writableChunkWrap(WritableCharChunk<ATTR>[] data, int offset, int size) {
+    public static <ATTR extends Any> WritableCharChunkChunk<ATTR> writableChunkWrap(WritableCharChunk<ATTR>[] data,
+            int offset, int size) {
         return new WritableCharChunkChunk<>(data, offset, size);
     }
 

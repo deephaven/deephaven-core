@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharArrayExpansionKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharArrayExpansionKernel and run "./gradlew replicateBarrageUtils" to regenerate
+//
+// @formatter:off
 package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.LongChunk;
@@ -25,7 +24,8 @@ public class LongArrayExpansionKernel implements ArrayExpansionKernel {
     public final static LongArrayExpansionKernel INSTANCE = new LongArrayExpansionKernel();
 
     @Override
-    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source,
+            final WritableIntChunk<ChunkPositions> perElementLengthDest) {
         if (source.size() == 0) {
             perElementLengthDest.setSize(0);
             return WritableLongChunk.makeWritableChunk(0);
@@ -86,13 +86,13 @@ public class LongArrayExpansionKernel implements ArrayExpansionKernel {
                 result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
                 final long[] row = new long[rowLen];
-                typedSource.copyToArray(lenRead, row,0, rowLen);
+                typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;
                 result.set(outOffset + i, row);
             }
         }
 
-        //noinspection unchecked
-        return (WritableObjectChunk<T, A>)result;
+        // noinspection unchecked
+        return (WritableObjectChunk<T, A>) result;
     }
 }

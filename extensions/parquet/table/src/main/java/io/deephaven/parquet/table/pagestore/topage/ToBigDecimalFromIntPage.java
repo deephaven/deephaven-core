@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
@@ -15,8 +15,7 @@ public class ToBigDecimalFromIntPage<ATTR extends Any> extends ToBigDecimalBase<
     public static <ATTR extends Any> ToPage<ATTR, BigDecimal[]> create(
             @NotNull final Class<?> nativeType,
             final int precision,
-            final int scale
-    ) {
+            final int scale) {
         return new ToBigDecimalFromIntPage(nativeType, precision, scale);
     }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -102,7 +102,8 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
     }
 
     @Override
-    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function, final String columnName,
+    protected <T, R> void applyFunction(final java.util.function.Function<? super T, ? extends R> function,
+            final String columnName,
             final String functionInput, final Class<R> resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
@@ -121,7 +122,8 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
         ArgumentValidations.assertNull(partitionedTable, "partitionedTable must be null", getPlotInfo());
         swappableTable.addColumn(columnName);
         final Function<Table, Table> tableTransform = t -> {
-            Arrays.stream(classesToImport).forEach(aClass -> ExecutionContext.getContext().getQueryLibrary().importClass(aClass));
+            Arrays.stream(classesToImport)
+                    .forEach(aClass -> ExecutionContext.getContext().getQueryLibrary().importClass(aClass));
             params.forEach(QueryScope::addParam);
             return t.update(update);
         };

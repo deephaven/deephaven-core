@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSsmBackedSource and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.DoubleVector;
@@ -20,27 +19,27 @@ import io.deephaven.engine.rowset.RowSet;
  * A {@link SsmBackedColumnSource} for Doubles.
  */
 public class DoubleSsmBackedSource extends AbstractColumnSource<DoubleVector>
-                                 implements ColumnSourceGetDefaults.ForObject<DoubleVector>,
-                                            MutableColumnSourceGetDefaults.ForObject<DoubleVector>,
-                                            SsmBackedColumnSource<DoubleSegmentedSortedMultiset, DoubleVector> {
+        implements ColumnSourceGetDefaults.ForObject<DoubleVector>,
+        MutableColumnSourceGetDefaults.ForObject<DoubleVector>,
+        SsmBackedColumnSource<DoubleSegmentedSortedMultiset, DoubleVector> {
     private final ObjectArraySource<DoubleSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
-    //region Constructor
+    // region Constructor
     public DoubleSsmBackedSource() {
         super(DoubleVector.class, double.class);
         underlying = new ObjectArraySource<>(DoubleSegmentedSortedMultiset.class, double.class);
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region SsmBackedColumnSource
+    // region SsmBackedColumnSource
     @Override
     public DoubleSegmentedSortedMultiset getOrCreate(long key) {
         DoubleSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
-        if(ssm == null) {
-            //region CreateNew
+        if (ssm == null) {
+            // region CreateNew
             underlying.set(key, ssm = new DoubleSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
-            //endregion CreateNew
+            // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
         return ssm;
@@ -65,7 +64,7 @@ public class DoubleSsmBackedSource extends AbstractColumnSource<DoubleVector>
     public ObjectArraySource<DoubleSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
-    //endregion
+    // endregion
 
     @Override
     public boolean isImmutable() {
@@ -93,7 +92,7 @@ public class DoubleSsmBackedSource extends AbstractColumnSource<DoubleVector>
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final DoubleSegmentedSortedMultiset ssm = getCurrentSsm(key);
-            if(ssm != null) {
+            if (ssm != null) {
                 ssm.clearDeltas();
             }
             return true;

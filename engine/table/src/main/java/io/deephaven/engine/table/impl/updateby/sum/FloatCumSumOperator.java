@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -41,7 +44,7 @@ public class FloatCumSumOperator extends BaseFloatUpdateByOperator {
     }
 
     public FloatCumSumOperator(@NotNull final MatchPair pair) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
     }
 
     @Override

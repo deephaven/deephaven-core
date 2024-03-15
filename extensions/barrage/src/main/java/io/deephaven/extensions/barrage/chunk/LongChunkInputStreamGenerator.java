@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkInputStreamGenerator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkInputStreamGenerator and run "./gradlew replicateBarrageUtils" to regenerate
+//
+// @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -62,7 +61,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             super(chunk, options, subset);
         }
 
-        private int cachedNullCount = - 1;
+        private int cachedNullCount = -1;
 
         @Override
         public int nullCount() {
@@ -114,7 +113,8 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                     try {
                         dos.writeLong(context.accumulator);
                     } catch (final IOException e) {
-                        throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                        throw new UncheckedDeephavenException(
+                                "Unexpected exception while draining data to OutputStream: ", e);
                     }
                     context.accumulator = 0;
                     context.count = 0;
@@ -140,7 +140,8 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                     final long val = chunk.get((int) row);
                     dos.writeLong(val);
                 } catch (final IOException e) {
-                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ",
+                            e);
                 }
             });
 
@@ -158,6 +159,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     @FunctionalInterface
     public interface LongConversion {
         long apply(long in);
+
         LongConversion IDENTITY = (long a) -> a;
     }
 
@@ -171,7 +173,8 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             final int outOffset,
             final int totalRows) throws IOException {
         return extractChunkFromInputStreamWithConversion(
-                elementSize, options, LongConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                elementSize, options, LongConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
+                totalRows);
     }
 
     static WritableChunk<Values> extractChunkFromInputStreamWithConversion(

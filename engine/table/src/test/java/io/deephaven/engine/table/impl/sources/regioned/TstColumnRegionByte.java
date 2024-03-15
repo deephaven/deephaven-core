@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
@@ -48,13 +48,13 @@ public abstract class TstColumnRegionByte {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+                @NotNull RowSequence rowSequence) {
             WritableByteChunk<? super Values> charDestination = destination.asWritableByteChunk();
             int size = destination.size();
             int length = (int) rowSequence.size();
 
-            rowSequence.forAllRowKeys(key ->
-            {
+            rowSequence.forAllRowKeys(key -> {
                 for (int i = 0; i < length; ++i) {
                     charDestination.set(size + i, (byte) key);
                 }
@@ -84,11 +84,11 @@ public abstract class TstColumnRegionByte {
         public void testGetBytes() {
             byte[] result = new byte[1024];
             SUT.getBytes(0, result, 0, result.length);
-            for(byte b : result) {
+            for (byte b : result) {
                 TestCase.assertEquals(QueryConstants.NULL_BYTE, b);
             }
             SUT.getBytes(Integer.MAX_VALUE, result, 100, result.length - 200);
-            for(byte b : result) {
+            for (byte b : result) {
                 TestCase.assertEquals(QueryConstants.NULL_BYTE, b);
             }
         }
@@ -99,12 +99,14 @@ public abstract class TstColumnRegionByte {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            //noinspection unchecked
+            // noinspection unchecked
             regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {{
-                oneOf(regionSupplier).get();
-                will(returnValue(new TstColumnRegionByte.Identity()));
-            }});
+            checking(new Expectations() {
+                {
+                    oneOf(regionSupplier).get();
+                    will(returnValue(new TstColumnRegionByte.Identity()));
+                }
+            });
             SUT = new DeferredColumnRegionByte<>(Long.MAX_VALUE, regionSupplier);
         }
 
@@ -117,9 +119,9 @@ public abstract class TstColumnRegionByte {
         }
 
         public void testGetBytes() {
-            assertArrayEquals(new byte[]{(byte) 0, (byte) 1, (byte) 2}, SUT.getBytes(0, new byte[3], 0, 3));
+            assertArrayEquals(new byte[] {(byte) 0, (byte) 1, (byte) 2}, SUT.getBytes(0, new byte[3], 0, 3));
             assertIsSatisfied();
-            assertArrayEquals(new byte[]{(byte) 5, (byte) 6, (byte) 7}, SUT.getBytes(5, new byte[3], 0, 3));
+            assertArrayEquals(new byte[] {(byte) 5, (byte) 6, (byte) 7}, SUT.getBytes(5, new byte[3], 0, 3));
             assertIsSatisfied();
         }
     }

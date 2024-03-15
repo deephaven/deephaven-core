@@ -21,12 +21,13 @@ dependencies {
 }
 def compare = tasks.register('compareProtobuf', DiffTask) {
     expectedContents.set configurations.go
-    actualContents.set layout.projectDirectory
-    generateTask.set ':go:updateProtobuf'
-
-    ignore {
-        exclude 'internal/proto/**'
+    actualContents {
+        directory layout.projectDirectory
+        ignore {
+            it.exclude 'internal/proto/**'
+        }
     }
+    generateTask.set ':go:updateProtobuf'
 }
 // fail a "check" build if these are out of date
 tasks.getByName('quick').dependsOn(compare)

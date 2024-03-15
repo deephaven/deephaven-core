@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -10,12 +10,12 @@ public class CharChunkChunk<ATTR extends Any> extends ChunkChunkBase<ATTR> imple
     private static final CharChunkChunk EMPTY = new CharChunkChunk<>(new CharChunk[0], 0, 0);
 
     public static <ATTR extends Any> CharChunkChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
     public static <ATTR extends Any> CharChunk<ATTR>[] makeArray(int capacity) {
-        //noinspection unchecked
+        // noinspection unchecked
         return new CharChunk[capacity];
     }
 
@@ -57,7 +57,7 @@ public class CharChunkChunk<ATTR extends Any> extends ChunkChunkBase<ATTR> imple
         for (int ii = newCapacity; ii < oldCapacity; ++ii) {
             // Be friendly to the garbage collector
             innerData[ii] = null;
-            innerOffsets[ii] = 0;  // to be nice
+            innerOffsets[ii] = 0; // to be nice
         }
     }
 

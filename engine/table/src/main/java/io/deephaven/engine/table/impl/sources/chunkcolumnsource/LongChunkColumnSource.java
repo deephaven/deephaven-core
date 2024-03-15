@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -29,11 +28,12 @@ import java.util.ArrayList;
 /**
  * A column source backed by {@link LongChunk LongChunks}.
  * <p>
- * The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The
- * {@link #getChunk(GetContext, RowSequence)}
- * call will return the backing chunk or a slice of the backing chunk if possible.
+ * The address space of the column source is dense, with each chunk backing a contiguous set of indices. The
+ * {@link #getChunk(GetContext, RowSequence)} call will return the backing chunk or a slice of the backing chunk if
+ * possible.
  */
-public class LongChunkColumnSource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, ChunkColumnSource<Long> {
+public class LongChunkColumnSource extends AbstractColumnSource<Long>
+        implements ImmutableColumnSourceGetDefaults.ForLong, ChunkColumnSource<Long> {
     private final ArrayList<WritableLongChunk<? extends Values>> data = new ArrayList<>();
     private final TLongArrayList firstOffsetForData;
     private long totalSize = 0;
@@ -63,7 +63,8 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {
         private final ResettableLongChunk resettableLongChunk = ResettableLongChunk.makeResettableChunk();
 
-        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity, final SharedContext sharedContext) {
+        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity,
+                final SharedContext sharedContext) {
             super(chunkSource, chunkCapacity, sharedContext);
         }
 
@@ -103,7 +104,8 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
         destination.setSize(0);
         rowSequence.forAllRowKeyRanges((s, e) -> {
@@ -130,7 +132,8 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         // immutable, so we can delegate to fill
         fillChunk(context, destination, rowSequence);
     }
@@ -148,7 +151,7 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     /**
      * Given a row key within this column's address space; return the chunk index that contains the row key.
      *
-     * @param start      the data row key to find the corresponding chunk for
+     * @param start the data row key to find the corresponding chunk for
      * @param startChunk the first chunk that may possibly contain start
      * @return the chunk index within data and offsets
      */

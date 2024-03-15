@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatRangeComparator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.DoubleComparisons;
@@ -25,7 +24,8 @@ public class DoubleRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
+        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class DoubleDoubleInclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -33,7 +33,8 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -49,7 +50,8 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -65,7 +67,8 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -81,7 +84,8 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -92,7 +96,8 @@ public class DoubleRangeComparator {
         }
     }
 
-    public static ChunkFilter.DoubleChunkFilter makeDoubleFilter(double lower, double upper, boolean lowerInclusive, boolean upperInclusive) {
+    public static ChunkFilter.DoubleChunkFilter makeDoubleFilter(double lower, double upper, boolean lowerInclusive,
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new DoubleDoubleInclusiveInclusiveFilter(lower, upper);

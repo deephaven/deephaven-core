@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
@@ -39,13 +39,13 @@ public class TstColumnRegionChar {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+                @NotNull RowSequence rowSequence) {
             WritableCharChunk<? super Values> charDestination = destination.asWritableCharChunk();
             int size = destination.size();
             int length = (int) rowSequence.size();
 
-            rowSequence.forAllRowKeys(key ->
-            {
+            rowSequence.forAllRowKeys(key -> {
                 for (int i = 0; i < length; ++i) {
                     charDestination.set(size + i, (char) key);
                 }
@@ -78,12 +78,14 @@ public class TstColumnRegionChar {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            //noinspection unchecked
+            // noinspection unchecked
             regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {{
-                oneOf(regionSupplier).get();
-                will(returnValue(new Identity()));
-            }});
+            checking(new Expectations() {
+                {
+                    oneOf(regionSupplier).get();
+                    will(returnValue(new Identity()));
+                }
+            });
             SUT = new DeferredColumnRegionChar<>(Long.MAX_VALUE, regionSupplier);
         }
 

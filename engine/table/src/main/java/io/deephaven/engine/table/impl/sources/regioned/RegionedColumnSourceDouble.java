@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RegionedColumnSourceChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -27,7 +26,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
         implements ColumnSourceGetDefaults.ForDouble /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceDouble(@NotNull final ColumnRegionDouble<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionDouble<ATTR>> makeDeferred) {
+            @NotNull final MakeDeferred<ATTR, ColumnRegionDouble<ATTR>> makeDeferred) {
         super(nullRegion, double.class, makeDeferred);
     }
 
@@ -39,8 +38,8 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionDouble<Values>> {
         @Override
         default ColumnRegionDouble<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionDouble(columnDefinition);
             }
@@ -67,13 +66,15 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
 
         @Override
         public ColumnRegionDouble<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Double.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Double.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
             }
             return new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
         }

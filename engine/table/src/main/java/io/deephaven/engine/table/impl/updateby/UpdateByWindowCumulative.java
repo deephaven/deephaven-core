@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
@@ -43,11 +46,6 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     void prepareWindowBucket(UpdateByWindowBucketContext context) {
         // working chunk size need not be larger than affectedRows.size()
         context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
-    }
-
-    @Override
-    void finalizeWindowBucket(UpdateByWindowBucketContext context) {
-        super.finalizeWindowBucket(context);
     }
 
     @Override

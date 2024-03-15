@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFactory and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -42,28 +41,28 @@ public class LongChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> LongChunk<ATTR> chunkWrap(Object array) {
-        final long[] typedArray = (long[])array;
+        final long[] typedArray = (long[]) array;
         return LongChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> LongChunk<ATTR> chunkWrap(Object array, int offset, int capacity) {
-        final long[] typedArray = (long[])array;
+        final long[] typedArray = (long[]) array;
         return LongChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> LongChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        LongChunk<ATTR>[] typedArray = (LongChunk<ATTR>[])array;
+        LongChunk<ATTR>[] typedArray = (LongChunk<ATTR>[]) array;
         return LongChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> LongChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-        LongChunk<ATTR>[] typedArray = (LongChunk<ATTR>[])array;
+        LongChunk<ATTR>[] typedArray = (LongChunk<ATTR>[]) array;
         return LongChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -95,14 +94,15 @@ public class LongChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> WritableLongChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        final long[] realType = (long[])array;
+        final long[] realType = (long[]) array;
         return WritableLongChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableLongChunk<ATTR>[] actual = (WritableLongChunk<ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableLongChunk<ATTR>[] actual = (WritableLongChunk<ATTR>[]) array;
         return WritableLongChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

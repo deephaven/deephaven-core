@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.base.verify.Require;
@@ -211,7 +211,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      */
     final SeekableChannelContext innerFillContext(@Nullable final FillContext context) {
         if (context != null) {
-            // Assuming PagingContextHolder is holding an object of ChannelContextWrapper
             final ChannelContextWrapper innerContext =
                     ((PagingContextHolder) context).updateInnerContext(this::fillContextUpdater);
             return innerContext.getChannelContext();
@@ -228,8 +227,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             @Nullable final SharedContext sharedContext,
             @Nullable final Context currentInnerContext) {
         final SeekableChannelsProvider channelsProvider = columnChunkReader.getChannelsProvider();
-        if (currentInnerContext != null) {
-            // Check if we can reuse the context object
+        if (currentInnerContext instanceof ChannelContextWrapper) {
+            // Check if we can reuse the channel context object
             final SeekableChannelContext channelContext =
                     ((ChannelContextWrapper) currentInnerContext).getChannelContext();
             if (channelsProvider.isCompatibleWith(channelContext)) {
@@ -237,7 +236,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 return (T) currentInnerContext;
             }
         }
-        // Create a new context object
+        // Create a new channel context object and a wrapper for holding it
         // noinspection unchecked
         return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeContext());
     }

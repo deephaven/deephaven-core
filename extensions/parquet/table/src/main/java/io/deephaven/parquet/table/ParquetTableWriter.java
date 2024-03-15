@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
@@ -51,7 +51,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * API for writing DH tables in parquet format
@@ -365,7 +365,7 @@ public class ParquetTableWriter {
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(destFilePath, destFilePathForMetadata,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(destFilePath), null),
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(destFilePath, false), null),
                 writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);

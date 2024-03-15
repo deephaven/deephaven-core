@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharToBigDecimalCast and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharToBigDecimalCast and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.util.cast;
 
 import io.deephaven.chunk.ByteChunk;
@@ -38,7 +37,8 @@ public class ByteToBigDecimalCast implements ToBigDecimalCast {
         return result;
     }
 
-    public static <T2 extends Any> void castInto(ByteChunk<? extends T2> input, WritableObjectChunk<BigDecimal, ? extends Any> result) {
+    public static <T2 extends Any> void castInto(ByteChunk<? extends T2> input,
+            WritableObjectChunk<BigDecimal, ? extends Any> result) {
         final int size = input.size();
         for (int ii = 0; ii < size; ++ii) {
             final byte value = input.get(ii);

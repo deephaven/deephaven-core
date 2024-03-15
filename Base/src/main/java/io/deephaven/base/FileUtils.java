@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.base;
 
 import io.deephaven.base.verify.Assert;
@@ -8,6 +8,9 @@ import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 public class FileUtils {
@@ -248,5 +251,73 @@ public class FileUtils {
             return pathname.isDirectory()
                     || (pathname.isFile() && (normalFileFilter == null || normalFileFilter.accept(pathname)));
         }
+    }
+
+    /**
+     * Take the file source path or URI string and convert it to a URI object.
+     *
+     * @param source The file source path or URI
+     * @param isDirectory Whether the source is a directory
+     * @return The URI object
+     */
+    public static URI convertToURI(final String source, final boolean isDirectory) {
+        if (source.isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty source to URI");
+        }
+        final URI uri;
+        try {
+            uri = new URI(source);
+        } catch (final URISyntaxException e) {
+            // If the URI is invalid, assume it's a file path
+            return convertToURI(new File(source), isDirectory);
+        }
+        if (uri.getScheme() == null) {
+            // Convert to a "file" URI
+            return convertToURI(new File(source), isDirectory);
+        }
+        return uri;
+    }
+
+    /**
+     * Takes a file and convert it to a URI object with {@code "file"} scheme. This method is preferred instead of
+     * {@link File#toURI()} because {@link File#toURI()} internally calls {@link File#isDirectory()}, which typically
+     * invokes the {@code stat} system call, resulting in filesystem metadata access.
+     *
+     * @param file The file
+     * @param isDirectory Whether the source file is a directory
+     * @return The URI object
+     */
+    public static URI convertToURI(final File file, final boolean isDirectory) {
+        String absPath = file.getAbsolutePath();
+        if (File.separatorChar != '/') {
+            absPath = absPath.replace(File.separatorChar, '/');
+        }
+        if (absPath.charAt(0) != '/') {
+            absPath = "/" + absPath;
+        }
+        if (isDirectory && absPath.charAt(absPath.length() - 1) != '/') {
+            absPath = absPath + "/";
+        }
+        if (absPath.startsWith("//")) {
+            absPath = "//" + absPath;
+        }
+        try {
+            return new URI("file", null, absPath, null);
+        } catch (final URISyntaxException e) {
+            throw new IllegalStateException("Failed to convert file to URI: " + file, e);
+        }
+    }
+
+    /**
+     * Takes a path and convert it to a URI object with {@code "file"} scheme. This method is preferred instead of
+     * {@link Path#toUri()} because {@link Path#toUri()} internally invokes the {@code stat} system call, resulting in
+     * filesystem metadata access.
+     *
+     * @param path The path
+     * @param isDirectory Whether the file is a directory
+     * @return The URI object
+     */
+    public static URI convertToURI(final Path path, final boolean isDirectory) {
+        return convertToURI(path.toFile(), isDirectory);
     }
 }

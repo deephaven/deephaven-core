@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.datasets.multiseries;
 
 import io.deephaven.base.verify.RequirementFailure;
@@ -68,11 +68,12 @@ public class MultiCatSeriesSwappable extends AbstractSwappableMultiSeries<Catego
     public CategoryDataSeriesInternal createSeries(String seriesName, final BaseTable t,
             final DynamicSeriesNamer seriesNamer) {
         seriesName = makeSeriesName(seriesName, seriesNamer);
-        final NonserializableCategoryDataSeriesPartitionedTable series = new NonserializableCategoryDataSeriesPartitionedTable(axes(),
-                seriesName,
-                t,
-                categories,
-                values);
+        final NonserializableCategoryDataSeriesPartitionedTable series =
+                new NonserializableCategoryDataSeriesPartitionedTable(axes(),
+                        seriesName,
+                        t,
+                        categories,
+                        values);
         series.addSwappableTable(getSwappableTable());
         return series;
     }
@@ -166,6 +167,7 @@ public class MultiCatSeriesSwappable extends AbstractSwappableMultiSeries<Catego
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
+// @formatter:off
 
     @Override public void initializeSeries(CategoryDataSeriesInternal series) {
         $$initializeSeries$$(series);

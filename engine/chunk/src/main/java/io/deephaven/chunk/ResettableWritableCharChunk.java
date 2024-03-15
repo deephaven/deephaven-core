@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -47,18 +47,19 @@ public class ResettableWritableCharChunk<ATTR_BASE extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_BASE> WritableCharChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableCharChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asWritableCharChunk(), offset, capacity);
     }
 
     @Override
     public <ATTR extends ATTR_BASE> WritableCharChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
-        final char[] typedArray = (char[])array;
+        final char[] typedArray = (char[]) array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
     public <ATTR extends ATTR_BASE> WritableCharChunk<ATTR> resetFromArray(Object array) {
-        final char[] typedArray = (char[])array;
+        final char[] typedArray = (char[]) array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
@@ -67,7 +68,8 @@ public class ResettableWritableCharChunk<ATTR_BASE extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_BASE> WritableCharChunk<ATTR> resetFromTypedChunk(WritableCharChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableCharChunk<ATTR> resetFromTypedChunk(WritableCharChunk<ATTR> other,
+            int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -78,7 +80,7 @@ public class ResettableWritableCharChunk<ATTR_BASE extends Any>
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         return (WritableCharChunk<ATTR>) this;
     }
 }

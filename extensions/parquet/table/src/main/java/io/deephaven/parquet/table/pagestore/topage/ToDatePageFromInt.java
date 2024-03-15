@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
@@ -18,7 +18,7 @@ public class ToDatePageFromInt<ATTR extends Any> implements ToPage<ATTR, LocalDa
 
     public static <ATTR extends Any> ToDatePageFromInt<ATTR> create(final Class<?> nativeType) {
         if (nativeType == null || LocalDate.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 

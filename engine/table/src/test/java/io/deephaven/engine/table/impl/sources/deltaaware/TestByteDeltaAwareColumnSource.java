@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharacterDeltaAwareColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharacterDeltaAwareColumnSource and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -41,7 +40,7 @@ public class TestByteDeltaAwareColumnSource {
 
     @Before
     public void setUp() {
-         source = new DeltaAwareColumnSource<>(byte.class);
+        source = new DeltaAwareColumnSource<>(byte.class);
     }
 
     @After
@@ -102,16 +101,14 @@ public class TestByteDeltaAwareColumnSource {
     }
 
     /**
-     * We make a structure that looks like this. Then we query the whole thing with one range and see if we get what
-     * we expect. Then we query with three subranges and again see if we get what we expect. Then in a second generation,
-     * we write some new values, which creates a baseline/delta situation. We do those same queries again (note that
-     * the subranges have been carefully chosen to span baseline and delta, so they're challenging) and again see if we
-     * get what we expect.
-     * Pictorially, the situation looks like this (best viewed with a monospace font).
-     * baseline: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-     * query1:   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-     * query2:             ^^^^^^^^^^^^^^^^^^^^               ^^^^^^^^^^               ^^^^^^^^^^^^^^^^^^^^
-     * delta:                        DDDDDDDDDDDDDDDDDDDD                    DDDDDDDDDDDDDDDDDDDD
+     * We make a structure that looks like this. Then we query the whole thing with one range and see if we get what we
+     * expect. Then we query with three subranges and again see if we get what we expect. Then in a second generation,
+     * we write some new values, which creates a baseline/delta situation. We do those same queries again (note that the
+     * subranges have been carefully chosen to span baseline and delta, so they're challenging) and again see if we get
+     * what we expect. Pictorially, the situation looks like this (best viewed with a monospace font). baseline:
+     * BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB query1:
+     * ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ query2:
+     * ^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^ delta: DDDDDDDDDDDDDDDDDDDD DDDDDDDDDDDDDDDDDDDD
      */
     @Test
     public void overlapping() {
@@ -124,7 +121,7 @@ public class TestByteDeltaAwareColumnSource {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
-            final byte value = valuesPhase1[(int)ii];
+            final byte value = valuesPhase1[(int) ii];
             source.set(ii, value);
             expectedPrev.put(ii, value);
             expectedCurrent.put(ii, value);
@@ -144,12 +141,12 @@ public class TestByteDeltaAwareColumnSource {
         // Now start the second cycle so we have different current and prev values.
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         for (long ii = 20; ii < 40; ++ii) {
-            final byte value = valuesPhase2[(int)ii];
+            final byte value = valuesPhase2[(int) ii];
             source.set(ii, value);
             expectedCurrent.put(ii, value);
         }
         for (long ii = 60; ii < 80; ++ii) {
-            final byte value = valuesPhase2[(int)ii];
+            final byte value = valuesPhase2[(int) ii];
             source.set(ii, value);
             expectedCurrent.put(ii, value);
         }
@@ -160,7 +157,7 @@ public class TestByteDeltaAwareColumnSource {
     }
 
     private static void checkUsingGet(DeltaAwareColumnSource<Byte> source, Map<Long, Byte> expectedCurrent,
-                                      Map<Long, Byte> expectedPrev, int begin, int end) {
+            Map<Long, Byte> expectedPrev, int begin, int end) {
         // Check the whole thing by using individual get calls: current and prev.
         // current...
         for (long ii = begin; ii < end; ++ii) {
@@ -177,7 +174,7 @@ public class TestByteDeltaAwareColumnSource {
     }
 
     private static void checkUsingChunk(DeltaAwareColumnSource<Byte> dacs, Map<Long, Byte> expectedCurrent,
-                                        Map<Long, Byte> expectedPrev, long[] ranges) {
+            Map<Long, Byte> expectedPrev, long[] ranges) {
         final RowSet rowSet = rangesToIndex(ranges);
         assertEquals(rowSet.size() % 2, 0);
 
@@ -206,7 +203,7 @@ public class TestByteDeltaAwareColumnSource {
 
     private static void checkChunk(ByteChunk<? extends Values> values, Map<Long, Byte> expected, RowSet keys) {
         int sliceOffset = 0;
-        for (final RowSet.Iterator it = keys.iterator(); it.hasNext(); ) {
+        for (final RowSet.Iterator it = keys.iterator(); it.hasNext();) {
             final long key = it.nextLong();
             final byte expectedValue = expected.get(key);
             final byte actualValue = values.get(sliceOffset++);
