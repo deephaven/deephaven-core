@@ -5,11 +5,12 @@
 import unittest
 
 from deephaven import dtypes
-from deephaven.jcompat import j_function, j_lambda
+from deephaven.jcompat import j_function, j_lambda, SafeCloseable
 from tests.testbase import BaseTestCase
 
 import jpy
 
+_JSharedContext = jpy.get_type("io.deephaven.engine.table.SharedContext")
 
 class JCompatTestCase(BaseTestCase):
     def test_j_function(self):
@@ -28,6 +29,12 @@ class JCompatTestCase(BaseTestCase):
 
         r = j_func.apply(10)
         self.assertEqual(r, "10")
+
+    def test_safe_closeable(self):
+        safe_closeable = SafeCloseable(_JSharedContext.makeSharedContext())
+        with safe_closeable:
+            pass
+        self.assertEqual(safe_closeable.closed, True)
 
 
 if __name__ == "__main__":
