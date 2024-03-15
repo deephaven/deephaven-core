@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.updategraph.ClockInconsistencyException;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -17,20 +18,20 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.updategraph.LogicalClock.NULL_CLOCK_VALUE;
 
 /**
- * Variant of {@link OperationSnapshotControl} that considers "extra" {@link NotificationStepSource sources} in addition
- * to the source {@link BaseTable} when determining whether to use previous values during initialization or evaluating
- * success. This is useful anytime an operation needs to listen to and snapshot one data source while also snapshotting
- * others.
+ * Variant of {@link OperationSnapshotControl} that considers "extra" {@link NotificationQueue.Dependency dependencies}
+ * in addition to the source {@link BaseTable} when determining whether to use previous values during initialization or
+ * evaluating success. This is useful anytime an operation needs to listen to and snapshot one data source while also
+ * snapshotting others.
  */
 public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControlEx.class);
 
-    private final NotificationStepSource[] extras;
+    private final NotificationQueue.Dependency[] extras;
 
     public OperationSnapshotControlEx(
             @NotNull final BaseTable<?> sourceTable,
-            @NotNull final NotificationStepSource... extras) {
+            @NotNull final NotificationQueue.Dependency... extras) {
         super(sourceTable);
         this.extras = extras;
     }
@@ -59,13 +60,12 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             return false;
         }
 
-        final NotificationStepSource[] notYetSatisfied;
+        final NotificationQueue.Dependency[] notYetSatisfied;
         try {
             notYetSatisfied = Stream.concat(Stream.of(sourceTable), Arrays.stream(extras))
                     .sequential()
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep
-                            && !source.satisfied(beforeStep))
-                    .toArray(NotificationStepSource[]::new);
+                    .filter(dependency -> !satisfied(dependency, beforeStep))
+                    .toArray(NotificationQueue.Dependency[]::new);
         } catch (ClockInconsistencyException e) {
             return null;
         }
@@ -109,5 +109,13 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
                     .endl();
         }
         return usePrev;
+    }
+
+    private static boolean satisfied(@NotNull final NotificationQueue.Dependency dependency, final long step) {
+        if (dependency instanceof NotificationStepSource
+                && ((NotificationStepSource) dependency).getLastNotificationStep() == step) {
+            return true;
+        }
+        return dependency.satisfied(step);
     }
 }
