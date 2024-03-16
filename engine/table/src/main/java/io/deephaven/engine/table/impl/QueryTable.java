@@ -840,8 +840,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final String description = "aggregation(" + aggregationContextFactory
-                    + ", " + groupByColumns + ")";
+            final String description = "aggregation(" + aggregationContextFactory + ", " + groupByColumns + ")";
             return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
                     () -> ChunkedOperatorAggregationHelper.aggregation(
                             aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));

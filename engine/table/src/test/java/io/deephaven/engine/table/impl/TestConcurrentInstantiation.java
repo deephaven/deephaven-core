@@ -1300,8 +1300,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             }
 
             // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the
-            // resultant table
-            // is computed using the appropriate version.
+            // resultant table is computed using the appropriate version.
             final Table expected1 = updateGraph.exclusiveLock().computeLocked(
                     () -> function.apply(table.silent()).select());
             final Table expected2 = updateGraph.exclusiveLock()
