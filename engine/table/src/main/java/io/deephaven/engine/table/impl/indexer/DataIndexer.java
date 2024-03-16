@@ -204,7 +204,6 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      */
     @Nullable
     public static DataIndex getOptimalPartialIndex(Table table, final String... keyColumnNames) {
-        // TODO-RWC: Consider whether this is really safe to use
         if (keyColumnNames.length == 0) {
             return null;
         }

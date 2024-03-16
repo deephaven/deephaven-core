@@ -197,7 +197,7 @@ class MergedDataIndex extends BaseDataIndex {
             // key).
             final int keyRowPosition = lookupFunction.get(key);
             if (keyRowPosition == lookupFunction.noEntryValue()) {
-                return (int) RowSequence.NULL_ROW_KEY;
+                return RowSequence.NULL_ROW_KEY;
             }
             return keyRowPosition;
         };

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,30 +32,33 @@ public interface DataIndex extends BasicDataIndex {
      * </dl>
      */
     interface RowKeyLookup {
+
         /**
          * Get the row key in the index table for the provided lookup key.
          *
          * @param key The key to lookup
-         * @return The result position
+         * @return The result row key, or {@link RowSequence#NULL_ROW_KEY} if the key is not found.
          */
         long apply(Object key, boolean usePrev); // TODO-RWC: Decide about prev impl for the lookups
     }
 
     /**
      * Build a {@link RowKeyLookup lookup function} of row keys for this index. If {@link #isRefreshing()} is true, this
-     * lookup function is guaranteed to be accurate only for the current cycle.
+     * lookup function is only guaranteed to be accurate for the current cycle.
      *
-     * @return a function that provides map-like lookup of index table positions from an index key.
+     * @return A function that provides map-like lookup of index table positions from an index key
      */
     @NotNull
     RowKeyLookup rowKeyLookup();
 
     /**
      * Return a {@link RowKeyLookup lookup function} function of index row keys for this index. If
-     * {@link #isRefreshing()} is true, this lookup function is guaranteed to be accurate only for the current cycle.
+     * {@link #isRefreshing()} is true, this lookup function is only guaranteed to be accurate for the current cycle.
      * The keys provided must be in the order of the {@code lookupSources}.
      *
-     * @return a function that provides map-like lookup of matching rows from an index key.
+     * @param lookupSources The sources to use for the lookup key, in the order of the caller's key column
+     * @return A function that provides map-like lookup of matching rows from an index key. The result must not be used
+     *         concurrently by more than one thread.
      */
     @NotNull
     @FinalDefault
@@ -64,6 +68,7 @@ public interface DataIndex extends BasicDataIndex {
             return rowKeyLookup();
         }
 
+        // TODO-RWC: Change this when we can impose order on keyColumnMap
         // Get the source columns of the index in the order of the index key columns.
         final Map<String, ColumnSource<?>> reverseMap = new HashMap<>(keyColumnMap().size());
         keyColumnMap().forEach((k, v) -> reverseMap.put(v, k));
@@ -94,19 +99,22 @@ public interface DataIndex extends BasicDataIndex {
             }
         }
 
-        return (key, usePrev) -> {
-            // This is the complex key provided by the caller.
-            final Object[] keys = (Object[]) key;
-
+        return new RowKeyLookup() {
             // This is the complex key we need to provide to the lookup function.
-            final Object[] remappedKey = new Object[keys.length];
+            final Object[] remappedKey = new Object[indexToUserMapping.length];
 
-            // Assign the user-supplied keys to the lookup function key in the appropriate order.
-            for (int ii = 0; ii < remappedKey.length; ++ii) {
-                remappedKey[ii] = keys[indexToUserMapping[ii]];
+            @Override
+            public long apply(final Object key, final boolean usePrev) {
+                // This is the complex key provided by the caller.
+                final Object[] keys = (Object[]) key;
+
+                // Assign the user-supplied keys to the lookup function key in the appropriate order.
+                for (int ii = 0; ii < remappedKey.length; ++ii) {
+                    remappedKey[ii] = keys[indexToUserMapping[ii]];
+                }
+
+                return rowKeyLookup().apply(remappedKey, usePrev);
             }
-
-            return rowKeyLookup().apply(remappedKey, usePrev);
         };
     }
 

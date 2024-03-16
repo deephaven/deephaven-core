@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -34,7 +35,7 @@ import java.util.Map;
  */
 class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
-    private static final int KEY_NOT_FOUND = -1;
+    private static final int KEY_NOT_FOUND = (int) RowSequence.NULL_ROW_KEY;
 
     private final String keyColumnName;
 

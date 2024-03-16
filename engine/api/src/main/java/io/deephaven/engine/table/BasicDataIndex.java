@@ -22,7 +22,10 @@ public interface BasicDataIndex extends LivenessReferent {
     @NotNull
     String[] keyColumnNames();
 
-    /** Get a map from indexed column sources to key column names for the index {@link #table() table}. */
+    /**
+     * Get a map from indexed column sources to key column names for the index {@link #table() table}. This map must be
+     * ordered in the same order presented by {@link #keyColumnNames()} and used for lookup keys.
+     */
     @NotNull
     Map<ColumnSource<?>, String> keyColumnMap();
 
