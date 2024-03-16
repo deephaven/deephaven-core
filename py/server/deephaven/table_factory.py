@@ -23,7 +23,6 @@ from deephaven.update_graph import auto_locking_ctx
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
-_JBaseArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.BaseArrayBackedInputTable")
 _JAppendOnlyArrayBackedInputTable = jpy.get_type(
     "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
 _JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
