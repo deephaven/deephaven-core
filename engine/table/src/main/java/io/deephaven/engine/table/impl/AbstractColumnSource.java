@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.List;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
@@ -53,8 +52,6 @@ public abstract class AbstractColumnSource<T> implements
     protected final Class<?> componentType;
 
     protected final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-
-    protected volatile List<ColumnSource<?>> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
         this(type, null);
@@ -110,19 +107,6 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public ColumnSource<T> getPrevSource() {
         return new PrevColumnSource<>(this);
-    }
-
-    @Override
-    public List<ColumnSource<?>> getColumnSources() {
-        List<ColumnSource<?>> localRowSetIndexerKey;
-        if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
-            synchronized (this) {
-                if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
-                    rowSetIndexerKey = localRowSetIndexerKey = Collections.singletonList(this);
-                }
-            }
-        }
-        return localRowSetIndexerKey;
     }
 
     @Override
