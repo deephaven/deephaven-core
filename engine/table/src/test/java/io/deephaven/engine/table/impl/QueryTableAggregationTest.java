@@ -308,23 +308,17 @@ public class QueryTableAggregationTest {
                 return 8;
             }
         };
-        final AggregationControl controlShiftByProbing = new AggregationControl() {
-            @Override
-            public boolean shouldProbeShift(long shiftSize, int numStates) {
-                return true;
-            }
-        };
 
         final EvalNugget[] ens = new EvalNugget[] {
                 incrementalByEvalNugget(controlSize8, merged),
                 incrementalByEvalNugget(merged),
 
                 incrementalByEvalNugget(controlSize8, merged, "StrCol"),
-                incrementalByEvalNugget(controlShiftByProbing, merged, "StrCol"),
+                incrementalByEvalNugget(AggregationControl.DEFAULT, merged, "StrCol"),
                 incrementalByEvalNugget(controlSize8, merged, "IntCol"),
                 incrementalByEvalNugget(merged, "IntCol"),
                 incrementalByEvalNugget(controlSize8, merged, "TimeCol"),
-                incrementalByEvalNugget(controlShiftByProbing, merged, "TimeCol"),
+                incrementalByEvalNugget(AggregationControl.DEFAULT, merged, "TimeCol"),
                 incrementalByEvalNugget(controlSize8,
                         (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : epochNanos(TimeCol)"),
                         "TimeCol"),

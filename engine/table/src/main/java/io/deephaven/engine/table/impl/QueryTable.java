@@ -848,23 +848,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    public QueryTable aggNoMemo(
-            @NotNull final AggregationControl aggregationControl,
-            @NotNull final AggregationContextFactory aggregationContextFactory,
-            final boolean preserveEmpty,
-            @Nullable final Table initialGroups,
-            @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        // TODO-RWC: Understand if we need this.
-        final UpdateGraph updateGraph = getUpdateGraph();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final String description = "aggregation(" + aggregationContextFactory
-                    + ", " + groupByColumns + ")";
-            return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
-                    () -> ChunkedOperatorAggregationHelper.aggregation(aggregationControl,
-                            aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
-        }
-    }
-
     private static UnsupportedOperationException unsupportedForBlinkTables(@NotNull final String operationName) {
         return new UnsupportedOperationException("Blink tables do not support " + operationName
                 + "; use BlinkTableTools.blinkToAppendOnly to accumulate full history");

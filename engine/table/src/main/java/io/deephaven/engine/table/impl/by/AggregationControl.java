@@ -22,12 +22,6 @@ public class AggregationControl {
     private static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
 
     public static final AggregationControl DEFAULT = new AggregationControl();
-    public static final AggregationControl DEFAULT_FOR_OPERATOR = new AggregationControl() {
-        @Override
-        public boolean considerIndexing(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
-            return true;
-        }
-    };
 
     public static final AggregationControl IGNORE_GROUPING = new AggregationControl() {
         @Override
@@ -51,10 +45,6 @@ public class AggregationControl {
 
     public boolean considerIndexing(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {
         return true;
-    }
-
-    public boolean shouldProbeShift(final long shiftSize, final int numStates) {
-        return shiftSize <= numStates * 2;
     }
 
     boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping,

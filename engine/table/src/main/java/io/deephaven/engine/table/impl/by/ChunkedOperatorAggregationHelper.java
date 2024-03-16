@@ -72,7 +72,7 @@ public class ChunkedOperatorAggregationHelper {
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        return aggregation(AggregationControl.DEFAULT_FOR_OPERATOR,
+        return aggregation(AggregationControl.DEFAULT,
                 aggregationContextFactory, input, preserveEmpty, initialKeys, groupByColumns);
     }
 
