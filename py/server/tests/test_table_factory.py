@@ -13,7 +13,7 @@ from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_s
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
-from deephaven.table_factory import DynamicTableWriter, ring_table
+from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
 from deephaven.stream import blink_to_append_only, stream_to_append_only
@@ -21,6 +21,7 @@ from deephaven.stream import blink_to_append_only, stream_to_append_only
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JTable = jpy.get_type("io.deephaven.engine.table.Table")
 
 
 @dataclass
@@ -371,6 +372,11 @@ class TableFactoryTestCase(BaseTestCase):
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
+
+        with self.subTest("custom input table creation"):
+            place_holder_input_table = empty_table(1).update_view(["Key=`A`", "Value=10"]).with_attributes({_JTable.INPUT_TABLE_ATTRIBUTE: "Placeholder IT"}).j_table
+            # Confirming no error.
+            InputTable(place_holder_input_table)
 
     def test_ring_table(self):
         cols = [

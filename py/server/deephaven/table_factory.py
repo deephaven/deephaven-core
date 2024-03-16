@@ -235,7 +235,6 @@ class InputTable(Table):
 
     Users should always create InputTables through factory methods rather than directly from the constructor.
     """
-    j_object_type = _JBaseArrayBackedInputTable
 
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
