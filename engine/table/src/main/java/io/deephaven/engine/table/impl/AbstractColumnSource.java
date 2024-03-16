@@ -6,11 +6,14 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -22,6 +25,7 @@ import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.*;
@@ -42,6 +46,8 @@ public abstract class AbstractColumnSource<T> implements
      * instead of individual keys.
      */
     public static final long USE_RANGES_AVERAGE_RUN_LENGTH = 5;
+
+    private static final int CHUNK_SIZE = 1 << 11;
 
     protected final Class<T> type;
     protected final Class<?> componentType;
@@ -129,57 +135,75 @@ public abstract class AbstractColumnSource<T> implements
             final Object... keys) {
 
         if (dataIndex != null) {
-            final RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
+            final Table indexTable = dataIndex.table();
+            final RowSet matchingIndexRows;
+            if (caseInsensitive && type == String.class) {
+                // Linear scan through the index table, accumulating index row keys for case-insensitive matches
+                final RowSetBuilderSequential matchingIndexRowsBuilder = RowSetFactory.builderSequential();
 
-            if (caseInsensitive && (type == String.class)) {
-                // Linear scan through the index table, adding case-insensitive matches
-                final Table indexTable = dataIndex.table();
-
-                KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
+                // noinspection rawtypes
+                final KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
+                // noinspection unchecked
                 Collections.addAll(keySet, keys);
 
-                final RowSet rowSetToUse = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
-                final ColumnSource<?> keySource = usePrev
-                        ? indexTable.getColumnSource(dataIndex.keyColumnNames()[0]).getPrevSource()
-                        : indexTable.getColumnSource(dataIndex.keyColumnNames()[0]);
-                final ColumnSource<RowSet> rowSetSource = usePrev
-                        ? dataIndex.rowSetColumn().getPrevSource()
-                        : dataIndex.rowSetColumn();
+                final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
+                final ColumnSource<?> indexKeySource =
+                        indexTable.getColumnSource(dataIndex.keyColumnNames()[0], String.class);
 
-                try (final CloseableIterator<String> keyIt = ChunkedColumnIterator.make(keySource, rowSetToUse);
-                        final CloseableIterator<RowSet> rowSetIt =
-                                ChunkedColumnIterator.make(rowSetSource, rowSetToUse)) {
-                    while (keyIt.hasNext()) {
-                        final String key = keyIt.next();
-                        final RowSet rowSet = rowSetIt.next();
-                        if (keySet.containsKey(key)) {
-                            allInMatchingGroups.addRowSet(rowSet);
+                final int chunkSize = (int) Math.min(CHUNK_SIZE, indexRowSet.size());
+                try (final RowSequence.Iterator indexRowSetIterator = indexRowSet.getRowSequenceIterator();
+                        final GetContext indexKeyGetContext = indexKeySource.makeGetContext(chunkSize)) {
+                    while (indexRowSetIterator.hasMore()) {
+                        final RowSequence chunkIndexRows = indexRowSetIterator.getNextRowSequenceWithLength(chunkSize);
+                        final ObjectChunk<String, ? extends Values> chunkKeys = (usePrev
+                                ? indexKeySource.getPrevChunk(indexKeyGetContext, chunkIndexRows)
+                                : indexKeySource.getChunk(indexKeyGetContext, chunkIndexRows)).asObjectChunk();
+                        final LongChunk<OrderedRowKeys> chunkRowKeys = chunkIndexRows.asRowKeyChunk();
+                        final int thisChunkSize = chunkKeys.size();
+                        for (int ii = 0; ii < thisChunkSize; ++ii) {
+                            final String key = chunkKeys.get(ii);
+                            if (keySet.contains(key)) {
+                                matchingIndexRowsBuilder.appendKey(chunkRowKeys.get(ii));
+                            }
                         }
                     }
                 }
+                matchingIndexRows = matchingIndexRowsBuilder.build();
             } else {
-                // Use the lookup function to get the matching RowSets intersected with the mapper
+                // Use the lookup function to get the index row keys for the matching keys
+                final RowSetBuilderRandom matchingIndexRowsBuilder = RowSetFactory.builderRandom();
+
                 final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
                 for (Object key : keys) {
                     final long rowKey = rowKeyLookup.apply(key, usePrev);
-                    final RowSet range = usePrev
-                            ? dataIndex.rowSetColumn().getPrev(rowKey)
-                            : dataIndex.rowSetColumn().get(rowKey);
-                    if (range != null) {
-                        allInMatchingGroups.addRowSet(range);
+                    if (rowKey != RowSequence.NULL_ROW_KEY) {
+                        matchingIndexRowsBuilder.addKey(rowKey);
                     }
                 }
+                matchingIndexRows = matchingIndexRowsBuilder.build();
             }
 
-            final WritableRowSet matchingValues;
-            try (final RowSet matchingGroups = allInMatchingGroups.build()) {
-                if (invertMatch) {
-                    matchingValues = mapper.minus(matchingGroups);
-                } else {
-                    matchingValues = mapper.intersect(matchingGroups);
+            try (final SafeCloseable ignored = matchingIndexRows) {
+                final WritableRowSet filtered = invertMatch ? mapper.copy() : RowSetFactory.empty();
+                if (matchingIndexRows.isNonempty()) {
+                    final ColumnSource<RowSet> indexRowSetSource = usePrev
+                            ? dataIndex.rowSetColumn().getPrevSource()
+                            : dataIndex.rowSetColumn();
+                    try (final CloseableIterator<RowSet> matchingIndexRowSetIterator =
+                            ChunkedColumnIterator.make(indexRowSetSource, matchingIndexRows)) {
+                        matchingIndexRowSetIterator.forEachRemaining((final RowSet matchingRowSet) -> {
+                            if (invertMatch) {
+                                filtered.remove(matchingRowSet);
+                            } else {
+                                try (final RowSet intersected = matchingRowSet.intersect(mapper)) {
+                                    filtered.insert(intersected);
+                                }
+                            }
+                        });
+                    }
                 }
+                return filtered;
             }
-            return matchingValues;
         } else {
             return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
                     ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
