@@ -13,7 +13,7 @@ import jpy
 from deephaven import DHError
 from deephaven.column import Column
 from deephaven.dtypes import DType
-from deephaven.table import Table
+from deephaven.table import Table, PartitionedTable
 from deephaven.experimental import s3
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
@@ -276,6 +276,90 @@ def write(
                 _JParquetTools.writeTable(table.j_table, _JFile(path), write_instructions)
             else:
                 _JParquetTools.writeTable(table.j_table, path)
+    except Exception as e:
+        raise DHError(e, "failed to write to parquet data.") from e
+
+
+def write_key_value_partitioned_table(
+        table: Union[Table, PartitionedTable],
+        destination_dir: str,
+        col_definitions: Optional[List[Column]] = None,
+        col_instructions: Optional[List[ColumnInstruction]] = None,
+        compression_codec_name: Optional[str] = None,
+        max_dictionary_keys: Optional[int] = None,
+        max_dictionary_size: Optional[int] = None,
+        target_page_size: Optional[int] = None,
+        base_name: Optional[str] = None
+) -> None:
+    """ Write a table to a Parquet file in a key-value partitoned format.
+
+    Args:
+        table (Table): the source table or partitioned table
+        destination_dir (str): the destination root directory to store partitioned data in nested format. Non-existing
+            directories are created.
+        col_definitions (Optional[List[Column]]): the column definitions to use, default is None
+        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing, default is None
+        compression_codec_name (Optional[str]): the default compression codec to use, if not specified, defaults to SNAPPY
+        max_dictionary_keys (Optional[int]): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        max_dictionary_size (Optional[int]): the maximum dictionary size (in bytes) allowed, defaults to 2^20 (1,048,576)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        base_name (Optional[str]): The base name for the individual partitioned tables, if not specified, defaults to
+            `{uuid}`, so files will have names of the format `<uuid>.parquet` where `uuid` is a randomly generated UUID.
+            Users can provide the following tokens in the base_name:
+            - The token `{uuid}` will be replaced with a random UUID. For example, a base name of
+            "table-{uuid}" will result in files named like "table-8e8ab6b2-62f2-40d1-8191-1c5b70c5f330.parquet.parquet".
+            - The token `{partitions}` will be replaced with an underscore-delimited, concatenated string of
+            partition values. For example, a base name of "{partitions}-table" will result in files like
+            "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are
+            partitioning columns.
+            - The token `{i}` will be replaced with an automatically incremented integer for files in a directory. For
+            example, a base name of "table-{i}" will result in files named like "PC=partition1/table-0.parquet",
+            "PC=partition1/table-1.parquet", etc.
+
+    Raises:
+        DHError
+    """
+    try:
+        write_instructions = _build_parquet_instructions(
+            col_instructions=col_instructions,
+            compression_codec_name=compression_codec_name,
+            max_dictionary_keys=max_dictionary_keys,
+            max_dictionary_size=max_dictionary_size,
+            target_page_size=target_page_size,
+            for_read=False,
+        )
+
+        table_definition = None
+        if col_definitions is not None:
+            table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
+
+        if table_definition:
+            if write_instructions:
+                if base_name:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
+                                                                 base_name, write_instructions)
+                else:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
+                                                                 write_instructions)
+            else:
+                if base_name:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
+                                                                 base_name)
+                else:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir)
+        else:
+            if write_instructions:
+                if base_name:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, base_name,
+                                                                 write_instructions)
+                else:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir,
+                                                                 write_instructions)
+            else:
+                if base_name:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, base_name)
+                else:
+                    _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 

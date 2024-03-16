@@ -29,10 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 import static io.deephaven.parquet.base.ParquetUtils.getKeyForFile;
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
 
 /**
  * Used to generate a combined {@value ParquetUtils#METADATA_FILE_NAME} and
@@ -109,7 +109,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         }
         this.parquetFileMetadataList = new ArrayList<>(destinations.length);
         this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                convertToURI(metadataRootDirAbsPathString), null);
+                convertToURI(metadataRootDirAbsPathString, true), null);
         this.partitioningColumnsSchema = partitioningColumnsSchema;
 
         this.mergedSchema = null;

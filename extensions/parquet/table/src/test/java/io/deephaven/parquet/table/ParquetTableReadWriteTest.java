@@ -618,14 +618,14 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        writeKeyValuePartitionedTable(inputData, parentDir, "{partitions}-data-{i}", writeInstructions);
+        writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), "{partitions}-data", writeInstructions);
 
         // Verify that the partitioned data exists
         for (int PC1 = 0; PC1 <= 2; PC1++) {
             for (int PC2 = 0; PC2 <= 1; PC2++) {
                 final File dir = new File(parentDir, "PC1=" + PC1 + File.separator + "PC2=" + PC2);
                 assertTrue(dir.exists() && dir.isDirectory());
-                final File dataFile = new File(dir, "PC1=" + PC1 + "_PC2=" + PC2 + "-data-0.parquet");
+                final File dataFile = new File(dir, "PC1=" + PC1 + "_PC2=" + PC2 + "-data.parquet");
                 assertTrue(dataFile.exists() && dataFile.isFile());
             }
         }
@@ -655,7 +655,7 @@ public final class ParquetTableReadWriteTest {
                 .setGenerateMetadataFiles(true)
                 .build();
         try {
-            writeKeyValuePartitionedTable(inputData, parentDir, "data", writeInstructions);
+            writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), "data", writeInstructions);
             fail("Expected exception when writing the partitioned table with no non-partitioning columns");
         } catch (final RuntimeException expected) {
         }
@@ -680,15 +680,16 @@ public final class ParquetTableReadWriteTest {
                 .setGenerateMetadataFiles(true)
                 .build();
         try {
-            writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data", writeInstructions);
+            writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                    "{partitions}-data", writeInstructions);
             fail("Expected exception when writing the partitioned table with non-unique keys without {i} or {uuid} in "
                     + "base name");
         } catch (final RuntimeException expected) {
         }
 
         // Write the partitioned table with non-unique keys with {i} in the base name
-        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "{partitions}-data-{i}",
-                writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                "{partitions}-data-{i}", writeInstructions);
 
         // Verify that the partitioned data exists
         for (int PC1 = 0; PC1 <= 2; PC1++) {
@@ -713,7 +714,7 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
 
         // Write the partitioned table with non-unique keys with {uuid} in the base name
-        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, "data-{uuid}",
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(), "data-{uuid}",
                 writeInstructions);
 
         // Verify that the partitioned data exists with uuid in names
@@ -730,7 +731,8 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
 
         // Write the partitioned table with non-unique keys without a base name
-        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                writeInstructions);
 
         // Verify that the partitioned data exists with uuid in names
         for (int PC1 = 0; PC1 <= 2; PC1++) {
@@ -758,7 +760,7 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        writeKeyValuePartitionedTable(partitionedTable, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTable, parentDir.getAbsolutePath(), writeInstructions);
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
         assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
         final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata")).select();
@@ -796,7 +798,7 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        writeKeyValuePartitionedTable(inputData, tableDefinitionToWrite, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(inputData, tableDefinitionToWrite, parentDir.getPath(), writeInstructions);
 
         // Verify that the partitioned data exists
         for (int PC1 = 0; PC1 <= 2; PC1++) {
@@ -849,7 +851,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
         final String[] partitioningCols = new String[] {"symbol", "epic_collection_id", "epic_request_id"};
         final PartitionedTable partitionedTable = inputData.partitionBy(partitioningCols);
-        writeKeyValuePartitionedTable(partitionedTable, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
 
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         for (final String col : partitioningCols) {
@@ -905,7 +907,7 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        writeKeyValuePartitionedTable(inputData, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions);
 
         // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings
         // Therefore, we cannot compare the tables directly
@@ -964,7 +966,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
 
         // First API we test is passing the table directly without any table definition
-        writeKeyValuePartitionedTable(inputData, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions);
 
         // Store the big decimal with the precision and scale consistent with what we write to parquet
         inputData = maybeFixBigDecimal(inputData);
@@ -980,7 +982,7 @@ public final class ParquetTableReadWriteTest {
 
         // Next API we test is passing the partitioned table without any table definition
         final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
-        writeKeyValuePartitionedTable(partitionedTable, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
         fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
         assertTableEquals(inputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
         fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
@@ -996,7 +998,7 @@ public final class ParquetTableReadWriteTest {
                 .collect(Collectors.toList());
         newColumns.add(ColumnDefinition.ofInt("NPC15"));
         final TableDefinition newDefinition = TableDefinition.of(newColumns);
-        writeKeyValuePartitionedTable(inputData, newDefinition, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(inputData, newDefinition, parentDir.getAbsolutePath(), writeInstructions);
         final Table expected = inputData.dropColumns("PC2", "NPC6").updateView("NPC15 = (int)null");
         fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
         assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
@@ -1006,7 +1008,7 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
 
         // Next API we test is passing the partitioned table with an updated table definition
-        writeKeyValuePartitionedTable(partitionedTable, newDefinition, parentDir, writeInstructions);
+        writeKeyValuePartitionedTable(partitionedTable, newDefinition, parentDir.getPath(), writeInstructions);
         fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
         assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
         fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));

@@ -6,15 +6,17 @@ import os
 import shutil
 import tempfile
 import unittest
+import fnmatch
 
 import pandas
 import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, Column, ColumnType
+from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col
 from deephaven.pandas import to_pandas, to_table
-from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout
+from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
+                               write_key_value_partitioned_table)
 from tests.testbase import BaseTestCase
 from deephaven.experimental import s3
 
@@ -113,7 +115,8 @@ class ParquetTestCase(BaseTestCase):
 
         # Reading
         with self.subTest(msg="read_table(str)"):
-            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1], file_layout=ParquetFileLayout.SINGLE_FILE)
+            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1],
+                          file_layout=ParquetFileLayout.SINGLE_FILE)
             self.assert_table_equals(table, table2)
 
         # Delete
@@ -575,6 +578,77 @@ class ParquetTestCase(BaseTestCase):
         with self.assertRaises(Exception):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
         # TODO(deephaven-core#5064): Add support for local S3 testing
+
+    def test_writing_partitioned_data(self):
+        source = new_table([
+            string_col("X", ["Aa", "Bb", "Aa", "Cc", "Bb", "Aa", "Bb", "Bb", "Cc"]),
+            string_col("Y", ["M", "N", "O", "N", "P", "M", "O", "P", "M"]),
+            int_col("Number", [55, 76, 20, 130, 230, 50, 73, 137, 214]),
+        ])
+        partitioned_table = source.partition_by(by="X")
+        base_name = "test-{uuid}"
+        max_dictionary_keys = 1024
+
+        root_dir = os.path.join(self.temp_dir.name, "test_partitioned_writing")
+        if os.path.exists(root_dir):
+            shutil.rmtree(root_dir)
+
+        def verify_table_from_disk(table):
+            self.assertTrue(len(table.columns))
+            self.assertTrue(table.columns[0].name == "X")
+            self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
+            self.assert_table_equals(table.select().sort("X", "Y"), source.sort("X", "Y"))
+
+        def verify_file_names():
+            partition_dir_path = os.path.join(root_dir, 'X=Aa')
+            self.assertTrue(os.path.exists(partition_dir_path))
+            self.assertTrue(len(os.listdir(partition_dir_path)) == 1)
+            parquet_file = os.listdir(partition_dir_path)[0]
+            self.assertTrue(fnmatch.fnmatch(parquet_file, 'test-*.parquet'))
+
+        # Test all different APIs
+        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir, base_name=base_name,
+                                          max_dictionary_keys=max_dictionary_keys)
+        from_disk = read(root_dir)
+        definition = from_disk.columns
+        verify_table_from_disk(from_disk)
+        verify_file_names()
+        from_disk = None
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir,
+                                          max_dictionary_keys=max_dictionary_keys)
+        verify_table_from_disk(read(root_dir))
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir, base_name=base_name)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir)
+        verify_table_from_disk(read(root_dir))
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
+                                          base_name=base_name, max_dictionary_keys=max_dictionary_keys)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
+                                          max_dictionary_keys=max_dictionary_keys)
+        verify_table_from_disk(read(root_dir))
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
+                                          base_name=base_name)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir)
+        verify_table_from_disk(read(root_dir))
 
 
 if __name__ == '__main__':
