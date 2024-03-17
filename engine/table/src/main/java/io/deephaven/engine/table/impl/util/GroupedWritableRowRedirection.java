@@ -19,9 +19,9 @@ import java.util.Arrays;
  * The GroupedWritableRowRedirection is intended for situations where you have several row sets that represent
  * contiguous rows of your output table and a flat output RowSet.
  * <p>
- * When sorting a table by its grouping column, instead of using a large contiguous WritableRowRedirection, we simply
- * store the row sets for each group and the accumulated cardinality. We then binary search in the accumulated
- * cardinality for a given key; and fetch the corresponding offset from that group's row set.
+ * When sorting a table by indexed columns, instead of using a large contiguous WritableRowRedirection, we simply store
+ * the row sets for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for
+ * a given key; and fetch the corresponding offset from that group's row set.
  * <p>
  * This WritableRowRedirection does not support mutation.
  */
@@ -47,14 +47,14 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
      */
     private final ThreadLocal<SavedContext> threadContext = ThreadLocal.withInitial(SavedContext::new);
 
-    public GroupedWritableRowRedirection(long size, long[] groupSizes, RowSet[] groups) {
+    public GroupedWritableRowRedirection(final long size, final long[] groupSizes, final RowSet[] groups) {
         this.size = size;
         this.groupSizes = groupSizes;
         this.groups = groups;
     }
 
     @Override
-    public long get(long outerRowKey) {
+    public long get(final long outerRowKey) {
         if (outerRowKey < 0 || outerRowKey >= size) {
             return RowSequence.NULL_ROW_KEY;
         }

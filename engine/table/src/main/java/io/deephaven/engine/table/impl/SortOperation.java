@@ -97,7 +97,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     @Override
     public OperationSnapshotControl newSnapshotControl(QueryTable queryTable) {
         return dataIndex != null
-                ? new OperationSnapshotControlEx(queryTable, (QueryTable) dataIndex.table())
+                ? new OperationSnapshotControlEx(queryTable, dataIndex.table())
                 : new OperationSnapshotControl(queryTable);
     }
 
@@ -120,8 +120,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortedKeys.size() == 0) {
             return true;
         }
-        final RowSet.Iterator it = parent.getRowSet().iterator();
-        return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
+        try (RowSet.Iterator it = parent.getRowSet().iterator()) {
+            return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
+        }
     }
 
     @NotNull
@@ -239,30 +240,25 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isBlink()) {
-            try (final RowSet prevRowSet = usePrev ? parent.getRowSet().copyPrev() : null) {
-                final RowSet rowSetToUse = usePrev ? prevRowSet : parent.getRowSet();
-                final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(
-                        sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToUse, usePrev);
-                return blinkTableSort(sortedKeys);
-            }
+            final RowSet rowSetToUse = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
+            final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(
+                    sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToUse, usePrev);
+            return blinkTableSort(sortedKeys);
         }
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             // reset the sort data structures that we share between invocations
             final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
 
-            final RowSet rowSetToSort = usePrev ? closer.add(parent.getRowSet().copyPrev()) : parent.getRowSet();
+            final RowSet rowSetToSort = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
 
             if (rowSetToSort.size() >= Integer.MAX_VALUE) {
                 throw new UnsupportedOperationException("Can not perform ticking sort for table larger than "
                         + Integer.MAX_VALUE + " rows, table is" + rowSetToSort.size());
             }
 
-            final long[] sortedKeys =
-                    SortHelpers
-                            .getSortedKeys(sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToSort,
-                                    usePrev)
-                            .getArrayMapping();
+            final long[] sortedKeys = SortHelpers.getSortedKeys(
+                    sortOrder, originalSortColumns, sortColumns, dataIndex, rowSetToSort, usePrev).getArrayMapping();
 
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
             sortMapping = SortHelpers.createSortRowRedirection();

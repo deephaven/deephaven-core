@@ -263,12 +263,12 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 col("Sentinel", 7, 8, 6, 4, 5, 3, 1, 2, 0)), sorted3);
     }
 
-    public void testGroupedSortHistorical() {
-        testGroupedSortHistorical(10000);
-        testGroupedSortHistorical(1000000);
+    public void testIndexedSortHistorical() {
+        testIndexedSortHistorical(10000);
+        testIndexedSortHistorical(1000000);
     }
 
-    private void testGroupedSortHistorical(int size) {
+    private void testIndexedSortHistorical(int size) {
         final String[] choices = new String[] {"Hornigold", "Jennings", "Vane", "Bellamy"};
         final String[] letters = new String[] {"D", "C", "A", "B"};
 
@@ -283,49 +283,49 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
 
         // Single column index on "Captain"
-        Table grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
+        Table indexed = testTable(RowSetFactory.flat(values.length).toTracking(),
                 colIndexed("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
         Table nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
 
-        Table sortedGrouped = grouped.sortDescending("Captain");
+        Table sortedIndexed = indexed.sortDescending("Captain");
         Table sortedNoGroups = nogroups.sortDescending("Captain");
-        show(sortedGrouped);
-        assertTableEquals(sortedNoGroups, sortedGrouped);
+        show(sortedIndexed);
+        assertTableEquals(sortedNoGroups, sortedIndexed);
 
         // Single column indexes on both "Captain" and "Secondary"
-        grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
+        indexed = testTable(RowSetFactory.flat(values.length).toTracking(),
                 colIndexed("Captain", values),
                 colIndexed("Secondary", values)).update("Sentinel=i");
         nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
 
-        sortedGrouped = grouped.sortDescending("Captain", "Secondary");
+        sortedIndexed = indexed.sortDescending("Captain", "Secondary");
         sortedNoGroups = nogroups.sortDescending("Captain", "Secondary");
-        show(sortedGrouped);
-        assertTableEquals(sortedNoGroups, sortedGrouped);
+        show(sortedIndexed);
+        assertTableEquals(sortedNoGroups, sortedIndexed);
 
-        sortedGrouped = grouped.sortDescending("Secondary", "Captain");
+        sortedIndexed = indexed.sortDescending("Secondary", "Captain");
         sortedNoGroups = nogroups.sortDescending("Secondary", "Captain");
-        show(sortedGrouped);
-        assertTableEquals(sortedNoGroups, sortedGrouped);
+        show(sortedIndexed);
+        assertTableEquals(sortedNoGroups, sortedIndexed);
 
         // Multi-column indexes on "Captain" and "Secondary"
-        grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
+        indexed = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
-        DataIndexer.getOrCreateDataIndex(grouped, "Captain", "Secondary");
+        DataIndexer.getOrCreateDataIndex(indexed, "Captain", "Secondary");
         nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
 
-        sortedGrouped = grouped.sortDescending("Captain", "Secondary");
+        sortedIndexed = indexed.sortDescending("Captain", "Secondary");
         sortedNoGroups = nogroups.sortDescending("Captain", "Secondary");
-        show(sortedGrouped);
-        assertTableEquals(sortedNoGroups, sortedGrouped);
+        show(sortedIndexed);
+        assertTableEquals(sortedNoGroups, sortedIndexed);
     }
 
     public void testSortBool() {

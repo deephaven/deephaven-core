@@ -74,7 +74,7 @@ public class QueryTableHugeSortTest {
     }
 
     @Test
-    public void testHugeGroupedSort() {
+    public void testHugeIndexedSort() {
         final String[] captains = new String[] {"Hornigold", "Jennings", "Vane", "Bellamy"};
 
         final long tableSize = 1L << 24; // 16 MM (note we msut be a multiple of captains.length)
@@ -82,20 +82,20 @@ public class QueryTableHugeSortTest {
 
         QueryScope.addParam("captains", captains);
         QueryScope.addParam("segSize", segSize);
-        final Table grouped =
+        final Table indexed =
                 TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
 
-        final ColumnSource<Object> captainSource = (ColumnSource<Object>) grouped.getColumnSource("Captain");
+        final ColumnSource<Object> captainSource = (ColumnSource<Object>) indexed.getColumnSource("Captain");
 
         // Create the index for this table and column.
-        DataIndexer.getOrCreateDataIndex(grouped, "Captain");
+        DataIndexer.getOrCreateDataIndex(indexed, "Captain");
 
         final long sortStart = System.currentTimeMillis();
-        final Table sortedGrouped = grouped.sortDescending("Captain");
+        final Table sortedIndexed = indexed.sortDescending("Captain");
         final long sortDuration = System.currentTimeMillis() - sortStart;
         System.out.println("Sort Duration: " + sortDuration + "ms");
 
-        show(sortedGrouped);
+        show(sortedIndexed);
 
         final String[] sortedCaptains = Arrays.copyOf(captains, captains.length);
         Arrays.sort(sortedCaptains, Comparator.reverseOrder());
@@ -105,7 +105,7 @@ public class QueryTableHugeSortTest {
 
         System.out.println("Comparing tables:");
         final long compareStart = System.currentTimeMillis();
-        assertTableEquals(sortedValues.view("Captain"), sortedGrouped.view("Captain"));
+        assertTableEquals(sortedValues.view("Captain"), sortedIndexed.view("Captain"));
         final long compareDuration = System.currentTimeMillis() - compareStart;
         System.out.println("Compare Duration: " + compareDuration + "ms");
     }
