@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.table.iterators.ColumnIterator;
@@ -105,8 +104,7 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
                                 renamedRowSetColumn,
                                 RowSetColumnSourceWrapper.from(parent.getColumnSource(rowSetColumn)));
                     } else {
-                        // Convert the key columns to primitive column sources.
-                        resultColumnSourceMap.put(columnName, ReinterpretUtils.maybeConvertToPrimitive(columnSource));
+                        resultColumnSourceMap.put(columnName, columnSource);
                     }
                 });
                 final OperationSnapshotControl snapshotControl =
