@@ -102,19 +102,19 @@ public class QueryTableAjTest {
     @Test
     public void testAjStaticGroupedBoth() {
         // noinspection unchecked
-        testAjStatic(TstUtils::colGrouped, TstUtils::colGrouped);
+        testAjStatic(TstUtils::colIndexed, TstUtils::colIndexed);
     }
 
     @Test
     public void testAjStaticGroupedLeftOnly() {
         // noinspection unchecked
-        testAjStatic(TstUtils::colGrouped, TableTools::col);
+        testAjStatic(TstUtils::colIndexed, TableTools::col);
     }
 
     @Test
     public void testAjStaticGroupedRightOnly() {
         // noinspection unchecked
-        testAjStatic(TableTools::col, TstUtils::colGrouped);
+        testAjStatic(TableTools::col, TstUtils::colIndexed);
     }
 
     public void testAjStatic(MakeColumn leftMaker, MakeColumn rightMaker) {
@@ -559,11 +559,11 @@ public class QueryTableAjTest {
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
                                     ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.None);
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
-                                    ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.None);
+                                    ColumnInfo.ColAttributes.Indexed, ColumnInfo.ColAttributes.None);
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
-                                    ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.Grouped);
+                                    ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.Indexed);
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
-                                    ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.Grouped);
+                                    ColumnInfo.ColAttributes.Indexed, ColumnInfo.ColAttributes.Indexed);
                         }
                     }
                 }

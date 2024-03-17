@@ -36,11 +36,11 @@ public class ColumnInfo<T, U> {
          */
         Immutable,
         /**
-         * This attribute indicates that the column is grouped, and should be indexed. Only use this when enclosed by a
+         * This attribute indicates that the column should be indexed. Only use this when enclosed by a
          * {@link io.deephaven.engine.liveness.LivenessScope} that was constructed with
          * {@code enforceStrongReachability == true}.
          */
-        Grouped
+        Indexed
 
     }
 
@@ -51,7 +51,7 @@ public class ColumnInfo<T, U> {
         this.generator = generator;
         this.name = name;
         this.immutable = Arrays.asList(colAttributes).contains(ColAttributes.Immutable);
-        this.grouped = Arrays.asList(colAttributes).contains(ColAttributes.Grouped);
+        this.grouped = Arrays.asList(colAttributes).contains(ColAttributes.Indexed);
     }
 
     public ColumnHolder<?> generateInitialColumn(RowSet rowSet, Random random) {
@@ -66,7 +66,7 @@ public class ColumnInfo<T, U> {
         if (immutable) {
             return new ImmutableColumnHolder<>(name, type, componentType, grouped, initialData);
         } else if (grouped) {
-            return TstUtils.groupedColumnHolderForChunk(name, type, componentType, initialData);
+            return TstUtils.indexedColumnHolderForChunk(name, type, componentType, initialData);
         } else {
             return TstUtils.columnHolderForChunk(name, type, componentType, initialData);
         }
@@ -83,7 +83,7 @@ public class ColumnInfo<T, U> {
     public ColumnHolder<T> generateUpdateColumnHolder(RowSet keysToModify, Random random) {
         final Chunk<Values> chunk = generator.populateChunk(keysToModify, random);
         if (grouped) {
-            return TstUtils.groupedColumnHolderForChunk(name, type, componentType, chunk);
+            return TstUtils.indexedColumnHolderForChunk(name, type, componentType, chunk);
         } else {
             return TstUtils.columnHolderForChunk(name, type, componentType, chunk);
         }

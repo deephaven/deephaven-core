@@ -165,7 +165,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
         t = TstUtils.testRefreshingTable(
                 TableTools.col("Opra", "opra1", "opra2", "opra3", "Opra1", "Opra2", "Opra3", "Opra4", null, "OpRa5"),
-                TstUtils.colGrouped("Food", "Apple", "Orange", "bacon", "laffa", "pOtato", "carroT", "WafflE", null,
+                TstUtils.colIndexed("Food", "Apple", "Orange", "bacon", "laffa", "pOtato", "carroT", "WafflE", null,
                         "Apple"));
 
         f = WhereFilterFactory.getExpression("Food icase in `apple`, `orange`, `bacon`,`LAFFA`");

@@ -58,7 +58,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     }
 
     public void testPreserveGrouping() {
-        final Table x = TstUtils.testTable(TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+        final Table x = TstUtils.testTable(TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
 
         assertTrue(DataIndexer.hasDataIndex(x, "Sym"));
@@ -74,7 +74,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         assertFalse(DataIndexer.hasDataIndex(xs, "Sentinel"));
 
         final Table x2 = TstUtils.testTable(TstUtils.i(0, 1 << 16, 2 << 16, 3 << 16, 4 << 16, 5 << 16).toTracking(),
-                TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
 
         final Table xu = x2.update("Sym2=Sym");
@@ -89,7 +89,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            final ColumnHolder<?> symHolder = TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
+            final ColumnHolder<?> symHolder = TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
             final ColumnHolder<?> sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();

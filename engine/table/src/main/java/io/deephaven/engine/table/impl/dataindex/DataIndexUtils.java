@@ -53,8 +53,6 @@ public class DataIndexUtils {
         throw new IllegalArgumentException("Data index must have at least one key column");
     }
 
-    // TODO-RWC: should we delete the unused methods here?
-
     /**
      * Make a {@link DataIndexKeySet} that stores data index {@link DataIndex.RowKeyLookup lookup} keys that have
      * {@code keyColumnCount} components.

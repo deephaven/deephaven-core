@@ -96,25 +96,25 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals(Arrays.asList("c", "b", "a"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "DataToSort").get(0, 3)));
 
-        final ColumnHolder<?> c1 = TstUtils.colGrouped("Unsorted", 3, 1, 2);
+        final ColumnHolder<?> c1 = TstUtils.colIndexed("Unsorted", 3, 1, 2);
         final Table table = newTable(c1, col("DataToSort", "c", "a", "b"));
         result = table.sort("DataToSort");
         assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(DataAccessHelpers.getColumn(result, "Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "c"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "DataToSort").get(0, 3)));
-        final ColumnHolder<?> c11 = TstUtils.colGrouped("Unsorted", 3, 1, 2);
+        final ColumnHolder<?> c11 = TstUtils.colIndexed("Unsorted", 3, 1, 2);
         result = newTable(c11, col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
         assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(DataAccessHelpers.getColumn(result, "Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("c", "b", "a"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "DataToSort").get(0, 3)));
 
-        final ColumnHolder<?> c2 = TstUtils.colGrouped("Unsorted", '3', '1', '2');
+        final ColumnHolder<?> c2 = TstUtils.colIndexed("Unsorted", '3', '1', '2');
         result = newTable(c2, col("DataToSort", "c", "a", "b")).sort("Unsorted");
         assertEquals(Arrays.asList('1', '2', '3'),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Unsorted").get(0, 3)));
         assertEquals(Arrays.asList("a", "b", "c"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "DataToSort").get(0, 3)));
-        final ColumnHolder<?> c22 = TstUtils.colGrouped("Unsorted", '3', '1', '2');
+        final ColumnHolder<?> c22 = TstUtils.colIndexed("Unsorted", '3', '1', '2');
         result = newTable(c22, col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
         assertEquals(Arrays.asList('3', '2', '1'),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Unsorted").get(0, 3)));
@@ -160,14 +160,14 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Witness").get(0, 4)));
 
 
-        final ColumnHolder<?> c3 = TstUtils.colGrouped("Unsorted", '3', '1', '2', null);
+        final ColumnHolder<?> c3 = TstUtils.colIndexed("Unsorted", '3', '1', '2', null);
         result = newTable(c3, col("DataToSort", "c", "a", "b", "d")).sort("Unsorted");
         show(result);
         assertEquals(Arrays.asList(null, '1', '2', '3'),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Unsorted").get(0, 4)));
         assertEquals(Arrays.asList("d", "a", "b", "c"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "DataToSort").get(0, 4)));
-        final ColumnHolder<?> c4 = TstUtils.colGrouped("Unsorted", '3', '1', null, '2');
+        final ColumnHolder<?> c4 = TstUtils.colIndexed("Unsorted", '3', '1', null, '2');
         result = newTable(c4, col("DataToSort", "c", "a", "d", "b")).sortDescending("Unsorted");
         assertEquals(Arrays.asList('3', '2', '1', null),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Unsorted").get(0, 4)));
@@ -230,7 +230,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testGroupedSortRefreshing() {
         final Table table = testRefreshingTable(RowSetFactory.flat(9).toTracking(),
-                colGrouped("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
+                colIndexed("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
                         "Canteloupe"),
                 col("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
 
@@ -284,7 +284,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         // Single column index on "Captain"
         Table grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
-                colGrouped("Captain", values),
+                colIndexed("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");
         Table nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
@@ -297,8 +297,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         // Single column indexes on both "Captain" and "Secondary"
         grouped = testTable(RowSetFactory.flat(values.length).toTracking(),
-                colGrouped("Captain", values),
-                colGrouped("Secondary", values)).update("Sentinel=i");
+                colIndexed("Captain", values),
+                colIndexed("Secondary", values)).update("Sentinel=i");
         nogroups = testTable(RowSetFactory.flat(values.length).toTracking(),
                 col("Captain", values),
                 col("Secondary", values)).update("Sentinel=i");

@@ -112,15 +112,15 @@ public class TstUtils {
     }
 
     /**
-     * Create a grouped column holder from the given chunk.
+     * Create an indexed column holder from the given chunk.
      *
      * @param name the name of the column
      * @param type the type of the column
      * @param componentType the component type of the column if applicable
      * @param chunkData the data in an chunk for this column
-     * @return the new ColumnHolder with the grouping attribute set
+     * @return the new ColumnHolder with the indexed attribute set
      */
-    public static <T> ColumnHolder<T> groupedColumnHolderForChunk(
+    public static <T> ColumnHolder<T> indexedColumnHolderForChunk(
             String name, Class<T> type, Class<?> componentType, Chunk<Values> chunkData) {
         return ColumnHolder.makeForChunk(name, type, componentType, true, chunkData);
     }
@@ -210,7 +210,7 @@ public class TstUtils {
     }
 
     @SafeVarargs
-    public static <T> ColumnHolder<T> colGrouped(String name, T... data) {
+    public static <T> ColumnHolder<T> colIndexed(String name, T... data) {
         return ColumnHolder.createColumnHolder(name, true, data);
     }
 
@@ -575,9 +575,9 @@ public class TstUtils {
         QueryTable queryTable = new QueryTable(rowSet, columns);
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
 
-        // Add grouping indexes for the grouping columns.
+        // Add indexes for the indexed columns.
         for (ColumnHolder<?> columnHolder : columnHolders) {
-            if (columnHolder.grouped) {
+            if (columnHolder.indexed) {
                 // This mechanism is only safe in a reachability/liveness sense if we're enclosed in a LivenessScope
                 // that enforces strong reachability.
                 DataIndexer.getOrCreateDataIndex(queryTable, columnHolder.name);

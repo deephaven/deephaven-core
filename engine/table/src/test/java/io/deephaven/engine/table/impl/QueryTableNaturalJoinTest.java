@@ -370,7 +370,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[] {"I1", "C1", "C2"},
-                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Grouped},
+                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Indexed},
                 new IntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e", "f"),
                 new IntGenerator(1, 10)));
@@ -445,7 +445,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinGroupedStatic() {
         // noinspection unchecked
-        testNaturalJoinSimpleStatic(TstUtils::colGrouped);
+        testNaturalJoinSimpleStatic(TstUtils::colIndexed);
     }
 
     private interface MakeLeftColumn {

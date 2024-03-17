@@ -170,11 +170,11 @@ public class TestDataIndexer extends RefreshingTableTestCase {
 
         ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[4];
         columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Indexed);
         columnInfo[1] = new ColumnInfo<>(new SetGenerator<>("q", "r", "s", "t"), "Sym2",
-                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Indexed);
         columnInfo[2] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
-                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Indexed);
         columnInfo[3] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
