@@ -11,6 +11,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
+/**
+ * {@link BasicDataIndex} implementation that holds an index {@link Table} and does not specify the {@link ColumnSource
+ * ColumnSources} that were indexed, and hence cannot support {@link #keyColumnMap()}. This is useful for standalone
+ * indices that are not associated with a specific table, but rather used to accumulate a merged index for a merged
+ * table over the indexed data.
+ */
 public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIndex {
 
     private final Table table;
@@ -21,7 +27,7 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
             @NotNull final Table table,
             @NotNull final String[] keyColumnNames,
             @NotNull final String rowSetColumnName) {
-        return new StandaloneDataIndex(table, keyColumnNames, rowSetColumnName);
+        return new StandaloneDataIndex(table.coalesce(), keyColumnNames, rowSetColumnName);
     }
 
     private StandaloneDataIndex(
@@ -31,6 +37,9 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
         this.table = table;
         this.keyColumnNames = keyColumnNames;
         this.rowSetColumnName = rowSetColumnName;
+        if (table.isRefreshing()) {
+            manage(table);
+        }
     }
 
     @Override
@@ -41,7 +50,7 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
     @Override
     @NotNull
     public Map<ColumnSource<?>, String> keyColumnMap() {
-        throw new UnsupportedOperationException("StandaloneDataIndex#keyColumnMap");
+        throw new UnsupportedOperationException("Cannot provide a key column map for a standalone data index");
     }
 
     @Override
@@ -58,6 +67,6 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
 
     @Override
     public boolean isRefreshing() {
-        return false;
+        return table.isRefreshing();
     }
 }
