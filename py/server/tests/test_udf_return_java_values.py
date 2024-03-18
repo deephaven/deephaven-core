@@ -287,7 +287,7 @@ def fn(col) -> Optional[{np_dtype}]:
             nbsin = numba.vectorize([numba.float64(numba.float64)])(np.sin)
 
         # this is the workaround that utilizes vectorization and type inference
-        @numba.vectorize([numba.float64(numba.float64)], nopython=True)
+        @numba.vectorize([numba.float64(numba.int64)], nopython=True)
         def nbsin(x):
             return np.sin(x)
         t3 = empty_table(10).update(["X3 = nbsin(i)"])

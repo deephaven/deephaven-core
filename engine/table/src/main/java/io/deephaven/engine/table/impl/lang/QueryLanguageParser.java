@@ -153,7 +153,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private final Map<String, Class<?>> staticImportLookupCache = new HashMap<>();
 
     // We need some class to represent null. We know for certain that this one won't be used...
-    private static final Class<?> NULL_CLASS = QueryLanguageParser.class;
+    public static final Class<?> NULL_CLASS = QueryLanguageParser.class;
 
     /**
      * The result of the QueryLanguageParser for the expression passed given to the constructor.
@@ -1965,6 +1965,39 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 if (target == double.class)
                     return true;
         }
+        return false;
+    }
+
+    public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
+        if (original == null || !original.isPrimitive() || target == null || !target.isPrimitive()
+                || original.equals(void.class) || target.equals(void.class)) {
+            throw new IllegalArgumentException("Arguments must be a primitive type (excluding void)!");
+        }
+
+        if (original.equals(target)) {
+            return true;
+        }
+
+        LanguageParserPrimitiveType originalEnum = LanguageParserPrimitiveType.getPrimitiveType(original);
+
+        switch (originalEnum) {
+            case BytePrimitive:
+                if (target == short.class)
+                    return true;
+            case ShortPrimitive:
+            case CharPrimitive:
+                if (target == int.class)
+                    return true;
+            case IntPrimitive:
+                if (target == long.class)
+                    return true;
+                break;
+            case FloatPrimitive:
+                if (target == double.class)
+                    return true;
+                break;
+        }
+
         return false;
     }
 

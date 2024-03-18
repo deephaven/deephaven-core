@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -12,7 +13,9 @@ import org.jpy.PyObject;
 import java.time.Instant;
 import java.util.*;
 
-import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isWideningPrimitiveConversion;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.NULL_CLASS;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isLosslessWideningPrimitiveConversion;
+import static io.deephaven.util.type.TypeUtils.getUnboxedType;
 
 /**
  * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call() varargs
@@ -228,6 +231,11 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         // skip the array type code
                         ti++;
                         possibleTypes.add(numpyType2JavaArrayClass.get(paramTypeCodes.charAt(ti)));
+                        if (paramTypeCodes.charAt(ti) == '?') {
+                            possibleTypes.add(Boolean[].class);
+                        }
+                    } else if (typeCode == 'N') {
+                        possibleTypes.add(NULL_CLASS);
                     } else {
                         possibleTypes.add(numpyType2JavaClass.get(typeCode));
                     }
@@ -252,7 +260,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             if (t.isAssignableFrom(type)) {
                 return true;
             }
-            if (t.isPrimitive() && type.isPrimitive() && isWideningPrimitiveConversion(type, t)) {
+            if (t.isPrimitive() && type.isPrimitive() && isLosslessWideningPrimitiveConversion(type, t)) {
                 return true;
             }
         }
@@ -263,18 +271,25 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     public void verifyArguments(Class<?>[] argTypes) {
         String callableName = pyCallable.getAttribute("__name__").toString();
 
-        if (argTypes.length != parameters.size()) {
-            throw new IllegalArgumentException(
-                    callableName + ": " + "Expected " + parameters.size() + " arguments, got " + argTypes.length);
-        }
+        // if (argTypes.length > parameters.size()) {
+        // throw new IllegalArgumentException(
+        // callableName + ": " + "Expected " + parameters.size() + " or fewer arguments, got " + argTypes.length);
+        // }
         for (int i = 0; i < argTypes.length; i++) {
-            Set<Class<?>> types = parameters.get(i).getPossibleTypes();
-            if (!types.contains(argTypes[i]) && !types.contains(Object.class)
-                    && !isSafelyCastable(types, argTypes[i])) {
+            Set<Class<?>> types =
+                    parameters.get(i > parameters.size() - 1 ? parameters.size() - 1 : i).getPossibleTypes();
+            // Object is a catch-all type, so we don't need to check for it
+            if (argTypes[i] == Object.class) {
+                continue;
+            }
+
+            Class<?> t = getUnboxedType(argTypes[i]) == null ? argTypes[i] : getUnboxedType(argTypes[i]);
+            if (!types.contains(t) && !types.contains(Object.class)
+                    && !isSafelyCastable(types, t)) {
                 throw new IllegalArgumentException(
                         callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of "
                                 + parameters.get(i).getPossibleTypes() + ", got "
-                                + argTypes[i]);
+                                + (argTypes[i].equals(NULL_CLASS) ? "null" : argTypes[i]));
             }
         }
     };

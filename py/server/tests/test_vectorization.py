@@ -269,7 +269,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
 
     def test_optional_annotations(self):
-        def pyfunc(p1: np.int32, p2: np.int32, p3: Optional[np.int32]) -> Optional[int]:
+        def pyfunc(p1: np.int32, p2: np.int64, p3: Optional[np.int32]) -> Optional[int]:
             total = p1 + p2 + p3
             return None if total % 3 == 0 else total
 
