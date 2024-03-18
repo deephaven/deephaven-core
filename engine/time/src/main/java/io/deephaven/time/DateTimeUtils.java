@@ -2551,7 +2551,7 @@ public class DateTimeUtils {
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
-     * @deprecated Use {@link #nanosOfDay(Instant, ZoneId, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #nanosOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2569,7 +2569,7 @@ public class DateTimeUtils {
      * @param dateTime time
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
-     * @deprecated Use {@link #nanosOfDay(ZonedDateTime, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #nanosOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2588,7 +2588,7 @@ public class DateTimeUtils {
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the top of the day
-     * @deprecated Use {@link #millisOfDay(Instant, ZoneId, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #millisOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2606,7 +2606,7 @@ public class DateTimeUtils {
      * @param dateTime time
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the top of the day
-     * @deprecated Use {@link #millisOfDay(ZonedDateTime, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #millisOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2625,7 +2625,7 @@ public class DateTimeUtils {
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the top of the day
-     * @deprecated Use {@link #secondOfDay(Instant, ZoneId, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #secondOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2643,7 +2643,7 @@ public class DateTimeUtils {
      * @param dateTime time
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the top of the day
-     * @deprecated Use {@link #secondOfDay(ZonedDateTime, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #secondOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2662,7 +2662,7 @@ public class DateTimeUtils {
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the top of the day
-     * @deprecated Use {@link #minuteOfDay(Instant, ZoneId, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #minuteOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2680,7 +2680,7 @@ public class DateTimeUtils {
      * @param dateTime time
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the top of the day
-     * @deprecated Use {@link #minuteOfDay(ZonedDateTime, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #minuteOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2699,7 +2699,7 @@ public class DateTimeUtils {
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
      *         elapsed since the top of the day
-     * @deprecated Use {@link #hourOfDay(Instant, ZoneId, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #hourOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2717,7 +2717,7 @@ public class DateTimeUtils {
      * @param dateTime time
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
      *         elapsed since the top of the day
-     * @deprecated Use {@link #hourOfDay(ZonedDateTime, boolean)} instead.  To be removed soon.
+     * @deprecated Use {@link #hourOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
     @ScriptApi
     @Deprecated
@@ -2799,12 +2799,12 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of milliseconds
-     *        from the start of the day. On days when daylight savings time events occur, results may be different from
-     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
-     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the start of the day
      */
@@ -2822,12 +2822,12 @@ public class DateTimeUtils {
      * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of milliseconds
-     *        from the start of the day. On days when daylight savings time events occur, results may be different from
-     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
-     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the start of the day
      */
