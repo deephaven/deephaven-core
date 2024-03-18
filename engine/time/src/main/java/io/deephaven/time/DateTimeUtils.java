@@ -2730,7 +2730,7 @@ public class DateTimeUtils {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
@@ -2741,7 +2741,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
-     *         have elapsed since the top of the day
+     *         have elapsed since the start of the day
      */
     @ScriptApi
     public static long nanosOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
@@ -2754,7 +2754,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
      * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
@@ -2764,7 +2764,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
-     *         have elapsed since the top of the day
+     *         have elapsed since the start of the day
      */
     @ScriptApi
     public static long nanosOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
@@ -2780,11 +2780,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     public static long nanosOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
@@ -2795,7 +2795,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
+     * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
@@ -2806,7 +2806,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
-     *         have elapsed since the top of the day
+     *         have elapsed since the start of the day
      */
     @ScriptApi
     public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
@@ -2819,7 +2819,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
+     * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
      * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
@@ -2829,7 +2829,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
-     *         have elapsed since the top of the day
+     *         have elapsed since the start of the day
      */
     @ScriptApi
     public static int millisOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
@@ -2841,11 +2841,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
+     * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of milliseconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     public static int millisOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
@@ -2856,7 +2856,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of seconds that have elapsed since the top of the day.
+     * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
@@ -2867,7 +2867,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
     public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
@@ -2880,7 +2880,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of seconds that have elapsed since the top of the day.
+     * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param dateTime time
      * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
@@ -2890,7 +2890,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
     public static int secondOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
@@ -2902,11 +2902,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of seconds that have elapsed since the top of the day.
+     * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of seconds that have elapsed
-     *         since the top of the day
+     *         since the start of the day
      */
     public static int secondOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
@@ -2917,7 +2917,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of minutes that have elapsed since the top of the day.
+     * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
@@ -2928,7 +2928,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
     public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
@@ -2941,7 +2941,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of minutes that have elapsed since the top of the day.
+     * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param dateTime time
      * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
@@ -2951,7 +2951,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
     public static int minuteOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
@@ -2963,11 +2963,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of minutes that have elapsed since the top of the day.
+     * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of minutes that have elapsed
-     *         since the top of the day
+     *         since the start of the day
      */
     public static int minuteOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
@@ -2978,7 +2978,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of hours that have elapsed since the top of the day.
+     * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
@@ -2989,7 +2989,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
     public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
@@ -3002,7 +3002,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of hours that have elapsed since the top of the day.
+     * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param dateTime time
      * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
@@ -3012,7 +3012,7 @@ public class DateTimeUtils {
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
      *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
     public static int hourOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
@@ -3024,11 +3024,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of hours that have elapsed since the top of the day.
+     * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of hours that have elapsed
-     *         since the top of the day
+     *         since the start of the day
      */
     public static int hourOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
