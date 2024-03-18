@@ -95,7 +95,7 @@ class WhereListener extends MergedListener {
     }
 
     @NotNull
-    private static List<NotificationQueue.Dependency> extractDependencies(@NotNull final WhereFilter[] filters) {
+    static List<NotificationQueue.Dependency> extractDependencies(@NotNull final WhereFilter[] filters) {
         return Stream.concat(
                 Stream.of(filters)
                         .filter(f -> f instanceof NotificationQueue.Dependency)

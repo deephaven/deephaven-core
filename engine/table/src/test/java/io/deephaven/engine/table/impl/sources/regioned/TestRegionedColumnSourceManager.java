@@ -455,12 +455,12 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         }
 
         @Override
-        public @NotNull String[] keyColumnNames() {
-            return new String[] {groupingColumnDefinition.getName()};
+        public @NotNull List<String> keyColumnNames() {
+            return List.of(groupingColumnDefinition.getName());
         }
 
         @Override
-        public @NotNull Map<ColumnSource<?>, String> keyColumnMap() {
+        public @NotNull Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
             return Map.of(groupingColumnSource, groupingColumnDefinition.getName());
         }
 

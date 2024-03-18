@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -19,7 +20,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -27,18 +28,19 @@ import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * DataIndex over a partitioning column of a {@link Table} backed by a {@link RegionedColumnSourceManager}.
  */
-class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
+class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
 
-    private static final int KEY_NOT_FOUND = -1;
+    private static final int KEY_NOT_FOUND = (int) RowSequence.NULL_ROW_KEY;
 
     private final String keyColumnName;
 
-    private final Map<ColumnSource<?>, String> keyColumnMap;
+    private final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn;
 
     /** The table containing the index. Consists of a sorted key column and an associated RowSet column. */
     private final QueryTable indexTable;
@@ -73,7 +75,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
             @NotNull final RegionedColumnSourceManager columnSourceManager) {
         this.keyColumnName = keyColumnName;
 
-        keyColumnMap = Map.of(keySource, keyColumnName);
+        keyColumnNamesByIndexedColumn = Map.of(keySource, keyColumnName);
 
         // Build the index table and the position lookup map.
         final QueryTable locationTable = (QueryTable) columnSourceManager.locationTable().coalesce();
@@ -231,20 +233,14 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
     @Override
     @NotNull
-    public String[] keyColumnNames() {
-        return new String[] {keyColumnName};
+    public List<String> keyColumnNames() {
+        return List.of(keyColumnName);
     }
 
     @Override
     @NotNull
-    public Map<ColumnSource<?>, String> keyColumnMap() {
-        return keyColumnMap;
-    }
-
-    @Override
-    @NotNull
-    public String rowSetColumnName() {
-        return ROW_SET_COLUMN_NAME;
+    public Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
+        return keyColumnNamesByIndexedColumn;
     }
 
     @Override

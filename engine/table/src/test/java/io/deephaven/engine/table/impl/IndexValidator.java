@@ -5,20 +5,21 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableArray;
 import junit.framework.TestCase;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
+
+import static io.deephaven.engine.table.impl.dataindex.DataIndexUtils.lookupKeysEqual;
 
 /**
  * This class listens to a table and on each update verifies that the indexes returned by the table's RowSet for a set
@@ -26,176 +27,132 @@ import java.util.Objects;
  * stale indexes are not left between table updates.
  */
 public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
-    private final Table source;
-    private final Collection<String[]> indexColumns;
+
+    private final Table sourceTable;
+    private final List<String[]> indexColumns;
+    private final List<DataIndex> indexes;
     private final String context;
+
     private int validationCount = 0;
 
-    public IndexValidator(String context, Table source, ArrayList<ArrayList<String>> indexColumns) {
-        this(context, source, convertListToArray(indexColumns));
+    public IndexValidator(String context, Table sourceTable, List<List<String>> indexColumns) {
+        this(context, sourceTable, convertListToArray(indexColumns));
     }
 
-    private static Collection<String[]> convertListToArray(ArrayList<ArrayList<String>> indexColumns) {
+    private static Collection<String[]> convertListToArray(List<List<String>> indexColumns) {
         Collection<String[]> collectionOfArrays = new ArrayList<>();
-        for (ArrayList<String> columnSet : indexColumns) {
+        for (List<String> columnSet : indexColumns) {
             collectionOfArrays.add(columnSet.toArray(new String[0]));
         }
         return collectionOfArrays;
     }
 
-    private IndexValidator(String context, Table source, Collection<String[]> indexColumns) {
-        super("index validator " + context, source, false);
+    private IndexValidator(String context, Table sourceTable, Collection<String[]> indexColumns) {
+        super("index validator " + context, sourceTable, false);
+
         this.context = context;
-        this.source = source;
-        this.indexColumns = indexColumns;
+        this.sourceTable = sourceTable;
 
-        source.addUpdateListener(this);
-    }
-
-    private void validateIndexes(Collection<String[]> indexColumns, RowSet rowSet, boolean usePrev) {
-        for (String[] indexToCheck : indexColumns) {
-            validateIndex(indexToCheck, rowSet, source, context, usePrev);
-        }
-    }
-
-    // private void validatePrevIndexes(Collection<String[]> indexColumns, TrackingRowSet rowSet) {
-    // for (String[] indexToCheck : indexColumns) {
-    // validatePrevIndex(indexToCheck, rowSet);
-    // }
-    // }
-
-    public static void validateIndex(String[] indexToCheck, RowSet rowSet, Table source, String context,
-            boolean usePrev) {
-        final ColumnSource<?>[] groupColumns = getColumnSources(indexToCheck, source);
-        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet.trackingCast());
-        if (!rowSet.isTracking() || dataIndexer == null || !dataIndexer.hasDataIndex(groupColumns)) {
-            return;
-        }
-
-        final BaseDataIndex dataIndex = (BaseDataIndex) dataIndexer.getDataIndex(groupColumns);
-        final Table indexTable = dataIndex.table();
-
-        // Create column iterators for the keys and the row set
-        final CloseableIterator<?>[] keyIterators =
-                Arrays.stream(indexToCheck).map(indexTable::columnIterator).toArray(CloseableIterator[]::new);
-        final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName());
-
-        // Verify that the keys are correct in the table vs. the index.
-        while (rsIt.hasNext()) {
-            final RowSet rs = rsIt.next();
-            final Object[] keyValues = Arrays.stream(keyIterators).map(CloseableIterator::next).toArray();
-            final Object keys = getFromValues(keyValues);
-
-            final RowSet.Iterator it = rs.iterator();
-            while (it.hasNext()) {
-                final long next = it.nextLong();
-                if (indexToCheck.length == 1) {
-                    if (usePrev) {
-                        checkGroupPrevKey(groupColumns, next, keyValues[0], context);
-                    } else {
-                        checkGroupKey(groupColumns, next, keyValues[0], context);
-                    }
-                } else {
-                    if (usePrev) {
-                        checkGroupPrevKey(groupColumns, next, keys, context);
-                    } else {
-                        checkGroupKey(groupColumns, next, keys, context);
+        try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
+            final List<String[]> foundIndexColumns = new ArrayList<>();
+            final List<DataIndex> foundIndexes = new ArrayList<>();
+            for (String[] keyColumns : indexColumns) {
+                final DataIndex index = DataIndexer.getDataIndex(sourceTable, keyColumns);
+                if (index != null) {
+                    Assert.eq(sourceTable.isRefreshing(), "sourceTable.isRefreshing()",
+                            index.isRefreshing(), "index.isRefreshing()");
+                    foundIndexColumns.add(keyColumns);
+                    foundIndexes.add(index);
+                    if (index.isRefreshing()) {
+                        manage(index);
                     }
                 }
             }
+            this.indexColumns = foundIndexColumns;
+            indexes = foundIndexes;
         }
 
-        // Clean up the iterators
-        SafeCloseableArray.close(keyIterators);
-        SafeCloseable.closeAll(rsIt);
+        validateIndexes();
 
-        // Verify that every key in the row set is in the index at the correct position.
-        final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
-        final ColumnSource<RowSet> rowSetColumn = dataIndex.rowSetColumn();
-
-        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
-            long next = it.nextLong();
-            Object[] key = Arrays.stream(groupColumns).map(cs -> cs.get(next)).toArray();
-            final long rowKey;
-            if (key.length == 1) {
-                rowKey = rowKeyLookup.apply(key[0], usePrev);
-            } else {
-                rowKey = rowKeyLookup.apply(key, usePrev);
-            }
-            final RowSet keyRowSet = rowSetColumn.get(rowKey);
-            Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
-            if (keyRowSet != null) {
-                Assert.assertion(keyRowSet.find(next) >= 0, "keyRowSet.find(next) >= 0", next, "next", key, "key",
-                        keyRowSet, "keyRowSet", context, "context");
-            }
-        }
+        sourceTable.addUpdateListener(this);
     }
 
-    private static ColumnSource<?>[] getColumnSources(String[] indexToCheck, Table source) {
-        return Arrays.stream(indexToCheck).map(source::getColumnSource).toArray(ColumnSource[]::new);
+    @Override
+    public boolean canExecute(final long step) {
+        return super.canExecute(step) && indexes.stream().map(DataIndex::table).allMatch(t -> t.satisfied(step));
     }
 
-    private static void checkGroupKey(final ColumnSource<?>[] groupColumns, final long next, final Object key,
-            final String context) {
-        final Object value = getValue(groupColumns, next);
-        if (key instanceof Object[]) {
-            Assert.assertion(Arrays.equals((Object[]) value, (Object[]) key), "Arrays.equals(value, key)", value,
-                    "value", key, "key", context, "context");
+    public static void validateIndex(final Table sourceTable, final String[] keyColumns, final boolean usePrev) {
+        final DataIndex index = DataIndexer.getDataIndex(sourceTable, keyColumns);
+        if (index == null) {
             return;
         }
-        Assert.assertion(Objects.equals(value, key), "value.equals(key)", value, "value", key, "key", context,
-                "context");
-    }
+        final Table indexTable = index.table();
 
-    private static void checkGroupPrevKey(final ColumnSource<?>[] groupColumns, final long next, final Object key,
-            final String context) {
-        Object value = getPrevValue(groupColumns, next);
-        if (key instanceof Object[]) {
-            Assert.assertion(Arrays.equals((Object[]) value, (Object[]) key), "Arrays.equals(value, key)", value,
-                    "value", key, "key", context, "context");
-            return;
+        final ColumnSource<?>[] sourceKeyColumns =
+                Arrays.stream(keyColumns).map(sourceTable::getColumnSource).toArray(ColumnSource[]::new);
+
+        ChunkSource<Values> sourceKeys = DataIndexUtils.makeBoxedKeySource(sourceKeyColumns);
+        if (usePrev) {
+            sourceKeys = ((ChunkSource.WithPrev<Values>) sourceKeys).getPrevSource();
         }
-        Assert.assertion(value == key || value.equals(key), "value.equals(key)", value, "value", key, "key", context,
-                "context");
-    }
+        final RowSet sourceTableRowSet = usePrev ? sourceTable.getRowSet().prev() : sourceTable.getRowSet();
 
-    private static Object getValue(ColumnSource<?>[] groupColumns, long next) {
-        // pretty inefficient, since this is a chunk source
-        final ChunkSource.WithPrev<Values> source = DataIndexUtils.makeBoxedKeySource(groupColumns);
-        try (final ChunkSource.GetContext ctx = source.makeGetContext(1)) {
-            return source.getChunk(ctx, next, next).asObjectChunk().get(0);
+        final ColumnSource<RowSet> indexRowSets = usePrev ? index.rowSetColumn().getPrevSource() : index.rowSetColumn();
+        ChunkSource<Values> indexKeys = DataIndexUtils.makeBoxedKeySource(index.keyColumns(sourceKeyColumns));
+        if (usePrev) {
+            indexKeys = ((ChunkSource.WithPrev<Values>) indexKeys).getPrevSource();
+        }
+        final RowSet indexTableRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
+        final DataIndex.RowKeyLookup indexLookup = index.rowKeyLookup();
+
+        // This is a lot of parallel iterators over the same RowSet, but this is test/validation code and its easier to
+        // read this way.
+        try (final WritableRowSet visitedRowSet = RowSetFactory.empty();
+                final CloseableIterator<RowSet> indexRowSetsIterator =
+                        ChunkedColumnIterator.make(indexRowSets, indexTableRowSet);
+                final CloseableIterator<?> indexKeysIterator = ChunkedColumnIterator.make(indexKeys, indexTableRowSet);
+                final RowSet.Iterator indexTableRowSetIterator = indexTableRowSet.iterator()) {
+            while (indexKeysIterator.hasNext()) {
+                final RowSet indexRowSet = indexRowSetsIterator.next(); // Already in prev space if usePrev
+                final Object indexKey = indexKeysIterator.next();
+                final long indexTableRowKey = indexTableRowSetIterator.nextLong();
+
+                // Validate that we haven't visited any row keys in the index row set yet
+                Assert.assertion(!visitedRowSet.overlaps(indexRowSet), "!visitedRowSet.overlaps(indexRowSet)");
+                // Validate that all row keys in the index row set are part of the source table's row set
+                Assert.assertion(indexRowSet.subsetOf(sourceTableRowSet), "indexRowSet.subsetOf(sourceTableRowSet)");
+                visitedRowSet.insert(indexRowSet);
+
+                // Validate that every row the index bucket claims to include has the right key
+                try (final CloseableIterator<?> sourceKeysIterator =
+                        ChunkedColumnIterator.make(sourceKeys, indexRowSet)) {
+                    sourceKeysIterator.forEachRemaining((final Object sourceKey) -> {
+                        Assert.assertion(lookupKeysEqual(sourceKey, indexKey), "lookupKeysEqual(sourceKey, indexKey)");
+                    });
+                }
+
+                // Validate that the index lookup returns the right row key
+                Assert.eq(indexTableRowKey, "indexTableRowKey",
+                        indexLookup.apply(indexKey, usePrev), "indexLookup.apply(indexKey, usePrev)");
+            }
+            // Validate that we visit every row
+            Assert.equals(sourceTableRowSet, "sourceTableRowSet", visitedRowSet, "visitedRowSet");
         }
     }
 
-    private static Object getPrevValue(ColumnSource<?>[] groupColumns, long next) {
-        // pretty inefficient, since this is a chunk source
-        final ChunkSource.WithPrev<Values> source = DataIndexUtils.makeBoxedKeySource(groupColumns);
-        try (final ChunkSource.GetContext ctx = source.makeGetContext(1)) {
-            return source.getPrevChunk(ctx, next, next).asObjectChunk().get(0);
+    private void validateIndexes() {
+        for (String[] indexColumn : indexColumns) {
+            validateIndex(sourceTable, indexColumn, false);
+            if (sourceTable.isRefreshing()) {
+                validateIndex(sourceTable, indexColumn, true);
+            }
         }
     }
-
-    private static Object getFromValues(Object... values) {
-        if (values.length == 1) {
-            return values[0];
-        }
-        return values;
-    }
-
-    public void validateIndexes() {
-        validateIndexes(indexColumns, source.getRowSet(), false);
-    }
-
-    public void validatePrevIndexes() {
-        validateIndexes(indexColumns, source.getRowSet(), true);
-    }
-
 
     @Override
     public void onUpdate(final TableUpdate upstream) {
-        // validateIndexes();
-        // NB: This would normally be inappropriate: we don't expect index support on the non-tracking row sets we
-        // use for updates. Forcing support by cloning and making the result tracking.
+        validateIndexes();
         validationCount++;
         System.out.println("Validation Count for " + context + ": " + validationCount);
     }

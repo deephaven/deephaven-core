@@ -308,23 +308,17 @@ public class QueryTableAggregationTest {
                 return 8;
             }
         };
-        final AggregationControl controlShiftByProbing = new AggregationControl() {
-            @Override
-            public boolean shouldProbeShift(long shiftSize, int numStates) {
-                return true;
-            }
-        };
 
         final EvalNugget[] ens = new EvalNugget[] {
                 incrementalByEvalNugget(controlSize8, merged),
                 incrementalByEvalNugget(merged),
 
                 incrementalByEvalNugget(controlSize8, merged, "StrCol"),
-                incrementalByEvalNugget(controlShiftByProbing, merged, "StrCol"),
+                incrementalByEvalNugget(AggregationControl.DEFAULT, merged, "StrCol"),
                 incrementalByEvalNugget(controlSize8, merged, "IntCol"),
                 incrementalByEvalNugget(merged, "IntCol"),
                 incrementalByEvalNugget(controlSize8, merged, "TimeCol"),
-                incrementalByEvalNugget(controlShiftByProbing, merged, "TimeCol"),
+                incrementalByEvalNugget(AggregationControl.DEFAULT, merged, "TimeCol"),
                 incrementalByEvalNugget(controlSize8,
                         (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : epochNanos(TimeCol)"),
                         "TimeCol"),
@@ -582,7 +576,7 @@ public class QueryTableAggregationTest {
 
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
-                colGrouped("X", 4, 2, 6),
+                colIndexed("X", 4, 2, 6),
                 col("Y", 4, 2, 2));
         TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
         TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
@@ -608,7 +602,7 @@ public class QueryTableAggregationTest {
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
                 col("X", 4, 2, 6),
-                colGrouped("Y", 4, 2, 2));
+                colIndexed("Y", 4, 2, 2));
         TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
         TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
         TestCase.assertEquals(ObjectVector.class,
@@ -632,8 +626,8 @@ public class QueryTableAggregationTest {
 
         table = testRefreshingTable(
                 col("S", "e", "c", "g"),
-                colGrouped("X", 4, 2, 6),
-                colGrouped("Y", 4, 3, 2));
+                colIndexed("X", 4, 2, 6),
+                colIndexed("Y", 4, 3, 2));
         TestCase.assertEquals(2, table.updateView("Z=X+Y").groupBy("Z").size());
         TestCase.assertEquals(4, table.updateView("Z=X+Y").groupBy("Z").numColumns());
         TestCase.assertEquals(ObjectVector.class,
@@ -1360,7 +1354,7 @@ public class QueryTableAggregationTest {
                 "bigI",
                 "bigD"
         },
-                Arrays.asList(grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Grouped) : ea, ea, ea, ea,
+                Arrays.asList(grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Indexed) : ea, ea, ea, ea,
                         ea, ea, ea, ea, ea, ea, ea),
                 lotsOfStrings ? new StringGenerator(1000000) : new SetGenerator<>("a", "b", "c", "d"),
                 new CharGenerator('a', 'z'),
@@ -1683,7 +1677,7 @@ public class QueryTableAggregationTest {
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
         final List<ColumnInfo.ColAttributes> ea = Collections.emptyList();
-        final List<ColumnInfo.ColAttributes> ga = Collections.singletonList(ColumnInfo.ColAttributes.Grouped);
+        final List<ColumnInfo.ColAttributes> ga = Collections.singletonList(ColumnInfo.ColAttributes.Indexed);
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 new String[] {"Sym", "charCol", "byteCol", "shortCol", "intCol", "longCol", "bigI", "bigD",
                         "doubleCol", "doubleNanCol", "boolCol"},
@@ -3516,7 +3510,7 @@ public class QueryTableAggregationTest {
     public void testIds6220() {
         final QueryTable table = testRefreshingTable(
                 RowSetFactory.fromRange(0, 2).toTracking(),
-                colGrouped("Key", "a", "b", "c"), col("I", 2, 4, 6));
+                colIndexed("Key", "a", "b", "c"), col("I", 2, 4, 6));
         final IncrementalReleaseFilter filter = new IncrementalReleaseFilter(0, 10);
         final Table byTable = table.where(filter).groupBy("Key");
         TableTools.showWithRowSet(byTable);

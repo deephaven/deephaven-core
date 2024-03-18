@@ -12,7 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -204,7 +204,6 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      */
     @Nullable
     public static DataIndex getOptimalPartialIndex(Table table, final String... keyColumnNames) {
-        // TODO-RWC: Consider whether this is really safe to use
         if (keyColumnNames.length == 0) {
             return null;
         }
@@ -256,12 +255,12 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @throws IllegalStateException If a valid, live {@link DataIndex} already exists for the given key columns
      */
     public void addDataIndex(@NotNull final DataIndex dataIndex) {
-        if (dataIndex.keyColumnMap().isEmpty()) {
+        if (dataIndex.keyColumnNamesByIndexedColumn().isEmpty()) {
             throw new IllegalArgumentException("DataIndex must have at least one key column");
         }
-        if (!rootCache.add(pathFor(dataIndex.keyColumnMap().keySet()), dataIndex)) {
+        if (!rootCache.add(pathFor(dataIndex.keyColumnNamesByIndexedColumn().keySet()), dataIndex)) {
             throw new IllegalStateException(String.format("Attempted to add a duplicate index %s for key columns %s",
-                    dataIndex, dataIndex.keyColumnMap().keySet()));
+                    dataIndex, dataIndex.keyColumnNamesByIndexedColumn().keySet()));
         }
     }
 
@@ -285,7 +284,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         if (dataIndex == null) {
             return true;
         }
-        if (dataIndex instanceof BaseDataIndex && !((BaseDataIndex) dataIndex).isValid()) {
+        if (dataIndex instanceof AbstractDataIndex && !((AbstractDataIndex) dataIndex).isValid()) {
             return true;
         }
         return dataIndex.isRefreshing() && dataIndex.table().isFailed();

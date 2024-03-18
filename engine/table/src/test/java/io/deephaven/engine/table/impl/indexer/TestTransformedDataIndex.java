@@ -3,14 +3,12 @@
 //
 package io.deephaven.engine.table.impl.indexer;
 
-import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -29,11 +27,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
+import java.util.function.ToLongFunction;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 @Category(OutOfBandTest.class)
-public class TestDerivedDataIndex extends RefreshingTableTestCase {
+public class TestTransformedDataIndex extends RefreshingTableTestCase {
     private static final int INITIAL_SIZE = 100;
     private static final int STEP_SIZE = 100;
     private static final int MAX_STEPS = 100;
@@ -72,7 +71,7 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         for (final DataIndex dataIndex : dataIndexes) {
             assertRefreshing(dataIndex);
 
-            final ColumnSource<?>[] columns = Arrays.stream(dataIndex.keyColumnNames())
+            final ColumnSource<?>[] columns = dataIndex.keyColumnNames().stream()
                     .map(testTable::getColumnSource)
                     .toArray(ColumnSource[]::new);
             assertLookupFromTable(testTable, dataIndex, columns);
@@ -86,7 +85,7 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
             for (final DataIndex dataIndex : dataIndexes) {
                 assertRefreshing(dataIndex);
 
-                final ColumnSource<?>[] columns = Arrays.stream(dataIndex.keyColumnNames())
+                final ColumnSource<?>[] columns = dataIndex.keyColumnNames().stream()
                         .map(testTable::getColumnSource)
                         .toArray(ColumnSource[]::new);
                 assertLookupFromTable(testTable, dataIndex, columns);
@@ -101,22 +100,21 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         final DataIndexer dataIndexer = DataIndexer.of(testTable.getRowSet());
 
         final DataIndex dataIndex = DataIndexer.getDataIndex(testTable, "Sym", "Sym2");
-        Assert.neqNull(dataIndex, "dataIndex");
+        assertNotNull(dataIndex);
 
         // Make sure the index is found with the re-ordered column names.
-        Assert.eqTrue(DataIndexer.hasDataIndex(testTable, "Sym2", "Sym"),
-                "dataIndexer.hasDataIndex(testTable, \"Sym2\", \"Sym\")");
+        assertTrue(DataIndexer.hasDataIndex(testTable, "Sym2", "Sym"));
         final DataIndex tmp1 = DataIndexer.getDataIndex(testTable, "Sym2", "Sym");
-        Assert.eq(dataIndex, "dataIndex", tmp1, "tmp1");
+        assertEquals(dataIndex, tmp1);
 
         final ColumnSource<?>[] columnsReordered = new ColumnSource<?>[] {
                 testTable.getColumnSource("Sym2"),
                 testTable.getColumnSource("Sym")
         };
         // Make sure the index is found with re-ordered columns.
-        Assert.eqTrue(dataIndexer.hasDataIndex(columnsReordered), "dataIndexer.hasDataIndex(columnsReordered)");
+        assertTrue(dataIndexer.hasDataIndex(columnsReordered));
         final DataIndex tmp2 = dataIndexer.getDataIndex(columnsReordered);
-        Assert.eq(dataIndex, "dataIndex", tmp2, "tmp2");
+        assertEquals(dataIndex, tmp2);
 
         final ColumnSource<?>[] columns = Arrays.stream(new String[] {"Sym", "Sym2"})
                 .map(testTable::getColumnSource)
@@ -248,117 +246,6 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testImmutable() {
-        final Random random = new Random(0);
-
-        final DataIndexTransformer transformer = DataIndexTransformer.builder().immutable(true).build();
-
-        for (final DataIndex dataIndex : dataIndexes) {
-            assertRefreshing(dataIndex);
-
-            BasicDataIndex subIndex = dataIndex.transform(transformer);
-            assertImmutable(subIndex);
-            assertLookup(dataIndex, subIndex);
-        }
-
-        // Transform and validate
-        for (int ii = 0; ii < MAX_STEPS; ++ii) {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
-                    () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
-
-            for (final DataIndex dataIndex : dataIndexes) {
-                assertRefreshing(dataIndex);
-
-                BasicDataIndex subIndex = dataIndex.transform(transformer);
-                assertImmutable(subIndex);
-                assertLookup(dataIndex, subIndex);
-            }
-        }
-    }
-
-    @Test
-    public void testIntersectImmutable() {
-        final Random random = new Random(0);
-
-        try (final RowSet reduced = testTable.getRowSet().subSetByPositionRange(0, testTable.getRowSet().size() / 4)) {
-            final DataIndexTransformer transformer = DataIndexTransformer.builder()
-                    .intersectRowSet(reduced)
-                    .immutable(true)
-                    .build();
-            final Function<RowSet, RowSet> mutator = (rs) -> rs.intersect(reduced);
-
-            for (final DataIndex dataIndex : dataIndexes) {
-                assertRefreshing(dataIndex);
-
-                BasicDataIndex subIndex = dataIndex.transform(transformer);
-                assertStatic(subIndex);
-                assertImmutable(subIndex);
-                assertLookupMutator(dataIndex, subIndex, mutator);
-            }
-        }
-
-        // Transform and validate
-        for (int ii = 0; ii < MAX_STEPS; ++ii) {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
-                    () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
-
-            try (final RowSet reduced =
-                    testTable.getRowSet().subSetByPositionRange(0, testTable.getRowSet().size() / 4)) {
-                final DataIndexTransformer transformer = DataIndexTransformer.builder()
-                        .intersectRowSet(reduced)
-                        .immutable(true)
-                        .build();
-                final Function<RowSet, RowSet> mutator = (rs) -> rs.intersect(reduced);
-
-                for (final DataIndex dataIndex : dataIndexes) {
-                    assertRefreshing(dataIndex);
-
-                    BasicDataIndex subIndex = dataIndex.transform(transformer);
-                    assertStatic(subIndex);
-                    assertImmutable(subIndex);
-                    assertLookupMutator(dataIndex, subIndex, mutator);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testSortImmutable() {
-        final Random random = new Random(0);
-
-        final DataIndexTransformer transformer = DataIndexTransformer.builder()
-                .sortByFirstRowKey(true)
-                .immutable(true)
-                .build();
-
-        for (final DataIndex dataIndex : dataIndexes) {
-            assertRefreshing(dataIndex);
-
-            BasicDataIndex subIndex = dataIndex.transform(transformer);
-            assertStatic(subIndex);
-            assertImmutable(subIndex);
-            assertSortedByFirstRowKey(subIndex);
-            assertLookup(dataIndex, subIndex);
-        }
-
-        // Transform and validate
-        for (int ii = 0; ii < MAX_STEPS; ++ii) {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
-                    () -> GenerateTableUpdates.generateTableUpdates(STEP_SIZE, random, testTable, columnInfo));
-
-            for (final DataIndex dataIndex : dataIndexes) {
-                assertRefreshing(dataIndex);
-
-                BasicDataIndex subIndex = dataIndex.transform(transformer);
-                assertStatic(subIndex);
-                assertImmutable(subIndex);
-                assertSortedByFirstRowKey(subIndex);
-                assertLookup(dataIndex, subIndex);
-            }
-        }
-    }
-
-    @Test
     public void testSortIntersect() {
         final Random random = new Random(0);
 
@@ -456,27 +343,13 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
 
 
     private void assertStatic(final BasicDataIndex subIndex) {
-        Assert.eqFalse(subIndex.isRefreshing(), "subIndex.isRefreshing()");
-        Assert.eqFalse(subIndex.table().isRefreshing(), "subIndex.table().isRefreshing()");
+        assertFalse(subIndex.isRefreshing());
+        assertFalse(subIndex.table().isRefreshing());
     }
 
     private void assertRefreshing(final BasicDataIndex subIndex) {
-        Assert.eqTrue(subIndex.isRefreshing(), "subIndex.isRefreshing()");
-        Assert.eqTrue(subIndex.table().isRefreshing(), "subIndex.table().isRefreshing()");
-    }
-
-    private void assertImmutable(final BasicDataIndex subIndex) {
-        final Table subIndexTable = subIndex.table();
-
-        // This transform should result in a static index.
-        Assert.eqFalse(subIndexTable.isRefreshing(), "subIndexTable.isRefreshing()");
-
-        // This transform should result in a flat table.
-        Assert.eqFalse(subIndexTable.isFlat(), "subIndexTable.isFlat()");
-
-        final boolean allImmutable = subIndexTable.getColumnSourceMap().values().stream()
-                .allMatch(ColumnSource::isImmutable);
-        Assert.eqTrue(allImmutable, "All columns are immutable");
+        assertTrue(subIndex.isRefreshing());
+        assertTrue(subIndex.table().isRefreshing());
     }
 
     private void assertLookup(final DataIndex fullIndex,
@@ -484,10 +357,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         final Table subIndexTable = subIndex.table();
 
         final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup();
-        final TObjectLongHashMap<Object> subIndexKeyMap =
-                BaseDataIndex.buildKeyMap(subIndex.table(), subIndex.keyColumnNames());
+        final ToLongFunction<Object> subIndexRowKeyMappingFunction = DataIndexUtils.buildRowKeyMappingFunction(
+                subIndex.table(), subIndex.keyColumnNames().toArray(String[]::new));
 
-        ChunkSource.WithPrev<?> subKeys = DataIndexUtils.makeBoxedKeySource(subIndex.indexKeyColumns());
+        ChunkSource.WithPrev<?> subKeys = DataIndexUtils.makeBoxedKeySource(subIndex.keyColumns());
 
         try (final CloseableIterator<Object> subKeyIt =
                 ChunkedColumnIterator.make(subKeys, subIndexTable.getRowSet())) {
@@ -496,12 +369,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 final Object subKey = subKeyIt.next();
 
                 // Verify the row sets at the lookup keys match.
-                final long subRowKey = subIndexKeyMap.get(subKey);
+                final long subRowKey = subIndexRowKeyMappingFunction.applyAsLong(subKey);
                 final long fullRowKey = fullIndexRowKeyLookup.apply(subKey, false);
 
-                Assert.eqTrue(
-                        subIndex.rowSetColumn().get(subRowKey).equals(fullIndex.rowSetColumn().get(fullRowKey)),
-                        "subIndex.rowSetColumn().get(subRowKey).equals(fullIndex.rowSetColumn().get(fullRowKey))");
+                assertEquals(subIndex.rowSetColumn().get(subRowKey), fullIndex.rowSetColumn().get(fullRowKey));
             }
         }
     }
@@ -511,10 +382,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
             final BasicDataIndex subIndex,
             final Function<RowSet, RowSet> mutator) {
         final Table fullIndexTable = fullIndex.table();
-        final TObjectLongHashMap<Object> subIndexKeyMap =
-                BaseDataIndex.buildKeyMap(subIndex.table(), subIndex.keyColumnNames());
+        final ToLongFunction<Object> subIndexRowKeyMappingFunction = DataIndexUtils.buildRowKeyMappingFunction(
+                subIndex.table(), subIndex.keyColumnNames().toArray(String[]::new));
 
-        ChunkSource.WithPrev<?> fullKeys = DataIndexUtils.makeBoxedKeySource(fullIndex.indexKeyColumns());
+        ChunkSource.WithPrev<?> fullKeys = DataIndexUtils.makeBoxedKeySource(fullIndex.keyColumns());
 
         try (final CloseableIterator<Object> fullKeyIt =
                 ChunkedColumnIterator.make(fullKeys, fullIndexTable.getRowSet());
@@ -526,14 +397,13 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 final RowSet fullRowSet = fullRowSetIt.next();
 
                 // Is the key in the sub-index?
-                final long subRowKey = subIndexKeyMap.get(fullKey);
+                final long subRowKey = subIndexRowKeyMappingFunction.applyAsLong(fullKey);
                 if (subRowKey == NULL_ROW_KEY) {
                     // Verify applying the mutator to the full row set results in an empty row set.
-                    Assert.eqTrue(mutator.apply(fullRowSet).isEmpty(), "mutator.apply(fullRowSet).isEmpty()");
+                    assertTrue(mutator.apply(fullRowSet).isEmpty());
                 } else {
                     // The row set from the lookup must match the computed row set.
-                    Assert.eqTrue(subIndex.rowSetColumn().get(subRowKey).equals(mutator.apply(fullRowSet)),
-                            "subIndex.rowSetColumn().get(subRowKey).equals(mutator.apply(fullRowSet))");
+                    assertEquals(subIndex.rowSetColumn().get(subRowKey), mutator.apply(fullRowSet));
                 }
             }
         }
@@ -562,9 +432,9 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 Assert.geqZero(fullRowKey, "fullRowKey");
 
                 final RowSet fullRowSet = fullIndexRowSetColumn.get(fullRowKey);
-                Assert.neqNull(fullRowSet, "fullRowSet");
+                assertNotNull(fullRowSet);
 
-                Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
+                assertTrue(fullRowSet.containsRange(rowKey, rowKey));
             }
         }
     }

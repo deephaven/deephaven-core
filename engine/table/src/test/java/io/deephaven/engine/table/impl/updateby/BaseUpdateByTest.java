@@ -81,13 +81,11 @@ public class BaseUpdateByTest {
         final Random random = new Random(seed);
         final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 generators.toArray(new TestDataGenerator[0]));
-        final QueryTable t = getTable(tableSize, random, columnInfos);
+        final QueryTable t = getTable(isRefreshing, tableSize, random, columnInfos);
 
         if (!isRefreshing && includeGroups) {
             DataIndexer.getOrCreateDataIndex(t, "Sym");
         }
-
-        t.setRefreshing(isRefreshing);
 
         return new CreateResult(t, columnInfos, random);
     }

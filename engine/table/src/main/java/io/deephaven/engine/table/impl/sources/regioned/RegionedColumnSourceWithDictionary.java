@@ -227,6 +227,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
+            // noinspection resource
             symbolTableRowSet = symbolTableIndexBuilder.build().toTracking();
         }
 
@@ -270,7 +271,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
     private final class SymbolTableUpdateListener extends BaseTable.ListenerImpl {
 
-        private final BaseTable symbolTable;
+        private final BaseTable<?> symbolTable;
         private final ModifiedColumnSet emptyModifiedColumns;
 
         private SymbolTableUpdateListener(@NotNull final String description, @NotNull final Table sourceTable,
@@ -295,6 +296,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             }
 
             final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactory.builderSequential();
+            // noinspection unchecked
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);

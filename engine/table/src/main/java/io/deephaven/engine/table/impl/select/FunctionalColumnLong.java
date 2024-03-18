@@ -3,29 +3,30 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.ToLongFunction;
 
-public class FunctionalColumn<S, D> implements SelectColumn {
+public class FunctionalColumnLong<S> implements SelectColumn {
 
     @NotNull
     private final String sourceName;
@@ -34,59 +35,31 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     private final String destName;
     @NotNull
-    private final Class<D> destDataType;
-    @NotNull
-    private final RowKeyAndValueFunction<S, D> function;
-    @Nullable
-    private final Class<?> componentType;
+    private final RowKeyAndValueFunction<S> function;
 
     private ColumnSource<S> sourceColumnSource;
 
     @FunctionalInterface
-    public interface RowKeyAndValueFunction<S, D> {
-        D apply(long rowKey, S value);
+    public interface RowKeyAndValueFunction<S> {
+        long applyAsLong(long rowKey, S value);
     }
 
-    public FunctionalColumn(
+    public FunctionalColumnLong(
             @NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
-            @NotNull Class<D> destDataType,
-            @NotNull Function<S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, (l, v) -> function.apply(v));
+            @NotNull ToLongFunction<S> function) {
+        this(sourceName, sourceDataType, destName, (l, v) -> function.applyAsLong(v));
     }
 
-    public FunctionalColumn(
+    public FunctionalColumnLong(
             @NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
-            @NotNull Class<D> destDataType,
-            @Nullable Class<?> componentType,
-            @NotNull Function<S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, componentType, (l, v) -> function.apply(v));
-    }
-
-    public FunctionalColumn(
-            @NotNull String sourceName,
-            @NotNull Class<S> sourceDataType,
-            @NotNull String destName,
-            @NotNull Class<D> destDataType,
-            @NotNull RowKeyAndValueFunction<S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, null, function);
-    }
-
-    public FunctionalColumn(
-            @NotNull String sourceName,
-            @NotNull Class<S> sourceDataType,
-            @NotNull String destName,
-            @NotNull Class<D> destDataType,
-            @Nullable Class<?> componentType,
-            @NotNull RowKeyAndValueFunction<S, D> function) {
+            @NotNull RowKeyAndValueFunction<S> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
-        this.destDataType = Require.neqNull(destDataType, "destDataType");
-        this.componentType = componentType;
         this.function = function;
         Require.gtZero(destName.length(), "destName.length()");
     }
@@ -104,7 +77,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
         }
         if (!(sourceDataType.isAssignableFrom(localSourceColumnSource.getType()) || sourceDataType
-                .isAssignableFrom(io.deephaven.util.type.TypeUtils.getBoxedType(localSourceColumnSource.getType())))) {
+                .isAssignableFrom(TypeUtils.getBoxedType(localSourceColumnSource.getType())))) {
             throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type "
                     + localSourceColumnSource.getType() + ", expected " + sourceDataType);
         }
@@ -130,7 +103,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public Class<?> getReturnedType() {
-        return destDataType;
+        return long.class;
     }
 
     @Override
@@ -145,27 +118,37 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @NotNull
     @Override
-    public ColumnSource<D> getDataView() {
-        return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
+    public ColumnSource<Long> getDataView() {
+        return new ViewColumnSource<>(long.class, new Formula(null) {
+
+            @Override
+            public long getLong(final long rowKey) {
+                return function.applyAsLong(rowKey, sourceColumnSource.get(rowKey));
+            }
+
+            @Override
+            public long getPrevLong(final long rowKey) {
+                return function.applyAsLong(rowKey, sourceColumnSource.getPrev(rowKey));
+            }
 
             @Override
             public Object get(final long rowKey) {
-                return function.apply(rowKey, sourceColumnSource.get(rowKey));
+                return TypeUtils.box(getLong(rowKey));
             }
 
             @Override
             public Object getPrev(final long rowKey) {
-                return function.apply(rowKey, sourceColumnSource.getPrev(rowKey));
+                return TypeUtils.box(getPrevLong(rowKey));
             }
 
             @Override
             public ChunkType getChunkType() {
-                return ChunkType.fromElementType(destDataType);
+                return ChunkType.Long;
             }
 
             @Override
             public FillContext makeFillContext(final int chunkCapacity) {
-                return new FunctionalColumnFillContext(getChunkType());
+                return new FunctionalColumnFillContext();
             }
 
             @Override
@@ -192,8 +175,8 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
         private final ChunkFiller chunkFiller;
 
-        private FunctionalColumnFillContext(final ChunkType chunkType) {
-            chunkFiller = ChunkFiller.forChunkType(chunkType);
+        private FunctionalColumnFillContext() {
+            chunkFiller = ChunkFiller.forChunkType(ChunkType.Long);
         }
     }
 
@@ -215,12 +198,12 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public final WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, destDataType);
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, long.class);
     }
 
     @Override
     public final WritableColumnSource<?> newFlatDestInstance(final long size) {
-        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, destDataType, componentType);
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, long.class, null);
     }
 
     @Override
@@ -234,7 +217,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public FunctionalColumn<S, D> copy() {
-        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, function);
+    public FunctionalColumnLong<S> copy() {
+        return new FunctionalColumnLong<>(sourceName, sourceDataType, destName, function);
     }
 }

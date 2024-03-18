@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,10 +45,6 @@ public abstract class TableInfo {
 
     public static TableInfo deserializeFromJSON(@NotNull final String tableInfoRaw) throws IOException {
         return OBJECT_MAPPER.readValue(tableInfoRaw, ImmutableTableInfo.class);
-    }
-
-    public final Set<String> groupingColumnNames() {
-        return groupingColumns().stream().map(GroupingColumnInfo::columnName).collect(Collectors.toSet());
     }
 
     public final Map<String, GroupingColumnInfo> groupingColumnMap() {

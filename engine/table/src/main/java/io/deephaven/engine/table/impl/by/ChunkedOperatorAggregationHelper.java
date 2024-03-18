@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -13,6 +12,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -21,8 +21,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
@@ -37,7 +36,6 @@ import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseableList;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -47,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
@@ -72,7 +71,7 @@ public class ChunkedOperatorAggregationHelper {
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
-        return aggregation(AggregationControl.DEFAULT_FOR_OPERATOR,
+        return aggregation(AggregationControl.DEFAULT,
                 aggregationContextFactory, input, preserveEmpty, initialKeys, groupByColumns);
     }
 
@@ -117,40 +116,27 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
 
-        final Mutable<QueryTable> resultHolder = new MutableObject<>();
-        final OperationSnapshotControl snapshotControl;
-
-        final ColumnSource<?>[] keySources =
-                Arrays.stream(keyNames).map(input::getColumnSource).toArray(ColumnSource[]::new);
-
-        // If the table is refreshing and using an index, include the index table in the snapshot control.
-        final DataIndex dataIndex;
-        final DataIndexer dataIndexer = DataIndexer.existingOf((input.getRowSet()));
-        if (control.considerIndexing(input, keySources) && dataIndexer != null
-                && DataIndexer.hasDataIndex(input, keyNames)) {
-            dataIndex = DataIndexer.getDataIndex(input, keyNames);
-            if (dataIndex != null) {
-                final Table dataIndexTable = dataIndex.table();
-                Assert.eq(input.isRefreshing(), "input.isRefreshing()",
-                        dataIndexTable.isRefreshing(), "dataIndexTable.isRefreshing()");
+        return LivenessScopeStack.computeEnclosed(() -> {
+            final Mutable<QueryTable> resultHolder = new MutableObject<>();
+            final OperationSnapshotControl snapshotControl;
+            // If the table is refreshing and using an index, include the index table in the snapshot control.
+            final BasicDataIndex dataIndex = control.dataIndexToUse(input, keyNames);
+            if (dataIndex != null && dataIndex.isRefreshing()) {
                 snapshotControl = input.createSnapshotControlIfRefreshing(
-                        it -> new OperationSnapshotControlEx(it, (NotificationStepSource) dataIndexTable));
+                        it -> new OperationSnapshotControlEx(it, dataIndex.table()));
             } else {
                 snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
             }
-        } else {
-            dataIndex = null;
-            snapshotControl = input.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
-        }
 
-        BaseTable.initializeWithSnapshot(
-                "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
-                (usePrev, beforeClockValue) -> {
-                    resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
-                            input, dataIndex, preserveEmpty, initialKeys, keyNames, usePrev));
-                    return true;
-                });
-        return resultHolder.getValue();
+            BaseTable.initializeWithSnapshot(
+                    "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
+                    (usePrev, beforeClockValue) -> {
+                        resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
+                                input, dataIndex, preserveEmpty, initialKeys, keyNames, usePrev));
+                        return true;
+                    });
+            return resultHolder.getValue();
+        }, input::isRefreshing, Table::isRefreshing);
     }
 
     private static QueryTable aggregation(
@@ -158,7 +144,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final OperationSnapshotControl snapshotControl,
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
-            @Nullable final DataIndex dataIndex,
+            @Nullable final BasicDataIndex dataIndex,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
             @NotNull final String[] keyNames,
@@ -181,7 +167,7 @@ public class ChunkedOperatorAggregationHelper {
         final PermuteKernel[] permuteKernels = ac.makePermuteKernels();
 
         if (dataIndex != null && initialKeys == null && !input.isRefreshing()) {
-            return staticIndexedAggregation(dataIndex, keyNames, keySources, ac);
+            return staticIndexedAggregation(dataIndex, keyNames, ac);
         }
 
         final Table symbolTable;
@@ -212,8 +198,8 @@ public class ChunkedOperatorAggregationHelper {
         final RowSetBuilderRandom initialRowsBuilder =
                 initialKeys != null && !preserveEmpty ? new BitmapRandomBuilder(stateManager.maxTableSize() - 1) : null;
         if (dataIndex != null) {
-            initialIndexedKeyAddition(dataIndex, keySources, ac, stateManager,
-                    outputPosition, initialRowsBuilder, usePrev);
+            initialIndexedKeyAddition(dataIndex, keySources, ac, stateManager, outputPosition, initialRowsBuilder,
+                    usePrev);
         } else {
             initialBucketedKeyAddition(input, reinterpretedKeySources, ac, permuteKernels, stateManager,
                     outputPosition, initialRowsBuilder, usePrev);
@@ -244,6 +230,7 @@ public class ChunkedOperatorAggregationHelper {
         }
         ac.getResultColumns(resultColumnSourceMap);
 
+        @SuppressWarnings("resource")
         final TrackingWritableRowSet resultRowSet = (initialRowsBuilder == null
                 ? RowSetFactory.flat(outputPosition.intValue())
                 : initialRowsBuilder.build()).toTracking();
@@ -264,54 +251,51 @@ public class ChunkedOperatorAggregationHelper {
             incrementalStateManager.startTrackingPrevValues();
 
             final boolean isBlink = input.isBlink();
-            final TableUpdateListener listener =
-                    new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", input, result) {
-                        @ReferentialIntegrity
-                        final OperationSnapshotControl swapListenerHardReference = snapshotControl;
+            final TableUpdateListener listener = new BaseTable.ListenerImpl(
+                    "by(" + aggregationContextFactory + ", " + Arrays.toString(keyNames) + ")", input, result) {
+                final ModifiedColumnSet keysUpstreamModifiedColumnSet = input.newModifiedColumnSet(keyNames);
+                final ModifiedColumnSet[] operatorInputModifiedColumnSets =
+                        ac.getInputModifiedColumnSets(input);
+                final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
+                        ac.initializeRefreshing(result, this);
 
-                        final ModifiedColumnSet keysUpstreamModifiedColumnSet = input.newModifiedColumnSet(keyNames);
-                        final ModifiedColumnSet[] operatorInputModifiedColumnSets =
-                                ac.getInputModifiedColumnSets(input);
-                        final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
-                                ac.initializeRefreshing(result, this);
+                final StateChangeRecorder stateChangeRecorder =
+                        preserveEmpty ? null : ac.getStateChangeRecorder();
 
-                        final StateChangeRecorder stateChangeRecorder =
-                                preserveEmpty ? null : ac.getStateChangeRecorder();
+                @Override
+                public void onUpdate(@NotNull final TableUpdate upstream) {
+                    incrementalStateManager.beginUpdateCycle();
 
-                        @Override
-                        public void onUpdate(@NotNull final TableUpdate upstream) {
-                            incrementalStateManager.beginUpdateCycle();
+                    final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
+                    if (upstreamToUse.empty()) {
+                        return;
+                    }
+                    final TableUpdate downstream;
+                    try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
+                            reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
+                            operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
+                            outputPosition)) {
+                        downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
+                                keyColumnsRaw,
+                                keyColumnsCopied,
+                                result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
+                    }
 
-                            final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
-                            if (upstreamToUse.empty()) {
-                                return;
-                            }
-                            final TableUpdate downstream;
-                            try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
-                                    reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
-                                    operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
-                                    outputPosition)) {
-                                downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
-                                        keyColumnsRaw,
-                                        keyColumnsCopied,
-                                        result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
-                            }
+                    if (downstream.empty()) {
+                        downstream.release();
+                        return;
+                    }
 
-                            if (downstream.empty()) {
-                                downstream.release();
-                                return;
-                            }
+                    result.getRowSet().writableCast().update(downstream.added(), downstream.removed());
+                    result.notifyListeners(downstream);
+                }
 
-                            result.getRowSet().writableCast().update(downstream.added(), downstream.removed());
-                            result.notifyListeners(downstream);
-                        }
-
-                        @Override
-                        public void onFailureInternal(@NotNull final Throwable originalException, Entry sourceEntry) {
-                            ac.propagateFailureToOperators(originalException, sourceEntry);
-                            super.onFailureInternal(originalException, sourceEntry);
-                        }
-                    };
+                @Override
+                public void onFailureInternal(@NotNull final Throwable originalException, Entry sourceEntry) {
+                    ac.propagateFailureToOperators(originalException, sourceEntry);
+                    super.onFailureInternal(originalException, sourceEntry);
+                }
+            };
 
             snapshotControl.setListenerAndResult(listener, result);
         }
@@ -504,7 +488,9 @@ public class ChunkedOperatorAggregationHelper {
             ac.initializeGetContexts(sharedContext, getContexts, chunkSize);
             // noinspection unchecked
             workingChunks = toClose.addArray(new WritableChunk[ac.size()]);
+            // noinspection unchecked
             valueChunks = new Chunk[ac.size()];
+            // noinspection unchecked
             postValueChunks = new Chunk[ac.size()];
             ac.initializeWorkingChunks(workingChunks, chunkSize);
             permutedKeyIndices =
@@ -907,8 +893,8 @@ public class ChunkedOperatorAggregationHelper {
                     usePreKeys = permutedKeyIndices;
                     usePostKeys = postPermutedKeyIndices;
                 } else {
-                    usePreKeys = (LongChunk) preKeyIndices;
-                    usePostKeys = (LongChunk) postKeyIndices;
+                    usePreKeys = WritableLongChunk.upcast(preKeyIndices);
+                    usePostKeys = WritableLongChunk.upcast(postKeyIndices);
                 }
 
                 boolean anyOperatorModified = false;
@@ -1649,27 +1635,24 @@ public class ChunkedOperatorAggregationHelper {
 
     @NotNull
     private static QueryTable staticIndexedAggregation(
-            final DataIndex preTransformDataIndex,
+            final BasicDataIndex dataIndex,
             final String[] keyNames,
-            final ColumnSource<?>[] keySources,
             final AggregationContext ac) {
-        final BasicDataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
-                .sortByFirstRowKey(true) // Preserve encounter order
-                .immutable(true) // Ensure that we can re-use the key column sources in the result table
-                .build());
+        // Ensure that we can re-use the key column sources in the result table
         final Table indexTable = dataIndex.table();
         final int groupCount = indexTable.intSize();
 
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
 
         // Add the index key columns directly to the result table.
-        final ColumnSource<?>[] indexKeyColumns = dataIndex.indexKeyColumns(keySources);
-        for (int i = 0; i < keyNames.length; i++) {
-            resultColumnSourceMap.put(keyNames[i], indexKeyColumns[i]);
+        final Table indexKeyTable = indexTable.flatten().select(keyNames);
+        for (final String keyName : keyNames) {
+            resultColumnSourceMap.put(keyName, indexKeyTable.getColumnSource(keyName));
         }
         ac.getResultColumns(resultColumnSourceMap);
 
-        // Add the index row sets to the internal grouping.
+        // Add the index row sets to the internal grouping. Note that we have not flattened the RowSet column, but
+        // doIndexedAddition operations based on row position.
         try (final CloseableIterator<RowSet> groupRowSetIterator =
                 ChunkedColumnIterator.make(dataIndex.rowSetColumn(), indexTable.getRowSet())) {
             doIndexedAddition(ac, groupRowSetIterator::next, groupCount, CHUNK_SIZE);
@@ -1678,9 +1661,12 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(RowSetFactory.flat(groupCount).toTracking(), resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, groupCount);
 
-        // Create a hashmap lookup function from the index table.
-        final TObjectLongHashMap<Object> lookup = BaseDataIndex.buildKeyMap(indexTable, keyNames);
-        ac.supplyRowLookup(() -> key -> (int) lookup.get(key));
+        // Create a lookup function from the index table
+        ac.supplyRowLookup(() -> {
+            final ToLongFunction<Object> lookupKeyToRowKey =
+                    DataIndexUtils.buildRowKeyMappingFunction(indexKeyTable, keyNames);
+            return key -> (int) lookupKeyToRowKey.applyAsLong(key);
+        });
 
         final QueryTable finalResult = ac.transformResult(result);
         if (finalResult.getRowSet().isFlat()) {
@@ -1768,34 +1754,27 @@ public class ChunkedOperatorAggregationHelper {
         // This logic is duplicative of the logic in the main aggregation function, but it's hard to consolidate
         // further. A better strategy might be to do a selectDistinct first, but that would result in more hash table
         // inserts.
-        final ColumnSource<?>[] inputKeySources = Arrays.stream(keyColumnNames)
+        final ColumnSource<?>[] initialKeysSources = Arrays.stream(keyColumnNames)
                 .map(inputInitialKeys::getColumnSource)
                 .toArray(ColumnSource[]::new);
 
-        final DataIndexer dataIndexer = control.considerIndexing(inputInitialKeys, inputKeySources)
-                ? DataIndexer.existingOf(inputInitialKeys.getRowSet())
-                : null;
+        try (final SafeCloseable ignored1 = inputInitialKeys.isRefreshing() ? LivenessScopeStack.open() : null;
+                final SafeCloseable ignored2 =
+                        ExecutionContext.getContext().withUpdateGraph(inputInitialKeys.getUpdateGraph()).open()) {
 
-        final Table initialKeys;
-        final ColumnSource<?>[] keySources;
-        if (dataIndexer != null && dataIndexer.hasDataIndex(inputKeySources)) {
-            final BasicDataIndex dataIndex = dataIndexer.getDataIndex(inputKeySources).transform(
-                    DataIndexTransformer.builder()
-                            .sortByFirstRowKey(true) // Preserve encounter order
-                            .build());
-            initialKeys = dataIndex.table();
-            Assert.eq(inputInitialKeys.isRefreshing(), "inputInitialKeys.isRefreshing()",
-                    initialKeys.isRefreshing(), "initialKeys.isRefreshing()");
-            keySources = dataIndex.indexKeyColumns(inputKeySources);
-        } else {
-            initialKeys = inputInitialKeys;
-            keySources = inputKeySources;
-        }
+            final Table initialKeys;
+            final ColumnSource<?>[] keySources;
+            final BasicDataIndex dataIndex = control.dataIndexToUse(inputInitialKeys, keyColumnNames);
+            if (dataIndex != null) {
+                initialKeys = dataIndex.table();
+                keySources = dataIndex.keyColumns(initialKeysSources);
+            } else {
+                initialKeys = inputInitialKeys;
+                keySources = initialKeysSources;
+            }
 
-        final OperatorAggregationStateManager stateManager;
-        if (initialKeys.isRefreshing()) {
-            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
-                    initialKeys.getUpdateGraph()).open()) {
+            final OperatorAggregationStateManager stateManager;
+            if (initialKeys.isRefreshing()) {
                 final MutableObject<OperatorAggregationStateManager> stateManagerHolder = new MutableObject<>();
                 ConstructSnapshot.callDataSnapshotFunction(
                         "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
@@ -1806,15 +1785,16 @@ public class ChunkedOperatorAggregationHelper {
                             return true;
                         });
                 stateManager = stateManagerHolder.getValue();
+            } else {
+                stateManager = makeInitializedStateManager(
+                        initialKeys, keySources, outputPosition, stateManagerSupplier, false);
             }
-        } else {
-            stateManager = makeInitializedStateManager(
-                    initialKeys, keySources, outputPosition, stateManagerSupplier, false);
+
+            try (final RowSet empty = RowSetFactory.empty()) {
+                doIndexedAddition(ac, () -> empty, outputPosition.intValue(), 0);
+            }
+            return stateManager;
         }
-        try (final RowSet empty = RowSetFactory.empty()) {
-            doIndexedAddition(ac, () -> empty, outputPosition.intValue(), 0);
-        }
-        return stateManager;
     }
 
     private static OperatorAggregationStateManager makeInitializedStateManager(
@@ -1861,6 +1841,7 @@ public class ChunkedOperatorAggregationHelper {
         final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[ac.size()];
         // noinspection unchecked
         final WritableChunk<Values>[] workingChunks = findRuns ? new WritableChunk[ac.size()] : null;
+        // noinspection unchecked
         final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
         final IterativeChunkedAggregationOperator.BucketedContext[] bucketedContexts =
                 new IterativeChunkedAggregationOperator.BucketedContext[ac.size()];
@@ -1873,7 +1854,7 @@ public class ChunkedOperatorAggregationHelper {
             buildSources = reinterpretedKeySources;
         }
 
-        final RowSet rowSet = usePrev ? input.getRowSet().copyPrev() : input.getRowSet();
+        final RowSet rowSet = usePrev ? input.getRowSet().prev() : input.getRowSet();
 
         if (rowSet.isEmpty()) {
             return;
@@ -1882,10 +1863,9 @@ public class ChunkedOperatorAggregationHelper {
         final int chunkSize = chunkSize(rowSet.size());
 
         try (final SafeCloseable bc = stateManager.makeAggregationStateBuildContext(buildSources, chunkSize);
-                final SafeCloseable ignored1 = usePrev ? rowSet : null;
-                final SafeCloseable ignored2 = new SafeCloseableArray<>(getContexts);
-                final SafeCloseable ignored3 = findRuns ? new SafeCloseableArray<>(workingChunks) : null;
-                final SafeCloseable ignored4 = new SafeCloseableArray<>(bucketedContexts);
+                final SafeCloseable ignored1 = new SafeCloseableArray<>(getContexts);
+                final SafeCloseable ignored2 = findRuns ? new SafeCloseableArray<>(workingChunks) : null;
+                final SafeCloseable ignored3 = new SafeCloseableArray<>(bucketedContexts);
                 final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
                 final WritableIntChunk<RowKeys> outputPositions = WritableIntChunk.makeWritableChunk(chunkSize);
                 final WritableIntChunk<ChunkPositions> chunkPosition = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -1964,18 +1944,14 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void initialIndexedKeyAddition(
-            final DataIndex preTransformDataIndex,
+            final BasicDataIndex dataIndex,
             final ColumnSource<?>[] keySources,
             final AggregationContext ac,
             final OperatorAggregationStateManager stateManager,
             final MutableInt outputPosition,
             final RowSetBuilderRandom initialRowsBuilder,
             final boolean usePrev) {
-        final BasicDataIndex dataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
-                .sortByFirstRowKey(true) // Preserve encounter order
-                .build());
         final Table indexTable = dataIndex.table();
-
         final int indexEntryCount = indexTable.intSize();
 
         if (indexEntryCount == 0) {
@@ -1985,7 +1961,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.ensureCapacity(indexEntryCount);
 
         final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
-        final ColumnSource[] indexKeySources = Arrays.stream(dataIndex.indexKeyColumns(keySources))
+        final ColumnSource[] indexKeySources = Arrays.stream(dataIndex.keyColumns(keySources))
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .map(cs -> usePrev && !cs.isImmutable() ? cs.getPrevSource() : cs)
                 .toArray(ColumnSource[]::new);
@@ -2069,11 +2045,10 @@ public class ChunkedOperatorAggregationHelper {
         // to use allColumns as the modified columns parameter
         final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                 new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
-        final RowSet rowSet = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
+        final RowSet rowSet = usePrev ? table.getRowSet().prev() : table.getRowSet();
         final int initialResultSize;
-        try (final SafeCloseable ignored1 = new SafeCloseableArray<>(opContexts);
-                final SafeCloseable ignored2 = usePrev ? rowSet : null) {
-            initialResultSize = preserveEmpty || rowSet.size() != 0 ? 1 : 0;
+        try (final SafeCloseable ignored = new SafeCloseableArray<>(opContexts)) {
+            initialResultSize = preserveEmpty || !rowSet.isEmpty() ? 1 : 0;
             ac.initializeSingletonContexts(opContexts, rowSet.size());
             doNoKeyAddition(rowSet, ac, opContexts, allColumns, usePrev, allColumns);
         }
@@ -2083,165 +2058,165 @@ public class ChunkedOperatorAggregationHelper {
         // always will create one result for zerokey
         ac.propagateInitialStateToOperators(result, 1);
 
-        if (table.isRefreshing()) {
+        if (snapshotControl != null) {
             ac.startTrackingPrevValues();
 
             final boolean isBlink = table.isBlink();
-            final TableUpdateListener listener =
-                    new BaseTable.ListenerImpl("groupBy(" + aggregationContextFactory + ")", table, result) {
+            final TableUpdateListener listener = new BaseTable.ListenerImpl(
+                    "by(" + aggregationContextFactory + ")", table, result) {
 
-                        final ModifiedColumnSet[] inputModifiedColumnSet = ac.getInputModifiedColumnSets(table);
-                        final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
-                                ac.initializeRefreshing(result, this);
+                final ModifiedColumnSet[] inputModifiedColumnSet = ac.getInputModifiedColumnSets(table);
+                final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
+                        ac.initializeRefreshing(result, this);
 
-                        int lastSize = initialResultSize;
-                        int statesCreated = initialResultSize;
+                int lastSize = initialResultSize;
+                int statesCreated = initialResultSize;
 
-                        @Override
-                        public void onUpdate(@NotNull final TableUpdate upstream) {
-                            final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
-                            if (upstreamToUse.empty()) {
-                                return;
-                            }
-                            processNoKeyUpdate(upstreamToUse);
+                @Override
+                public void onUpdate(@NotNull final TableUpdate upstream) {
+                    final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
+                    if (upstreamToUse.empty()) {
+                        return;
+                    }
+                    processNoKeyUpdate(upstreamToUse);
+                }
+
+                private void processNoKeyUpdate(@NotNull final TableUpdate upstream) {
+                    ac.resetOperatorsForStep(upstream, 1);
+
+                    final ModifiedColumnSet upstreamModifiedColumnSet =
+                            upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY
+                                    : upstream.modifiedColumnSet();
+
+                    final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
+                            new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
+                    try (final SafeCloseable ignored = new SafeCloseableArray<>(opContexts)) {
+                        final OperatorDivision od = new OperatorDivision(ac, upstream.modified().isNonempty(),
+                                upstreamModifiedColumnSet, inputModifiedColumnSet);
+                        ac.initializeSingletonContexts(opContexts, upstream,
+                                od.operatorsWithModifiedInputColumns);
+
+                        final boolean[] modifiedOperators = new boolean[ac.size()];
+                        // remove all the removals
+                        if (upstream.removed().isNonempty()) {
+                            doNoKeyRemoval(upstream.removed(), ac, opContexts, allColumns, modifiedOperators);
                         }
 
-                        private void processNoKeyUpdate(@NotNull final TableUpdate upstream) {
-                            ac.resetOperatorsForStep(upstream, 1);
+                        final boolean processShifts = upstream.shifted().nonempty() && ac.requiresIndices();
 
-                            final ModifiedColumnSet upstreamModifiedColumnSet =
-                                    upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY
-                                            : upstream.modifiedColumnSet();
+                        if (upstream.modified().isNonempty() && (od.anyOperatorHasModifiedInputColumns
+                                || od.anyOperatorWithoutModifiedInputColumnsRequiresIndices)) {
+                            if (processShifts) {
+                                // Also handles shifted modifications for modified-input operators that require
+                                // indices (if any)
+                                doNoKeyShifts(table, upstream, ac, opContexts, od.operatorsThatRequireIndices,
+                                        modifiedOperators);
 
-                            final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
-                                    new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
-                            try (final SafeCloseable ignored = new SafeCloseableArray<>(opContexts)) {
-                                final OperatorDivision od = new OperatorDivision(ac, upstream.modified().isNonempty(),
-                                        upstreamModifiedColumnSet, inputModifiedColumnSet);
-                                ac.initializeSingletonContexts(opContexts, upstream,
-                                        od.operatorsWithModifiedInputColumns);
+                                try (final RowSet unshiftedModifies =
+                                        extractUnshiftedModifiesFromUpstream(upstream)) {
+                                    // Do unshifted modifies for everyone
+                                    doNoKeyModifications(unshiftedModifies, unshiftedModifies, ac, opContexts,
+                                            true,
+                                            od.operatorsWithModifiedInputColumns,
+                                            od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
+                                            modifiedOperators);
 
-                                final boolean[] modifiedOperators = new boolean[ac.size()];
-                                // remove all the removals
-                                if (upstream.removed().isNonempty()) {
-                                    doNoKeyRemoval(upstream.removed(), ac, opContexts, allColumns, modifiedOperators);
-                                }
-
-                                final boolean processShifts = upstream.shifted().nonempty() && ac.requiresIndices();
-
-                                if (upstream.modified().isNonempty() && (od.anyOperatorHasModifiedInputColumns
-                                        || od.anyOperatorWithoutModifiedInputColumnsRequiresIndices)) {
-                                    if (processShifts) {
-                                        // Also handles shifted modifications for modified-input operators that require
-                                        // indices (if any)
-                                        doNoKeyShifts(table, upstream, ac, opContexts, od.operatorsThatRequireIndices,
-                                                modifiedOperators);
-
-                                        try (final RowSet unshiftedModifies =
-                                                extractUnshiftedModifiesFromUpstream(upstream)) {
-                                            // Do unshifted modifies for everyone
-                                            doNoKeyModifications(unshiftedModifies, unshiftedModifies, ac, opContexts,
-                                                    true,
-                                                    od.operatorsWithModifiedInputColumns,
-                                                    od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
+                                    if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
+                                        // Do shifted modifies for RowSet-only and modified-input operators that
+                                        // don't require indices
+                                        try (final RowSet shiftedModifiesPost =
+                                                upstream.modified().minus(unshiftedModifies);
+                                                final WritableRowSet shiftedModifiesPre =
+                                                        shiftedModifiesPost.copy()) {
+                                            upstream.shifted().unapply(shiftedModifiesPre);
+                                            doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
+                                                    opContexts, true,
+                                                    od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
+                                                    od.operatorsThatRequireIndices,
                                                     modifiedOperators);
-
-                                            if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
-                                                // Do shifted modifies for RowSet-only and modified-input operators that
-                                                // don't require indices
-                                                try (final RowSet shiftedModifiesPost =
-                                                        upstream.modified().minus(unshiftedModifies);
-                                                        final WritableRowSet shiftedModifiesPre =
-                                                                shiftedModifiesPost.copy()) {
-                                                    upstream.shifted().unapply(shiftedModifiesPre);
-                                                    doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
-                                                            opContexts, true,
-                                                            od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
-                                                            od.operatorsThatRequireIndices,
-                                                            modifiedOperators);
-                                                }
-                                            } else if (ac.requiresIndices()) {
-                                                // Do shifted modifies for RowSet-only operators
-                                                try (final RowSet shiftedModifiesPost =
-                                                        upstream.modified().minus(unshiftedModifies)) {
-                                                    doIndexOnlyNoKeyModifications(shiftedModifiesPost, ac, opContexts,
-                                                            od.operatorsThatRequireIndices, modifiedOperators);
-                                                }
-                                            }
                                         }
-                                    } else if (od.anyOperatorHasModifiedInputColumns) {
-                                        doNoKeyModifications(upstream.getModifiedPreShift(), upstream.modified(), ac,
-                                                opContexts, ac.requiresIndices(),
-                                                od.operatorsWithModifiedInputColumns,
-                                                od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
-                                                modifiedOperators);
-
-                                    } else {
-                                        doIndexOnlyNoKeyModifications(upstream.modified(), ac, opContexts,
-                                                od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
-                                                modifiedOperators);
+                                    } else if (ac.requiresIndices()) {
+                                        // Do shifted modifies for RowSet-only operators
+                                        try (final RowSet shiftedModifiesPost =
+                                                upstream.modified().minus(unshiftedModifies)) {
+                                            doIndexOnlyNoKeyModifications(shiftedModifiesPost, ac, opContexts,
+                                                    od.operatorsThatRequireIndices, modifiedOperators);
+                                        }
                                     }
-                                } else if (processShifts) {
-                                    doNoKeyShifts(table, upstream, ac, opContexts, od.operatorsThatRequireIndices,
-                                            modifiedOperators);
                                 }
+                            } else if (od.anyOperatorHasModifiedInputColumns) {
+                                doNoKeyModifications(upstream.getModifiedPreShift(), upstream.modified(), ac,
+                                        opContexts, ac.requiresIndices(),
+                                        od.operatorsWithModifiedInputColumns,
+                                        od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
+                                        modifiedOperators);
 
-                                if (upstream.added().isNonempty()) {
-                                    doNoKeyAddition(upstream.added(), ac, opContexts, allColumns, false,
-                                            modifiedOperators);
-                                }
-
-                                final int newResultSize =
-                                        preserveEmpty || (isBlink && lastSize != 0) || table.size() != 0 ? 1 : 0;
-                                final TableUpdateImpl downstream = new TableUpdateImpl();
-                                downstream.shifted = RowSetShiftData.EMPTY;
-                                if ((lastSize == 0 && newResultSize == 1)) {
-                                    downstream.added = RowSetFactory.fromKeys(0);
-                                    downstream.removed = RowSetFactory.empty();
-                                    downstream.modified = RowSetFactory.empty();
-                                    result.getRowSet().writableCast().insert(0);
-                                } else if (lastSize == 1 && newResultSize == 0) {
-                                    downstream.added = RowSetFactory.empty();
-                                    downstream.removed = RowSetFactory.fromKeys(0);
-                                    downstream.modified = RowSetFactory.empty();
-                                    result.getRowSet().writableCast().remove(0);
-                                } else if (anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
-                                    downstream.added = RowSetFactory.empty();
-                                    downstream.removed = RowSetFactory.empty();
-                                    downstream.modified = RowSetFactory.fromKeys(0);
-                                } else {
-                                    downstream.added = RowSetFactory.empty();
-                                    downstream.removed = RowSetFactory.empty();
-                                    downstream.modified = RowSetFactory.empty();
-                                }
-                                lastSize = newResultSize;
-
-                                final int newStatesCreated = Math.max(statesCreated, newResultSize);
-                                try (final RowSet newStates =
-                                        makeNewStatesRowSet(statesCreated, newStatesCreated - 1)) {
-                                    ac.propagateChangesToOperators(downstream, newStates);
-                                }
-                                statesCreated = newStatesCreated;
-
-                                extractDownstreamModifiedColumnSet(downstream, result.getModifiedColumnSetForUpdates(),
-                                        modifiedOperators, upstreamModifiedColumnSet, resultModifiedColumnSetFactories);
-
-                                if (downstream.empty()) {
-                                    downstream.release();
-                                    return;
-                                }
-
-                                result.notifyListeners(downstream);
+                            } else {
+                                doIndexOnlyNoKeyModifications(upstream.modified(), ac, opContexts,
+                                        od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
+                                        modifiedOperators);
                             }
+                        } else if (processShifts) {
+                            doNoKeyShifts(table, upstream, ac, opContexts, od.operatorsThatRequireIndices,
+                                    modifiedOperators);
                         }
 
-                        @Override
-                        public void onFailureInternal(@NotNull final Throwable originalException,
-                                final Entry sourceEntry) {
-                            ac.propagateFailureToOperators(originalException, sourceEntry);
-                            super.onFailureInternal(originalException, sourceEntry);
+                        if (upstream.added().isNonempty()) {
+                            doNoKeyAddition(upstream.added(), ac, opContexts, allColumns, false,
+                                    modifiedOperators);
                         }
-                    };
+
+                        final int newResultSize =
+                                preserveEmpty || (isBlink && lastSize != 0) || !table.isEmpty() ? 1 : 0;
+                        final TableUpdateImpl downstream = new TableUpdateImpl();
+                        downstream.shifted = RowSetShiftData.EMPTY;
+                        if ((lastSize == 0 && newResultSize == 1)) {
+                            downstream.added = RowSetFactory.fromKeys(0);
+                            downstream.removed = RowSetFactory.empty();
+                            downstream.modified = RowSetFactory.empty();
+                            result.getRowSet().writableCast().insert(0);
+                        } else if (lastSize == 1 && newResultSize == 0) {
+                            downstream.added = RowSetFactory.empty();
+                            downstream.removed = RowSetFactory.fromKeys(0);
+                            downstream.modified = RowSetFactory.empty();
+                            result.getRowSet().writableCast().remove(0);
+                        } else if (anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
+                            downstream.added = RowSetFactory.empty();
+                            downstream.removed = RowSetFactory.empty();
+                            downstream.modified = RowSetFactory.fromKeys(0);
+                        } else {
+                            downstream.added = RowSetFactory.empty();
+                            downstream.removed = RowSetFactory.empty();
+                            downstream.modified = RowSetFactory.empty();
+                        }
+                        lastSize = newResultSize;
+
+                        final int newStatesCreated = Math.max(statesCreated, newResultSize);
+                        try (final RowSet newStates =
+                                makeNewStatesRowSet(statesCreated, newStatesCreated - 1)) {
+                            ac.propagateChangesToOperators(downstream, newStates);
+                        }
+                        statesCreated = newStatesCreated;
+
+                        extractDownstreamModifiedColumnSet(downstream, result.getModifiedColumnSetForUpdates(),
+                                modifiedOperators, upstreamModifiedColumnSet, resultModifiedColumnSetFactories);
+
+                        if (downstream.empty()) {
+                            downstream.release();
+                            return;
+                        }
+
+                        result.notifyListeners(downstream);
+                    }
+                }
+
+                @Override
+                public void onFailureInternal(@NotNull final Throwable originalException,
+                        final Entry sourceEntry) {
+                    ac.propagateFailureToOperators(originalException, sourceEntry);
+                    super.onFailureInternal(originalException, sourceEntry);
+                }
+            };
             snapshotControl.setListenerAndResult(listener, result);
         }
 
@@ -2280,7 +2255,9 @@ public class ChunkedOperatorAggregationHelper {
             ac.initializeGetContexts(preSharedContext, preGetContexts, preIndex.size(), operatorsToProcess);
             ac.initializeGetContexts(postSharedContext, postGetContexts, postIndex.size(), operatorsToProcess);
 
+            // noinspection unchecked
             final Chunk<? extends Values>[] workingPreChunks = new Chunk[ac.size()];
+            // noinspection unchecked
             final Chunk<? extends Values>[] workingPostChunks = new Chunk[ac.size()];
 
             while (postIt.hasMore()) {

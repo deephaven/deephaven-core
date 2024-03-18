@@ -53,7 +53,7 @@ public final class AddOnlyToBlinkTableAdapter {
         final OperationSnapshotControl snapshotControl =
                 coalesced.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
-        // noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
+        // noinspection DataFlowIssue snapshotControl cannot be null here, since we know the table is refreshing
         ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", snapshotControl,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Start with the same rows as the original table

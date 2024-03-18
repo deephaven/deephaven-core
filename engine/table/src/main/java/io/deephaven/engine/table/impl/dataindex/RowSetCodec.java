@@ -15,11 +15,12 @@ import java.io.*;
  * A codec to encode and decode generic row set to a column.
  */
 public class RowSetCodec implements ObjectCodec<RowSet> {
+
     public RowSetCodec(@SuppressWarnings("unused") String arguments) {}
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable RowSet input) {
+    @NotNull
+    public byte[] encode(@Nullable final RowSet input) {
         if (input == null) {
             throw new UnsupportedOperationException(getClass() + " does not support null input");
         }
@@ -51,7 +52,7 @@ public class RowSetCodec implements ObjectCodec<RowSet> {
 
     @Nullable
     @Override
-    public RowSet decode(@NotNull byte[] input, int offset, int length) {
+    public RowSet decode(@NotNull final byte[] input, final int offset, final int length) {
         try {
             final ByteArrayInputStream byteInput = new ByteArrayInputStream(input, offset, length);
             final DataInputStream dataInputStream = new DataInputStream(byteInput);

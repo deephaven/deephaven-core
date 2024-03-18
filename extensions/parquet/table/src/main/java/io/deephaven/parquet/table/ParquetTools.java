@@ -624,16 +624,16 @@ public class ParquetTools {
 
         // Build the list of indexes to write
         dataIndexes.forEach(di -> {
-            final Map<ColumnSource<?>, String> indexKeyColumnMap = di.keyColumnMap();
+            final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn = di.keyColumnNamesByIndexedColumn();
 
-            // Re-map the columns to their names
-            final String[] keyColumnNames = indexKeyColumnMap.keySet().stream()
+            // Re-map the index columns to their names in this table
+            final String[] keyColumnNames = keyColumnNamesByIndexedColumn.keySet().stream()
                     .map(columnToName::get)
                     .filter(Objects::nonNull)
                     .toArray(String[]::new);
 
             // Make sure all the columns actually exist in the table
-            if (keyColumnNames.length == indexKeyColumnMap.size()) {
+            if (keyColumnNames.length == keyColumnNamesByIndexedColumn.size()) {
                 indexesToWrite.add(keyColumnNames);
             }
         });

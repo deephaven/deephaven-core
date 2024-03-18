@@ -14,7 +14,6 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * <p>
@@ -24,8 +23,6 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
 
     private final ColumnSource<?>[] columnSources;
 
-    private final List<ColumnSource<?>> columnSourceList;
-
     /**
      * Construct a new tuple source backed by the supplied column sources. The column sources array should not be
      * changed after this call.
@@ -34,12 +31,6 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
      */
     MultiColumnTupleSource(@NotNull final ColumnSource<?>... columnSources) {
         this.columnSources = columnSources;
-        columnSourceList = List.of(columnSources);
-    }
-
-    @Override
-    public List<ColumnSource<?>> getColumnSources() {
-        return columnSourceList;
     }
 
     @Override
