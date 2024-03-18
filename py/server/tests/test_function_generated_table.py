@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+#
 from typing import Any
 
 import deephaven.dtypes as dht

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.ColumnName;
@@ -30,7 +30,7 @@ import java.util.function.IntToLongFunction;
 
 @Category(ParallelTest.class)
 public class CharRegionBinarySearchKernelTest {
-    private static final int[] SIZES = { 10, 100, 1000000 };
+    private static final int[] SIZES = {10, 100, 1000000};
     private static final int MAX_FAILED_LOOKUPS = 1000;
     private static final int NUM_NEGATIVE_LOOKUPS = 100;
 
@@ -62,8 +62,7 @@ public class CharRegionBinarySearchKernelTest {
                     region,
                     startRow, endRow,
                     sortColumn,
-                    new Character[] { value }
-            )) {
+                    new Character[] {value})) {
                 if (startRow <= ii && ii <= endRow) {
                     Assert.assertTrue("Expected to find " + value + " at index " + ii,
                             valuesFound.containsRange(ii, ii));
@@ -91,8 +90,7 @@ public class CharRegionBinarySearchKernelTest {
                     region,
                     startRow, endRow,
                     sortColumn,
-                    new Character[] { value }
-            )) {
+                    new Character[] {value})) {
                 Assert.assertTrue(valuesFound.isEmpty());
             }
         }
@@ -114,6 +112,7 @@ public class CharRegionBinarySearchKernelTest {
             randomizedTestRunner(size, 0, i -> 0, i -> size);
         }
     }
+
     @Test
     public void testRowIsAboveRange() {
         for (int size : SIZES) {
@@ -169,6 +168,7 @@ public class CharRegionBinarySearchKernelTest {
             invertedRandomizedTestRunner(size, 0, i -> 0, i -> size);
         }
     }
+
     @Test
     public void testInvertedRowIsAboveRange() {
         for (int size : SIZES) {
@@ -219,22 +219,24 @@ public class CharRegionBinarySearchKernelTest {
     }
 
     private static final int PAGE_SIZE = 1 << 16;
+
     private static ColumnRegionChar<Values> makeColumnRegionChar(@NotNull final List<Character> values) {
         return new AppendOnlyFixedSizePageRegionChar<>(
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, PAGE_SIZE, new AppendOnlyRegionAccessor<>() {
-            @Override
-            public void readChunkPage(long firstRowPosition, int minimumSize, @NotNull WritableChunk<Values> destination) {
-                int finalSize = (int) Math.min(minimumSize, values.size() - firstRowPosition);
-                destination.setSize(finalSize);
-                for (int ii = 0; ii < finalSize; ++ii) {
-                    destination.asWritableCharChunk().set(ii, values.get((int) firstRowPosition + ii));
-                }
-            }
+                    @Override
+                    public void readChunkPage(long firstRowPosition, int minimumSize,
+                            @NotNull WritableChunk<Values> destination) {
+                        int finalSize = (int) Math.min(minimumSize, values.size() - firstRowPosition);
+                        destination.setSize(finalSize);
+                        for (int ii = 0; ii < finalSize; ++ii) {
+                            destination.asWritableCharChunk().set(ii, values.get((int) firstRowPosition + ii));
+                        }
+                    }
 
-            @Override
-            public long size() {
-                return values.size();
-            }
-        });
+                    @Override
+                    public long size() {
+                        return values.size();
+                    }
+                });
     }
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.WritableCharChunk;
@@ -22,7 +22,7 @@ public class TestCharacterImmutable2DArraySource extends AbstractCharacterColumn
         final Immutable2DCharArraySource flatCharArraySource = new Immutable2DCharArraySource(12);
         flatCharArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatCharArraySource.makeFillFromContext(capacity);
-             final WritableCharChunk nullChunk = WritableCharChunk.makeWritableChunk(capacity)) {
+                final WritableCharChunk nullChunk = WritableCharChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);
             flatCharArraySource.fillFromChunk(ffc, nullChunk, RowSetFactory.flat(capacity));
         }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -17,7 +17,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
  */
-public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean, FillUnordered<Values> {
+public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean>
+        implements MutableColumnSourceGetDefaults.ForBoolean, FillUnordered<Values> {
 
     private final ColumnSource<Byte> alternateColumnSource;
 
@@ -42,13 +43,15 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == byte.class || alternateDataType == Byte.class;
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
-        //noinspection unchecked
+    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
+        // noinspection unchecked
         return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
     }
 
@@ -84,21 +87,27 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
         final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
-        final ByteChunk<? extends Values> byteChunk = alternateColumnSource.getChunk(toBooleanFillContext.alternateGetContext, rowSequence).asByteChunk();
+        final ByteChunk<? extends Values> byteChunk =
+                alternateColumnSource.getChunk(toBooleanFillContext.alternateGetContext, rowSequence).asByteChunk();
         convertToBoolean(destination, byteChunk);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
-        final ByteChunk<? extends Values> byteChunk = alternateColumnSource.getPrevChunk(toBooleanFillContext.alternateGetContext, rowSequence).asByteChunk();
+        final ByteChunk<? extends Values> byteChunk =
+                alternateColumnSource.getPrevChunk(toBooleanFillContext.alternateGetContext, rowSequence).asByteChunk();
         convertToBoolean(destination, byteChunk);
     }
 
-    private static void convertToBoolean(@NotNull final WritableChunk<? super Values> destination, @NotNull final ByteChunk<? extends Values> byteChunk) {
-        final WritableObjectChunk<Boolean, ? super Values> booleanObjectDestination = destination.asWritableObjectChunk();
+    private static void convertToBoolean(@NotNull final WritableChunk<? super Values> destination,
+            @NotNull final ByteChunk<? extends Values> byteChunk) {
+        final WritableObjectChunk<Boolean, ? super Values> booleanObjectDestination =
+                destination.asWritableObjectChunk();
         for (int ii = 0; ii < byteChunk.size(); ++ii) {
             booleanObjectDestination.set(ii, BooleanUtils.byteAsBoolean(byteChunk.get(ii)));
         }
@@ -111,26 +120,30 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
         final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
         if (toBooleanFillContext.byteChunk == null) {
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
         toBooleanFillContext.byteChunk.setSize(keys.size());
         // noinspection unchecked
-        ((FillUnordered<Values>) alternateColumnSource).fillChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
+        ((FillUnordered<Values>) alternateColumnSource).fillChunkUnordered(toBooleanFillContext.alternateFillContext,
+                toBooleanFillContext.byteChunk, keys);
         convertToBoolean(dest, toBooleanFillContext.byteChunk);
     }
 
     @Override
-    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
         final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
         if (toBooleanFillContext.byteChunk == null) {
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
         toBooleanFillContext.byteChunk.setSize(keys.size());
         // noinspection unchecked
-        ((FillUnordered<Values>) alternateColumnSource).fillPrevChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
+        ((FillUnordered<Values>) alternateColumnSource).fillPrevChunkUnordered(
+                toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
         convertToBoolean(dest, toBooleanFillContext.byteChunk);
     }
 

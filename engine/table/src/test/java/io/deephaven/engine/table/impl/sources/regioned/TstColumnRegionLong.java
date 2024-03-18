@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TstColumnRegionChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TstColumnRegionChar and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
@@ -44,13 +43,13 @@ public class TstColumnRegionLong {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+                @NotNull RowSequence rowSequence) {
             WritableLongChunk<? super Values> longDestination = destination.asWritableLongChunk();
             int size = destination.size();
             int length = (int) rowSequence.size();
 
-            rowSequence.forAllRowKeys(key ->
-            {
+            rowSequence.forAllRowKeys(key -> {
                 for (int i = 0; i < length; ++i) {
                     longDestination.set(size + i, (long) key);
                 }
@@ -83,12 +82,14 @@ public class TstColumnRegionLong {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            //noinspection unchecked
+            // noinspection unchecked
             regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {{
-                oneOf(regionSupplier).get();
-                will(returnValue(new Identity()));
-            }});
+            checking(new Expectations() {
+                {
+                    oneOf(regionSupplier).get();
+                    will(returnValue(new Identity()));
+                }
+            });
             SUT = new DeferredColumnRegionLong<>(Long.MAX_VALUE, regionSupplier);
         }
 

@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharTimSortKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharTimSortKernel and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.test.types.ParallelTest;
@@ -14,82 +13,95 @@ import org.junit.experimental.categories.Category;
 
 @Category(ParallelTest.class)
 public class TestByteTimSortKernel extends BaseTestByteTimSortKernel {
-    // I like this output, but for now am leaving these tests off, so we can focus on getting right answers and we can try
+    // I like this output, but for now am leaving these tests off, so we can focus on getting right answers and we can
+    // try
     // out JMH for running morally equivalent things.
 
-//    @Test
-//    public void byteRandomPerformanceTest() {
-//        performanceTest(TestByteTimSortKernel::generateByteRandom, ByteSortKernelStuff::new, ByteSortKernelStuff::run, getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
-//    }
-//
-//    @Test
-//    public void byteRunPerformanceTest() {
-//        performanceTest(TestByteTimSortKernel::generateByteRuns, ByteSortKernelStuff::new, ByteSortKernelStuff::run, getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
-//    }
-//
-//    @Test
-//    public void byteRunDescendingPerformanceTest() {
-//        performanceTest(TestByteTimSortKernel::generateDescendingByteRuns, ByteSortKernelStuff::new, ByteSortKernelStuff::run, getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
-//    }
-//
-//    @Test
-//    public void byteRunAscendingPerformanceTest() {
-//        performanceTest(TestByteTimSortKernel::generateAscendingByteRuns, ByteSortKernelStuff::new, ByteSortKernelStuff::run, getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
-//    }
-//
+    // @Test
+    // public void byteRandomPerformanceTest() {
+    // performanceTest(TestByteTimSortKernel::generateByteRandom, ByteSortKernelStuff::new, ByteSortKernelStuff::run,
+    // getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
+    // }
+    //
+    // @Test
+    // public void byteRunPerformanceTest() {
+    // performanceTest(TestByteTimSortKernel::generateByteRuns, ByteSortKernelStuff::new, ByteSortKernelStuff::run,
+    // getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
+    // }
+    //
+    // @Test
+    // public void byteRunDescendingPerformanceTest() {
+    // performanceTest(TestByteTimSortKernel::generateDescendingByteRuns, ByteSortKernelStuff::new,
+    // ByteSortKernelStuff::run, getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
+    // }
+    //
+    // @Test
+    // public void byteRunAscendingPerformanceTest() {
+    // performanceTest(TestByteTimSortKernel::generateAscendingByteRuns, ByteSortKernelStuff::new,
+    // ByteSortKernelStuff::run, getJavaComparator(), ByteMergeStuff::new, ByteMergeStuff::run);
+    // }
+    //
     @Test
     public void byteRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), ByteLongSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(),
+                    ByteLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteAscendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateAscendingByteRuns, getJavaComparator(), ByteSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateAscendingByteRuns, getJavaComparator(),
+                    ByteSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteDescendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateDescendingByteRuns, getJavaComparator(), ByteSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateDescendingByteRuns, getJavaComparator(),
+                    ByteSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateByteRuns, getJavaComparator(), ByteSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateByteRuns, getJavaComparator(),
+                    ByteSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteLongRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), ByteLongSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateByteRandom, getJavaComparator(),
+                    ByteLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteLongAscendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateAscendingByteRuns, getJavaComparator(), ByteLongSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateAscendingByteRuns, getJavaComparator(),
+                    ByteLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteLongDescendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateDescendingByteRuns, getJavaComparator(), ByteLongSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateDescendingByteRuns, getJavaComparator(),
+                    ByteLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void byteLongRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestByteTimSortKernel::generateByteRuns, getJavaComparator(), ByteLongSortKernelStuff::new);
+            correctnessTest(size, TestByteTimSortKernel::generateByteRuns, getJavaComparator(),
+                    ByteLongSortKernelStuff::new);
         }
     }
 
@@ -97,8 +109,9 @@ public class TestByteTimSortKernel extends BaseTestByteTimSortKernel {
     public void byteRandomPartitionCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_PARTTITION_CHUNK_SIZE; size *= 2) {
             int partitions = 2;
-            while (partitions < (int)Math.sqrt(size)) {
-                partitionCorrectnessTest(size, size, partitions, TestByteTimSortKernel::generateByteRandom, getJavaComparator(), BytePartitionKernelStuff::new);
+            while (partitions < (int) Math.sqrt(size)) {
+                partitionCorrectnessTest(size, size, partitions, TestByteTimSortKernel::generateByteRandom,
+                        getJavaComparator(), BytePartitionKernelStuff::new);
                 if (size < 1000) {
                     break;
                 }
@@ -111,7 +124,8 @@ public class TestByteTimSortKernel extends BaseTestByteTimSortKernel {
     @Test
     public void byteMultiRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            multiCorrectnessTest(size, TestByteTimSortKernel::generateMultiByteRandom, getJavaMultiComparator(), ByteMultiSortKernelStuff::new);
+            multiCorrectnessTest(size, TestByteTimSortKernel::generateMultiByteRandom, getJavaMultiComparator(),
+                    ByteMultiSortKernelStuff::new);
         }
     }
 }

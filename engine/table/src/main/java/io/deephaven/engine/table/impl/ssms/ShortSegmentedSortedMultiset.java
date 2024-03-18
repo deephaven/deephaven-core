@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSegmentedSortedMultiset and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.Assert;
@@ -38,16 +37,16 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     private int minGallop = TimsortUtils.INITIAL_GALLOP;
 
     /**
-     * If we have only a single leaf, then we use the directory arrays for the leaf values, otherwise we use it to
-     * track the largest value in a given leaf.  The values are valid for 0 ... leafCount - 2, because the last leaf
-     * must accept any value that is greater than the second to last leave's maximum.
+     * If we have only a single leaf, then we use the directory arrays for the leaf values, otherwise we use it to track
+     * the largest value in a given leaf. The values are valid for 0 ... leafCount - 2, because the last leaf must
+     * accept any value that is greater than the second to last leave's maximum.
      */
-    private short [] directoryValues;
-    private long [] directoryCount;
+    private short[] directoryValues;
+    private long[] directoryCount;
 
-    private int [] leafSizes;
-    private short [][] leafValues;
-    private long [][] leafCounts;
+    private int[] leafSizes;
+    private short[][] leafValues;
+    private long[][] leafCounts;
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
@@ -57,7 +56,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     // endregion Deltas
 
 
-    //region Constructor
+    // region Constructor
     /**
      * Create a ShortSegmentedSortedArray with the given leafSize.
      *
@@ -68,9 +67,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         leafCount = 0;
         size = 0;
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region Insertion
+    // region Insertion
     @Override
     public boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
         final long beforeSize = size();
@@ -78,10 +77,13 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         return beforeSize != size();
     }
 
-    private int insertExistingIntoLeaf(WritableShortChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts, int ripos, MutableInt wipos, int leafSize, short [] leafValues, long [] leafCounts, short maxInsert, boolean lastLeaf) {
+    private int insertExistingIntoLeaf(WritableShortChunk<? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int ripos, MutableInt wipos, int leafSize, short[] leafValues,
+            long[] leafCounts, short maxInsert, boolean lastLeaf) {
         int rlpos = 0;
         short nextValue;
-        while (rlpos < leafSize && ripos < valuesToInsert.size() && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
+        while (rlpos < leafSize && ripos < valuesToInsert.size()
+                && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
             if (gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
                 valuesToInsert.set(wipos.intValue(), nextValue);
@@ -97,10 +99,12 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                     }
                 } else if (rlpos == leafSize) {
                     // we have hit the end of the leaf, we can not insert any value that is less than maxvalue
-                    final int lastInsert = lastLeaf ? valuesToInsert.size() : upperBound(valuesToInsert, ripos, valuesToInsert.size(), maxInsert);
+                    final int lastInsert = lastLeaf ? valuesToInsert.size()
+                            : upperBound(valuesToInsert, ripos, valuesToInsert.size(), maxInsert);
 
                     // noinspection unchecked
-                    valuesToInsert.copyFromTypedChunk((WritableShortChunk)valuesToInsert, ripos, wipos.intValue(), lastInsert - ripos);
+                    valuesToInsert.copyFromTypedChunk((WritableShortChunk) valuesToInsert, ripos, wipos.intValue(),
+                            lastInsert - ripos);
                     counts.copyFromTypedChunk(counts, ripos, wipos.intValue(), lastInsert - ripos);
                     wipos.add(lastInsert - ripos);
                     ripos = lastInsert;
@@ -110,7 +114,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         return ripos;
     }
 
-    private void distributeNewIntoLeaves(ShortChunk<? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts, final int insertStart, final int insertCount, int firstLeaf, int requiredLeaves, int newLeafSize) {
+    private void distributeNewIntoLeaves(ShortChunk<? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts,
+            final int insertStart, final int insertCount, int firstLeaf, int requiredLeaves, int newLeafSize) {
         Assert.gtZero(insertCount, "insertCount");
 
         final int valuesPerLeaf = valuesPerLeaf(newLeafSize, requiredLeaves);
@@ -154,12 +159,14 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 if (wpos >= 0 && iwins > minGallop) {
                     // find the smallest insert value greater than the leafValue, but do not go beyond the beginning of
                     // the leaf we are writing to
-                    final int minInsert = gallopBound(valuesToInsert, Math.max(insertStart, ripos - wpos), ripos + 1, leafValue);
+                    final int minInsert =
+                            gallopBound(valuesToInsert, Math.max(insertStart, ripos - wpos), ripos + 1, leafValue);
 
                     final int gallopLength = ripos - minInsert + 1;
 
                     if (gallopLength > 0) {
-                        valuesToInsert.copyToTypedArray(minInsert, leafValues[wleaf], wpos - gallopLength + 1, gallopLength);
+                        valuesToInsert.copyToTypedArray(minInsert, leafValues[wleaf], wpos - gallopLength + 1,
+                                gallopLength);
                         while (ripos >= minInsert) {
                             leafCounts[wleaf][wpos--] = counts.get(ripos--);
                         }
@@ -185,12 +192,15 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 if (lwins > minGallop) {
                     // find the smallest leaf value greater than the insertValue, but do not go beyond the beginning of
                     // the leaf we are writing to
-                    final int minInsert = gallopBound(leafValues[firstLeaf], Math.max(0, rlpos - wpos), rlpos + 1, insertValue);
+                    final int minInsert =
+                            gallopBound(leafValues[firstLeaf], Math.max(0, rlpos - wpos), rlpos + 1, insertValue);
                     final int gallopLength = rlpos - minInsert + 1;
 
                     if (gallopLength > 0) {
-                        System.arraycopy(leafValues[firstLeaf], minInsert, leafValues[wleaf], wpos - gallopLength + 1, gallopLength);
-                        System.arraycopy(leafCounts[firstLeaf], minInsert, leafCounts[wleaf], wpos - gallopLength + 1, gallopLength);
+                        System.arraycopy(leafValues[firstLeaf], minInsert, leafValues[wleaf], wpos - gallopLength + 1,
+                                gallopLength);
+                        System.arraycopy(leafCounts[firstLeaf], minInsert, leafCounts[wleaf], wpos - gallopLength + 1,
+                                gallopLength);
                         rlpos -= gallopLength;
                         wpos -= gallopLength;
                         remaining -= gallopLength;
@@ -241,8 +251,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 wpos = valuesPerLeaf - 1;
                 wleaf--;
             }
-        }
-        else {
+        } else {
             assert rlpos >= 0;
             // we need to copy the rest of the leaf values
 
@@ -265,7 +274,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         size += insertCount;
     }
 
-    private void insertNewIntoLeaf(WritableShortChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts, int insertStart, int insertCount, int leafSize, short [] leafValues, long [] leafCounts) {
+    private void insertNewIntoLeaf(WritableShortChunk<? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int insertStart, int insertCount, int leafSize, short[] leafValues,
+            long[] leafCounts) {
         assert insertCount > 0;
 
         // we start at the end of the leaf and insert values, picking off the correct value as we go
@@ -337,7 +348,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                         rlpos -= gallopLength;
                         wpos -= gallopLength;
                         if (rlpos == -1) {
-                            copyRemainingValuesToLeaf(valuesToInsert, counts, insertStart, leafValues, leafCounts, ripos);
+                            copyRemainingValuesToLeaf(valuesToInsert, counts, insertStart, leafValues, leafCounts,
+                                    ripos);
                             return;
                         }
                     }
@@ -352,34 +364,38 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private void copyRemainingValuesToLeaf(WritableShortChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts, int insertStart, short[] leafValues, long[] leafCounts, int ripos) {
+    private void copyRemainingValuesToLeaf(WritableShortChunk<? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int insertStart, short[] leafValues, long[] leafCounts, int ripos) {
         valuesToInsert.copyToTypedArray(insertStart, leafValues, 0, ripos - insertStart + 1);
         for (int ii = 0; ii < ripos - insertStart + 1; ++ii) {
             leafCounts[ii] = counts.get(ii + insertStart);
         }
     }
 
-    private void maybeCompact(WritableShortChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts, int ripos, int wipos) {
+    private void maybeCompact(WritableShortChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+            int ripos, int wipos) {
         if (wipos == ripos) {
             return;
         }
         // we've found something to compact away
         final int originalSize = valuesToInsert.size();
         final int toCopy = originalSize - ripos;
-        //noinspection unchecked - how the heck does this type not actuall work?
-        valuesToInsert.copyFromTypedChunk((ShortChunk)valuesToInsert, ripos, wipos, toCopy);
+        // noinspection unchecked - how the heck does this type not actuall work?
+        valuesToInsert.copyFromTypedChunk((ShortChunk) valuesToInsert, ripos, wipos, toCopy);
         counts.copyFromChunk(counts, ripos, wipos, toCopy);
         valuesToInsert.setSize(wipos + toCopy);
         counts.setSize(wipos + toCopy);
     }
 
-    private void insertExisting(WritableShortChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
+    private void insertExisting(WritableShortChunk<? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts) {
         if (leafCount == 0) {
             return;
         }
         if (leafCount == 1) {
             final MutableInt wipos = new MutableInt(0);
-            final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, 0, wipos, size, directoryValues, directoryCount, NULL_SHORT, true);
+            final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, 0, wipos, size, directoryValues,
+                    directoryCount, NULL_SHORT, true);
             maybeCompact(valuesToInsert, counts, ripos, wipos.intValue());
             return;
         }
@@ -394,7 +410,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             // find the thing in directoryValues
             final boolean lastLeaf = nextLeaf == leafCount - 1;
             final short maxValue = lastLeaf ? NULL_SHORT : directoryValues[nextLeaf];
-            ripos = insertExistingIntoLeaf(valuesToInsert, counts, ripos, wipos, leafSizes[nextLeaf], leafValues[nextLeaf], leafCounts[nextLeaf], maxValue, lastLeaf);
+            ripos = insertExistingIntoLeaf(valuesToInsert, counts, ripos, wipos, leafSizes[nextLeaf],
+                    leafValues[nextLeaf], leafCounts[nextLeaf], maxValue, lastLeaf);
             if (lastLeaf) {
                 break;
             }
@@ -450,7 +467,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             }
             if (desiredLeafCount == 1) {
                 // we should fit into the existing leaf
-                insertNewIntoLeaf(valuesToInsert, counts, 0, valuesToInsert.size(), size, directoryValues, directoryCount);
+                insertNewIntoLeaf(valuesToInsert, counts, 0, valuesToInsert.size(), size, directoryValues,
+                        directoryCount);
                 size = newSize;
                 validate();
                 return;
@@ -487,11 +505,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 makeLeafHole(nextLeaf + 1, requiredLeaves - 1);
                 leafCount += (requiredLeaves - 1);
             }
-            distributeNewIntoLeaves(valuesToInsert, counts, rpos, insertIntoLeaf, nextLeaf, requiredLeaves, newLeafSize);
+            distributeNewIntoLeaves(valuesToInsert, counts, rpos, insertIntoLeaf, nextLeaf, requiredLeaves,
+                    newLeafSize);
 
             rpos += insertIntoLeaf;
-        }
-        while (rpos < valuesToInsert.size());
+        } while (rpos < valuesToInsert.size());
 
         validate();
     }
@@ -528,7 +546,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         int rpos = 0;
         if (lastLeafFree > 0) {
             final int insertCount = Math.min(lastLeafFree, valuesToInsert.size());
-            insertNewIntoLeaf(valuesToInsert, counts, rpos, insertCount, lastLeafSize, leafValues[lastLeafIndex], leafCounts[lastLeafIndex]);
+            insertNewIntoLeaf(valuesToInsert, counts, rpos, insertCount, lastLeafSize, leafValues[lastLeafIndex],
+                    leafCounts[lastLeafIndex]);
             leafSizes[lastLeafIndex] += insertCount;
             rpos += insertCount;
             if (insertCount == valuesToInsert.size()) {
@@ -624,7 +643,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         packValuesIntoLeaves(values, counts, 0, 0, valuesPerLeaf);
     }
 
-    private void packValuesIntoLeaves(ShortChunk<? extends Values> values, IntChunk<ChunkLengths> counts, int rpos, int startLeaf, int valuesPerLeaf) {
+    private void packValuesIntoLeaves(ShortChunk<? extends Values> values, IntChunk<ChunkLengths> counts, int rpos,
+            int startLeaf, int valuesPerLeaf) {
         while (rpos < values.size()) {
             final int thisLeafSize = Math.min(valuesPerLeaf, values.size() - rpos);
             leafSizes[startLeaf] = thisLeafSize;
@@ -642,7 +662,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             startLeaf++;
         }
     }
-    //endregion
+    // endregion
 
     private void clear() {
         leafCount = 0;
@@ -655,7 +675,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         directoryCount = null;
     }
 
-    //region Bounds search
+    // region Bounds search
 
     /**
      * Return the lowest index geq valuesToSearch.
@@ -666,7 +686,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int lowerBound(short [] valuesToSearch, int lo, int hi, short searchValue) {
+    private static int lowerBound(short[] valuesToSearch, int lo, int hi, short searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final short testValue = valuesToSearch[mid];
@@ -720,7 +740,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int gallopBound(short [] valuesToSearch, int lo, int hi, short searchValue) {
+    private static int gallopBound(short[] valuesToSearch, int lo, int hi, short searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final short testValue = valuesToSearch[mid];
@@ -747,7 +767,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(short [] valuesToSearch, int lo, int hi, short searchValue) {
+    private static int upperBound(short[] valuesToSearch, int lo, int hi, short searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final short testValue = valuesToSearch[mid];
@@ -795,7 +815,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than to valuesToSearch
      */
-    private static int lowerBoundExclusive(short [] valuesToSearch, int lo, int hi, short searchValue) {
+    private static int lowerBoundExclusive(short[] valuesToSearch, int lo, int hi, short searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final short testValue = valuesToSearch[mid];
@@ -813,22 +833,24 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         return lo;
     }
 
-    //endregion
+    // endregion
 
-    //region Removal
+    // region Removal
     /**
-     * Remove valuesToRemove from this SSA.  The valuesToRemove to remove must be sorted.
+     * Remove valuesToRemove from this SSA. The valuesToRemove to remove must be sorted.
      *
-     * @param valuesToRemove    the valuesToRemove to remove
+     * @param valuesToRemove the valuesToRemove to remove
      */
     @Override
-    public boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove, WritableIntChunk<ChunkLengths> counts) {
+    public boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
+            WritableIntChunk<ChunkLengths> counts) {
         final long beforeSize = size();
         remove(removeContext, valuesToRemove.asShortChunk(), counts);
         return beforeSize != size();
     }
 
-    private void remove(RemoveContext removeContext, ShortChunk<? extends Values> valuesToRemove, IntChunk<ChunkLengths> counts) {
+    private void remove(RemoveContext removeContext, ShortChunk<? extends Values> valuesToRemove,
+            IntChunk<ChunkLengths> counts) {
         validate();
         validateInputs(valuesToRemove, counts);
 
@@ -841,7 +863,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (leafCount == 1) {
             final MutableInt sz = new MutableInt(size);
-            final int consumed = removeFromLeaf(removeContext, valuesToRemove, counts, 0, valuesToRemove.size(), directoryValues, directoryCount, sz);
+            final int consumed = removeFromLeaf(removeContext, valuesToRemove, counts, 0, valuesToRemove.size(),
+                    directoryValues, directoryCount, sz);
             assert consumed == valuesToRemove.size();
             if (sz.intValue() == 0) {
                 clear();
@@ -849,7 +872,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 size = sz.intValue();
             }
         } else {
-            removeContext.ensureLeafCount((leafCount + 1)/ 2);
+            removeContext.ensureLeafCount((leafCount + 1) / 2);
 
             int rpos = 0;
             int nextLeaf = 0;
@@ -860,7 +883,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 nextLeaf = lowerBound(directoryValues, nextLeaf, leafCount - 1, firstValueToRemove);
 
                 final MutableInt sz = new MutableInt(leafSizes[nextLeaf]);
-                rpos = removeFromLeaf(removeContext, valuesToRemove, counts, rpos, valuesToRemove.size(), leafValues[nextLeaf], leafCounts[nextLeaf], sz);
+                rpos = removeFromLeaf(removeContext, valuesToRemove, counts, rpos, valuesToRemove.size(),
+                        leafValues[nextLeaf], leafCounts[nextLeaf], sz);
                 size -= leafSizes[nextLeaf] - sz.intValue();
                 leafSizes[nextLeaf] = sz.intValue();
                 if (sz.intValue() == 0) {
@@ -868,7 +892,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 } else {
                     // we figure out if we can be pulled back into the prior leaf
                     final int priorLeaf;
-                    if (cl >= 0 && removeContext.compactionLeafs[cl] + removeContext.compactionLeafLengths[cl] == nextLeaf) {
+                    if (cl >= 0 && removeContext.compactionLeafs[cl]
+                            + removeContext.compactionLeafLengths[cl] == nextLeaf) {
                         // we need to go to one leaf before our compaction length, if we happen to be removing all
                         // the prior leaves we end up with a negative number here.
                         priorLeaf = removeContext.compactionLeafs[cl] - 1;
@@ -891,8 +916,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                             mergeTwoLeavesBack(priorLeaf, nextLeaf);
                             cl = markLeafForRemoval(removeContext, nextLeaf, cl);
                         }
-                    }
-                    else if (nextLeaf < leafCount - 1 && leafSizes[nextLeaf] + leafSizes[nextLeaf + 1] <= leafSize) {
+                    } else if (nextLeaf < leafCount - 1 && leafSizes[nextLeaf] + leafSizes[nextLeaf + 1] <= leafSize) {
                         // we shove ourselves forward into the next leaf
                         mergeTwoLeavesForward(nextLeaf, nextLeaf + 1);
                         cl = markLeafForRemoval(removeContext, nextLeaf, cl);
@@ -901,8 +925,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 nextLeaf++;
 
                 validateCompaction(removeContext, cl);
-            }
-            while (rpos < valuesToRemove.size());
+            } while (rpos < valuesToRemove.size());
 
             if (size == 0) {
                 clear();
@@ -939,8 +962,10 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         final int firstSourceSize = leafSizes[firstLeafSource];
         final int secondDestinationSize = leafSizes[secondLeafDestination];
         // first make a hole
-        System.arraycopy(leafValues[secondLeafDestination], 0, leafValues[secondLeafDestination], firstSourceSize, secondDestinationSize);
-        System.arraycopy(leafCounts[secondLeafDestination], 0, leafCounts[secondLeafDestination], firstSourceSize, secondDestinationSize);
+        System.arraycopy(leafValues[secondLeafDestination], 0, leafValues[secondLeafDestination], firstSourceSize,
+                secondDestinationSize);
+        System.arraycopy(leafCounts[secondLeafDestination], 0, leafCounts[secondLeafDestination], firstSourceSize,
+                secondDestinationSize);
         // now copy the first leaf into that hole
         System.arraycopy(leafValues[firstLeafSource], 0, leafValues[secondLeafDestination], 0, firstSourceSize);
         System.arraycopy(leafCounts[firstLeafSource], 0, leafCounts[secondLeafDestination], 0, firstSourceSize);
@@ -956,14 +981,18 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         final int thirdDestinationSize = leafSizes[thirdLeafDestination];
 
         // first make a hole
-        System.arraycopy(leafValues[thirdLeafDestination], 0, leafValues[thirdLeafDestination], totalSourceSize, thirdDestinationSize);
-        System.arraycopy(leafCounts[thirdLeafDestination], 0, leafCounts[thirdLeafDestination], totalSourceSize, thirdDestinationSize);
+        System.arraycopy(leafValues[thirdLeafDestination], 0, leafValues[thirdLeafDestination], totalSourceSize,
+                thirdDestinationSize);
+        System.arraycopy(leafCounts[thirdLeafDestination], 0, leafCounts[thirdLeafDestination], totalSourceSize,
+                thirdDestinationSize);
 
         // now copy the first leaf into that hole
         System.arraycopy(leafValues[firstLeafSource], 0, leafValues[thirdLeafDestination], 0, firstSourceSize);
         System.arraycopy(leafCounts[firstLeafSource], 0, leafCounts[thirdLeafDestination], 0, firstSourceSize);
-        System.arraycopy(leafValues[secondLeafSource], 0, leafValues[thirdLeafDestination], firstSourceSize, secondSourceSize);
-        System.arraycopy(leafCounts[secondLeafSource], 0, leafCounts[thirdLeafDestination], firstSourceSize, secondSourceSize);
+        System.arraycopy(leafValues[secondLeafSource], 0, leafValues[thirdLeafDestination], firstSourceSize,
+                secondSourceSize);
+        System.arraycopy(leafCounts[secondLeafSource], 0, leafCounts[thirdLeafDestination], firstSourceSize,
+                secondSourceSize);
 
         leafSizes[thirdLeafDestination] += totalSourceSize;
         leafSizes[firstLeafSource] = 0;
@@ -997,7 +1026,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         removeContext.compactionLeafLengths[cl]++;
 
         // we might need to collapse two adjacent ranges in the compaction
-        if (cl > 0 && removeContext.compactionLeafs[cl - 1] + removeContext.compactionLeafLengths[cl - 1] == removeContext.compactionLeafs[cl]) {
+        if (cl > 0 && removeContext.compactionLeafs[cl - 1]
+                + removeContext.compactionLeafLengths[cl - 1] == removeContext.compactionLeafs[cl]) {
             removeContext.compactionLeafLengths[cl - 1] += removeContext.compactionLeafLengths[cl];
             cl--;
         }
@@ -1054,7 +1084,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private int removeFromLeaf(RemoveContext removeContext, ShortChunk<? extends Values> valuesToRemove, IntChunk<ChunkLengths> counts, int ripos, int end, short[] leafValues, long[] leafCounts, MutableInt sz) {
+    private int removeFromLeaf(RemoveContext removeContext, ShortChunk<? extends Values> valuesToRemove,
+            IntChunk<ChunkLengths> counts, int ripos, int end, short[] leafValues, long[] leafCounts, MutableInt sz) {
         int rlpos = 0;
         int cl = -1;
         while (ripos < end) {
@@ -1084,7 +1115,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             ripos++;
 
             for (int cli = 0; cli < cl; ++cli) {
-                if (removeContext.compactionLocations[cli] + removeContext.compactionLengths[cli] == removeContext.compactionLocations[cli + 1]) {
+                if (removeContext.compactionLocations[cli]
+                        + removeContext.compactionLengths[cli] == removeContext.compactionLocations[cli + 1]) {
                     throw new IllegalStateException();
                 }
             }
@@ -1120,9 +1152,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
         return removed;
     }
-    //endregion
+    // endregion
 
-    //region Validation
+    // region Validation
     @VisibleForTesting
     public void validate() {
         if (!SEGMENTED_SORTED_MULTISET_VALIDATION) {
@@ -1143,7 +1175,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final short prevValue = valuesToInsert.get(ii - 1);
             final short curValue = valuesToInsert.get(ii);
-            Assert.assertion(ShortComparisons.lt(prevValue, curValue), "ShortComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
+            Assert.assertion(ShortComparisons.lt(prevValue, curValue), "ShortComparisons.lt(prevValue, curValue)",
+                    prevValue, "prevValue", curValue, "curValue");
         }
     }
 
@@ -1199,25 +1232,29 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 final short lastValue = leafValues[ii][leafSizes[ii] - 1];
                 if (ii < leafCount - 1) {
                     final short directoryValue = directoryValues[ii];
-                    Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue, "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
+                    Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue,
+                            "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
 
                     if (ii < leafCount - 2) {
                         final short nextDirectoryValue = directoryValues[ii + 1];
-                        Assert.assertion(lt(directoryValue, nextDirectoryValue), "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue", nextDirectoryValue, "nextDirectoryValue");
+                        Assert.assertion(lt(directoryValue, nextDirectoryValue),
+                                "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue",
+                                nextDirectoryValue, "nextDirectoryValue");
                     }
 
                     final short nextFirstValue = leafValues[ii + 1][0];
-                    Assert.assertion(lt(directoryValue, nextFirstValue), "lt(directoryValue, nextFirstValue)", directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
+                    Assert.assertion(lt(directoryValue, nextFirstValue), "lt(directoryValue, nextFirstValue)",
+                            directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
                 }
                 // It would be nice to enable an assertion to make sure we are dense after removals, but the other
                 // reason this assertion can fail is that if we insert into a node that is too large we may have to
-                // split it.  The last node we have could be short, and it might be possible to merge it with the node
+                // split it. The last node we have could be short, and it might be possible to merge it with the node
                 // afterwards, but we don't do removals during an insertion phase.
-//                if (ii < leafCount - 1) {
-//                    final int thisLeafSize = leafSizes[ii];
-//                    final int nextLeafSize = leafSizes[ii + 1];
-//                    Assert.leq(leafSize, "leafSize", thisLeafSize + nextLeafSize, "thisLeafSize + nextLeafSize");
-//                }
+                // if (ii < leafCount - 1) {
+                // final int thisLeafSize = leafSizes[ii];
+                // final int nextLeafSize = leafSizes[ii + 1];
+                // Assert.leq(leafSize, "leafSize", thisLeafSize + nextLeafSize, "thisLeafSize + nextLeafSize");
+                // }
             }
 
             validateLeafOrdering();
@@ -1244,7 +1281,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             Assert.gtZero(counts[ii], "counts[ii]");
             final short thisValue = values[ii];
             final short nextValue = values[ii + 1];
-            Assert.assertion(lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])", (Short)thisValue, "values[ii]", (Short)nextValue, "values[ii + 1]", ii, "ii");
+            Assert.assertion(lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])", (Short) thisValue,
+                    "values[ii]", (Short) nextValue, "values[ii + 1]", ii, "ii");
         }
         if (size > 0) {
             Assert.gtZero(counts[size - 1], "counts[size - 1]");
@@ -1269,9 +1307,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         return expectedSize;
     }
 
-    //endregion
+    // endregion
 
-    //region Comparisons
+    // region Comparisons
     private int getDesiredLeafCount(int newSize) {
         return (newSize + leafSize - 1) / leafSize;
     }
@@ -1305,10 +1343,12 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         return lhs == rhs;
         // endregion equality function
     }
-    //endregion
+    // endregion
 
     @Override
-    public long totalSize() { return totalSize; }
+    public long totalSize() {
+        return totalSize;
+    }
 
     @Override
     public int getNodeSize() {
@@ -1328,8 +1368,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public short getMinShort() {
         if (leafCount == 0) {
             throw new IllegalStateException();
-        }
-        else if (leafCount == 1) {
+        } else if (leafCount == 1) {
             return directoryValues[0];
         }
         return leafValues[0][0];
@@ -1339,8 +1378,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public long getMinCount() {
         if (leafCount == 0) {
             throw new IllegalStateException();
-        }
-        else if (leafCount == 1) {
+        } else if (leafCount == 1) {
             return directoryCount[0];
         }
         return leafCounts[0][0];
@@ -1349,8 +1387,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     private void addMinCount(long toAdd) {
         if (leafCount == 0) {
             throw new IllegalStateException();
-        }
-        else if (leafCount == 1) {
+        } else if (leafCount == 1) {
             directoryCount[0] += toAdd;
         } else {
             leafCounts[0][0] += toAdd;
@@ -1389,8 +1426,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public short getMaxShort() {
         if (leafCount == 0) {
             throw new IllegalStateException();
-        }
-        else if (leafCount == 1) {
+        } else if (leafCount == 1) {
             return directoryValues[size - 1];
         }
         return leafValues[leafCount - 1][leafSizes[leafCount - 1] - 1];
@@ -1400,8 +1436,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public long getMaxCount() {
         if (leafCount == 0) {
             throw new IllegalStateException();
-        }
-        else if (leafCount == 1) {
+        } else if (leafCount == 1) {
             return directoryCount[size - 1];
         }
         return leafCounts[leafCount - 1][leafSizes[leafCount - 1] - 1];
@@ -1410,8 +1445,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     private void addMaxCount(long toAdd) {
         if (leafCount == 0) {
             throw new IllegalStateException();
-        }
-        else if (leafCount == 1) {
+        } else if (leafCount == 1) {
             directoryCount[size - 1] += toAdd;
         } else {
             leafCounts[leafCount - 1][leafSizes[leafCount - 1] - 1] += toAdd;
@@ -1438,10 +1472,10 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    //region Moving
+    // region Moving
     @Override
     public void moveFrontToBack(SegmentedSortedMultiSet untypedDestination, long count) {
-        final ShortSegmentedSortedMultiset destination = (ShortSegmentedSortedMultiset)untypedDestination;
+        final ShortSegmentedSortedMultiset destination = (ShortSegmentedSortedMultiset) untypedDestination;
         validate();
         destination.validate();
 
@@ -1454,7 +1488,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(geq(getMinShort(), destination.getMaxShort()), "geq(getMinShort(), destination.getMaxShort())");
+                Assert.assertion(geq(getMinShort(), destination.getMaxShort()),
+                        "geq(getMinShort(), destination.getMaxShort())");
             }
         }
 
@@ -1525,7 +1560,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                     directoryCount[0] = leftOver;
                     directoryValues[0] = directoryValues[size - 1];
                     destination.leafCounts[wleaf][destination.leafSizes[wleaf] - 1] -= leftOver;
-                    Assert.gtZero(destination.leafCounts[wleaf][destination.leafSizes[wleaf] - 1], "destination.leafCounts[wleaf][destination.leafSizes[wleaf] - 1]");
+                    Assert.gtZero(destination.leafCounts[wleaf][destination.leafSizes[wleaf] - 1],
+                            "destination.leafCounts[wleaf][destination.leafSizes[wleaf] - 1]");
                     size = 1;
                 } else {
                     directoryValues = null;
@@ -1556,8 +1592,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                         final int sizeOfLeftOverLeaf = leafSizes[rli];
                         size -= (sizeOfLeftOverLeaf - 1);
 
-                        final short [] tmpValues = new short[leafSize];
-                        final long [] tmpCounts = new long[leafSize];
+                        final short[] tmpValues = new short[leafSize];
+                        final long[] tmpCounts = new long[leafSize];
                         tmpValues[0] = leafValues[rli][sizeOfLeftOverLeaf - 1];
                         tmpCounts[0] = leftOver;
                         leafValues[rli] = tmpValues;
@@ -1565,7 +1601,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                         leafSizes[rli] = 1;
 
                         destination.leafCounts[wleaf - 1][sizeOfLeftOverLeaf - 1] -= leftOver;
-                        Assert.gtZero(destination.leafCounts[wleaf - 1][sizeOfLeftOverLeaf - 1], "destination.leafCounts[wleaf - 1][sizeOfLeftOverLeaf - 1]");
+                        Assert.gtZero(destination.leafCounts[wleaf - 1][sizeOfLeftOverLeaf - 1],
+                                "destination.leafCounts[wleaf - 1][sizeOfLeftOverLeaf - 1]");
                         if (rli < leafCount - 1) {
                             updateDirectory(rli);
                         }
@@ -1594,10 +1631,10 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         boolean sourceLeavesMerged = false;
         if (partialUnique > 0) {
-            final short [] sourceValues;
-            final long [] sourceCounts;
-            final short [] destinationValues;
-            final long [] destinationCounts;
+            final short[] sourceValues;
+            final long[] sourceCounts;
+            final short[] destinationValues;
+            final long[] destinationCounts;
             final int copySize;
             final int destOffset;
             if (leafCount == 1) {
@@ -1645,10 +1682,12 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             if (leftOver > 0) {
                 if (destination.directoryCount == null) {
                     destination.leafCounts[wleaf][destOffset + partialUnique - 1] -= leftOver;
-                    Assert.gtZero(destination.leafCounts[wleaf][destOffset + partialUnique - 1], "destination.leafCounts[wleaf][destOffset + partialUnique - 1]");
+                    Assert.gtZero(destination.leafCounts[wleaf][destOffset + partialUnique - 1],
+                            "destination.leafCounts[wleaf][destOffset + partialUnique - 1]");
                 } else {
                     destination.directoryCount[destination.size - 1] -= leftOver;
-                    Assert.gtZero(destination.directoryCount[destination.size - 1], "destination.directoryCount[destination.size]");
+                    Assert.gtZero(destination.directoryCount[destination.size - 1],
+                            "destination.directoryCount[destination.size]");
                 }
             }
 
@@ -1722,7 +1761,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(geq(getMinShort(), destination.getMaxShort()), "geq(getMinShort(), destination.getMaxShort())");
+                Assert.assertion(geq(getMinShort(), destination.getMaxShort()),
+                        "geq(getMinShort(), destination.getMaxShort())");
             }
         }
 
@@ -1739,7 +1779,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param finalSlots how many slots outside of completeLeaves are required
      * @param completeLeaves how many complete leaves are required
      *
-     * @return true if we should put our finalSlots values in the "extra" leaf.  False if they should be appended to the last leaf that already exists
+     * @return true if we should put our finalSlots values in the "extra" leaf. False if they should be appended to the
+     *         last leaf that already exists
      */
     private boolean prepareAppend(int finalSlots, int completeLeaves) {
         Assert.leq(finalSlots, "finalSlots", leafSize, "leafSize");
@@ -1790,8 +1831,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param initialSlots how many slots outside of a complete leaf will be prepended
      * @param completeLeaves how many complete leaves will be prepended
      *
-     * @return true if the initialSlots values should be copied into their own private leaf, false if they should share space
-     * with the next leaf
+     * @return true if the initialSlots values should be copied into their own private leaf, false if they should share
+     *         space with the next leaf
      */
     private boolean preparePrepend(int initialSlots, int completeLeaves) {
         final int extraLeafCount;
@@ -1834,8 +1875,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (extraLeafCount == 0 && initialSlots > 0) {
             // make a hole in the first leaf that still has values
             if (directoryCount != null) {
-                final short [] tmpValues = new short[initialSlots + size];
-                final long [] tmpCount = new long[initialSlots + size];
+                final short[] tmpValues = new short[initialSlots + size];
+                final long[] tmpCount = new long[initialSlots + size];
                 System.arraycopy(directoryValues, 0, tmpValues, initialSlots, size);
                 System.arraycopy(directoryCount, 0, tmpCount, initialSlots, size);
                 directoryValues = tmpValues;
@@ -1869,7 +1910,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public void moveBackToFront(SegmentedSortedMultiSet untypedDestination, long count) {
-        final ShortSegmentedSortedMultiset destination = (ShortSegmentedSortedMultiset)untypedDestination;
+        final ShortSegmentedSortedMultiset destination = (ShortSegmentedSortedMultiset) untypedDestination;
         validate();
         destination.validate();
 
@@ -1882,7 +1923,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(leq(getMaxShort(), destination.getMinShort()), "leq(getMaxShort(), destination.getMinShort())");
+                Assert.assertion(leq(getMaxShort(), destination.getMinShort()),
+                        "leq(getMaxShort(), destination.getMinShort())");
             }
         }
 
@@ -1943,11 +1985,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         final boolean extraLeaf = destination.preparePrepend(slotsInPartialLeaf, completeLeavesToMove);
         if (slotsInPartialLeaf > 0) {
             final boolean leftOverExists = leftOver > 0;
-            final short [] destValues;
-            final long [] destCounts;
+            final short[] destValues;
+            final long[] destCounts;
 
-            final short [] srcValues;
-            final long [] srcCounts;
+            final short[] srcValues;
+            final long[] srcCounts;
             final int srcSize;
 
             if (destination.directoryCount != null) {
@@ -2020,14 +2062,16 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 System.arraycopy(leafSizes, rleaf + 1, destination.leafSizes, destinationLeaf, completeLeavesToMove);
                 final int directoryMoves;
                 final boolean haveLastSourceDirectoryEntry = rleaf + 1 + completeLeavesToMove < leafCount - 1;
-                final boolean requireLastDestinationDirectoryEntry = destination.leafCount > (destinationLeaf + completeLeavesToMove);
+                final boolean requireLastDestinationDirectoryEntry =
+                        destination.leafCount > (destinationLeaf + completeLeavesToMove);
                 if (haveLastSourceDirectoryEntry && requireLastDestinationDirectoryEntry) {
                     directoryMoves = completeLeavesToMove;
                 } else {
                     directoryMoves = completeLeavesToMove - 1;
                 }
                 if (directoryMoves > 0) {
-                    System.arraycopy(directoryValues, rleaf + 1, destination.directoryValues, destinationLeaf, directoryMoves);
+                    System.arraycopy(directoryValues, rleaf + 1, destination.directoryValues, destinationLeaf,
+                            directoryMoves);
                 }
                 if (requireLastDestinationDirectoryEntry) {
                     destination.updateDirectory(destinationLeaf + completeLeavesToMove - 1);
@@ -2061,9 +2105,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
                 final int firstLeafTozero = hasLeftOverSlot ? rleaf + 2 : rleaf + 1;
                 Arrays.fill(leafValues, firstLeafTozero, firstLeafTozero + numberOfLeavesToRemove, null);
                 Arrays.fill(leafCounts, firstLeafTozero, firstLeafTozero + numberOfLeavesToRemove, null);
-                Arrays.fill(leafSizes, firstLeafTozero , firstLeafTozero + numberOfLeavesToRemove, 0);
+                Arrays.fill(leafSizes, firstLeafTozero, firstLeafTozero + numberOfLeavesToRemove, 0);
                 if (directoryMoves > 0) {
-                    Arrays.fill(directoryValues, firstLeafTozero, firstLeafTozero + directoryMoves - (completeLeavesToMove - numberOfLeavesToRemove), NULL_SHORT);
+                    Arrays.fill(directoryValues, firstLeafTozero,
+                            firstLeafTozero + directoryMoves - (completeLeavesToMove - numberOfLeavesToRemove),
+                            NULL_SHORT);
                 }
                 maybePromoteLastLeaf();
             }
@@ -2082,7 +2128,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(leq(getMaxShort(), destination.getMinShort()), "leq(getMaxShort(), destination.getMinShort())");
+                Assert.assertion(leq(getMaxShort(), destination.getMinShort()),
+                        "leq(getMaxShort(), destination.getMinShort())");
             }
         }
     }
@@ -2102,7 +2149,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
         return sz - rpos;
     }
-    //endregion
+    // endregion
 
     @Override
     public WritableShortChunk<?> keyChunk() {
@@ -2117,7 +2164,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private void fillKeyChunk(WritableShortChunk<?> keyChunk, int offset) {
-        if(keyChunk.capacity() < offset + intSize()) {
+        if (keyChunk.capacity() < offset + intSize()) {
             throw new IllegalArgumentException("Input chunk is not large enough");
         }
 
@@ -2148,37 +2195,38 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private short[] keyArray() {
-        return keyArray(0, size-1);
+        return keyArray(0, size - 1);
     }
 
     /**
      * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)
+     * 
      * @param first
      * @param last
      * @return
      */
     private short[] keyArray(long first, long last) {
-        if(isEmpty()) {
+        if (isEmpty()) {
             return ArrayTypeUtils.EMPTY_SHORT_ARRAY;
         }
 
-        final int totalSize = (int)(last - first + 1);
+        final int totalSize = (int) (last - first + 1);
         final short[] keyArray = new short[totalSize];
         if (leafCount == 1) {
-            System.arraycopy(directoryValues, (int)first, keyArray, 0, totalSize);
+            System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
         } else if (leafCount > 0) {
             int offset = 0;
             int copied = 0;
             int skipped = 0;
             for (int li = 0; li < leafCount && copied < totalSize; ++li) {
-                if(skipped < first) {
-                    final int toSkip = (int)first - skipped;
-                    if(toSkip < leafSizes[li]) {
+                if (skipped < first) {
+                    final int toSkip = (int) first - skipped;
+                    if (toSkip < leafSizes[li]) {
                         final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);
                         System.arraycopy(leafValues[li], toSkip, keyArray, 0, nToCopy);
                         copied = nToCopy;
                         offset = copied;
-                        skipped = (int)first;
+                        skipped = (int) first;
                     } else {
                         skipped += leafSizes[li];
                     }
@@ -2199,7 +2247,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if(prevValues == null) {
+        if (prevValues == null) {
             prevValues = new ShortVectorDirect(keyArray());
         }
 
@@ -2207,7 +2255,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             added = new TShortHashSet(valuesToInsert.size());
         }
 
-        if(removed == null) {
+        if (removed == null) {
             for (int ii = 0; ii < valuesToInsert.size(); ii++) {
                 added.add(valuesToInsert.get(ii));
             }
@@ -2224,19 +2272,19 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private void maybeAccumulateRemoval(short valueRemoved) {
-        if(!accumulateDeltas) {
+        if (!accumulateDeltas) {
             return;
         }
 
-        if(prevValues == null) {
+        if (prevValues == null) {
             prevValues = new ShortVectorDirect(keyArray());
         }
 
-        if(removed == null) {
+        if (removed == null) {
             removed = new TShortHashSet();
         }
 
-        if(added == null || !added.remove(valueRemoved)) {
+        if (added == null || !added.remove(valueRemoved)) {
             removed.add(valueRemoved);
         }
     }
@@ -2278,16 +2326,16 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     // region ShortVector
     @Override
     public short get(long index) {
-        if(index < 0 || index > size()) {
+        if (index < 0 || index > size()) {
             throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
         }
 
-        if(leafCount == 1) {
+        if (leafCount == 1) {
             return directoryValues[(int) index];
         } else {
-            for(int ii = 0; ii < leafCount; ii++) {
-                if(index < leafSizes[ii]) {
-                    return leafValues[ii][(int)(index)];
+            for (int ii = 0; ii < leafCount; ii++) {
+                if (index < leafSizes[ii]) {
+                    return leafValues[ii][(int) (index)];
                 }
                 index -= leafSizes[ii];
             }
@@ -2331,21 +2379,21 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public ShortVector getDirect() {
         return new ShortVectorDirect(keyArray());
     }
-    //endregion
+    // endregion
 
-    //region VectorEquals
+    // region VectorEquals
     private boolean equalsArray(ShortVector o) {
-        if(size() != o.size()) {
+        if (size() != o.size()) {
             return false;
         }
 
-        if(leafCount == 1) {
-            for(int ii = 0; ii < size; ii++) {
-                //region DirObjectEquals
-                if(directoryValues[ii] != o.get(ii)) {
+        if (leafCount == 1) {
+            for (int ii = 0; ii < size; ii++) {
+                // region DirObjectEquals
+                if (directoryValues[ii] != o.get(ii)) {
                     return false;
                 }
-                //endregion DirObjectEquals
+                // endregion DirObjectEquals
             }
 
             return true;
@@ -2353,8 +2401,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         int nCompared = 0;
         for (int li = 0; li < leafCount; ++li) {
-            for(int ai = 0; ai < leafSizes[li]; ai++) {
-                if(leafValues[li][ai] != o.get(nCompared++)) {
+            for (int ai = 0; ai < leafSizes[li]; ai++) {
+                if (leafValues[li][ai] != o.get(nCompared++)) {
                     return false;
                 }
             }
@@ -2362,29 +2410,29 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         return true;
     }
-    //endregion VectorEquals
+    // endregion VectorEquals
 
     private boolean equalsArray(ObjectVector<?> o) {
-        //region EqualsArrayTypeCheck
-        if(o.getComponentType() != short.class && o.getComponentType() != Short.class) {
+        // region EqualsArrayTypeCheck
+        if (o.getComponentType() != short.class && o.getComponentType() != Short.class) {
             return false;
         }
-        //endregion EqualsArrayTypeCheck
+        // endregion EqualsArrayTypeCheck
 
-        if(size() != o.size()) {
+        if (size() != o.size()) {
             return false;
         }
 
-        if(leafCount == 1) {
-            for(int ii = 0; ii < size; ii++) {
-                final Short val = (Short)o.get(ii);
-                //region VectorEquals
-                if(directoryValues[ii] == NULL_SHORT && val != null && val != NULL_SHORT) {
+        if (leafCount == 1) {
+            for (int ii = 0; ii < size; ii++) {
+                final Short val = (Short) o.get(ii);
+                // region VectorEquals
+                if (directoryValues[ii] == NULL_SHORT && val != null && val != NULL_SHORT) {
                     return false;
                 }
-                //endregion VectorEquals
+                // endregion VectorEquals
 
-                if(!Objects.equals(directoryValues[ii], val)) {
+                if (!Objects.equals(directoryValues[ii], val)) {
                     return false;
                 }
             }
@@ -2394,15 +2442,15 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         int nCompared = 0;
         for (int li = 0; li < leafCount; ++li) {
-            for(int ai = 0; ai < leafSizes[li]; ai++) {
-                final Short val = (Short)o.get(nCompared++);
-                //region VectorEquals
-                if(leafValues[li][ai] == NULL_SHORT && val != null && val != NULL_SHORT) {
+            for (int ai = 0; ai < leafSizes[li]; ai++) {
+                final Short val = (Short) o.get(nCompared++);
+                // region VectorEquals
+                if (leafValues[li][ai] == NULL_SHORT && val != null && val != NULL_SHORT) {
                     return false;
                 }
-                //endregion VectorEquals
+                // endregion VectorEquals
 
-                if(!Objects.equals(leafValues[li][ai],  val)) {
+                if (!Objects.equals(leafValues[li][ai], val)) {
                     return false;
                 }
             }
@@ -2413,36 +2461,37 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o)
+            return true;
         if (!(o instanceof ShortSegmentedSortedMultiset)) {
-            //region VectorEquals
-            if(o instanceof ShortVector) {
-                return equalsArray((ShortVector)o);
+            // region VectorEquals
+            if (o instanceof ShortVector) {
+                return equalsArray((ShortVector) o);
             }
-            //endregion VectorEquals
+            // endregion VectorEquals
 
-            if(o instanceof ObjectVector) {
-                return equalsArray((ObjectVector)o);
+            if (o instanceof ObjectVector) {
+                return equalsArray((ObjectVector) o);
             }
             return false;
         }
         final ShortSegmentedSortedMultiset that = (ShortSegmentedSortedMultiset) o;
 
-        if(size() != that.size()) {
+        if (size() != that.size()) {
             return false;
         }
 
-        if(leafCount == 1) {
-            if(that.leafCount != 1 || size != that.size) {
+        if (leafCount == 1) {
+            if (that.leafCount != 1 || size != that.size) {
                 return false;
             }
 
-            for(int ii = 0; ii < size; ii++) {
-                //region DirObjectEquals
-                if(directoryValues[ii] != that.directoryValues[ii]) {
+            for (int ii = 0; ii < size; ii++) {
+                // region DirObjectEquals
+                if (directoryValues[ii] != that.directoryValues[ii]) {
                     return false;
                 }
-                //endregion DirObjectEquals
+                // endregion DirObjectEquals
             }
 
             return true;
@@ -2451,19 +2500,19 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         int otherLeaf = 0;
         int otherLeafIdx = 0;
         for (int li = 0; li < leafCount; ++li) {
-            for(int ai = 0; ai < leafSizes[li]; ai++) {
-                //region LeafObjectEquals
-                if(leafValues[li][ai] != that.leafValues[otherLeaf][otherLeafIdx++]) {
+            for (int ai = 0; ai < leafSizes[li]; ai++) {
+                // region LeafObjectEquals
+                if (leafValues[li][ai] != that.leafValues[otherLeaf][otherLeafIdx++]) {
                     return false;
                 }
-                //endregion LeafObjectEquals
+                // endregion LeafObjectEquals
 
-                if(otherLeafIdx >= that.leafSizes[otherLeaf]) {
+                if (otherLeafIdx >= that.leafSizes[otherLeaf]) {
                     otherLeaf++;
                     otherLeafIdx = 0;
                 }
 
-                if(otherLeaf >= that.leafCount) {
+                if (otherLeaf >= that.leafCount) {
                     return false;
                 }
             }
@@ -2474,9 +2523,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public int hashCode() {
-        if(leafCount == 1) {
+        if (leafCount == 1) {
             int result = Objects.hash(size);
-            for(int ii = 0; ii < size; ii++) {
+            for (int ii = 0; ii < size; ii++) {
                 result = result * 31 + Objects.hash(directoryValues[ii]);
             }
 
@@ -2486,7 +2535,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         int result = Objects.hash(leafCount, size);
 
         for (int li = 0; li < leafCount; ++li) {
-            for(int ai = 0; ai < leafSizes[li]; ai++) {
+            for (int ai = 0; ai < leafSizes[li]; ai++) {
                 result = result * 31 + Objects.hash(leafValues[li][ai]);
             }
         }
@@ -2501,7 +2550,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         } else if (leafCount > 0) {
             StringBuilder arrAsString = new StringBuilder("[");
             for (int li = 0; li < leafCount; ++li) {
-                for(int ai = 0; ai < leafSizes[li]; ai++) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
                     arrAsString.append(leafValues[li][ai]).append(", ");
                 }
             }

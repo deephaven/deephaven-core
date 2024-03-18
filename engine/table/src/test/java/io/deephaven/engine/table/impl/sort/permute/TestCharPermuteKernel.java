@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sort.permute;
 
 import io.deephaven.chunk.WritableCharChunk;
@@ -29,7 +29,7 @@ public class TestCharPermuteKernel {
 
         CharPermuteKernel.permute(inputValues, destinations, outputValues);
 
-        char value = (char)(startingValue() + 9);
+        char value = (char) (startingValue() + 9);
         for (int ii = 0; ii < 10; ++ii) {
             TestCase.assertEquals(value, outputValues.get(ii));
             value--;
@@ -95,8 +95,7 @@ public class TestCharPermuteKernel {
         for (int ii = 0; ii < outputValues.size(); ++ii) {
             if (ii % 2 == 1) {
                 TestCase.assertEquals(uninitializedValue(), outputValues.get(ii));
-            }
-            else if (ii / 2 < half) {
+            } else if (ii / 2 < half) {
                 TestCase.assertEquals(startingValue() + ii, outputValues.get(ii));
             } else {
                 TestCase.assertEquals(startingValue() + (ii / 2 - half) * 2 + 1, outputValues.get(ii));
@@ -112,7 +111,8 @@ public class TestCharPermuteKernel {
 
     // region defaultValue
     @SuppressWarnings("MismatchedReadAndWriteOfArray")
-    private static final char [] uninitializedValue = new char[1];
+    private static final char[] uninitializedValue = new char[1];
+
     private char uninitializedValue() {
         return uninitializedValue[0];
     }

@@ -10,18 +10,3 @@ dependencies {
 
     compileOnly depAnnotations
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java'
-        )
-    }
-}

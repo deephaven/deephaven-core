@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSsmBackedSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSsmBackedSource and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.ShortVector;
@@ -20,27 +19,27 @@ import io.deephaven.engine.rowset.RowSet;
  * A {@link SsmBackedColumnSource} for Shorts.
  */
 public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
-                                 implements ColumnSourceGetDefaults.ForObject<ShortVector>,
-                                            MutableColumnSourceGetDefaults.ForObject<ShortVector>,
-                                            SsmBackedColumnSource<ShortSegmentedSortedMultiset, ShortVector> {
+        implements ColumnSourceGetDefaults.ForObject<ShortVector>,
+        MutableColumnSourceGetDefaults.ForObject<ShortVector>,
+        SsmBackedColumnSource<ShortSegmentedSortedMultiset, ShortVector> {
     private final ObjectArraySource<ShortSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
-    //region Constructor
+    // region Constructor
     public ShortSsmBackedSource() {
         super(ShortVector.class, short.class);
         underlying = new ObjectArraySource<>(ShortSegmentedSortedMultiset.class, short.class);
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region SsmBackedColumnSource
+    // region SsmBackedColumnSource
     @Override
     public ShortSegmentedSortedMultiset getOrCreate(long key) {
         ShortSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
-        if(ssm == null) {
-            //region CreateNew
+        if (ssm == null) {
+            // region CreateNew
             underlying.set(key, ssm = new ShortSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
-            //endregion CreateNew
+            // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
         return ssm;
@@ -65,7 +64,7 @@ public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
     public ObjectArraySource<ShortSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
-    //endregion
+    // endregion
 
     @Override
     public boolean isImmutable() {
@@ -93,7 +92,7 @@ public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final ShortSegmentedSortedMultiset ssm = getCurrentSsm(key);
-            if(ssm != null) {
+            if (ssm != null) {
                 ssm.clearDeltas();
             }
             return true;

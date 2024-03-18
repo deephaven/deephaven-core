@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharValueTracker and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharValueTracker and run "./gradlew replicateDownsamplingValueTrackers" to regenerate
+//
+// @formatter:off
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
@@ -34,6 +33,7 @@ public final class IntValueTracker extends ValueTracker {
     private int minValue(int offset) {
         return source.getUnsafe(minValuePosition(offset));
     }
+
     private int maxValue(int offset) {
         return source.getUnsafe(maxValuePosition(offset));
     }
@@ -41,12 +41,14 @@ public final class IntValueTracker extends ValueTracker {
     private void setMinValue(int offset, int value) {
         source.set(minValuePosition(offset), value);
     }
+
     private void setMaxValue(int offset, int value) {
         source.set(maxValuePosition(offset), value);
     }
 
     @Override
-    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable WritableRowSet nulls) {
         final int val = valuesChunk.asIntChunk().get(indexInChunk);
         if (val == NULL_INT) {
             if (nulls != null) {
@@ -57,7 +59,8 @@ public final class IntValueTracker extends ValueTracker {
 
         // if max and min indexes are null, then this is the first non-null value, so we always want it
         final boolean first = maxIndex(offset) == QueryConstants.NULL_LONG;
-        Assert.eq(first, "first", minIndex(offset) == QueryConstants.NULL_LONG, "minIndex(" + offset +") == QueryConstants.NULL_LONG");
+        Assert.eq(first, "first", minIndex(offset) == QueryConstants.NULL_LONG,
+                "minIndex(" + offset + ") == QueryConstants.NULL_LONG");
 
         if (first || val > maxValue(offset)) {
             setMaxValue(offset, val);
@@ -72,13 +75,15 @@ public final class IntValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable WritableRowSet nulls) {
         int val = valuesChunk.asIntChunk().get(indexInChunk);
         if (val == NULL_INT) {
             if (nulls != null) {
                 nulls.insert(rowKey);
             }
-            // whether or not we are tracking nulls, if the row was our max/min, mark the value as invalid so we can rescan
+            // whether or not we are tracking nulls, if the row was our max/min, mark the value as invalid so we can
+            // rescan
             if (rowKey == maxIndex(offset)) {
                 maxValueValid(offset, false);// invalid will force a rescan
             }
@@ -96,7 +101,8 @@ public final class IntValueTracker extends ValueTracker {
                     // This is still the max, but update the value
                     setMaxValue(offset, val);
                 } else {
-                    // May no longer be the max, rescan to check - leave old value in place for another update to compare
+                    // May no longer be the max, rescan to check - leave old value in place for another update to
+                    // compare
                     // against it or replace in rescan
                     maxValueValid(offset, false);
                 }
@@ -130,7 +136,8 @@ public final class IntValueTracker extends ValueTracker {
     }
 
     @Override
-    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable RowSet nulls) {
         int val = valuesChunk.asIntChunk().get(indexInChunk);
         if (val == NULL_INT) {
             // can't check if our min/max is valid, or anything about positions, only can confirm that this rowKey is in
@@ -159,6 +166,6 @@ public final class IntValueTracker extends ValueTracker {
 
     @Override
     public String toString(int offset) {
-        return "IntValueTracker("+offset+") { max=" + maxValue(offset) + ", min=" + minValue(offset) + " }";
+        return "IntValueTracker(" + offset + ") { max=" + maxValue(offset) + ", min=" + minValue(offset) + " }";
     }
 }

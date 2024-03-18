@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.util;
 
 import io.deephaven.base.verify.Require;
@@ -604,7 +604,10 @@ public class GenerateAxesPlotMethods {
         final String header3 =
                 headerSpace + headerComment + " AND THEN RUN GeneratePlottingConvenience " + headerComment;
 
-        StringBuilder code = new StringBuilder(header + "\n" + header2 + "\n" + header3 + "\n\n\n");
+        StringBuilder code = new StringBuilder().append(header).append("\n")
+                .append(header2).append("\n")
+                .append(header3).append("\n// @formatter:off\n\n\n");
+
 
         code.append(
                 codeFunction(isInterface, new String[] {"x", "y"}, new String[][] {numberTimeTypes, numberTimeTypes},

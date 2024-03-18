@@ -6,3 +6,9 @@ plugins {
 dependencies {
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
+
+spotless {
+    java {
+        targetExclude '**/*'
+    }
+}

@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ShortCumMinMaxOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.minmax;
 
 import io.deephaven.base.verify.Assert;
@@ -54,10 +56,10 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
     public FloatCumMinMaxOperator(
             @NotNull final MatchPair pair,
             final boolean isMax
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         this.isMax = isMax;
         // region constructor
         // endregion constructor
@@ -68,8 +70,8 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
         return new FloatCumMinMaxOperator(
                 pair,
                 isMax
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

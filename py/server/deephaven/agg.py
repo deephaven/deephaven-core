@@ -1,8 +1,7 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-
-from __future__ import annotations
+"""This module implement various aggregations that can be used in deephaven table's aggregation operations."""
 
 from typing import List, Union, Any
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.attributes.Any;
@@ -30,7 +30,7 @@ public class CharToIntegerCastWithOffset<T extends Any> implements ToIntFunctor<
 
     private IntChunk<T> castWithOffset(CharChunk<? extends T> input) {
         for (int ii = 0; ii < input.size(); ++ii) {
-            result.set(ii, (int)input.get(ii) + offset);
+            result.set(ii, (int) input.get(ii) + offset);
         }
         result.setSize(input.size());
         return result;

@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkHasher and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkHasher and run "./gradlew replicateHashing" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.LongChunk;
@@ -45,12 +44,12 @@ public class LongChunkHasher implements ChunkHasher {
 
     @Override
     public int hashInitial(Object value) {
-        return hashInitialSingle(TypeUtils.unbox((Long)value));
+        return hashInitialSingle(TypeUtils.unbox((Long) value));
     }
 
     @Override
     public int hashUpdate(int existing, Object value) {
-        return hashUpdateSingle(existing, TypeUtils.unbox((Long)value));
+        return hashUpdateSingle(existing, TypeUtils.unbox((Long) value));
     }
 
     @Override

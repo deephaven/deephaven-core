@@ -1,10 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/****************************************************************************************************************************
- ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GroovyStaticImportGenerator or "./gradlew :Generators:groovyStaticImportGenerator" to regenerate
- ****************************************************************************************************************************/
-
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Run GroovyStaticImportGenerator or "./gradlew :Generators:groovyStaticImportGenerator" to regenerate
+//
+// @formatter:off
 package io.deephaven.libs;
 
 import io.deephaven.function.Basic;

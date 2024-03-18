@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util.copy;
 
 import io.deephaven.chunk.attributes.Values;
@@ -18,7 +18,7 @@ public class TestCharCopyKernel {
         final char[] baseInput = new char[64];
         final char[] overInput = new char[64];
         final long[] useOverInput = new long[1];
-        useOverInput[0] = 1L << 63;  // This is the edge case
+        useOverInput[0] = 1L << 63; // This is the edge case
         CharCopyKernel.conditionalCopy(output, baseInput, overInput, useOverInput, 0, 0, 64);
     }
 }

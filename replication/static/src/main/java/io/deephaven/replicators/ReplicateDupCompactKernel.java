@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -13,19 +13,20 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static io.deephaven.replication.ReplicatePrimitiveCode.className;
+import static io.deephaven.replication.ReplicationUtils.className;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateDupCompactKernel {
     public static void main(String[] args) throws IOException {
         final String charJavaPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/join/dupcompact/CharDupCompactKernel.java";
-        final List<String> kernelsToInvert = ReplicatePrimitiveCode.charToAllButBoolean(charJavaPath);
-        final String objectDupCompact = ReplicatePrimitiveCode.charToObject(charJavaPath);
+        final List<String> kernelsToInvert =
+                ReplicatePrimitiveCode.charToAllButBoolean("replicateDupCompactKernel", charJavaPath);
+        final String objectDupCompact = ReplicatePrimitiveCode.charToObject("replicateDupCompactKernel", charJavaPath);
         fixupObjectDupCompact(objectDupCompact);
 
         kernelsToInvert.add(charJavaPath);
@@ -87,11 +88,7 @@ public class ReplicateDupCompactKernel {
             }
         }
 
-        lines.addAll(insertionPoint, Arrays.asList(
-                "/* ---------------------------------------------------------------------------------------------------------------------",
-                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
-                        + " and regenerate",
-                " * ------------------------------------------------------------------------------------------------------------------ */"));
+        lines.add(insertionPoint, ReplicationUtils.fileHeaderString("replicateDupCompactKernel", oldName));
 
         FileUtils.writeLines(new File(newPath), lines);
 
@@ -131,8 +128,13 @@ public class ReplicateDupCompactKernel {
     private static List<String> ascendingNameToDescendingName(String path, List<String> lines) {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = className.replace("DupCompactKernel", "ReverseDupCompactKernel");
-        // we should skip the replicate header
-        return globalReplacements(3, lines, className, newName);
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream("replicateDupCompactKernel", ReplicationUtils.className(path)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+
+        return globalReplacements(lines, className, newName);
     }
 
     private static void fixupObjectDupCompact(String objectPath) throws IOException {

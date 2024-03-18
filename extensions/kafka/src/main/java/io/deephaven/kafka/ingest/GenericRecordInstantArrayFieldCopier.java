@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -17,7 +17,9 @@ import java.util.regex.Pattern;
 
 public class GenericRecordInstantArrayFieldCopier extends GenericRecordFieldCopier {
     private final long multiplier;
-    public GenericRecordInstantArrayFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema, final long multiplier) {
+
+    public GenericRecordInstantArrayFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema,
+            final long multiplier) {
         super(fieldPathStr, separator, schema);
         this.multiplier = multiplier;
     }

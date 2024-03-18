@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.attributes.Any;
@@ -28,7 +28,7 @@ public interface ToIntFunctor<T extends Any> extends SafeCloseable {
     default void close() {}
 
     static <T extends Any> Identity<T> makeIdentity() {
-        //noinspection unchecked
+        // noinspection unchecked
         return Identity.INSTANCE;
     }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sort.findruns;
 
 import io.deephaven.chunk.*;
@@ -121,7 +121,7 @@ public class CharFindRunsKernel {
         }
         char last = sortedValues.get(offsetsIn.get(0));
         sortedValues.set(0, last);
-        for(int ri = 1; ri < numRuns; ++ri) {
+        for (int ri = 1; ri < numRuns; ++ri) {
             final int nextOffset = offsetsIn.get(ri);
             final char next = sortedValues.get(nextOffset);
             if (leq(next, last)) {

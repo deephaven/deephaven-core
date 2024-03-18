@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFiller and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFiller and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfillers;
 
 import io.deephaven.engine.table.ElementSource;
@@ -24,7 +23,8 @@ public final class ByteChunkFiller implements ChunkFiller {
     public static final ByteChunkFiller INSTANCE = new ByteChunkFiller();
 
     @Override
-    public final void fillByRanges(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillByRanges(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
@@ -37,7 +37,8 @@ public final class ByteChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillByIndices(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillByIndices(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
@@ -48,7 +49,8 @@ public final class ByteChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk, final WritableChunk<? super Values> dest) {
+    public final void fillByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk,
+            final WritableChunk<? super Values> dest) {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final int sz = chunk.size();
         // Calling setSize early provides a more informative exception if the destination chunk
@@ -60,7 +62,8 @@ public final class ByteChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillPrevByRanges(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByRanges(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
@@ -73,7 +76,8 @@ public final class ByteChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillPrevByIndices(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByIndices(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
@@ -84,7 +88,8 @@ public final class ByteChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillPrevByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk,
+            final WritableChunk<? super Values> dest) {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final int sz = chunk.size();
         // Calling setSize early provides a more informative exception if the destination chunk

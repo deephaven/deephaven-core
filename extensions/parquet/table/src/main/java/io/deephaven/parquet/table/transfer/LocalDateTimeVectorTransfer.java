@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit InstantVectorTransfer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit InstantVectorTransfer and run "./gradlew replicateParquetTransferObjects" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.primitive.iterator.CloseableIterator;

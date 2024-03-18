@@ -40,12 +40,3 @@ dependencies {
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/*ChunkInputStreamGenerator.java',
-                '**/*ArrayExpansionKernel.java'
-        )
-    }
-}

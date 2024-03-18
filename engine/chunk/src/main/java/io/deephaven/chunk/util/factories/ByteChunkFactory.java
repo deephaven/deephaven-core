@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFactory and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -42,28 +41,28 @@ public class ByteChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> ByteChunk<ATTR> chunkWrap(Object array) {
-        final byte[] typedArray = (byte[])array;
+        final byte[] typedArray = (byte[]) array;
         return ByteChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ByteChunk<ATTR> chunkWrap(Object array, int offset, int capacity) {
-        final byte[] typedArray = (byte[])array;
+        final byte[] typedArray = (byte[]) array;
         return ByteChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ByteChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        ByteChunk<ATTR>[] typedArray = (ByteChunk<ATTR>[])array;
+        ByteChunk<ATTR>[] typedArray = (ByteChunk<ATTR>[]) array;
         return ByteChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ByteChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-        ByteChunk<ATTR>[] typedArray = (ByteChunk<ATTR>[])array;
+        ByteChunk<ATTR>[] typedArray = (ByteChunk<ATTR>[]) array;
         return ByteChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -95,14 +94,15 @@ public class ByteChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> WritableByteChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        final byte[] realType = (byte[])array;
+        final byte[] realType = (byte[]) array;
         return WritableByteChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableByteChunk<ATTR>[] actual = (WritableByteChunk<ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableByteChunk<ATTR>[] actual = (WritableByteChunk<ATTR>[]) array;
         return WritableByteChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

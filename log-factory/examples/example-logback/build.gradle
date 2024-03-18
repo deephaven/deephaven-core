@@ -11,6 +11,6 @@ dependencies {
 }
 
 application {
-	mainClassName = 'io.deephaven.internal.example.LogExampleMain'
+	mainClass.set 'io.deephaven.internal.example.LogExampleMain'
 	// see logback.xml for config
 }

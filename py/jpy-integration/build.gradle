@@ -115,9 +115,12 @@ Task pythonToJava = tasks.create 'unittestPythonToJava', {
 Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet sourceSet ->
 
   def gradleWrapper = tasks.register("${taskName}GradleInit", Wrapper.class) { wrapper ->
-    wrapper.scriptFile "${buildDir}/template-project/gradlew"
-    wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
+
+    def templateProject = layout.buildDirectory.dir('template-project').get()
+    wrapper.scriptFile "${templateProject}/gradlew"
+    wrapper.jarFile "${templateProject}/gradle/wrapper/gradle-wrapper.jar"
     wrapper.gradleVersion '8.4'
+    wrapper.validateDistributionUrl.set false
   }
   return Docker.registerDockerTask(project, taskName) {
     copyIn {

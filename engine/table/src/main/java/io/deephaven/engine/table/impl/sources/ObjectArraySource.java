@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
@@ -22,7 +22,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements MutableColumnSourceGetDefaults.ForObject<T> {
+public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
+        implements MutableColumnSourceGetDefaults.ForObject<T> {
     @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
@@ -45,12 +46,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     @Override
     public void startTrackingPrevValues() {
         super.startTrackingPrev(blocks.length);
-        //noinspection unchecked
+        // noinspection unchecked
         prevBlocks = (T[][]) new Object[blocks.length][];
     }
 
     private void init() {
-        //noinspection unchecked
+        // noinspection unchecked
         blocks = (T[][]) new Object[INITIAL_NUMBER_OF_BLOCKS][];
         maxIndex = INITIAL_MAX_INDEX;
     }
@@ -157,7 +158,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         if (oldValue == newValue) {
             return oldValue;
         }
-        //noinspection unchecked
+        // noinspection unchecked
         if (shouldRecordPrevious(index, prevBlocks, recycler)) {
             prevBlocks[blockIndex][indexWithinBlock] = oldValue;
         }
@@ -181,14 +182,14 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
     @Override
     final T[] allocateNullFilledBlock(int size) {
-        //noinspection unchecked
-        return (T[])new Object[size];
+        // noinspection unchecked
+        return (T[]) new Object[size];
     }
 
     @Override
     final T[] allocateBlock(int size) {
-        //noinspection unchecked
-        return (T[])new Object[size];
+        // noinspection unchecked
+        return (T[]) new Object[size];
     }
 
     @Override
@@ -204,7 +205,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
     @Override
     SoftRecycler<T[]> getRecycler() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (SoftRecycler<T[]>) recycler;
     }
 
@@ -222,18 +223,18 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         Assert.eqNull(prevInUse, "prevInUse");
         final int blockNo = getBlockNo(position);
-        final T [] backingArray = blocks[blockNo];
+        final T[] backingArray = blocks[blockNo];
         chunk.asResettableWritableObjectChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
-        return (long)blockNo << LOG_BLOCK_SIZE;
+        return (long) blockNo << LOG_BLOCK_SIZE;
     }
 
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         Assert.eqNull(prevInUse, "prevInUse");
         final int blockNo = getBlockNo(position);
-        final T [] backingArray = blocks[blockNo];
+        final T[] backingArray = blocks[blockNo];
         final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
-        final int offset = (int)(position - firstPosition);
+        final int offset = (int) (position - firstPosition);
         final int capacity = BLOCK_SIZE - offset;
         chunk.asResettableWritableObjectChunk().resetFromTypedArray(backingArray, offset, capacity);
         return capacity;
@@ -367,7 +368,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
+    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final RowSequence indices) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -392,7 +394,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final RowSequence indices) {
         final long sz = indices.size();
         if (sz == 0) {
             destGeneric.setSize(0);
@@ -422,15 +425,18 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
             final int indexWithinBlock = (int) (v & INDEX_MASK);
             final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
             final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
-            final boolean usePrev = ctx.prevInUseBlock != null && (ctx.prevInUseBlock[indexWithinInUse] & maskWithinInUse) != 0;
-            dest.set(ctx.offset++, usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
+            final boolean usePrev =
+                    ctx.prevInUseBlock != null && (ctx.prevInUseBlock[indexWithinInUse] & maskWithinInUse) != 0;
+            dest.set(ctx.offset++,
+                    usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
             return true;
         });
         dest.setSize(ctx.offset);
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableObjectChunk<T, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -451,7 +457,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableObjectChunk<T, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -478,7 +485,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
+        final boolean trackPrevious =
+                prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -540,7 +548,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
             final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
             final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
-            final T [] inner = blocks[block];
+            final T[] inner = blocks[block];
 
             chunk.copyToTypedArray(offset, inner, sIndexWithinBlock, length);
             firstKey += length;
@@ -553,13 +561,14 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
+        final boolean trackPrevious =
+                prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
             int lastII = ii;
@@ -590,22 +599,24 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<RowKeys> keys) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
+        final boolean trackPrevious =
+                prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             final long minKeyInCurrentBlock = firstKey & ~INDEX_MASK;
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
 
             final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
-            final T [] inner = blocks[block];
+            final T[] inner = blocks[block];
 
             if (chunk.isAlias(inner)) {
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
@@ -637,7 +648,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
             // TODO (#3359): we can move full blocks!
         }
         if (source < dest && source + length >= dest) {
-            for (long ii = length - 1; ii >= 0; ) {
+            for (long ii = length - 1; ii >= 0;) {
                 final long sourceKey = source + ii;
                 final long destKey = dest + ii;
                 final int sourceBlock = (int) (sourceKey >> LOG_BLOCK_SIZE);
@@ -647,9 +658,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
                 final int destIndexWithinBlock = (int) (destKey & INDEX_MASK);
 
                 final int valuesInBothBlocks = Math.min(destIndexWithinBlock + 1, sourceIndexWithinBlock + 1);
-                final int toMove = (ii + 1) < valuesInBothBlocks ? (int)(ii + 1): valuesInBothBlocks;
+                final int toMove = (ii + 1) < valuesInBothBlocks ? (int) (ii + 1) : valuesInBothBlocks;
 
-                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock - toMove + 1, blocks[destBlock], destIndexWithinBlock - toMove + 1, toMove);
+                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock - toMove + 1, blocks[destBlock],
+                        destIndexWithinBlock - toMove + 1, toMove);
                 ii -= toMove;
             }
         } else {
@@ -663,9 +675,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
                 final int destIndexWithinBlock = (int) (destKey & INDEX_MASK);
 
                 final int valuesInBothBlocks = BLOCK_SIZE - Math.max(destIndexWithinBlock, sourceIndexWithinBlock);
-                final int toMove = (length - ii < valuesInBothBlocks) ? (int)(length - ii): valuesInBothBlocks;
+                final int toMove = (length - ii < valuesInBothBlocks) ? (int) (length - ii) : valuesInBothBlocks;
 
-                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock, blocks[destBlock], destIndexWithinBlock, toMove);
+                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock, blocks[destBlock], destIndexWithinBlock,
+                        toMove);
                 ii += toMove;
             }
         }

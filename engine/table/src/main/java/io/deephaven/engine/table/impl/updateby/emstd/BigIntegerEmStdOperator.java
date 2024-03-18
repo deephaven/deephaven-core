@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.emstd;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -18,19 +21,20 @@ import java.math.MathContext;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /***
- * Compute an exponential moving standard deviation for a BigInteger column source.  The output is expressed as a
+ * Compute an exponential moving standard deviation for a BigInteger column source. The output is expressed as a
  * BigDecimal value and is computed using the following formula:
  * <p>
  * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
  * <p>
  * This function is described in the following document:
  * <p>
- * "Incremental calculation of weighted mean and variance"
- * Tony Finch, University of Cambridge Computing Service (February 2009)
+ * "Incremental calculation of weighted mean and variance" Tony Finch, University of Cambridge Computing Service
+ * (February 2009)
  * https://web.archive.org/web/20181222175223/http://people.ds.cam.ac.uk/fanf2/hermes/doc/antiforgery/stats.pdf
  * <p>
  * NOTE: `alpha` as used in the paper has been replaced with `1 - alpha` per the convention adopted by Deephaven.
- */public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteger> {
+ */
+public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteger> {
     public class Context extends BaseBigNumberEmStdOperator<BigInteger>.Context {
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
@@ -38,9 +42,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
         @Override
         public void accumulateCumulative(@NotNull final RowSequence inputKeys,
-                                         @NotNull final Chunk<? extends Values>[] valueChunkArr,
-                                         @Nullable final LongChunk<? extends Values> tsChunk,
-                                         final int len) {
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                @Nullable final LongChunk<? extends Values> tsChunk,
+                final int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -58,10 +62,11 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
                             curVariance = BigDecimal.ZERO;
                             curVal = null;
                         } else {
-                            //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                            // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                             curVariance = opAlpha.multiply(
                                     curVariance.add(
-                                            opOneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)), mathContext),
+                                            opOneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)),
+                                            mathContext),
                                     mathContext);
 
                             final BigDecimal decayedEmaVal = curEma.multiply(opAlpha, mathContext);
@@ -103,11 +108,12 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
                                 oneMinusAlpha = computeOneMinusAlpha(alpha);
                                 lastDt = dt;
                             }
-                            //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                            // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                             final BigDecimal decInput = new BigDecimal(input, mathContext);
                             curVariance = alpha.multiply(
                                     curVariance.add(
-                                            oneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)), mathContext),
+                                            oneMinusAlpha.multiply(decInput.subtract(curEma).pow(2, mathContext)),
+                                            mathContext),
                                     mathContext);
 
                             final BigDecimal decayedEmaVal = curEma.multiply(alpha, mathContext);

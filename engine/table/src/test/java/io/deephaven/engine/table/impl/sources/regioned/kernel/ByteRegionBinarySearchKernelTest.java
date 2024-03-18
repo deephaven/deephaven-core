@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRegionBinarySearchKernelTest and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRegionBinarySearchKernelTest and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.ColumnName;
@@ -35,7 +34,7 @@ import java.util.function.IntToLongFunction;
 
 @Category(ParallelTest.class)
 public class ByteRegionBinarySearchKernelTest {
-    private static final int[] SIZES = { 10, 100, 1000000 };
+    private static final int[] SIZES = {10, 100, 1000000};
     private static final int MAX_FAILED_LOOKUPS = 1000;
     private static final int NUM_NEGATIVE_LOOKUPS = 100;
 
@@ -67,8 +66,7 @@ public class ByteRegionBinarySearchKernelTest {
                     region,
                     startRow, endRow,
                     sortColumn,
-                    new Byte[] { value }
-            )) {
+                    new Byte[] {value})) {
                 if (startRow <= ii && ii <= endRow) {
                     Assert.assertTrue("Expected to find " + value + " at index " + ii,
                             valuesFound.containsRange(ii, ii));
@@ -96,8 +94,7 @@ public class ByteRegionBinarySearchKernelTest {
                     region,
                     startRow, endRow,
                     sortColumn,
-                    new Byte[] { value }
-            )) {
+                    new Byte[] {value})) {
                 Assert.assertTrue(valuesFound.isEmpty());
             }
         }
@@ -119,6 +116,7 @@ public class ByteRegionBinarySearchKernelTest {
             randomizedTestRunner(size, 0, i -> 0, i -> size);
         }
     }
+
     @Test
     public void testRowIsAboveRange() {
         for (int size : SIZES) {
@@ -174,6 +172,7 @@ public class ByteRegionBinarySearchKernelTest {
             invertedRandomizedTestRunner(size, 0, i -> 0, i -> size);
         }
     }
+
     @Test
     public void testInvertedRowIsAboveRange() {
         for (int size : SIZES) {
@@ -224,22 +223,24 @@ public class ByteRegionBinarySearchKernelTest {
     }
 
     private static final int PAGE_SIZE = 1 << 16;
+
     private static ColumnRegionByte<Values> makeColumnRegionByte(@NotNull final List<Byte> values) {
         return new AppendOnlyFixedSizePageRegionByte<>(
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, PAGE_SIZE, new AppendOnlyRegionAccessor<>() {
-            @Override
-            public void readChunkPage(long firstRowPosition, int minimumSize, @NotNull WritableChunk<Values> destination) {
-                int finalSize = (int) Math.min(minimumSize, values.size() - firstRowPosition);
-                destination.setSize(finalSize);
-                for (int ii = 0; ii < finalSize; ++ii) {
-                    destination.asWritableByteChunk().set(ii, values.get((int) firstRowPosition + ii));
-                }
-            }
+                    @Override
+                    public void readChunkPage(long firstRowPosition, int minimumSize,
+                            @NotNull WritableChunk<Values> destination) {
+                        int finalSize = (int) Math.min(minimumSize, values.size() - firstRowPosition);
+                        destination.setSize(finalSize);
+                        for (int ii = 0; ii < finalSize; ++ii) {
+                            destination.asWritableByteChunk().set(ii, values.get((int) firstRowPosition + ii));
+                        }
+                    }
 
-            @Override
-            public long size() {
-                return values.size();
-            }
-        });
+                    @Override
+                    public long size() {
+                        return values.size();
+                    }
+                });
     }
 }

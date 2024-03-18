@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -33,9 +36,9 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
 
         @Override
         public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+                Chunk<? extends Values>[] valueChunkArr,
+                LongChunk<? extends Values> tsChunk,
+                int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -62,7 +65,7 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
                     // read the value from the values chunk
                     final char input = charValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
-                    //noinspection ConstantConditions
+                    // noinspection ConstantConditions
                     final boolean isNull = input == NULL_CHAR;
                     final boolean isNullTime = timestamp == NULL_LONG;
                     if (isNull) {
@@ -110,11 +113,12 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
     /**
      * An operator that computes an EMA from a char column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public CharEMOperator(
             @NotNull final MatchPair pair,
@@ -123,8 +127,8 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,
             @NotNull final EmFunction aggFunction
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, aggFunction);
         // region constructor
@@ -140,8 +144,8 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 aggFunction
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

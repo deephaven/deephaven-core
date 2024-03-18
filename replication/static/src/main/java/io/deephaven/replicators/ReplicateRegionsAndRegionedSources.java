@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import org.apache.commons.io.FileUtils;
@@ -25,6 +25,7 @@ import static io.deephaven.replication.ReplicationUtils.*;
  * some primitive types.
  */
 public class ReplicateRegionsAndRegionedSources {
+    private static final String TASK = "replicateRegionsAndRegionedSources";
 
     private static final String PARQUET_REGION_CHAR_PATH =
             "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/region/ParquetColumnRegionChar.java";
@@ -36,24 +37,24 @@ public class ReplicateRegionsAndRegionedSources {
 
     public static void main(String... args) throws IOException {
         // Note that Byte and Object regions are not replicated!
-        charToAllButBooleanAndByte(
+        charToAllButBooleanAndByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/ColumnRegionChar.java");
-        charToAllButBooleanAndByte(
+        charToAllButBooleanAndByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/DeferredColumnRegionChar.java");
 
 
         // Note that Object regions are not replicated!
-        fixupParquetColumnRegions(charToAllButBooleanAndByte(PARQUET_REGION_CHAR_PATH));
-        fixupChunkColumnRegionByte(charToByte(PARQUET_REGION_CHAR_PATH));
+        fixupParquetColumnRegions(charToAllButBooleanAndByte(TASK, PARQUET_REGION_CHAR_PATH));
+        fixupChunkColumnRegionByte(charToByte(TASK, PARQUET_REGION_CHAR_PATH));
 
-        charToAllButBoolean(GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH);
-        fixupBinSearchObject(charToObject(GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
+        charToAllButBoolean(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH);
+        fixupBinSearchObject(charToObject(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
 
-        charToAllButBooleanAndByte(GENERIC_REGION_CHAR_PATH);
-        fixupChunkColumnRegionByte(charToByte(GENERIC_REGION_CHAR_PATH));
-        fixupChunkColumnRegionObject(charToObject(GENERIC_REGION_CHAR_PATH));
+        charToAllButBooleanAndByte(TASK, GENERIC_REGION_CHAR_PATH);
+        fixupChunkColumnRegionByte(charToByte(TASK, GENERIC_REGION_CHAR_PATH));
+        fixupChunkColumnRegionObject(charToObject(TASK, GENERIC_REGION_CHAR_PATH));
 
-        final List<String> paths = charToAllButBoolean(
+        final List<String> paths = charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/RegionedColumnSourceChar.java");
         fixupRegionedColumnSourceLong(paths.stream().filter(p -> p.contains("Long")).findFirst().get());
         fixupRegionedColumnSourceByte(paths.stream().filter(p -> p.contains("Byte")).findFirst().get());

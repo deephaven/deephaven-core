@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -17,17 +17,27 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
         super(keySourcesForErrorMessages);
     }
 
-    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull IntegerArraySource addedSlots);
-    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, @NotNull IntegerArraySource addedSlots);
+    public abstract int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
+            @NotNull IntegerArraySource addedSlots);
+
+    public abstract int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
+            @NotNull IntegerArraySource addedSlots);
 
     public abstract void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources);
-    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, IntegerArraySource slots, RowSetBuilderRandom foundBuilder);
+
+    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, IntegerArraySource slots,
+            RowSetBuilderRandom foundBuilder);
+
     public abstract void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources);
 
     public abstract int getTableSize();
+
     public abstract RowSet getLeftIndex(int slot);
+
     public abstract RowSet getRightIndex(int slot);
 
     public abstract void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount);
-    public abstract void convertRightGrouping(IntegerArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource);
+
+    public abstract void convertRightGrouping(IntegerArraySource slots, int slotCount,
+            ObjectArraySource<RowSet> rowSetSource);
 }
