@@ -7,7 +7,52 @@ on:
     branches: [ 'main', 'release/v*' ]
 
 jobs:
+  makedirs:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Make Directories
+        run: |
+          mkdir -p tmp-deephaven-core-v2/${{ github.ref_name }}/
+          cd tmp-deephaven-core-v2/${{ github.ref_name }}/
+          mkdir -p javadoc pydoc client-api
+          cd client-api
+          mkdir -p javascript python cpp-examples cpp r
+          
+      - name: Deploy Directories
+        if: ${{ github.event_name == 'push' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -rlptDvz
+          path: tmp-deephaven-core-v2/
+          remote_path: deephaven-core-v2/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+  symlink:
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') }}
+    needs: [javadoc, typedoc, pydoc, cppdoc, rdoc]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Make Symlinks
+        run: |
+          mkdir -p tmp-deephaven-core-v2/symlinks
+          cd tmp-deephaven-core-v2/symlinks
+          ln -s ../${{ github.ref_name }} latest
+          ln -s ../main next
+          
+      - name: Deploy Symlinks
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -rlptDvz
+          path: tmp-deephaven-core-v2/
+          remote_path: deephaven-core-v2/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
   javadoc:
+    needs: [makedirs]
     runs-on: ubuntu-22.04
     concurrency:
       group: javadoc-${{ github.workflow }}-${{ github.ref }}
@@ -51,25 +96,26 @@ jobs:
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Upload Javadocs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }} 
         uses: actions/upload-artifact@v4
         with:
           name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
 
       - name: Deploy Javadoc
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: combined-javadoc/build/docs/javadoc/
-          remote_path: deephaven-core/javadoc/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/javadoc/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   typedoc:
+    needs: [makedirs]
     runs-on: ubuntu-22.04
     concurrency:
       group: typedoc-${{ github.workflow }}-${{ github.ref }}
@@ -113,25 +159,26 @@ jobs:
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
           
       - name: Upload JavaScript/TypeScript docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: typedoc-${{ steps.dhc-version.outputs.version }}
           path: 'web/client-api/types/build/documentation/'
 
       - name: Deploy JavaScript/TypeScript docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: web/client-api/types/build/documentation/
-          remote_path: deephaven-core/client-api/javascript/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/javascript/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   pydoc:
+    needs: [makedirs]
     runs-on: ubuntu-22.04
     concurrency:
       group: pydoc-${{ github.workflow }}-${{ github.ref }}
@@ -175,38 +222,38 @@ jobs:
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
  
       - name: Upload Python Server Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/docs/'
           
       - name: Upload Python Client Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/pyclient-docs/'
 
       - name: Deploy Python Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: sphinx/build/docs/
-          remote_path: deephaven-core/pydoc/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/pydoc/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Deploy Client Python Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: sphinx/build/pyclient-docs/
-          remote_path: deephaven-core/client-api/python/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/python/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
@@ -221,6 +268,7 @@ jobs:
           if-no-files-found: ignore
 
   cppdoc:
+    needs: [makedirs]
     runs-on: ubuntu-22.04
     concurrency:
       group: cppdoc-${{ github.workflow }}-${{ github.ref }}
@@ -257,44 +305,45 @@ jobs:
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
   
       - name: Upload Client C++ Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppClientDocs/'
           
       - name: Upload Client C++ Example Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppExamplesDocs/'
 
       - name: Deploy Client C++ Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: sphinx/build/cppClientDocs/
-          remote_path: deephaven-core/client-api/cpp/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/cpp/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Deploy Client C++ Example Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: sphinx/build/cppExamplesDocs/
-          remote_path: deephaven-core/client-api/cpp-examples/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/cpp-examples/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
   rdoc:
+    needs: [makedirs]
     runs-on: ubuntu-22.04
     concurrency:
       group: rdoc-${{ github.workflow }}-${{ github.ref }}
@@ -331,19 +380,19 @@ jobs:
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
         
       - name: Upload R Docs
-        if: ${{ (github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: rdoc-${{ steps.dhc-version.outputs.version }}
           path: 'R/rdeephaven/docs/'
 
       - name: Deploy R Docs
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --delete
+          switches: -rlptDvz --delete
           path: R/rdeephaven/docs/
-          remote_path: deephaven-core/client-api/r/
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/r/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
