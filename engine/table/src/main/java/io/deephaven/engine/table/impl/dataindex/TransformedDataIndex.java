@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.BasicDataIndex;
@@ -15,6 +16,7 @@ import io.deephaven.engine.table.DataIndexTransformer;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.FunctionalColumnLong;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,15 +76,21 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
                 return localIndexTable;
             }
 
-            localIndexTable = parentIndex.table();
-            localIndexTable = maybeIntersectAndInvert(localIndexTable);
-            localIndexTable = maybeSortByFirstKey(localIndexTable);
-            localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
-                    ? localIndexTable.snapshot()
-                    : localIndexTable;
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                localIndexTable = parentIndex.table();
+                localIndexTable = maybeIntersectAndInvert(localIndexTable);
+                localIndexTable = maybeSortByFirstKey(localIndexTable);
+                localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
+                        ? localIndexTable.snapshot()
+                        : localIndexTable;
 
-            indexTable = localIndexTable;
-            return localIndexTable;
+                if (localIndexTable.isRefreshing()) {
+                    manage(localIndexTable);
+                }
+
+                indexTable = localIndexTable;
+                return localIndexTable;
+            }
         }
     }
 
