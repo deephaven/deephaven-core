@@ -552,28 +552,38 @@ public class TstUtils {
         return getTable(true, size, random, columnInfos);
     }
 
-    public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo<?, ?>[] columnInfos) {
+    public static QueryTable getTable(
+            final boolean refreshing,
+            final int size,
+            @NotNull final Random random,
+            @NotNull final ColumnInfo<?, ?>[] columnInfos) {
         final TrackingWritableRowSet rowSet = getInitialIndex(size, random).toTracking();
-        final ColumnHolder<?>[] sources = new ColumnHolder[columnInfos.length];
+        final ColumnHolder<?>[] columnHolders = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnInfos.length; i++) {
-            sources[i] = columnInfos[i].generateInitialColumn(rowSet, random);
+            columnHolders[i] = columnInfos[i].generateInitialColumn(rowSet, random);
         }
         if (refreshing) {
-            return testRefreshingTable(rowSet, sources);
+            return testRefreshingTable(rowSet, columnHolders);
         } else {
-            return testTable(rowSet, sources);
+            return testTable(rowSet, columnHolders);
         }
     }
 
-    public static QueryTable testTable(ColumnHolder<?>... columnHolders) {
-        final WritableRowSet rowSet = RowSetFactory.flat(columnHolders[0].size());
-        return testTable(rowSet.toTracking(), columnHolders);
-    }
-
-    public static QueryTable testTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
+    private static QueryTable testTable(
+            final boolean refreshing,
+            final boolean flat,
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
         final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
-        QueryTable queryTable = new QueryTable(rowSet, columns);
+        final QueryTable queryTable = new QueryTable(rowSet, columns);
         queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        if (refreshing) {
+            queryTable.setRefreshing(true);
+        }
+        if (flat) {
+            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()");
+            queryTable.setFlat();
+        }
 
         // Add indexes for the indexed columns.
         for (ColumnHolder<?> columnHolder : columnHolders) {
@@ -587,6 +597,37 @@ public class TstUtils {
         return queryTable;
     }
 
+    public static QueryTable testTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(false, false, rowSet, columnHolders);
+    }
+
+    public static QueryTable testRefreshingTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, false, rowSet, columnHolders);
+    }
+
+    public static QueryTable testFlatRefreshingTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, true, rowSet, columnHolders);
+    }
+
+    private static QueryTable testTable(final boolean refreshing, @NotNull final ColumnHolder<?>... columnHolders) {
+        final WritableRowSet rowSet = RowSetFactory.flat(columnHolders[0].size());
+        return testTable(refreshing, false, rowSet.toTracking(), columnHolders);
+    }
+
+    public static QueryTable testTable(@NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(false, columnHolders);
+    }
+
+    public static QueryTable testRefreshingTable(@NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, columnHolders);
+    }
+
     @NotNull
     private static Map<String, ColumnSource<?>> getColumnSourcesFromHolders(
             TrackingRowSet rowSet, ColumnHolder<?>[] columnHolders) {
@@ -595,30 +636,6 @@ public class TstUtils {
             columns.put(columnHolder.name, getTestColumnSource(rowSet, columnHolder));
         }
         return columns;
-    }
-
-    public static QueryTable testRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        final QueryTable queryTable = testTable(rowSet, columnHolders);
-        queryTable.setRefreshing(true);
-        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
-
-        return queryTable;
-    }
-
-    public static QueryTable testFlatRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
-        return new QueryTable(rowSet, getColumnSourcesFromHolders(rowSet, columnHolders)) {
-            {
-                setRefreshing(true);
-                setFlat();
-            }
-        };
-    }
-
-    public static QueryTable testRefreshingTable(ColumnHolder<?>... columnHolders) {
-        final QueryTable queryTable = testTable(columnHolders);
-        queryTable.setRefreshing(true);
-        return queryTable;
     }
 
     public static ColumnSource<?> getTestColumnSource(RowSet rowSet, ColumnHolder<?> columnHolder) {

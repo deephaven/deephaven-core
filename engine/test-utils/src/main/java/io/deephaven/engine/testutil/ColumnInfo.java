@@ -22,7 +22,7 @@ public class ColumnInfo<T, U> {
     final TestDataGenerator<T, U> generator;
     final String name;
     final boolean immutable;
-    final boolean grouped;
+    final boolean indexed;
 
     final static ColAttributes[] ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY = new ColAttributes[0];
 
@@ -51,7 +51,7 @@ public class ColumnInfo<T, U> {
         this.generator = generator;
         this.name = name;
         this.immutable = Arrays.asList(colAttributes).contains(ColAttributes.Immutable);
-        this.grouped = Arrays.asList(colAttributes).contains(ColAttributes.Indexed);
+        this.indexed = Arrays.asList(colAttributes).contains(ColAttributes.Indexed);
     }
 
     public ColumnHolder<?> generateInitialColumn(RowSet rowSet, Random random) {
@@ -59,13 +59,13 @@ public class ColumnInfo<T, U> {
 
         if (dataType == Long.class && type == Instant.class) {
             Require.eqFalse(immutable, "immutable");
-            Require.eqFalse(grouped, "grouped");
+            Require.eqFalse(indexed, "indexed");
             return ColumnHolder.getInstantColumnHolder(name, false, initialData);
         }
 
         if (immutable) {
-            return new ImmutableColumnHolder<>(name, type, componentType, grouped, initialData);
-        } else if (grouped) {
+            return new ImmutableColumnHolder<>(name, type, componentType, indexed, initialData);
+        } else if (indexed) {
             return TstUtils.indexedColumnHolderForChunk(name, type, componentType, initialData);
         } else {
             return TstUtils.columnHolderForChunk(name, type, componentType, initialData);
@@ -82,7 +82,7 @@ public class ColumnInfo<T, U> {
 
     public ColumnHolder<T> generateUpdateColumnHolder(RowSet keysToModify, Random random) {
         final Chunk<Values> chunk = generator.populateChunk(keysToModify, random);
-        if (grouped) {
+        if (indexed) {
             return TstUtils.indexedColumnHolderForChunk(name, type, componentType, chunk);
         } else {
             return TstUtils.columnHolderForChunk(name, type, componentType, chunk);
