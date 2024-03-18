@@ -211,7 +211,7 @@ public class Sort {
         }
 
         if (values.isEmpty()) {
-            return new int[]{};
+            return new int[0];
         }
 
         return IntStream.range(0, values.intSize("rank"))
@@ -327,7 +327,7 @@ public class Sort {
         }
 
         if (values.isEmpty()) {
-            return new int[]{};
+            return new int[0];
         }
 
         return IntStream.range(0, values.intSize("rank"))
@@ -361,7 +361,7 @@ public class Sort {
         }
 
         if (values.length == 0) {
-            return new int[]{};
+            return new int[0];
         }
 
         final ${pt.primitive}[] vs = new ${pt.primitive}[values.length];
@@ -434,7 +434,7 @@ public class Sort {
         }
 
         if (values.isEmpty()) {
-            return new int[]{};
+            return new int[0];
         }
 
         return IntStream.range(0, values.intSize("rank"))
