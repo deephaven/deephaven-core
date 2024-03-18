@@ -86,6 +86,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
      * and this ensures that clients will have a stable cache across server restarts.
      */
     private static final HashFunction HASH_FUNCTION = Hashing.murmur3_128(0);
+    public static final String REQUIRED_PATH_PREFIX = "/";
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
     private final SessionService sessionService;
@@ -134,7 +135,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         PathMatcher matcher =
                 request.hasFilterGlob() ? createPathFilter(request.getFilterGlob()) : ignore -> true;
         Path dir = resolveOrThrow(request.getPath());
-        builder.setCanonicalPath(String.valueOf(root.relativize(dir)));
+        builder.setCanonicalPath(REQUIRED_PATH_PREFIX + root.relativize(dir));
         try (Stream<Path> list = Files.list(dir)) {
             for (Path p : (Iterable<Path>) list::iterator) {
                 if (!matcher.matches(dir.relativize(p))) {
@@ -143,7 +144,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                 BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
                 boolean isDirectory = attrs.isDirectory();
                 ItemInfo.Builder info = ItemInfo.newBuilder()
-                        .setPath(String.valueOf(root.relativize(p)));
+                        .setPath(REQUIRED_PATH_PREFIX + root.relativize(p));
                 if (isDirectory) {
                     info.setType(ItemType.DIRECTORY);
                 } else {
