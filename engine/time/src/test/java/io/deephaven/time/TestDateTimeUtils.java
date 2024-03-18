@@ -2581,7 +2581,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null, false));
 
         TestCase.assertEquals(11, DateTimeUtils.hourOfDay(lt));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -2669,7 +2669,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null, false));
 
         TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(lt));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -2779,7 +2779,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null, false));
 
         TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(lt));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -3005,7 +3005,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null, false));
 
         TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.millisOfDay(lt));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay((LocalTime) null));
 
         // Test daylight savings time
 
