@@ -7,6 +7,7 @@ import com.google.gwt.junit.tools.GWTTestSuite;
 import io.deephaven.web.client.api.HierarchicalTableTestGwt;
 import io.deephaven.web.client.api.NullValueTestGwt;
 import io.deephaven.web.client.api.PartitionedTableTestGwt;
+import io.deephaven.web.client.api.storage.JsStorageServiceTest;
 import io.deephaven.web.client.api.subscription.ConcurrentTableTestGwt;
 import io.deephaven.web.client.api.TableManipulationTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
@@ -29,6 +30,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(NullValueTestGwt.class);
         suite.addTestSuite(HierarchicalTableTestGwt.class);
         suite.addTestSuite(PartitionedTableTestGwt.class);
+        suite.addTestSuite(JsStorageServiceTest.class);
 
         // This should be a unit test, but it requires a browser environment to run on GWT 2.9
         // GWT 2.9 doesn't have proper bindings for Promises in HtmlUnit, so we need to use the IntegrationTest suite

@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -107,11 +108,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     }
 
     private Path resolveOrThrow(String incomingPath) {
-        if (incomingPath.startsWith("/")) {
-            Path resolved = root.resolve(incomingPath.substring(1)).normalize();
-            if (resolved.startsWith(root)) {
-                return resolved;
-            }
+        if (incomingPath.startsWith(File.separator)) {
+            incomingPath = incomingPath.substring(1);
+        }
+        Path resolved = root.resolve(incomingPath).normalize();
+        if (resolved.startsWith(root)) {
+            return resolved;
         }
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
     }
@@ -132,6 +134,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         PathMatcher matcher =
                 request.hasFilterGlob() ? createPathFilter(request.getFilterGlob()) : ignore -> true;
         Path dir = resolveOrThrow(request.getPath());
+        builder.setCanonicalPath(String.valueOf(root.relativize(dir)));
         try (Stream<Path> list = Files.list(dir)) {
             for (Path p : (Iterable<Path>) list::iterator) {
                 if (!matcher.matches(dir.relativize(p))) {
@@ -140,7 +143,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                 BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
                 boolean isDirectory = attrs.isDirectory();
                 ItemInfo.Builder info = ItemInfo.newBuilder()
-                        .setPath("/" + root.relativize(p));
+                        .setPath(String.valueOf(root.relativize(p)));
                 if (isDirectory) {
                     info.setType(ItemType.DIRECTORY);
                 } else {
@@ -163,7 +166,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         if (filterGlob.contains("**")) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
-        if (filterGlob.contains("/")) {
+        if (filterGlob.contains(File.separator)) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, only the same directory can be checked");
         }

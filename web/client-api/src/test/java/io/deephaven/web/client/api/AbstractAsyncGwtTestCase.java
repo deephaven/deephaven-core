@@ -250,9 +250,9 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> delayFinish(int timeout) {
-        return table -> {
+        return object -> {
             delayTestFinish(timeout);
-            return Promise.resolve(table);
+            return Promise.resolve(object);
         };
     }
 
