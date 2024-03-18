@@ -32,7 +32,7 @@ import java.util.function.ToLongFunction;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 @Category(OutOfBandTest.class)
-public class TestDerivedDataIndex extends RefreshingTableTestCase {
+public class TestTransformedDataIndex extends RefreshingTableTestCase {
     private static final int INITIAL_SIZE = 100;
     private static final int STEP_SIZE = 100;
     private static final int MAX_STEPS = 100;
