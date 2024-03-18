@@ -260,13 +260,14 @@ public class TimeTableTest extends RefreshingTableTestCase {
         final DataIndexer dataIndexer = DataIndexer.of(timeTable.getRowSet());
 
         // Create the index for this table and column.
-        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true);
+                final RowSet intersectRowSet = RowSetFactory.fromRange(100, 109)) {
             DataIndexer.getOrCreateDataIndex(timeTable, "Timestamp");
 
             final BasicDataIndex dataIndex =
                     dataIndexer.getDataIndex(dtColumn).transform(
                             DataIndexTransformer.builder()
-                                    .intersectRowSet(RowSetFactory.fromRange(100, 109))
+                                    .intersectRowSet(intersectRowSet)
                                     .build());
             final Table indexTable = dataIndex.table();
 
@@ -290,7 +291,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
             final BasicDataIndex longDataIndex =
                     Objects.requireNonNull(DataIndexer.getDataIndex(riTable, "longTimestamp")).transform(
                             DataIndexTransformer.builder()
-                                    .intersectRowSet(RowSetFactory.fromRange(100, 109))
+                                    .intersectRowSet(intersectRowSet)
                                     .build());
             final Table longIndexTable = longDataIndex.table();
 

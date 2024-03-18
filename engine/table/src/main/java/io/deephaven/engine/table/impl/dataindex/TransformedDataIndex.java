@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -28,8 +29,9 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
 
     @NotNull
     private final DataIndex parentIndex;
-    @NotNull
-    private final DataIndexTransformer transformer;
+    private final boolean isRefreshing;
+
+    private DataIndexTransformer transformer;
 
     private volatile Table indexTable;
 
@@ -43,6 +45,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
             @NotNull final DataIndex parentIndex,
             @NotNull final DataIndexTransformer transformer) {
         this.parentIndex = parentIndex;
+        isRefreshing = !transformer.snapshotResult() && parentIndex.isRefreshing();
         this.transformer = transformer;
     }
 
@@ -89,6 +92,9 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
                 }
 
                 indexTable = localIndexTable;
+                // Don't hold onto the transformer after the index table is computed, we don't need to maintain
+                // reachability for its RowSets anymore.
+                transformer = null;
                 return localIndexTable;
             }
         }
@@ -96,7 +102,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
 
     @Override
     public boolean isRefreshing() {
-        return !transformer.snapshotResult() && parentIndex.isRefreshing();
+        return isRefreshing;
     }
 
     // region DataIndex materialization operations
@@ -140,6 +146,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
      * @return The table with intersections and inversions applied.
      */
     private Table maybeIntersectAndInvert(@NotNull final Table indexTable) {
+        Assert.neqNull(transformer, "transformer");
         if (transformer.intersectRowSet().isEmpty() && transformer.invertRowSet().isEmpty()) {
             return indexTable;
         }
@@ -163,6 +170,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
      * @return The table sorted by first row key, if requested, else the input index table
      */
     protected Table maybeSortByFirstKey(final @NotNull Table indexTable) {
+        Assert.neqNull(transformer, "transformer");
         if (!transformer.sortByFirstRowKey()) {
             return indexTable;
         }

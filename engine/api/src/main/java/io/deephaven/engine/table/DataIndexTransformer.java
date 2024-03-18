@@ -85,14 +85,18 @@ public interface DataIndexTransformer {
     interface Builder {
 
         /**
-         * Intersect the index {@link RowSet RowSets} with {@code rowSet}. The result {@link BasicDataIndex} will be a
-         * static snapshot.
+         * Intersect the index {@link RowSet RowSets} with {@code rowSet}. All
+         * {@link DataIndex#transform(DataIndexTransformer) transformations} using the resulting DataIndexTransformer
+         * should be {@link BasicDataIndex#table() materialized} before {@code rowSet} is {@link RowSet#close() closed}.
+         * The result {@link BasicDataIndex} will be a static snapshot.
          */
         Builder intersectRowSet(RowSet rowSet);
 
         /**
-         * Invert the index {@link RowSet RowSets} with the supplied RowSet. The result {@link BasicDataIndex} will be a
-         * static snapshot.
+         * Invert the index {@link RowSet RowSets} with the supplied RowSet. All
+         * {@link DataIndex#transform(DataIndexTransformer) transformations} using the resulting DataIndexTransformer
+         * should be {@link BasicDataIndex#table() materialized} before {@code rowSet} is {@link RowSet#close() closed}.
+         * The result {@link BasicDataIndex} will be a static snapshot.
          */
         Builder invertRowSet(RowSet rowSet);
 
