@@ -1590,8 +1590,8 @@ public class Numeric {
 
     /**
      * Returns the differences between elements in the input vector separated by a stride.
-     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
-     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
      * The result has the same length as the input vector.
      * Differences off the end of the input vector are the null value.
      *
@@ -2861,8 +2861,11 @@ public class Numeric {
      *
      * @param v1 the first value to compare.
      * @param v2 the second value to compare.
-     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2; and a value greater than 0 if v1 is numerically greater than v2.
-     *      Deephaven null values are less than normal numbers which are less than NaN values. 
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2;
+     *      and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values.
+     *      Unlike standard Java, Deephaven treats NaN values as ordered. In particular two NaN values will compare
+     *      equal to each other, and a NaN value will compare greater than any other value.
      */
     static public int compare(${pt.primitive} v1, ${pt.primitive} v2) {
         final boolean isNull1 = isNull(v1);
@@ -2897,8 +2900,11 @@ public class Numeric {
      *
      * @param v1 the first value to compare.
      * @param v2 the second value to compare.
-     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2; and a value greater than 0 if v1 is numerically greater than v2.
-     *      Deephaven null values are less than normal numbers which are less than NaN values. 
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2;
+     *      and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values.
+     *      Unlike standard Java, Deephaven treats NaN values as ordered. In particular two NaN values will compare
+     *      equal to each other, and a NaN value will compare greater than any other value.
      */
     static public int compare(${pt.boxed} v1, ${pt.boxed} v2) {
         return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
