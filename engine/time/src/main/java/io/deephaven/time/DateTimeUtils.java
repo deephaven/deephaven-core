@@ -2799,8 +2799,8 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of milliseconds
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
@@ -2822,8 +2822,8 @@ public class DateTimeUtils {
      * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of milliseconds
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
@@ -2883,8 +2883,8 @@ public class DateTimeUtils {
      * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of seconds from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of seconds
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
@@ -2921,8 +2921,8 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of minutes from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
@@ -2944,8 +2944,8 @@ public class DateTimeUtils {
      * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of minutes from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
@@ -2982,8 +2982,8 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of hours from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of hours
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
@@ -3005,8 +3005,8 @@ public class DateTimeUtils {
      * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     * @param localTime if {@code true}, returns the number of hours from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of hours
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
