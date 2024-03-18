@@ -45,20 +45,29 @@ class MergedDataIndex extends BaseDataIndex {
 
     private static final String LOCATION_DATA_INDEX_TABLE_COLUMN_NAME = "__DataIndexTable";
 
-    private final String[] keyColumnNames;
+    private final List<String> keyColumnNames;
     private final RegionedColumnSourceManager columnSourceManager;
 
-    private final Map<ColumnSource<?>, String> keyColumnMap;
+    private final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn;
 
-    /** The table containing the index. Consists of sorted key column(s) and an associated RowSet column. */
+    /**
+     * The lookup function for the index table. Note that this is always set before {@link #indexTable}.
+     */
+    private AggregationRowLookup lookupFunction;
+
+    /**
+     * The index table. Note that we use this as a barrier to ensure {@link #lookupFunction} is visible.
+     */
     private volatile Table indexTable;
 
-    private volatile AggregationRowLookup lookupFunction;
-
-    /** Whether this index is known to be corrupt. */
+    /**
+     * Whether this index is known to be corrupt.
+     */
     private volatile boolean isCorrupt;
 
-    /** Whether this index is valid. {@code null} means we don't know, yet. */
+    /**
+     * Whether this index is valid. {@code null} means we don't know, yet.
+     */
     private volatile Boolean isValid;
 
     MergedDataIndex(
@@ -68,13 +77,13 @@ class MergedDataIndex extends BaseDataIndex {
 
         Require.eq(keyColumnNames.length, "keyColumnNames.length", keySources.length, "keySources.length");
 
-        this.keyColumnNames = keyColumnNames;
+        this.keyColumnNames = List.of(keyColumnNames);
         this.columnSourceManager = columnSourceManager;
 
         // Create an in-order reverse lookup map for the key column names
-        keyColumnMap = Collections.unmodifiableMap(IntStream.range(0, keySources.length).sequential()
+        keyColumnNamesByIndexedColumn = Collections.unmodifiableMap(IntStream.range(0, keySources.length).sequential()
                 .collect(LinkedHashMap::new, (m, i) -> m.put(keySources[i], keyColumnNames[i]), Assert::neverInvoked));
-        if (keyColumnMap.size() != keySources.length) {
+        if (keyColumnNamesByIndexedColumn.size() != keySources.length) {
             throw new IllegalArgumentException(String.format("Duplicate key sources found in %s for %s",
                     Arrays.toString(keySources), Arrays.toString(keyColumnNames)));
         }
@@ -88,34 +97,29 @@ class MergedDataIndex extends BaseDataIndex {
 
     @Override
     @NotNull
-    public String[] keyColumnNames() {
+    public List<String> keyColumnNames() {
         return keyColumnNames;
     }
 
     @Override
     @NotNull
-    public Map<ColumnSource<?>, String> keyColumnMap() {
-        return keyColumnMap;
-    }
-
-    @Override
-    @NotNull
-    public String rowSetColumnName() {
-        return ROW_SET_COLUMN_NAME;
+    public Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
+        return keyColumnNamesByIndexedColumn;
     }
 
     @Override
     @NotNull
     public Table table() {
-        if (indexTable != null) {
-            return indexTable;
+        Table localIndexTable;
+        if ((localIndexTable = indexTable) != null) {
+            return localIndexTable;
         }
         synchronized (this) {
-            if (indexTable != null) {
-                return indexTable;
+            if ((localIndexTable = indexTable) != null) {
+                return localIndexTable;
             }
             try {
-                QueryPerformanceRecorder.withNugget(
+                return QueryPerformanceRecorder.withNugget(
                         String.format("Merge Data Indexes [%s]", String.join(", ", keyColumnNames)),
                         this::buildTable);
             } catch (Throwable t) {
@@ -123,28 +127,29 @@ class MergedDataIndex extends BaseDataIndex {
                 throw t;
             }
         }
-        return indexTable;
     }
 
-    private void buildTable() {
+    private Table buildTable() {
         final Table locationTable = columnSourceManager.locationTable().coalesce();
 
         // Perform a parallelizable update to produce coalesced location index tables with their row sets shifted by
         // the appropriate region offset.
         // This potentially loads many small row sets into memory, but it avoids the risk of re-materializing row set
         // pages during the accumulation phase.
+        final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
         final Table locationDataIndexes = locationTable
                 .update(List.of(new FunctionalColumn<>(
                         columnSourceManager.locationColumnName(), TableLocation.class,
                         LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
-                        this::loadIndexTableAndShiftRowSets)))
+                        (final long locationRowKey, final TableLocation location) -> loadIndexTableAndShiftRowSets(
+                                locationRowKey, location, keyColumnNamesArray))))
                 .dropColumns(columnSourceManager.locationColumnName());
 
         // Merge all the location index tables into a single table
         final Table mergedDataIndexes = PartitionedTableFactory.of(locationDataIndexes).merge();
 
         // Group the merged data indexes by the keys
-        final Table groupedByKeyColumns = mergedDataIndexes.groupBy(keyColumnNames);
+        final Table groupedByKeyColumns = mergedDataIndexes.groupBy(keyColumnNamesArray);
 
         // Combine the row sets from each group into a single row set
         final Table combined = groupedByKeyColumns
@@ -162,9 +167,13 @@ class MergedDataIndex extends BaseDataIndex {
 
         lookupFunction = AggregationProcessor.getRowLookup(groupedByKeyColumns);
         indexTable = combined;
+        return combined;
     }
 
-    private Table loadIndexTableAndShiftRowSets(final long locationRowKey, @NotNull final TableLocation location) {
+    private static Table loadIndexTableAndShiftRowSets(
+            final long locationRowKey,
+            @NotNull final TableLocation location,
+            @NotNull final String[] keyColumnNames) {
         final BasicDataIndex dataIndex = location.getDataIndex(keyColumnNames);
         if (dataIndex == null) {
             throw new UncheckedDeephavenException(String.format("Failed to load data index [%s] for location %s",
@@ -216,10 +225,11 @@ class MergedDataIndex extends BaseDataIndex {
         if (isValid != null) {
             return isValid;
         }
+        final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
         try (final CloseableIterator<TableLocation> locations =
                 columnSourceManager.locationTable().objectColumnIterator(columnSourceManager.locationColumnName())) {
             while (locations.hasNext()) {
-                if (!locations.next().hasDataIndex(keyColumnNames)) {
+                if (!locations.next().hasDataIndex(keyColumnNamesArray)) {
                     return isValid = false;
                 }
             }

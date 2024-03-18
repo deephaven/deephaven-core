@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -22,7 +21,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
@@ -46,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
@@ -1661,9 +1661,12 @@ public class ChunkedOperatorAggregationHelper {
         final QueryTable result = new QueryTable(RowSetFactory.flat(groupCount).toTracking(), resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, groupCount);
 
-        // Create a hashmap lookup function from the index table.
-        final TObjectLongHashMap<Object> lookup = BaseDataIndex.buildKeyMap(indexKeyTable, keyNames);
-        ac.supplyRowLookup(() -> key -> (int) lookup.get(key));
+        // Create a lookup function from the index table
+        ac.supplyRowLookup(() -> {
+            final ToLongFunction<Object> lookupKeyToRowKey =
+                    DataIndexUtils.buildRowKeyLookupMap(indexKeyTable, keyNames);
+            return key -> (int) lookupKeyToRowKey.applyAsLong(key);
+        });
 
         final QueryTable finalResult = ac.transformResult(result);
         if (finalResult.getRowSet().isFlat()) {
@@ -1764,7 +1767,7 @@ public class ChunkedOperatorAggregationHelper {
             final BasicDataIndex dataIndex = control.dataIndexToUse(inputInitialKeys, keyColumnNames);
             if (dataIndex != null) {
                 initialKeys = dataIndex.table();
-                keySources = dataIndex.indexKeyColumns(initialKeysSources);
+                keySources = dataIndex.keyColumns(initialKeysSources);
             } else {
                 initialKeys = inputInitialKeys;
                 keySources = initialKeysSources;
@@ -1958,7 +1961,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.ensureCapacity(indexEntryCount);
 
         final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
-        final ColumnSource[] indexKeySources = Arrays.stream(dataIndex.indexKeyColumns(keySources))
+        final ColumnSource[] indexKeySources = Arrays.stream(dataIndex.keyColumns(keySources))
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .map(cs -> usePrev && !cs.isImmutable() ? cs.getPrevSource() : cs)
                 .toArray(ColumnSource[]::new);

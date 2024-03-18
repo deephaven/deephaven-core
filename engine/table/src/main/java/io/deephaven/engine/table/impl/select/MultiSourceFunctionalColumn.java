@@ -45,14 +45,16 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
         D apply(long rowKey, ColumnSource<?>[] sources);
     }
 
-    public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
+    public MultiSourceFunctionalColumn(
+            @NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
             @NotNull RowKeyAndSourcesFunction<D> function) {
         this(sourceNames, destName, destDataType, null, function);
     }
 
-    public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
+    public MultiSourceFunctionalColumn(
+            @NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
             @Nullable Class<?> componentType,
@@ -115,21 +117,22 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public List<String> getColumnArrays() {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @NotNull
     @Override
     public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
-            @Override
-            public Object getPrev(long rowKey) {
-                return function.apply(rowKey, prevSources);
-            }
 
             @Override
             public Object get(long rowKey) {
                 return function.apply(rowKey, sourceColumns);
+            }
+
+            @Override
+            public Object getPrev(long rowKey) {
+                return function.apply(rowKey, prevSources);
             }
 
             @Override
@@ -161,9 +164,10 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {
-        final ChunkFiller chunkFiller;
 
-        FunctionalColumnFillContext(final ChunkType chunkType) {
+        private final ChunkFiller chunkFiller;
+
+        private FunctionalColumnFillContext(final ChunkType chunkType) {
             chunkFiller = ChunkFiller.forChunkType(chunkType);
         }
     }

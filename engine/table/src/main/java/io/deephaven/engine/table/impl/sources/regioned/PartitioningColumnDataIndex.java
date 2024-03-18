@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.sources.RowSetColumnSourceWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,7 +40,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
     private final String keyColumnName;
 
-    private final Map<ColumnSource<?>, String> keyColumnMap;
+    private final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn;
 
     /** The table containing the index. Consists of a sorted key column and an associated RowSet column. */
     private final QueryTable indexTable;
@@ -74,7 +75,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
             @NotNull final RegionedColumnSourceManager columnSourceManager) {
         this.keyColumnName = keyColumnName;
 
-        keyColumnMap = Map.of(keySource, keyColumnName);
+        keyColumnNamesByIndexedColumn = Map.of(keySource, keyColumnName);
 
         // Build the index table and the position lookup map.
         final QueryTable locationTable = (QueryTable) columnSourceManager.locationTable().coalesce();
@@ -232,20 +233,14 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
 
     @Override
     @NotNull
-    public String[] keyColumnNames() {
-        return new String[] {keyColumnName};
+    public List<String> keyColumnNames() {
+        return List.of(keyColumnName);
     }
 
     @Override
     @NotNull
-    public Map<ColumnSource<?>, String> keyColumnMap() {
-        return keyColumnMap;
-    }
-
-    @Override
-    @NotNull
-    public String rowSetColumnName() {
-        return ROW_SET_COLUMN_NAME;
+    public Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
+        return keyColumnNamesByIndexedColumn;
     }
 
     @Override

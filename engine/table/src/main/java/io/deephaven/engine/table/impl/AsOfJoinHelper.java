@@ -151,7 +151,7 @@ public class AsOfJoinHelper {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
             leftRowSetToUse = leftDataIndexTable.getRowSet();
             leftSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.indexKeyColumns(originalLeftSources));
+                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.keyColumns(originalLeftSources));
         } else {
             leftRowSetToUse = leftTable.getRowSet();
             leftSourcesToUse = leftSources;
@@ -160,7 +160,7 @@ public class AsOfJoinHelper {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.RightInput);
             rightRowSetToUse = rightDataIndexTable.getRowSet();
             rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
+                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.keyColumns(originalRightSources));
         } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
@@ -486,7 +486,7 @@ public class AsOfJoinHelper {
             Assert.eq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftDataIndex);
             leftRowSetToUse = leftDataIndexTable.getRowSet();
             leftSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.indexKeyColumns(originalLeftSources));
+                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.keyColumns(originalLeftSources));
         } else {
             Assert.eq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
             leftRowSetToUse = leftTable.getRowSet();
@@ -495,7 +495,7 @@ public class AsOfJoinHelper {
         if (rightDataIndexTable != null) {
             rightRowSetToUse = rightDataIndexTable.getRowSet();
             rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
+                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.keyColumns(originalRightSources));
         } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
@@ -901,7 +901,7 @@ public class AsOfJoinHelper {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
             leftRowSetToUse = leftDataIndexTable.getRowSet();
             leftSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.indexKeyColumns(originalLeftSources));
+                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.keyColumns(originalLeftSources));
         } else {
             leftRowSetToUse = leftTable.getRowSet();
             leftSourcesToUse = leftSources;
@@ -910,7 +910,7 @@ public class AsOfJoinHelper {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.RightInput);
             rightRowSetToUse = rightDataIndexTable.getRowSet();
             rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.indexKeyColumns(originalRightSources));
+                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.keyColumns(originalRightSources));
         } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;

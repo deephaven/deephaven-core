@@ -9,76 +9,110 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
- * This interface provides a data index for a {@link Table}. The index itself is a Table containing the key column(s)
- * and the RowSets associated with each unique combination of values. DataIndexes may be loaded from persistent storage
- * or created using aggregations
+ * Implementations of BasicDataIndex provide a data index for a {@link Table}. The index is itself a {@link Table} with
+ * columns corresponding to the indexed column(s) ("key" columns) and a column of {@link RowSet RowSets} that contain
+ * the row keys for each unique combination of key values (that is, the "group" or "bucket"). The index itself is a
+ * Table containing the key column(s) and the RowSets associated with each unique combination of values. Implementations
+ * may be loaded from persistent storage or created at runtime, e.g. via aggregations.
  */
 public interface BasicDataIndex extends LivenessReferent {
 
-    /** Get the key column names for the index {@link #table() table}. */
-    @NotNull
-    String[] keyColumnNames();
-
     /**
-     * Get a map from indexed column sources to key column names for the index {@link #table() table}. This map must be
-     * ordered in the same order presented by {@link #keyColumnNames()} and used for lookup keys.
+     * Get a map from indexed {@link ColumnSource ColumnSources} to key column names for the index {@link #table()
+     * table}. This map must be ordered in the same order presented by {@link #keyColumnNames()} and used for lookup
+     * keys.
+     *
+     * @return A map designating the key column names for each indexed {@link ColumnSource}
      */
     @NotNull
-    Map<ColumnSource<?>, String> keyColumnMap();
+    Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn();
 
-    /** Get the output row set column name for this index. */
+    /**
+     * Get a list of the key column names for the index {@link #table() table}.
+     *
+     * @return The key column names
+     */
+    @NotNull
+    List<String> keyColumnNames();
+
+    /**
+     * Get the {@link RowSet} column name for the index {@link #table() table}.
+     * 
+     * @return The {@link RowSet} column name
+     */
     @NotNull
     String rowSetColumnName();
 
-    /** Return the index table key sources in the order of the index table. **/
+    /**
+     * Get the key {@link ColumnSource ColumnSources} of the index {@link #table() table}.
+     *
+     * @return An array of the key {@link ColumnSource ColumnSources}, to be owned by the caller
+     */
     @FinalDefault
     @NotNull
-    default ColumnSource<?>[] indexKeyColumns() {
+    default ColumnSource<?>[] keyColumns() {
         final Table indexTable = table();
-        return Arrays.stream(keyColumnNames())
+        return keyColumnNames().stream()
                 .map(indexTable::getColumnSource)
                 .toArray(ColumnSource[]::new);
-        // TODO-RWC: Should this be in a static helper instead of the interface?
     }
 
-    /** Return the index table key sources in the relative order of the indexed sources supplied. **/
+    /**
+     * Get the key {@link ColumnSource ColumnSources} of the index {@link #table() table} in the relative order of
+     * {@code indexedColumnSources}.
+     *
+     * @param indexedColumnSources The indexed {@link ColumnSource ColumnSources} in the desired order; must match the
+     *        keys of {@link #keyColumnNamesByIndexedColumn()}
+     * @return An array of the key {@link ColumnSource ColumnSources} in the specified order, to be owned by the caller
+     */
     @FinalDefault
     @NotNull
-    default ColumnSource<?>[] indexKeyColumns(@NotNull final ColumnSource<?>[] columnSources) {
+    default ColumnSource<?>[] keyColumns(@NotNull final ColumnSource<?>[] indexedColumnSources) {
         final Table indexTable = table();
-        final Map<ColumnSource<?>, String> keyColumnMap = keyColumnMap();
-        // Verify that the provided sources match the sources of the index.
-        if (columnSources.length != keyColumnMap.size()
-                || !keyColumnMap.keySet().containsAll(Arrays.asList(columnSources))) {
-            throw new IllegalArgumentException("The provided columns must match the data index key columns");
+        final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn = keyColumnNamesByIndexedColumn();
+        // Verify that the provided columns match the indexed columns.
+        if (keyColumnNamesByIndexedColumn.size() != indexedColumnSources.length
+                || !keyColumnNamesByIndexedColumn.keySet().containsAll(Arrays.asList(indexedColumnSources))) {
+            throw new IllegalArgumentException(String.format(
+                    "The provided columns %s do not match the index's indexed columns %s",
+                    Arrays.toString(indexedColumnSources),
+                    keyColumnNamesByIndexedColumn.keySet()));
         }
-        return Arrays.stream(columnSources)
-                .map(keyColumnMap::get)
+        return Arrays.stream(indexedColumnSources)
+                .map(keyColumnNamesByIndexedColumn::get)
                 .map(indexTable::getColumnSource)
                 .toArray(ColumnSource[]::new);
-        // TODO-RWC: Should this be in a static helper instead of the interface?
     }
 
-    /** Return the index table row set source. **/
+    /**
+     * Get the {@link RowSet} {@link ColumnSource} of the index {@link #table() table}.
+     *
+     * @return The {@link RowSet} {@link ColumnSource}
+     */
     @FinalDefault
     @NotNull
     default ColumnSource<RowSet> rowSetColumn() {
         return table().getColumnSource(rowSetColumnName(), RowSet.class);
     }
 
-
-    /** Get the index as a table. */
+    /**
+     * Get the {@link Table} backing this data index.
+     * 
+     * @return The {@link Table}
+     */
     @NotNull
     Table table();
 
     /**
-     * Whether the data index table is refreshing. Some transformations will force the index to become static even when
-     * the source table is refreshing.
+     * Whether the index {@link #table()} {@link Table#isRefreshing() is refreshing}. Some transformations will force
+     * the index to become static even when the source table is refreshing.
      *
-     * @return true when the index table is refreshing, false otherwise.
+     * @return {@code true} if the index {@link #table()} {@link Table#isRefreshing() is refreshing}, {@code false}
+     *         otherwise
      */
     boolean isRefreshing();
 }

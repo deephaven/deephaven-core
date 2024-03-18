@@ -17,6 +17,8 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 
@@ -27,55 +29,55 @@ import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GRO
  */
 public class TableBackedDataIndex extends BaseDataIndex {
 
+    @NotNull
+    private final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn;
+
+    @NotNull
+    final List<String> keyColumnNames;
+
+    private final boolean isRefreshing;
+
+    private QueryTable sourceTable;
+
     /**
-     * The table containing the index. Consists of sorted key column(s) and an associated
-     * {@link io.deephaven.engine.rowset.RowSet} column.
+     * The lookup function for the index table. Note that this is always set before {@link #indexTable}.
      */
-    private Table indexTable;
-
-    @NotNull
-    private final QueryTable sourceTable;
-
-    @NotNull
-    private final Map<ColumnSource<?>, String> keyColumnMap;
-
-    @NotNull
-    final String[] keyColumnNames;
-
     private AggregationRowLookup lookupFunction;
+
+    /**
+     * The index table. Note that we use this as a barrier to ensure {@link #lookupFunction} is visible.
+     */
+    private volatile Table indexTable;
 
     public TableBackedDataIndex(
             @NotNull final QueryTable sourceTable,
-            @NotNull final String[] keyColumnNames) {
-
-        this.sourceTable = sourceTable;
-        this.keyColumnNames = keyColumnNames;
+            @NotNull final String... keyColumnNames) {
+        this.keyColumnNames = List.of(keyColumnNames);
 
         // Create an in-order reverse lookup map for the key column names.
-        keyColumnMap = new LinkedHashMap<>(keyColumnNames.length);
-        for (final String keyColumnName : keyColumnNames) {
-            final ColumnSource<?> keySource = sourceTable.getColumnSource(keyColumnName);
-            keyColumnMap.put(keySource, keyColumnName);
-        }
+        keyColumnNamesByIndexedColumn = Collections.unmodifiableMap(
+                Arrays.stream(keyColumnNames).collect(Collectors.toMap(
+                        sourceTable::getColumnSource, Function.identity(), Assert::neverInvoked, LinkedHashMap::new)));
 
-        // We will defer the actual index creation until it is needed.
+        isRefreshing = sourceTable.isRefreshing();
+
+        // Defer the actual index table and lookup function creation until they are needed.
+        this.sourceTable = sourceTable;
+        if (isRefreshing) {
+            manage(sourceTable);
+        }
     }
 
     @Override
-    public String[] keyColumnNames() {
+    @NotNull
+    public List<String> keyColumnNames() {
         return keyColumnNames;
     }
 
     @Override
     @NotNull
-    public Map<ColumnSource<?>, String> keyColumnMap() {
-        return keyColumnMap;
-    }
-
-    @Override
-    @NotNull
-    public String rowSetColumnName() {
-        return ROW_SET_COLUMN_NAME;
+    public Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
+        return keyColumnNamesByIndexedColumn;
     }
 
     @Override
@@ -124,6 +126,10 @@ public class TableBackedDataIndex extends BaseDataIndex {
                 });
         lookupFunction = resultLookupFunction.getValue();
         indexTable = resultIndexTable;
+        if (isRefreshing) {
+            unmanage(sourceTable);
+        }
+        sourceTable = null;
         return resultIndexTable;
     }
 
@@ -140,7 +146,7 @@ public class TableBackedDataIndex extends BaseDataIndex {
 
     @Override
     public boolean isRefreshing() {
-        return sourceTable.isRefreshing();
+        return isRefreshing;
     }
 
     @Override

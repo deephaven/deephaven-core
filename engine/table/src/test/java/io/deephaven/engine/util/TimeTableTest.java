@@ -271,7 +271,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
             final Table indexTable = dataIndex.table();
 
             Assert.assertEquals(indexTable.size(), 10);
-            try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames()[0]);
+            try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames().get(0));
                     final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
                 while (keyIt.hasNext()) {
                     final Instant key = keyIt.next();
@@ -296,7 +296,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
             Assert.assertEquals(longIndexTable.size(), 10);
             try (final CloseablePrimitiveIteratorOfLong keyIt = new ChunkedLongColumnIterator(
-                    longIndexTable.getColumnSource(longDataIndex.keyColumnNames()[0], long.class),
+                    longIndexTable.getColumnSource(longDataIndex.keyColumnNames().get(0), long.class),
                     longIndexTable.getRowSet());
                     final CloseableIterator<RowSet> rsIt =
                             longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {

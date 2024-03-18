@@ -5,31 +5,60 @@ package io.deephaven.engine.table;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.rowset.RowSet;
-import org.immutables.value.Value;
+import io.deephaven.util.annotations.FinalDefault;
+import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Optional;
 
+/**
+ * A transformation to apply to an existing {@link DataIndex data index} in order to produce a transformed
+ * {@link BasicDataIndex}.
+ */
 @Immutable
 @BuildableStyle
 public interface DataIndexTransformer {
 
-    /** The row set to {@link RowSet#intersect(RowSet)} the output row sets. */
+    /**
+     * A {@link RowSet} to {@link RowSet#intersect(RowSet) intersect} with input RowSets when producing output RowSets.
+     * If present, the result {@link BasicDataIndex} will be a static snapshot. This is the first transformation applied
+     * if present.
+     */
     Optional<RowSet> intersectRowSet();
 
-    /** The row set to {@link RowSet#invert(RowSet)} the output row sets. */
+    /*
+     * A {@link RowSet} to {@link RowSet#invert(RowSet) invert} the input RowSets with when producing output RowSets. If
+     * present, the result {@link BasicDataIndex} will be a static snapshot. This is always applied after {@link
+     * #intersectRowSet() if present.
+     */
     Optional<RowSet> invertRowSet();
 
-    /** Whether to sort the output table by the first row key in each output row set. */
-    @Value.Default
+    /**
+     * Whether to sort the output {@link BasicDataIndex BasicDataIndex's} {@link BasicDataIndex#table() table} by the
+     * first row key in each output {@link RowSet}. This is always applied after {@link #intersectRowSet()} and
+     * {@link #invertRowSet()} if present. Note that when sorting a {@link BasicDataIndex#isRefreshing() refreshing}
+     * index, operations that rely on the transformed index must be sure to depend on the <em>transformed</em> index,
+     * and not the input index, for correct satisfaction.
+     */
+    @Default
     default boolean sortByFirstRowKey() {
         return false;
     }
 
-    /** Whether to force the materialized table to be static, flat, and immutable. */
-    @Value.Default
-    default boolean immutable() {
-        return false;
+    /**
+     * @return Whether the set of transformations will force the result index table to be a static snapshot.
+     */
+    @FinalDefault
+    default boolean snapshotResult() {
+        return intersectRowSet().isPresent() || invertRowSet().isPresent();
+    }
+
+    @Check
+    default void checkNotEmpty() {
+        if (intersectRowSet().isEmpty() && invertRowSet().isEmpty() && !sortByFirstRowKey()) {
+            throw new IllegalArgumentException("DataIndexTransformer must specify at least one transformation");
+        }
     }
 
     /**
@@ -38,11 +67,12 @@ public interface DataIndexTransformer {
      * <p>
      * When multiple transformations are specified, they are applied in a specific order:
      * <ol>
-     * <li>Intersect the output row sets.</li>
-     * <li>Invert the output row sets.</li>
-     * <li>Sort the index table by the first row key within each row set.</li>
-     * <li>Force the materialized table to be static and immutable.</li>
-     * <li>Map the old key columns to the new columns.</li>
+     * <li>Intersect the index {@link RowSet RowSets} with the supplied RowSet. Note that the result will always be a
+     * static snapshot.</li>
+     * <li>Invert the index {@link RowSet RowSets} with the supplied RowSet. Note that the result will always be a
+     * static snapshot.</li>
+     * <li>Sort the index table by the first row key within each {@link RowSet}. Be careful to use the correct
+     * dependency for satisfaction!</li>
      * </ol>
      * </p>
      *
@@ -55,23 +85,23 @@ public interface DataIndexTransformer {
     interface Builder {
 
         /**
-         * Intersect the output row sets with the provided {@link RowSet}. This transformation forces the result table
-         * to become static.
+         * Intersect the index {@link RowSet RowSets} with {@code rowSet}. The result {@link BasicDataIndex} will be a
+         * static snapshot.
          */
         Builder intersectRowSet(RowSet rowSet);
 
         /**
-         * Invert the output row sets with the provided {@link RowSet}. This transformation forces the result table to
-         * become static.
+         * Invert the index {@link RowSet RowSets} with the supplied RowSet. The result {@link BasicDataIndex} will be a
+         * static snapshot.
          */
         Builder invertRowSet(RowSet rowSet);
 
-        /** Whether to sort the index table by the first row key within each row set. */
+        /**
+         * Whether to sort the index table by the first row key within each {@link RowSet}. Defaults to {@code false}.
+         * Be careful to use the correct dependency for satisfaction!
+         */
         @SuppressWarnings("unused")
         Builder sortByFirstRowKey(boolean sort);
-
-        /** Whether to force the materialized table to be static, flat, and immutable. */
-        Builder immutable(boolean immutable);
 
         DataIndexTransformer build();
     }

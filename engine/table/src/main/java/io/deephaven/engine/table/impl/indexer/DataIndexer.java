@@ -255,12 +255,12 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @throws IllegalStateException If a valid, live {@link DataIndex} already exists for the given key columns
      */
     public void addDataIndex(@NotNull final DataIndex dataIndex) {
-        if (dataIndex.keyColumnMap().isEmpty()) {
+        if (dataIndex.keyColumnNamesByIndexedColumn().isEmpty()) {
             throw new IllegalArgumentException("DataIndex must have at least one key column");
         }
-        if (!rootCache.add(pathFor(dataIndex.keyColumnMap().keySet()), dataIndex)) {
+        if (!rootCache.add(pathFor(dataIndex.keyColumnNamesByIndexedColumn().keySet()), dataIndex)) {
             throw new IllegalStateException(String.format("Attempted to add a duplicate index %s for key columns %s",
-                    dataIndex, dataIndex.keyColumnMap().keySet()));
+                    dataIndex, dataIndex.keyColumnNamesByIndexedColumn().keySet()));
         }
     }
 

@@ -250,7 +250,7 @@ public class SortHelpers {
 
         // Don't use a full index if it is too large.
         if (dataIndex != null
-                && dataIndex.keyColumnNames().length == columnsToSortBy.length
+                && dataIndex.keyColumnNames().size() == columnsToSortBy.length
                 && rowSetToSort.size() > dataIndex.table().size() * 2L) {
             return getSortMappingIndexed(order, originalColumnsToSortBy, dataIndex, rowSetToSort, usePrev);
         }
@@ -532,7 +532,7 @@ public class SortHelpers {
         final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
         // noinspection unchecked
         final ColumnSource<Comparable<?>>[] originalIndexKeyColumns =
-                (ColumnSource<Comparable<?>>[]) dataIndex.indexKeyColumns(columnSources);
+                (ColumnSource<Comparable<?>>[]) dataIndex.keyColumns(columnSources);
         // noinspection unchecked
         final ColumnSource<Comparable<?>>[] indexKeyColumns =
                 (ColumnSource<Comparable<?>>[]) ReinterpretUtils.maybeConvertToPrimitive(originalIndexKeyColumns);
@@ -598,12 +598,13 @@ public class SortHelpers {
 
         // Can we utilize an existing index on the first column?
         if (dataIndex != null
-                && dataIndex.keyColumnNames().length == 1
-                && dataIndex.keyColumnMap().containsKey(originalColumnSources[0])) {
+                && dataIndex.keyColumnNames().size() == 1
+                && dataIndex.keyColumnNamesByIndexedColumn().containsKey(originalColumnSources[0])) {
             final Table indexTable = dataIndex.table();
             final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
             final ColumnSource<Comparable<?>> originalIndexKeyColumn = indexTable.getColumnSource(
-                    dataIndex.keyColumnMap().get(originalColumnSources[0]), originalColumnSources[0].getType());
+                    dataIndex.keyColumnNamesByIndexedColumn().get(originalColumnSources[0]),
+                    originalColumnSources[0].getType());
             // noinspection unchecked
             final ColumnSource<Comparable<?>> indexColumn =
                     (ColumnSource<Comparable<?>>) ReinterpretUtils.maybeConvertToPrimitive(originalIndexKeyColumn);

@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -10,16 +12,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * This interface provides a data index for a {@link Table}. The index itself is a Table containing the key column(s)
- * and the RowSets associated with each unique combination of values. DataIndexes may be loaded from persistent storage
- * or created using aggregations.
- *
- * This {@link DataIndex} interface provides methods for transforming the index and fast retrieval of row keys from
+ * Expansion of {@link BasicDataIndex} to include methods for transforming the index and fast retrieval of row keys from
  * lookup keys.
  */
 public interface DataIndex extends BasicDataIndex {
     /**
-     * Provides a lookup function from {@code lookup key} to the row key in the index table. Keys consist of
+     * Provides a lookup function from a <em>lookup key</em> to the row key in the index table. Lookup keys consist of
      * reinterpreted values and are specified as follows:
      * <dl>
      * <dt>No key columns</dt>
@@ -39,102 +37,113 @@ public interface DataIndex extends BasicDataIndex {
          * @param key The key to lookup
          * @return The result row key, or {@link RowSequence#NULL_ROW_KEY} if the key is not found.
          */
-        long apply(Object key, boolean usePrev); // TODO-RWC: Decide about prev impl for the lookups
+        long apply(Object key, boolean usePrev);
     }
 
     /**
-     * Build a {@link RowKeyLookup lookup function} of row keys for this index. If {@link #isRefreshing()} is true, this
-     * lookup function is only guaranteed to be accurate for the current cycle.
+     * Build a {@link RowKeyLookup lookup function} of row keys for this index. If {@link #isRefreshing()} is
+     * {@code true}, this lookup function is only guaranteed to be accurate for the current cycle. Lookup keys should be
+     * in the order of the index's key columns.
      *
-     * @return A function that provides map-like lookup of index table positions from an index key
+     * @return A function that provides map-like lookup of index {@link #table()} row keys from an index lookup key
      */
     @NotNull
     RowKeyLookup rowKeyLookup();
 
     /**
      * Return a {@link RowKeyLookup lookup function} function of index row keys for this index. If
-     * {@link #isRefreshing()} is true, this lookup function is only guaranteed to be accurate for the current cycle.
-     * The keys provided must be in the order of the {@code lookupSources}.
+     * {@link #isRefreshing()} is {@code true}, this lookup function is only guaranteed to be accurate for the current
+     * cycle. Lookup keys should be in the order of {@code lookupColumns}.
      *
-     * @param lookupSources The sources to use for the lookup key, in the order of the caller's key column
-     * @return A function that provides map-like lookup of matching rows from an index key. The result must not be used
-     *         concurrently by more than one thread.
+     * @param lookupColumns The {@link ColumnSource ColumnSources} to use for the lookup key
+     * @return A function that provides map-like lookup of index {@link #table()} row keys from an index lookup key. The
+     *         result must not be used concurrently by more than one thread.
      */
     @NotNull
     @FinalDefault
-    default RowKeyLookup rowKeyLookup(@NotNull final ColumnSource<?>[] lookupSources) {
-        if (lookupSources.length == 1) {
-            // Trivially ordered.
-            return rowKeyLookup();
+    default RowKeyLookup rowKeyLookup(@NotNull final ColumnSource<?>[] lookupColumns) {
+        final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn = keyColumnNamesByIndexedColumn();
+        final ColumnSource<?>[] indexedColumns =
+                keyColumnNamesByIndexedColumn.keySet().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+
+        final Runnable onMismatch = () -> {
+            throw new IllegalArgumentException(String.format(
+                    "The provided lookup columns %s do not match the indexed columns %s",
+                    Arrays.toString(lookupColumns), Arrays.toString(indexedColumns)));
+        };
+
+        if (indexedColumns.length != lookupColumns.length) {
+            onMismatch.run();
         }
 
-        // TODO-RWC: Change this when we can impose order on keyColumnMap
-        // Get the source columns of the index in the order of the index key columns.
-        final Map<String, ColumnSource<?>> reverseMap = new HashMap<>(keyColumnMap().size());
-        keyColumnMap().forEach((k, v) -> reverseMap.put(v, k));
-        final ColumnSource<?>[] indexSourceColumns = Arrays.stream(keyColumnNames()).map(reverseMap::get)
-                .toArray(ColumnSource[]::new);
-
-        if (Arrays.equals(lookupSources, indexSourceColumns)) {
-            // Order matches, so we can use the default lookup function.
-            return rowKeyLookup();
-        }
-
-        // We will need to create an appropriately mapped lookup key for each user-supplied key. Let's create an int[]
-        // storing the index of the user-supplied key array that is correct for the lookup function key.
-        final int[] indexToUserMapping = new int[lookupSources.length];
-
-        // Build an intermediate map (N^2 loop but N is small and this is called only at creation).
-        for (int ii = 0; ii < indexSourceColumns.length; ++ii) {
+        // We will need to create an appropriately mapped index lookup key for each caller-supplied key. Let's create an
+        // int[] mapping the offset into the index's lookup key to the offset into the caller's lookup key.
+        final int[] indexToCallerOffsetMap = new int[lookupColumns.length];
+        boolean sameOrder = true;
+        // This is an N^2 loop but N is expected to be very small and this is called only at creation.
+        for (int ii = 0; ii < indexedColumns.length; ++ii) {
             boolean found = false;
-            for (int jj = 0; jj < lookupSources.length; ++jj) {
-                if (indexSourceColumns[ii] == lookupSources[jj]) {
-                    indexToUserMapping[ii] = jj;
+            for (int jj = 0; jj < lookupColumns.length; ++jj) {
+                if (indexedColumns[ii] == lookupColumns[jj]) {
+                    indexToCallerOffsetMap[ii] = jj;
+                    sameOrder &= ii == jj;
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                throw new IllegalArgumentException("The provided columns must match the data index key columns");
+                onMismatch.run();
             }
         }
 
+        if (sameOrder) {
+            return rowKeyLookup();
+        }
+        Assert.neq(indexToCallerOffsetMap.length, "indexToCallerOffsetMap.length", 1);
+
         return new RowKeyLookup() {
-            // This is the complex key we need to provide to the lookup function.
-            final Object[] remappedKey = new Object[indexToUserMapping.length];
+            // This is the complex key we need to provide to our lookup function.
+            final Object[] indexKey = new Object[indexToCallerOffsetMap.length];
 
             @Override
-            public long apply(final Object key, final boolean usePrev) {
+            public long apply(final Object callerKey, final boolean usePrev) {
                 // This is the complex key provided by the caller.
-                final Object[] keys = (Object[]) key;
+                final Object[] callerKeys = (Object[]) callerKey;
 
-                // Assign the user-supplied keys to the lookup function key in the appropriate order.
-                for (int ii = 0; ii < remappedKey.length; ++ii) {
-                    remappedKey[ii] = keys[indexToUserMapping[ii]];
+                // Assign the caller-supplied keys to the lookup function key in the appropriate order.
+                for (int ii = 0; ii < indexKey.length; ++ii) {
+                    indexKey[ii] = callerKeys[indexToCallerOffsetMap[ii]];
                 }
 
-                return rowKeyLookup().apply(remappedKey, usePrev);
+                return rowKeyLookup().apply(indexKey, usePrev);
             }
         };
     }
 
     /**
      * Transform and return a new {@link BasicDataIndex} with the provided transform operations applied. Some
-     * transformations will force the index to become static even when the source table is refreshing.
+     * transformations will force the result to be a static snapshot even when this DataIndex {@link #isRefreshing() is
+     * refreshing}.
      *
-     * @param transformer the {@link DataIndexTransformer} containing the desired transformations.
+     * @param transformer The {@link DataIndexTransformer} specifying the desired transformations
      *
-     * @return the transformed {@link BasicDataIndex}
+     * @return The transformed {@link BasicDataIndex}
      */
     @NotNull
     BasicDataIndex transform(@NotNull DataIndexTransformer transformer);
 
     /**
-     * Create a new {@link DataIndex} by remapping the source table key columns to new columns.
+     * Create a new {@link DataIndex} using the same index {@link #table()}, with the indexed columns in
+     * {@link #keyColumnNamesByIndexedColumn()} remapped according to {@code oldToNewColumnMap}. This is used when it is
+     * known that an operation has produced new columns that are equivalent to the old indexed columns. The result index
+     * may keep {@code this} index reachable and
+     * {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) live} for its own lifetime, if
+     * necessary.
      *
-     * @param oldToNewColumnMap map from the old key columns to the new key columns.
+     * @param oldToNewColumnMap Map from the old indexed {@link ColumnSource ColumnSources} to the new indexed
+     *        ColumnSources
      *
-     * @return the transformed {@link BasicDataIndex}
+     * @return The remapped {@link DataIndex}
      */
     DataIndex remapKeyColumns(@NotNull Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap);
 }

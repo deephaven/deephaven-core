@@ -132,7 +132,7 @@ public abstract class AbstractColumnSource<T> implements
 
                 final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
                 final ColumnSource<?> indexKeySource =
-                        indexTable.getColumnSource(dataIndex.keyColumnNames()[0], String.class);
+                        indexTable.getColumnSource(dataIndex.keyColumnNames().get(0), String.class);
 
                 final int chunkSize = (int) Math.min(CHUNK_SIZE, indexRowSet.size());
                 try (final RowSequence.Iterator indexRowSetIterator = indexRowSet.getRowSequenceIterator();

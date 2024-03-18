@@ -306,13 +306,14 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         }
 
         final MutableInt dataIndexSourceOffset = new MutableInt(0);
-        final KeyedObjectHashMap<ColumnSource<?>, SourceOffsetPair> dataIndexSources = dataIndex.keyColumnMap().keySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        cs -> cs,
-                        cs -> new SourceOffsetPair(cs, dataIndexSourceOffset.getAndIncrement()),
-                        Assert::neverInvoked,
-                        () -> new KeyedObjectHashMap<>(new KeyedObjectKey.ExactAdapter<>(sop -> sop.source))));
+        final KeyedObjectHashMap<ColumnSource<?>, SourceOffsetPair> dataIndexSources =
+                dataIndex.keyColumnNamesByIndexedColumn().keySet()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                cs -> cs,
+                                cs -> new SourceOffsetPair(cs, dataIndexSourceOffset.getAndIncrement()),
+                                Assert::neverInvoked,
+                                () -> new KeyedObjectHashMap<>(new KeyedObjectKey.ExactAdapter<>(sop -> sop.source))));
 
         final int[] indexToKeySourceOffsets = new int[dataIndexSources.size()];
         boolean isAscending = true;
@@ -331,7 +332,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         throw new IllegalArgumentException(String.format(
                 "The provided key sources %s don't match the data index key sources %s",
-                Arrays.toString(keySources), dataIndex.keyColumnMap().keySet()));
+                Arrays.toString(keySources), dataIndex.keyColumnNamesByIndexedColumn().keySet()));
     }
 
     @NotNull
@@ -386,7 +387,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (sourceDataIndex != null) {
             // Does our index contain every key column?
 
-            if (sourceDataIndex.keyColumnNames().length == sourceKeyColumns.length) {
+            if (sourceDataIndex.keyColumnNames().size() == sourceKeyColumns.length) {
                 // Even if we have an index, we may be better off with a linear search.
                 if (selection.size() > (sourceDataIndex.table().size() * 2L)) {
                     return filterFullIndex(selection);

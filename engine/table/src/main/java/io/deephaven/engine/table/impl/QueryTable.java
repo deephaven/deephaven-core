@@ -1625,7 +1625,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Make a set containing only the columns that were part of indexes.
         Set<ColumnSource<?>> indexedColumns = new HashSet<>();
         dataIndexes.forEach(di -> {
-            indexedColumns.addAll(di.keyColumnMap().keySet());
+            indexedColumns.addAll(di.keyColumnNamesByIndexedColumn().keySet());
         });
 
         final Set<ColumnSource<?>> usedOutputColumns = new HashSet<>();
@@ -1695,7 +1695,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         for (final DataIndex dataIndex : dataIndexes) {
             // Create a new data index for each unique mapping.
             oldToNewMaps.forEach(map -> {
-                if (Collections.disjoint(dataIndex.keyColumnMap().keySet(), map.keySet())) {
+                if (Collections.disjoint(dataIndex.keyColumnNamesByIndexedColumn().keySet(), map.keySet())) {
                     // The index contains no remapped original sources, no work needed.
                     return;
                 }
