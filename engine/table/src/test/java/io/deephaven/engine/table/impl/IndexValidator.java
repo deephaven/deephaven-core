@@ -8,7 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.util.SafeCloseable;
@@ -72,7 +72,7 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
             return;
         }
 
-        final BaseDataIndex dataIndex = (BaseDataIndex) dataIndexer.getDataIndex(groupColumns);
+        final AbstractDataIndex dataIndex = (AbstractDataIndex) dataIndexer.getDataIndex(groupColumns);
         final Table indexTable = dataIndex.table();
 
         // Create column iterators for the keys and the row set

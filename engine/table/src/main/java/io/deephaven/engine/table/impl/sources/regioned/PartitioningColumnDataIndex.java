@@ -20,7 +20,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * DataIndex over a partitioning column of a {@link Table} backed by a {@link RegionedColumnSourceManager}.
  */
-class PartitioningColumnDataIndex<KEY_TYPE> extends BaseDataIndex {
+class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
 
     private static final int KEY_NOT_FOUND = (int) RowSequence.NULL_ROW_KEY;
 

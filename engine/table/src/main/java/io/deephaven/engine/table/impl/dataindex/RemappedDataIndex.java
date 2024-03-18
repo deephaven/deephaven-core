@@ -14,18 +14,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A {@link BaseDataIndex} that remaps the key columns of another {@link BaseDataIndex}. Used to implement
+ * A {@link AbstractDataIndex} that remaps the key columns of another {@link AbstractDataIndex}. Used to implement
  * {@link io.deephaven.engine.table.DataIndex#remapKeyColumns(Map)}.
  */
-public class RemappedDataIndex extends BaseDataIndex {
+public class RemappedDataIndex extends AbstractDataIndex {
 
-    private final BaseDataIndex sourceIndex;
+    private final AbstractDataIndex sourceIndex;
     private final Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap;
 
     private final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn;
 
     public static DataIndex from(
-            @NotNull final BaseDataIndex sourceIndex,
+            @NotNull final AbstractDataIndex sourceIndex,
             @NotNull final Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap) {
         if (sourceIndex instanceof RemappedDataIndex) {
             // We should chain the remappings and delegate to the original source index.
@@ -54,7 +54,7 @@ public class RemappedDataIndex extends BaseDataIndex {
     }
 
     private RemappedDataIndex(
-            @NotNull final BaseDataIndex sourceIndex,
+            @NotNull final AbstractDataIndex sourceIndex,
             @NotNull final Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap) {
         this.sourceIndex = sourceIndex;
         this.oldToNewColumnMap = oldToNewColumnMap;

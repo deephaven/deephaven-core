@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 
 /**
- * This class creates a possibly-{@link BaseDataIndex#isRefreshing() refreshing} {@link BaseDataIndex} for a table. At
- * its core, the index is a {@link Table} containing the key column(s) and the {@link io.deephaven.engine.rowset.RowSet
- * RowSets} that contain these values.
+ * This class creates a possibly-{@link AbstractDataIndex#isRefreshing() refreshing} {@link AbstractDataIndex} for a
+ * table. At its core, the index is a {@link Table} containing the key column(s) and the
+ * {@link io.deephaven.engine.rowset.RowSet RowSets} that contain these values.
  */
-public class TableBackedDataIndex extends BaseDataIndex {
+public class TableBackedDataIndex extends AbstractDataIndex {
 
     @NotNull
     private final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn;

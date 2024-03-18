@@ -25,10 +25,11 @@ import java.util.Map;
 /**
  * Abstract base implementation of {@link DataIndex} that provides common functionality.
  */
-public abstract class BaseDataIndex extends LivenessArtifact implements DataIndex {
+public abstract class AbstractDataIndex extends LivenessArtifact implements DataIndex {
 
     /**
-     * The name of the {@link RowSet} column in the index {@link #table()} used by all {@link BaseDataIndex} instances.
+     * The name of the {@link RowSet} column in the index {@link #table()} used by all {@link AbstractDataIndex}
+     * instances.
      */
     protected static final String ROW_SET_COLUMN_NAME = "dh_row_set";
 
@@ -51,11 +52,11 @@ public abstract class BaseDataIndex extends LivenessArtifact implements DataInde
     }
 
     /**
-     * Whether this BaseDataIndex is potentially usable. This will return {@code true} when there are no known issues
-     * for this data index. This performs fast checks, such as verifying all locations have index table files, but does
-     * not fully guarantee that the index is complete and loadable.
+     * Whether this AbstractDataIndex is potentially usable. This will return {@code true} when there are no known
+     * issues for this data index. This performs fast checks, such as verifying all locations have index table files,
+     * but does not fully guarantee that the index is complete and loadable.
      *
-     * @return true If the BaseDataIndex is potentially usable, false otherwise
+     * @return true If the AbstractDataIndex is potentially usable, false otherwise
      */
     public abstract boolean isValid();
 

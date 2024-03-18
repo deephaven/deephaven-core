@@ -12,7 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -284,7 +284,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         if (dataIndex == null) {
             return true;
         }
-        if (dataIndex instanceof BaseDataIndex && !((BaseDataIndex) dataIndex).isValid()) {
+        if (dataIndex instanceof AbstractDataIndex && !((AbstractDataIndex) dataIndex).isValid()) {
             return true;
         }
         return dataIndex.isRefreshing() && dataIndex.table().isFailed();

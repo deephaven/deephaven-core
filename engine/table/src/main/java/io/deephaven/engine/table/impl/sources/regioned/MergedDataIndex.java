@@ -17,7 +17,7 @@ import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
-import io.deephaven.engine.table.impl.dataindex.BaseDataIndex;
+import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -41,7 +41,7 @@ import java.util.stream.IntStream;
  *           source table".
  */
 @InternalUseOnly
-class MergedDataIndex extends BaseDataIndex {
+class MergedDataIndex extends AbstractDataIndex {
 
     private static final String LOCATION_DATA_INDEX_TABLE_COLUMN_NAME = "__DataIndexTable";
 
