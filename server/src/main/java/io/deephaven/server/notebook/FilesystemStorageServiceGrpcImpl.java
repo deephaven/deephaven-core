@@ -71,9 +71,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             DataDir.get().resolve("storage").toString());
 
     private static final String WEB_LAYOUT_DIRECTORY =
-            Configuration.getInstance().getStringWithDefault("web.storage.layout.directory", "/layouts");
+            Configuration.getInstance().getProperty("web.storage.layout.directory");
     private static final String WEB_NOTEBOOK_DIRECTORY =
-            Configuration.getInstance().getStringWithDefault("web.storage.notebook.directory", "/notebooks");
+            Configuration.getInstance().getProperty("web.storage.notebook.directory");
     private static final String[] PRE_CREATE_PATHS = Configuration.getInstance()
             .getStringArrayFromPropertyWithDefault("storage.path.defaults", new String[] {
                     WEB_LAYOUT_DIRECTORY,
@@ -86,7 +86,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
      * and this ensures that clients will have a stable cache across server restarts.
      */
     private static final HashFunction HASH_FUNCTION = Hashing.murmur3_128(0);
-    public static final String REQUIRED_PATH_PREFIX = "/";
+
+    /**
+     * Presently, the Web IDE requires that all paths start with "/". When this is no longer true, remove this constant.
+     */
+    @Deprecated
+    private static final String REQUIRED_PATH_PREFIX = "/";
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
     private final SessionService sessionService;
