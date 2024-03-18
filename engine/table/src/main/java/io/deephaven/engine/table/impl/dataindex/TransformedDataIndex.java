@@ -76,7 +76,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
                 return localIndexTable;
             }
 
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = parentIndex.isRefreshing() ? LivenessScopeStack.open() : null) {
                 localIndexTable = parentIndex.table();
                 localIndexTable = maybeIntersectAndInvert(localIndexTable);
                 localIndexTable = maybeSortByFirstKey(localIndexTable);

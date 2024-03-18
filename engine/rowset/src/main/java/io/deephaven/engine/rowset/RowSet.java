@@ -134,9 +134,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     /**
      * Returns true if a RowSet has any overlap.
      */
-    default boolean overlaps(@NotNull RowSet rowSet) {
-        return intersect(rowSet).isNonempty();
-    }
+    boolean overlaps(@NotNull RowSet rowSet);
 
     /**
      * Returns true if this RowSet has any overlap with the provided range.
