@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.dataindex;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -74,7 +76,10 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
 
             localIndexTable = parentIndex.table();
             localIndexTable = maybeIntersectAndInvert(localIndexTable);
-            localIndexTable = maybeSortByFirsKey(localIndexTable);
+            localIndexTable = maybeSortByFirstKey(localIndexTable);
+            localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
+                    ? localIndexTable.snapshot()
+                    : localIndexTable;
 
             indexTable = localIndexTable;
             return localIndexTable;
@@ -95,14 +100,24 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
         if (invertRowSet == null) {
             assert intersectRowSet != null;
             // Only intersect
-            mutator = rs -> rs.intersect(intersectRowSet);
+            mutator = (final RowSet rowSet) -> {
+                final WritableRowSet intersected = rowSet.intersect(intersectRowSet);
+                if (intersected.isEmpty()) {
+                    intersected.close();
+                    return null;
+                }
+                return intersected;
+            };
         } else if (intersectRowSet == null) {
             // Only invert
             mutator = invertRowSet::invert;
         } else {
             // Intersect and invert
-            mutator = index -> {
-                try (final WritableRowSet intersected = index.intersect(intersectRowSet)) {
+            mutator = (final RowSet rowSet) -> {
+                try (final WritableRowSet intersected = rowSet.intersect(intersectRowSet)) {
+                    if (intersected.isEmpty()) {
+                        return null;
+                    }
                     return invertRowSet.invert(intersected);
                 }
             };
@@ -123,11 +138,14 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
         final Function<RowSet, RowSet> mutator =
                 getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
         final Table mutated = indexTable
-                .updateView(List.of(new FunctionalColumn<>(
+                .update(List.of(new FunctionalColumn<>(
                         parentIndex.rowSetColumnName(), RowSet.class,
                         parentIndex.rowSetColumnName(), RowSet.class,
                         mutator)));
-        return indexTable.isRefreshing() ? mutated.snapshot() : mutated;
+        if (transformer.intersectRowSet().isPresent()) {
+            return mutated.where(Filter.isNotNull(ColumnName.of(parentIndex.rowSetColumnName())));
+        }
+        return mutated;
     }
 
     /**
@@ -136,7 +154,7 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
      * @param indexTable The input index table
      * @return The table sorted by first row key, if requested, else the input index table
      */
-    protected Table maybeSortByFirsKey(final @NotNull Table indexTable) {
+    protected Table maybeSortByFirstKey(final @NotNull Table indexTable) {
         if (!transformer.sortByFirstRowKey()) {
             return indexTable;
         }

@@ -893,8 +893,8 @@ public class ChunkedOperatorAggregationHelper {
                     usePreKeys = permutedKeyIndices;
                     usePostKeys = postPermutedKeyIndices;
                 } else {
-                    usePreKeys = WritableLongChunk.upcast(preKeyIndices.asWritableLongChunk());
-                    usePostKeys = WritableLongChunk.upcast(postKeyIndices.asWritableLongChunk());
+                    usePreKeys = WritableLongChunk.upcast(preKeyIndices);
+                    usePostKeys = WritableLongChunk.upcast(postKeyIndices);
                 }
 
                 boolean anyOperatorModified = false;

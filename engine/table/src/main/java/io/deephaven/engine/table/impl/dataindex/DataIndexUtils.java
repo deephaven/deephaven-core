@@ -122,8 +122,11 @@ public class DataIndexUtils {
         try (final CloseableIterator<Object> lookupKeyIterator =
                 ChunkedColumnIterator.make(lookupKeySource, indexTable.getRowSet());
                 final RowSet.Iterator rowKeyIterator = indexTable.getRowSet().iterator()) {
-            lookupKeyToRowKeyPairs.put(lookupKeyIterator.next(),
-                    new LookupKeyRowKeyPair(lookupKeyIterator.next(), rowKeyIterator.nextLong()));
+            while (lookupKeyIterator.hasNext()) {
+                final Object lookupKey = lookupKeyIterator.next();
+                final long rowKey = rowKeyIterator.nextLong();
+                lookupKeyToRowKeyPairs.put(lookupKey, new LookupKeyRowKeyPair(lookupKey, rowKey));
+            }
         }
 
         return (final Object lookupKey) -> {

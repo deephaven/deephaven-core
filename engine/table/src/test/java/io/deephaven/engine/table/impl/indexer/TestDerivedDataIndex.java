@@ -100,22 +100,21 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
         final DataIndexer dataIndexer = DataIndexer.of(testTable.getRowSet());
 
         final DataIndex dataIndex = DataIndexer.getDataIndex(testTable, "Sym", "Sym2");
-        Assert.neqNull(dataIndex, "dataIndex");
+        assertNotNull(dataIndex);
 
         // Make sure the index is found with the re-ordered column names.
-        Assert.eqTrue(DataIndexer.hasDataIndex(testTable, "Sym2", "Sym"),
-                "dataIndexer.hasDataIndex(testTable, \"Sym2\", \"Sym\")");
+        assertTrue(DataIndexer.hasDataIndex(testTable, "Sym2", "Sym"));
         final DataIndex tmp1 = DataIndexer.getDataIndex(testTable, "Sym2", "Sym");
-        Assert.eq(dataIndex, "dataIndex", tmp1, "tmp1");
+        assertEquals(dataIndex, tmp1);
 
         final ColumnSource<?>[] columnsReordered = new ColumnSource<?>[] {
                 testTable.getColumnSource("Sym2"),
                 testTable.getColumnSource("Sym")
         };
         // Make sure the index is found with re-ordered columns.
-        Assert.eqTrue(dataIndexer.hasDataIndex(columnsReordered), "dataIndexer.hasDataIndex(columnsReordered)");
+        assertTrue(dataIndexer.hasDataIndex(columnsReordered));
         final DataIndex tmp2 = dataIndexer.getDataIndex(columnsReordered);
-        Assert.eq(dataIndex, "dataIndex", tmp2, "tmp2");
+        assertEquals(dataIndex, tmp2);
 
         final ColumnSource<?>[] columns = Arrays.stream(new String[] {"Sym", "Sym2"})
                 .map(testTable::getColumnSource)
@@ -344,13 +343,13 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
 
 
     private void assertStatic(final BasicDataIndex subIndex) {
-        Assert.eqFalse(subIndex.isRefreshing(), "subIndex.isRefreshing()");
-        Assert.eqFalse(subIndex.table().isRefreshing(), "subIndex.table().isRefreshing()");
+        assertFalse(subIndex.isRefreshing());
+        assertFalse(subIndex.table().isRefreshing());
     }
 
     private void assertRefreshing(final BasicDataIndex subIndex) {
-        Assert.eqTrue(subIndex.isRefreshing(), "subIndex.isRefreshing()");
-        Assert.eqTrue(subIndex.table().isRefreshing(), "subIndex.table().isRefreshing()");
+        assertTrue(subIndex.isRefreshing());
+        assertTrue(subIndex.table().isRefreshing());
     }
 
     private void assertLookup(final DataIndex fullIndex,
@@ -373,9 +372,7 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 final long subRowKey = subIndexKeyMap.applyAsLong(subKey);
                 final long fullRowKey = fullIndexRowKeyLookup.apply(subKey, false);
 
-                Assert.eqTrue(
-                        subIndex.rowSetColumn().get(subRowKey).equals(fullIndex.rowSetColumn().get(fullRowKey)),
-                        "subIndex.rowSetColumn().get(subRowKey).equals(fullIndex.rowSetColumn().get(fullRowKey))");
+                assertEquals(subIndex.rowSetColumn().get(subRowKey), fullIndex.rowSetColumn().get(fullRowKey));
             }
         }
     }
@@ -403,11 +400,10 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 final long subRowKey = subIndexKeyMap.applyAsLong(fullKey);
                 if (subRowKey == NULL_ROW_KEY) {
                     // Verify applying the mutator to the full row set results in an empty row set.
-                    Assert.eqTrue(mutator.apply(fullRowSet).isEmpty(), "mutator.apply(fullRowSet).isEmpty()");
+                    assertTrue(mutator.apply(fullRowSet).isEmpty());
                 } else {
                     // The row set from the lookup must match the computed row set.
-                    Assert.eqTrue(subIndex.rowSetColumn().get(subRowKey).equals(mutator.apply(fullRowSet)),
-                            "subIndex.rowSetColumn().get(subRowKey).equals(mutator.apply(fullRowSet))");
+                    assertEquals(subIndex.rowSetColumn().get(subRowKey), mutator.apply(fullRowSet));
                 }
             }
         }
@@ -436,9 +432,9 @@ public class TestDerivedDataIndex extends RefreshingTableTestCase {
                 Assert.geqZero(fullRowKey, "fullRowKey");
 
                 final RowSet fullRowSet = fullIndexRowSetColumn.get(fullRowKey);
-                Assert.neqNull(fullRowSet, "fullRowSet");
+                assertNotNull(fullRowSet);
 
-                Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
+                assertTrue(fullRowSet.containsRange(rowKey, rowKey));
             }
         }
     }
