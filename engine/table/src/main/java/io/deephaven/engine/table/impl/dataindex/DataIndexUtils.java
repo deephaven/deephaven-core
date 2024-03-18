@@ -110,7 +110,7 @@ public class DataIndexUtils {
      * @param keyColumnNames The key columns to search
      * @return A mapping function from lookup keys to {@code indexTable} row keys
      */
-    public static ToLongFunction<Object> buildRowKeyLookupMap(
+    public static ToLongFunction<Object> buildRowKeyMappingFunction(
             final Table indexTable,
             final String[] keyColumnNames) {
 

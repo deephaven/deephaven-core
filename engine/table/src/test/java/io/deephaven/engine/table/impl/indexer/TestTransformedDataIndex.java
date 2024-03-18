@@ -357,8 +357,8 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
         final Table subIndexTable = subIndex.table();
 
         final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup();
-        final ToLongFunction<Object> subIndexKeyMap =
-                DataIndexUtils.buildRowKeyLookupMap(subIndex.table(), subIndex.keyColumnNames().toArray(String[]::new));
+        final ToLongFunction<Object> subIndexRowKeyMappingFunction = DataIndexUtils.buildRowKeyMappingFunction(
+                subIndex.table(), subIndex.keyColumnNames().toArray(String[]::new));
 
         ChunkSource.WithPrev<?> subKeys = DataIndexUtils.makeBoxedKeySource(subIndex.keyColumns());
 
@@ -369,7 +369,7 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                 final Object subKey = subKeyIt.next();
 
                 // Verify the row sets at the lookup keys match.
-                final long subRowKey = subIndexKeyMap.applyAsLong(subKey);
+                final long subRowKey = subIndexRowKeyMappingFunction.applyAsLong(subKey);
                 final long fullRowKey = fullIndexRowKeyLookup.apply(subKey, false);
 
                 assertEquals(subIndex.rowSetColumn().get(subRowKey), fullIndex.rowSetColumn().get(fullRowKey));
@@ -382,8 +382,8 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
             final BasicDataIndex subIndex,
             final Function<RowSet, RowSet> mutator) {
         final Table fullIndexTable = fullIndex.table();
-        final ToLongFunction<Object> subIndexKeyMap =
-                DataIndexUtils.buildRowKeyLookupMap(subIndex.table(), subIndex.keyColumnNames().toArray(String[]::new));
+        final ToLongFunction<Object> subIndexRowKeyMappingFunction = DataIndexUtils.buildRowKeyMappingFunction(
+                subIndex.table(), subIndex.keyColumnNames().toArray(String[]::new));
 
         ChunkSource.WithPrev<?> fullKeys = DataIndexUtils.makeBoxedKeySource(fullIndex.keyColumns());
 
@@ -397,7 +397,7 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                 final RowSet fullRowSet = fullRowSetIt.next();
 
                 // Is the key in the sub-index?
-                final long subRowKey = subIndexKeyMap.applyAsLong(fullKey);
+                final long subRowKey = subIndexRowKeyMappingFunction.applyAsLong(fullKey);
                 if (subRowKey == NULL_ROW_KEY) {
                     // Verify applying the mutator to the full row set results in an empty row set.
                     assertTrue(mutator.apply(fullRowSet).isEmpty());

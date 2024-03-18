@@ -1664,7 +1664,7 @@ public class ChunkedOperatorAggregationHelper {
         // Create a lookup function from the index table
         ac.supplyRowLookup(() -> {
             final ToLongFunction<Object> lookupKeyToRowKey =
-                    DataIndexUtils.buildRowKeyLookupMap(indexKeyTable, keyNames);
+                    DataIndexUtils.buildRowKeyMappingFunction(indexKeyTable, keyNames);
             return key -> (int) lookupKeyToRowKey.applyAsLong(key);
         });
 
