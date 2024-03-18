@@ -193,7 +193,7 @@ public class ParquetTools {
      * @return The URI
      */
     private static URI convertParquetSourceToURI(@NotNull final String source) {
-        if (source.endsWith(".parquet")) {
+        if (source.endsWith(PARQUET_FILE_EXTENSION)) {
             return convertToURI(source, false);
         }
         return convertToURI(source, true);
@@ -697,6 +697,10 @@ public class ParquetTools {
             @NotNull final URI source,
             @NotNull final ParquetInstructions instructions) {
         if (!FILE_URI_SCHEME.equals(source.getScheme())) {
+            if (!source.getRawPath().endsWith(PARQUET_FILE_EXTENSION)) {
+                throw new IllegalArgumentException("This API currently does not support reading partitioned parquet " +
+                        "data from non-local sources. Please use the appropriate API for reading partitioned parquet.");
+            }
             return readSingleFileTable(source, instructions);
         }
         return readTableInternal(new File(source), instructions);
@@ -917,7 +921,7 @@ public class ParquetTools {
     public static Table readKeyValuePartitionedTable(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory),
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory, true),
                 MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions), readInstructions);
     }
 
@@ -963,7 +967,7 @@ public class ParquetTools {
         if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
             throw new IllegalArgumentException("No partitioning columns");
         }
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory), tableDefinition,
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory, true), tableDefinition,
                 readInstructions), readInstructions, tableDefinition);
     }
 
@@ -1004,7 +1008,7 @@ public class ParquetTools {
     public static Table readFlatPartitionedTable(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory), readInstructions),
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory, true), readInstructions),
                 readInstructions);
     }
 
@@ -1042,7 +1046,7 @@ public class ParquetTools {
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory), readInstructions),
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory, true), readInstructions),
                 readInstructions, tableDefinition);
     }
 

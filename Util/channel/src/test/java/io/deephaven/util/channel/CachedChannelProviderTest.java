@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -213,6 +214,17 @@ public class CachedChannelProviderTest {
         @Override
         public SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) {
             return new TestMockChannel(count.getAndIncrement(), path.toString());
+        }
+
+        @Override
+        public void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException {
+            // Do nothing
+        }
+
+        @Override
+        public void applyToChildURIsRecursively(@NotNull URI directoryURI, @NotNull Consumer<URI> processor)
+                throws IOException {
+            // Do nothing
         }
 
         @Override

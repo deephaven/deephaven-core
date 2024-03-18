@@ -7,6 +7,8 @@ import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
@@ -41,6 +43,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
      */
     private static final BufferPool BUFFER_POOL = new BufferPool(S3Instructions.MAX_FRAGMENT_SIZE);
 
+    private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
+
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
@@ -49,6 +53,10 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
         this.s3AsyncClient = buildClient(s3Instructions);
         this.s3Instructions = s3Instructions;
+    }
+
+    S3Instructions getS3Instructions() {
+        return s3Instructions;
     }
 
     private static S3AsyncClient buildClient(@NotNull S3Instructions s3Instructions) {
@@ -70,6 +78,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .region(Region.of(s3Instructions.regionName()))
                 .credentialsProvider(s3Instructions.awsV2CredentialsProvider());
         s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);
+        if (log.isDebugEnabled()) {
+            log.debug("building client with instructions: {}", s3Instructions);
+        }
         return builder.build();
     }
 
@@ -110,12 +121,18 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("requesting list of child URIs for directory: {}", directoryURI);
+        }
         applyToChildURIsHelper(directoryURI, processor, false);
     }
 
     @Override
     public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("requesting recursive list of child URIs for directory: {}", directoryURI);
+        }
         applyToChildURIsHelper(directoryURI, processor, true);
     }
 

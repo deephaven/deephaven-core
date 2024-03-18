@@ -19,6 +19,8 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
 
     static final String S3_URI_SCHEME = "s3";
 
+    private static volatile S3SeekableChannelProvider instance;
+
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
         return S3_URI_SCHEME.equals(uri.getScheme());
@@ -33,6 +35,13 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
         final S3Instructions s3Instructions = (S3Instructions) config;
-        return new S3SeekableChannelProvider(s3Instructions);
+        if (instance == null || s3Instructions != instance.getS3Instructions()) {
+            synchronized (S3SeekableChannelProvider.class) {
+                if (instance == null || s3Instructions != instance.getS3Instructions()) {
+                    instance = new S3SeekableChannelProvider(s3Instructions);
+                }
+            }
+        }
+        return instance;
     }
 }

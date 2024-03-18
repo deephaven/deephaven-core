@@ -123,7 +123,7 @@ public final class ParquetTableReadWriteTest {
     // TODO(deephaven-core#5064): Add support for local S3 testing
     // The following tests are disabled by default, as they require a AWS access key and secret key to be set
     private static final boolean ENABLE_S3_TESTING =
-            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", true);
+            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
     private static File rootFile;
 

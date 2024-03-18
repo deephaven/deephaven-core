@@ -59,7 +59,9 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         }
         this.context = (S3ChannelContext) channelContext;
         if (this.context != null) {
-            if (this.context.getUri() != uri) {
+            if (this.context.getUri() == null) {
+                this.context.verifyOrSetUri(uri);
+            } else if (!this.context.getUri().equals(uri)) {
                 this.context.close();
                 this.context.verifyOrSetUri(uri);
             }
