@@ -1083,7 +1083,7 @@ public class ParquetTools {
         if (writeInstructions.generateMetadataFiles()) {
             // We insist on writing the metadata file in the same directory as the destination files, thus all
             // destination files should be in the same directory. This also ensures that the file names would be unique.
-            final String firstDestinationDir = destinations[0].getParentFile().getAbsolutePath();
+            final String firstDestinationDir = destinations[0].getAbsoluteFile().getParentFile().getAbsolutePath();
             for (int i = 1; i < destinations.length; i++) {
                 if (!firstDestinationDir.equals(destinations[i].getParentFile().getAbsolutePath())) {
                     throw new IllegalArgumentException("All destination files must be in the same directory for " +

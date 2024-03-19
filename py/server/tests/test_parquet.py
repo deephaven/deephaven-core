@@ -325,7 +325,9 @@ class ParquetTestCase(BaseTestCase):
             "someIntColumn = i"
         ])
         # Force "longStringColumn" to use non-dictionary encoding
-        write(dh_table, "data_from_dh.parquet", max_dictionary_size=100)
+        write(dh_table, "data_from_dh.parquet", max_dictionary_size=100, generate_metadata_files=True)
+        self.verify_metadata_files(".")
+
         from_disk = read('data_from_dh.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, from_disk)
 
@@ -579,6 +581,12 @@ class ParquetTestCase(BaseTestCase):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
         # TODO(deephaven-core#5064): Add support for local S3 testing
 
+    def verify_metadata_files(self, root_dir):
+        metadata_file_path = os.path.join(root_dir, '_metadata')
+        self.assertTrue(os.path.exists(metadata_file_path))
+        common_metadata_file_path = os.path.join(root_dir, '_common_metadata')
+        self.assertTrue(os.path.exists(common_metadata_file_path))
+
     def test_writing_partitioned_data(self):
         source = new_table([
             string_col("X", ["Aa", "Bb", "Aa", "Cc", "Bb", "Aa", "Bb", "Bb", "Cc"]),
@@ -617,8 +625,9 @@ class ParquetTestCase(BaseTestCase):
 
         shutil.rmtree(root_dir)
         write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir,
-                                          max_dictionary_keys=max_dictionary_keys)
+                                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
         verify_table_from_disk(read(root_dir))
+        self.verify_metadata_files(root_dir)
 
         shutil.rmtree(root_dir)
         write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir, base_name=base_name)
@@ -637,8 +646,9 @@ class ParquetTestCase(BaseTestCase):
 
         shutil.rmtree(root_dir)
         write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
-                                          max_dictionary_keys=max_dictionary_keys)
+                                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
         verify_table_from_disk(read(root_dir))
+        self.verify_metadata_files(root_dir)
 
         shutil.rmtree(root_dir)
         write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
