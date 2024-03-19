@@ -37,7 +37,7 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
         final S3Instructions s3Instructions = (S3Instructions) config;
         if (instance == null || s3Instructions != instance.getS3Instructions()) {
             synchronized (S3SeekableChannelProvider.class) {
-                if (instance == null || s3Instructions != instance.getS3Instructions()) {
+                if (instance == null || !s3Instructions.equals(instance.getS3Instructions())) {
                     instance = new S3SeekableChannelProvider(s3Instructions);
                 }
             }
