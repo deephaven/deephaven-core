@@ -365,8 +365,8 @@ public abstract class QueryTableWhereTest {
         final ColumnInfo<?, ?>[] setInfo;
         final ColumnInfo<?, ?>[] filteredInfo;
 
-        final int setSize = 10;
-        final int filteredSize = 50;
+        final int setSize = 100;
+        final int filteredSize = 5000;
         final Random random = new Random(0);
 
         final String[] columnNames =
@@ -374,8 +374,8 @@ public abstract class QueryTableWhereTest {
 
         final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
                 columnNames,
-                new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
-                new IntGenerator(-100, 100),
+                new SetGenerator<>("aa", "bb"),
+                new IntGenerator(0, 10),
                 new DoubleGenerator(0, 100),
                 new SetGenerator<>('a', 'b', 'c', 'd', 'e', 'f'),
                 new ByteGenerator((byte) 0, (byte) 64),
@@ -395,8 +395,8 @@ public abstract class QueryTableWhereTest {
 
         final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
                 columnNames,
-                new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
-                new IntGenerator(-100, 100),
+                new SetGenerator<>("aa", "bb", "cc", "dd"),
+                new IntGenerator(0, 20),
                 new DoubleGenerator(0, 100),
                 new CharGenerator('a', 'z'),
                 new ByteGenerator((byte) 0, (byte) 127),
@@ -419,6 +419,7 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "Sym")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "byteCol")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "shortCol")),
@@ -426,12 +427,80 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "longCol")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "floatCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "Sym")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "byteCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "shortCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "longCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
+        };
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < 100; step++) {
+            final boolean modSet = random.nextInt(10) < 1;
+            final boolean modFiltered = random.nextBoolean();
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (modSet) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            setSize, random, setTable, setInfo);
+                }
+            });
+            validate(en);
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (modFiltered) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            filteredSize, random, filteredTable, filteredInfo);
+                }
+            });
+            validate(en);
+        }
+    }
+
+    @Test
+    public void testWhereInDynamicPartialIndexed() {
+        final ColumnInfo<?, ?>[] setInfo;
+        final ColumnInfo<?, ?>[] filteredInfo;
+
+        final int setSize = 100;
+        final int filteredSize = 5000;
+        final Random random = new Random(0);
+
+        final String[] columnNames =
+                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
+
+        final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
+                columnNames,
+                new SetGenerator<>("aa", "bb"),
+                new IntGenerator(0, 10),
+                new DoubleGenerator(0, 100),
+                new SetGenerator<>('a', 'b', 'c', 'd', 'e', 'f'),
+                new ByteGenerator((byte) 0, (byte) 64),
+                new SetGenerator<>(1.0f, 2.0f, 3.3f, null),
+                new LongGenerator(0, 1000),
+                new ShortGenerator((short) 500, (short) 600)));
+
+        final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
+                columnNames,
+                new SetGenerator<>("aa", "bb", "cc", "dd"),
+                new IntGenerator(0, 20),
+                new DoubleGenerator(0, 100),
+                new CharGenerator('a', 'z'),
+                new ByteGenerator((byte) 0, (byte) 127),
+                new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
+                new LongGenerator(1500, 2500),
+                new ShortGenerator((short) 400, (short) 700)));
+
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol");
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "intCol")),
         };
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

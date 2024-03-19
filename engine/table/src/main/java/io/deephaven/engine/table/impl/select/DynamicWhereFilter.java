@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.dataindex.DataIndexKeySet;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -54,8 +53,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private final InstrumentedTableUpdateListener setUpdateListener;
 
     private Object[] liveValuesArray;
-    private SetInclusionKernel setInclusionKernel;
-    private SetInclusionKernel setExclusionKernel;
 
     private ColumnSource<?>[] sourceKeyColumns;
     /**
@@ -222,7 +219,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             throw new RuntimeException("Inconsistent state, key not found in set: " + key);
         }
         liveValuesArray = null;
-        setInclusionKernel = setExclusionKernel = null;
     }
 
     private void addKey(Object key) {
@@ -231,7 +227,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             throw new RuntimeException("Inconsistent state, key already in set:" + key);
         }
         liveValuesArray = null;
-        setInclusionKernel = setExclusionKernel = null;
     }
 
     private void addKeyUnchecked(Object key) {
@@ -486,55 +481,37 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     private WritableRowSet filterLinear(final RowSet selection, final boolean filterInclusion) {
-        if (selection.isEmpty()) {
-            return RowSetFactory.empty();
-        }
-
-        final ChunkSource<Values> keySource = DataIndexUtils.makeBoxedKeySource(sourceKeyColumns);
-        SetInclusionKernel kernel = filterInclusion ? setInclusionKernel : setExclusionKernel;
-
-        if (kernel == null) {
-            if (liveValuesArray == null) {
-                liveValuesArray = liveValues.toArray();
-            }
-            if (filterInclusion) {
-                kernel = setInclusionKernel =
-                        SetInclusionKernel.makeKernel(keySource.getChunkType(), List.of(liveValuesArray), true);
-            } else {
-                kernel = setExclusionKernel =
-                        SetInclusionKernel.makeKernel(keySource.getChunkType(), List.of(liveValuesArray), false);
-            }
-        }
+        // Any single column filter is pushed through AbstractColumnSource.match()
+        Assert.gt(sourceKeyColumns.length, "sourceKeyColumns.length", 1);
 
         final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
+
+        final ChunkSource<Values> keySource = DataIndexUtils.makeBoxedKeySource(sourceKeyColumns);
 
         final int maxChunkSize = getChunkSize(selection);
         // @formatter:off
         try (final ChunkSource.GetContext keyGetContext = keySource.makeGetContext(maxChunkSize);
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
              final WritableLongChunk<OrderedRowKeys> selectionRowKeyChunk =
-                     WritableLongChunk.makeWritableChunk(maxChunkSize);
-             final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(maxChunkSize)) {
+                     WritableLongChunk.makeWritableChunk(maxChunkSize)) {
             // @formatter:on
 
             while (selectionIterator.hasMore()) {
                 final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
 
-                final Chunk<Values> keyChunk = Chunk.downcast(keySource.getChunk(keyGetContext, selectionChunk));
+                final ObjectChunk<Object, ? extends Values> keyChunk
+                        = keySource.getChunk(keyGetContext, selectionChunk).asObjectChunk();
                 final int thisChunkSize = keyChunk.size();
-                kernel.matchValues(keyChunk, matches);
 
                 selectionRowKeyChunk.setSize(thisChunkSize);
                 selectionChunk.fillRowKeyChunk(selectionRowKeyChunk);
 
                 for (int ii = 0; ii < thisChunkSize; ++ii) {
-                    if (matches.get(ii)) {
+                    if (liveValues.contains(keyChunk.asObjectChunk().get(ii)) == filterInclusion)
                         indexBuilder.appendKey(selectionRowKeyChunk.get(ii));
                     }
                 }
             }
-        }
-
         return indexBuilder.build();
     }
 
