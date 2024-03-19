@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.storage;
 
 import elemental2.promise.Promise;
@@ -71,7 +74,6 @@ public class JsStorageServiceTest extends AbstractAsyncGwtTestCase {
                 }));
             }).then(ignore -> {
                 delayTestFinish(20_003);
-
 
 
 
