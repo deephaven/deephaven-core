@@ -18,7 +18,15 @@ import java.util.function.LongConsumer;
  */
 public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseable, LogOutputAppendable {
 
-    void close();
+    /**
+     * <p>
+     * Free any resources associated with this object.
+     * <p>
+     * Using any {@code RowSet} methods after {@code close()} is an error and may produce exceptions or undefined
+     * results.
+     */
+    @Override
+    default void close() {}
 
     /**
      * Make a new {@link WritableRowSet} with the same row keys as {@code this} that is safe for further mutation. As in
@@ -126,9 +134,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     /**
      * Returns true if a RowSet has any overlap.
      */
-    default boolean overlaps(@NotNull RowSet rowSet) {
-        return intersect(rowSet).isNonempty();
-    }
+    boolean overlaps(@NotNull RowSet rowSet);
 
     /**
      * Returns true if this RowSet has any overlap with the provided range.

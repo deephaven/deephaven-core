@@ -45,14 +45,25 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
      * <p>
      * Get the metadata object stored with this column, or null if no such data exists.
      * <p>
-     * This is typically a value to range map (grouping metadata). The value to range map, if non-null, is a map from
-     * unique (boxed) column values for this location to the associated ranges in which they occur. Ranges are either
-     * 2-element int[]s, or 2-element long[]s.
+     * Historically, this was typically a value to range map (grouping metadata). The value to range map, if non-null,
+     * is a map from unique (boxed) column values for this location to the associated ranges in which they occur. Ranges
+     * are either 2-element int[]s, or 2-element long[]s.
      *
      * @return The metadata stored with this column, or null if no such data exists
      */
+    @SuppressWarnings("unused")
     @Nullable
     <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition);
+
+    /**
+     * Get this column location cast to the specified type
+     *
+     * @return {@code this}, with the appropriate cast applied
+     */
+    default <CL extends ColumnLocation> CL cast() {
+        // noinspection unchecked
+        return (CL) this;
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // ColumnRegion Factories

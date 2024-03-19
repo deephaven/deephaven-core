@@ -198,6 +198,21 @@ public class ReinterpretUtils {
     }
 
     /**
+     * Convert each source in {@code sources} to a primitive if possible.
+     *
+     * @param sources An array of the sources to potentially convert
+     * @return The primitive sources for each source in {@code sources}
+     */
+    @NotNull
+    public static ColumnSource<?>[] maybeConvertToPrimitive(@NotNull final ColumnSource<?>[] sources) {
+        final ColumnSource<?>[] result = new ColumnSource<?>[sources.length];
+        for (int ii = 0; ii < sources.length; ++ii) {
+            result[ii] = maybeConvertToPrimitive(sources[ii]);
+        }
+        return result;
+    }
+
+    /**
      * If {@code source} is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
      * @param source the source to convert

@@ -76,16 +76,14 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
-    public void preMutationHook() {
-        checkAndGetPrev();
+    public <INDEXER_TYPE extends Indexer> INDEXER_TYPE indexer() {
+        // noinspection unchecked
+        return (INDEXER_TYPE) indexer;
     }
 
     @Override
-    protected void postMutationHook() {
-        final TrackingRowSet.Indexer localIndexer = indexer;
-        if (localIndexer != null) {
-            localIndexer.rowSetChanged();
-        }
+    protected void preMutationHook() {
+        checkAndGetPrev();
     }
 
     @Override
@@ -162,12 +160,12 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
         public UnmodifiableRowSetImpl() {}
 
         @Override
-        public final void preMutationHook() {
+        protected final void preMutationHook() {
             throw new UnsupportedOperationException("Unmodifiable view must never be mutated");
         }
 
         @Override
-        public final void postMutationHook() {
+        protected final void postMutationHook() {
             throw new UnsupportedOperationException("Unmodifiable view must never be mutated");
         }
 

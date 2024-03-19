@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
 import java.util.function.LongUnaryOperator;
 
 public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJoinStateManager {
+
     protected StaticHashedNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
         super(keySourcesForErrorMessages);
     }
@@ -38,13 +39,18 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
     public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
 
-    public abstract WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
-            long groupingSize, IntegerArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
-            JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildIndexedRowRedirectionFromRedirections(QueryTable leftTable,
+            boolean exactMatch, RowSet indexTableRowSet, LongArraySource leftRedirections,
+            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    protected WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
-            long groupingSize, LongUnaryOperator groupPositionToRightSide, ArrayBackedColumnSource<RowSet> leftIndices,
+    public abstract WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(QueryTable leftTable,
+            boolean exactMatch, RowSet indexTableRowSet, IntegerArraySource leftHashSlots,
+            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+
+    protected WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, boolean exactMatch,
+            RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets,
             JoinControl.RedirectionType redirectionType) {
+        final int rowSetCount = indexTableRowSet.intSize();
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -52,10 +58,10 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 }
                 // we can use an array, which is perfect for a small enough flat table
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
-                for (int ii = 0; ii < groupingSize; ++ii) {
+                for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
                     checkExactMatch(exactMatch, ii, rightSide);
-                    final RowSet leftRowSetForKey = leftIndices.get(ii);
+                    final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                     leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
                 return new ContiguousWritableRowRedirection(innerIndex);
@@ -63,12 +69,12 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             case Sparse: {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
 
-                for (int ii = 0; ii < groupingSize; ++ii) {
+                for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final RowSet leftRowSetForKey = leftIndices.get(ii);
+                        final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                         leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
@@ -78,12 +84,12 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 final WritableRowRedirection rowRedirection =
                         WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
-                for (int ii = 0; ii < groupingSize; ++ii) {
+                for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final RowSet leftRowSetForKey = leftIndices.get(ii);
+                        final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                         leftRowSetForKey.forAllRowKeys((long ll) -> rowRedirection.put(ll, rightSide));
                     }
                 }
@@ -95,9 +101,9 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
     }
 
     public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size,
-            LongUnaryOperator groupPositionToRightSide, LongUnaryOperator firstLeftKey) {
+            LongUnaryOperator indexPositionToRightSide, LongUnaryOperator firstLeftKey) {
         for (int ii = 0; ii < size; ++ii) {
-            final long rightSide = groupPositionToRightSide.applyAsLong(ii);
+            final long rightSide = indexPositionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
                 throw new IllegalStateException("Natural Join found duplicate right key for "
                         + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
@@ -105,7 +111,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         }
     }
 
-    public void errorOnDuplicatesGrouped(IntegerArraySource leftHashSlots, long size,
+    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size,
             ObjectArraySource<RowSet> rowSetSource) {
         throw new UnsupportedOperationException();
     }

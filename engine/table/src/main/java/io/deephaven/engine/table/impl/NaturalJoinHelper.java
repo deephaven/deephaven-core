@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
@@ -22,6 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.*;
 
 class NaturalJoinHelper {
 
@@ -54,232 +55,209 @@ class NaturalJoinHelper {
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
-        try (final BucketingContext bucketingContext =
-                new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
+        try (final BucketingContext bc = new BucketingContext("naturalJoin",
+                leftTable, rightTable, columnsToMatch, columnsToAdd, control, true, true)) {
+            final JoinControl.BuildParameters.From firstBuildFrom = bc.buildParameters.firstBuildFrom();
+            final int initialHashTableSize = bc.buildParameters.hashTableSize();
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
-            if (!rightTable.isRefreshing() && control.useUniqueTable(bucketingContext.uniqueValues,
-                    bucketingContext.maximumUniqueValue, bucketingContext.minimumUniqueValue)) {
-                Assert.neqNull(bucketingContext.uniqueFunctor, "uniqueFunctor");
+            if (!rightTable.isRefreshing()
+                    && control.useUniqueTable(bc.uniqueValues, bc.maximumUniqueValue, bc.minimumUniqueValue)) {
+                Assert.neqNull(bc.uniqueFunctor, "uniqueFunctor");
                 final SimpleUniqueStaticNaturalJoinStateManager jsm = new SimpleUniqueStaticNaturalJoinStateManager(
-                        bucketingContext.originalLeftSources, bucketingContext.uniqueValuesRange(),
-                        bucketingContext.uniqueFunctor);
-                jsm.setRightSide(rightTable.getRowSet(), bucketingContext.rightSources[0]);
+                        bc.originalLeftSources, bc.uniqueValuesRange(), bc.uniqueFunctor);
+                jsm.setRightSide(rightTable.getRowSet(), bc.rightSources[0]);
                 final LongArraySource leftRedirections = new LongArraySource();
                 leftRedirections.ensureCapacity(leftTable.getRowSet().size());
-                jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, leftRedirections);
+                jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
 
                 final WritableRowRedirection rowRedirection = jsm.buildRowRedirection(leftTable, exactMatch,
                         leftRedirections, control.getRedirectionType(leftTable));
 
                 final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
+                if (leftTable.isRefreshing()) {
+                    leftTable.addUpdateListener(new LeftTickingListener(bc.listenerDescription, columnsToMatch,
+                            columnsToAdd, leftTable, result, rowRedirection, jsm, bc.leftSources));
+                }
+                return result;
+            }
 
-                leftTable
-                        .addUpdateListener(new LeftTickingListener(bucketingContext.listenerDescription, columnsToMatch,
-                                columnsToAdd, leftTable, result, rowRedirection, jsm, bucketingContext.leftSources));
+            if (bc.leftSources.length == 0) {
+                return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, exactMatch, bc.listenerDescription);
+            }
+
+            final WritableRowRedirection rowRedirection;
+
+            if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
+                // We always build right first, regardless of the build parameters. This is probably irrelevant.
+
+                final BothIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.make(
+                        IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
+                        initialHashTableSize, control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+                jsm.buildFromRightSide(rightTable, bc.rightSources);
+
+                try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
+                        jsm.makeInitialBuildContext()) {
+
+                    if (bc.leftDataIndexTable != null) {
+                        jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, ibc);
+                        rowRedirection = jsm.buildIndexedRowRedirection(leftTable, exactMatch, ibc,
+                                bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
+                    } else {
+                        jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, ibc);
+                        jsm.compactAll();
+                        rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, ibc,
+                                control.getRedirectionType(leftTable));
+                    }
+                }
+
+                final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
+
+                final JoinListenerRecorder leftRecorder =
+                        new JoinListenerRecorder(true, bc.listenerDescription, leftTable, result);
+                final JoinListenerRecorder rightRecorder =
+                        new JoinListenerRecorder(false, bc.listenerDescription, rightTable, result);
+
+                final ChunkedMergedJoinListener mergedJoinListener = new ChunkedMergedJoinListener(
+                        leftTable, rightTable, bc.leftSources, bc.rightSources, columnsToMatch, columnsToAdd,
+                        leftRecorder, rightRecorder, result, rowRedirection, jsm, exactMatch, bc.listenerDescription);
+                leftRecorder.setMergedListener(mergedJoinListener);
+                rightRecorder.setMergedListener(mergedJoinListener);
+
+                leftTable.addUpdateListener(leftRecorder);
+                rightTable.addUpdateListener(rightRecorder);
+
+                result.addParentReference(mergedJoinListener);
 
                 return result;
             }
 
-            if (bucketingContext.leftSources.length == 0) {
-                return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, exactMatch,
-                        bucketingContext.listenerDescription);
-            }
+            if (leftTable.isRefreshing()) {
+                Assert.eq(firstBuildFrom, "firstBuildFrom", RightInput);
 
-            final WritableRowRedirection rowRedirection;
-            if (rightTable.isRefreshing()) {
-                if (leftTable.isRefreshing()) {
-                    if (bucketingContext.useLeftGrouping) {
-                        throw new UnsupportedOperationException(
-                                "Grouping is not supported with ticking chunked naturalJoin!");
-                    }
+                final LongArraySource leftRedirections = new LongArraySource();
+                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
+                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
+                        initialHashTableSize, control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
 
-                    // the right side is unique, so we should have a state for it; the left side can have many
-                    // duplicates
-                    // so we would prefer to have a smaller table
-                    final int tableSize = control.tableSizeForRightBuild(rightTable);
-
-                    final BothIncrementalNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(IncrementalNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                    tableSize, control.getMaximumLoadFactor(),
-                                    control.getTargetLoadFactor());
-                    jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
-
-                    try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
-                            jsm.makeInitialBuildContext()) {
-                        jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, ibc);
-
-                        jsm.compactAll();
-
-                        rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, ibc,
-                                control.getRedirectionType(leftTable));
-                    }
-
-                    final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
-
-                    final JoinListenerRecorder leftRecorder =
-                            new JoinListenerRecorder(true, bucketingContext.listenerDescription, leftTable, result);
-                    final JoinListenerRecorder rightRecorder =
-                            new JoinListenerRecorder(false, bucketingContext.listenerDescription, rightTable, result);
-
-                    final ChunkedMergedJoinListener mergedJoinListener = new ChunkedMergedJoinListener(
-                            leftTable, rightTable, bucketingContext.leftSources, bucketingContext.rightSources,
-                            columnsToMatch,
-                            columnsToAdd, leftRecorder, rightRecorder, result, rowRedirection, jsm, exactMatch,
-                            bucketingContext.listenerDescription);
-                    leftRecorder.setMergedListener(mergedJoinListener);
-                    rightRecorder.setMergedListener(mergedJoinListener);
-
-                    leftTable.addUpdateListener(leftRecorder);
-                    rightTable.addUpdateListener(rightRecorder);
-
-                    result.addParentReference(mergedJoinListener);
-
-                    return result;
-                } else {
-                    // right is live, left is static
-                    final RightIncrementalNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(RightIncrementalNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                    control.tableSizeForLeftBuild(leftTable),
-                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-                    RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext =
-                            jsm.makeInitialBuildContext(leftTable);
-
-                    final ObjectArraySource<WritableRowSet> rowSetSource;
-                    final MutableInt groupingSize = new MutableInt();
-                    if (bucketingContext.useLeftGrouping) {
-                        final Map<?, RowSet> grouping =
-                                bucketingContext.leftSources[0].getGroupToRange(leftTable.getRowSet());
-
-                        // noinspection unchecked,rawtypes
-                        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<WritableRowSet>> flatResultColumnSources =
-                                GroupingUtils.groupingToFlatSources(
-                                        (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getRowSet(),
-                                        groupingSize);
-                        final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
-                        rowSetSource = flatResultColumnSources.getSecond();
-
-                        final Table leftTableGrouped = new QueryTable(
-                                RowSetFactory.flat(groupingSize.intValue()).toTracking(),
-                                Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
-
-                        final ColumnSource<?>[] groupedSourceArray = {groupSource};
-                        jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, initialBuildContext);
-                        jsm.convertLeftGroups(groupingSize.intValue(), initialBuildContext, rowSetSource);
-                    } else {
-                        jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, initialBuildContext);
-                        rowSetSource = null;
-                    }
-
-                    jsm.addRightSide(rightTable.getRowSet(), bucketingContext.rightSources);
-
-                    if (bucketingContext.useLeftGrouping) {
-                        rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource,
-                                groupingSize.intValue(), exactMatch, initialBuildContext,
-                                control.getRedirectionType(leftTable));
-                    } else {
-                        rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, initialBuildContext,
-                                control.getRedirectionType(leftTable));
-                    }
-
-                    final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
-
-                    rightTable.addUpdateListener(
-                            new RightTickingListener(
-                                    bucketingContext.listenerDescription,
-                                    rightTable,
-                                    columnsToMatch,
-                                    columnsToAdd,
-                                    result,
-                                    rowRedirection,
-                                    jsm,
-                                    bucketingContext.rightSources,
-                                    exactMatch));
-                    return result;
-                }
-            } else {
-                if (bucketingContext.useLeftGrouping) {
-                    if (leftTable.isRefreshing()) {
-                        throw new UnsupportedOperationException(
-                                "Grouping information is not supported when tables are refreshing!");
-                    }
-
-                    final Map<?, RowSet> grouping =
-                            bucketingContext.leftSources[0].getGroupToRange(leftTable.getRowSet());
-
-                    final MutableInt groupingSize = new MutableInt();
-                    // noinspection unchecked,rawtypes
-                    final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<RowSet>> flatResultColumnSources =
-                            GroupingUtils.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
-                                    grouping, leftTable.getRowSet(), groupingSize);
-                    final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
-                    final ObjectArraySource<RowSet> rowSetSource = flatResultColumnSources.getSecond();
-
-                    final Table leftTableGrouped = new QueryTable(
-                            RowSetFactory.flat(groupingSize.intValue()).toTracking(),
-                            Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
-
-                    final ColumnSource<?>[] groupedSourceArray = {groupSource};
-                    final StaticHashedNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class, groupedSourceArray,
-                                    groupedSourceArray,
-                                    control.tableSize(groupingSize.intValue()),
-                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-                    final IntegerArraySource leftHashSlots = new IntegerArraySource();
-                    jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
-                    try {
-                        jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
-                    } catch (DuplicateRightRowDecorationException e) {
-                        jsm.errorOnDuplicatesGrouped(leftHashSlots, leftTableGrouped.size(), rowSetSource);
-                    }
-                    rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftTableGrouped.size(),
-                            leftHashSlots, rowSetSource, control.getRedirectionType(leftTable));
-                } else if (control.buildLeft(leftTable, rightTable)) {
-                    final StaticHashedNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                    control.tableSizeForLeftBuild(leftTable),
-                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-                    final IntegerArraySource leftHashSlots = new IntegerArraySource();
-                    jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, leftHashSlots);
-                    try {
-                        jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
-                    } catch (DuplicateRightRowDecorationException e) {
-                        jsm.errorOnDuplicatesSingle(leftHashSlots, leftTable.size(), leftTable.getRowSet());
-                    }
-                    rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
+                jsm.buildFromRightSide(rightTable, bc.rightSources);
+                if (bc.leftDataIndexTable != null) {
+                    jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, leftRedirections);
+                    rowRedirection = jsm.buildIndexedRowRedirectionFromRedirections(leftTable, exactMatch,
+                            bc.leftDataIndexTable.getRowSet(), leftRedirections, bc.leftDataIndexRowSetSource,
                             control.getRedirectionType(leftTable));
                 } else {
-                    final LongArraySource leftRedirections = new LongArraySource();
-                    final StaticHashedNaturalJoinStateManager jsm =
-                            TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,
-                                    bucketingContext.leftSources, bucketingContext.originalLeftSources,
-                                    control.tableSizeForRightBuild(rightTable),
-                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor());
-                    jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
-                    jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, leftRedirections);
+                    jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
                     rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, leftRedirections,
                             control.getRedirectionType(leftTable));
-
-                    final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
-
-                    leftTable.addUpdateListener(
-                            new LeftTickingListener(
-                                    bucketingContext.listenerDescription,
-                                    columnsToMatch,
-                                    columnsToAdd,
-                                    leftTable,
-                                    result,
-                                    rowRedirection,
-                                    jsm,
-                                    bucketingContext.leftSources));
-                    return result;
                 }
+
+                final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
+
+                leftTable.addUpdateListener(
+                        new LeftTickingListener(
+                                bc.listenerDescription,
+                                columnsToMatch,
+                                columnsToAdd,
+                                leftTable,
+                                result,
+                                rowRedirection,
+                                jsm,
+                                bc.leftSources));
+                return result;
             }
 
+            if (rightTable.isRefreshing()) {
+                Assert.assertion(firstBuildFrom == LeftInput || firstBuildFrom == LeftDataIndex,
+                        "firstBuildFrom == LeftInput || firstBuildFrom == LeftDataIndex");
+
+                final RightIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.make(
+                        RightIncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
+                        initialHashTableSize, control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+                final RightIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
+                        jsm.makeInitialBuildContext(leftTable);
+
+                if (firstBuildFrom == LeftDataIndex) {
+                    Assert.neqNull(bc.leftDataIndexTable, "leftDataIndexTable");
+                    jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources, ibc);
+                    jsm.convertLeftDataIndex(bc.leftDataIndexTable.intSize(), ibc, bc.leftDataIndexRowSetSource);
+                } else {
+                    jsm.buildFromLeftSide(leftTable, bc.leftSources, ibc);
+                }
+
+                jsm.addRightSide(rightTable.getRowSet(), bc.rightSources);
+
+                if (firstBuildFrom == LeftDataIndex) {
+                    rowRedirection = jsm.buildRowRedirectionFromHashSlotIndexed(leftTable,
+                            bc.leftDataIndexRowSetSource, bc.leftDataIndexTable.intSize(),
+                            exactMatch, ibc, control.getRedirectionType(leftTable));
+                } else {
+                    rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc,
+                            control.getRedirectionType(leftTable));
+                }
+
+                final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
+
+                rightTable.addUpdateListener(
+                        new RightTickingListener(
+                                bc.listenerDescription,
+                                rightTable,
+                                columnsToMatch,
+                                columnsToAdd,
+                                result,
+                                rowRedirection,
+                                jsm,
+                                bc.rightSources,
+                                exactMatch));
+                return result;
+            }
+
+            if (firstBuildFrom == LeftDataIndex) {
+                Assert.neqNull(bc.leftDataIndexTable, "leftDataIndexTable");
+                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
+                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftDataIndexSources,
+                        bc.originalLeftDataIndexSources, initialHashTableSize,
+                        control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+
+                final IntegerArraySource leftHashSlots = new IntegerArraySource();
+                jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources,
+                        leftHashSlots);
+                jsm.decorateWithRightSide(rightTable, bc.rightSources);
+                rowRedirection = jsm.buildIndexedRowRedirectionFromHashSlots(leftTable, exactMatch,
+                        bc.leftDataIndexTable.getRowSet(), leftHashSlots,
+                        bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
+            } else if (firstBuildFrom == LeftInput) {
+                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
+                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
+                        // The static state manager doesn't allow rehashing, so we must allocate a big enough hash
+                        // table for the possibility that all left rows will have unique keys.
+                        control.tableSize(leftTable.size()),
+                        control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+                final IntegerArraySource leftHashSlots = new IntegerArraySource();
+                jsm.buildFromLeftSide(leftTable, bc.leftSources, leftHashSlots);
+                try {
+                    jsm.decorateWithRightSide(rightTable, bc.rightSources);
+                } catch (DuplicateRightRowDecorationException e) {
+                    jsm.errorOnDuplicatesSingle(leftHashSlots, leftTable.size(), leftTable.getRowSet());
+                }
+                rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
+                        control.getRedirectionType(leftTable));
+            } else {
+                final LongArraySource leftRedirections = new LongArraySource();
+                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.make(
+                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
+                        initialHashTableSize, control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+
+                jsm.buildFromRightSide(rightTable, bc.rightSources);
+                jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
+                rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, leftRedirections,
+                        control.getRedirectionType(leftTable));
+            }
             return makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, false);
         }
     }
@@ -293,7 +271,7 @@ class NaturalJoinHelper {
         final boolean rightRefreshing = rightTable.isRefreshing();
 
         if (rightTable.size() > 1) {
-            if (leftTable.size() > 0) {
+            if (!leftTable.isEmpty()) {
                 throw new RuntimeException(
                         "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
             }
@@ -302,7 +280,7 @@ class NaturalJoinHelper {
         } else if (rightTable.size() == 1) {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
         } else {
-            if (exactMatch && leftTable.size() > 0) {
+            if (exactMatch && !leftTable.isEmpty()) {
                 throw new RuntimeException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
@@ -385,7 +363,7 @@ class NaturalJoinHelper {
                         });
             }
         } else if (rightTable.isRefreshing()) {
-            if (leftTable.size() > 0) {
+            if (!leftTable.isEmpty()) {
                 rightTable.addUpdateListener(
                         new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                             @Override
@@ -415,7 +393,7 @@ class NaturalJoinHelper {
 
     private static boolean updateRightRedirection(QueryTable rightTable, SingleValueRowRedirection rowRedirection) {
         final boolean changed;
-        if (rightTable.size() == 0) {
+        if (rightTable.isEmpty()) {
             changed = rowRedirection.getValue() != RowSequence.NULL_ROW_KEY;
             if (changed) {
                 rowRedirection.writableSingleValueCast().setValue(RowSequence.NULL_ROW_KEY);
@@ -431,11 +409,11 @@ class NaturalJoinHelper {
     }
 
     private static void checkRightTableSizeZeroKeys(final Table leftTable, final Table rightTable, boolean exactMatch) {
-        if (leftTable.size() != 0) {
+        if (!leftTable.isEmpty()) {
             if (rightTable.size() > 1) {
                 throw new RuntimeException(
                         "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
-            } else if (rightTable.size() == 0 && exactMatch) {
+            } else if (rightTable.isEmpty() && exactMatch) {
                 throw new RuntimeException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
@@ -582,8 +560,7 @@ class NaturalJoinHelper {
 
             final boolean addedRightColumnsChanged;
 
-            final int maxSize =
-                    UpdateSizeCalculator.chunkSize(upstream, JoinControl.CHUNK_SIZE);
+            final int maxSize = UpdateSizeCalculator.chunkSize(upstream, JoinControl.CHUNK_SIZE);
             if (maxSize == 0) {
                 Assert.assertion(upstream.empty(), "upstream.empty()");
                 return;
@@ -601,23 +578,18 @@ class NaturalJoinHelper {
                 }
 
                 if (upstream.shifted().nonempty()) {
-                    final RowSet previousToShift;
-
-                    if (rightKeysChanged) {
-                        previousToShift =
-                                getParent().getRowSet().copyPrev().minus(modifiedPreShift)
-                                        .minus(upstream.removed());
-                    } else {
-                        previousToShift = getParent().getRowSet().copyPrev().minus(upstream.removed());
-                    }
-
-                    final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
-                    while (sit.hasNext()) {
-                        sit.next();
-                        final RowSet shiftedRowSet =
-                                previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())
-                                        .shift(sit.shiftDelta());
-                        jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(), modifiedSlotTracker);
+                    try (final WritableRowSet previousToShift =
+                            getParent().getRowSet().prev().minus(upstream.removed())) {
+                        if (rightKeysChanged) {
+                            previousToShift.remove(modifiedPreShift);
+                        }
+                        upstream.shifted().apply((long beginRange, long endRange, long shiftDelta) -> {
+                            try (final WritableRowSet shiftedRowSet =
+                                    previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                shiftedRowSet.shiftInPlace(shiftDelta);
+                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta, modifiedSlotTracker);
+                            }
+                        });
                     }
                 }
 
@@ -827,22 +799,19 @@ class NaturalJoinHelper {
                     }
 
                     if (rightShifted.nonempty()) {
-                        final WritableRowSet previousToShift = rightRecorder.getParent().getRowSet().copyPrev();
-                        previousToShift.remove(rightRemoved);
-
-                        if (rightKeysModified) {
-                            previousToShift.remove(modifiedPreShift);
-                        }
-
-                        final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
-                        while (sit.hasNext()) {
-                            sit.next();
-                            try (final WritableRowSet shiftedRowSet =
-                                    previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
-                                shiftedRowSet.shiftInPlace(sit.shiftDelta());
-                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(),
-                                        modifiedSlotTracker);
+                        try (final WritableRowSet previousToShift =
+                                rightRecorder.getParent().getRowSet().prev().minus(rightRemoved)) {
+                            if (rightKeysModified) {
+                                previousToShift.remove(modifiedPreShift);
                             }
+                            rightShifted.apply((long beginRange, long endRange, long shiftDelta) -> {
+                                try (final WritableRowSet shiftedRowSet =
+                                        previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                    shiftedRowSet.shiftInPlace(shiftDelta);
+                                    jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
+                                            modifiedSlotTracker);
+                                }
+                            });
                         }
                     }
 

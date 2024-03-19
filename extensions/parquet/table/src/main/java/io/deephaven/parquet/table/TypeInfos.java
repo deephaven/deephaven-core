@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
@@ -105,6 +106,10 @@ public class TypeInfos {
 
         // Impute an appropriate codec for the data type
         final Class<?> dataType = columnDefinition.getDataType();
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5262): Eliminate reliance on RowSetCodec
+        if (dataType.equals(RowSet.class)) {
+            return new ImmutablePair<>(RowSetCodec.class.getName(), null);
+        }
         if (Externalizable.class.isAssignableFrom(dataType)) {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), dataType.getName());
         }
@@ -144,7 +149,7 @@ public class TypeInfos {
         // noinspection unchecked
         final PrecisionAndScale precisionAndScale = getPrecisionAndScale(
                 computedCache, columnName, rowSet, () -> (ColumnSource<BigDecimal>) columnSourceMap.get(columnName));
-        final Set<Class<?>> clazzes = Collections.singleton(BigDecimal.class);
+        final Set<Class<?>> clazzes = Set.of(BigDecimal.class);
         return new TypeInfo() {
             @Override
             public Set<Class<?>> getTypes() {
@@ -152,7 +157,8 @@ public class TypeInfos {
             }
 
             @Override
-            public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class dataType) {
+            public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating,
+                    Class<?> dataType) {
                 return type(PrimitiveTypeName.BINARY, required, repeating)
                         .as(LogicalTypeAnnotation.decimalType(precisionAndScale.scale, precisionAndScale.precision));
             }
@@ -183,8 +189,7 @@ public class TypeInfos {
     private enum IntType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(int.class, Integer.class)));
+        private static final Set<Class<?>> clazzes = Set.of(int.class, Integer.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -200,8 +205,7 @@ public class TypeInfos {
     private enum LongType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(long.class, Long.class)));
+        private static final Set<Class<?>> clazzes = Set.of(long.class, Long.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -217,8 +221,7 @@ public class TypeInfos {
     private enum ShortType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(short.class, Short.class)));
+        private static final Set<Class<?>> clazzes = Set.of(short.class, Short.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -234,8 +237,7 @@ public class TypeInfos {
     private enum BooleanType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(boolean.class, Boolean.class)));
+        private static final Set<Class<?>> clazzes = Set.of(boolean.class, Boolean.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -251,8 +253,7 @@ public class TypeInfos {
     private enum FloatType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(float.class, Float.class)));
+        private static final Set<Class<?>> clazzes = Set.of(float.class, Float.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -268,8 +269,7 @@ public class TypeInfos {
     private enum DoubleType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(double.class, Double.class)));
+        private static final Set<Class<?>> clazzes = Set.of(double.class, Double.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -285,8 +285,7 @@ public class TypeInfos {
     private enum CharType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(char.class, Character.class)));
+        private static final Set<Class<?>> clazzes = Set.of(char.class, Character.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -302,8 +301,7 @@ public class TypeInfos {
     private enum ByteType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(byte.class, Byte.class)));
+        private static final Set<Class<?>> clazzes = Set.of(byte.class, Byte.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -319,7 +317,7 @@ public class TypeInfos {
     private enum StringType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(String.class);
+        private static final Set<Class<?>> clazzes = Set.of(String.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -336,7 +334,7 @@ public class TypeInfos {
     private enum InstantType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(Instant.class);
+        private static final Set<Class<?>> clazzes = Set.of(Instant.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -354,7 +352,7 @@ public class TypeInfos {
     private enum LocalDateTimeType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDateTime.class);
+        private static final Set<Class<?>> clazzes = Set.of(LocalDateTime.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -372,7 +370,7 @@ public class TypeInfos {
     private enum LocalDateType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDate.class);
+        private static final Set<Class<?>> clazzes = Set.of(LocalDate.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -389,7 +387,7 @@ public class TypeInfos {
     private enum LocalTimeType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(LocalTime.class);
+        private static final Set<Class<?>> clazzes = Set.of(LocalTime.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -413,7 +411,7 @@ public class TypeInfos {
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(BigInteger.class);
+        private static final Set<Class<?>> clazzes = Set.of(BigInteger.class);
 
         @Override
         public Set<Class<?>> getTypes() {

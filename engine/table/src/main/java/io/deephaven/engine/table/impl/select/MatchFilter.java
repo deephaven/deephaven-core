@@ -6,25 +6,33 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
-import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Stream;
 
-public class MatchFilter extends WhereFilterImpl {
+public class MatchFilter extends WhereFilterImpl implements DependencyStreamProvider {
 
     private static final long serialVersionUID = 1L;
 
@@ -40,11 +48,24 @@ public class MatchFilter extends WhereFilterImpl {
 
     @NotNull
     private final String columnName;
-    private Object[] values; // TODO: Does values need to be declared volatile (if we go back to the double-check)?
+    private Object[] values;
     private final String[] strValues;
     private final boolean invertMatch;
     private final boolean caseInsensitive;
-    private boolean initialized = false;
+
+    private boolean initialized;
+
+    /**
+     * The {@link DataIndex} for this filter, if any. Only ever non-{@code null} during operation initialization.
+     */
+    private DataIndex dataIndex;
+    /**
+     * Whether our dependencies have been gathered at least once. We expect dependencies to be gathered one time after
+     * {@link #beginOperation(Table)} (when we know if we're using a {@link DataIndex}), and then again after for every
+     * instantiation attempt when initializing the listener. Since we only use the DataIndex during instantiation, we
+     * don't need the listener to depend on it.
+     */
+    private boolean initialDependenciesGathered;
 
     public enum MatchType {
         Regular, Inverted,
@@ -54,27 +75,45 @@ public class MatchFilter extends WhereFilterImpl {
         MatchCase, IgnoreCase
     }
 
-    public MatchFilter(MatchType matchType, String columnName, Object... values) {
-        this.columnName = columnName;
-        this.values = values;
-        this.strValues = null;
+    public MatchFilter(
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(CaseSensitivity.MatchCase, matchType, columnName, null, values);
+    }
+
+    public MatchFilter(
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, null, values);
+    }
+
+    public MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(sensitivity, MatchType.Regular, columnName, strValues, null);
+    }
+
+    public MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(sensitivity, matchType, columnName, strValues, null);
+    }
+
+    private MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @Nullable String[] strValues,
+            @Nullable final Object[] values) {
+        this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
         this.invertMatch = (matchType == MatchType.Inverted);
-        this.caseInsensitive = false;
-    }
-
-    public MatchFilter(String columnName, Object... values) {
-        this(MatchType.Regular, columnName, values);
-    }
-
-    public MatchFilter(CaseSensitivity sensitivity, String columnName, String... strValues) {
-        this(sensitivity, MatchType.Regular, columnName, strValues);
-    }
-
-    public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, String... strValues) {
         this.columnName = columnName;
         this.strValues = strValues;
-        this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
-        this.invertMatch = (matchType == MatchType.Inverted);
+        this.values = values;
     }
 
     public MatchFilter renameFilter(String newName) {
@@ -164,12 +203,46 @@ public class MatchFilter extends WhereFilterImpl {
         initialized = true;
     }
 
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        if (initialDependenciesGathered || dataIndex != null) {
+            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
+        }
+        try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
+            dataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
+            if (dataIndex != null && dataIndex.isRefreshing()) {
+                dataIndex.retainReference();
+            }
+        }
+        return dataIndex != null ? this::completeOperation : () -> {
+        };
+    }
+
+    private void completeOperation() {
+        if (dataIndex.isRefreshing()) {
+            dataIndex.dropReference();
+        }
+        dataIndex = null;
+    }
+
+    @Override
+    public Stream<NotificationQueue.Dependency> getDependencyStream() {
+        if (initialDependenciesGathered) {
+            return Stream.empty();
+        }
+        initialDependenciesGathered = true;
+        if (dataIndex == null || !dataIndex.isRefreshing()) {
+            return Stream.empty();
+        }
+        return Stream.of(dataIndex.table());
+    }
+
     @NotNull
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
+        return columnSource.match(invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
     }
 
     @NotNull
@@ -177,7 +250,7 @@ public class MatchFilter extends WhereFilterImpl {
     public WritableRowSet filterInverse(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
+        return columnSource.match(!invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
     }
 
     @Override
@@ -398,6 +471,7 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        // noinspection unchecked,rawtypes
                         return Enum.valueOf((Class) cls, str);
                     }
                 };

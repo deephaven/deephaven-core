@@ -3,13 +3,18 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.*;
 
 @VisibleForTesting
 public class JoinControl {
@@ -33,14 +38,6 @@ public class JoinControl {
                         Math.min(MAX_TABLE_SIZE, Long.highestOneBit(initialCapacity) * 2)));
     }
 
-    int tableSizeForRightBuild(Table rightTable) {
-        return tableSize(rightTable.size());
-    }
-
-    int tableSizeForLeftBuild(Table leftTable) {
-        return tableSize(leftTable.size());
-    }
-
     double getMaximumLoadFactor() {
         return DEFAULT_MAX_LOAD_FACTOR;
     }
@@ -49,18 +46,170 @@ public class JoinControl {
         return DEFAULT_TARGET_LOAD_FACTOR;
     }
 
-    static boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
-        return !leftTable.isRefreshing() && leftSources.length == 1
-                && RowSetIndexer.of(leftTable.getRowSet()).hasGrouping(leftSources[0]);
+    @Nullable
+    DataIndex dataIndexToUse(Table table, ColumnSource<?>[] sources) {
+        final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
+        return indexer == null ? null
+                : LivenessScopeStack.computeEnclosed(
+                        // DataIndexer will only give us valid, live data indexes.
+                        () -> indexer.getDataIndex(sources),
+                        // Ensure that we use an enclosing scope to manage the data index if needed.
+                        table::isRefreshing,
+                        // Don't keep the data index managed. Joins hold the update graph lock, so the index can't go
+                        // stale,
+                        // and we'll only use it during instantiation.
+                        di -> false);
     }
 
-    boolean buildLeft(QueryTable leftTable, Table rightTable) {
-        return !leftTable.isRefreshing() && leftTable.size() <= rightTable.size();
+    static final class BuildParameters {
+
+        enum From {
+            LeftInput, LeftDataIndex, RightInput, RightDataIndex
+        }
+
+        private final From firstBuildFrom;
+        private final int hashTableSize;
+
+        BuildParameters(
+                @NotNull final JoinControl.BuildParameters.From firstBuildFrom,
+                final int hashTableSize) {
+            this.firstBuildFrom = firstBuildFrom;
+            this.hashTableSize = hashTableSize;
+        }
+
+        From firstBuildFrom() {
+            return firstBuildFrom;
+        }
+
+        int hashTableSize() {
+            return hashTableSize;
+        }
     }
 
-    boolean considerSymbolTables(QueryTable leftTable, @SuppressWarnings("unused") QueryTable rightTable,
-            boolean useLeftGrouping, boolean useRightGrouping, ColumnSource<?> leftSource,
-            ColumnSource<?> rightSource) {
+    /**
+     * Join Control Goals:
+     * <ol>
+     * <li>Keep the hash table small</li>
+     * <li>Avoid rehashing</li>
+     * </ol>
+     * To meet these goals, we:
+     * <dl>
+     * <dt>Both sides refreshing</dt>
+     * <dd>Build from a data index if available. Size the hash table for the expected highest cardinality side to
+     * minimize rehashing. Prefer building from the expected highest cardinality side first, even though it's probably
+     * irrelevant.</dd>
+     * <dt>One side refreshing</dt>
+     * <dd>Always build from the static side. Use a data index if that side has one.</dd>
+     * <dt>Both sides static</dt>
+     * <dd>Build from the expected lowest cardinality side to avoid creating unnecessary states. Use a data index if
+     * available on expected lowest cardinality side.</dd>
+     * </dl>
+     */
+    BuildParameters buildParameters(
+            @NotNull final Table leftTable, @Nullable final Table leftDataIndexTable,
+            @NotNull final Table rightTable, @Nullable final Table rightDataIndexTable) {
+
+        // If we're going to do our initial build from a data index, choose the hash table size accordingly.
+        // Else, choose our default initial size.
+        final int leftBuildSize = leftDataIndexTable != null
+                ? tableSize(leftDataIndexTable.size())
+                : initialBuildSize();
+        final int rightBuildSize = rightDataIndexTable != null
+                ? tableSize(rightDataIndexTable.size())
+                : initialBuildSize();
+
+        final BuildParameters.From firstBuildFrom;
+        final int hashTableSize;
+        if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
+            // Both refreshing: build from largest available data index, or largest table if no indexes
+            if (leftDataIndexTable != null && rightDataIndexTable != null) {
+                firstBuildFrom = leftDataIndexTable.size() >= rightDataIndexTable.size()
+                        ? LeftDataIndex
+                        : RightDataIndex;
+            } else if (leftDataIndexTable != null) {
+                firstBuildFrom = LeftDataIndex;
+            } else if (rightDataIndexTable != null) {
+                firstBuildFrom = RightDataIndex;
+            } else {
+                firstBuildFrom = leftTable.size() >= rightTable.size()
+                        ? LeftInput
+                        : RightInput;
+            }
+
+            // We need to hold states from both sides. We'll need a table at least big enough for the largest side.
+            hashTableSize = Math.max(leftBuildSize, rightBuildSize);
+
+        } else if (leftTable.isRefreshing()) {
+            // Left refreshing, right static: build from right data index if available, else right table
+            firstBuildFrom = rightDataIndexTable != null
+                    ? RightDataIndex
+                    : RightInput;
+
+            // We need to hold states from right, only.
+            hashTableSize = rightBuildSize;
+
+        } else if (rightTable.isRefreshing()) {
+            // Left static, right refreshing: build from left data index if available, else left table
+            firstBuildFrom = leftDataIndexTable != null
+                    ? LeftDataIndex
+                    : LeftInput;
+
+            // We need to hold states from left, only.
+            hashTableSize = leftBuildSize;
+
+        } else {
+            // Both static: build from smallest available data index or smallest table; ties go to smallest table
+            if (leftDataIndexTable != null && rightDataIndexTable != null) {
+                firstBuildFrom = leftDataIndexTable.size() <= rightDataIndexTable.size()
+                        ? LeftDataIndex
+                        : RightDataIndex;
+            } else if (leftDataIndexTable != null) {
+                firstBuildFrom = leftDataIndexTable.size() < rightTable.size()
+                        ? LeftDataIndex
+                        : RightInput;
+            } else if (rightDataIndexTable != null) {
+                firstBuildFrom = leftTable.size() <= rightDataIndexTable.size()
+                        ? LeftInput
+                        : RightDataIndex;
+            } else {
+                firstBuildFrom = leftTable.size() <= rightTable.size()
+                        ? LeftInput
+                        : RightInput;
+            }
+
+            switch (firstBuildFrom) {
+                case LeftDataIndex: // Fall through
+                case LeftInput:
+                    hashTableSize = leftBuildSize;
+                    break;
+                case RightDataIndex: // Fall through
+                case RightInput:
+                    hashTableSize = rightBuildSize;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected first build from " + firstBuildFrom);
+            }
+        }
+        return new BuildParameters(firstBuildFrom, hashTableSize);
+    }
+
+    /**
+     * Same as {@link #buildParameters(Table, Table, Table, Table)}, but it's assumed that all RHS rows are unique.
+     * That, is the RHS table is treated like its own data index table in some respects.
+     */
+    BuildParameters buildParametersForUniqueRights(
+            @NotNull final Table leftTable, @Nullable Table leftDataIndexTable, @NotNull final Table rightTable) {
+        // Treat rightTable as its own data index table, and then fix up the firstBuildFrom to not be RightDataIndex.
+        final BuildParameters result = buildParameters(leftTable, leftDataIndexTable, rightTable, rightTable);
+        return result.firstBuildFrom() == RightDataIndex
+                ? new BuildParameters(RightInput, result.hashTableSize())
+                : result;
+    }
+
+    boolean considerSymbolTables(
+            Table leftTable, Table rightTable,
+            boolean useLeftGrouping, boolean useRightGrouping,
+            ColumnSource<?> leftSource, ColumnSource<?> rightSource) {
         return !leftTable.isRefreshing() && !useLeftGrouping && leftSource.getType() == String.class
                 && !rightTable.isRefreshing() && !useRightGrouping && rightSource.getType() == String.class
                 && leftSource instanceof SymbolTableSource && rightSource instanceof SymbolTableSource
@@ -73,7 +222,7 @@ public class JoinControl {
     }
 
     boolean useSymbolTables(long leftSize, long leftSymbolSize, long rightSize, long rightSymbolSize) {
-        final long proposedSymbolSize = Math.min(rightSymbolSize, leftSymbolSize);
+        final long proposedSymbolSize = Math.min(leftSymbolSize, rightSymbolSize);
         return proposedSymbolSize <= leftSize / 2 || proposedSymbolSize <= rightSize / 2;
     }
 

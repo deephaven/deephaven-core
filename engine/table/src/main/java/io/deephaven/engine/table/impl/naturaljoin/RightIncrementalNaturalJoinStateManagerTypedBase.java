@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.*;
@@ -44,10 +43,10 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     // the keys for our hash entries
     protected final ChunkType[] chunkTypes;
-    protected final WritableColumnSource[] mainKeySources;
+    protected final WritableColumnSource<?>[] mainKeySources;
 
     protected ImmutableObjectArraySource<WritableRowSet> leftRowSet =
-            new ImmutableObjectArraySource(WritableRowSet.class, null);
+            new ImmutableObjectArraySource<>(WritableRowSet.class, null);
     protected ImmutableLongArraySource rightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
@@ -196,8 +195,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     @Override
-    public void convertLeftGroups(int groupingSize, InitialBuildContext ibc,
-            ObjectArraySource<WritableRowSet> rowSetSource) {
+    public void convertLeftDataIndex(int groupingSize, InitialBuildContext ibc, ColumnSource<RowSet> rowSetSource) {
         for (int ii = 0; ii < tableSize; ++ii) {
             final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
             if (leftRowSet != null) {
@@ -209,8 +207,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     throw new IllegalStateException(
                             "When converting left group position to row keys more than one LHS value was found!");
                 }
-                final long groupPosition = leftRowSet.get(0);
-                this.leftRowSet.set(ii, rowSetSource.get(groupPosition));
+                this.leftRowSet.set(ii, rowSetSource.get(leftRowSet.firstRowKey()).copy());
             }
         }
     }
@@ -287,8 +284,8 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
-            ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
+            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
     }

@@ -77,8 +77,6 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     // region chunk add
     @Override
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
-        setGroupToRange(null);
-
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("Index=" + rowSet + ", data size=" + vs.size());
         }
@@ -126,8 +124,6 @@ public class FloatTestSource extends AbstractColumnSource<Float>
 
     @Override
     public synchronized void remove(RowSet rowSet) {
-        setGroupToRange(null);
-
         maybeInitializePrevForStep();
         rowSet.forAllRowKeys(data::remove);
     }
@@ -135,7 +131,6 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     @Override
     public synchronized void shift(long startKeyInclusive, long endKeyInclusive, long shiftDelta) {
         maybeInitializePrevForStep();
-        setGroupToRange(null);
 
         // Note: moving to the right, we need to start with rightmost data first.
         final long dir = shiftDelta > 0 ? -1 : 1;

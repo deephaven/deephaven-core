@@ -240,18 +240,33 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 
-    public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
-            long groupingSize, IntegerArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
+    public WritableRowRedirection buildIndexedRowRedirectionFromRedirections(
+            QueryTable leftTable,
+            boolean exactMatch,
+            RowSet indexTableRowSet,
+            LongArraySource leftRedirections,
+            ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize,
-                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices,
+        return buildIndexedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+                leftRedirections::getUnsafe, indexRowSets, redirectionType);
+    }
+
+    public WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(
+            QueryTable leftTable,
+            boolean exactMatch,
+            RowSet indexTableRowSet,
+            IntegerArraySource leftHashSlots,
+            ColumnSource<RowSet> indexRowSets,
+            JoinControl.RedirectionType redirectionType) {
+        return buildIndexedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), indexRowSets,
                 redirectionType);
     }
 
-    public void errorOnDuplicatesGrouped(IntegerArraySource leftHashSlots, long size,
+    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size,
             ObjectArraySource<RowSet> rowSetSource) {
         errorOnDuplicates(leftHashSlots, size,
-                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)),
+                (long indexPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(indexPosition)),
                 (long row) -> rowSetSource.getUnsafe(row).firstRowKey());
     }
 
