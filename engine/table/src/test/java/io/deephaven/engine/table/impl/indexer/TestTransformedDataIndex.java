@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -22,10 +23,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
@@ -90,6 +88,59 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                         .toArray(ColumnSource[]::new);
                 assertLookupFromTable(testTable, dataIndex, columns);
             }
+        }
+    }
+
+    @Test
+    public void testRemappedDataIndexAllColumns() {
+        for (final DataIndex dataIndex : dataIndexes) {
+            // Map dummy columns to the key columns
+            final Map<ColumnSource<?>, ColumnSource<?>> firstRemap = new HashMap<>();
+            dataIndex.keyColumnNames().forEach(name -> firstRemap.put(testTable.getColumnSource(name),
+                    InMemoryColumnSource.makeImmutableSource(Integer.class, null)));
+            final DataIndex firstRemappedIndex = dataIndex.remapKeyColumns(firstRemap);
+            // Verify that the original and remapped indexes point to the same index table columns
+            assertEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
+
+            // Map new dummy columns to the old dummy columns (second-level)
+            final Map<ColumnSource<?>, ColumnSource<?>> secondRemap = new HashMap<>();
+            firstRemap.forEach((oldColumn, dummy) -> secondRemap.put(dummy,
+                    InMemoryColumnSource.makeImmutableSource(Integer.class, null)));
+            final DataIndex secondRemappedIndex = firstRemappedIndex.remapKeyColumns(secondRemap);
+            // Verify that the original and remapped indexes point to the same index table columns
+            assertEquals(dataIndex.keyColumns(), secondRemappedIndex.keyColumns());
+
+            // Map even newer dummy columns to the old dummy columns (third-level)
+            final Map<ColumnSource<?>, ColumnSource<?>> thirdRemap = new HashMap<>();
+            secondRemap.forEach((oldColumn, dummy) -> thirdRemap.put(dummy,
+                    InMemoryColumnSource.makeImmutableSource(Integer.class, null)));
+            final DataIndex thirdRemappedIndex = secondRemappedIndex.remapKeyColumns(secondRemap);
+            // Verify that the original and remapped indexes point to the same index table columns
+            assertEquals(dataIndex.keyColumns(), thirdRemappedIndex.keyColumns());
+        }
+    }
+
+    @Test
+    public void testRemappedDataIndexOnlyFirstColumns() {
+        for (final DataIndex dataIndex : dataIndexes) {
+            final ColumnSource<?> firstDummy = InMemoryColumnSource.makeImmutableSource(Integer.class, null);
+            final Map<ColumnSource<?>, ColumnSource<?>> firstRemap =
+                    Map.of(testTable.getColumnSource(dataIndex.keyColumnNames().get(0)), firstDummy);
+            final DataIndex firstRemappedIndex = dataIndex.remapKeyColumns(firstRemap);
+            // Verify that the original and remapped indexes point to the same index table columns
+            assertEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
+
+            final ColumnSource<?> secondDummy = InMemoryColumnSource.makeImmutableSource(Integer.class, null);
+            final Map<ColumnSource<?>, ColumnSource<?>> secondRemap = Map.of(firstDummy, secondDummy);
+            final DataIndex secondRemappedIndex = firstRemappedIndex.remapKeyColumns(secondRemap);
+            // Verify that the original and remapped indexes point to the same index table columns
+            assertEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
+
+            final ColumnSource<?> thirdDummy = InMemoryColumnSource.makeImmutableSource(Integer.class, null);
+            final Map<ColumnSource<?>, ColumnSource<?>> thirdRemap = Map.of(secondDummy, thirdDummy);
+            final DataIndex thirdRemappedIndex = secondRemappedIndex.remapKeyColumns(thirdRemap);
+            // Verify that the original and remapped indexes point to the same index table columns
+            assertEquals(dataIndex.keyColumns(), thirdRemappedIndex.keyColumns());
         }
     }
 

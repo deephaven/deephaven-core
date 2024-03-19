@@ -146,7 +146,7 @@ public abstract class AbstractColumnSource<T> implements
                         final int thisChunkSize = chunkKeys.size();
                         for (int ii = 0; ii < thisChunkSize; ++ii) {
                             final String key = chunkKeys.get(ii);
-                            if (keySet.contains(key)) {
+                            if (keySet.containsKey(key)) {
                                 matchingIndexRowsBuilder.appendKey(chunkRowKeys.get(ii));
                             }
                         }

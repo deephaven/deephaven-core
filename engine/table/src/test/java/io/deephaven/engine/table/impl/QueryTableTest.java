@@ -933,6 +933,40 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public void testStringMatchFilterIndexed() {
+        // MatchFilters (currently) only use indexes on initial creation but this incremental test will recreate
+        // index-enabled match filtered tables and compare them against incremental non-indexed filtered tables.
+
+        Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
+        final Random random = new Random(0);
+
+        final int size = 500;
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"S1", "S2"},
+                new SetGenerator<>("aa", "bb", "cc", "dd", "AA", "BB", "CC", "DD"),
+                new SetGenerator<>("aaa", "bbb", "ccc", "ddd", "AAA", "BBB", "CCC", "DDD")));
+
+        DataIndexer.getOrCreateDataIndex(table, "S1");
+        DataIndexer.getOrCreateDataIndex(table, "S2");
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> table.where("S1 in 'aa'")),
+                EvalNugget.from(() -> table.where("S2 in 'bbb'")),
+                EvalNugget.from(() -> table.where("S2 not in 'ccc', 'dddd'")),
+                EvalNugget.from(() -> table.where("S1 not in 'aa', 'bb'")),
+
+                EvalNugget.from(() -> table.where("S1 icase in 'aa'")),
+                EvalNugget.from(() -> table.where("S2 icase in 'bbb'")),
+                EvalNugget.from(() -> table.where("S2 icase not in 'ccc', 'dddd'")),
+                EvalNugget.from(() -> table.where("S1 icase not in 'aa', 'bb'")),
+        };
+
+        for (int i = 0; i < 500; i++) {
+            simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
+    }
+
     public void testDoubleRangeFilterSimple() {
         final Table t = TableTools.newTable(doubleCol("DV", 1.0, 2.0, -3.0, Double.NaN, QueryConstants.NULL_DOUBLE, 6.0,
                 Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 9.0)).update("IV=i+1");
