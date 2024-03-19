@@ -96,9 +96,14 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     private final ObjectArraySource<RowSet> rowSetSource;
     private final ModifiedColumnSet rowSetModifiedColumnSet;
 
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+    @ReferentialIntegrity
+    private final Collection<DataIndex> retainedDataIndexes = new ArrayList<>();
+
     /**
      * A reference to a delayed error notifier for the {@link #includedLocationsTable}, if one is pending.
      */
+    @SuppressWarnings("unused")
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
 
@@ -221,6 +226,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
                 final DataIndex partitioningIndex =
                         new PartitioningColumnDataIndex<>(cd.getName(), columnSources.get(cd.getName()), this);
+                retainedDataIndexes.add(partitioningIndex);
                 if (isRefreshing) {
                     manage(partitioningIndex);
                 }
@@ -239,7 +245,10 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
                         .map(columnSources::get)
                         .toArray(ColumnSource[]::new);
-                DataIndexer.of(initialRowSet).addDataIndex(new MergedDataIndex(keyColumnNames, keySources, this));
+                final DataIndex mergedIndex = new MergedDataIndex(keyColumnNames, keySources, this);
+                retainedDataIndexes.add(mergedIndex);
+                // Not refreshing, so no need to manage mergedIndex
+                DataIndexer.of(initialRowSet).addDataIndex(mergedIndex);
             }
         }
         return initialRowSet;
