@@ -148,7 +148,15 @@ public class ParquetTableWriter {
                         tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
                                 destDirPath.relativize(info.metadataFilePath.toPath()).toString(),
                                 info.parquetColumnNames));
-                        write(indexTable, indexTable.getDefinition(), writeInstructions,
+                        final ParquetInstructions writeInstructionsToUse;
+                        if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
+                            writeInstructionsToUse = writeInstructions;
+                        } else {
+                            writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
+                                    .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
+                                    .build();
+                        }
+                        write(indexTable, indexTable.getDefinition(), writeInstructionsToUse,
                                 info.destFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
                     }
                 }
