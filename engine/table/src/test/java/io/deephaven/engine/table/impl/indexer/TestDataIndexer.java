@@ -75,9 +75,6 @@ public class TestDataIndexer extends RefreshingTableTestCase {
 
         // Create indexes for every column combination; they will be retained by our parent class's LivenessScope
         for (final List<String> set : powerSet(queryTable.getColumnSourceMap().keySet())) {
-            if (set.isEmpty()) {
-                continue;
-            }
             System.out.println("Creating index for " + set);
             DataIndexer.getOrCreateDataIndex(queryTable, set.toArray(String[]::new));
         }
