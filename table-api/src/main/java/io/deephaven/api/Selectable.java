@@ -20,6 +20,16 @@ import java.util.stream.Collectors;
  */
 public interface Selectable {
 
+    /**
+     * Wrap a selectable to mark it as stateful.
+     *
+     * @param innerSelectable the selectable that is stateful
+     * @return the wrapped selectable
+     */
+    static StatefulSelectable stateful(Selectable innerSelectable) {
+        return StatefulSelectable.of(innerSelectable);
+    }
+
     static Selectable of(ColumnName newColumn, Expression expression) {
         if (newColumn.equals(expression)) {
             return newColumn;

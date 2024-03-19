@@ -105,11 +105,6 @@ class LongConstantColumn implements SelectColumn {
         return false;
     }
 
-    @Override
-    public final boolean isStateless() {
-        return true;
-    }
-
     private static final class OutputFormulaFillContext implements Formula.FillContext {
 
         private static final Formula.FillContext INSTANCE = new OutputFormulaFillContext();

@@ -323,7 +323,7 @@ abstract class AbstractFilterExecution {
         return permitParallelization()
                 && numberOfRows != 0
                 && (QueryTable.FORCE_PARALLEL_WHERE || numberOfRows / 2 > QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT)
-                && filter.permitParallelization();
+                && filter.isStateless();
     }
 
     /**
@@ -341,6 +341,6 @@ abstract class AbstractFilterExecution {
         if (QueryTable.DISABLE_PARALLEL_WHERE) {
             return false;
         }
-        return Arrays.stream(filters).anyMatch(WhereFilter::permitParallelization);
+        return Arrays.stream(filters).anyMatch(WhereFilter::isStateless);
     }
 }

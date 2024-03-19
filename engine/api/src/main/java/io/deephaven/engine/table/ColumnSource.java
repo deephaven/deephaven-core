@@ -202,7 +202,7 @@ public interface ColumnSource<T>
     /**
      * Most column sources will return the same value for a given row without respect to the order that the rows are
      * read. Those columns sources are considered "stateless" and should return true.
-     *
+     * <p>
      * Some column sources, however may be dependent on evaluation order. For example, a formula that updates a Map must
      * be evaluated from the first row to the last row. A column source that has the potential to depend on the order of
      * evaluation must return false.

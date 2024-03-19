@@ -52,12 +52,6 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public boolean isStateless() {
-        // we can't control python
-        return false;
-    }
-
-    @Override
     protected final FormulaSourceDescriptor getSourceDescriptor() {
         return new FormulaSourceDescriptor(
                 returnedType,

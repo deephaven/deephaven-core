@@ -6,15 +6,8 @@ package io.deephaven.sql;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.*;
 import io.deephaven.api.filter.Filter.Visitor;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.literal.Literal;
 
 import java.util.ArrayList;
@@ -102,5 +95,18 @@ enum FilterSimplifier implements Visitor<Filter> {
     @Override
     public Filter visit(RawString rawString) {
         return rawString;
+    }
+
+    @Override
+    public Filter visit(StatefulFilter filter) {
+        final Filter simplifiedInner = filter.innerFilter().walk(this);
+        if (simplifiedInner instanceof StatefulFilter) {
+            return simplifiedInner;
+        }
+        if (simplifiedInner instanceof FilterNot) {
+            return FilterNot.of(StatefulFilter.of(((FilterNot<?>) simplifiedInner).filter()));
+        } else {
+            return StatefulFilter.of(simplifiedInner);
+        }
     }
 }

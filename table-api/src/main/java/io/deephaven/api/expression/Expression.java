@@ -34,5 +34,7 @@ public interface Expression {
         T visit(Method method);
 
         T visit(RawString rawString);
+
+        T visit(StatefulExpression statefulExpression);
     }
 }

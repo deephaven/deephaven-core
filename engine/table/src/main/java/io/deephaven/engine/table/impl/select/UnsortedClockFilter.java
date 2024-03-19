@@ -143,7 +143,7 @@ public class UnsortedClockFilter extends ClockFilter {
     }
 
     @Override
-    public boolean permitParallelization() {
+    public boolean isStateless() {
         return false;
     }
 }

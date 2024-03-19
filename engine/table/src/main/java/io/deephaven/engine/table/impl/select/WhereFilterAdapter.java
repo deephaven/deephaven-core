@@ -9,14 +9,8 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.expression.StatefulExpression;
+import io.deephaven.api.filter.*;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
@@ -77,6 +71,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(Filter filter, boolean inverted) {
+        return filter.walk(new WhereFilterAdapter(inverted));
+    }
+
+    public static WhereFilter of(StatefulFilter filter, boolean inverted) {
         return filter.walk(new WhereFilterAdapter(inverted));
     }
 
@@ -206,6 +204,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(RawString rawString) {
         return of(rawString, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(StatefulFilter filter) {
+        return of(filter, inverted);
     }
 
     private static class FilterComparisonAdapter implements Expression.Visitor<WhereFilter> {
@@ -345,6 +348,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 return original();
             }
 
+            @Override
+            public WhereFilter visit(StatefulExpression statefulExpression) {
+                return StatefulWhereFilter.of(statefulExpression.innerExpression().walk(this));
+            }
+
             private RangeConditionFilter range(String rhsValue) {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 switch (preferred.operator()) {
@@ -387,6 +395,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(RawString lhs) {
             return original();
+        }
+
+        @Override
+        public WhereFilter visit(StatefulExpression statefulExpression) {
+            return StatefulWhereFilter.of(statefulExpression.innerExpression().walk(this));
         }
     }
 
@@ -448,6 +461,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(RawString rawString) {
             return getExpression(Strings.of(rawString));
+        }
+
+        @Override
+        public WhereFilter visit(StatefulExpression statefulExpression) {
+            return StatefulWhereFilter.of(statefulExpression.innerExpression().walk(this));
         }
     }
 }

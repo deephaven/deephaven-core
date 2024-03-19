@@ -34,6 +34,10 @@ import java.util.stream.Collectors;
  */
 public interface Filter extends Expression {
 
+    static Filter stateful(Filter innerFilter) {
+        return StatefulFilter.of(innerFilter);
+    }
+
     static Collection<? extends Filter> from(String... expressions) {
         return from(Arrays.asList(expressions));
     }
@@ -233,5 +237,7 @@ public interface Filter extends Expression {
         T visit(boolean literal);
 
         T visit(RawString rawString);
+
+        T visit(StatefulFilter filter);
     }
 }

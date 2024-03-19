@@ -159,7 +159,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     }
 
     @Override
-    public boolean permitParallelization() {
+    public boolean isStateless() {
         return false;
     }
 }

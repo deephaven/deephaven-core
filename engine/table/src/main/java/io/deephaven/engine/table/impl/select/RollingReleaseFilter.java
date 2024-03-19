@@ -124,7 +124,7 @@ public class RollingReleaseFilter
     }
 
     @Override
-    public boolean permitParallelization() {
+    public boolean isStateless() {
         return false;
     }
 }

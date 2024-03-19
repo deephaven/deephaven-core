@@ -219,11 +219,6 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public boolean isStateless() {
-        return false;
-    }
-
-    @Override
     public FunctionalColumn<S, D> copy() {
         return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, function);
     }
