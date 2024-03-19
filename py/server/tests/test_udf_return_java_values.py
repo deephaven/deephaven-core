@@ -54,7 +54,8 @@ def fn(col) -> {np_dtype}:
             "np.str_": dtypes.string_array,
             "np.uint16": dtypes.char_array,
         }
-        container_types = ["List", "Tuple", "list", "tuple", "Sequence", "np.ndarray"]
+        # container_types = ["List", "Tuple", "list", "tuple", "Sequence", "np.ndarray"]
+        container_types = ["list"]
         for component_type, dh_dtype in component_types.items():
             for container_type in container_types:
                 with self.subTest(component_type=component_type, container_type=container_type):

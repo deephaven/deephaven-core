@@ -201,22 +201,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             throw new IllegalStateException("Signature should always be available.");
         }
 
-        // List<Class<?>> paramTypes = new ArrayList<>();
-        // for (char numpyTypeChar : signatureString.toCharArray()) {
-        // if (numpyTypeChar != '-') {
-        // Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
-        // if (paramType == null) {
-        // throw new IllegalStateException(
-        // "Parameters of vectorized functions should always be of integral, floating point, boolean, String, or Object
-        // type: "
-        // + numpyTypeChar + " of " + signatureString);
-        // }
-        // paramTypes.add(paramType);
-        // } else {
-        // break;
-        // }
-        // }
-        // this.paramTypes = paramTypes;
         String pyEncodedParamsStr = signatureString.split("->")[0];
         if (!pyEncodedParamsStr.isEmpty()) {
             String[] pyEncodedParams = pyEncodedParamsStr.split(",");
@@ -271,14 +255,13 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     public void verifyArguments(Class<?>[] argTypes) {
         String callableName = pyCallable.getAttribute("__name__").toString();
 
-        // if (argTypes.length > parameters.size()) {
-        // throw new IllegalArgumentException(
-        // callableName + ": " + "Expected " + parameters.size() + " or fewer arguments, got " + argTypes.length);
-        // }
         for (int i = 0; i < argTypes.length; i++) {
             Set<Class<?>> types =
                     parameters.get(i > parameters.size() - 1 ? parameters.size() - 1 : i).getPossibleTypes();
-            // Object is a catch-all type, so we don't need to check for it
+
+            // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
+            // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
+            // check for Object type input
             if (argTypes[i] == Object.class) {
                 continue;
             }

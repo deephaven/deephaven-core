@@ -2817,12 +2817,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             } else {
                 throw new IllegalStateException("Vectorizability check failed: " + n);
             }
-
-            // TODO related to core#709, but should be covered by PyCallableWrapper.verifyArguments, needs to verify
-            // if (!isSafelyCoerceable(argTypes[i], paramTypes.get(i))) {
-            // throw new PythonCallVectorizationFailure("Python vectorized function argument type mismatch: " + n + " "
-            // + argTypes[i].getSimpleName() + " -> " + paramTypes.get(i).getSimpleName());
-            // }
         }
     }
 

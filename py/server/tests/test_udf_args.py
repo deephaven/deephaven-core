@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import typing
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, Sequence
 import unittest
 
 import numpy as np
@@ -452,13 +452,40 @@ def f(x: {p_type}) -> bool:  # note typing
                     t = empty_table(1).update(["X = i", f"Y = f(X)"])
                 self.assertRegex(str(cm.exception), "f: Expect")
 
-    def test_np_typehints_mismatch(self):
-        def f(x: float) -> bool:
-            return True
+    def test_sequence_args(self):
+        with self.subTest("Sequence"):
+            def f(x: Sequence[int]) -> bool:
+                return True
 
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(1).update(["X = i", "Y = f(ii)"])
-        self.assertRegex(str(cm.exception), "f: Expect")
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(1).update(["X = i", "Y = f(ii)"])
+            self.assertRegex(str(cm.exception), "f: Expect")
+
+            t = empty_table(1).update(["X = i", "Y = ii"]).group_by("X").update(["Z = f(Y.toArray())"])
+            self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
+        with self.subTest("bytes"):
+            def f(x: bytes) -> bool:
+                return True
+
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(1).update(["X = i", "Y = f(ii)"])
+            self.assertRegex(str(cm.exception), "f: Expect")
+
+            t = empty_table(1).update(["X = i", "Y = (byte)(ii % 128)"]).group_by("X").update(["Z = f(Y.toArray())"])
+            self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
+        with self.subTest("bytearray"):
+            def f(x: bytearray) -> bool:
+                return True
+
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(1).update(["X = i", "Y = f(ii)"])
+            self.assertRegex(str(cm.exception), "f: Expect")
+
+            t = empty_table(1).update(["X = i", "Y = (byte)(ii % 128)"]).group_by("X").update(["Z = f(Y.toArray())"])
+            self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
 
 if __name__ == "__main__":
     unittest.main()
