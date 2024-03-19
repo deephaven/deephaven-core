@@ -499,8 +499,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             while (selectionIterator.hasMore()) {
                 final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
 
-                final ObjectChunk<Object, ? extends Values> keyChunk
-                        = keySource.getChunk(keyGetContext, selectionChunk).asObjectChunk();
+                final ObjectChunk<Object, ? extends Values> keyChunk =
+                        keySource.getChunk(keyGetContext, selectionChunk).asObjectChunk();
                 final int thisChunkSize = keyChunk.size();
 
                 selectionRowKeyChunk.setSize(thisChunkSize);
@@ -509,9 +509,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 for (int ii = 0; ii < thisChunkSize; ++ii) {
                     if (liveValues.contains(keyChunk.asObjectChunk().get(ii)) == filterInclusion)
                         indexBuilder.appendKey(selectionRowKeyChunk.get(ii));
-                    }
                 }
             }
+        }
         return indexBuilder.build();
     }
 
