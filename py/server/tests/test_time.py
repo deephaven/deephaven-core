@@ -5,7 +5,7 @@
 import unittest
 from time import sleep
 import datetime
-import zoneinfo
+import sys
 import pandas as pd
 import numpy as np
 
@@ -119,10 +119,12 @@ class TimeTestCase(BaseTestCase):
             to_j_time_zone(dt)
             self.fail("Expected DHError")
 
-        dttz = zoneinfo.ZoneInfo("America/New_York")
-        dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
-        self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("America/New_York"))
-        self.assertEqual(to_j_time_zone(dt), to_j_time_zone("America/New_York"))
+        if sys.version_info >= (3, 8):
+            import zoneinfo
+            dttz = zoneinfo.ZoneInfo("America/New_York")
+            dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+            self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("America/New_York"))
+            self.assertEqual(to_j_time_zone(dt), to_j_time_zone("America/New_York"))
 
         with self.assertRaises(TypeError):
             to_j_time_zone(False)
