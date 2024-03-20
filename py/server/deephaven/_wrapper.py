@@ -159,7 +159,7 @@ def pythonify(j_obj: Any) -> Optional[Any]:
 
 def _wrap_with_subclass(j_obj: jpy.JType, cls: type) -> Optional[JObjectWrapper]:
     """ Returns a wrapper instance for the specified Java object by trying the entire subclasses' hierarchy. The
-    function employs the DFS strategy to try most specific subclass first. If no matching wrapper class is found,
+    function employs a Depth First Search strategy to try the most specific subclass first. If no matching wrapper class is found,
     returns None.
 
     The premises for this function are as follows:
