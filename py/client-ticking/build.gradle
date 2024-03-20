@@ -73,6 +73,9 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
                          DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
                          python3 setup.py build_ext -i; \
                        DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
+                       auditwheel repair dist/pydeephaven_ticking*${py}*.whl; \
+                       rm -f dist/pydeephaven_ticking*${py}*.whl; \
+                       mv -f wheelhouse/*.whl dist; \
                        pip3 install in-wheels/*.whl; \
                        pip3 install --force --no-deps dist/pydeephaven_ticking*${py}*.whl; \
                      done; \
