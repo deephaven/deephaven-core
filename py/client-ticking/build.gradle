@@ -15,7 +15,6 @@ dependencies {
 evaluationDependsOn(':cpp-client')
 
 def prefix = '/opt/deephaven'
-def pypapy = hasProperty('pypapy') ? property('pypapy') : 'cp38-cp38'
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
@@ -27,7 +26,7 @@ deephavenDocker {
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
 
-def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking') {
+def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDockerTask(project, taskName) {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
@@ -59,20 +58,24 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
-        runCommand("PREFIX=${prefix}; PYPAPY=${pypapy}; DEEPHAVEN_VERSION=${project.version};" +
+        runCommand("PREFIX=${prefix}; WHEELS_SET='${wheelsSet}'; DEEPHAVEN_VERSION=${project.version};" +
                    '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
                      . "${PREFIX}/env.sh"; \
-                     PATH="/opt/python/${PYPAPY}/bin:$PATH"; \
-                     pip3 install cython; \
-                     MAKEFLAGS="-j${NCPUS}" \
-                       CFLAGS="-I${DHCPP}/include" \
-                       LDFLAGS="-L${DHCPP}/lib" \
-                       DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
-                       python3 setup.py build_ext -i; \
-                     DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
-                     pip3 install in-wheels/*.whl; \
-                     pip3 install --force --no-deps dist/*.whl; \
+                     ORIG_PATH=$PATH; \
+                     for py in ${WHEELS_SET}; do \
+                       rm -f *.cpp *.so; \
+                       PATH="/opt/python/${py}/bin:$ORIG_PATH"; \
+                       pip3 install cython; \
+                       MAKEFLAGS="-j${NCPUS}" \
+                         CFLAGS="-I${DHCPP}/include" \
+                         LDFLAGS="-L${DHCPP}/lib" \
+                         DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
+                         python3 setup.py build_ext -i; \
+                       DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
+                       pip3 install in-wheels/*.whl; \
+                       pip3 install --force --no-deps dist/pydeephaven_ticking*${py}*.whl; \
+                     done; \
                      ln dist/*.whl /out; \
                      cd /; \
                      rm -fr "${PREFIX}/src/py-client-ticking"
@@ -81,7 +84,12 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         environmentVariable 'LD_LIBRARY_PATH', ""  // avoid conflict with libarrow.13.0.0.so
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
-}
+}}
+
+def buildPyClientTicking = buildPyClientTickingManyLinux("cp38-cp38", 'pyClientTicking')
+
+def wheelsSet = [ 'cp38-cp38', 'cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312' ]
+def buildPyClientTickingAllWheels = buildPyClientTickingManyLinux(String.join(' ', wheelsSet), 'pyClientTickingAllWheels')
 
 def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
     // Only tested on x86-64, and we only build dependencies for x86-64
@@ -117,10 +125,10 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
         copyFile('dep-wheels/', "/project/in-wheels")
         copyFile('pyt-wheel/', "/project/in-wheels")
         workingDir('/project')
-        runCommand("PYPAPY=${pypapy};" +
+        runCommand("WHEEL_TAG=cp38-cp38; " +
                    '''set -eux ; \
                      [ -f /project/in-wheels/pydeephaven_ticking*.whl ]; \
-                     PATH="/opt/python/${PYPAPY}/bin:$PATH"; \
+                     PATH="/opt/python/${WHEEL_TAG}/bin:$PATH"; \
                      pip3.8 install unittest-xml-reporting; \
                      pip3.8 install /project/in-wheels/*.whl; \
                    ''')
