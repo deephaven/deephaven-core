@@ -103,7 +103,7 @@ def _is_direct_initialisable(cls) -> bool:
 
 
 def _lookup_wrapped_class(j_obj: jpy.JType) -> List[type]:
-    """ Returns the wrapper class for the specified Java object. """
+    """ Returns the wrapper classes for the specified Java object. """
     # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
     # the Java objects returned by calling resolve()
     global _has_all_wrappers_imported
@@ -166,8 +166,7 @@ def pythonify(j_obj: Any) -> Optional[Any]:
 def _wrap_with_subclass(j_obj: jpy.JType, cls: type) -> Optional[JObjectWrapper]:
     """ Returns a wrapper instance for the specified Java object if the specified class is a subclass of the wrapper
     class. Otherwise, returns None. """
-    subclasses = cls.__subclasses__()
-    for subclass in subclasses:
+    for subclass in cls.__subclasses__():
         try:
             if (wrapper := _wrap_with_subclass(j_obj, subclass)) is not None:
                 return wrapper
