@@ -51,7 +51,7 @@ public class SeekRow {
 
     @ConcurrentMethod
     public long seek(Table table) {
-        final Mutable<Long> result = new MutableObject<>(-1L);
+        final Mutable<Long> result = new MutableObject<>(null);
 
         ConstructSnapshot.callDataSnapshotFunction("SeekRow",
                 ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), (NotificationStepSource) table),
