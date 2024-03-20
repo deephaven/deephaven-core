@@ -33,7 +33,7 @@ public interface SafeCloseable extends AutoCloseable {
     /**
      * {@link #close() Close} all non-{@code null} {@link AutoCloseable} elements. Terminates the {@code stream}.
      *
-     * @param stream the stream of {@link AutoCloseable AutoCloseables} to {@link #close() close}
+     * @param stream The stream of {@link AutoCloseable AutoCloseables} to {@link #close() close}
      * @param <ACT> the auto closable type
      */
     static <ACT extends AutoCloseable> void closeAll(@NotNull final Stream<ACT> stream) {
@@ -43,7 +43,7 @@ public interface SafeCloseable extends AutoCloseable {
     /**
      * {@link #close() Close} all non-{@code null} {@link AutoCloseable} elements. Consumes the {@code iterator}.
      *
-     * @param iterator the iterator of {@link AutoCloseable AutoCloseables} to {@link #close() close}
+     * @param iterator The iterator of {@link AutoCloseable AutoCloseables} to {@link #close() close}
      * @param <ACT> the auto closable type
      */
     static <ACT extends AutoCloseable> void closeAll(@NotNull final Iterator<ACT> iterator) {

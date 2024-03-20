@@ -40,10 +40,6 @@ public interface CloseableIterator<TYPE> extends Iterator<TYPE>, AutoCloseable {
                 .onClose(this::close);
     }
 
-    /**
-     * @inheritDoc
-     * @apiNote Unlike {@link AutoCloseable}, CloseableIterators must not throw checked exceptions.
-     */
     @Override
     default void close() {}
 

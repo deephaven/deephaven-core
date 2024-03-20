@@ -10,11 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@link SafeCloseable} that will close non-null values inside of an array.
+ * {@link SafeCloseable} that will close non-null values inside an array.
  * <p>
  * The common use case is to create an array; use the SafeCloseableArray in an ignored try-with-resources variable, and
- * then populate the array within the loop. If you fail before populating the array nothing is closed, if you fail
- * during or after populating the array the created values are closed.
+ * then populate the array within the loop. If the operation fails before populating the array nothing is closed. If the
+ * operation fails during or after populating the array the populated values are closed.
  */
 public class SafeCloseableArray<ACT extends AutoCloseable> implements SafeCloseable {
 
@@ -32,7 +32,7 @@ public class SafeCloseableArray<ACT extends AutoCloseable> implements SafeClosea
     /**
      * Close an array of {@link AutoCloseable} entries, ignoring {@code null} elements and assigning elements to
      * {@code null} as they are cleared.
-     * 
+     *
      * @param array The array to operate one
      */
     public static <ACT extends AutoCloseable> void close(final ACT @NotNull [] array) {
