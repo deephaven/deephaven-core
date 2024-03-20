@@ -178,8 +178,7 @@ def _wrap_with_subclass(j_obj: jpy.JType, cls: type) -> Optional[JObjectWrapper]
 
 def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
     """ Wraps the specified Java object as an instance of the most specific custom wrapper class if one is available,
-    otherwise returns
-    the raw Java object. """
+    otherwise returns the raw Java object. """
     if j_obj is None:
         return None
 
