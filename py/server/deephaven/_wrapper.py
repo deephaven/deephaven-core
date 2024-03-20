@@ -193,7 +193,7 @@ def wrap_j_object(j_obj: jpy.JType) -> Optional[Union[JObjectWrapper, jpy.JType]
         except:
             continue
 
-    return  j_obj
+    return j_obj
 
 
 def unwrap(obj: Any) -> Union[jpy.JType, Any]:
