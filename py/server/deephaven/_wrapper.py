@@ -13,7 +13,7 @@ import inspect
 import pkgutil
 import sys
 from abc import ABC, abstractmethod
-from typing import Set, Union, Optional, Any
+from typing import Set, Union, Optional, Any, List
 
 import jpy
 
@@ -102,7 +102,7 @@ def _is_direct_initialisable(cls) -> bool:
     return False
 
 
-def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
+def _lookup_wrapped_class(j_obj: jpy.JType) -> List[type]:
     """ Returns the wrapper class for the specified Java object. """
     # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
     # the Java objects returned by calling resolve()
@@ -111,12 +111,13 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
         _recursive_import(__package__.partition(".")[0])
         _has_all_wrappers_imported = True
 
+    wcs = []
     for wc in _di_wrapper_classes:
         j_clz = wc.j_object_type
         if j_clz.jclass.isInstance(j_obj):
-            return wc
+             wcs.append(wc)
 
-    return None
+    return wcs
 
 
 def javaify(obj: Any) -> Optional[jpy.JType]:
@@ -162,15 +163,36 @@ def pythonify(j_obj: Any) -> Optional[Any]:
     return wrap_j_object(j_obj)
 
 
+def _wrap_with_subclass(j_obj: jpy.JType, cls: type) -> Optional[JObjectWrapper]:
+    """ Returns a wrapper instance for the specified Java object if the specified class is a subclass of the wrapper
+    class. Otherwise, returns None. """
+    subclasses = cls.__subclasses__()
+    for subclass in subclasses:
+        try:
+            if (wrapper := _wrap_with_subclass(j_obj, subclass)) is not None:
+                return wrapper
+            return subclass(j_obj)
+        except:
+            continue
+    return None
+
 def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
-    """ Wraps the specified Java object as an instance of a custom wrapper class if one is available, otherwise returns
+    """ Wraps the specified Java object as an instance of the most specific custom wrapper class if one is available,
+    otherwise returns
     the raw Java object. """
     if j_obj is None:
         return None
 
-    wc = _lookup_wrapped_class(j_obj)
+    wcs = _lookup_wrapped_class(j_obj)
+    for wc in wcs:
+        try:
+            if (wrapper:= _wrap_with_subclass(j_obj, wc)) is not None:
+                return wrapper
+            return wc(j_obj)
+        except:
+            continue
 
-    return wc(j_obj) if wc else j_obj
+    return  j_obj
 
 
 def unwrap(obj: Any) -> Union[jpy.JType, Any]:

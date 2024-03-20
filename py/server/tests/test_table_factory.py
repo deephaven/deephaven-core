@@ -456,5 +456,19 @@ class TableFactoryTestCase(BaseTestCase):
         it.delete(t)
         self.assertEqual(it.size, 0)
 
+    def test_j_input_wrapping(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+        col_defs = {c.name: c.data_type for c in t.columns}
+        append_only_input_table = input_table(col_defs=col_defs)
+
+        from deephaven import _wrapper
+        t = _wrapper.wrap_j_object(append_only_input_table.j_table)
+        self.assertTrue(isinstance(t, InputTable))
+
+
 if __name__ == '__main__':
     unittest.main()
