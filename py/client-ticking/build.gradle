@@ -15,6 +15,7 @@ dependencies {
 evaluationDependsOn(':cpp-client')
 
 def prefix = '/opt/deephaven'
+def pypapy = hasProperty('pypapy') ? property('pypapy') : 'cp310-cp310'
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
@@ -58,11 +59,11 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
-        runCommand("PREFIX=${prefix}; DEEPHAVEN_VERSION=${project.version};" +
+        runCommand("PREFIX=${prefix}; PYPAPY=${pypapy}; DEEPHAVEN_VERSION=${project.version};" +
                    '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
                      . "${PREFIX}/env.sh"; \
-                     PATH="/opt/python/cp38-cp38/bin:$PATH"; \
+                     PATH="/opt/python/${PYPAPY}/bin:$PATH"; \
                      pip3 install cython; \
                      MAKEFLAGS="-j${NCPUS}" \
                        CFLAGS="-I${DHCPP}/include" \
@@ -101,8 +102,9 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
                    ''')
         copyFile('tests/', "/project/tests/")
         workingDir('/project')
-        runCommand('''set -eux ; \
-                     PATH="/opt/python/cp38-cp38/bin:$PATH"; \
+        runCommand("PYPAPY=${pypapy};" +
+                   '''set -eux ; \
+                     PATH="/opt/python/${PYPAPY}/bin:$PATH"; \
                      pip3 install unittest-xml-reporting
                    ''')
 
@@ -116,7 +118,7 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ project.tasks.getByName('pyClientTicking') ]
-    entrypoint = ['/opt/python/cp38-cp38/bin/python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    entrypoint = ["/opt/python/${pypapy}/bin/python3", '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
