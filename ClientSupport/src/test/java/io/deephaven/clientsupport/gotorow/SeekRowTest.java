@@ -102,7 +102,7 @@ public class SeekRowTest {
         }
         // descending tables
         Table descUnsorted = TableTools.newTable(intCol("num", data));
-        Table descSorted = descUnsorted.sort("num");
+        Table descSorted = descUnsorted.sortDescending("num");
 
         assertSeekPositionAllRows(ascUnsorted, seekValue, ascForwardPositions, ascBackwardPositions);
         assertSeekPositionAllRows(ascSorted, seekValue, ascForwardPositions, ascBackwardPositions);
