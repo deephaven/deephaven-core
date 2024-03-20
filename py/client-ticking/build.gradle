@@ -15,7 +15,7 @@ dependencies {
 evaluationDependsOn(':cpp-client')
 
 def prefix = '/opt/deephaven'
-def pypapy = hasProperty('pypapy') ? property('pypapy') : 'cp310-cp310'
+def pypapy = hasProperty('pypapy') ? property('pypapy') : 'cp38-cp38'
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
@@ -87,25 +87,42 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
     copyIn {
+        from(configurations.pythonWheel) {
+            into 'dep-wheels'
+        }
         from(layout.projectDirectory) {
             include 'tests/**'
         }
+        from(layout.buildDirectory.dir('wheel')) {
+            into 'pyt-wheel'
+        }
     }
     dockerfile {
-        from('deephaven/py-client-ticking:local-build')
+        from('registry.access.redhat.com/ubi8/ubi-minimal:8.8')
         runCommand("PREFIX=${prefix}; " +
                    '''set -eux ; \
+                      DNF=`type microdnf >/dev/null 2>&1 && echo 'microdnf --disableplugin=subscription-manager' || echo 'dnf -q'`; \
+                      $DNF -y update; \
+                      $DNF -y install python3.8 \
+                        python3-pip; \
+                      $DNF clean all; \
+                      python3.8 -m pip install --upgrade pip; \
+                      python3.8 -m pip install unittest-xml-reporting; \
                       rm -fr /out; \
                       mkdir -p \
                         /out/report \
                         /project/tests                      
                    ''')
         copyFile('tests/', "/project/tests/")
+        copyFile('dep-wheels/', "/project/in-wheels")
+        copyFile('pyt-wheel/', "/project/in-wheels")
         workingDir('/project')
         runCommand("PYPAPY=${pypapy};" +
                    '''set -eux ; \
+                     [ -f /project/in-wheels/pydeephaven_ticking*.whl ]; \
                      PATH="/opt/python/${PYPAPY}/bin:$PATH"; \
-                     pip3 install unittest-xml-reporting
+                     pip3.8 install unittest-xml-reporting; \
+                     pip3.8 install /project/in-wheels/*.whl; \
                    ''')
 
         //
@@ -118,11 +135,12 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ project.tasks.getByName('pyClientTicking') ]
-    entrypoint = ["/opt/python/${pypapy}/bin/python3", '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    entrypoint = ["python3.8", '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
 }
 
 tasks.getByName('check').dependsOn(testPyClientTicking)
+tasks.getByName('testPyClientTickingPrepareDocker').dependsOn(pyClientTicking)
 deephavenDocker.shouldLogIfTaskFails testPyClientTicking
