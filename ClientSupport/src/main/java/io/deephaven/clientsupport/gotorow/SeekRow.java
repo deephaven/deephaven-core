@@ -4,6 +4,8 @@
 package io.deephaven.clientsupport.gotorow;
 
 import java.time.Instant;
+
+import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -47,6 +49,7 @@ public class SeekRow {
         this.isBackward = isBackward;
     }
 
+    @ConcurrentMethod
     public long seek(Table table) {
         final Mutable<Long> result = new MutableObject<>(-1L);
 
@@ -143,13 +146,10 @@ public class SeekRow {
                     // just go to the closest value
                     if (closestLowerValueYet == null && closestUpperValueYet == null) {
                         result.setValue(-1L);
-                        return true;
                     } else if (closestLowerValueYet == null) {
                         result.setValue(rowSet.find(closestUpperRowYet));
-                        return true;
                     } else if (closestUpperValueYet == null) {
                         result.setValue(rowSet.find(closestUpperRowYet));
-                        return true;
                     } else {
                         // we need to decide between the two
                         Class columnType = columnSource.getType();
@@ -163,7 +163,6 @@ public class SeekRow {
                                     .appendDouble(du)
                                     .append(")").endl();
                             result.setValue(rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet));
-                            return true;
                         } else if (Instant.class.isAssignableFrom(columnType)) {
                             long nu = DateTimeUtils.epochNanos(((Instant) closestUpperValueYet));
                             long nl = DateTimeUtils.epochNanos(((Instant) closestLowerValueYet));
@@ -173,7 +172,6 @@ public class SeekRow {
                             log.info().append("Using nano distance (").append(dl).append(", ").append(du).append(")")
                                     .endl();
                             result.setValue(rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet));
-                            return true;
                         } else {
                             long nu = rowSet.find(closestUpperRowYet);
                             long nl = rowSet.find(closestLowerRowYet);
@@ -183,9 +181,10 @@ public class SeekRow {
                             log.info().append("Using index distance (").append(dl).append(", ").append(du).append(")")
                                     .endl();
                             result.setValue(du < dl ? nu : nl);
-                            return true;
                         }
                     }
+
+                    return true;
                 }));
 
         return result.getValue();
