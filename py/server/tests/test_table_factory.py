@@ -9,7 +9,7 @@ import jpy
 import numpy as np
 
 from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, \
-    input_table, time
+    input_table, time, _wrapper
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
@@ -376,7 +376,10 @@ class TableFactoryTestCase(BaseTestCase):
         with self.subTest("custom input table creation"):
             place_holder_input_table = empty_table(1).update_view(["Key=`A`", "Value=10"]).with_attributes({_JTable.INPUT_TABLE_ATTRIBUTE: "Placeholder IT"}).j_table
             # Confirming no error.
-            InputTable(place_holder_input_table)
+            it = InputTable(place_holder_input_table)
+
+            self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), InputTable))
+
 
     def test_ring_table(self):
         cols = [
@@ -465,7 +468,6 @@ class TableFactoryTestCase(BaseTestCase):
         col_defs = {c.name: c.data_type for c in t.columns}
         append_only_input_table = input_table(col_defs=col_defs)
 
-        from deephaven import _wrapper
         t = _wrapper.wrap_j_object(append_only_input_table.j_table)
         self.assertTrue(isinstance(t, InputTable))
 
