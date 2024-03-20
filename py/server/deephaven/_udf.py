@@ -250,7 +250,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
     else:
         p_sig = _ParsedSignature(fn=fn)
         if sys.version_info.major == 3 and sys.version_info.minor >= 10:
-            sig = inspect.signature(fn, eval_str=True)
+            sig = inspect.signature(fn, eval_str=True) # novermin
         else:
             sig = inspect.signature(fn)
 
