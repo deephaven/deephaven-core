@@ -119,7 +119,7 @@ class TimeTestCase(BaseTestCase):
             to_j_time_zone(dt)
             self.fail("Expected DHError")
 
-        if sys.version_info >= (3, 8):
+        if sys.version_info >= (3, 9):
             import zoneinfo
             dttz = zoneinfo.ZoneInfo("America/New_York")
             dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
