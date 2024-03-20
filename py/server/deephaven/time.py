@@ -29,12 +29,25 @@ _NANOS_PER_SECOND = 1000000000
 _NANOS_PER_MICRO = 1000
 
 TimeZoneAlias = Union[TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]
+"""The TimeZone alias"""
+
 LocalDateAlias = Union[LocalDate, str, datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+"""The LocalDate alias"""
+
 LocalTimeAlias = Union[LocalTime, int, str, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+"""The LocalTime alias"""
+
 InstantAlias = Union[Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+"""The Instant alias"""
+
 ZonedDateTimeAlias = Union[ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+"""The ZonedDateTime alias"""
+
 DurationAlias = Union[Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]
+"""The Duration alias"""
+
 PeriodAlias = Union[Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]
+"""The Period alias"""
 
 # region Clock
 
