@@ -34,7 +34,9 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         from(layout.projectDirectory) {
             include 'setup.py'
             include 'README.md'
-            include 'src/**'
+            include 'src/**/*.py'
+            include 'src/**/*.pyx'
+            include 'src/**/*.pxd'
         }
         from(configurations.pythonWheel) {
             into 'wheels'
@@ -44,7 +46,7 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         into layout.buildDirectory.dir('wheel')
     }
     dockerfile {
-        from('deephaven/cpp-client:local-build')
+        from('deephaven/cpp-client-py:local-build')
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix}/log \\
@@ -60,6 +62,8 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
                    '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
                      . "${PREFIX}/env.sh"; \
+                     PATH="/opt/python/cp38-cp38/bin:$PATH"; \
+                     pip3 install cython; \
                      MAKEFLAGS="-j${NCPUS}" \
                        CFLAGS="-I${DHCPP}/include" \
                        LDFLAGS="-L${DHCPP}/lib" \
@@ -75,7 +79,7 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
 
         environmentVariable 'LD_LIBRARY_PATH', ""  // avoid conflict with libarrow.13.0.0.so
     }
-    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
 }
 
 def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
@@ -97,6 +101,11 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
                    ''')
         copyFile('tests/', "/project/tests/")
         workingDir('/project')
+        runCommand('''set -eux ; \
+                     PATH="/opt/python/cp38-cp38/bin:$PATH"; \
+                     pip3 install unittest-xml-reporting
+                   ''')
+
         //
         // Setup for test run.
         //
@@ -107,7 +116,7 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ project.tasks.getByName('pyClientTicking') ]
-    entrypoint = ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    entrypoint = ['/opt/python/cp38-cp38/bin/python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }

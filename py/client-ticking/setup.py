@@ -59,6 +59,7 @@ setup(
     ext_modules = cythonize(
         [Extension("pydeephaven_ticking._core",
                    sources=["src/pydeephaven_ticking/*.pyx"],
+                   language="c++",
                    extra_compile_args=["-std=c++17"],
                    libraries=["dhcore_static"]
         )]),
