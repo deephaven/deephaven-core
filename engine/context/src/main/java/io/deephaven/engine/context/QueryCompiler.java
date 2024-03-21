@@ -227,7 +227,7 @@ public class QueryCompiler {
             }
             throw new UncheckedDeephavenException("Error while compiling class", cause);
         } catch (InterruptedException e) {
-            throw new UncheckedDeephavenException("Interrupted while compile class", e);
+            throw new UncheckedDeephavenException("Interrupted while compiling class", e);
         }
     }
 
@@ -235,6 +235,7 @@ public class QueryCompiler {
      * Compile a class.
      *
      * @param request The compilation request
+     * @param resolver The resolver to use for delivering compilation results
      */
     public void compile(
             @NotNull final QueryCompilerRequest request,
@@ -247,6 +248,7 @@ public class QueryCompiler {
      * Compiles all requests.
      *
      * @param requests The compilation requests
+     * @param resolvers The resolvers to use for delivering compilation results
      */
     public void compile(
             @NotNull final QueryCompilerRequest[] requests,
@@ -276,6 +278,13 @@ public class QueryCompiler {
                     newResolvers.add(resolver);
                     future = resolver.getFuture();
                 }
+                /*
+                 * RWC-CODE-REVIEW: If we inherit a compilation that's still in progress, is it possible for our batch
+                 * to fail because our compilation units depend on one another, and hence depend on some other
+                 * compilation that's not done yet? Maybe the solution to this is to document the concern in the JavaDoc
+                 * since we don't use QueryCompiler in that way. That is, all of our compilations are independent, even
+                 * within a batch.
+                 */
                 allFutures[ii] = future;
             }
         }
@@ -287,6 +296,30 @@ public class QueryCompiler {
             } catch (RuntimeException e) {
                 // These failures are not applicable to a single request, so we can't just complete the future and
                 // leave the failure in the cache.
+                /*
+                 * @formatter:off
+                 * RWC-CODE-REVIEW: If this can happen, it's inappropriate to ever put a future into knownClasses for
+                 * other threads to see until it's "done".
+                 * By "done", I mean:
+                 *   (a) It has been completed successfully, or
+                 *   (b) it has been completed exceptionally with a failure that's determined to be isolated to the
+                 *       particular classBody (e.g. because allFutures.size() == 1, and there was no interruption).
+                 * If you don't follow this rule, with the current approach to sharing other threads may get() an
+                 * inherited future and see the failure that you are "retracting" below.
+                 *
+                 * I see two options, here:
+                 *   (1) Accept the possibility of duplicating efforts when compiling the same classBody as part of two
+                 *       batches, and don't register in knownClasses until "done". If we go this route, we should
+                 *       probably ensure we only load the "winner" of the putIfAbsent race for successful compilations.
+                 *   (2) Allow for retries in case of inherited failures.
+                 *       One implementation for this approach might be to have two flavors of sharing:
+                 *         ( i) knownClasses for futures that are "done" or isolated (and hence will become "done), and
+                 *         (ii) inProgressCompilations for compilations that might require retry.
+                 *       You could basically execute the splitting of requests into "known", "inProgress", and "new"
+                 *       followed by compiling "new" and get()ing "all" until you arrive at a state with no failures
+                 *       inherited from "inProgress" compilations.
+                 * @formatter:on
+                 */
                 synchronized (this) {
                     for (int ii = 0; ii < newRequests.size(); ++ii) {
                         if (newResolvers.get(ii).completeExceptionally(e)) {
@@ -304,6 +337,13 @@ public class QueryCompiler {
             } catch (ExecutionException err) {
                 resolvers[ii].completeExceptionally(err.getCause());
             } catch (Throwable err) {
+                /*
+                 * RWC-CODE-REVIEW: get() can throw InterruptedException, and you are catching it in your Throwable
+                 * clause. Clearly, we never want any other thread to inherit an interrupted result. See note regarding
+                 * sharing above. That said, I think we can safely assert that we only catch InterruptedException in a
+                 * case where we *are* inheriting rather than sharing the future (either "known" or "inProgress"), hence
+                 * this completeExceptionally() will not impact other threads.
+                 */
                 resolvers[ii].completeExceptionally(err);
             }
         }
@@ -459,7 +499,7 @@ public class QueryCompiler {
     }
 
     private static class CompilationState {
-        int next_pi;
+        int next_pi; // RWC-CODE-REVIEW: nextProbeIndex?
         boolean compiled;
         String packageName;
         String fqClassName;
@@ -489,7 +529,7 @@ public class QueryCompiler {
 
         /*
          * @formatter:off
-         * 1. try to resolve CFs without compiling; retain next hash to try
+         * 1. try to resolve without compiling; retain next hash to try
          * 2. compile all remaining with a single compilation task
          * 3. goto step 1 if any are unresolved
          * @formatter:on
@@ -510,11 +550,15 @@ public class QueryCompiler {
 
                     final QueryCompilerRequest request = requests.get(ii);
                     if (pi >= MAX_CLASS_COLLISIONS) {
+                        /*
+                         * RWC-CODE-REVIEW: If you get here, every un-compiled CompilationState has the same issue.
+                         * Should this really be specific to just one request? Did we need the change to control flow?
+                         */
                         Exception err = new IllegalStateException("Found too many collisions for package name root "
                                 + request.packageNameRoot() + ", class name=" + request.className() + ", class body "
                                 + "hash=" + basicHashText[ii] + " - contact Deephaven support!");
                         resolvers.get(ii).completeExceptionally(err);
-                        state.compiled = true;
+                        state.compiled = true; /* RWC-CODE-REVIEW: Is this really compiled? Not in a useful way. */
                         ++numCompiled;
                         break;
                     }
@@ -558,7 +602,7 @@ public class QueryCompiler {
                 }
             }
 
-            maybeCreateClass(compilationRequestAttempts);
+            maybeCreateClasses(compilationRequestAttempts);
 
             // We could be running on a screwy filesystem that is slow (e.g. NFS). If we wrote a file and can't load it
             // ... then give the filesystem some time. All requests should use the same deadline.
@@ -796,7 +840,7 @@ public class QueryCompiler {
         }
     }
 
-    private void maybeCreateClass(
+    private void maybeCreateClasses(
             @NotNull final List<CompilationRequestAttempt> requests) {
         // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
         // directories (e.g. io/deephaven/test) if they are not already there. This will be useful later.
@@ -832,6 +876,7 @@ public class QueryCompiler {
             throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
         }
 
+        /* RWC-CODE-REVIEW: Did it turn out that caching file managers was a dead end, feature-loss-wise? */
         final JavaFileManager fileManager = new SynchronizedJavaFileManager(
                 compiler.getStandardFileManager(null, null, null));
 
@@ -841,6 +886,7 @@ public class QueryCompiler {
             int parallelismFactor = operationInitializer.parallelismFactor();
 
             int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
+            /* RWC-CODE-REVIEW: Should this be debug level? */
             log.info().append("Compiling with parallelismFactor = ").append(parallelismFactor)
                     .append(" requestsPerTask = ").append(requestsPerTask).endl();
             if (parallelismFactor == 1 || requestsPerTask >= requests.size()) {
@@ -870,12 +916,19 @@ public class QueryCompiler {
             throw t;
         } finally {
             try {
+                /*
+                 * RWC-CODE-REVIEW: I think it would be desirable if you waited for all the futures to finish before
+                 * trying to delete their target dir out from under them. I just worry about leaving things in a weird
+                 * state. Also, we hate leaving jobs running in the thread pool. Maybe you should use IterationManager,
+                 * which handles this waiting.
+                 */
                 FileUtils.deleteRecursively(new File(tempDirAsString));
             } catch (Exception e) {
                 // ignore errors here
             }
 
             try {
+                /* RWC-CODE-REVIEW: Same thing, re: the waiting. You might close out from under a running compile. */
                 fileManager.close();
             } catch (IOException ioe) {
                 if (!exceptionCaught) {
@@ -886,7 +939,7 @@ public class QueryCompiler {
         }
     }
 
-    private void maybeCreateClassHelper(
+    private void maybeCreateClassHelper( /* RWC-CODE-REVIEW: Does this name still make sense? */
             @NotNull final JavaCompiler compiler,
             @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
@@ -951,6 +1004,10 @@ public class QueryCompiler {
                         .collect(Collectors.toList()))
                 .call();
 
+        /*
+         * RWC-CODE-REVIEW: Why do we ever want to retry? Seems like move collisions. If so, why do we only retry one
+         * time? Seems user-unfriendly.
+         */
         final boolean wantRetry = numFailures.intValue() > 0 && numFailures.intValue() != endExclusive - startInclusive;
 
         // The above has compiled into e.g.

@@ -74,7 +74,8 @@ public interface CompletionStageFuture<T> extends Future<T>, CompletionStage<T> 
         boolean completeExceptionally(@NotNull Throwable ex);
 
         /**
-         * @return the underlying future to provide to the recipient
+         * @return the underlying future to provide to the recipient; implementations must ensure that this method
+         * always returns an identical result for a given Resolver instance
          */
         CompletionStageFuture<T> getFuture();
     }
