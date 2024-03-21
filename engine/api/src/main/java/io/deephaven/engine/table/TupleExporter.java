@@ -30,7 +30,7 @@ public interface TupleExporter<TUPLE_TYPE> {
             @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
 
     /**
-     * Export a single element from the tuple, identified by its element index, to an Object
+     * Export a single element from the tuple, identified by its element index, to an Object.
      * 
      * <p>
      * For the empty tuple, this is unsupported.
@@ -41,6 +41,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      *
      * @param tuple The tuple to export an element from
      * @param elementIndex The element index to export
+     * @return The exported element, boxed as an Object as needed
      */
     Object exportElement(TUPLE_TYPE tuple, int elementIndex);
 
@@ -57,8 +58,25 @@ public interface TupleExporter<TUPLE_TYPE> {
      *
      * @param tuple The tuple to export an element from
      * @param elementIndex The element index to export
+     * @return The exported element, reinterpreted if internally reinterpreted, boxed as an Object as needed
      */
     default Object exportElementReinterpreted(TUPLE_TYPE tuple, int elementIndex) {
         return exportElement(tuple, elementIndex);
+    }
+
+    @FunctionalInterface
+    interface ExportElementFunction<TUPLE_TYPE> {
+
+        /**
+         * Export a single element from the tuple, identified by its element index, to an Object. This interface is
+         * intended to be compatible with both {@link TupleExporter#exportElement(Object, int)} and
+         * {@link TupleExporter#exportElementReinterpreted(Object, int)}, and consequently does not specify whether the
+         * result will be reinterpreted.
+         * 
+         * @param tuple The tuple to export an element from
+         * @param elementIndex The element index to export
+         * @return The exported element, boxed as an Object as needed
+         */
+        Object exportElement(TUPLE_TYPE tuple, int elementIndex);
     }
 }

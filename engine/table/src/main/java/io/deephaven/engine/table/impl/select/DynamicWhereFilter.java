@@ -13,9 +13,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
-import io.deephaven.engine.table.impl.dataindex.DataIndexKeySet;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -44,15 +43,18 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private final MatchPair[] matchPairs;
     private final boolean inclusion;
 
-    private final DataIndexKeySet liveValues;
+    private final Set<Object> liveValues;
 
     private final QueryTable setTable;
     private final ChunkSource.WithPrev<Values> setKeySource;
+    private final TupleExporter.ExportElementFunction<Object> setKeyElementExporter;
     @SuppressWarnings("FieldCanBeLocal")
     @ReferentialIntegrity
     private final InstrumentedTableUpdateListener setUpdateListener;
 
     private Object[] liveValuesArray;
+    private SetInclusionKernel setInclusionKernel;
+    private SetInclusionKernel setExclusionKernel;
 
     private ColumnSource<?>[] sourceKeyColumns;
     /**
@@ -75,13 +77,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         this.matchPairs = setColumnsNames;
         this.inclusion = inclusion;
 
-        liveValues = DataIndexUtils.makeKeySet(setColumnsNames.length);
+        liveValues = new HashSet<>();
 
         final ColumnSource<?>[] setColumns = Arrays.stream(matchPairs)
                 .map(mp -> setTable.getColumnSource(mp.rightColumn())).toArray(ColumnSource[]::new);
 
         if (setTable.isRefreshing()) {
-            setKeySource = DataIndexUtils.makeBoxedKeySource(setColumns);
+            setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
+            //noinspection unchecked
+            setKeyElementExporter = ((TupleExporter<Object>) setKeySource)::exportElementReinterpreted;
             if (setTable.getRowSet().isNonempty()) {
                 try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
                         setKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
@@ -183,8 +187,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             this.setTable = null;
             setKeySource = null;
             setUpdateListener = null;
+            final TupleSource<Object> tmpKeySource = TupleSourceFactory.makeTupleSource(setColumns);
+            // TODO-RYAN_OR_LARRY: This is not great, since it keeps a ref to the set table's column sources.
+            //   We could refactor the tuple sources to make the export methods static, and implement TupleExporter
+            //   in terms of the static methods.
+            //   We should also make numElements(), exportAllTo(Object[]), and exportAllTo(Object[], int[]) in
+            //   TupleExporter, the latter being an offset-remapped versions.
+            //   Issue here is the TupleSource code gen: io.deephaven.replicators.TupleSourceCodeGenerator
+            setKeyElementExporter = ((TupleExporter<Object>) tmpKeySource)::exportElementReinterpreted;
             if (setTable.getRowSet().isNonempty()) {
-                final ChunkSource.WithPrev<Values> tmpKeySource = DataIndexUtils.makeBoxedKeySource(setColumns);
                 try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
                         tmpKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
                     initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
@@ -197,10 +208,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
      * "Copy constructor" for DynamicWhereFilter's with static set tables.
      */
     private DynamicWhereFilter(
-            @NotNull final DataIndexKeySet liveValues,
+            @NotNull final Set<Object> liveValues,
+            @NotNull final TupleExporter.ExportElementFunction<Object> setKeyElementExporter,
             final boolean inclusion,
             final MatchPair... setColumnsNames) {
         this.liveValues = liveValues;
+        this.setKeyElementExporter = setKeyElementExporter;
         this.matchPairs = setColumnsNames;
         this.inclusion = inclusion;
         setTable = null;
@@ -215,10 +228,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     private void removeKey(Object key) {
         final boolean removed = liveValues.remove(key);
-        if (!removed && key != null) {
+        if (!removed) {
             throw new RuntimeException("Inconsistent state, key not found in set: " + key);
         }
         liveValuesArray = null;
+        setInclusionKernel = setExclusionKernel = null;
     }
 
     private void addKey(Object key) {
@@ -227,6 +241,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             throw new RuntimeException("Inconsistent state, key already in set:" + key);
         }
         liveValuesArray = null;
+        setInclusionKernel = setExclusionKernel = null;
     }
 
     private void addKeyUnchecked(Object key) {
@@ -337,9 +352,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         }
         final Object[] keysInDataIndexOrder = new Object[indexToSetKeyOffsets.length];
         return (final Object key) -> {
-            final Object[] keysInSetOrder = (Object[]) key;
             for (int ki = 0; ki < keysInDataIndexOrder.length; ++ki) {
-                keysInDataIndexOrder[ki] = keysInSetOrder[indexToSetKeyOffsets[ki]];
+                keysInDataIndexOrder[ki] = setKeyElementExporter.exportElement(key, indexToSetKeyOffsets[ki]);
             }
             return keysInDataIndexOrder;
         };
@@ -372,6 +386,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (matchPairs.length == 1) {
             // Single column filter, delegate to the column source.
             if (liveValuesArray == null) {
+                // TODO-RYAN_OR_LARRY: We should make an unboxed array.
+                //   See io.deephaven.util.type.ArrayTypeUtils.toArray(java.util.Collection<?>, java.lang.Class)
+                //   That's a bad pattern, should change the code to route to the `getUnboxedArray` methods.
+                //   Then, we re-integrate setInclusionKernel and setExclusionKernel
                 liveValuesArray = liveValues.toArray();
             }
             // Our keys are reinterpreted, so we need to reinterpret the column source for correct matching.
@@ -486,7 +504,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
-        final ChunkSource<Values> keySource = DataIndexUtils.makeBoxedKeySource(sourceKeyColumns);
+        final ChunkSource<Values> keySource = TupleSourceFactory.makeTupleSource(sourceKeyColumns);
 
         final int maxChunkSize = getChunkSize(selection);
         // @formatter:off
@@ -537,7 +555,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @Override
     public DynamicWhereFilter copy() {
         if (setTable == null) {
-            return new DynamicWhereFilter(liveValues, inclusion, matchPairs);
+            return new DynamicWhereFilter(liveValues, setKeyElementExporter, inclusion, matchPairs);
         }
         return new DynamicWhereFilter(setTable, inclusion, matchPairs);
     }
