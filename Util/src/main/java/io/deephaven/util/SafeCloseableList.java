@@ -63,7 +63,7 @@ public class SafeCloseableList implements SafeCloseable {
         }
     }
 
-    public static final Collector<SafeCloseable, SafeCloseableList, SafeCloseableList> COLLECTOR = new Collector<>() {
+    public static final Collector<AutoCloseable, SafeCloseableList, SafeCloseableList> COLLECTOR = new Collector<>() {
 
         @Override
         public Supplier<SafeCloseableList> supplier() {
@@ -71,7 +71,7 @@ public class SafeCloseableList implements SafeCloseable {
         }
 
         @Override
-        public BiConsumer<SafeCloseableList, SafeCloseable> accumulator() {
+        public BiConsumer<SafeCloseableList, AutoCloseable> accumulator() {
             return SafeCloseableList::add;
         }
 
