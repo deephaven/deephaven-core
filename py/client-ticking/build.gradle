@@ -49,20 +49,20 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
         from('deephaven/cpp-client-py:local-build')
         runCommand("""mkdir -p \\
                         /out \\
-                        ${prefix}/log \\
-                        ${prefix}/src/py-client-ticking/src \\
-                        ${prefix}/src/py-client-ticking/in-wheels
+                        '${prefix}/log' \\
+                        '${prefix}/src/py-client-ticking/src' \\
+                        '${prefix}/src/py-client-ticking/in-wheels'
 
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
-        runCommand("PREFIX=${prefix}; WHEELS_SET='${wheelsSet}'; DEEPHAVEN_VERSION=${project.version};" +
+        runCommand("PREFIX='${prefix}'; WHEELS_SET='${wheelsSet}'; DEEPHAVEN_VERSION='${project.version}';" +
                    '''set -eux ; \
                      cd "${PREFIX}/src/py-client-ticking"; \
                      . "${PREFIX}/env.sh"; \
-                     ORIG_PATH=$PATH; \
+                     ORIG_PATH="$PATH"; \
                      for py in ${WHEELS_SET}; do \
                        rm -f *.cpp *.so; \
                        PATH="/opt/python/${py}/bin:$ORIG_PATH"; \
@@ -73,11 +73,11 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
                          DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
                          python3 setup.py build_ext -i; \
                        DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
-                       auditwheel repair dist/pydeephaven_ticking*${py}*.whl; \
-                       rm -f dist/pydeephaven_ticking*${py}*.whl; \
+                       auditwheel repair dist/pydeephaven_ticking*"${py}"*.whl; \
+                       rm -f dist/pydeephaven_ticking*"${py}"*.whl; \
                        mv -f wheelhouse/*.whl dist; \
                        pip3 install in-wheels/*.whl; \
-                       pip3 install --force --no-deps dist/pydeephaven_ticking*${py}*.whl; \
+                       pip3 install --force --no-deps dist/pydeephaven_ticking*"${py}"*.whl; \
                      done; \
                      ln dist/*.whl /out; \
                      cd /; \
@@ -110,7 +110,7 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
     }
     dockerfile {
         from('registry.access.redhat.com/ubi8/ubi-minimal:8.8')
-        runCommand("PREFIX=${prefix}; " +
+        runCommand("PREFIX='${prefix}'; " +
                    '''set -eux ; \
                       DNF=`type microdnf >/dev/null 2>&1 && echo 'microdnf --disableplugin=subscription-manager' || echo 'dnf -q'`; \
                       $DNF -y update; \
