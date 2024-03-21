@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.base;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -33,9 +34,10 @@ public final class ParquetUtils {
     }
 
     /**
-     * @return the key value derived from the file name, used for storing each file's metadata in the metadata files.
+     * @return the key value derived from the file path, used for storing each file's metadata in the combined
+     *         {@value #METADATA_FILE_NAME} and {@value #COMMON_METADATA_FILE_NAME} files.
      */
-    public static String getKeyForFile(final String fileName) {
-        return "deephaven_per_file_" + fileName;
+    public static String getPerFileMetadataKey(final String filePath) {
+        return "deephaven_per_file_" + filePath.replace(File.separatorChar, '_');
     }
 }

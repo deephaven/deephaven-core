@@ -5,7 +5,6 @@ package io.deephaven.parquet.base;
 
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 
-import java.io.File;
 import java.io.IOException;
 
 /**

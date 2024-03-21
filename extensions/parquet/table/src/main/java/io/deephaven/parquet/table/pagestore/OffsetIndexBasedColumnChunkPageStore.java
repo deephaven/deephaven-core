@@ -59,15 +59,11 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             final long mask,
             @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(pageCache, columnChunkReader, mask, toPage);
-        isInitialized = false;
         numPages = NUM_PAGES_NOT_INITIALIZED;
         fixedPageSize = PAGE_SIZE_NOT_FIXED;
-        offsetIndex = null;
-        pageStates = null;
-        columnPageDirectAccessor = null;
     }
 
-    private void initialize(@Nullable final FillContext fillContext) {
+    private void ensureInitialized(@Nullable final FillContext fillContext) {
         if (isInitialized) {
             return;
         }
@@ -162,20 +158,13 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
 
     @Override
     @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
-        if (isInitialized) {
-            return getPageContainingImpl(fillContext, rowKey);
-        }
-        // We need to initialize this class
-        if (fillContext != null) {
-            initialize(fillContext);
-            return getPageContainingImpl(fillContext, rowKey);
-        }
-        // Create a fill context and use it to initialize this class as well as read the page
-        // TODO What should be the chunk capacity here?
-        try (final FillContext fillContext1 = makeFillContext(1, null)) {
-            initialize(fillContext1);
-            return getPageContainingImpl(fillContext1, rowKey);
+    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        // We don't really use chunk capacity in our FillContext. In practice, however, this method is only invoked with
+        // a null FillContext for single-element "get" methods.
+        try (final FillContext allocatedFillContext = fillContext != null ? null : makeFillContext(1, null)) {
+            final FillContext fillContextToUse = fillContext != null ? fillContext : allocatedFillContext;
+            ensureInitialized(fillContextToUse);
+            return getPageContainingImpl(fillContextToUse, rowKey);
         }
     }
 

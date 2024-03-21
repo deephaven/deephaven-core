@@ -32,11 +32,12 @@ import java.util.Map;
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
-import static io.deephaven.parquet.base.ParquetUtils.getKeyForFile;
+import static io.deephaven.parquet.base.ParquetUtils.getPerFileMetadataKey;
 
 /**
  * Used to generate a combined {@value ParquetUtils#METADATA_FILE_NAME} and
- * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file for provided Parquet files.
+ * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file for provided Parquet files. This class is stateful and therefore
+ * should not be used by multiple threads concurrently.
  */
 final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
 
@@ -82,24 +83,6 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         }
         this.metadataRootDirAbsPath = metadataRootDir.getAbsoluteFile().toPath();
         final String metadataRootDirAbsPathString = metadataRootDirAbsPath.toString();
-        final File firstDestination = destinations[0];
-        for (int i = 0; i < destinations.length; i++) {
-            final File destination = destinations[i];
-            if (!destination.getAbsolutePath().startsWith(metadataRootDirAbsPathString)) {
-                throw new UncheckedDeephavenException("All destinations must be nested under the provided metadata root"
-                        + " directory, provided destination " + destination.getAbsolutePath() + " is not under " +
-                        metadataRootDirAbsPathString);
-            }
-            // TODO How should I change the basename in the API for writeKeyValuePartitioned data for this check?
-            if (i > 0) {
-                // We use filename to generate the key for each file's metadata in the common metadata file, therefore
-                // all files must have unique names.
-                if (destination.getName().equals(firstDestination.getName())) {
-                    throw new UncheckedDeephavenException("When generating common metadata for multiple parquet files, "
-                            + "all files must have unique names, but " + destination.getName() + " is repeated.");
-                }
-            }
-        }
         for (final File destination : destinations) {
             if (!destination.getAbsolutePath().startsWith(metadataRootDirAbsPathString)) {
                 throw new UncheckedDeephavenException("All destinations must be nested under the provided metadata root"
@@ -121,10 +104,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     }
 
     /**
-     * Add parquet metadata for the provided parquet file the combined metadata file. We store deephaven-specific
-     * metadata for each file individually inside the key-value metadata of the combined metadata file, with keys being
-     * derived from the file names and values being the metadata for the file. Therefore, the provided parquet files
-     * must have unique names.
+     * Add parquet metadata for the provided parquet file the combined metadata file.
      *
      * @param parquetFilePath The parquet file destination path
      * @param metadata The parquet metadata
@@ -170,8 +150,9 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         for (final ParquetFileMetadata parquetFileMetadata : parquetFileMetadataList) {
             final FileMetaData fileMetaData = parquetFileMetadata.metadata.getFileMetaData();
             mergedSchema = mergeSchemaInto(fileMetaData.getSchema(), mergedSchema);
-            mergeKeyValueMetaData(parquetFileMetadata);
-            mergeBlocksInto(parquetFileMetadata, metadataRootDirAbsPath, mergedBlocks);
+            final String relativePath = getRelativePath(parquetFileMetadata.filePath, metadataRootDirAbsPath);
+            mergeKeyValueMetaData(parquetFileMetadata, relativePath);
+            mergeBlocksInto(parquetFileMetadata, relativePath, mergedBlocks);
             mergedCreatedBy.add(fileMetaData.getCreatedBy());
         }
         if (mergedKeyValueMetaData.size() != parquetFileMetadataList.size()) {
@@ -212,7 +193,8 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
      * well as accumulate the required fields to generate a common table info later once all files are processed.</li>
      * </ul>
      */
-    private void mergeKeyValueMetaData(@NotNull final ParquetFileMetadata parquetFileMetadata) throws IOException {
+    private void mergeKeyValueMetaData(@NotNull final ParquetFileMetadata parquetFileMetadata,
+            @NotNull final String relativePath) throws IOException {
         final Map<String, String> keyValueMetaData =
                 parquetFileMetadata.metadata.getFileMetaData().getKeyValueMetaData();
         for (final Map.Entry<String, String> entry : keyValueMetaData.entrySet()) {
@@ -232,12 +214,11 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                 });
             } else {
                 // Add a separate entry for each file
-                final String fileKey = getKeyForFile(new File(parquetFileMetadata.filePath).getName());
+                final String fileKey = getPerFileMetadataKey(relativePath);
                 // Assuming the keys are unique for each file because file names are unique, verified in the constructor
                 if (mergedKeyValueMetaData.containsKey(fileKey)) {
-                    throw new UncheckedDeephavenException("Could not merge metadata for for file " +
-                            parquetFileMetadata.filePath + " because has conflicting file name with another file. For "
-                            + " generating metadata files, file names should be unique");
+                    throw new IllegalStateException("Could not merge metadata for file " +
+                            parquetFileMetadata.filePath + " because it has conflicting file key: " + fileKey);
                 }
                 mergedKeyValueMetaData.put(fileKey, entry.getValue());
 
@@ -265,19 +246,22 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     }
 
     private static void mergeBlocksInto(final ParquetFileMetadata parquetFileMetadata,
-            final Path metadataRootDirAbsPath, final Collection<BlockMetaData> mergedBlocks) {
-        final Path parquetFileAbsPath = new File(parquetFileMetadata.filePath).getAbsoluteFile().toPath();
-        String fileRelativePathString = metadataRootDirAbsPath.relativize(parquetFileAbsPath).toString();
-        // Remove leading slashes from the relative path
-        int pos = 0;
-        while (pos < fileRelativePathString.length() && fileRelativePathString.charAt(pos) == '/') {
-            pos++;
-        }
-        fileRelativePathString = fileRelativePathString.substring(pos);
+            final String fileRelativePathString, final Collection<BlockMetaData> mergedBlocks) {
         for (final BlockMetaData block : parquetFileMetadata.metadata.getBlocks()) {
             block.setPath(fileRelativePathString);
             mergedBlocks.add(block);
         }
+    }
+
+    private static String getRelativePath(final String parquetFilePath, final Path metadataRootDirAbsPath) {
+        final Path parquetFileAbsPath = new File(parquetFilePath).getAbsoluteFile().toPath();
+        final String relativePath = metadataRootDirAbsPath.relativize(parquetFileAbsPath).toString();
+        // Remove leading slashes from the relative path
+        int pos = 0;
+        while (pos < relativePath.length() && relativePath.charAt(pos) == '/') {
+            pos++;
+        }
+        return relativePath.substring(pos);
     }
 
     private void writeMetadataFile(final ParquetMetadata metadataFooter, final String outputPath) throws IOException {

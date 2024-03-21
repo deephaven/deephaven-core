@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.parquet.base.ParquetUtils.COMMON_METADATA_FILE_NAME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_FILE_NAME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
-import static io.deephaven.parquet.base.ParquetUtils.getKeyForFile;
+import static io.deephaven.parquet.base.ParquetUtils.getPerFileMetadataKey;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -204,7 +204,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFile,
                     partitionOrder.getAndIncrement(), partitions, inputInstructions);
             tlk.setFileReader(metadataFileReader);
-            tlk.setMetadata(getParquetMetadataForFile(partitionFile, metadataFileMetadata));
+            tlk.setMetadata(getParquetMetadataForFile(filePathString, metadataFileMetadata));
             tlk.setRowGroupIndices(rowGroupIndices);
             return tlk;
         }).collect(Collectors.toList());
@@ -214,16 +214,16 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
      * This method takes the {@link ParquetMetadata} from the metadata file, extracts the key-value metadata specific to
      * the provided file, and creates a new {@link ParquetMetadata} for this file.
      *
-     * @param parquetFile The parquet file to read metadata for
+     * @param parquetFileRelativePath The parquet file path relative to the root directory containing the metadata file
      * @param metadataFileMetadata The overall metadata in the metadata file
      */
-    private static ParquetMetadata getParquetMetadataForFile(@NotNull final File parquetFile,
+    private static ParquetMetadata getParquetMetadataForFile(@NotNull final String parquetFileRelativePath,
             @NotNull final ParquetMetadata metadataFileMetadata) {
         final String fileMetadataString = metadataFileMetadata.getFileMetaData().getKeyValueMetaData()
-                .get(getKeyForFile(parquetFile.getName()));
+                .get(getPerFileMetadataKey(parquetFileRelativePath));
         final ParquetMetadata fileMetadata;
         if (fileMetadataString != null) {
-            // Create a new file metadata object using the key-value metadata for that file
+            // Create a new file metadata object using the key-value metadata for this file
             final Map<String, String> keyValueMetadata = Map.of(METADATA_KEY, fileMetadataString);
             fileMetadata = new ParquetMetadata(
                     new FileMetaData(metadataFileMetadata.getFileMetaData().getSchema(),
@@ -231,7 +231,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                             metadataFileMetadata.getFileMetaData().getCreatedBy()),
                     metadataFileMetadata.getBlocks());
         } else {
-            // File specific metadata not found, the the metadata file's metadata
+            // File specific metadata not found, use the metadata file's metadata
             fileMetadata = metadataFileMetadata;
         }
         return fileMetadata;

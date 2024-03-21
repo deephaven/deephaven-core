@@ -16,7 +16,7 @@ from deephaven import arrow as dharrow
 from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
-                               write_key_value_partitioned_table)
+                               write_partitioned)
 from tests.testbase import BaseTestCase
 from deephaven.experimental import s3
 
@@ -339,6 +339,12 @@ class ParquetTestCase(BaseTestCase):
         self.assertTrue((metadata.row_group(0).column(2).path_in_schema == 'someIntColumn') &
                         ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
 
+    def verify_metadata_files(self, root_dir):
+        metadata_file_path = os.path.join(root_dir, '_metadata')
+        self.assertTrue(os.path.exists(metadata_file_path))
+        common_metadata_file_path = os.path.join(root_dir, '_common_metadata')
+        self.assertTrue(os.path.exists(common_metadata_file_path))
+
     def test_dates_and_time(self):
         dh_table = empty_table(10000).update(formulas=[
             "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
@@ -581,13 +587,7 @@ class ParquetTestCase(BaseTestCase):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
         # TODO(deephaven-core#5064): Add support for local S3 testing
 
-    def verify_metadata_files(self, root_dir):
-        metadata_file_path = os.path.join(root_dir, '_metadata')
-        self.assertTrue(os.path.exists(metadata_file_path))
-        common_metadata_file_path = os.path.join(root_dir, '_common_metadata')
-        self.assertTrue(os.path.exists(common_metadata_file_path))
-
-    def test_writing_partitioned_data(self):
+    def test_write_partitioned_data(self):
         source = new_table([
             string_col("X", ["Aa", "Bb", "Aa", "Cc", "Bb", "Aa", "Bb", "Bb", "Cc"]),
             string_col("Y", ["M", "N", "O", "N", "P", "M", "O", "P", "M"]),
@@ -615,8 +615,8 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(fnmatch.fnmatch(parquet_file, 'test-*.parquet'))
 
         # Test all different APIs
-        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir, base_name=base_name,
-                                          max_dictionary_keys=max_dictionary_keys)
+        write_partitioned(partitioned_table, destination_dir=root_dir, base_name=base_name,
+                          max_dictionary_keys=max_dictionary_keys)
         from_disk = read(root_dir)
         definition = from_disk.columns
         verify_table_from_disk(from_disk)
@@ -624,40 +624,40 @@ class ParquetTestCase(BaseTestCase):
         from_disk = None
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir,
-                                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
+        write_partitioned(partitioned_table, destination_dir=root_dir,
+                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
         verify_table_from_disk(read(root_dir))
         self.verify_metadata_files(root_dir)
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir, base_name=base_name)
+        write_partitioned(partitioned_table, destination_dir=root_dir, base_name=base_name)
         verify_table_from_disk(read(root_dir))
         verify_file_names()
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(partitioned_table, destination_dir=root_dir)
+        write_partitioned(partitioned_table, destination_dir=root_dir)
         verify_table_from_disk(read(root_dir))
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
-                                          base_name=base_name, max_dictionary_keys=max_dictionary_keys)
+        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+                          base_name=base_name, max_dictionary_keys=max_dictionary_keys)
         verify_table_from_disk(read(root_dir))
         verify_file_names()
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
-                                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
+        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
         verify_table_from_disk(read(root_dir))
         self.verify_metadata_files(root_dir)
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir,
-                                          base_name=base_name)
+        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+                          base_name=base_name)
         verify_table_from_disk(read(root_dir))
         verify_file_names()
 
         shutil.rmtree(root_dir)
-        write_key_value_partitioned_table(source, col_definitions=definition, destination_dir=root_dir)
+        write_partitioned(source, col_definitions=definition, destination_dir=root_dir)
         verify_table_from_disk(read(root_dir))
 
 
