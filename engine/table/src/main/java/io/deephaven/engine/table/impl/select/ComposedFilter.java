@@ -5,11 +5,8 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-<<<<<<< HEAD
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
-=======
 import io.deephaven.engine.table.impl.BaseTable;
->>>>>>> upstream/main
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;

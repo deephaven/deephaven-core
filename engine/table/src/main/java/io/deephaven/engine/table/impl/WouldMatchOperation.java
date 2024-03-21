@@ -45,11 +45,6 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
      * Just a little helper to keep column stuff together.
      */
     private static class ColumnHolder {
-<<<<<<< HEAD
-        final WouldMatchPair wouldMatchPair;
-        IndexWrapperColumnSource column;
-=======
->>>>>>> upstream/main
 
         private final WouldMatchPair wouldMatchPair;
         private final WhereFilter filter;
@@ -98,9 +93,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
+
         return Arrays.stream(whereFilters)
                 .map((final WhereFilter filter) -> {
-                    filter.init(parent.getDefinition());
                     // Ensure we gather the correct dependencies when building a snapshot control.
                     return filter.beginOperation(parent);
                 }).collect(SafeCloseableList.COLLECTOR);
@@ -122,22 +120,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final RowSet fullRowSet = usePrev ? closer.add(parent.getRowSet().copyPrev()) : parent.getRowSet();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
-<<<<<<< HEAD
-            final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                    QueryCompilerRequestProcessor.batch();
-            final WhereFilter[] filters = matchColumns.stream().map(ColumnHolder::getFilter)
-                    .peek(holder -> holder.init(parent.getDefinition(), compilationProcessor))
-                    .toArray(WhereFilter[]::new);
-            compilationProcessor.compile();
-
-            for (int ii = 0; ii < filters.length; ++ii) {
-                final ColumnHolder holder = matchColumns.get(ii);
-                final WhereFilter filter = filters[ii];
-=======
 
             matchColumns.forEach(holder -> {
                 final WhereFilter filter = holder.getFilter();
->>>>>>> upstream/main
                 final WritableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(
                         holder.getColumnName(), parent, result.toTracking(), filter);
@@ -151,7 +136,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 if (filter.isRefreshing()) {
                     anyRefreshing.setTrue();
                 }
-            }
+            });
 
             resultTable = new QueryTable(parent.getRowSet(), newColumns);
             transformer =

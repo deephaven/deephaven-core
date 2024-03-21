@@ -1167,12 +1167,17 @@ public class QueryTable extends BaseTable<QueryTable> {
         final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
         final int numFilters = filters.length;
         final BitSet priorityFilterIndexes = new BitSet(numFilters);
+
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcesor = QueryCompilerRequestProcessor.batch();
+        // Initialize our filters immediately so we can examine the columns they use. Note that filter
+        // initialization is safe to invoke repeatedly.
+        for (final WhereFilter filter : filters) {
+            filter.init(getDefinition(), compilationProcesor);
+        }
+        compilationProcesor.compile();
+
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];
-
-            // Initialize our filters immediately so we can examine the columns they use. Note that filter
-            // initialization is safe to invoke repeatedly.
-            filter.init(getDefinition());
 
             // Simple filters against indexed columns get priority
             if (dataIndexer != null
@@ -1246,37 +1251,20 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result;
                     }
 
-<<<<<<< HEAD
-                    List<WhereFilter> selectFilters = new LinkedList<>();
-                    List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
-                    final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                            QueryCompilerRequestProcessor.batch();
+                    final List<WhereFilter> whereFilters = new LinkedList<>();
+                    final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
+                            new LinkedList<>();
                     for (final WhereFilter filter : filters) {
-                        filter.init(getDefinition(), compilationProcessor);
                         if (filter instanceof AbstractConditionFilter
                                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
                             shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
                         } else {
-                            selectFilters.add(filter);
-=======
-                    {
-                        final List<WhereFilter> whereFilters = new LinkedList<>();
-                        final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
-                                new LinkedList<>();
-                        for (final WhereFilter filter : filters) {
-                            if (filter instanceof AbstractConditionFilter
-                                    && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                                shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                            } else {
-                                whereFilters.add(filter);
-                            }
-                        }
-                        if (!shiftColPairs.isEmpty()) {
-                            return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
->>>>>>> upstream/main
+                            whereFilters.add(filter);
                         }
                     }
-                    compilationProcessor.compile();
+                    if (!shiftColPairs.isEmpty()) {
+                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
+                    }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
                         try (final SafeCloseable ignored = Arrays.stream(filters)
