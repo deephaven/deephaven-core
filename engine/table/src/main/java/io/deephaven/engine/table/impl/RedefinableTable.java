@@ -52,7 +52,11 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
 
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final SelectColumn selectColumn : columns) {
+<<<<<<< HEAD
             List<String> usedColumnNames = selectColumn.initDef(allColumns, compilationProcessor);
+=======
+            final List<String> usedColumnNames = new ArrayList<>(selectColumn.initDef(allColumns));
+>>>>>>> upstream/main
             usedColumnNames.addAll(selectColumn.getColumnArrays());
             resultColumnsInternal.addAll(usedColumnNames.stream()
                     .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))

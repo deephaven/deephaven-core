@@ -443,7 +443,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     # when np.ndarray is used, the 1st argument is the component type
     if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
         import types
-        if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray):
+        if isinstance(t, types.GenericAlias) and (issubclass(t.__origin__, Sequence) or t.__origin__ == np.ndarray): # novermin
             nargs = len(t.__args__)
             if nargs == 1:
                 component_type = t.__args__[0]

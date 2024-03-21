@@ -1592,6 +1592,73 @@ public class Numeric {
     }
 
     /**
+     * Returns the differences between elements in the input vector separated by a stride.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
+     * The result has the same length as the input vector.
+     * Differences off the end of the input vector are the null value.
+     *
+     * @param stride number of elements separating the elements to be differenced.
+     * @param values input vector.
+     * @return a vector containing the differences between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.boxed}[] values) {
+        return diff(stride, unbox(values));
+    }
+
+    /**
+     * Returns the differences between elements in the input vector separated by a stride.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result has the same length as the input vector.
+     * Differences off the end of the input vector are the null value.
+     *
+     * @param stride number of elements separating the elements to be differenced.
+     * @param values input vector.
+     * @return a vector containing the differences between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.primitive}... values) {
+        return diff(stride, new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the differences between elements in the input vector separated by a stride.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result has the same length as the input vector.
+     * Differences off the end of the input vector are the null value.
+     *
+     * @param stride number of elements separating the elements to be differenced.
+     * @param values input vector.
+     * @return a vector containing the differences between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("diff");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        for (int i = 0; i < n; i++) {
+            ${pt.primitive} v1 = values.get(i);
+            ${pt.primitive} v2 = values.get(i + stride);
+
+            if (isNull(v1) || isNull(v2)) {
+                result[i] = ${pt.null};
+            } else {
+                result[i] = (${pt.primitive})(v2 - v1);
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the cumulative minimum.  Null values are excluded.
      *
      * @param values values.
@@ -2790,6 +2857,61 @@ public class Numeric {
 
 
     </#if>
+
+
+    /**
+     * Compares two specified values.  Deephaven null values are less than normal numbers which are less than NaN values.
+     *
+     * @param v1 the first value to compare.
+     * @param v2 the second value to compare.
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2;
+     *      and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values.
+     *      Unlike standard Java, Deephaven treats NaN values as ordered. In particular two NaN values will compare
+     *      equal to each other, and a NaN value will compare greater than any other value.
+     */
+    static public int compare(${pt.primitive} v1, ${pt.primitive} v2) {
+        final boolean isNull1 = isNull(v1);
+        final boolean isNull2 = isNull(v2);
+
+        if (isNull1 && isNull2) {
+            return 0;
+        } else if (isNull1) {
+            return -1;
+        } else if (isNull2) {
+            return 1;
+        }
+
+        final boolean isNaN1 = isNaN(v1);
+        final boolean isNaN2 = isNaN(v2);
+
+        // NaN is considered the greatest
+        if (isNaN1 && isNaN2) {
+            return 0;
+        } else if (isNaN1) {
+            return 1;
+        } else if (isNaN2) {
+            return -1;
+        }
+
+        return ${pt.boxed}.compare(v1, v2);
+    }
+
+
+    /**
+     * Compares two specified values.  Deephaven null values are less than normal numbers which are less than NaN values.
+     *
+     * @param v1 the first value to compare.
+     * @param v2 the second value to compare.
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2;
+     *      and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values.
+     *      Unlike standard Java, Deephaven treats NaN values as ordered. In particular two NaN values will compare
+     *      equal to each other, and a NaN value will compare greater than any other value.
+     */
+    static public int compare(${pt.boxed} v1, ${pt.boxed} v2) {
+        return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
+    }
 
     </#if>
     </#list>

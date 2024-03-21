@@ -5,7 +5,8 @@ package io.deephaven.util;
 
 import java.util.Objects;
 
-public class SafeCloseablePair<A extends SafeCloseable, B extends SafeCloseable> implements SafeCloseable {
+public class SafeCloseablePair<A extends AutoCloseable, B extends AutoCloseable> implements SafeCloseable {
+
     public final A first;
     public final B second;
 
@@ -32,12 +33,7 @@ public class SafeCloseablePair<A extends SafeCloseable, B extends SafeCloseable>
 
     @Override
     public void close() {
-        if (this.first != null) {
-            this.first.close();
-        }
-        if (this.second != null) {
-            this.second.close();
-        }
+        SafeCloseable.closeAll(first, second);
     }
 
     public static <AP extends SafeCloseable, BP extends SafeCloseable, A extends AP, B extends BP> SafeCloseablePair<AP, BP> downcast(

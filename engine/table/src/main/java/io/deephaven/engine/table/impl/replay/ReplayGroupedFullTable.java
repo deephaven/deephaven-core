@@ -6,22 +6,17 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.time.DateTimeUtils;
 
-import java.util.Map;
-
 public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
+
     private int redirIndexSize;
 
-    public ReplayGroupedFullTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn,
-            Replayer replayer, String groupingColumn) {
-        super("ReplayGroupedFullTable", rowSet, input, timeColumn, replayer,
-                WritableRowRedirection.FACTORY.createRowRedirection((int) rowSet.size()),
-                new String[] {groupingColumn});
+    public ReplayGroupedFullTable(Table source, String timeColumn, Replayer replayer, String groupingColumn) {
+        super("ReplayGroupedFullTable", source, timeColumn, replayer,
+                WritableRowRedirection.FACTORY.createRowRedirection(source.intSize()), new String[] {groupingColumn});
         redirIndexSize = 0;
         // We do not modify existing entries in the WritableRowRedirection (we only add at the end), so there's no need
         // to ask the WritableRowRedirection to track previous values.

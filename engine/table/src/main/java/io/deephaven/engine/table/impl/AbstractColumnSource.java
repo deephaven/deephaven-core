@@ -5,32 +5,36 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.vector.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
@@ -42,16 +46,15 @@ public abstract class AbstractColumnSource<T> implements
      */
     public static final long USE_RANGES_AVERAGE_RUN_LENGTH = 5;
 
+    private static final int CHUNK_SIZE = 1 << 11;
+
     protected final Class<T> type;
     protected final Class<?> componentType;
 
     protected final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
-    protected volatile Map<T, RowSet> groupToRange;
-    protected volatile List<ColumnSource<?>> rowSetIndexerKey;
-
     protected AbstractColumnSource(@NotNull final Class<T> type) {
-        this(type, Object.class);
+        this(type, null);
     }
 
     public AbstractColumnSource(@NotNull final Class<T> type, @Nullable final Class<?> elementType) {
@@ -84,7 +87,7 @@ public abstract class AbstractColumnSource<T> implements
             } else if (ShortVector.class.isAssignableFrom(type)) {
                 componentType = short.class;
             } else {
-                componentType = elementType;
+                componentType = elementType == null ? Object.class : elementType;
             }
         } else {
             componentType = null;
@@ -107,70 +110,84 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public List<ColumnSource<?>> getColumnSources() {
-        List<ColumnSource<?>> localRowSetIndexerKey;
-        if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
-            synchronized (this) {
-                if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
-                    rowSetIndexerKey = localRowSetIndexerKey = Collections.singletonList(this);
-                }
-            }
-        }
-        return localRowSetIndexerKey;
-    }
-
-    @Override
-    public Map<T, RowSet> getGroupToRange() {
-        return groupToRange;
-    }
-
-    @Override
-    public Map<T, RowSet> getGroupToRange(RowSet rowSet) {
-        return groupToRange;
-    }
-
-    public final void setGroupToRange(@Nullable Map<T, RowSet> groupToRange) {
-        this.groupToRange = groupToRange;
-    }
-
-    @Override
     public WritableRowSet match(
             final boolean invertMatch,
             final boolean usePrev,
             final boolean caseInsensitive,
+            @Nullable final DataIndex dataIndex,
             @NotNull final RowSet mapper,
             final Object... keys) {
-        final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
-        if (groupToRange != null) {
-            RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
 
-            if (caseInsensitive && (type == String.class)) {
-                KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
+        if (dataIndex != null) {
+            final Table indexTable = dataIndex.table();
+            final RowSet matchingIndexRows;
+            if (caseInsensitive && type == String.class) {
+                // Linear scan through the index table, accumulating index row keys for case-insensitive matches
+                final RowSetBuilderSequential matchingIndexRowsBuilder = RowSetFactory.builderSequential();
+
+                // noinspection rawtypes
+                final KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
+                // noinspection unchecked
                 Collections.addAll(keySet, keys);
 
-                for (Map.Entry<T, RowSet> ent : groupToRange.entrySet()) {
-                    if (keySet.containsKey(ent.getKey())) {
-                        allInMatchingGroups.addRowSet(ent.getValue());
+                final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
+                final ColumnSource<?> indexKeySource =
+                        indexTable.getColumnSource(dataIndex.keyColumnNames().get(0), String.class);
+
+                final int chunkSize = (int) Math.min(CHUNK_SIZE, indexRowSet.size());
+                try (final RowSequence.Iterator indexRowSetIterator = indexRowSet.getRowSequenceIterator();
+                        final GetContext indexKeyGetContext = indexKeySource.makeGetContext(chunkSize)) {
+                    while (indexRowSetIterator.hasMore()) {
+                        final RowSequence chunkIndexRows = indexRowSetIterator.getNextRowSequenceWithLength(chunkSize);
+                        final ObjectChunk<String, ? extends Values> chunkKeys = (usePrev
+                                ? indexKeySource.getPrevChunk(indexKeyGetContext, chunkIndexRows)
+                                : indexKeySource.getChunk(indexKeyGetContext, chunkIndexRows)).asObjectChunk();
+                        final LongChunk<OrderedRowKeys> chunkRowKeys = chunkIndexRows.asRowKeyChunk();
+                        final int thisChunkSize = chunkKeys.size();
+                        for (int ii = 0; ii < thisChunkSize; ++ii) {
+                            final String key = chunkKeys.get(ii);
+                            if (keySet.containsKey(key)) {
+                                matchingIndexRowsBuilder.appendKey(chunkRowKeys.get(ii));
+                            }
+                        }
                     }
                 }
+                matchingIndexRows = matchingIndexRowsBuilder.build();
             } else {
+                // Use the lookup function to get the index row keys for the matching keys
+                final RowSetBuilderRandom matchingIndexRowsBuilder = RowSetFactory.builderRandom();
+
+                final DataIndex.RowKeyLookup rowKeyLookup = dataIndex.rowKeyLookup();
                 for (Object key : keys) {
-                    RowSet range = groupToRange.get(key);
-                    if (range != null) {
-                        allInMatchingGroups.addRowSet(range);
+                    final long rowKey = rowKeyLookup.apply(key, usePrev);
+                    if (rowKey != RowSequence.NULL_ROW_KEY) {
+                        matchingIndexRowsBuilder.addKey(rowKey);
                     }
                 }
+                matchingIndexRows = matchingIndexRowsBuilder.build();
             }
 
-            final WritableRowSet matchingValues;
-            try (final RowSet matchingGroups = allInMatchingGroups.build()) {
-                if (invertMatch) {
-                    matchingValues = mapper.minus(matchingGroups);
-                } else {
-                    matchingValues = mapper.intersect(matchingGroups);
+            try (final SafeCloseable ignored = matchingIndexRows) {
+                final WritableRowSet filtered = invertMatch ? mapper.copy() : RowSetFactory.empty();
+                if (matchingIndexRows.isNonempty()) {
+                    final ColumnSource<RowSet> indexRowSetSource = usePrev
+                            ? dataIndex.rowSetColumn().getPrevSource()
+                            : dataIndex.rowSetColumn();
+                    try (final CloseableIterator<RowSet> matchingIndexRowSetIterator =
+                            ChunkedColumnIterator.make(indexRowSetSource, matchingIndexRows)) {
+                        matchingIndexRowSetIterator.forEachRemaining((final RowSet matchingRowSet) -> {
+                            if (invertMatch) {
+                                filtered.remove(matchingRowSet);
+                            } else {
+                                try (final RowSet intersected = matchingRowSet.intersect(mapper)) {
+                                    filtered.insert(intersected);
+                                }
+                            }
+                        });
+                    }
                 }
+                return filtered;
             }
-            return matchingValues;
         } else {
             return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
                     ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
@@ -192,44 +209,6 @@ public abstract class AbstractColumnSource<T> implements
         public boolean equalKey(String s, String s2) {
             return (s == null) ? s2 == null : s.equalsIgnoreCase(s2);
         }
-    }
-
-    @Override
-    public Map<T, RowSet> getValuesMapping(RowSet subRange) {
-        Map<T, RowSet> result = new LinkedHashMap<>();
-        final Map<T, RowSet> groupToRange = getGroupToRange();
-
-        // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
-        // could be bigger than the RowSet we care about, by a very large margin. In this case we could be spinning
-        // on RowSet intersect operations that are actually useless. This check says that if our subRange is smaller
-        // than the number of keys in our grouping, we should just fetch the keys instead and generate the grouping
-        // from scratch.
-        boolean useGroupToRange = (groupToRange != null) && (groupToRange.size() < subRange.size());
-        if (useGroupToRange) {
-            for (Map.Entry<T, RowSet> typeEntry : groupToRange.entrySet()) {
-                RowSet mapping = subRange.intersect(typeEntry.getValue());
-                if (mapping.size() > 0) {
-                    result.put(typeEntry.getKey(), mapping);
-                }
-            }
-        } else {
-            Map<T, RowSetBuilderSequential> valueToIndexSet = new LinkedHashMap<>();
-
-            for (RowSet.Iterator it = subRange.iterator(); it.hasNext();) {
-                long key = it.nextLong();
-                T value = get(key);
-                RowSetBuilderSequential indexes = valueToIndexSet.get(value);
-                if (indexes == null) {
-                    indexes = RowSetFactory.builderSequential();
-                }
-                indexes.appendKey(key);
-                valueToIndexSet.put(value, indexes);
-            }
-            for (Map.Entry<T, RowSetBuilderSequential> entry : valueToIndexSet.entrySet()) {
-                result.put(entry.getKey(), entry.getValue().build());
-            }
-        }
-        return result;
     }
 
     @Override

@@ -168,15 +168,12 @@ public class TestEventDrivenUpdateGraph {
     public void testUpdatePerformanceTracker() {
         final Table upt = UpdatePerformanceTracker.getQueryTable();
 
-
         final EventDrivenUpdateGraph eventDrivenUpdateGraph1 = EventDrivenUpdateGraph.newBuilder("TestEDUG1").build();
         final EventDrivenUpdateGraph eventDrivenUpdateGraph2 = EventDrivenUpdateGraph.newBuilder("TestEDUG2").build();
 
         // first empty flush
         eventDrivenUpdateGraph1.requestRefresh();
         eventDrivenUpdateGraph2.requestRefresh();
-
-        final long start = System.currentTimeMillis();
 
         final int count1 = 10;
         final int count2 = 20;
@@ -211,7 +208,7 @@ public class TestEventDrivenUpdateGraph {
             inRange = defaultUpdateGraph.sharedLock().computeLocked(() -> uptAgged.update(
                     "EIUExpectedMillis = UpdateGraph==`TestEDUG1` ? " + time1 + " : " + time2,
                     "TotalExpectedTime=InvocationCount * EIUExpectedMillis * 1_000_000L",
-                    "InRange=(UsageNanos > 0.9 * TotalExpectedTime) && (UsageNanos < 1.5 * TotalExpectedTime)"));
+                    "InRange=(UsageNanos > 0.9 * TotalExpectedTime) && (UsageNanos < 2.5 * TotalExpectedTime)"));
         }
         TableTools.show(inRange);
 

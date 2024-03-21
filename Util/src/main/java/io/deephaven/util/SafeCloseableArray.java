@@ -10,17 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@link SafeCloseable} that will close non-null values inside of an array.
+ * {@link SafeCloseable} that will close non-null values inside an array.
  * <p>
  * The common use case is to create an array; use the SafeCloseableArray in an ignored try-with-resources variable, and
- * then populate the array within the loop. If you fail before populating the array nothing is closed, if you fail
- * during or after populating the array the created values are closed.
+ * then populate the array within the loop. If the operation fails before populating the array nothing is closed. If the
+ * operation fails during or after populating the array the populated values are closed.
  */
-public class SafeCloseableArray<SCT extends SafeCloseable> implements SafeCloseable {
+public class SafeCloseableArray<ACT extends AutoCloseable> implements SafeCloseable {
 
-    private final SCT[] array;
+    private final ACT[] array;
 
-    public SafeCloseableArray(SCT[] entries) {
+    public SafeCloseableArray(ACT[] entries) {
         array = entries;
     }
 
@@ -30,16 +30,16 @@ public class SafeCloseableArray<SCT extends SafeCloseable> implements SafeClosea
     }
 
     /**
-     * Close an array of {@link SafeCloseable} entries, ignoring {@code null} elements and assigning elements to
+     * Close an array of {@link AutoCloseable} entries, ignoring {@code null} elements and assigning elements to
      * {@code null} as they are cleared.
-     * 
+     *
      * @param array The array to operate one
      */
-    public static <SCT extends SafeCloseable> void close(@NotNull final SCT[] array) {
+    public static <ACT extends AutoCloseable> void close(final ACT @NotNull [] array) {
         final int length = array.length;
         List<Exception> exceptions = null;
         for (int ii = 0; ii < length; ii++) {
-            try (final SafeCloseable ignored = array[ii]) {
+            try (final AutoCloseable ignored = array[ii]) {
                 array[ii] = null;
             } catch (Exception e) {
                 if (exceptions == null) {

@@ -3,11 +3,18 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+<<<<<<< HEAD
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+=======
+import io.deephaven.engine.table.impl.BaseTable;
+>>>>>>> upstream/main
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
@@ -70,6 +77,20 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         for (WhereFilter filter : componentFilters) {
             filter.init(tableDefinition, compilationProcessor);
+        }
+    }
+
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        return Arrays.stream(componentFilters)
+                .map((final WhereFilter whereFilter) -> whereFilter.beginOperation(sourceTable))
+                .collect(SafeCloseableList.COLLECTOR);
+    }
+
+    @Override
+    public void validateSafeForRefresh(@NotNull final BaseTable<?> sourceTable) {
+        for (WhereFilter filter : componentFilters) {
+            filter.validateSafeForRefresh(sourceTable);
         }
     }
 

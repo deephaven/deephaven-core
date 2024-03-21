@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,6 +67,11 @@ class WhereFilterInvertedImpl
             @NotNull final TableDefinition tableDefinition,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         filter.init(tableDefinition, compilationProcessor);
+    }
+
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        return filter.beginOperation(sourceTable);
     }
 
     @Override

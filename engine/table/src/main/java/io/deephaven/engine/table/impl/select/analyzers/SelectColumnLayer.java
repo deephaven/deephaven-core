@@ -62,7 +62,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean canParallelizeThisColumn;
     private final boolean isSystemic;
     private final boolean resultTypeIsLivenessReferent;
-    private final boolean resultTypeIsTable;
+    private final boolean resultTypeIsTableOrRowSet;
 
     private UpdateCommitterEx<SelectColumnLayer, LivenessNode> prevUnmanager;
     private List<WritableObjectChunk<? extends LivenessReferent, Values>> prevValueChunksToUnmanage;
@@ -109,12 +109,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // We want to ensure that results are managed appropriately if they are LivenessReferents
         resultTypeIsLivenessReferent = LivenessReferent.class.isAssignableFrom(ws.getType());
 
-        // We assume that formulas producing Tables are likely to
+        // We assume that formulas producing Tables or RowSets are likely to
         // 1. be expensive to evaluate and
         // 2. have wildly varying job size,
         // and so we ignore minimum size to parallelize and limit divisionSize to 1 to maximize the
         // effect of our parallelism.
-        resultTypeIsTable = Table.class.isAssignableFrom(ws.getType());
+        resultTypeIsTableOrRowSet = Table.class.isAssignableFrom(ws.getType())
+                || RowSet.class.isAssignableFrom(ws.getType());
     }
 
     private ChunkSource<Values> getChunkSource() {
@@ -163,9 +164,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 || updateGraph.exclusiveLock().isHeldByCurrentThread();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
-                                ((resultTypeIsTable && totalSize > 0)
+                                ((resultTypeIsTableOrRowSet && totalSize > 0)
                                         || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
-                            final long divisionSize = resultTypeIsTable ? 1
+                            final long divisionSize = resultTypeIsTableOrRowSet ? 1
                                     : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
                             final List<TableUpdate> updates = new ArrayList<>();

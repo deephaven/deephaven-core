@@ -401,6 +401,83 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
+    public WritableRowRedirection buildIndexedRowRedirection(
+            QueryTable leftTable,
+            boolean exactMatch,
+            InitialBuildContext ibc,
+            ColumnSource<RowSet> indexRowSets,
+            JoinControl.RedirectionType redirectionType) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        switch (redirectionType) {
+            case Contiguous: {
+                if (!leftTable.isFlat() || leftTable.getRowSet().lastRowKey() > Integer.MAX_VALUE) {
+                    throw new IllegalStateException("Left table is not flat for contiguous row redirection build!");
+                }
+                // we can use an array, which is perfect for a small enough flat table
+                final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
+
+                for (int ii = 0; ii < tableSize; ++ii) {
+                    final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
+                    if (leftRowSet != null && !leftRowSet.isEmpty()) {
+                        Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
+                        // Load the row set from the index row set column.
+                        final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
+                        // Reset mainLeftRowSet to contain the indexed row set.
+                        mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
+                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        leftRowSetForKey.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
+                    }
+                }
+
+                return new ContiguousWritableRowRedirection(innerIndex);
+            }
+            case Sparse: {
+                final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
+                for (int ii = 0; ii < tableSize; ++ii) {
+                    final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
+                    if (leftRowSet != null && !leftRowSet.isEmpty()) {
+                        Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
+                        // Load the row set from the index row set column.
+                        final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
+                        // Reset mainLeftRowSet to contain the indexed row set.
+                        mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
+                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
+                            leftRowSetForKey.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        } else {
+                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        }
+                    }
+                }
+                return new LongColumnSourceWritableRowRedirection(sparseRedirections);
+            }
+            case Hash: {
+                final WritableRowRedirection rowRedirection =
+                        WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                for (int ii = 0; ii < tableSize; ++ii) {
+                    final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
+                    if (leftRowSet != null && !leftRowSet.isEmpty()) {
+                        Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
+                        // Load the row set from the index row set column.
+                        final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
+                        // Reset mainLeftRowSet to contain the indexed row set.
+                        mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
+                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
+                            leftRowSetForKey.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
+                        } else {
+                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        }
+                    }
+                }
+                return rowRedirection;
+            }
+        }
+        throw new IllegalStateException("Bad redirectionType: " + redirectionType);
+    }
+
     public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         Assert.eqZero(rehashPointer, "rehashPointer");

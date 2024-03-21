@@ -8,25 +8,33 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
+import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
+import java.util.Objects;
 
 public class TimeTableTest extends RefreshingTableTestCase {
 
@@ -219,45 +227,88 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 .map(l -> l == null ? null : DateTimeUtils.epochNanosToInstant(l))
                 .toArray(Instant[]::new);
         try (final RowSet match =
-                dtColumn.match(false, false, false, RowSetFactory.fromRange(100, 110), (Object[]) keys)) {
+                dtColumn.match(false, false, false, null, RowSetFactory.fromRange(100, 110),
+                        (Object[]) keys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
         }
         try (final RowSet match =
-                column.match(false, false, false, RowSetFactory.fromRange(100, 110), (Object[]) longKeys)) {
+                column.match(false, false, false, null, RowSetFactory.fromRange(100, 110),
+                        (Object[]) longKeys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
         }
         // inverted
         try (final RowSet match =
-                dtColumn.match(true, false, false, RowSetFactory.fromRange(100, 110), (Object[]) keys)) {
+                dtColumn.match(true, false, false, null, RowSetFactory.fromRange(100, 110),
+                        (Object[]) keys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
         }
         try (final RowSet match =
-                column.match(true, false, false, RowSetFactory.fromRange(100, 110), (Object[]) longKeys)) {
+                column.match(true, false, false, null, RowSetFactory.fromRange(100, 110),
+                        (Object[]) longKeys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
         }
     }
 
     @Test
-    public void testGetValuesMapping() {
+    public void testIndexing() {
         build(TimeTable.newBuilder().period(10));
         final ColumnSource<Instant> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        final Map<Instant, RowSet> dtMap = dtColumn.getValuesMapping(RowSetFactory.fromRange(100, 109));
-        Assert.assertEquals(dtMap.size(), 10);
-        dtMap.forEach((tm, rows) -> {
-            Assert.assertEquals(rows.size(), 1);
-            Assert.assertEquals(dtColumn.get(rows.firstRowKey()), tm);
-        });
+        final DataIndexer dataIndexer = DataIndexer.of(timeTable.getRowSet());
 
-        Map<Long, RowSet> longMap = column.getValuesMapping(RowSetFactory.fromRange(100, 109));
-        Assert.assertEquals(longMap.size(), 10);
-        longMap.forEach((tm, rows) -> {
-            Assert.assertEquals(rows.size(), 1);
-            Assert.assertEquals(column.get(rows.firstRowKey()), tm);
-        });
+        // Create the index for this table and column.
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true);
+                final RowSet intersectRowSet = RowSetFactory.fromRange(100, 109)) {
+            DataIndexer.getOrCreateDataIndex(timeTable, "Timestamp");
+
+            final BasicDataIndex dataIndex =
+                    dataIndexer.getDataIndex(dtColumn).transform(
+                            DataIndexTransformer.builder()
+                                    .intersectRowSet(intersectRowSet)
+                                    .build());
+            final Table indexTable = dataIndex.table();
+
+            Assert.assertEquals(indexTable.size(), 10);
+            try (final CloseableIterator<Instant> keyIt = indexTable.columnIterator(dataIndex.keyColumnNames().get(0));
+                    final CloseableIterator<RowSet> rsIt = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+                while (keyIt.hasNext()) {
+                    final Instant key = keyIt.next();
+                    final RowSet rs = rsIt.next();
+                    Assert.assertEquals(rs.size(), 1);
+                    Assert.assertEquals(dtColumn.get(rs.firstRowKey()), key);
+                }
+            }
+
+            final Table riTable = timeTable.updateView(List.of(
+                    new ReinterpretedColumn<>("Timestamp", Instant.class, "longTimestamp", long.class)));
+
+            // Create the index for this table and column.
+            DataIndexer.getOrCreateDataIndex(riTable, "longTimestamp");
+
+            final BasicDataIndex longDataIndex =
+                    Objects.requireNonNull(DataIndexer.getDataIndex(riTable, "longTimestamp")).transform(
+                            DataIndexTransformer.builder()
+                                    .intersectRowSet(intersectRowSet)
+                                    .build());
+            final Table longIndexTable = longDataIndex.table();
+
+            Assert.assertEquals(longIndexTable.size(), 10);
+            try (final CloseablePrimitiveIteratorOfLong keyIt = new ChunkedLongColumnIterator(
+                    longIndexTable.getColumnSource(longDataIndex.keyColumnNames().get(0), long.class),
+                    longIndexTable.getRowSet());
+                    final CloseableIterator<RowSet> rsIt =
+                            longIndexTable.columnIterator(longDataIndex.rowSetColumnName())) {
+                while (keyIt.hasNext()) {
+                    final long key = keyIt.nextLong();
+                    final RowSet rs = rsIt.next();
+                    Assert.assertEquals(rs.size(), 1);
+                    Assert.assertEquals(column.getLong(rs.firstRowKey()), key);
+                }
+            }
+        }
     }
 
     @Test
