@@ -61,5 +61,10 @@ setup(
         'jpy>=0.16.0',
         "java-utilities",
         f"deephaven-core[autocomplete]=={_version}",
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'deephaven = deephaven_server:main',
+        ],
+    },
 )
