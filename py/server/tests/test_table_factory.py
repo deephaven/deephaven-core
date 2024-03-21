@@ -375,10 +375,12 @@ class TableFactoryTestCase(BaseTestCase):
 
         with self.subTest("custom input table creation"):
             place_holder_input_table = empty_table(1).update_view(["Key=`A`", "Value=10"]).with_attributes({_JTable.INPUT_TABLE_ATTRIBUTE: "Placeholder IT"}).j_table
-            # Confirming no error.
-            it = InputTable(place_holder_input_table)
 
-            self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), InputTable))
+            with self.assertRaises(DHError) as cm:
+                InputTable(place_holder_input_table)
+            self.assertIn("not of InputTableUpdater type", str(cm.exception))
+
+            self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), Table))
 
 
     def test_ring_table(self):
@@ -468,8 +470,12 @@ class TableFactoryTestCase(BaseTestCase):
         col_defs = {c.name: c.data_type for c in t.columns}
         append_only_input_table = input_table(col_defs=col_defs)
 
-        t = _wrapper.wrap_j_object(append_only_input_table.j_table)
-        self.assertTrue(isinstance(t, InputTable))
+        it = _wrapper.wrap_j_object(append_only_input_table.j_table)
+        self.assertTrue(isinstance(it, InputTable))
+
+        t = _wrapper.wrap_j_object(t.j_object)
+        self.assertFalse(isinstance(t, InputTable))
+        self.assertTrue(isinstance(t, Table))
 
 
 if __name__ == '__main__':
