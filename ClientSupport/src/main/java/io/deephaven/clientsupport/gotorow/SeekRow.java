@@ -3,8 +3,6 @@
 //
 package io.deephaven.clientsupport.gotorow;
 
-import java.time.Instant;
-
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
@@ -16,7 +14,6 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -30,11 +27,7 @@ public class SeekRow {
     private final boolean contains;
     private final boolean isBackward;
 
-    private Comparable closestUpperValueYet;
-    private Comparable closestLowerValueYet;
     private ColumnSource columnSource;
-    private long closestUpperRowYet = -1;
-    private long closestLowerRowYet = -1;
     private boolean usePrev;
 
     private static final Logger log = LoggerFactory.getLogger(SeekRow.class);
@@ -123,70 +116,34 @@ public class SeekRow {
                         row = findRow(rowSet, 0, (int) startingRow);
                         if (row >= 0) {
                             result.setValue(row);
+                            log.info().append("found 1").endl();
                             return true;
                         }
                         row = findRow(rowSet, (int) startingRow, (int) rowSet.size());
                         if (row >= 0) {
                             result.setValue(row);
+                            log.info().append("found 2").endl();
                             return true;
                         }
                     } else {
                         row = findRow(rowSet, (int) startingRow + 1, (int) rowSet.size());
                         if (row >= 0) {
                             result.setValue(row);
+                            log.info().append("found 3").endl();
                             return true;
                         }
                         row = findRow(rowSet, 0, (int) startingRow + 1);
                         if (row >= 0) {
                             result.setValue(row);
+                            log.info().append("found 4").endl();
                             return true;
                         }
                     }
-
-                    // just go to the closest value
-                    if (closestLowerValueYet == null && closestUpperValueYet == null) {
-                        result.setValue(-1L);
-                    } else if (closestLowerValueYet == null) {
-                        result.setValue(rowSet.find(closestUpperRowYet));
-                    } else if (closestUpperValueYet == null) {
-                        result.setValue(rowSet.find(closestUpperRowYet));
-                    } else {
-                        // we need to decide between the two
-                        Class columnType = columnSource.getType();
-                        if (Number.class.isAssignableFrom(columnType)) {
-                            double nu = ((Number) closestUpperValueYet).doubleValue();
-                            double nl = ((Number) closestLowerRowYet).doubleValue();
-                            double ns = ((Number) seekValue).doubleValue();
-                            double du = Math.abs(nu - ns);
-                            double dl = Math.abs(nl - ns);
-                            log.info().append("Using numerical distance (").appendDouble(dl).append(", ")
-                                    .appendDouble(du)
-                                    .append(")").endl();
-                            result.setValue(rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet));
-                        } else if (Instant.class.isAssignableFrom(columnType)) {
-                            long nu = DateTimeUtils.epochNanos(((Instant) closestUpperValueYet));
-                            long nl = DateTimeUtils.epochNanos(((Instant) closestLowerValueYet));
-                            long ns = DateTimeUtils.epochNanos(((Instant) seekValue));
-                            long du = Math.abs(nu - ns);
-                            long dl = Math.abs(nl - ns);
-                            log.info().append("Using nano distance (").append(dl).append(", ").append(du).append(")")
-                                    .endl();
-                            result.setValue(rowSet.find(du < dl ? closestUpperRowYet : closestLowerRowYet));
-                        } else {
-                            long nu = rowSet.find(closestUpperRowYet);
-                            long nl = rowSet.find(closestLowerRowYet);
-                            long ns = startingRow;
-                            long du = Math.abs(nu - ns);
-                            long dl = Math.abs(nl - ns);
-                            log.info().append("Using index distance (").append(dl).append(", ").append(du).append(")")
-                                    .endl();
-                            result.setValue(du < dl ? nu : nl);
-                        }
-                    }
-
+                    result.setValue(-1L);
                     return true;
                 }));
 
+        log.info().append(result.getValue()).endl();
         return result.getValue();
     }
 
@@ -225,8 +182,6 @@ public class SeekRow {
                 end = mid - 1;
             }
         }
-        log.info().append("searching from ").append(start).append(" to ").append(end).append(": ").append(result)
-                .endl();
         return result;
     }
 
@@ -261,9 +216,6 @@ public class SeekRow {
             it = subIndex.iterator();
         }
 
-        final boolean isComparable = !contains
-                && (Comparable.class.isAssignableFrom(columnSource.getType()) || columnSource.getType().isPrimitive());
-
         final Object useSeek =
                 (seekValue instanceof String && insensitive) ? ((String) seekValue).toLowerCase() : seekValue;
 
@@ -278,41 +230,10 @@ public class SeekRow {
             }
             // noinspection ConstantConditions
             if (contains && value != null && ((String) value).contains((String) useSeek)) {
-                return (long) Require.geqZero(index.find(key), "index.find(key)");
+                return Require.geqZero(index.find(key), "index.find(key)");
             }
             if (value == useSeek || (useSeek != null && useSeek.equals(value))) {
-                return (long) Require.geqZero(index.find(key), "index.find(key)");
-            }
-
-            if (isComparable && useSeek != null && value != null) {
-                // noinspection unchecked
-                long compareResult = ((Comparable) useSeek).compareTo(value);
-                if (compareResult < 0) {
-                    // seekValue is less than value
-                    if (closestUpperRowYet == -1) {
-                        closestUpperRowYet = key;
-                        closestUpperValueYet = (Comparable) value;
-                    } else {
-                        // noinspection unchecked
-                        if (closestUpperValueYet.compareTo(value) > 0) {
-                            closestUpperValueYet = (Comparable) value;
-                            closestUpperRowYet = key;
-                        }
-                    }
-                } else {
-                    // seekValue is greater than value
-                    // seekValue is less than value
-                    if (closestLowerRowYet == -1) {
-                        closestLowerRowYet = key;
-                        closestLowerValueYet = (Comparable) value;
-                    } else {
-                        // noinspection unchecked
-                        if (closestLowerValueYet.compareTo(value) < 0) {
-                            closestLowerValueYet = (Comparable) value;
-                            closestLowerRowYet = key;
-                        }
-                    }
-                }
+                return Require.geqZero(index.find(key), "index.find(key)");
             }
         }
 
