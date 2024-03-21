@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,8 +18,6 @@ import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.Map;
-import java.util.function.Supplier;
 
 public class InstantRangeFilter extends LongRangeFilter {
 
@@ -40,10 +37,7 @@ public class InstantRangeFilter extends LongRangeFilter {
     }
 
     @Override
-    public void init(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         if (chunkFilter != null) {
             return;
         }

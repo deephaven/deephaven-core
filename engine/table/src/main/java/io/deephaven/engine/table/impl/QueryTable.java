@@ -1187,11 +1187,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                     List<WhereFilter> selectFilters = new LinkedList<>();
                     List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
                     final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                            new QueryCompilerRequestProcessor.BatchProcessor();
-                    final Supplier<Map<String, Object>> variableSupplier =
-                            SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
+                            QueryCompilerRequestProcessor.batch();
                     for (final WhereFilter filter : filters) {
-                        filter.init(getDefinition(), variableSupplier, compilationProcessor);
+                        filter.init(getDefinition(), compilationProcessor);
                         if (filter instanceof AbstractConditionFilter
                                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
                             shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());

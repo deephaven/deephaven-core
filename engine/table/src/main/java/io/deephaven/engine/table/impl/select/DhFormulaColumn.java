@@ -48,7 +48,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static io.deephaven.engine.util.IterableUtils.makeCommaSeparatedList;
 
@@ -181,11 +180,15 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     @Override
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        return initDef(columnDefinitionMap, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
     public List<String> initDef(
             @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
-        if (formulaFactory != null) {
+        if (formulaFactoryFuture != null) {
             validateColumnDefinition(columnDefinitionMap);
             return formulaColumnPython != null ? formulaColumnPython.usedColumns : usedColumns;
         }
@@ -194,7 +197,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             final TimeLiteralReplacedExpression timeConversionResult =
                     TimeLiteralReplacedExpression.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
-                    timeConversionResult, columnDefinitionMap, Collections.emptyMap(), queryScopeVariables.get(), true);
+                    timeConversionResult, columnDefinitionMap, Collections.emptyMap(),
+                    compilationRequestProcessor.getQueryScopeVariables(), true);
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
                     timeConversionResult, result);
             hasConstantValue = result.isConstantValueExpression();
@@ -211,13 +215,13 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             formulaString = result.getConvertedExpression();
 
             // check if this is a column to be created with a Python vectorizable function
-            checkAndInitializeVectorization(columnDefinitionMap, queryScopeVariables, compilationRequestProcessor);
+            checkAndInitializeVectorization(columnDefinitionMap, compilationRequestProcessor);
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + originalFormulaString, e);
         }
 
         if (useKernelFormulasProperty) {
-            formulaFactory = createKernelFormulaFactory(getFormulaKernelFactory(compilationRequestProcessor));
+            formulaFactoryFuture = createKernelFormulaFactory(getFormulaKernelFactory(compilationRequestProcessor));
         } else {
             compileFormula(compilationRequestProcessor);
         }
@@ -226,7 +230,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private void checkAndInitializeVectorization(
             @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         // noinspection SuspiciousToArrayCall
         final PyCallableWrapperJpyImpl[] cws = Arrays.stream(params)
@@ -248,7 +251,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                             pyCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
                             argumentsChunked,
                             true));
-            formulaColumnPython.initDef(columnDefinitionMap, queryScopeVariables, compilationRequestProcessor);
+            formulaColumnPython.initDef(columnDefinitionMap, compilationRequestProcessor);
         }
     }
 
@@ -750,7 +753,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @NotNull
     String generateKernelClassBody() {
         try {
-            return invokeKernelBuilder(QueryCompilerRequestProcessor.ImmediateProcessor.INSTANCE).get().classBody;
+            return invokeKernelBuilder(QueryCompilerRequestProcessor.immediate()).get().classBody;
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException("Failed to compile formula: ", e);
         }
@@ -759,7 +762,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @Override
     public SelectColumn copy() {
         final DhFormulaColumn copy = new DhFormulaColumn(columnName, formulaString);
-        if (formulaFactory != null) {
+        if (formulaFactoryFuture != null) {
             copy.analyzedFormula = analyzedFormula;
             copy.hasConstantValue = hasConstantValue;
             copy.returnedType = returnedType;
@@ -807,7 +810,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     return null;
                 });
 
-        formulaFactory = compilationRequestProcessor.submit(QueryCompilerRequest.builder()
+        formulaFactoryFuture = compilationRequestProcessor.submit(QueryCompilerRequest.builder()
                 .description("Formula Expression: " + formulaString)
                 .className(className)
                 .classBody(classBody)

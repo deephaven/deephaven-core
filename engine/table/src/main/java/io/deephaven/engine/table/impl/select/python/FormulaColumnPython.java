@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.select.AbstractFormulaColumn;
@@ -19,7 +18,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
@@ -42,16 +40,13 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public final List<String> initDef(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
-        if (formulaFactory != null) {
+    public final List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        if (formulaFactoryFuture != null) {
             validateColumnDefinition(columnDefinitionMap);
         } else {
             returnedType = dcf.getReturnedType();
             applyUsedVariables(columnDefinitionMap, new LinkedHashSet<>(dcf.getColumnNames()), Map.of());
-            formulaFactory = createKernelFormulaFactory(CompletionStageFuture.completedFuture(this));
+            formulaFactoryFuture = createKernelFormulaFactory(CompletionStageFuture.completedFuture(this));
         }
 
         return usedColumns;
@@ -75,7 +70,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     @Override
     public final SelectColumn copy() {
         final FormulaColumnPython copy = new FormulaColumnPython(columnName, dcf);
-        if (formulaFactory != null) {
+        if (formulaFactoryFuture != null) {
             // copy all initDef state
             copy.returnedType = returnedType;
             onCopy(copy);
@@ -85,7 +80,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public final FormulaKernel createInstance(Vector<?>[] arrays, QueryScopeParam<?>[] params) {
-        if (formulaFactory == null) {
+        if (formulaFactoryFuture == null) {
             throw new IllegalStateException("Must be initialized first");
         }
         return dcf.toFormulaKernel();

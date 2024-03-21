@@ -8,13 +8,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * A Select filter that always returns an empty RowSet.
@@ -36,10 +33,7 @@ public class WhereNoneFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {}
+    public void init(@NotNull final TableDefinition tableDefinition) {}
 
     @NotNull
     @Override

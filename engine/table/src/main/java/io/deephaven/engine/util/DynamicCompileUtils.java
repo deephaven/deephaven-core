@@ -6,7 +6,6 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerRequest;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 
 import java.util.*;
 import java.util.function.Supplier;

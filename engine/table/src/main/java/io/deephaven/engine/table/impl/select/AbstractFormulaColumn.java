@@ -10,6 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.vector.*;
@@ -46,7 +47,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     protected final String columnName;
-    protected Future<FormulaFactory> formulaFactory;
+    protected Future<FormulaFactory> formulaFactoryFuture;
     private Formula formula;
     protected QueryScopeParam<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
@@ -94,9 +95,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             return usedColumns;
         }
 
-        // we'll have to assume that initDef has already been invoked if we could have grouped compilation requests
-        // otherwise this call will compile immediately if necessary
-        return initDef(extractDefinitions(columnsOfInterest));
+        return initDef(extractDefinitions(columnsOfInterest), QueryCompilerRequestProcessor.immediate());
     }
 
     @Override
@@ -153,7 +152,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected void onCopy(final AbstractFormulaColumn copy) {
-        copy.formulaFactory = formulaFactory;
+        copy.formulaFactoryFuture = formulaFactoryFuture;
         copy.columnDefinitions = columnDefinitions;
         copy.params = params;
         copy.usedColumns = usedColumns;
@@ -239,12 +238,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             QueryScopeParam<?>... params) {
         try {
             // the future must already be completed or else it is an error
-            formula = formulaFactory.get(0, TimeUnit.SECONDS).createFormula(
+            formula = formulaFactoryFuture.get(0, TimeUnit.SECONDS).createFormula(
                     StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap, columnsToData, params);
-        } catch (TimeoutException e) {
+        } catch (InterruptedException | TimeoutException e) {
             throw new IllegalStateException("Formula factory not already compiled!");
-        } catch (InterruptedException | ExecutionException e) {
-            throw new UncheckedDeephavenException("Error creating formula for " + columnName, e);
+        } catch (ExecutionException e) {
+            throw new UncheckedDeephavenException("Error creating formula for " + columnName, e.getCause());
         }
         return formula;
     }

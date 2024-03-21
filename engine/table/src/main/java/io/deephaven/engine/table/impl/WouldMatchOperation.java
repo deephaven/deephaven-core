@@ -10,7 +10,6 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -22,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +38,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     /**
      * Just a little helper to keep column stuff together.
      */
-    private class ColumnHolder {
+    private static class ColumnHolder {
         final WouldMatchPair wouldMatchPair;
         IndexWrapperColumnSource column;
 
@@ -93,12 +91,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
-            final Supplier<Map<String, Object>> variableSupplier =
-                    SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
             final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                    new QueryCompilerRequestProcessor.BatchProcessor();
+                    QueryCompilerRequestProcessor.batch();
             final WhereFilter[] filters = matchColumns.stream().map(ColumnHolder::getFilter)
-                    .peek(holder -> holder.init(parent.getDefinition(), variableSupplier, compilationProcessor))
+                    .peek(holder -> holder.init(parent.getDefinition(), compilationProcessor))
                     .toArray(WhereFilter[]::new);
             compilationProcessor.compile();
 
@@ -332,7 +328,6 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 final Object... keys) {
             boolean hasFalse = false;
             boolean hasTrue = false;
-            boolean hasOther = false;
 
             for (Object key : keys) {
                 if (key instanceof Boolean) {
@@ -341,8 +336,6 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     } else {
                         hasFalse = true;
                     }
-                } else {
-                    hasOther = true;
                 }
             }
 

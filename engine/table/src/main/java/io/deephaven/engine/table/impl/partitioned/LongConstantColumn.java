@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
@@ -21,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * {@link SelectColumn} implementation to assign a constant {@code long} value.
@@ -46,10 +44,7 @@ class LongConstantColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         return getColumns();
     }
 

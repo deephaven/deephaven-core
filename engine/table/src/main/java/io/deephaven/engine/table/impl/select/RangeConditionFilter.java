@@ -19,8 +19,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * A filter for comparable types (including Instant) for {@link Condition} values: <br>
@@ -132,21 +130,25 @@ public class RangeConditionFilter extends WhereFilterImpl {
     }
 
     @Override
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
     public void init(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (filter != null) {
             return;
         }
 
-        final ColumnDefinition def = tableDefinition.getColumn(columnName);
+        final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
 
-        final Class colClass = def.getDataType();
+        final Class<?> colClass = def.getDataType();
 
         if (colClass == double.class || colClass == Double.class) {
             filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition, value);
@@ -185,7 +187,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
             }
         }
 
-        filter.init(tableDefinition, queryScopeVariables, compilationProcessor);
+        filter.init(tableDefinition, compilationProcessor);
     }
 
     public static char parseCharFilter(String value) {

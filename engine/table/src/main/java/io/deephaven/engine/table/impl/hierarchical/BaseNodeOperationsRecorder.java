@@ -283,7 +283,7 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             // have no need to drop them post-sort.
 
             final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                    new QueryCompilerRequestProcessor.BatchProcessor();
+                    QueryCompilerRequestProcessor.batch();
 
             final SelectColumn[] columns = sortColumns.stream()
                     .map(sc -> sc.column().name())
@@ -293,7 +293,7 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                         final Selectable selectable = AbsoluteSortColumnConventions.makeSelectable(cn, baseColumnName);
                         final SelectColumn selectColumn = SelectColumn.of(selectable);
                         selectColumn.initDef(Map.of(baseColumnName, getDefinition().getColumn(baseColumnName)),
-                                SelectAndViewAnalyzer.newQueryScopeVariableSupplier(), compilationProcessor);
+                                compilationProcessor);
                         return selectColumn;
                     }).toArray(SelectColumn[]::new);
 

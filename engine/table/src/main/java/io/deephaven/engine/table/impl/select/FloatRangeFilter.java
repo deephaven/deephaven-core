@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.FloatRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
@@ -14,9 +13,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Map;
-import java.util.function.Supplier;
 
 public class FloatRangeFilter extends AbstractRangeFilter {
 
@@ -79,10 +75,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public void init(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         if (chunkFilter != null) {
             return;
         }

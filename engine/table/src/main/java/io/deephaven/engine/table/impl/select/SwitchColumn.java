@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class SwitchColumn implements SelectColumn {
 
@@ -47,9 +46,13 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
+    public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        return initDef(columnDefinitionMap, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
     public List<String> initDef(
             @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         if (realColumn == null) {
             if (columnDefinitionMap.get(expression) != null) {
@@ -58,8 +61,7 @@ public class SwitchColumn implements SelectColumn {
                 realColumn = FormulaColumn.createFormulaColumn(columnName, expression, parser);
             }
         }
-        final List<String> usedColumns = realColumn.initDef(
-                columnDefinitionMap, queryScopeVariables, compilationRequestProcessor);
+        final List<String> usedColumns = realColumn.initDef(columnDefinitionMap, compilationRequestProcessor);
         if (realColumn instanceof DhFormulaColumn) {
             FormulaColumnPython formulaColumnPython = ((DhFormulaColumn) realColumn).getFormulaColumnPython();
             realColumn = formulaColumnPython != null ? formulaColumnPython : realColumn;

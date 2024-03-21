@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
-import java.util.function.Supplier;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -162,10 +161,9 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
-                paramToken, formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                paramToken, formulaColumnMap, tableDef, compilationProcessor);
     }
 
     protected ObjectRollingFormulaOperator(

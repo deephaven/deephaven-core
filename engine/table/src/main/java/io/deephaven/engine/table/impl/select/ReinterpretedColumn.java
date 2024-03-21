@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
 import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
@@ -35,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Allows {@link ColumnSource} reinterpretation via view-type ({@link Table#view} and {@link Table#updateView})
@@ -153,10 +151,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         // noinspection unchecked
         final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {

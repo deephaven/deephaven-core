@@ -14,7 +14,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
 import io.deephaven.util.CompletionStageFuture;
-import io.deephaven.util.CompletionStageFutureImpl;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -216,7 +215,7 @@ public class QueryCompiler {
      * @param request The compilation request
      */
     public Class<?> compile(@NotNull final QueryCompilerRequest request) {
-        final CompletionStageFuture.Resolver<Class<?>> resolver = CompletionStageFutureImpl.make();
+        final CompletionStageFuture.Resolver<Class<?>> resolver = CompletionStageFuture.make();
         compile(request, resolver);
         try {
             return resolver.getFuture().get();
@@ -227,7 +226,7 @@ public class QueryCompiler {
             }
             throw new UncheckedDeephavenException("Error while compiling class", cause);
         } catch (InterruptedException e) {
-            throw new UncheckedDeephavenException("Interrupted while compile class", e);
+            throw new UncheckedDeephavenException("Interrupted while compiling class", e);
         }
     }
 
@@ -235,6 +234,7 @@ public class QueryCompiler {
      * Compile a class.
      *
      * @param request The compilation request
+     * @param resolver The resolver to use for delivering compilation results
      */
     public void compile(
             @NotNull final QueryCompilerRequest request,
@@ -247,6 +247,7 @@ public class QueryCompiler {
      * Compiles all requests.
      *
      * @param requests The compilation requests
+     * @param resolvers The resolvers to use for delivering compilation results
      */
     public void compile(
             @NotNull final QueryCompilerRequest[] requests,
@@ -459,8 +460,8 @@ public class QueryCompiler {
     }
 
     private static class CompilationState {
-        int next_pi;
-        boolean compiled;
+        int nextProbeIndex;
+        boolean complete;
         String packageName;
         String fqClassName;
     }
@@ -481,7 +482,7 @@ public class QueryCompiler {
                     requests.get(ii).classBody().getBytes(StandardCharsets.UTF_8)));
         }
 
-        int numCompiled = 0;
+        int numComplete = 0;
         final CompilationState[] states = new CompilationState[requests.size()];
         for (int ii = 0; ii < requests.size(); ++ii) {
             states[ii] = new CompilationState();
@@ -489,21 +490,21 @@ public class QueryCompiler {
 
         /*
          * @formatter:off
-         * 1. try to resolve CFs without compiling; retain next hash to try
+         * 1. try to resolve without compiling; retain next hash to try
          * 2. compile all remaining with a single compilation task
          * 3. goto step 1 if any are unresolved
          * @formatter:on
          */
 
-        while (numCompiled < requests.size()) {
+        while (numComplete < requests.size()) {
             for (int ii = 0; ii < requests.size(); ++ii) {
                 final CompilationState state = states[ii];
-                if (state.compiled) {
+                if (state.complete) {
                     continue;
                 }
 
                 while (true) {
-                    final int pi = state.next_pi++;
+                    final int pi = state.nextProbeIndex++;
                     final String packageNameSuffix = "c_" + basicHashText[ii]
                             + (pi == 0 ? "" : ("p" + pi))
                             + "v" + JAVA_CLASS_VERSION;
@@ -514,8 +515,8 @@ public class QueryCompiler {
                                 + request.packageNameRoot() + ", class name=" + request.className() + ", class body "
                                 + "hash=" + basicHashText[ii] + " - contact Deephaven support!");
                         resolvers.get(ii).completeExceptionally(err);
-                        state.compiled = true;
-                        ++numCompiled;
+                        state.complete = true;
+                        ++numComplete;
                         break;
                     }
 
@@ -533,14 +534,14 @@ public class QueryCompiler {
 
                     if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolvers.get(ii),
                             result)) {
-                        state.compiled = true;
-                        ++numCompiled;
+                        state.complete = true;
+                        ++numComplete;
                         break;
                     }
                 }
             }
 
-            if (numCompiled == requests.size()) {
+            if (numComplete == requests.size()) {
                 return;
             }
 
@@ -548,7 +549,7 @@ public class QueryCompiler {
             final List<CompilationRequestAttempt> compilationRequestAttempts = new ArrayList<>();
             for (int ii = 0; ii < requests.size(); ++ii) {
                 final CompilationState state = states[ii];
-                if (!state.compiled) {
+                if (!state.complete) {
                     final QueryCompilerRequest request = requests.get(ii);
                     compilationRequestAttempts.add(new CompilationRequestAttempt(
                             request,
@@ -558,22 +559,22 @@ public class QueryCompiler {
                 }
             }
 
-            maybeCreateClass(compilationRequestAttempts);
+            maybeCreateClasses(compilationRequestAttempts);
 
             // We could be running on a screwy filesystem that is slow (e.g. NFS). If we wrote a file and can't load it
             // ... then give the filesystem some time. All requests should use the same deadline.
             final long deadline = System.currentTimeMillis() + CODEGEN_TIMEOUT_MS - CODEGEN_LOOP_DELAY_MS;
             for (int ii = 0; ii < requests.size(); ++ii) {
                 final CompilationState state = states[ii];
-                if (state.compiled) {
+                if (state.complete) {
                     continue;
                 }
 
                 final QueryCompilerRequest request = requests.get(ii);
                 final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers.get(ii);
                 if (resolver.getFuture().isDone()) {
-                    state.compiled = true;
-                    ++numCompiled;
+                    state.complete = true;
+                    ++numComplete;
                     continue;
                 }
 
@@ -599,8 +600,8 @@ public class QueryCompiler {
                 }
 
                 if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
-                    state.compiled = true;
-                    ++numCompiled;
+                    state.complete = true;
+                    ++numComplete;
                 }
             }
         }
@@ -796,7 +797,7 @@ public class QueryCompiler {
         }
     }
 
-    private void maybeCreateClass(
+    private void maybeCreateClasses(
             @NotNull final List<CompilationRequestAttempt> requests) {
         // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
         // directories (e.g. io/deephaven/test) if they are not already there. This will be useful later.
@@ -841,8 +842,6 @@ public class QueryCompiler {
             int parallelismFactor = operationInitializer.parallelismFactor();
 
             int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
-            log.info().append("Compiling with parallelismFactor = ").append(parallelismFactor)
-                    .append(" requestsPerTask = ").append(requestsPerTask).endl();
             if (parallelismFactor == 1 || requestsPerTask >= requests.size()) {
                 maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
                         0, requests.size());
@@ -895,6 +894,9 @@ public class QueryCompiler {
             final int startInclusive,
             final int endExclusive) {
         final List<CompilationRequestAttempt> toRetry = new ArrayList<>();
+        // If any of our requests fail to compile then the JavaCompiler will not write any class files at all. The
+        // non-failing requests will be retried in a second pass that is expected to succeed. This enables us to
+        // fulfill futures independent of each other; otherwise a single failure would taint all requests in a batch.
         final boolean wantRetry = maybeCreateClassHelper2(compiler,
                 fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive, toRetry);
         if (!wantRetry) {

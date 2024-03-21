@@ -14,7 +14,6 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -22,8 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Interface for individual filters within a where clause.
@@ -107,25 +104,22 @@ public interface WhereFilter extends Filter {
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
-    @FinalDefault
-    default void init(@NotNull TableDefinition tableDefinition) {
-        init(tableDefinition, SelectAndViewAnalyzer.newQueryScopeVariableSupplier(),
-                QueryCompilerRequestProcessor.ImmediateProcessor.INSTANCE);
-    }
+    void init(@NotNull TableDefinition tableDefinition);
 
     /**
      * Initialize this select filter given the table definition
      *
      * @param tableDefinition the definition of the table that will be filtered
-     * @param queryScopeVariables a caching supplier of the set of query scope variables; valid for this call only
      * @param compilationProcessor the processor to use for compilation
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
-    void init(
-            @NotNull TableDefinition tableDefinition,
-            @NotNull Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull QueryCompilerRequestProcessor compilationProcessor);
+    @SuppressWarnings("unused")
+    default void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+        init(tableDefinition);
+    }
 
     /**
      * Validate that this {@code WhereFilter} is safe to use in the context of the provided sourceTable.

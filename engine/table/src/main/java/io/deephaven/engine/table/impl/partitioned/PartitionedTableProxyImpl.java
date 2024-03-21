@@ -32,7 +32,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -465,11 +464,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
         final TableDefinition definition = target.constituentDefinition();
-        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(definition, variableSupplier, compilationProcessor);
+            whereFilter.init(definition, compilationProcessor);
         }
         compilationProcessor.compile();
         return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(whereFilters))));

@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
@@ -40,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -234,11 +232,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public PartitionedTableImpl filter(@NotNull final Collection<? extends Filter> filters) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
-        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final boolean invalidFilter = Arrays.stream(whereFilters).flatMap((final WhereFilter filter) -> {
-            filter.init(table.getDefinition(), variableSupplier, compilationProcessor);
+            filter.init(table.getDefinition(), compilationProcessor);
             return Stream.concat(filter.getColumns().stream(), filter.getColumnArrays().stream());
         }).anyMatch((final String columnName) -> columnName.equals(constituentColumnName));
         compilationProcessor.compile();

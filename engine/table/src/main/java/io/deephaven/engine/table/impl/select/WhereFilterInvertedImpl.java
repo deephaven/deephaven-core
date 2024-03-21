@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
@@ -17,9 +16,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 class WhereFilterInvertedImpl
@@ -60,11 +57,15 @@ class WhereFilterInvertedImpl
     }
 
     @Override
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
     public void init(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
-        filter.init(tableDefinition, queryScopeVariables, compilationProcessor);
+        filter.init(tableDefinition, compilationProcessor);
     }
 
     @Override

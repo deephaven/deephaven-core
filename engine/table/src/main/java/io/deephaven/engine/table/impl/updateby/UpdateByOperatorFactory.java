@@ -14,7 +14,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
@@ -40,7 +39,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -88,8 +86,7 @@ public class UpdateByOperatorFactory {
      *         within the collection
      */
     final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByOperation> specs) {
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
 
         final OperationVisitor v = new OperationVisitor(compilationProcessor);
         specs.forEach(s -> s.walk(v));
@@ -290,7 +287,6 @@ public class UpdateByOperatorFactory {
     }
 
     private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByOperation.Visitor<Void> {
-        private final Supplier<Map<String, Object>> queryScopeVariables;
         private final QueryCompilerRequestProcessor compilationProcessor;
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
@@ -301,7 +297,6 @@ public class UpdateByOperatorFactory {
 
         OperationVisitor(
                 @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
-            this.queryScopeVariables = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
             this.compilationProcessor = compilationProcessor;
         }
 
@@ -1380,47 +1375,47 @@ public class UpdateByOperatorFactory {
                 return new BooleanRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == char.class || csType == Character.class) {
                 return new CharRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                        formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                        formulaColumnMap, tableDef, compilationProcessor);
             }
             return new ObjectRollingFormulaOperator<>(pair, affectingColumns,
                     rs.revWindowScale().timestampCol(),
                     prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
-                    formulaColumnMap, tableDef, queryScopeVariables, compilationProcessor);
+                    formulaColumnMap, tableDef, compilationProcessor);
         }
 
     }

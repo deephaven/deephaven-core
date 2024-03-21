@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -22,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 
 /**
  * {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#partitionedTransform
@@ -59,10 +57,7 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
     }
 
     @Override
-    public List<String> initDef(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         validateInputColumnDefinition(inputOutputColumnName, columnDefinitionMap);
         validateInputColumnDefinition(secondInputColumnName, columnDefinitionMap);
         return getColumns();

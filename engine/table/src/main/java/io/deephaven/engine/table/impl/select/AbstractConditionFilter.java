@@ -26,7 +26,6 @@ import org.jpy.PyObject;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
@@ -75,9 +74,13 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     }
 
     @Override
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
     public synchronized void init(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
@@ -89,7 +92,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
                     timeConversionResult, tableDefinition.getColumnNameMap(), outerToInnerNames,
-                    queryScopeVariables.get(), unboxArguments);
+                    compilationProcessor.getQueryScopeVariables(), unboxArguments);
 
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {

@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
-import java.util.function.Supplier;
 
 abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     protected final String PARAM_COLUMN_NAME = "__PARAM_COLUMN__";
@@ -98,7 +97,6 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.formulaColumnMap = formulaColumnMap;
@@ -117,8 +115,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
 
             final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
                     .fromGenericType(PARAM_COLUMN_NAME, inputVectorType, inputColumnType);
-            tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition), queryScopeVariables,
-                    compilationProcessor);
+            tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition), compilationProcessor);
             return tmp;
         });
     }

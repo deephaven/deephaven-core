@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -76,7 +75,6 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             final boolean delegateToBy,
             @NotNull final String formula,
             @NotNull final String columnParamName,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor,
             @NotNull final MatchPair... resultColumnPairs) {
         this.groupBy = groupBy;
@@ -101,7 +99,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                     .fromGenericType(inputColumnName, inputColumnSource.getType(),
                             inputColumnSource.getComponentType());
             formulaColumn.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition),
-                    queryScopeVariables, compilationProcessor);
+                    compilationProcessor);
             resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, formulaColumn.getReturnedType(), formulaColumn.getReturnedComponentType());
         }

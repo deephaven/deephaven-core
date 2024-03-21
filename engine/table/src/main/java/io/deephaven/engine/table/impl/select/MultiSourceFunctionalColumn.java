@@ -9,7 +9,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.PrevColumnSource;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -24,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 // TODO: Comment the heck out of this...
@@ -95,10 +93,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         NoSuchColumnException.throwIf(columnDefinitionMap.keySet(), sourceNames);
         return getColumns();
     }

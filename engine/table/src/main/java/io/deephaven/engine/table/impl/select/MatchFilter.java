@@ -5,14 +5,12 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.ColumnSource;
@@ -24,7 +22,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Supplier;
 
 public class MatchFilter extends WhereFilterImpl {
 
@@ -118,9 +115,13 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     @Override
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
     public synchronized void init(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariablesSupplier,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
@@ -135,7 +136,7 @@ public class MatchFilter extends WhereFilterImpl {
             return;
         }
         final List<Object> valueList = new ArrayList<>();
-        final Map<String, Object> queryScopeVariables = queryScopeVariablesSupplier.get();
+        final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {

@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -25,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -286,11 +284,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         Set<String> groupingColumnNames =
                 groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
-        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(definition, variableSupplier, compilationProcessor);
+            whereFilter.init(definition, compilationProcessor);
             List<String> columns = whereFilter.getColumns();
             if (whereFilter instanceof ReindexingFilter) {
                 otherFilters.add(whereFilter);

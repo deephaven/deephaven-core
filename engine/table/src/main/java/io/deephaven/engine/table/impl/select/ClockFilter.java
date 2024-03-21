@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -25,8 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Boilerplate super-class for various clock-oriented filters.
@@ -49,10 +46,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
     }
 
     @Override
-    public final void init(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {}
+    public final void init(@NotNull final TableDefinition tableDefinition) {}
 
     @Override
     public final List<String> getColumns() {

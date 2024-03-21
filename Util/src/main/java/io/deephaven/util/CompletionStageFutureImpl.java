@@ -21,19 +21,9 @@ import java.util.function.*;
 public class CompletionStageFutureImpl<T> extends CompletableFuture<T> implements CompletionStageFuture<T> {
 
     /**
-     * Create a new incomplete future.
-     *
-     * @param <T> The result type returned by this future's {@code join}
-     * @return a resolver for the future
-     */
-    public static <T> Resolver<T> make() {
-        return new CompletionStageFutureImpl<T>().new ResolverImpl();
-    }
-
-    /**
      * A resolver for this future implementation.
      */
-    private class ResolverImpl implements CompletionStageFuture.Resolver<T> {
+    class ResolverImpl implements CompletionStageFuture.Resolver<T> {
         public boolean complete(final T value) {
             return safelyComplete(value);
         }

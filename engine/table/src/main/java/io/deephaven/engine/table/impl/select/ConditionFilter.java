@@ -49,7 +49,7 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
 public class ConditionFilter extends AbstractConditionFilter {
 
     public static final int CHUNK_SIZE = 4096;
-    private Future<Class<?>> filterKernelClass = null;
+    private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
@@ -70,7 +70,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             case Numba:
                 throw new UnsupportedOperationException("Python condition filter should be created from python");
             default:
-                throw new UnsupportedOperationException("Unknow parser type " + parser);
+                throw new UnsupportedOperationException("Unknown parser type " + parser);
         }
     }
 
@@ -416,7 +416,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         this.classBody = classBody.toString();
 
-        filterKernelClass = compilationProcessor.submit(QueryCompilerRequest.builder()
+        filterKernelClassFuture = compilationProcessor.submit(QueryCompilerRequest.builder()
                 .description("Filter Expression: " + formula)
                 .className("GeneratedFilterKernel")
                 .classBody(this.classBody)
@@ -430,7 +430,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             @NotNull final TableDefinition tableDefinition,
             @NotNull final TimeLiteralReplacedExpression timeConversionResult,
             @NotNull final QueryLanguageParser.Result result) {
-        if (filterKernelClass != null) {
+        if (filterKernelClassFuture != null) {
             return null;
         }
         usedInputs = new ArrayList<>();
@@ -590,7 +590,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter == null) {
             try {
-                final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClass
+                final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClassFuture
                         .get(0, TimeUnit.SECONDS)
                         .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
                         .newInstance(table, fullSet, (Object) params);
@@ -601,10 +601,10 @@ public class ConditionFilter extends AbstractConditionFilter {
                 // note this filter is not valid for use in other contexts, as it captures references from the source
                 // table
                 filterValidForCopy = false;
-            } catch (TimeoutException e) {
+            } catch (InterruptedException | TimeoutException e) {
                 throw new IllegalStateException("Formula factory not already compiled!");
-            } catch (InterruptedException | ExecutionException e) {
-                throw new FormulaCompilationException("Formula compilation error for: " + formula, e);
+            } catch (ExecutionException e) {
+                throw new FormulaCompilationException("Formula compilation error for: " + formula, e.getCause());
             }
         }
         return filter;
@@ -620,7 +620,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames);
         onCopy(copy);
         if (initialized) {
-            copy.filterKernelClass = filterKernelClass;
+            copy.filterKernelClassFuture = filterKernelClassFuture;
             copy.usedInputs = usedInputs;
             copy.classBody = classBody;
             if (filterValidForCopy) {

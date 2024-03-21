@@ -9,7 +9,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -51,11 +50,9 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
         boolean simpleRetain = true;
 
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final SelectColumn selectColumn : columns) {
-            List<String> usedColumnNames = selectColumn.initDef(
-                    allColumns, SelectAndViewAnalyzer.newQueryScopeVariableSupplier(), compilationProcessor);
+            List<String> usedColumnNames = selectColumn.initDef(allColumns, compilationProcessor);
             usedColumnNames.addAll(selectColumn.getColumnArrays());
             resultColumnsInternal.addAll(usedColumnNames.stream()
                     .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))

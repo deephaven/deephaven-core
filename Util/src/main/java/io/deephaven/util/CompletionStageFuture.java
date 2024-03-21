@@ -5,8 +5,8 @@ package io.deephaven.util;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
@@ -22,30 +22,39 @@ import java.util.function.Function;
 public interface CompletionStageFuture<T> extends Future<T>, CompletionStage<T> {
 
     /**
+     * Create a new incomplete future.
+     *
+     * @param <T> The result type returned by this future's {@code join}
+     * @return a resolver for the future
+     */
+    static <T> Resolver<T> make() {
+        return new CompletionStageFutureImpl<T>().new ResolverImpl();
+    }
+
+    /**
      * Returns a new CompletionStageFuture that is already completed with the given value.
      *
      * @param value the value
      * @param <U> the type of the value
      * @return the completed CompletionStageFuture
-     * @see CompletableFuture#completedFuture(Object)
+     * @see java.util.concurrent.CompletableFuture#completedFuture(Object)
      */
     static <U> CompletionStageFuture<U> completedFuture(U value) {
-        final CompletionStageFutureImpl.Resolver<U> resolver = CompletionStageFutureImpl.make();
+        final CompletionStageFutureImpl.Resolver<U> resolver = CompletionStageFuture.make();
         resolver.complete(value);
         return resolver.getFuture();
     }
 
     /**
-     * Returns a new CompletableFuture that is already completed exceptionally with the given exception.
+     * Returns a new CompletionStageFuture that is already completed exceptionally with the given exception.
      *
      * @param ex the exception
      * @param <U> the type of the value
-     * @return the exceptionally completed CompletableFuture
-     * @since 9
-     * @see CompletableFuture#failedFuture(Throwable)
+     * @return the exceptionally completed CompletionStageFuture
+     * @see java.util.concurrent.CompletableFuture#failedFuture(Throwable)
      */
     static <U> CompletionStageFuture<U> failedFuture(Throwable ex) {
-        final CompletionStageFutureImpl.Resolver<U> resolver = CompletionStageFutureImpl.make();
+        final CompletionStageFutureImpl.Resolver<U> resolver = CompletionStageFuture.make();
         resolver.completeExceptionally(ex);
         return resolver.getFuture();
     }
@@ -56,7 +65,7 @@ public interface CompletionStageFuture<T> extends Future<T>, CompletionStage<T> 
          * If not already completed, sets the value returned by {@link #get()} and related methods to the given value.
          *
          * @param value the result value
-         * @return {@code true} if this invocation caused this SafeCompletableFuture to transition to a completed state,
+         * @return {@code true} if this invocation caused this CompletionStageFuture to transition to a completed state,
          *         else {@code false}
          * @see java.util.concurrent.CompletableFuture#complete(Object)
          */
@@ -64,17 +73,18 @@ public interface CompletionStageFuture<T> extends Future<T>, CompletionStage<T> 
 
         /**
          * If not already completed, causes invocations of {@link #get()} and related methods to throw the given
-         * exception.
+         * exception wrapped in an {@link ExecutionException}.
          *
          * @param ex the exception
-         * @return {@code true} if this invocation caused this SafeCompletableFuture to transition to a completed state,
+         * @return {@code true} if this invocation caused this CompletionStageFuture to transition to a completed state,
          *         else {@code false}
          * @see java.util.concurrent.CompletableFuture#completeExceptionally(Throwable)
          */
         boolean completeExceptionally(@NotNull Throwable ex);
 
         /**
-         * @return the underlying future to provide to the recipient
+         * @return the underlying future to provide to the recipient; implementations must ensure that this method
+         *         always returns an identical result for a given Resolver instance
          */
         CompletionStageFuture<T> getFuture();
     }

@@ -21,8 +21,6 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -30,7 +28,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -86,18 +83,13 @@ public interface SelectColumn extends Selectable {
      *          {@link QueryCompiler} usage needs to be resolved within initDef. Implementations must be idempotent.
      *          Implementations that want to hold on to the {@code columnDefinitionMap} must make a defensive copy.
      */
-    @FinalDefault
-    default List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        return initDef(columnDefinitionMap, SelectAndViewAnalyzer.newQueryScopeVariableSupplier(),
-                QueryCompilerRequestProcessor.ImmediateProcessor.INSTANCE);
-    }
+    List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap);
 
     /**
      * Initialize any internal column definitions from the provided initial. A compilation request consumer is provided
      * to allow for deferred compilation of expressions that belong to the same query.
      *
      * @param columnDefinitionMap the starting set of column definitions; valid for this call only
-     * @param queryScopeVariables a caching supplier of the set of query scope variables; valid for this call only
      * @param compilationRequestProcessor a consumer to submit compilation requests; valid for this call only
      *
      * @return a list of columns on which the result of this is dependent
@@ -105,10 +97,12 @@ public interface SelectColumn extends Selectable {
      *          {@link QueryCompiler} usage needs to be resolved within initDef. Implementations must be idempotent.
      *          Implementations that want to hold on to the {@code columnDefinitionMap} must make a defensive copy.
      */
-    List<String> initDef(
-            @NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull QueryCompilerRequestProcessor compilationRequestProcessor);
+    @SuppressWarnings("unused")
+    default List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
+        return initDef(columnDefinitionMap);
+    }
 
     /**
      * Get the data type stored in the resultant column.

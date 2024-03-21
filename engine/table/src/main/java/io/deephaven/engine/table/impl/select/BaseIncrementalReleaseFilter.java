@@ -8,7 +8,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.QueryConstants;
@@ -17,8 +16,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * Base class for filters that will release more rows of a table on each UGP cycle.
@@ -70,10 +67,7 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
-    public void init(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         initialized = true;
         if (!started) {
             return;

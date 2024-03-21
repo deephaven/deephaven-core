@@ -93,7 +93,6 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
@@ -281,10 +280,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         switch (type) {
             case NORMAL:
                 final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                        new QueryCompilerRequestProcessor.BatchProcessor();
+                        QueryCompilerRequestProcessor.batch();
                 final AggregationContext aggContext = new NormalConverter(
-                        table, requireStateChangeRecorder, SelectAndViewAnalyzer.newQueryScopeVariableSupplier(),
-                        compilationProcessor, groupByColumnNames).build();
+                        table, requireStateChangeRecorder, compilationProcessor, groupByColumnNames).build();
                 compilationProcessor.compile();
                 return aggContext;
             case ROLLUP_BASE:
@@ -668,17 +666,14 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
-        private final Supplier<Map<String, Object>> queryScopeVariables;
         private final QueryCompilerRequestProcessor compilationProcessor;
 
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
-                @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
                 @NotNull final QueryCompilerRequestProcessor compilationProcessor,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
-            this.queryScopeVariables = queryScopeVariables;
             this.compilationProcessor = compilationProcessor;
         }
 
@@ -754,7 +749,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
-                    true, formula.formula(), formula.paramToken(), queryScopeVariables, compilationProcessor,
+                    true, formula.formula(), formula.paramToken(), compilationProcessor,
                     MatchPair.fromPairs(resultPairs));
             addNoInputOperator(formulaChunkedOperator);
         }

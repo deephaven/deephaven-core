@@ -9,7 +9,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.CompletionStageFuture;
-import io.deephaven.util.CompletionStageFutureImpl;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
@@ -295,8 +294,8 @@ public class TestQueryCompiler {
         // noinspection unchecked
         CompletionStageFuture.Resolver<Class<?>>[] resolvers =
                 (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
-                        CompletionStageFutureImpl.make(),
-                        CompletionStageFutureImpl.make(),
+                        CompletionStageFuture.make(),
+                        CompletionStageFuture.make(),
                 };
 
         try {

@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
@@ -22,8 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * This will filter a table for the most recent N nanoseconds (must be on an {@link Instant} column).
@@ -62,10 +59,7 @@ public class TimeSeriesFilter
     }
 
     @Override
-    public void init(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Supplier<Map<String, Object>> queryScopeVariables,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {}
+    public void init(@NotNull final TableDefinition tableDefinition) {}
 
     @NotNull
     @Override

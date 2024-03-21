@@ -3,12 +3,9 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -32,14 +29,12 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
-import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
@@ -50,29 +45,21 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
     }
 
-    public static Supplier<Map<String, Object>> newQueryScopeVariableSupplier() {
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        return new CachingSupplier<>(() -> Collections.unmodifiableMap(
-                queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name))));
-    }
-
     public static void initializeSelectColumns(
             final Map<String, ColumnDefinition<?>> parentColumnMap,
             final SelectColumn[] selectColumns) {
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
-        initializeSelectColumns(parentColumnMap, newQueryScopeVariableSupplier(), selectColumns, compilationProcessor);
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        initializeSelectColumns(parentColumnMap, selectColumns, QueryCompilerRequestProcessor.batch());
         compilationProcessor.compile();
     }
 
     public static void initializeSelectColumns(
             final Map<String, ColumnDefinition<?>> parentColumnMap,
-            final Supplier<Map<String, Object>> queryScopeVariables,
             final SelectColumn[] selectColumns,
             final QueryCompilerRequestProcessor compilationProcessor) {
         final Map<String, ColumnDefinition<?>> targetColumnMap = new HashMap<>(parentColumnMap);
         for (SelectColumn column : selectColumns) {
-            column.initDef(targetColumnMap, queryScopeVariables, compilationProcessor);
+            column.initDef(targetColumnMap, compilationProcessor);
             final ColumnDefinition<?> columnDefinition = ColumnDefinition.fromGenericType(
                     column.getName(), column.getReturnedType(), column.getReturnedComponentType());
             targetColumnMap.put(column.getName(), columnDefinition);
@@ -120,9 +107,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         final HashSet<String> resultColumns = new HashSet<>();
 
         // First pass to initialize all columns and to compile formulas in one batch.
-        final Supplier<Map<String, Object>> variableSupplier = SelectAndViewAnalyzer.newQueryScopeVariableSupplier();
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                new QueryCompilerRequestProcessor.BatchProcessor();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (Map.Entry<String, ColumnSource<?>> entry : columnSources.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> cs = entry.getValue();
@@ -136,7 +121,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 continue;
             }
 
-            sc.initDef(columnDefinitions, variableSupplier, compilationProcessor);
+            sc.initDef(columnDefinitions, compilationProcessor);
             final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(
                     sc.getName(), sc.getReturnedType(), sc.getReturnedComponentType());
             columnDefinitions.put(sc.getName(), cd);
