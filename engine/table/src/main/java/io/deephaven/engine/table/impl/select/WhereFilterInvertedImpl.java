@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
@@ -12,6 +11,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
@@ -59,6 +59,11 @@ class WhereFilterInvertedImpl
     @Override
     public void init(TableDefinition tableDefinition) {
         filter.init(tableDefinition);
+    }
+
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        return filter.beginOperation(sourceTable);
     }
 
     @Override

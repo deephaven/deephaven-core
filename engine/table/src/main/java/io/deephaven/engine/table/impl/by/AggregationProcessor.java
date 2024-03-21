@@ -1430,7 +1430,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                             new CountAggregationOperator(null)
                     },
                     new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
-                    new ChunkSource.WithPrev[] {null, null});
+                    new ChunkSource.WithPrev[] {null, null},
+                    new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
         }
         // noinspection unchecked
         return new AggregationContext(
@@ -1438,7 +1439,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                         new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
                 },
                 new String[][] {ZERO_LENGTH_STRING_ARRAY},
-                new ChunkSource.WithPrev[] {null});
+                new ChunkSource.WithPrev[] {null},
+                new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
 
     private static ColumnSource<?> maybeReinterpretInstantAsLong(@NotNull final ColumnSource<?> inputSource) {

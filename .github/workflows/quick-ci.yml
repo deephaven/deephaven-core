@@ -50,3 +50,18 @@ jobs:
           name: quick-ci-jvm-err
           path: '**/*_pid*.log'
           if-no-files-found: ignore
+
+  verify-python-min-version:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install vermin
+        run: pip install vermin==1.6.0
+
+      - name: Verify minimum version support
+        run: vermin -t=3.8 --no-tips --eval-annotations --violations py/server/deephaven py/client py/client-ticking py/embedded-server

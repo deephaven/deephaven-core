@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -36,7 +37,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableIntArraySource}.
  */
-public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSource<Integer>
+public class Immutable2DIntArraySource extends AbstractColumnSource<Integer>
         implements ImmutableColumnSourceGetDefaults.ForInt, WritableColumnSource<Integer>, FillUnordered<Values>,
         InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
 /* MIXIN_IMPLS */ {

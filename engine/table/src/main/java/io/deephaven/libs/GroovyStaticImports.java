@@ -598,6 +598,42 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#clamp(short,short,short) */
     public static  short clamp( short value, short min, short max ) {return Numeric.clamp( value, min, max );}
 
+    /** @see io.deephaven.function.Numeric#compare(byte,byte) */
+    public static  int compare( byte v1, byte v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Byte,java.lang.Byte) */
+    public static  int compare( java.lang.Byte v1, java.lang.Byte v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Double,java.lang.Double) */
+    public static  int compare( java.lang.Double v1, java.lang.Double v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Float,java.lang.Float) */
+    public static  int compare( java.lang.Float v1, java.lang.Float v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Integer,java.lang.Integer) */
+    public static  int compare( java.lang.Integer v1, java.lang.Integer v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Long,java.lang.Long) */
+    public static  int compare( java.lang.Long v1, java.lang.Long v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Short,java.lang.Short) */
+    public static  int compare( java.lang.Short v1, java.lang.Short v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(double,double) */
+    public static  int compare( double v1, double v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(float,float) */
+    public static  int compare( float v1, float v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(int,int) */
+    public static  int compare( int v1, int v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(long,long) */
+    public static  int compare( long v1, long v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(short,short) */
+    public static  int compare( short v1, short v2 ) {return Numeric.compare( v1, v2 );}
+
     /** @see io.deephaven.function.Basic#concat(java.lang.Object[][]) */
     public static <T> T[] concat( T[]... values ) {return Basic.concat( values );}
 
@@ -2086,6 +2122,60 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumsum(io.deephaven.vector.ShortVector) */
     public static  short[] cumsum( io.deephaven.vector.ShortVector values ) {return Numeric.cumsum( values );}
 
+    /** @see io.deephaven.function.Numeric#diff(int,byte[]) */
+    public static  byte[] diff( int stride, byte... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,double[]) */
+    public static  double[] diff( int stride, double... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,float[]) */
+    public static  float[] diff( int stride, float... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,int[]) */
+    public static  int[] diff( int stride, int... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,long[]) */
+    public static  long[] diff( int stride, long... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Byte[]) */
+    public static  byte[] diff( int stride, java.lang.Byte[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Double[]) */
+    public static  double[] diff( int stride, java.lang.Double[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Float[]) */
+    public static  float[] diff( int stride, java.lang.Float[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Integer[]) */
+    public static  int[] diff( int stride, java.lang.Integer[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Long[]) */
+    public static  long[] diff( int stride, java.lang.Long[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,java.lang.Short[]) */
+    public static  short[] diff( int stride, java.lang.Short[] values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,short[]) */
+    public static  short[] diff( int stride, short... values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.ByteVector) */
+    public static  byte[] diff( int stride, io.deephaven.vector.ByteVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.DoubleVector) */
+    public static  double[] diff( int stride, io.deephaven.vector.DoubleVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.FloatVector) */
+    public static  float[] diff( int stride, io.deephaven.vector.FloatVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.IntVector) */
+    public static  int[] diff( int stride, io.deephaven.vector.IntVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.LongVector) */
+    public static  long[] diff( int stride, io.deephaven.vector.LongVector values ) {return Numeric.diff( stride, values );}
+
+    /** @see io.deephaven.function.Numeric#diff(int,io.deephaven.vector.ShortVector) */
+    public static  short[] diff( int stride, io.deephaven.vector.ShortVector values ) {return Numeric.diff( stride, values );}
+
     /** @see io.deephaven.function.Basic#distinct(byte[]) */
     public static  byte[] distinct( byte... values ) {return Basic.distinct( values );}
 
@@ -3438,6 +3528,138 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Random#randomLong(long,long,int) */
     public static  long[] randomLong( long min, long max, int size ) {return Random.randomLong( min, max, size );}
+
+    /** @see io.deephaven.function.Sort#rank(byte[]) */
+    public static  int[] rank( byte... values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(double[]) */
+    public static  int[] rank( double... values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(float[]) */
+    public static  int[] rank( float... values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(int[]) */
+    public static  int[] rank( int... values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(long[]) */
+    public static  int[] rank( long... values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Byte[]) */
+    public static  int[] rank( java.lang.Byte[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Double[]) */
+    public static  int[] rank( java.lang.Double[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Float[]) */
+    public static  int[] rank( java.lang.Float[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Integer[]) */
+    public static  int[] rank( java.lang.Integer[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Long[]) */
+    public static  int[] rank( java.lang.Long[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Short[]) */
+    public static  int[] rank( java.lang.Short[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(short[]) */
+    public static  int[] rank( short... values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.ByteVector) */
+    public static  int[] rank( io.deephaven.vector.ByteVector values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.DoubleVector) */
+    public static  int[] rank( io.deephaven.vector.DoubleVector values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.FloatVector) */
+    public static  int[] rank( io.deephaven.vector.FloatVector values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.IntVector) */
+    public static  int[] rank( io.deephaven.vector.IntVector values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.LongVector) */
+    public static  int[] rank( io.deephaven.vector.LongVector values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.ShortVector) */
+    public static  int[] rank( io.deephaven.vector.ShortVector values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(byte[]) */
+    public static  int[] rankDescending( byte... values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(double[]) */
+    public static  int[] rankDescending( double... values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(float[]) */
+    public static  int[] rankDescending( float... values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(int[]) */
+    public static  int[] rankDescending( int... values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(long[]) */
+    public static  int[] rankDescending( long... values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Byte[]) */
+    public static  int[] rankDescending( java.lang.Byte[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Double[]) */
+    public static  int[] rankDescending( java.lang.Double[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Float[]) */
+    public static  int[] rankDescending( java.lang.Float[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Integer[]) */
+    public static  int[] rankDescending( java.lang.Integer[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Long[]) */
+    public static  int[] rankDescending( java.lang.Long[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Short[]) */
+    public static  int[] rankDescending( java.lang.Short[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(short[]) */
+    public static  int[] rankDescending( short... values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.ByteVector) */
+    public static  int[] rankDescending( io.deephaven.vector.ByteVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.DoubleVector) */
+    public static  int[] rankDescending( io.deephaven.vector.DoubleVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.FloatVector) */
+    public static  int[] rankDescending( io.deephaven.vector.FloatVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.IntVector) */
+    public static  int[] rankDescending( io.deephaven.vector.IntVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.LongVector) */
+    public static  int[] rankDescending( io.deephaven.vector.LongVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.ShortVector) */
+    public static  int[] rankDescending( io.deephaven.vector.ShortVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescendingObj(java.lang.Comparable[]) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankDescendingObj( T... values ) {return Sort.rankDescendingObj( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescendingObj(io.deephaven.vector.ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankDescendingObj( io.deephaven.vector.ObjectVector<T> values ) {return Sort.rankDescendingObj( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescendingObj(java.lang.Comparable[],java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankDescendingObj( T[] values, java.util.Comparator<T> comparator ) {return Sort.rankDescendingObj( values, comparator );}
+
+    /** @see io.deephaven.function.Sort#rankDescendingObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankDescendingObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.rankDescendingObj( values, comparator );}
+
+    /** @see io.deephaven.function.Sort#rankObj(java.lang.Comparable[]) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankObj( T... values ) {return Sort.rankObj( values );}
+
+    /** @see io.deephaven.function.Sort#rankObj(io.deephaven.vector.ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankObj( io.deephaven.vector.ObjectVector<T> values ) {return Sort.rankObj( values );}
+
+    /** @see io.deephaven.function.Sort#rankObj(java.lang.Comparable[],java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankObj( T[] values, java.util.Comparator<T> comparator ) {return Sort.rankObj( values, comparator );}
+
+    /** @see io.deephaven.function.Sort#rankObj(io.deephaven.vector.ObjectVector,java.util.Comparator) */
+    public static <T extends java.lang.Comparable<? super T>> int[] rankObj( io.deephaven.vector.ObjectVector<T> values, java.util.Comparator<T> comparator ) {return Sort.rankObj( values, comparator );}
 
     /** @see io.deephaven.function.BinSearch#rawBinSearchIndex(java.lang.Comparable[],java.lang.Comparable,io.deephaven.function.BinSearchAlgo) */
     public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex( T[] values, T key, io.deephaven.function.BinSearchAlgo choiceWhenEquals ) {return BinSearch.rawBinSearchIndex( values, key, choiceWhenEquals );}

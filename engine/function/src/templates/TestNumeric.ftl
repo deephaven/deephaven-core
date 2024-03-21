@@ -680,6 +680,23 @@ public class TestNumeric extends BaseArrayTestCase {
 //        }
 //    }
 
+    public void test${pt.boxed}Diff() {
+        assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+        assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
+
+        assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+        assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})4, (${pt.primitive})8, (${pt.primitive})16}));
+
+        assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+        assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+    }
+
     public void test${pt.boxed}CumMinArray() {
         assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new ${pt.primitive}[]{5, 4, 3, 2, 1}, cummin(new ${pt.primitive}[]{5, 4, 3, 2, 1}));
@@ -1284,6 +1301,68 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNonFinite(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}, (${pt.primitive}) 7));
     }
 
+    public void test${pt.boxed}Compare() {
+        final ${pt.primitive} v1 = (${pt.primitive})1.4;
+        final ${pt.primitive} v2 = (${pt.primitive})2.3;
+        final ${pt.primitive} v3 = ${pt.null};
+        final ${pt.primitive} v4 = ${pt.null};
+        final ${pt.primitive} v5 = ${pt.boxed}.NaN;
+        final ${pt.primitive} v6 = ${pt.boxed}.NaN;
+
+        assertEquals(0, compare(v1, v1));
+        assertEquals(0, compare(v2, v2));
+        assertEquals(0, compare(v3, v3));
+        assertEquals(0, compare(v4, v4));
+        assertEquals(0, compare(v5, v5));
+        assertEquals(0, compare(v6, v6));
+
+        assertEquals(0, compare(v3, v4));
+        assertEquals(0, compare(v4, v3));
+
+        assertEquals(0, compare(v5, v6));
+        assertEquals(0, compare(v6, v5));
+
+        assertEquals(-1, compare(v1, v2));
+        assertEquals(1, compare(v2, v1));
+
+        assertEquals(1, compare(v1, v3));
+        assertEquals(-1, compare(v3, v1));
+
+        assertEquals(-1, compare(v1, v5));
+        assertEquals(1, compare(v5, v1));
+    }
+
+    public void test${pt.boxed}CompareBoxed() {
+        final ${pt.boxed} v1 = (${pt.primitive})1.4;
+        final ${pt.boxed} v2 = (${pt.primitive})2.3;
+        final ${pt.boxed} v3 = null;
+        final ${pt.boxed} v4 = null;
+        final ${pt.boxed} v5 = ${pt.boxed}.NaN;
+        final ${pt.boxed} v6 = ${pt.boxed}.NaN;
+
+        assertEquals(0, compare(v1, v1));
+        assertEquals(0, compare(v2, v2));
+        assertEquals(0, compare(v3, v3));
+        assertEquals(0, compare(v4, v4));
+        assertEquals(0, compare(v5, v5));
+        assertEquals(0, compare(v6, v6));
+
+        assertEquals(0, compare(v3, v4));
+        assertEquals(0, compare(v4, v3));
+
+        assertEquals(0, compare(v5, v6));
+        assertEquals(0, compare(v6, v5));
+
+        assertEquals(-1, compare(v1, v2));
+        assertEquals(1, compare(v2, v1));
+
+        assertEquals(1, compare(v1, v3));
+        assertEquals(-1, compare(v3, v1));
+
+        assertEquals(-1, compare(v1, v5));
+        assertEquals(1, compare(v5, v1));
+    }
+
     <#else>
 
     public void test${pt.boxed}IsNan(){
@@ -1320,6 +1399,48 @@ public class TestNumeric extends BaseArrayTestCase {
         assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
         assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
         assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
+    }
+
+    public void test${pt.boxed}Compare() {
+        final ${pt.primitive} v1 = (${pt.primitive})1;
+        final ${pt.primitive} v2 = (${pt.primitive})2;
+        final ${pt.primitive} v3 = ${pt.null};
+        final ${pt.primitive} v4 = ${pt.null};
+
+        assertEquals(0, compare(v1, v1));
+        assertEquals(0, compare(v2, v2));
+        assertEquals(0, compare(v3, v3));
+        assertEquals(0, compare(v4, v4));
+
+        assertEquals(0, compare(v3, v4));
+        assertEquals(0, compare(v4, v3));
+
+        assertEquals(-1, compare(v1, v2));
+        assertEquals(1, compare(v2, v1));
+
+        assertEquals(1, compare(v1, v3));
+        assertEquals(-1, compare(v3, v1));
+    }
+
+    public void test${pt.boxed}CompareBoxed() {
+        final ${pt.boxed} v1 = (${pt.primitive})1;
+        final ${pt.boxed} v2 = (${pt.primitive})2;
+        final ${pt.boxed} v3 = null;
+        final ${pt.boxed} v4 = null;
+
+        assertEquals(0, compare(v1, v1));
+        assertEquals(0, compare(v2, v2));
+        assertEquals(0, compare(v3, v3));
+        assertEquals(0, compare(v4, v4));
+
+        assertEquals(0, compare(v3, v4));
+        assertEquals(0, compare(v4, v3));
+
+        assertEquals(-1, compare(v1, v2));
+        assertEquals(1, compare(v2, v1));
+
+        assertEquals(1, compare(v1, v3));
+        assertEquals(-1, compare(v3, v1));
     }
 
     </#if>

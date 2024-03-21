@@ -85,7 +85,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
                         rightGenerator,
                         new IntGenerator()));
         final List<ColumnInfo.ColAttributes> leftKeyAttributes =
-                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Grouped)
+                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Indexed)
                         : Collections.emptyList();
         final QueryTable leftTable = getTable(false, leftSize, random,
                 initColumnInfos(new String[] {"JoinKey", "LeftSentinel"},

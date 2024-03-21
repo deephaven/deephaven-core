@@ -4,17 +4,18 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
-
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
@@ -80,15 +81,11 @@ public class BaseUpdateByTest {
         final Random random = new Random(seed);
         final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 generators.toArray(new TestDataGenerator[0]));
-        final QueryTable t = getTable(tableSize, random, columnInfos);
+        final QueryTable t = getTable(isRefreshing, tableSize, random, columnInfos);
 
         if (!isRefreshing && includeGroups) {
-            final AbstractColumnSource groupingSource = (AbstractColumnSource) t.getColumnSource("Sym");
-            final Map<String, RowSet> gtr = groupingSource.getValuesMapping(t.getRowSet());
-            groupingSource.setGroupToRange(gtr);
+            DataIndexer.getOrCreateDataIndex(t, "Sym");
         }
-
-        t.setRefreshing(isRefreshing);
 
         return new CreateResult(t, columnInfos, random);
     }

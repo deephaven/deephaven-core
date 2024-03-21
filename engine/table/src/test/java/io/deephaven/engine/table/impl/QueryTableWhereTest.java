@@ -13,23 +13,24 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.exceptions.TableInitializationException;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.verify.TableAssertions;
-import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
+import io.deephaven.engine.table.impl.sources.UnionRedirection;
+import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
@@ -231,13 +232,38 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testWhereInDependency() {
+        testWhereInDependencyInternal(false, false);
+    }
+
+    @Test
+    public void testWhereInDependencyIndexed() {
+        testWhereInDependencyInternal(true, false);
+        testWhereInDependencyInternal(false, true);
+        testWhereInDependencyInternal(true, true);
+    }
+
+    private void testWhereInDependencyInternal(boolean filterIndexed, boolean setIndexed) {
         final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),
                 col("A", 1, 2, 3, 4, 5, 6), col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
+        if (filterIndexed) {
+            DataIndexer.getOrCreateDataIndex(tableToFilter, "A");
+            DataIndexer.getOrCreateDataIndex(tableToFilter, "B");
+        }
 
         final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
                 col("A", 1, 2, 3), col("B", 2, 4, 6));
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
+        if (setIndexed) {
+            DataIndexer.getOrCreateDataIndex(setTable, "A");
+            DataIndexer.getOrCreateDataIndex(setTable, "B");
+
+            DataIndexer.getOrCreateDataIndex(setTable1, "A");
+            DataIndexer.getOrCreateDataIndex(setTable1, "B");
+
+            DataIndexer.getOrCreateDataIndex(setTable2, "A");
+            DataIndexer.getOrCreateDataIndex(setTable2, "B");
+        }
 
         final DynamicWhereFilter dynamicFilter1 =
                 new DynamicWhereFilter((QueryTable) setTable1, true, MatchPairFactory.getExpressions("A"));
@@ -325,27 +351,52 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testWhereDynamicInIncremental() {
+        testWhereDynamicIncrementalInternal(false, false);
+    }
+
+    @Test
+    public void testWhereDynamicInIncrementalIndexed() {
+        testWhereDynamicIncrementalInternal(true, false);
+        testWhereDynamicIncrementalInternal(false, true);
+        testWhereDynamicIncrementalInternal(true, true);
+    }
+
+    private static void testWhereDynamicIncrementalInternal(boolean filterIndexed, boolean setIndexed) {
         final ColumnInfo<?, ?>[] setInfo;
         final ColumnInfo<?, ?>[] filteredInfo;
 
-        final int setSize = 10;
-        final int filteredSize = 500;
+        final int setSize = 100;
+        final int filteredSize = 5000;
         final Random random = new Random(0);
 
+        final String[] columnNames =
+                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
+
         final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
-                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"},
-                new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
-                new IntGenerator(-100, 100),
+                columnNames,
+                new SetGenerator<>("aa", "bb"),
+                new IntGenerator(0, 10),
                 new DoubleGenerator(0, 100),
                 new SetGenerator<>('a', 'b', 'c', 'd', 'e', 'f'),
                 new ByteGenerator((byte) 0, (byte) 64),
                 new SetGenerator<>(1.0f, 2.0f, 3.3f, null),
                 new LongGenerator(0, 1000),
                 new ShortGenerator((short) 500, (short) 600)));
+        if (setIndexed) {
+            // Add an index on every column but "doubleCol"
+            for (final String columnName : columnNames) {
+                if (!columnName.equals("doubleCol")) {
+                    DataIndexer.getOrCreateDataIndex(setTable, columnName);
+                }
+            }
+            // Add the multi-column index for "Sym", "intCol"
+            DataIndexer.getOrCreateDataIndex(setTable, "Sym", "intCol");
+        }
+
         final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
-                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"},
-                new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
-                new IntGenerator(-100, 100),
+                columnNames,
+                new SetGenerator<>("aa", "bb", "cc", "dd"),
+                new IntGenerator(0, 20),
                 new DoubleGenerator(0, 100),
                 new CharGenerator('a', 'z'),
                 new ByteGenerator((byte) 0, (byte) 127),
@@ -353,11 +404,22 @@ public abstract class QueryTableWhereTest {
                 new LongGenerator(1500, 2500),
                 new ShortGenerator((short) 400, (short) 700)));
 
+        if (filterIndexed) {
+            // Add an index on every column but "doubleCol"
+            for (final String columnName : columnNames) {
+                if (!columnName.equals("doubleCol")) {
+                    DataIndexer.getOrCreateDataIndex(filteredTable, columnName);
+                }
+            }
+            // Add the multi-column index for "Sym", "intCol"
+            DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "intCol");
+        }
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "Sym")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "byteCol")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "shortCol")),
@@ -365,12 +427,80 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "longCol")),
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "floatCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "Sym")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "byteCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "shortCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "longCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
+        };
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < 100; step++) {
+            final boolean modSet = random.nextInt(10) < 1;
+            final boolean modFiltered = random.nextBoolean();
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (modSet) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            setSize, random, setTable, setInfo);
+                }
+            });
+            validate(en);
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (modFiltered) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            filteredSize, random, filteredTable, filteredInfo);
+                }
+            });
+            validate(en);
+        }
+    }
+
+    @Test
+    public void testWhereInDynamicPartialIndexed() {
+        final ColumnInfo<?, ?>[] setInfo;
+        final ColumnInfo<?, ?>[] filteredInfo;
+
+        final int setSize = 100;
+        final int filteredSize = 5000;
+        final Random random = new Random(0);
+
+        final String[] columnNames =
+                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
+
+        final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
+                columnNames,
+                new SetGenerator<>("aa", "bb"),
+                new IntGenerator(0, 10),
+                new DoubleGenerator(0, 100),
+                new SetGenerator<>('a', 'b', 'c', 'd', 'e', 'f'),
+                new ByteGenerator((byte) 0, (byte) 64),
+                new SetGenerator<>(1.0f, 2.0f, 3.3f, null),
+                new LongGenerator(0, 1000),
+                new ShortGenerator((short) 500, (short) 600)));
+
+        final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
+                columnNames,
+                new SetGenerator<>("aa", "bb", "cc", "dd"),
+                new IntGenerator(0, 20),
+                new DoubleGenerator(0, 100),
+                new CharGenerator('a', 'z'),
+                new ByteGenerator((byte) 0, (byte) 127),
+                new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
+                new LongGenerator(1500, 2500),
+                new ShortGenerator((short) 400, (short) 700)));
+
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol");
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "intCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "intCol")),
         };
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -1063,6 +1193,25 @@ public abstract class QueryTableWhereTest {
         assertEquals(1_000_000, result.size());
         assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
         assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+    }
+
+    @Test
+    public void testBigTableIndexed() {
+        final Random random = new Random(0);
+        final int size = 100_000;
+
+        final QueryTable source = getTable(size, random,
+                initColumnInfos(
+                        new String[] {"A"},
+                        new LongGenerator(0, 1000, 0.01)));
+        DataIndexer.getOrCreateDataIndex(source, "A");
+
+        final Table result = source.where("A >= 600", "A < 700");
+        Table sorted = result.sort("A");
+        show(sorted);
+
+        Assert.geq(DataAccessHelpers.getColumn(sorted, "A").getLong(0), "lowest value", 600, "600");
+        Assert.leq(DataAccessHelpers.getColumn(sorted, "A").getLong(result.size() - 1), "highest value", 699, "699");
     }
 
     @Test

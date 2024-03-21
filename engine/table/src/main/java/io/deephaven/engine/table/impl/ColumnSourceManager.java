@@ -3,11 +3,18 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -15,20 +22,14 @@ import java.util.Map;
 /**
  * Manager for ColumnSources in a Table.
  */
-public interface ColumnSourceManager {
+public interface ColumnSourceManager extends LivenessReferent {
 
     /**
-     * Get a map of name to {@link DeferredGroupingColumnSource} for the column sources maintained by this manager.
+     * Get a map of name to {@link ColumnSource} for the column sources maintained by this manager.
      *
      * @return An unmodifiable view of the column source map maintained by this manager.
      */
-    Map<String, ? extends DeferredGroupingColumnSource<?>> getColumnSources();
-
-    /**
-     * Turn off column grouping, and clear the groupings on all GROUPING column sources. Note that this does *not*
-     * affect PARTITIONING columns.
-     */
-    void disableGrouping();
+    Map<String, ? extends ColumnSource<?>> getColumnSources();
 
     /**
      * Add a table location to the list to be checked in run().
@@ -38,11 +39,31 @@ public interface ColumnSourceManager {
     void addLocation(@NotNull TableLocation tableLocation);
 
     /**
+     * Observe initial sizes for the previously added table locations, and update the managed column sources
+     * accordingly. Create any {@link DataIndex data indexes} that may be derived from the locations.
+     *
+     * @return The initial set of initially-available row keys, to be owned by the caller. This row set will have a
+     *         {@link io.deephaven.engine.table.impl.indexer.DataIndexer data indexer} populated with any data indexes
+     *         that were created.
+     */
+    TrackingWritableRowSet initialize();
+
+    /**
      * Observe size changes in the previously added table locations, and update the managed column sources accordingly.
-     * 
-     * @return The RowSet of added keys
+     *
+     * @return The set of added row keys, to be owned by the caller
      */
     WritableRowSet refresh();
+
+    /**
+     * Advise this ColumnSourceManager that an error has occurred, and that it will no longer be {@link #refresh()
+     * refreshed}. This method should ensure that the error is delivered to downstream {@link TableListener listeners}
+     * if appropriate.
+     *
+     * @param error The error that occurred
+     * @param entry The failing node's entry, if known
+     */
+    void deliverError(@NotNull Throwable error, @Nullable TableListener.Entry entry);
 
     /**
      * Get the added locations, first the ones that have been "included" (found to exist with non-zero size) in order of
@@ -59,6 +80,30 @@ public interface ColumnSourceManager {
      */
     @SuppressWarnings("unused")
     Collection<TableLocation> includedLocations();
+
+    /**
+     * Get the added locations that have been found to exist and have non-zero size as a table containing the
+     * {@link io.deephaven.engine.rowset.RowSet row sets} for each location. May only be called after
+     * {@link #initialize()}. The returned table will also have columns corresponding to the partitions found in the
+     * locations, for the convenience of many downstream operations.
+     *
+     * @return The added locations that have been found to exist and have non-zero size
+     */
+    Table locationTable();
+
+    /**
+     * Get the name of the column that contains the {@link TableLocation} values from {@link #locationTable()}.
+     *
+     * @return The name of the location column
+     */
+    String locationColumnName();
+
+    /**
+     * Get the name of the column that contains the {@link RowSet} values from {@link #locationTable()}.
+     *
+     * @return The name of the row set column
+     */
+    String rowSetColumnName();
 
     /**
      * Report whether this ColumnSourceManager has no locations that have been "included" (i.e. found to exist with

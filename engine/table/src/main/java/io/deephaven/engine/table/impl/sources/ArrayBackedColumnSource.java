@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -45,7 +46,7 @@ import java.util.Collection;
  * that the column source can be incrementally expanded without copying data from one array to another.
  */
 public abstract class ArrayBackedColumnSource<T>
-        extends AbstractDeferredGroupingColumnSource<T>
+        extends AbstractColumnSource<T>
         implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 

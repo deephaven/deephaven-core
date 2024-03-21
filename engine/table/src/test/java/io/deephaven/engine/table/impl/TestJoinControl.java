@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A set of JoinControl objects useful for unit tests.
@@ -13,15 +15,19 @@ public class TestJoinControl {
 
     static final JoinControl BUILD_LEFT_CONTROL = new JoinControl() {
         @Override
-        boolean buildLeft(QueryTable leftTable, Table rightTable) {
-            return true;
+        BuildParameters buildParameters(
+                @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
+                @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+            return new BuildParameters(BuildParameters.From.LeftInput, initialBuildSize());
         }
     };
 
     static final JoinControl BUILD_RIGHT_CONTROL = new JoinControl() {
         @Override
-        boolean buildLeft(QueryTable leftTable, Table rightTable) {
-            return false;
+        BuildParameters buildParameters(
+                @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
+                @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+            return new BuildParameters(BuildParameters.From.RightInput, initialBuildSize());
         }
     };
 
@@ -59,8 +65,10 @@ public class TestJoinControl {
         }
 
         @Override
-        boolean buildLeft(QueryTable leftTable, Table rightTable) {
-            return true;
+        BuildParameters buildParameters(
+                @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
+                @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+            return new BuildParameters(BuildParameters.From.LeftInput, initialBuildSize());
         }
     };
 
@@ -81,8 +89,10 @@ public class TestJoinControl {
         }
 
         @Override
-        boolean buildLeft(QueryTable leftTable, Table rightTable) {
-            return false;
+        BuildParameters buildParameters(
+                @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
+                @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+            return new BuildParameters(BuildParameters.From.RightInput, initialBuildSize());
         }
     };
 }

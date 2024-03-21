@@ -8,7 +8,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.updategraph.*;
@@ -1353,7 +1352,8 @@ public class ConstructSnapshot {
                 }
             }
             state.startLockedSnapshot(control);
-            try {
+            final LivenessScope snapshotLivenessScope = new LivenessScope();
+            try (final SafeCloseable ignored = LivenessScopeStack.open(snapshotLivenessScope, true)) {
                 final long beforeClockValue = updateGraph.clock().currentValue();
 
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
@@ -1382,6 +1382,9 @@ public class ConstructSnapshot {
                 if (log.isDebugEnabled()) {
                     log.debug().append(logPrefix).append(" Non-concurrent Snapshot Function took ")
                             .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
+                }
+                if (functionSuccessful && consistent) {
+                    snapshotLivenessScope.transferTo(initialLivenessManager);
                 }
                 step = LogicalClock.getStep(afterClockValue);
             } finally {

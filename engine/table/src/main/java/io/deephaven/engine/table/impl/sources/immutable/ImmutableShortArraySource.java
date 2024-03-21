@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -36,7 +37,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DShortArraySource}.
  */
-public class ImmutableShortArraySource extends AbstractDeferredGroupingColumnSource<Short>
+public class ImmutableShortArraySource extends AbstractColumnSource<Short>
         implements ImmutableColumnSourceGetDefaults.ForShort, WritableColumnSource<Short>, FillUnordered<Values>,
         InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
 /* MIXIN_IMPLS */ {
