@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util.systemicmarking;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -28,7 +28,8 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
                 () -> source.update("UC=Str.toUpperCase()"));
         final Table updated2 = SystemicObjectTracker.executeSystemically(false,
                 () -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> source.update("LC=Str2.toLowerCase()"));
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> source.update("LC=Str2.toLowerCase()"));
                 });
 
         TableTools.showWithRowSet(updated);
@@ -72,9 +73,9 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(source, i(7, 8), col("Str", "g", null), col("Str2", "G", "H"));
-                    source.notifyListeners(i(7, 8), i(), i());
-                });
+                TstUtils.addToTable(source, i(7, 8), col("Str", "g", null), col("Str2", "G", "H"));
+                source.notifyListeners(i(7, 8), i(), i());
+            });
         }, TestSystemicObjectMarking::isNpe);
 
         assertTrue(updated.isFailed());
@@ -86,7 +87,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
 
 
     private static boolean isNpe(List<Throwable> throwables) {
-        if (1 !=  throwables.size()) {
+        if (1 != throwables.size()) {
             return false;
         }
         if (!throwables.get(0).getClass().equals(FormulaEvaluationException.class)) {

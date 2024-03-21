@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.api.Pair;
@@ -95,6 +98,8 @@ public interface UpdateBySpec {
         T visit(RollingStdSpec spec);
 
         T visit(RollingWAvgSpec w);
+
+        T visit(RollingFormulaSpec w);
     }
     // endregion
 }

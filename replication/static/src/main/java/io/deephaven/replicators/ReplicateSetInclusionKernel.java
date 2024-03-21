@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import java.io.IOException;
@@ -9,7 +9,7 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolea
 
 public class ReplicateSetInclusionKernel {
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean(
+        charToAllButBoolean("replicateSetInclusionKernel",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/select/setinclusion/CharSetInclusionKernel.java");
     }
 }

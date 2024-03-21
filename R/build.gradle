@@ -161,6 +161,7 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
     copyIn {
+        mustRunAfter(rClientDoc)
         from(layout.projectDirectory) {
             include 'r-site.sh'
             include 'rdeephaven/man/**'

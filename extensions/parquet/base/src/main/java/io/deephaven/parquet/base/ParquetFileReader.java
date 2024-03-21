@@ -1,9 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.*;
@@ -11,17 +10,15 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 
-import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.*;
 
-import static io.deephaven.util.channel.SeekableChannelsProvider.convertToURI;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,
@@ -42,54 +39,72 @@ public class ParquetFileReader {
     private final URI rootURI;
     private final MessageType type;
 
+    /**
+     * Create a new ParquetFileReader for the provided source.
+     *
+     * @param source The source path or URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     */
     public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
             throws IOException {
-        this(convertToURI(source), channelsProvider);
+        this(convertToURI(source, false), channelsProvider);
     }
 
+    /**
+     * Create a new ParquetFileReader for the provided source.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     */
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this.channelsProvider = channelsProvider;
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
-            rootURI = Path.of(parquetFileURI).getParent().toUri();
+            rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
         } else {
             // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;
         }
-        final byte[] footer;
-        try (final SeekableChannelContext channelContext = channelsProvider.makeContext();
-                final SeekableByteChannel readChannel =
-                        channelsProvider.getReadChannel(channelContext, parquetFileURI)) {
-            final long fileLen = readChannel.size();
-            if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
-                // footerIndex + MAGIC
-                throw new InvalidParquetFileException(
-                        parquetFileURI + " is not a Parquet file (too small length: " + fileLen + ")");
+        try (
+                final SeekableChannelContext context = channelsProvider.makeContext();
+                final SeekableByteChannel ch = channelsProvider.getReadChannel(context, parquetFileURI)) {
+            positionToFileMetadata(parquetFileURI, ch);
+            try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                fileMetaData = Util.readFileMetaData(in);
             }
-
-            final long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
-            readChannel.position(footerLengthIndex);
-
-            final int footerLength = readIntLittleEndian(readChannel);
-            final byte[] magic = new byte[MAGIC.length];
-            Helpers.readBytes(readChannel, magic);
-            if (!Arrays.equals(MAGIC, magic)) {
-                throw new InvalidParquetFileException(
-                        parquetFileURI + " is not a Parquet file. expected magic number at tail "
-                                + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
-            }
-            final long footerIndex = footerLengthIndex - footerLength;
-            if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
-                throw new InvalidParquetFileException(
-                        "corrupted file: the footer index is not within the file: " + footerIndex);
-            }
-            readChannel.position(footerIndex);
-            footer = new byte[footerLength];
-            Helpers.readBytes(readChannel, footer);
         }
-        fileMetaData = Util.readFileMetaData(new ByteArrayInputStream(footer));
         type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
+    }
+
+    private static void positionToFileMetadata(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
+        final long fileLen = readChannel.size();
+        if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
+            // footerIndex + MAGIC
+            throw new InvalidParquetFileException(
+                    parquetFileURI + " is not a Parquet file (too small length: " + fileLen + ")");
+        }
+        final byte[] trailer = new byte[Integer.BYTES + MAGIC.length];
+        final long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
+        readChannel.position(footerLengthIndex);
+        Helpers.readBytes(readChannel, trailer);
+        if (!Arrays.equals(MAGIC, 0, MAGIC.length, trailer, Integer.BYTES, trailer.length)) {
+            throw new InvalidParquetFileException(
+                    parquetFileURI + " is not a Parquet file. expected magic number at tail " + Arrays.toString(MAGIC)
+                            + " but found "
+                            + Arrays.toString(Arrays.copyOfRange(trailer, Integer.BYTES, trailer.length)));
+        }
+        final int footerLength = makeLittleEndianInt(trailer[0], trailer[1], trailer[2], trailer[3]);
+        final long footerIndex = footerLengthIndex - footerLength;
+        if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
+            throw new InvalidParquetFileException(
+                    "corrupted file: the footer index is not within the file: " + footerIndex);
+        }
+        readChannel.position(footerIndex);
+    }
+
+    private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {
+        return (b0 & 0xff) | ((b1 & 0xff) << 8) | ((b2 & 0xff) << 16) | ((b3 & 0xff) << 24);
     }
 
     /**
@@ -120,7 +135,7 @@ public class ParquetFileReader {
      * True only if we are certain every data page in this column chunk uses dictionary encoding; note false also covers
      * the "we can't tell" case.
      */
-    private boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
+    private static boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
         final ColumnMetaData columnMeta = columnChunk.getMeta_data();
         if (columnMeta.encoding_stats == null) {
             return false; // this is false as "don't know".
@@ -178,14 +193,6 @@ public class ParquetFileReader {
             }
         }
         return result;
-    }
-
-    private int readIntLittleEndian(SeekableByteChannel f) throws IOException {
-        ByteBuffer tempBuf = ByteBuffer.allocate(Integer.BYTES);
-        tempBuf.order(ByteOrder.LITTLE_ENDIAN);
-        Helpers.readExact(f, tempBuf);
-        tempBuf.flip();
-        return tempBuf.getInt();
     }
 
     /**

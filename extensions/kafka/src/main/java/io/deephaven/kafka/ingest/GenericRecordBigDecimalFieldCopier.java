@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -61,7 +61,8 @@ public class GenericRecordBigDecimalFieldCopier extends GenericRecordFieldCopier
                 final BigDecimal bd = new BigDecimal(bi, scale);
                 output.set(ii + destOffset, bd);
             } else {
-                throw new IllegalStateException("Object of type " + bytesObj.getClass().getName() + " not recognized for decimal type backing");
+                throw new IllegalStateException(
+                        "Object of type " + bytesObj.getClass().getName() + " not recognized for decimal type backing");
             }
         }
     }

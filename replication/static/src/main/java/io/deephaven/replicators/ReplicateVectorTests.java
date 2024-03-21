@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -20,10 +20,10 @@ public class ReplicateVectorTests {
             "engine/vector/src/test/java/io/deephaven/vector/CharVectorDirectTest.java";
 
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CHAR_BASE_PATH);
-        ReplicatePrimitiveCode.charToAllButBoolean(CHAR_DIRECT_PATH);
-        fixupObject(ReplicatePrimitiveCode.charToObject(CHAR_BASE_PATH));
-        fixupObject(ReplicatePrimitiveCode.charToObject(CHAR_DIRECT_PATH));
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateVectorTests", CHAR_BASE_PATH);
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateVectorTests", CHAR_DIRECT_PATH);
+        fixupObject(ReplicatePrimitiveCode.charToObject("replicateVectorTests", CHAR_BASE_PATH));
+        fixupObject(ReplicatePrimitiveCode.charToObject("replicateVectorTests", CHAR_DIRECT_PATH));
     }
 
     private static void fixupObject(@NotNull final String path) throws IOException {

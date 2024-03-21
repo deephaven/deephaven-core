@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
@@ -30,14 +33,19 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    void prepareWindowBucket(UpdateByWindowBucketContext context) {
-        // working chunk size need not be larger than affectedRows.size()
-        context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
+    UpdateByWindow copy() {
+        final UpdateByOperator[] copiedOperators = new UpdateByOperator[this.operators.length];
+        for (int ii = 0; ii < copiedOperators.length; ii++) {
+            copiedOperators[ii] = this.operators[ii].copy();
+        }
+
+        return new UpdateByWindowCumulative(copiedOperators, operatorInputSourceSlots, timestampColumnName);
     }
 
     @Override
-    void finalizeWindowBucket(UpdateByWindowBucketContext context) {
-        super.finalizeWindowBucket(context);
+    void prepareWindowBucket(UpdateByWindowBucketContext context) {
+        // working chunk size need not be larger than affectedRows.size()
+        context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
     }
 
     @Override

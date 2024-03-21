@@ -1,21 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.tuplesource;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.tuple.EmptyTuple;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * <p>
@@ -24,11 +20,6 @@ import java.util.List;
 enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.WithPrev<Values> {
 
     INSTANCE;
-
-    @Override
-    public List<ColumnSource<?>> getColumnSources() {
-        return Collections.emptyList();
-    }
 
     @Override
     public EmptyTuple createTuple(final long rowKey) {

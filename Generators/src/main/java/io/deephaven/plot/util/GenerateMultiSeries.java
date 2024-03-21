@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.util;
 
 import io.deephaven.base.ClassUtil;
@@ -198,7 +198,9 @@ public class GenerateMultiSeries {
             final String header3 =
                     headerSpace + headerComment + " AND THEN RUN GenerateFigureImmutable " + headerComment;
 
-            code.append(String.join("\n", header, header2, header3)).append("\n\n");
+            code.append(String.join("\n", header, header2, header3))
+                    .append("\n// @formatter:off\n\n");
+
 
             code.append(generateClasses(skip));
 

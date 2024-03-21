@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 /**
@@ -31,6 +31,12 @@ public final class RollupConstants {
      * sum columns used in rollup aggregations.
      */
     static final String ROLLUP_RUNNING_SUM_COLUMN_ID = "_RS_";
+
+    /**
+     * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for sum of
+     * weights columns used in rollup wavg aggregations.
+     */
+    static final String ROLLUP_SUM_WEIGHTS_COLUMN_ID = "_RSW_";
 
     /**
      * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for running

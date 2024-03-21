@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -118,7 +118,7 @@ public interface ScriptSession extends LivenessNode {
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    default Object unwrapObject(Object object) {
+    default Object unwrapObject(@Nullable Object object) {
         return object;
     }
 }

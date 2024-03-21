@@ -1,17 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.context;
 
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Variable scope used to resolve parameter values during query execution and to expose named objects to users. Objects
@@ -69,8 +71,8 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @return A newly-constructed array of newly-constructed Params.
      * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
-    default QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
-        final QueryScopeParam[] result = new QueryScopeParam[names.size()];
+    default QueryScopeParam<?>[] getParams(final Collection<String> names) throws MissingVariableException {
+        final QueryScopeParam<?>[] result = new QueryScopeParam[names.size()];
         int pi = 0;
         for (final String name : names) {
             result[pi++] = createParam(name);
@@ -81,7 +83,7 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
     /**
      * Get all known scope variable names.
      *
-     * @return A collection of scope variable names.
+     * @return A caller-owned mutable collection of scope variable names.
      */
     Set<String> getParamNames();
 
@@ -130,13 +132,33 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      */
     <T> void putParam(final String name, final T value);
 
+    @FunctionalInterface
+    interface ParamFilter<T> {
+        boolean accept(String name, T value);
+    }
+
     /**
-     * Returns an immutable map with all objects in the scope. Callers may want to unwrap language-specific values using
-     * {@link #unwrapObject(Object)} before using them.
+     * Returns a mutable map with all objects in the scope. Callers may want to unwrap language-specific values using
+     * {@link #unwrapObject(Object)} before using them. This returned map is owned by the caller.
      *
-     * @return an immutable map with all known variables and their values.
+     * @param filter a predicate to filter the map entries
+     * @return a caller-owned mutable map with all known variables and their values.
      */
-    Map<String, Object> toMap();
+    Map<String, Object> toMap(@NotNull ParamFilter<Object> filter);
+
+    /**
+     * Returns a mutable map with all objects in the scope.
+     * <p>
+     * Callers may want to pass in a valueMapper of {@link #unwrapObject(Object)} which would unwrap values before
+     * filtering. The returned map is owned by the caller.
+     *
+     * @param valueMapper a function to map the values
+     * @param filter a predicate to filter the map entries
+     * @return a caller-owned mutable map with all known variables and their values.
+     * @param <T> the type of the mapped values
+     */
+    <T> Map<String, T> toMap(
+            @NotNull Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter);
 
     /**
      * Removes any wrapping that exists on a scope param object so that clients can fetch them. Defaults to returning
@@ -145,16 +167,16 @@ public interface QueryScope extends LivenessNode, LogOutputAppendable {
      * @param object the scoped object
      * @return an obj which can be consumed by a client
      */
-    default Object unwrapObject(Object object) {
+    default Object unwrapObject(@Nullable Object object) {
         return object;
     }
 
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {
         logOutput.append('{');
-        for (final String paramName : getParamNames()) {
-            final Object paramValue = readParamValue(paramName);
-            logOutput.nl().append(paramName).append("=");
+        for (final Map.Entry<String, Object> param : toMap((name, value) -> true).entrySet()) {
+            logOutput.nl().append(param.getKey()).append("=");
+            Object paramValue = param.getValue();
             if (paramValue == this) {
                 logOutput.append("this QueryScope (" + paramValue.getClass().getName() + ':'
                         + System.identityHashCode(paramValue) + ')');

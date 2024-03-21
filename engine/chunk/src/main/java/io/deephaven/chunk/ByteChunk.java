@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -35,7 +34,7 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final ByteChunk EMPTY = new ByteChunk<>(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
 
     public static <ATTR extends Any> ByteChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
@@ -43,7 +42,7 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final ByteChunk[] EMPTY_BYTE_CHUNK_ARRAY = new ByteChunk[0];
 
     static <ATTR extends Any> ByteChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_BYTE_CHUNK_ARRAY;
     }
 
@@ -93,7 +92,7 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     @Override
     public final void copyToArray(int srcOffset, Object dest, int destOffset, int length) {
-        final byte[] realType = (byte[])dest;
+        final byte[] realType = (byte[]) dest;
         copyToTypedArray(srcOffset, realType, destOffset, length);
     }
 
@@ -104,13 +103,13 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
             return;
         }
         if (ChunkHelpers.canCopyForward(data, sStart, destData, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 destData[destOffset + ii] = data[sStart + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             destData[destOffset + ii] = data[sStart + ii];
         }
@@ -144,22 +143,26 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region CopyToBuffer
     @Override
-    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset, final int length) {
+    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset,
+            final int length) {
         final ByteBuffer byteDestBuffer = (ByteBuffer) destBuffer;
         copyToTypedBuffer(srcOffset, byteDestBuffer, destOffset, length);
     }
 
     /**
-     * <p>Copy a sub-range of this ByteChunk to a {@link ByteBuffer}.
+     * <p>
+     * Copy a sub-range of this ByteChunk to a {@link ByteBuffer}.
      *
-     * <p>See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
      *
-     * @param srcOffset  The offset into this chunk to start copying from
+     * @param srcOffset The offset into this chunk to start copying from
      * @param destBuffer The destination {@link ByteBuffer}
      * @param destOffset The absolute offset into {@code destBuffer} to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyToTypedBuffer(final int srcOffset, @NotNull final ByteBuffer destBuffer, final int destOffset, final int length) {
+    public final void copyToTypedBuffer(final int srcOffset, @NotNull final ByteBuffer destBuffer, final int destOffset,
+            final int length) {
         if (destBuffer.hasArray()) {
             copyToTypedArray(srcOffset, destBuffer.array(), destBuffer.arrayOffset() + destOffset, length);
             return;
@@ -173,7 +176,7 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region downcast
     public static <ATTR extends Any, ATTR_DERIV extends ATTR> ByteChunk<ATTR_DERIV> downcast(ByteChunk<ATTR> self) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (ByteChunk<ATTR_DERIV>) self;
     }
     // endregion downcast

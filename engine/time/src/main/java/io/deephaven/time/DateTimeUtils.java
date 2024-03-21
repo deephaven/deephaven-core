@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time;
 
 import io.deephaven.base.clock.Clock;
@@ -2536,6 +2536,10 @@ public class DateTimeUtils {
         return dateTime.getMinute();
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    // ↓↓↓↓↓↓↓ THE METHODS BELOW ARE DEPRECATED AND WILL BE REMOVED SOON ↓↓↓↓↓↓↓
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
      * Returns the number of nanoseconds that have elapsed since the top of the day.
      * <p>
@@ -2547,14 +2551,12 @@ public class DateTimeUtils {
      * @param timeZone time zone
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
+     * @deprecated Use {@link #nanosOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
     @ScriptApi
+    @Deprecated
     public static long nanosOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
-        if (instant == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosOfDay(toZonedDateTime(instant, timeZone));
+        return nanosOfDay(instant, timeZone, false);
     }
 
     /**
@@ -2567,22 +2569,222 @@ public class DateTimeUtils {
      * @param dateTime time
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the top of the day
+     * @deprecated Use {@link #nanosOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
     @ScriptApi
+    @Deprecated
     public static long nanosOfDay(@Nullable final ZonedDateTime dateTime) {
+        return nanosOfDay(dateTime, false);
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param instant time
+     * @param timeZone time zone
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
+     *         have elapsed since the top of the day
+     * @deprecated Use {@link #millisOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        return millisOfDay(instant, timeZone, false);
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param dateTime time
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
+     *         have elapsed since the top of the day
+     * @deprecated Use {@link #millisOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
+        return millisOfDay(dateTime, false);
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param instant time
+     * @param timeZone time zone
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
+     *         elapsed since the top of the day
+     * @deprecated Use {@link #secondOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        return secondOfDay(instant, timeZone, false);
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param dateTime time
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
+     *         elapsed since the top of the day
+     * @deprecated Use {@link #secondOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
+        return secondOfDay(dateTime, false);
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param instant time
+     * @param timeZone time zone
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
+     *         elapsed since the top of the day
+     * @deprecated Use {@link #minuteOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        return minuteOfDay(instant, timeZone, false);
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param dateTime time
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
+     *         elapsed since the top of the day
+     * @deprecated Use {@link #minuteOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
+        return minuteOfDay(dateTime, false);
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param instant time
+     * @param timeZone time zone
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
+     *         elapsed since the top of the day
+     * @deprecated Use {@link #hourOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        return hourOfDay(instant, timeZone, false);
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     * <p>
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
+     *
+     * @param dateTime time
+     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
+     *         elapsed since the top of the day
+     * @deprecated Use {@link #hourOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
+     */
+    @ScriptApi
+    @Deprecated
+    public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
+        return hourOfDay(dateTime, false);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    // ↑↑↑↑↑↑↑ THE METHODS ABOVE ARE DEPRECATED AND WILL BE REMOVED SOON ↑↑↑↑↑↑↑
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
+     *
+     * @param instant time
+     * @param timeZone time zone
+     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
+     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
+     *         have elapsed since the start of the day
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
+            final boolean localTime) {
+        if (instant == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfDay(toZonedDateTime(instant, timeZone), localTime);
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
+     *
+     * @param dateTime time
+     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
+     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
+     *         have elapsed since the start of the day
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
 
-        return epochNanos(dateTime) - epochNanos(atMidnight(dateTime));
+        if (localTime) {
+            return dateTime.toLocalTime().toNanoOfDay();
+        } else {
+            return epochNanos(dateTime) - epochNanos(atMidnight(dateTime));
+        }
     }
 
     /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
      * @param localTime time
      * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     public static long nanosOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
@@ -2593,167 +2795,247 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
+     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
-     *         have elapsed since the top of the day
+     *         have elapsed since the start of the day
      */
     @ScriptApi
-    public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
+            final boolean localTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToMillis(nanosOfDay(instant, timeZone));
+        return (int) nanosToMillis(nanosOfDay(instant, timeZone, localTime));
     }
 
     /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
+     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
-     *         have elapsed since the top of the day
+     *         have elapsed since the start of the day
      */
     @ScriptApi
-    public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
+    public static int millisOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToMillis(nanosOfDay(dateTime));
+        return (int) nanosToMillis(nanosOfDay(dateTime, localTime));
     }
 
     /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of milliseconds that have elapsed since the start of the day.
+     *
+     * @param localTime time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of milliseconds that have
+     *         elapsed since the start of the day
+     */
+    public static int millisOfDay(@Nullable final LocalTime localTime) {
+        if (localTime == null) {
+            return NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfDay(localTime));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
+     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
+            final boolean localTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToSeconds(nanosOfDay(instant, timeZone));
+        return (int) nanosToSeconds(nanosOfDay(instant, timeZone, localTime));
     }
 
     /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param dateTime time
+     * @param localTime if {@code true}, returns the number of seconds from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of seconds
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
+    public static int secondOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToSeconds(nanosOfDay(dateTime));
+        return (int) nanosToSeconds(nanosOfDay(dateTime, localTime));
     }
 
     /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of seconds that have elapsed since the start of the day.
+     *
+     * @param localTime time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of seconds that have elapsed
+     *         since the start of the day
+     */
+    public static int secondOfDay(@Nullable final LocalTime localTime) {
+        if (localTime == null) {
+            return NULL_INT;
+        }
+
+        return (int) nanosToSeconds(nanosOfDay(localTime));
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
+     * @param localTime if {@code true}, returns the number of minutes from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
+            final boolean localTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return secondOfDay(instant, timeZone) / 60;
+        return secondOfDay(instant, timeZone, localTime) / 60;
     }
 
     /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param dateTime time
+     * @param localTime if {@code true}, returns the number of minutes from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
+    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return secondOfDay(dateTime) / 60;
+        return secondOfDay(dateTime, localTime) / 60;
     }
 
     /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of minutes that have elapsed since the start of the day.
+     *
+     * @param localTime time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of minutes that have elapsed
+     *         since the start of the day
+     */
+    public static int minuteOfDay(@Nullable final LocalTime localTime) {
+        if (localTime == null) {
+            return NULL_INT;
+        }
+
+        return secondOfDay(localTime) / 60;
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param instant time
      * @param timeZone time zone
+     * @param localTime if {@code true}, returns the number of hours from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of hours
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+    public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
+            final boolean localTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return hourOfDay(toZonedDateTime(instant, timeZone));
+        return hourOfDay(toZonedDateTime(instant, timeZone), localTime);
     }
 
     /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
+     * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param dateTime time
+     * @param localTime if {@code true}, returns the number of hours from the start of the day according to the local
+     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of hours
+     *        from the start of the day. On days when daylight savings time events occur, results may be different from
+     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
+     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
+     *        backwards. On non DST days, the result is the same as if localTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
-     *         elapsed since the top of the day
+     *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
+    public static int hourOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return minuteOfDay(dateTime) / 60;
+        return minuteOfDay(dateTime, localTime) / 60;
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the start of the day.
+     *
+     * @param localTime time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of hours that have elapsed
+     *         since the start of the day
+     */
+    public static int hourOfDay(@Nullable final LocalTime localTime) {
+        if (localTime == null) {
+            return NULL_INT;
+        }
+
+        return minuteOfDay(localTime) / 60;
     }
 
     /**
@@ -3152,8 +3434,8 @@ public class DateTimeUtils {
 
     /**
      * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the start
+     * of the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3171,9 +3453,29 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the start of
+     * the five-minute window that contains the input instant.
+     *
+     * @param instant instant for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the start of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant lowerBin(@Nullable final Instant instant, Duration interval) {
+        if (instant == null || interval == null) {
+            return null;
+        }
+
+        return lowerBin(instant, interval.toNanos());
+    }
+
+    /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
-     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
-     * start of the five-minute window that contains the input zoned date time.
+     * interval nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time
+     * value for the start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3191,15 +3493,35 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
+     * interval nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value
+     * for the start of the five-minute window that contains the input zoned date time.
+     *
+     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
+     *         of the window
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime lowerBin(@Nullable final ZonedDateTime dateTime, Duration interval) {
+        if (dateTime == null || interval == null) {
+            return null;
+        }
+
+        return lowerBin(dateTime, interval.toNanos());
+    }
+
+    /**
      * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the start of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the start
+     * of the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
      *        one minute.
-     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the start of the
+     * @return {@code null} if any input is {@code null}; otherwise, an {@link Instant} representing the start of the
      *         window
      */
     @ScriptApi
@@ -3213,16 +3535,37 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns an {@link Instant} value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the start of
+     * the five-minute window that contains the input instant.
+     *
+     * @param instant instant for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @param offset The window start offset. For example, a value of 'PT1m' would offset all windows by one minute.
+     * @return {@code null} if any input is {@code null}; otherwise, an {@link Instant} representing the start of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant lowerBin(@Nullable final Instant instant, Duration interval, Duration offset) {
+        if (instant == null || interval == null || offset == null) {
+            return null;
+        }
+
+        return lowerBin(instant, interval.toNanos(), offset.toNanos());
+    }
+
+    /**
      * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
-     * interval nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the
-     * start of the five-minute window that contains the input zoned date time.
+     * interval nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time
+     * value for the start of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
      *        one minute.
-     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start
-     *         of the window
+     * @return {@code null} if any input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start of
+     *         the window
      */
     @ScriptApi
     @Nullable
@@ -3236,9 +3579,30 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a {@link ZonedDateTime} value, which is at the starting (lower) end of a time range defined by the
+     * interval nanoseconds. For example, a five-minute {@code interval} intervalNanos value would return the zoned date
+     * time value for the start of the five-minute window that contains the input zoned date time.
+     *
+     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @param offset The window start offset. For example, a value of MINUTE would offset all windows by one minute.
+     * @return {@code null} if any input is {@code null}; otherwise, a {@link ZonedDateTime} representing the start of
+     *         the window
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime lowerBin(@Nullable final ZonedDateTime dateTime, Duration interval, Duration offset) {
+        if (dateTime == null || interval == null || offset == null) {
+            return null;
+        }
+
+        return lowerBin(dateTime, interval.toNanos(), offset.toNanos());
+    }
+
+    /**
      * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the end of
+     * the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3256,9 +3620,29 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the end of the
+     * five-minute window that contains the input instant.
+     *
+     * @param instant instant for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant upperBin(@Nullable final Instant instant, Duration interval) {
+        if (instant == null || interval == null) {
+            return null;
+        }
+
+        return upperBin(instant, interval.toNanos());
+    }
+
+    /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
-     * the five-minute window that contains the input zoned date time.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time value for
+     * the end of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
@@ -3276,15 +3660,35 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value for the end
+     * of the five-minute window that contains the input zoned date time.
+     *
+     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
+     *         the window
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime upperBin(@Nullable final ZonedDateTime dateTime, Duration interval) {
+        if (dateTime == null || interval == null) {
+            return null;
+        }
+
+        return upperBin(dateTime, interval.toNanos());
+    }
+
+    /**
      * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the instant value for the end of the
-     * five-minute window that contains the input instant.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the end of
+     * the five-minute window that contains the input instant.
      *
      * @param instant instant for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
      *        one minute.
-     * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     * @return {@code null} if any input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
      */
     @ScriptApi
@@ -3299,16 +3703,37 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns an {@link Instant} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the end of the
+     * five-minute window that contains the input instant.
+     *
+     * @param instant instant for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @param offset The window start offset. For example, a value of 'PT1m' would offset all windows by one minute.
+     * @return {@code null} if any input is {@code null}; otherwise, an {@link Instant} representing the end of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant upperBin(@Nullable final Instant instant, Duration interval, Duration offset) {
+        if (instant == null || interval == null || offset == null) {
+            return null;
+        }
+
+        return upperBin(instant, interval.toNanos(), offset.toNanos());
+    }
+
+    /**
      * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the zoned date time value for the end of
-     * the five-minute window that contains the input zoned date time.
+     * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time value for
+     * the end of the five-minute window that contains the input zoned date time.
      *
      * @param dateTime zoned date time for which to evaluate the start of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
      *        one minute.
-     * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
-     *         the window
+     * @return {@code null} if any input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of the
+     *         window
      */
     @ScriptApi
     @Nullable
@@ -3320,6 +3745,27 @@ public class DateTimeUtils {
 
         return epochNanosToZonedDateTime(Numeric.upperBin(epochNanos(dateTime) - offset, intervalNanos) + offset,
                 dateTime.getZone());
+    }
+
+    /**
+     * Returns a {@link ZonedDateTime} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value for the end
+     * of the five-minute window that contains the input zoned date time.
+     *
+     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param interval size of the window
+     * @param offset The window start offset. For example, a value of 'PT1m' would offset all windows by one minute.
+     * @return {@code null} if any input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of the
+     *         window
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime upperBin(@Nullable final ZonedDateTime dateTime, Duration interval, Duration offset) {
+        if (dateTime == null || interval == null || offset == null) {
+            return null;
+        }
+
+        return upperBin(dateTime, interval.toNanos(), offset.toNanos());
     }
 
     // endregion

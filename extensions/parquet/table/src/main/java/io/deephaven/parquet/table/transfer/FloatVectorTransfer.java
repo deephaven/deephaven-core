@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit IntVectorTransfer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit IntVectorTransfer and run "./gradlew replicateParquetTransferObjects" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
@@ -18,7 +17,7 @@ import java.nio.FloatBuffer;
 
 final class FloatVectorTransfer extends PrimitiveVectorTransfer<FloatVector, FloatBuffer> {
     FloatVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSizeInBytes) {
+            final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes / Float.BYTES, targetPageSizeInBytes,
                 FloatBuffer.allocate(targetPageSizeInBytes / Float.BYTES), Float.BYTES);
     }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
 import io.deephaven.vector.CharVector;
@@ -15,27 +15,27 @@ import io.deephaven.engine.rowset.RowSet;
  * A {@link SsmBackedColumnSource} for Characters.
  */
 public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
-                                 implements ColumnSourceGetDefaults.ForObject<CharVector>,
-                                            MutableColumnSourceGetDefaults.ForObject<CharVector>,
-                                            SsmBackedColumnSource<CharSegmentedSortedMultiset, CharVector> {
+        implements ColumnSourceGetDefaults.ForObject<CharVector>,
+        MutableColumnSourceGetDefaults.ForObject<CharVector>,
+        SsmBackedColumnSource<CharSegmentedSortedMultiset, CharVector> {
     private final ObjectArraySource<CharSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
-    //region Constructor
+    // region Constructor
     public CharSsmBackedSource() {
         super(CharVector.class, char.class);
         underlying = new ObjectArraySource<>(CharSegmentedSortedMultiset.class, char.class);
     }
-    //endregion Constructor
+    // endregion Constructor
 
-    //region SsmBackedColumnSource
+    // region SsmBackedColumnSource
     @Override
     public CharSegmentedSortedMultiset getOrCreate(long key) {
         CharSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
-        if(ssm == null) {
-            //region CreateNew
+        if (ssm == null) {
+            // region CreateNew
             underlying.set(key, ssm = new CharSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE));
-            //endregion CreateNew
+            // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
         return ssm;
@@ -60,7 +60,7 @@ public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
     public ObjectArraySource<CharSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
-    //endregion
+    // endregion
 
     @Override
     public boolean isImmutable() {
@@ -88,7 +88,7 @@ public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final CharSegmentedSortedMultiset ssm = getCurrentSsm(key);
-            if(ssm != null) {
+            if (ssm != null) {
                 ssm.clearDeltas();
             }
             return true;

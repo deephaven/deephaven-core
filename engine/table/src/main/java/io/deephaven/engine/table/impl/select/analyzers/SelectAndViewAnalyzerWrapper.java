@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -79,6 +79,10 @@ public class SelectAndViewAnalyzerWrapper {
             if (sourceTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
                 // be convenient for test authors by propagating the test source table attribute
                 queryTable.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+            }
+            if (sourceTable.isBlink()) {
+                // blink tables, although possibly not useful, can have shift columns
+                queryTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
             }
         }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil;
 
 import io.deephaven.base.verify.Assert;
@@ -143,6 +143,15 @@ public class GenerateTableUpdates {
     }
 
     public static final SimulationProfile DEFAULT_PROFILE = new SimulationProfile();
+
+    public static final SimulationProfile NO_SHIFT_PROFILE =
+            new SimulationProfile() {
+                {
+                    SHIFT_10_PERCENT_KEY_SPACE = 0;
+                    SHIFT_10_PERCENT_POS_SPACE = 0;
+                    SHIFT_AGGRESSIVELY = 0;
+                }
+            };
 
     public static void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
             final Random random, final QueryTable table,

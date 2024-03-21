@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.sql;
 
 import io.deephaven.base.log.LogOutput;
@@ -82,16 +85,9 @@ public final class Sql {
     private static Map<String, Table> currentScriptSessionNamedTables() {
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)
-        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        final Map<String, Table> scope = queryScope
-                .toMap()
-                .entrySet()
-                .stream()
-                .map(e -> Map.entry(e.getKey(), queryScope.unwrapObject(e.getValue())))
-                .filter(e -> e.getValue() instanceof Table)
-                .collect(Collectors.toMap(Entry::getKey, e -> (Table) e.getValue()));
-
-        return scope;
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        // noinspection unchecked,rawtypes
+        return (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
     }
 
     private static TableHeader adapt(TableDefinition tableDef) {

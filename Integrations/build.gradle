@@ -44,8 +44,7 @@ sourceSets {
     }
 }
 
-JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
-SourceSet test = java.sourceSets.maybeCreate('test')
+SourceSet test = extensions.findByType(JavaPluginExtension).sourceSets.maybeCreate('test')
 
 def runInDocker = { String name, String sourcePath, def command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
@@ -59,6 +58,11 @@ def runInDocker = { String name, String sourcePath, def command, Closure addConf
             }
 
             from(sourcePath) {
+                include 'deephaven/**'
+                include 'deephaven_internal/**'
+                include 'test_helper/**'
+                include 'tests/**'
+                include 'setup.py'
                 into 'python'
             }
             from(test.runtimeClasspath) {

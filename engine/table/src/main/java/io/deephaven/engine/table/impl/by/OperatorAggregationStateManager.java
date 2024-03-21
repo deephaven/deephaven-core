@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -16,7 +16,8 @@ interface OperatorAggregationStateManager {
 
     SafeCloseable makeAggregationStateBuildContext(ColumnSource<?>[] buildSources, long maxSize);
 
-    void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions);
+    void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition,
+            WritableIntChunk<RowKeys> outputPositions);
 
     ColumnSource[] getKeyHashTableSources();
 

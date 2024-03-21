@@ -1,9 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
@@ -19,7 +18,7 @@ import java.nio.IntBuffer;
 /**
  * Plain encoding except for booleans
  */
-public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer> {
+final class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuffer> {
     private final BooleanPlainValuesWriter writer;
     private IntBuffer nullOffsets;
 
@@ -75,8 +74,8 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
 
     @Override
     public void writeBulk(@NotNull ByteBuffer bulkValues,
-                          final int rowCount,
-                          @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         while (bulkValues.hasRemaining()) {
             final boolean v = bulkValues.get() == 1;
             writeBoolean(v);
@@ -87,9 +86,9 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull ByteBuffer bulkValues,
-                                            @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount,
-                                            @NotNull final Statistics<?> statistics) throws IOException {
+            @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         while (bulkValues.hasRemaining()) {
             final byte next = bulkValues.get();
             if (next != QueryConstants.NULL_BYTE) {
@@ -107,8 +106,8 @@ public class PlainBooleanChunkedWriter extends AbstractBulkValuesWriter<ByteBuff
 
     @Override
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull ByteBuffer bulkValues,
-                                                           final int rowCount,
-                                                           @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         nullOffsets.clear();
         int i = 0;
         while (bulkValues.hasRemaining()) {

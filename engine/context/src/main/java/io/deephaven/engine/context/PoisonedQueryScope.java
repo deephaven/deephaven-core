@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.context;
 
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class PoisonedQueryScope implements QueryScope {
@@ -53,7 +54,12 @@ public class PoisonedQueryScope implements QueryScope {
     }
 
     @Override
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(@NotNull ParamFilter<Object> filter) {
+        return fail();
+    }
+
+    @Override
+    public <T> Map<String, T> toMap(@NotNull Function<Object, T> valueMapper, @NotNull ParamFilter<T> filter) {
         return fail();
     }
 

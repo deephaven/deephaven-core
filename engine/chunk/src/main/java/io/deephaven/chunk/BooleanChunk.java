@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -31,7 +30,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final BooleanChunk EMPTY = new BooleanChunk<>(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);
 
     public static <ATTR extends Any> BooleanChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
@@ -39,7 +38,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final BooleanChunk[] EMPTY_BOOLEAN_CHUNK_ARRAY = new BooleanChunk[0];
 
     static <ATTR extends Any> BooleanChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_BOOLEAN_CHUNK_ARRAY;
     }
 
@@ -89,7 +88,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     @Override
     public final void copyToArray(int srcOffset, Object dest, int destOffset, int length) {
-        final boolean[] realType = (boolean[])dest;
+        final boolean[] realType = (boolean[]) dest;
         copyToTypedArray(srcOffset, realType, destOffset, length);
     }
 
@@ -100,13 +99,13 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
             return;
         }
         if (ChunkHelpers.canCopyForward(data, sStart, destData, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 destData[destOffset + ii] = data[sStart + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             destData[destOffset + ii] = data[sStart + ii];
         }
@@ -136,7 +135,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region downcast
     public static <ATTR extends Any, ATTR_DERIV extends ATTR> BooleanChunk<ATTR_DERIV> downcast(BooleanChunk<ATTR> self) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (BooleanChunk<ATTR_DERIV>) self;
     }
     // endregion downcast

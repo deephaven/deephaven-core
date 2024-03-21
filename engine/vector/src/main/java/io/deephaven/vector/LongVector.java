@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVector and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
@@ -154,10 +153,8 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
         if (size == 0) {
             return true;
         }
-        // @formatter:off
         try (final CloseablePrimitiveIteratorOfLong aIterator = aVector.iterator();
-             final CloseablePrimitiveIteratorOfLong bIterator = bVector.iterator()) {
-            // @formatter:on
+                final CloseablePrimitiveIteratorOfLong bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
                 if (aIterator.nextLong() != bIterator.nextLong()) {

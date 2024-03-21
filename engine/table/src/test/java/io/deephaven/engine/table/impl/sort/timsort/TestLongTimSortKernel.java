@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharTimSortKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharTimSortKernel and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.test.types.ParallelTest;
@@ -14,82 +13,95 @@ import org.junit.experimental.categories.Category;
 
 @Category(ParallelTest.class)
 public class TestLongTimSortKernel extends BaseTestLongTimSortKernel {
-    // I like this output, but for now am leaving these tests off, so we can focus on getting right answers and we can try
+    // I like this output, but for now am leaving these tests off, so we can focus on getting right answers and we can
+    // try
     // out JMH for running morally equivalent things.
 
-//    @Test
-//    public void longRandomPerformanceTest() {
-//        performanceTest(TestLongTimSortKernel::generateLongRandom, LongSortKernelStuff::new, LongSortKernelStuff::run, getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
-//    }
-//
-//    @Test
-//    public void longRunPerformanceTest() {
-//        performanceTest(TestLongTimSortKernel::generateLongRuns, LongSortKernelStuff::new, LongSortKernelStuff::run, getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
-//    }
-//
-//    @Test
-//    public void longRunDescendingPerformanceTest() {
-//        performanceTest(TestLongTimSortKernel::generateDescendingLongRuns, LongSortKernelStuff::new, LongSortKernelStuff::run, getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
-//    }
-//
-//    @Test
-//    public void longRunAscendingPerformanceTest() {
-//        performanceTest(TestLongTimSortKernel::generateAscendingLongRuns, LongSortKernelStuff::new, LongSortKernelStuff::run, getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
-//    }
-//
+    // @Test
+    // public void longRandomPerformanceTest() {
+    // performanceTest(TestLongTimSortKernel::generateLongRandom, LongSortKernelStuff::new, LongSortKernelStuff::run,
+    // getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
+    // }
+    //
+    // @Test
+    // public void longRunPerformanceTest() {
+    // performanceTest(TestLongTimSortKernel::generateLongRuns, LongSortKernelStuff::new, LongSortKernelStuff::run,
+    // getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
+    // }
+    //
+    // @Test
+    // public void longRunDescendingPerformanceTest() {
+    // performanceTest(TestLongTimSortKernel::generateDescendingLongRuns, LongSortKernelStuff::new,
+    // LongSortKernelStuff::run, getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
+    // }
+    //
+    // @Test
+    // public void longRunAscendingPerformanceTest() {
+    // performanceTest(TestLongTimSortKernel::generateAscendingLongRuns, LongSortKernelStuff::new,
+    // LongSortKernelStuff::run, getJavaComparator(), LongMergeStuff::new, LongMergeStuff::run);
+    // }
+    //
     @Test
     public void longRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateLongRandom, getJavaComparator(), LongLongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateLongRandom, getJavaComparator(),
+                    LongLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longAscendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateAscendingLongRuns, getJavaComparator(), LongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateAscendingLongRuns, getJavaComparator(),
+                    LongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longDescendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateDescendingLongRuns, getJavaComparator(), LongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateDescendingLongRuns, getJavaComparator(),
+                    LongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateLongRuns, getJavaComparator(), LongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateLongRuns, getJavaComparator(),
+                    LongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longLongRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateLongRandom, getJavaComparator(), LongLongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateLongRandom, getJavaComparator(),
+                    LongLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longLongAscendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateAscendingLongRuns, getJavaComparator(), LongLongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateAscendingLongRuns, getJavaComparator(),
+                    LongLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longLongDescendingRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateDescendingLongRuns, getJavaComparator(), LongLongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateDescendingLongRuns, getJavaComparator(),
+                    LongLongSortKernelStuff::new);
         }
     }
 
     @Test
     public void longLongRunCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            correctnessTest(size, TestLongTimSortKernel::generateLongRuns, getJavaComparator(), LongLongSortKernelStuff::new);
+            correctnessTest(size, TestLongTimSortKernel::generateLongRuns, getJavaComparator(),
+                    LongLongSortKernelStuff::new);
         }
     }
 
@@ -97,8 +109,9 @@ public class TestLongTimSortKernel extends BaseTestLongTimSortKernel {
     public void longRandomPartitionCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_PARTTITION_CHUNK_SIZE; size *= 2) {
             int partitions = 2;
-            while (partitions < (int)Math.sqrt(size)) {
-                partitionCorrectnessTest(size, size, partitions, TestLongTimSortKernel::generateLongRandom, getJavaComparator(), LongPartitionKernelStuff::new);
+            while (partitions < (int) Math.sqrt(size)) {
+                partitionCorrectnessTest(size, size, partitions, TestLongTimSortKernel::generateLongRandom,
+                        getJavaComparator(), LongPartitionKernelStuff::new);
                 if (size < 1000) {
                     break;
                 }
@@ -111,7 +124,8 @@ public class TestLongTimSortKernel extends BaseTestLongTimSortKernel {
     @Test
     public void longMultiRandomCorrectness() {
         for (int size = INITIAL_CORRECTNESS_SIZE; size <= MAX_CHUNK_SIZE; size *= 2) {
-            multiCorrectnessTest(size, TestLongTimSortKernel::generateMultiLongRandom, getJavaMultiComparator(), LongMultiSortKernelStuff::new);
+            multiCorrectnessTest(size, TestLongTimSortKernel::generateMultiLongRandom, getJavaMultiComparator(),
+                    LongMultiSortKernelStuff::new);
         }
     }
 }

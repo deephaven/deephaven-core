@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -29,7 +29,7 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final CharChunk EMPTY = new CharChunk<>(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
 
     public static <ATTR extends Any> CharChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
@@ -37,7 +37,7 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final CharChunk[] EMPTY_CHAR_CHUNK_ARRAY = new CharChunk[0];
 
     static <ATTR extends Any> CharChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_CHAR_CHUNK_ARRAY;
     }
 
@@ -87,7 +87,7 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     @Override
     public final void copyToArray(int srcOffset, Object dest, int destOffset, int length) {
-        final char[] realType = (char[])dest;
+        final char[] realType = (char[]) dest;
         copyToTypedArray(srcOffset, realType, destOffset, length);
     }
 
@@ -98,13 +98,13 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
             return;
         }
         if (ChunkHelpers.canCopyForward(data, sStart, destData, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 destData[destOffset + ii] = data[sStart + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             destData[destOffset + ii] = data[sStart + ii];
         }
@@ -131,22 +131,26 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region CopyToBuffer
     @Override
-    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset, final int length) {
+    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset,
+            final int length) {
         final CharBuffer charDestBuffer = (CharBuffer) destBuffer;
         copyToTypedBuffer(srcOffset, charDestBuffer, destOffset, length);
     }
 
     /**
-     * <p>Copy a sub-range of this CharChunk to a {@link CharBuffer}.
+     * <p>
+     * Copy a sub-range of this CharChunk to a {@link CharBuffer}.
      *
-     * <p>See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
      *
-     * @param srcOffset  The offset into this chunk to start copying from
+     * @param srcOffset The offset into this chunk to start copying from
      * @param destBuffer The destination {@link CharBuffer}
      * @param destOffset The absolute offset into {@code destBuffer} to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyToTypedBuffer(final int srcOffset, @NotNull final CharBuffer destBuffer, final int destOffset, final int length) {
+    public final void copyToTypedBuffer(final int srcOffset, @NotNull final CharBuffer destBuffer, final int destOffset,
+            final int length) {
         if (destBuffer.hasArray()) {
             copyToTypedArray(srcOffset, destBuffer.array(), destBuffer.arrayOffset() + destOffset, length);
             return;
@@ -160,7 +164,7 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region downcast
     public static <ATTR extends Any, ATTR_DERIV extends ATTR> CharChunk<ATTR_DERIV> downcast(CharChunk<ATTR> self) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (CharChunk<ATTR_DERIV>) self;
     }
     // endregion downcast

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import org.apache.commons.io.FileUtils;
@@ -17,8 +17,9 @@ import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 public class ReplicateCopyKernelTests {
     public static void main(String[] args) throws IOException {
         ReplicateCopyKernel.main(args);
-        charToAll("engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java");
-        fixupObjectCopyKernelTest(charToObject(
+        charToAll("replicateCopyKernelTests",
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java");
+        fixupObjectCopyKernelTest(charToObject("replicateCopyKernelTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/util/copy/TestCharCopyKernel.java"));
     }
 

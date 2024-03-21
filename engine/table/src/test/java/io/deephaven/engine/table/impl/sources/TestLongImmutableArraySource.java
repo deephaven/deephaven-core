@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharacterImmutableArraySource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharacterImmutableArraySource and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.WritableLongChunk;
@@ -22,7 +21,7 @@ public class TestLongImmutableArraySource extends AbstractLongColumnSourceTest {
         final ImmutableLongArraySource immutableLongArraySource = new ImmutableLongArraySource();
         immutableLongArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = immutableLongArraySource.makeFillFromContext(capacity);
-             final WritableLongChunk nullChunk = WritableLongChunk.makeWritableChunk(capacity)) {
+                final WritableLongChunk nullChunk = WritableLongChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);
             immutableLongArraySource.fillFromChunk(ffc, nullChunk, RowSetFactory.flat(capacity));
         }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import java.io.IOException;
@@ -14,10 +14,10 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.intToLongAndFloati
 public class ReplicateToPage {
 
     public static void main(String... args) throws IOException {
-        intToLongAndFloatingPoints(
+        intToLongAndFloatingPoints("replicateToPage",
                 "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pagestore/topage/ToIntPage.java",
                 "interface");
-        charToShortAndByte(
+        charToShortAndByte("replicateToPage",
                 "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pagestore/topage/ToCharPageFromInt.java");
     }
 }

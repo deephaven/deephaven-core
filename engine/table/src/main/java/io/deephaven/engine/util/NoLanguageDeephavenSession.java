@@ -1,19 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.function.Function;
 
 /**
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user
@@ -76,9 +73,9 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected Set<String> getVariableNames(Predicate<String> allowName) {
+    protected Set<String> getVariableNames() {
         synchronized (variables) {
-            return variables.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
+            return new HashSet<>(variables.keySet());
         }
     }
 
@@ -95,10 +92,27 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
     }
 
     @Override
-    protected Map<String, Object> getAllValues() {
+    protected <T> Map<String, T> getAllValues(@Nullable Function<Object, T> valueMapper,
+            QueryScope.@NotNull ParamFilter<T> filter) {
+        final Map<String, T> result = new HashMap<>();
+
         synchronized (variables) {
-            return Map.copyOf(variables);
+            for (final Map.Entry<String, Object> entry : variables.entrySet()) {
+                final String name = entry.getKey();
+                Object value = entry.getValue();
+                if (valueMapper != null) {
+                    value = valueMapper.apply(value);
+                }
+
+                // noinspection unchecked
+                if (filter.accept(name, (T) value)) {
+                    // noinspection unchecked
+                    result.put(name, (T) value);
+                }
+            }
         }
+
+        return result;
     }
 
     @Override

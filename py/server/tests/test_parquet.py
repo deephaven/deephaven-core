@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 import os
@@ -558,17 +558,17 @@ class ParquetTestCase(BaseTestCase):
 
         # Fails since we have a negative read_ahead_count
         with self.assertRaises(DHError):
-            s3.S3Instructions(aws_region_name="us-east-1",
+            s3.S3Instructions(region_name="us-east-1",
                               read_ahead_count=-1,
                               )
 
         # Fails since we provide the key without the secret key
         with self.assertRaises(DHError):
-            s3.S3Instructions(aws_region_name="us-east-1",
-                              aws_access_key_id="Some key without secret",
+            s3.S3Instructions(region_name="us-east-1",
+                              access_key_id="Some key without secret",
                               )
 
-        s3_instructions = s3.S3Instructions(aws_region_name="us-east-1",
+        s3_instructions = s3.S3Instructions(region_name="us-east-1",
                                             read_ahead_count=1,
                                             )
         # Fails because we don't have the right credentials

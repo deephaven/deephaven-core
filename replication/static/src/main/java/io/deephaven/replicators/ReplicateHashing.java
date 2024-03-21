@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.base.verify.Assert;
@@ -19,20 +19,22 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateHashing {
+    private static final String TASK = "replicateHashing";
+
     public static void main(String[] args) throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
+        charToAll(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         final String objectHasher =
-                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         fixupObjectChunkHasher(objectHasher);
 
-        charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCast.java");
-        charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCast.java");
-        charToIntegers(
+        charToIntegers(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCast.java");
+        charToIntegers(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCast.java");
+        charToIntegers(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCastWithOffset.java");
-        charToIntegers(
+        charToIntegers(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCastWithOffset.java");
 
-        final List<String> paths = charToAll(
+        final List<String> paths = charToAll(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         final String floatPath =
                 paths.stream().filter(p -> p.contains("Float")).findFirst().orElseThrow(FileNotFoundException::new);
@@ -43,16 +45,16 @@ public class ReplicateHashing {
         fixupDoubleChunkEquals(doublePath);
 
         final String objectIdentityEquals =
-                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkIdentityEquals(objectIdentityEquals);
 
         final String objectEquals =
-                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkEquals(objectEquals);
 
-        final List<String> compactKernels = charToAll(
+        final List<String> compactKernels = charToAll(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
-        final String objectCompact = charToObject(
+        final String objectCompact = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
         fixupObjectCompact(objectCompact);
         // noinspection OptionalGetWithoutIsPresent
@@ -66,7 +68,7 @@ public class ReplicateHashing {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = addImport(lines, Objects.class);
         FileUtils.writeLines(objectFile, globalReplacements(fixupChunkAttributes(lines), "Object.hashCode",
-                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\)value\\)", "value"));
+                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\) value\\)", "value"));
     }
 
     private static void fixupObjectChunkEquals(String objectPath) throws IOException {

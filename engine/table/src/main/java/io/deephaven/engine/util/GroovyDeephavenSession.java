@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import com.google.auto.service.AutoService;
@@ -15,13 +15,9 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.*;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -52,6 +48,7 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.tools.JavaFileObject;
@@ -72,7 +69,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -557,7 +554,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private static boolean packageIsVisibleToClassGraph(String packageImport) {
-        try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
+        try (ScanResult scanResult =
+                new ClassGraph().enableClassInfo().enableSystemJarsAndModules().acceptPackages(packageImport).scan()) {
             final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
             // force load the class so that the jvm is aware of the package
             firstClassFound.ifPresent(ClassInfo::loadClass);
@@ -744,9 +742,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected Set<String> getVariableNames(Predicate<String> allowName) {
+    protected Set<String> getVariableNames() {
         synchronized (bindingBackingMap) {
-            return bindingBackingMap.keySet().stream().filter(allowName).collect(Collectors.toUnmodifiableSet());
+            return new HashSet<>(bindingBackingMap.keySet());
         }
     }
 
@@ -757,8 +755,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     protected Object setVariable(String name, @Nullable Object newValue) {
-        NameValidator.validateQueryParameterName(name);
-
         Object oldValue = bindingBackingMap.put(name, newValue);
 
         // Observe changes from this "setVariable" (potentially capturing previous or concurrent external changes from
@@ -768,10 +764,28 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @Override
-    protected Map<String, Object> getAllValues() {
+    protected <T> Map<String, T> getAllValues(
+            @Nullable final Function<Object, T> valueMapper,
+            @NotNull final QueryScope.ParamFilter<T> filter) {
+        final Map<String, T> result = new HashMap<>();
+
         synchronized (bindingBackingMap) {
-            return Map.copyOf(bindingBackingMap);
+            for (final Map.Entry<String, Object> entry : bindingBackingMap.entrySet()) {
+                final String name = entry.getKey();
+                Object value = entry.getValue();
+                if (valueMapper != null) {
+                    value = valueMapper.apply(value);
+                }
+
+                // noinspection unchecked
+                if (filter.accept(name, (T) value)) {
+                    // noinspection unchecked
+                    result.put(name, (T) value);
+                }
+            }
         }
+
+        return result;
     }
 
     public Binding getBinding() {

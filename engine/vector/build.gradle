@@ -16,18 +16,3 @@ dependencies {
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/Byte*Vector*.java',
-                '**/Char*Vector*.java',
-                '**/Short*Vector*.java',
-                '**/Int*Vector*.java',
-                '**/Long*Vector*.java',
-                '**/Float*Vector*.java',
-                '**/Double*Vector*.java',
-                '**/Object*Vector*.java'
-        )
-    }
-}

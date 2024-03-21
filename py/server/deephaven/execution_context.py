@@ -1,10 +1,9 @@
 #
-#     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 """This module gives users the ability to directly manage the Deephaven query execution context on threads, which is
 critical for applications to correctly launch deferred query evaluations, such as table update operations in threads.
 """
-from __future__ import annotations
 
 from typing import Sequence, Union
 from contextlib import ContextDecorator

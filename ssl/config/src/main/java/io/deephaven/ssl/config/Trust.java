@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * @see TrustJdk
  * @see TrustProperties
  * @see TrustSystem
+ * @see TrustCustom
  * @see TrustAll
  * @see TrustList
  */
@@ -47,6 +48,8 @@ public interface Trust {
         T visit(TrustProperties properties);
 
         T visit(TrustSystem system);
+
+        T visit(TrustCustom custom);
 
         T visit(TrustAll all);
 

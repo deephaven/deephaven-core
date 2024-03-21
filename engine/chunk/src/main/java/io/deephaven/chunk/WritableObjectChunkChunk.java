@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit WritableCharChunkChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit WritableCharChunkChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -14,7 +13,7 @@ import io.deephaven.chunk.attributes.Any;
 public class WritableObjectChunkChunk<T, ATTR extends Any> extends ObjectChunkChunk<T, ATTR> implements WritableChunkChunk<ATTR> {
 
     public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR>[] makeArray(int capacity) {
-        //noinspection unchecked
+        // noinspection unchecked
         return new WritableObjectChunk[capacity];
     }
 
@@ -26,7 +25,8 @@ public class WritableObjectChunkChunk<T, ATTR extends Any> extends ObjectChunkCh
         return new WritableObjectChunkChunk<>(data, 0, data.length);
     }
 
-    public static <T, ATTR extends Any> WritableObjectChunkChunk<T, ATTR> writableChunkWrap(WritableObjectChunk<T, ATTR>[] data, int offset, int size) {
+    public static <T, ATTR extends Any> WritableObjectChunkChunk<T, ATTR> writableChunkWrap(WritableObjectChunk<T, ATTR>[] data,
+            int offset, int size) {
         return new WritableObjectChunkChunk<>(data, offset, size);
     }
 

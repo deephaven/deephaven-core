@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.compress;
 
 import io.deephaven.util.SafeCloseable;
@@ -55,6 +55,9 @@ public interface CompressorAdapter extends SafeCloseable {
 
     /**
      * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream.
+     * Callers should process the results before {@code inputStream} is closed; if the {@link BytesInput} interface
+     * needs to persist longer than {@code inputStream}, callers should use {@link BytesInput#copy(BytesInput)} on the
+     * results.
      * 
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data

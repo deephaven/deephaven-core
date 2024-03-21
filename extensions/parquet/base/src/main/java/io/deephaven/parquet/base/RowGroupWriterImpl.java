@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.compress.CompressorAdapter;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class RowGroupWriterImpl implements RowGroupWriter {
+final class RowGroupWriterImpl implements RowGroupWriter {
     private final PositionedBufferedOutputStream bufferedOutput;
     private final MessageType type;
     private final int targetPageSize;

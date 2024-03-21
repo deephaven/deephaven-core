@@ -1,11 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.s3;
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
-interface AwsSdkV2Credentials extends AwsCredentials {
+interface AwsSdkV2Credentials extends Credentials {
 
-    AwsCredentialsProvider awsCredentialsProvider();
+    AwsCredentialsProvider awsV2CredentialsProvider();
 }

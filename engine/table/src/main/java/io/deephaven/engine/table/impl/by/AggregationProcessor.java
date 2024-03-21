@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
@@ -127,15 +127,7 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NAN_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NI_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NONNULL_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_PI_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM2_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROW_REDIRECTION_PREFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
 import static io.deephaven.util.type.TypeUtils.isNumeric;
@@ -584,7 +576,10 @@ public class AggregationProcessor implements AggregationContextFactory {
                     isFirst ? "SortedFirst" : "SortedLast", sortColumn));
         }
 
-        final void addWeightedAvgOrSumOperator(@NotNull final String weightName, final boolean isSum) {
+        final void addWeightedAvgOrSumOperator(
+                @NotNull final String weightName,
+                final boolean isSum,
+                final boolean exposeInternal) {
             final ColumnSource<?> weightSource = table.getColumnSource(weightName);
             final boolean weightSourceIsFloatingPoint;
             if (isInteger(weightSource.getChunkType())) {
@@ -653,7 +648,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     }
                 } else {
                     resultOperator = new ChunkedWeightedAverageOperator(
-                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
+                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name(), exposeInternal);
                 }
                 addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
             });
@@ -824,12 +819,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
-            addWeightedAvgOrSumOperator(wAvg.weight().name(), false);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
         }
 
         @Override
@@ -903,13 +898,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final AggSpecTDigest tDigest) {
             rollupUnsupported("TDigest");
-        }
-
-        @Override
-        @FinalDefault
-        default void visit(@NotNull final AggSpecWAvg wAvg) {
-            // TODO(deephaven-core#3350): AggWAvg support for rollup()
-            rollupUnsupported("WAvg", 3350);
         }
     }
 
@@ -1042,7 +1030,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true);
+            // Weighted sum does not need to expose internal columns to re-aggregate.
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecWAvg wAvg) {
+            // Weighted average needs access internal columns to re-aggregate.
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, true);
         }
 
         @Override
@@ -1191,6 +1186,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final AggSpecWAvg wAvg) {
+            reaggregateWAvgOperator();
+        }
+
+
+        @Override
         public void visit(@NotNull final AggSpecVar var) {
             reaggregateStdOrVarOperators(false);
         }
@@ -1285,6 +1286,28 @@ public class AggregationProcessor implements AggregationContextFactory {
                     addOperator(new IntegralChunkedReAvgOperator(resultName, runningSumOp, nonNullCountOp),
                             null, nonNullCountName, runningSumName);
                 }
+            }
+        }
+
+        private void reaggregateWAvgOperator() {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+
+                // Make a recording operator for the sum of weights column
+                final String sumOfWeightsName = resultName + ROLLUP_SUM_WEIGHTS_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final ColumnSource<?> sumOfWeightsSource = table.getColumnSource(sumOfWeightsName);
+
+                final DoubleWeightRecordingInternalOperator doubleWeightOperator =
+                        new DoubleWeightRecordingInternalOperator(sumOfWeightsSource.getChunkType());
+                addOperator(doubleWeightOperator, sumOfWeightsSource, resultName, sumOfWeightsName);
+
+                final ColumnSource<?> weightedAveragesSource = table.getColumnSource(resultName);
+
+                // The sum of weights column is directly usable as the weights for the WAvg re-aggregation.
+                final IterativeChunkedAggregationOperator resultOperator = new ChunkedWeightedAverageOperator(
+                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true);
+
+                addOperator(resultOperator, weightedAveragesSource, resultName, sumOfWeightsName);
             }
         }
 
@@ -1407,7 +1430,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                             new CountAggregationOperator(null)
                     },
                     new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
-                    new ChunkSource.WithPrev[] {null, null});
+                    new ChunkSource.WithPrev[] {null, null},
+                    new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
         }
         // noinspection unchecked
         return new AggregationContext(
@@ -1415,7 +1439,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                         new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
                 },
                 new String[][] {ZERO_LENGTH_STRING_ARRAY},
-                new ChunkSource.WithPrev[] {null});
+                new ChunkSource.WithPrev[] {null},
+                new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
 
     private static ColumnSource<?> maybeReinterpretInstantAsLong(@NotNull final ColumnSource<?> inputSource) {

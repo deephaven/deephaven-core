@@ -1,83 +1,77 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.AsOfJoinMatch;
-import io.deephaven.api.AsOfJoinRule;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.Strings;
-import io.deephaven.api.agg.*;
+import io.deephaven.api.*;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptimizer;
+import io.deephaven.api.agg.AggregationOutputs;
+import io.deephaven.api.agg.Partition;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.base.Pair;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableInitializationException;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
+import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.updateby.UpdateBy;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
-import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.table.iterators.*;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.util.*;
-import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.liveness.Liveness;
-import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
-import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.snapshot.SnapshotIncrementalListener;
 import io.deephaven.engine.table.impl.snapshot.SnapshotInternalListener;
 import io.deephaven.engine.table.impl.snapshot.SnapshotUtils;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
+import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.iterators.*;
+import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.util.IterableUtils;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.systemicmarking.SystemicObject;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -95,8 +89,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
+import static java.lang.Boolean.TRUE;
 
 /**
  * Primary coalesced table implementation.
@@ -148,8 +144,20 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         String getLogPrefix();
 
-        default OperationSnapshotControl newSnapshotControl(final QueryTable queryTable) {
-            return new OperationSnapshotControl(queryTable);
+        /**
+         * Perform pre-instantiation work.
+         *
+         * @param parent The parent table for the operation
+         * @return A {@link SafeCloseable} that will be {@link SafeCloseable#close() closed} when the operation is
+         *         complete, whether successful or not
+         */
+        default SafeCloseable beginOperation(@NotNull final QueryTable parent) {
+            return () -> {
+            };
+        }
+
+        default OperationSnapshotControl newSnapshotControl(final QueryTable parent) {
+            return new OperationSnapshotControl(parent);
         }
 
         /**
@@ -474,13 +482,35 @@ public class QueryTable extends BaseTable<QueryTable> {
      * @param matchPairs the columns that map one-to-one with the result table
      * @return a transformer that passes dirty details via an identity mapping
      */
-    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(QueryTable resultTable,
-            MatchPair... matchPairs) {
+    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(
+            @NotNull final QueryTable resultTable,
+            @NotNull final MatchPair... matchPairs) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
         for (int ii = 0; ii < matchPairs.length; ++ii) {
             columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].leftColumn());
         }
         return newModifiedColumnSetTransformer(MatchPair.getRightColumns(matchPairs), columnSets);
+    }
+
+    /**
+     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
+     * listeners of the provided resultTable.
+     *
+     * @param resultTable the destination table
+     * @param pairs the columns that map one-to-one with the result table
+     * @return a transformer that passes dirty details via an identity mapping
+     */
+    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(
+            @NotNull final QueryTable resultTable,
+            @NotNull final Pair... pairs) {
+        return newModifiedColumnSetTransformer(
+                Arrays.stream(pairs)
+                        .map(Pair::output)
+                        .map(ColumnName::name)
+                        .toArray(String[]::new),
+                Arrays.stream(pairs)
+                        .map(pair -> resultTable.newModifiedColumnSet(pair.input().name()))
+                        .toArray(ModifiedColumnSet[]::new));
     }
 
     /**
@@ -810,8 +840,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final String description = "aggregation(" + aggregationContextFactory
-                    + ", " + groupByColumns + ")";
+            final String description = "aggregation(" + aggregationContextFactory + ", " + groupByColumns + ")";
             return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
                     () -> ChunkedOperatorAggregationHelper.aggregation(
                             aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
@@ -923,54 +952,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
+    public Table moveColumns(final int index, String... columnsToMove) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            // Get the current columns
-            final List<String> currentColumns = getDefinition().getColumnNames();
-
-            // Create a Set from columnsToMove. This way, we can rename and rearrange columns at once.
-            final Set<String> leftColsToMove = new HashSet<>();
-            final Set<String> rightColsToMove = new HashSet<>();
-            int extraCols = 0;
-
-            for (final String columnToMove : columnsToMove) {
-                final String left = MatchPairFactory.getExpression(columnToMove).leftColumn;
-                final String right = MatchPairFactory.getExpression(columnToMove).rightColumn;
-
-                if (!leftColsToMove.add(left) || !currentColumns.contains(left) || (rightColsToMove.contains(left)
-                        && !left.equals(right) && leftColsToMove.stream().anyMatch(col -> col.equals(right)))) {
-                    extraCols++;
-                }
-                if (currentColumns.stream().anyMatch(currentColumn -> currentColumn.equals(right))
-                        && !left.equals(right)
-                        && rightColsToMove.add(right) && !rightColsToMove.contains(left)) {
-                    extraCols--;
-                }
-            }
-            index += moveToEnd ? extraCols : 0;
-
-            // vci for write, cci for currentColumns, ctmi for columnsToMove
-            final SelectColumn[] viewColumns = new SelectColumn[currentColumns.size() + extraCols];
-            for (int vci = 0, cci = 0, ctmi = 0; vci < viewColumns.length;) {
-                if (vci >= index && ctmi < columnsToMove.length) {
-                    viewColumns[vci++] = SelectColumnFactory.getExpression(columnsToMove[ctmi++]);
-                } else {
-                    // Don't add the column if it's one of the columns we're moving or if it has been renamed.
-                    final String currentColumn = currentColumns.get(cci++);
-                    if (!leftColsToMove.contains(currentColumn)
-                            && Arrays.stream(viewColumns).noneMatch(
-                                    viewCol -> viewCol != null
-                                            && viewCol.getMatchPair().leftColumn.equals(currentColumn))
-                            && Arrays.stream(columnsToMove)
-                                    .noneMatch(colToMove -> MatchPairFactory.getExpression(colToMove).rightColumn
-                                            .equals(currentColumn))) {
-
-                        viewColumns[vci++] = SelectColumnFactory.getExpression(currentColumn);
-                    }
-                }
-            }
-            return viewOrUpdateView(Flavor.View, viewColumns);
+            return renameColumnsImpl("moveColumns(" + index + ", ", Math.max(0, index),
+                    Pair.from(columnsToMove));
         }
     }
 
@@ -1056,9 +1042,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all
             // columns have changed.
-            update.removed = upstream == null ? RowSetFactory.empty()
-                    : upstream.removed().intersect(getRowSet());
-            getRowSet().writableCast().remove(update.removed);
+            update.removed = upstream == null
+                    ? RowSetFactory.empty()
+                    : getRowSet().writableCast().extract(upstream.removed());
 
             // Update our rowSet and compute removals due to splatting.
             if (upstream != null && upstream.shifted().nonempty()) {
@@ -1177,16 +1163,62 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    private QueryTable whereInternal(final WhereFilter... filters) {
-        if (filters.length == 0) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
+    private void initializeAndPrioritizeFilters(@NotNull final WhereFilter... filters) {
+        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
+        final int numFilters = filters.length;
+        final BitSet priorityFilterIndexes = new BitSet(numFilters);
+        for (int fi = 0; fi < numFilters; ++fi) {
+            final WhereFilter filter = filters[fi];
+
+            // Initialize our filters immediately so we can examine the columns they use. Note that filter
+            // initialization is safe to invoke repeatedly.
+            filter.init(getDefinition());
+
+            // Simple filters against indexed columns get priority
+            if (dataIndexer != null
+                    && !(filter instanceof ReindexingFilter)
+                    && filter.isSimpleFilter()
+                    && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(ZERO_LENGTH_STRING_ARRAY))) {
+                priorityFilterIndexes.set(fi);
             }
-            return this;
         }
 
-        return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
+        if (priorityFilterIndexes.isEmpty()) {
+            return;
+        }
+
+        // Copy the priority filters to a temporary array
+        final int numPriorityFilters = priorityFilterIndexes.cardinality();
+        final WhereFilter[] priorityFilters = new WhereFilter[numPriorityFilters];
+        // @formatter:off
+        for (int pfi = 0, fi = priorityFilterIndexes.nextSetBit(0);
+             fi >= 0;
+             fi = priorityFilterIndexes.nextSetBit(fi + 1)) {
+            // @formatter:on
+            priorityFilters[pfi++] = filters[fi];
+        }
+        // Move the regular (non-priority) filters to the back of the array
+        // @formatter:off
+        for (int rfi = numFilters - 1, fi = priorityFilterIndexes.previousClearBit(numFilters - 1);
+             fi >= 0;
+             fi = priorityFilterIndexes.previousClearBit(fi - 1)) {
+            // @formatter:on
+            filters[rfi--] = filters[fi];
+        }
+        // Re-add the priority filters at the front of the array
+        System.arraycopy(priorityFilters, 0, filters, 0, numPriorityFilters);
+    }
+
+    private QueryTable whereInternal(final WhereFilter... filters) {
+        if (filters.length == 0) {
+            return (QueryTable) prepareReturnThis();
+        }
+
+        final String whereDescription = "where(" + Arrays.toString(filters) + ")";
+        return QueryPerformanceRecorder.withNugget(whereDescription, sizeForInstrumentation(),
                 () -> {
+                    initializeAndPrioritizeFilters(filters);
+
                     for (int fi = 0; fi < filters.length; ++fi) {
                         if (!(filters[fi] instanceof ReindexingFilter)) {
                             continue;
@@ -1214,101 +1246,117 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result;
                     }
 
-                    List<WhereFilter> selectFilters = new LinkedList<>();
-                    List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
-                    for (final WhereFilter filter : filters) {
-                        filter.init(getDefinition());
-                        if (filter instanceof AbstractConditionFilter
-                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                        } else {
-                            selectFilters.add(filter);
+                    {
+                        final List<WhereFilter> whereFilters = new LinkedList<>();
+                        final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
+                                new LinkedList<>();
+                        for (final WhereFilter filter : filters) {
+                            if (filter instanceof AbstractConditionFilter
+                                    && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
+                                shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
+                            } else {
+                                whereFilters.add(filter);
+                            }
+                        }
+                        if (!shiftColPairs.isEmpty()) {
+                            return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
                         }
                     }
 
-                    if (!shiftColPairs.isEmpty()) {
-                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, selectFilters);
-                    }
-
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        final OperationSnapshotControl snapshotControl =
-                                createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                        try (final SafeCloseable ignored = Arrays.stream(filters)
+                                .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
+                            final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
+                                    (final BaseTable<?> parent) -> {
+                                        /*
+                                         * Note that the dependencies for instantiation may be different from the
+                                         * dependencies for the WhereListener. Do not refactor to share this array with
+                                         * the WhereListener unless you ensure that this no longer holds, i.e. if
+                                         * MatchFilter starts applying data indexes during update processing.
+                                         */
+                                        final NotificationQueue.Dependency[] filterDependencies =
+                                                WhereListener.extractDependencies(filters)
+                                                        .toArray(NotificationQueue.Dependency[]::new);
+                                        getUpdateGraph(filterDependencies);
+                                        return filterDependencies.length > 0
+                                                ? new OperationSnapshotControlEx(parent, filterDependencies)
+                                                : new OperationSnapshotControl(parent);
+                                    });
 
-                        final Mutable<QueryTable> result = new MutableObject<>();
-                        initializeWithSnapshot("where", snapshotControl,
-                                (prevRequested, beforeClock) -> {
-                                    final boolean usePrev = prevRequested && isRefreshing();
-                                    final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
+                            final Mutable<QueryTable> result = new MutableObject<>();
+                            initializeWithSnapshot("where", snapshotControl,
+                                    (prevRequested, beforeClock) -> {
+                                        final boolean usePrev = prevRequested && isRefreshing();
+                                        final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
 
-                                    final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
-                                            new CompletableFuture<>();
+                                        final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
+                                                new CompletableFuture<>();
+                                        final InitialFilterExecution initialFilterExecution =
+                                                new InitialFilterExecution(this, filters, rowSetToUse.copy(), usePrev);
+                                        final TrackingWritableRowSet currentMapping;
+                                        initialFilterExecution.scheduleCompletion((adds, mods) -> {
+                                            currentMappingFuture.complete(adds.writableCast().toTracking());
+                                        }, currentMappingFuture::completeExceptionally);
 
-                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
-                                            this, filters, rowSetToUse.copy(), usePrev);
-                                    final TrackingWritableRowSet currentMapping;
-                                    initialFilterExecution.scheduleCompletion((adds, mods) -> {
-                                        currentMappingFuture.complete(adds.writableCast().toTracking());
-                                    }, currentMappingFuture::completeExceptionally);
-
-                                    try {
-                                        currentMapping = currentMappingFuture.get();
-                                    } catch (ExecutionException | InterruptedException e) {
-                                        if (e instanceof InterruptedException) {
-                                            throw new CancellationException("interrupted while filtering");
-                                        } else if (e.getCause() instanceof RuntimeException) {
-                                            throw (RuntimeException) e.getCause();
-                                        } else {
-                                            throw new UncheckedDeephavenException(e);
+                                        try {
+                                            currentMapping = currentMappingFuture.get();
+                                        } catch (ExecutionException | InterruptedException e) {
+                                            if (e instanceof InterruptedException) {
+                                                throw new CancellationException("interrupted while filtering");
+                                            }
+                                            throw new TableInitializationException(whereDescription,
+                                                    "an exception occurred while performing the initial filter",
+                                                    e.getCause());
+                                        } finally {
+                                            // account for work done in alternative threads
+                                            final BasePerformanceEntry basePerformanceEntry =
+                                                    initialFilterExecution.getBasePerformanceEntry();
+                                            if (basePerformanceEntry != null) {
+                                                QueryPerformanceRecorder.getInstance().getEnclosingNugget()
+                                                        .accumulate(basePerformanceEntry);
+                                            }
                                         }
-                                    } finally {
-                                        // account for work done in alternative threads
-                                        final BasePerformanceEntry basePerformanceEntry =
-                                                initialFilterExecution.getBasePerformanceEntry();
-                                        if (basePerformanceEntry != null) {
-                                            QueryPerformanceRecorder.getInstance().getEnclosingNugget()
-                                                    .accumulate(basePerformanceEntry);
-                                        }
-                                    }
-                                    currentMapping.initializePreviousValue();
+                                        currentMapping.initializePreviousValue();
 
-                                    final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
+                                        final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
-                                    for (final WhereFilter filter : filters) {
-                                        filter.setRecomputeListener(filteredTable);
-                                    }
-                                    final boolean refreshingFilters =
-                                            Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
-                                    copyAttributes(filteredTable, CopyAttributeOperation.Filter);
-                                    // as long as filters do not change, we can propagate add-only/append-only attrs
-                                    if (!refreshingFilters) {
-                                        if (isAddOnly()) {
-                                            filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        for (final WhereFilter filter : filters) {
+                                            filter.setRecomputeListener(filteredTable);
                                         }
-                                        if (isAppendOnly()) {
-                                            filteredTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        final boolean refreshingFilters =
+                                                Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
+                                        copyAttributes(filteredTable, CopyAttributeOperation.Filter);
+                                        // as long as filters do not change, we can propagate add-only/append-only attrs
+                                        if (!refreshingFilters) {
+                                            if (isAddOnly()) {
+                                                filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, TRUE);
+                                            }
+                                            if (isAppendOnly()) {
+                                                filteredTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, TRUE);
+                                            }
                                         }
-                                    }
 
-                                    if (snapshotControl != null) {
-                                        final ListenerRecorder recorder = new ListenerRecorder(
-                                                "where(" + Arrays.toString(filters) + ")", QueryTable.this,
-                                                filteredTable);
-                                        final WhereListener whereListener = new WhereListener(
-                                                log, this, recorder, filteredTable, filters);
-                                        filteredTable.setWhereListener(whereListener);
-                                        recorder.setMergedListener(whereListener);
-                                        snapshotControl.setListenerAndResult(recorder, filteredTable);
-                                        filteredTable.addParentReference(whereListener);
-                                    } else if (refreshingFilters) {
-                                        final WhereListener whereListener = new WhereListener(
-                                                log, this, null, filteredTable, filters);
-                                        filteredTable.setWhereListener(whereListener);
-                                        filteredTable.addParentReference(whereListener);
-                                    }
-                                    result.setValue(filteredTable);
-                                    return true;
-                                });
-                        return result.getValue();
+                                        if (snapshotControl != null) {
+                                            final ListenerRecorder recorder = new ListenerRecorder(
+                                                    whereDescription, QueryTable.this,
+                                                    filteredTable);
+                                            final WhereListener whereListener = new WhereListener(
+                                                    log, this, recorder, filteredTable, filters);
+                                            filteredTable.setWhereListener(whereListener);
+                                            recorder.setMergedListener(whereListener);
+                                            snapshotControl.setListenerAndResult(recorder, filteredTable);
+                                            filteredTable.addParentReference(whereListener);
+                                        } else if (refreshingFilters) {
+                                            final WhereListener whereListener = new WhereListener(
+                                                    log, this, null, filteredTable, filters);
+                                            filteredTable.setWhereListener(whereListener);
+                                            filteredTable.addParentReference(whereListener);
+                                        }
+                                        result.setValue(filteredTable);
+                                        return true;
+                                    });
+                            return result.getValue();
+                        }
                     });
                 });
     }
@@ -1338,7 +1386,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final Table distinctValues;
                     final boolean setRefreshing = rightTable.isRefreshing();
-                    if (setRefreshing) {
+
+                    final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
+                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, columnNames);
+                    if (rightIndex != null) {
+                        // We have a distinct index table, let's use it.
+                        distinctValues = rightIndex.table();
+                    } else if (setRefreshing) {
                         distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
                     } else {
                         distinctValues = rightTable;
@@ -1501,12 +1555,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {
-                                if (e.getCause() instanceof RuntimeException) {
-                                    throw (RuntimeException) e.getCause();
-                                } else {
-                                    throw new UncheckedDeephavenException("Failure computing select or update",
-                                            e.getCause());
-                                }
+                                throw new TableInitializationException(updateDescription,
+                                        "an exception occurred while performing the initial select or update",
+                                        e.getCause());
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
@@ -1530,9 +1581,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             if (resultTable.getRowSet().isFlat()) {
                                 resultTable.setFlat();
                             }
-                            if (resultTable.getRowSet() == rowSet) {
-                                propagateGrouping(processedColumns, resultTable);
-                            }
+                            propagateDataIndexes(processedColumns, resultTable);
                             for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
                                 if (columnSource instanceof PossiblyImmutableColumnSource) {
                                     ((PossiblyImmutableColumnSource) columnSource).setImmutable();
@@ -1554,8 +1603,39 @@ public class QueryTable extends BaseTable<QueryTable> {
                 }));
     }
 
-    private void propagateGrouping(SelectColumn[] selectColumns, QueryTable resultTable) {
-        final Set<String> usedOutputColumns = new HashSet<>();
+    /**
+     * Data indexes on select source columns may be valid in the result table. Add new mappings so the data indexes are
+     * retrievable from the result table column sources.
+     */
+    private void propagateDataIndexes(SelectColumn[] selectColumns, QueryTable resultTable) {
+        if (rowSet != resultTable.getRowSet()) {
+            return;
+        }
+
+        // Get a list of all the data indexes in the source table.
+        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
+        if (dataIndexer == null) {
+            return;
+        }
+        final List<DataIndex> dataIndexes = dataIndexer.dataIndexes(false);
+        if (dataIndexes.isEmpty()) {
+            return;
+        }
+
+        // Make a set containing only the columns that were part of indexes.
+        Set<ColumnSource<?>> indexedColumns = new HashSet<>();
+        dataIndexes.forEach(di -> {
+            indexedColumns.addAll(di.keyColumnNamesByIndexedColumn().keySet());
+        });
+
+        final Set<ColumnSource<?>> usedOutputColumns = new HashSet<>();
+
+        // Maintain a list of unique old to new mappings.
+        // NOTE: this is complex because select() may return multiple aliases for the same source column. Until/unless
+        // we have a guarantee that only a single alias is created, we must create a new data index for each alias and
+        // this requires generating all unique mappings for these columns.
+        final List<Map<ColumnSource<?>, ColumnSource<?>>> oldToNewMaps = new ArrayList<>();
+
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
                 selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
@@ -1565,39 +1645,67 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (selectColumn instanceof SourceColumn) {
                 sourceColumn = (SourceColumn) selectColumn;
             }
-            if (sourceColumn != null && !usedOutputColumns.contains(sourceColumn.getSourceName())) {
-                final ColumnSource<?> originalColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        getColumnSource(sourceColumn.getSourceName()));
-                final ColumnSource<?> selectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        resultTable.getColumnSource(sourceColumn.getName()));
-                if (originalColumnSource != selectedColumnSource) {
-                    if (originalColumnSource instanceof DeferredGroupingColumnSource) {
-                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
-                        final GroupingProvider<?> groupingProvider =
-                                ((DeferredGroupingColumnSource<?>) originalColumnSource).getGroupingProvider();
-                        if (groupingProvider != null) {
-                            // noinspection unchecked,rawtypes
-                            deferredGroupingSelectedSource.setGroupingProvider((GroupingProvider) groupingProvider);
-                        } else if (originalColumnSource.getGroupToRange() != null) {
-                            // noinspection unchecked,rawtypes
-                            deferredGroupingSelectedSource
-                                    .setGroupToRange((Map) originalColumnSource.getGroupToRange());
-                        }
-                    } else if (originalColumnSource.getGroupToRange() != null) {
-                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
-                        // noinspection unchecked,rawtypes
-                        deferredGroupingSelectedSource.setGroupToRange((Map) originalColumnSource.getGroupToRange());
-                    } else {
-                        final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
-                        if (indexer.hasGrouping(originalColumnSource)) {
-                            indexer.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
-                        }
-                    }
-                }
+
+            if (sourceColumn == null) {
+                continue;
             }
-            usedOutputColumns.add(selectColumn.getName());
+
+            final ColumnSource<?> resultSource = resultTable.getColumnSource(sourceColumn.getName());
+            if (usedOutputColumns.contains(resultSource)) {
+                // We already handled this result source.
+                continue;
+            }
+            usedOutputColumns.add(resultSource);
+
+            final ColumnSource<?> originalSource = getColumnSource(sourceColumn.getSourceName());
+            if (!indexedColumns.contains(originalSource) || originalSource == resultSource) {
+                // Not part of an index, or not changed, ignore this column.
+                continue;
+            }
+
+            if (oldToNewMaps.isEmpty()) {
+                oldToNewMaps.add(new HashMap<>());
+            }
+
+            // Map original source to the new source.
+            final Map<ColumnSource<?>, ColumnSource<?>> firstMap = oldToNewMaps.get(0);
+            if (firstMap.containsKey(originalSource)) {
+                // We have a collision, which means our mapping won't be unique. We need to clone
+                // conflicting mappings with a new map containing our updated target.
+                final ColumnSource<?> previousResultSource = firstMap.get(originalSource);
+                final List<Map<ColumnSource<?>, ColumnSource<?>>> newMaps = new ArrayList<>();
+                oldToNewMaps.stream()
+                        .filter(map -> map.get(originalSource) == previousResultSource)
+                        .forEach(map -> {
+                            final Map<ColumnSource<?>, ColumnSource<?>> newMap = new HashMap<>(map);
+                            newMap.put(originalSource, resultSource);
+                            newMaps.add(newMap);
+                        });
+                oldToNewMaps.addAll(newMaps);
+            } else {
+                oldToNewMaps.forEach(map -> map.put(originalSource, resultSource));
+            }
+        }
+
+        if (oldToNewMaps.isEmpty()) {
+            return;
+        }
+
+        // Add new DataIndex entries to the DataIndexer with the remapped column sources.
+        for (final DataIndex dataIndex : dataIndexes) {
+            // Create a new data index for each unique mapping.
+            oldToNewMaps.forEach(map -> {
+                if (Collections.disjoint(dataIndex.keyColumnNamesByIndexedColumn().keySet(), map.keySet())) {
+                    // The index contains no remapped original sources, no work needed.
+                    return;
+                }
+
+                // Create a new DataIndex using the new column sources as keys.
+                final DataIndex remappedIndex = dataIndex.remapKeyColumns(map);
+
+                // Add the new index to the DataIndexer.
+                dataIndexer.addDataIndex(remappedIndex);
+            });
         }
     }
 
@@ -1732,7 +1840,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
                                 this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet,
                                 getModifiedColumnSetForUpdates(),
-                                true, false, selectColumns);
+                                true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
                         final QueryTable result = new QueryTable(
@@ -1819,76 +1927,139 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table renameColumns(Collection<io.deephaven.api.Pair> pairs) {
+    public Table renameColumns(Collection<Pair> pairs) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return renameColumnsImpl(MatchPair.fromPairs(pairs));
+            return renameColumnsImpl("renameColumns(", -1, pairs);
         }
     }
 
-    private Table renameColumnsImpl(MatchPair... pairs) {
-        return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")",
+    private Table renameColumnsImpl(
+            @NotNull final String methodNuggetPrefix,
+            final int movePosition,
+            @NotNull final Collection<Pair> pairs) {
+        final String pairsLogString = Strings.ofPairs(pairs);
+        return QueryPerformanceRecorder.withNugget(methodNuggetPrefix + pairsLogString + ")",
                 sizeForInstrumentation(), () -> {
-                    if (pairs == null || pairs.length == 0) {
+                    if (pairs.isEmpty()) {
                         return prepareReturnThis();
                     }
 
-                    checkInitiateOperation();
+                    Set<String> notFound = null;
+                    Set<String> duplicateSource = null;
+                    Set<String> duplicateDest = null;
 
-                    final Map<String, String> pairLookup = new HashMap<>();
-                    for (final MatchPair pair : pairs) {
-                        if (pair.leftColumn == null || pair.leftColumn.equals("")) {
-                            throw new IllegalArgumentException(
-                                    "Bad left column in rename pair \"" + pair + "\"");
+                    final Set<ColumnName> newNames = new HashSet<>();
+                    final Map<ColumnName, ColumnName> pairLookup = new LinkedHashMap<>();
+                    for (final Pair pair : pairs) {
+                        if (!columns.containsKey(pair.input().name())) {
+                            (notFound == null ? notFound = new LinkedHashSet<>() : notFound)
+                                    .add(pair.input().name());
                         }
-                        if (null == columns.get(pair.rightColumn)) {
-                            throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
+                        if (pairLookup.put(pair.input(), pair.output()) != null) {
+                            (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
+                                    .add(pair.input().name());
                         }
-                        pairLookup.put(pair.rightColumn, pair.leftColumn);
+                        if (!newNames.add(pair.output())) {
+                            (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
+                                    .add(pair.output().name());
+                        }
                     }
 
-                    int mcsPairIdx = 0;
-                    final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
+                    // if we accumulated any errors, build one mega error message and throw it
+                    if (notFound != null || duplicateSource != null || duplicateDest != null) {
+                        throw new IllegalArgumentException(Stream.of(
+                                notFound == null ? null : "Column(s) not found: " + String.join(", ", notFound),
+                                duplicateSource == null ? null
+                                        : "Duplicate source column(s): " + String.join(", ", duplicateSource),
+                                duplicateDest == null ? null
+                                        : "Duplicate destination column(s): " + String.join(", ", duplicateDest))
+                                .filter(Objects::nonNull).collect(Collectors.joining("\n")));
+                    }
 
+                    final MutableInt mcsPairIdx = new MutableInt();
+                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size()];
                     final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
-                    for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
-                        final String oldName = entry.getKey();
-                        final ColumnSource<?> columnSource = entry.getValue();
-                        String newName = pairLookup.get(oldName);
-                        if (newName == null) {
-                            newName = oldName;
+
+                    final Runnable moveColumns = () -> {
+                        for (final Map.Entry<ColumnName, ColumnName> rename : pairLookup.entrySet()) {
+                            final ColumnName oldName = rename.getKey();
+                            final ColumnName newName = rename.getValue();
+                            final ColumnSource<?> columnSource = columns.get(oldName.name());
+                            newColumns.put(newName.name(), columnSource);
+                            modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
+                                    Pair.of(newName, oldName);
                         }
-                        modifiedColumnSetPairs[mcsPairIdx++] = new MatchPair(newName, oldName);
-                        newColumns.put(newName, columnSource);
-                    }
+                    };
 
-                    final QueryTable queryTable = new QueryTable(rowSet, newColumns);
-                    if (isRefreshing()) {
-                        final ModifiedColumnSet.Transformer mcsTransformer =
-                                newModifiedColumnSetTransformer(queryTable, modifiedColumnSetPairs);
-                        addUpdateListener(new ListenerImpl("renameColumns(" + Arrays.deepToString(pairs) + ')',
-                                this, queryTable) {
-                            @Override
-                            public void onUpdate(final TableUpdate upstream) {
-                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = queryTable.getModifiedColumnSetForUpdates();
-                                if (upstream.modified().isNonempty()) {
-                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
-                                            downstream.modifiedColumnSet);
-                                } else {
-                                    downstream.modifiedColumnSet.clear();
-                                }
-                                queryTable.notifyListeners(downstream);
+                    for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
+                        final ColumnName oldName = ColumnName.of(entry.getKey());
+                        final ColumnSource<?> columnSource = entry.getValue();
+                        ColumnName newName = pairLookup.get(oldName);
+                        if (newName == null) {
+                            if (newNames.contains(oldName)) {
+                                // this column is being replaced by a rename
+                                continue;
                             }
-                        });
+                            newName = oldName;
+                        } else if (movePosition >= 0) {
+                            // we move this column when we get to the right position
+                            continue;
+                        }
+
+                        if (mcsPairIdx.intValue() == movePosition) {
+                            moveColumns.run();
+                        }
+
+                        modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
+                                Pair.of(newName, oldName);
+                        newColumns.put(newName.name(), columnSource);
                     }
-                    propagateFlatness(queryTable);
 
-                    copyAttributes(queryTable, CopyAttributeOperation.RenameColumns);
-                    copySortableColumns(queryTable, pairs);
-                    maybeCopyColumnDescriptions(queryTable, pairs);
+                    if (mcsPairIdx.intValue() <= movePosition) {
+                        moveColumns.run();
+                    }
 
-                    return queryTable;
+                    final Mutable<QueryTable> result = new MutableObject<>();
+
+                    final OperationSnapshotControl snapshotControl =
+                            createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+                    initializeWithSnapshot("renameColumns", snapshotControl, (usePrev, beforeClockValue) -> {
+                        final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                        propagateFlatness(resultTable);
+
+                        copyAttributes(resultTable, CopyAttributeOperation.RenameColumns);
+                        copySortableColumns(resultTable, pairs);
+                        maybeCopyColumnDescriptions(resultTable, pairs);
+
+                        if (snapshotControl != null) {
+                            final ModifiedColumnSet.Transformer mcsTransformer =
+                                    newModifiedColumnSetTransformer(resultTable, modifiedColumnSetPairs);
+                            final ListenerImpl listener = new ListenerImpl(
+                                    methodNuggetPrefix + pairsLogString + ')', this, resultTable) {
+                                @Override
+                                public void onUpdate(final TableUpdate upstream) {
+                                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                                    if (upstream.modified().isNonempty()) {
+                                        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+                                        mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                                downstream.modifiedColumnSet);
+                                    } else {
+                                        downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                                    }
+                                    resultTable.notifyListeners(downstream);
+                                }
+                            };
+                            snapshotControl.setListenerAndResult(listener, resultTable);
+                        }
+
+                        result.setValue(resultTable);
+
+                        return true;
+                    });
+
+                    return result.getValue();
+
                 });
     }
 
@@ -2148,7 +2319,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
-                            .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                            .ungroup(columnsToUngroupBy.toArray(ZERO_LENGTH_STRING_ARRAY));
 
                     maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
 
@@ -3235,10 +3406,10 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own, the caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
-     *
+     * <p>
      * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
      * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
      * the enclosing operation.
@@ -3255,15 +3426,37 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     /**
+     * Get a {@link Table} that adds, or overwrites, columns from {@code this}. The result will share the same
+     * {@link #getRowSet() row set} as this table.
+     * <p>
+     * The result will not update on its own. The caller must also establish an appropriate listener to update the
+     * provided column sources and propagate {@link TableUpdate updates}.
+     * <p>
+     * No attributes are propagated to the result table.
+     *
+     * @param additionalSources The additional columns to add or overwrite
+     * @return A new table with the additional columns
+     */
+    public QueryTable withAdditionalColumns(@NotNull final Map<String, ColumnSource<?>> additionalSources) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(this.columns);
+            columns.putAll(additionalSources);
+            final TableDefinition definition = TableDefinition.inferFrom(columns);
+            return new QueryTable(definition, rowSet, columns, null, null);
+        }
+    }
+
+    /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own, the caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
-     *
+     * <p>
      * This method is intended to be used for composing alternative engine operations, in particular
      * {@link #partitionBy(boolean, String...)}.
-     *
+     * <p>
      * No {@link QueryPerformanceNugget nugget} is opened for this table, to prevent operations that call this
      * repeatedly from having an inordinate performance penalty. If callers require a nugget, they must create one in
      * the enclosing operation.
@@ -3519,28 +3712,30 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(operation.getDescription(), sizeForInstrumentation(), () -> {
             final Mutable<T> resultTable = new MutableObject<>();
 
-            final OperationSnapshotControl snapshotControl;
-            if (isRefreshing() && operation.snapshotNeeded()) {
-                snapshotControl = operation.newSnapshotControl(this);
-            } else {
-                snapshotControl = null;
+            try (final SafeCloseable ignored = operation.beginOperation(this)) {
+                final OperationSnapshotControl snapshotControl;
+                if (isRefreshing() && operation.snapshotNeeded()) {
+                    snapshotControl = operation.newSnapshotControl(this);
+                } else {
+                    snapshotControl = null;
+                }
+
+                initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
+                    final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);
+                    if (result == null) {
+                        return false;
+                    }
+
+                    resultTable.setValue(result.resultNode);
+                    if (snapshotControl != null) {
+                        snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
+                    }
+
+                    return true;
+                });
+
+                return resultTable.getValue();
             }
-
-            initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
-                final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);
-                if (result == null) {
-                    return false;
-                }
-
-                resultTable.setValue(result.resultNode);
-                if (snapshotControl != null) {
-                    snapshotControl.setListenerAndResult(result.resultListener, result.resultNode);
-                }
-
-                return true;
-            });
-
-            return resultTable.getValue();
         });
     }
 

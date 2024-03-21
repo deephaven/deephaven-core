@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.Chunk;
@@ -45,26 +45,31 @@ public interface ArrayExpansionKernel {
     }
 
     /**
-     * This expands the source from a {@code T[]} per element to a flat {@code T} per element. The kernel records the number of
-     * consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is owned by the caller.
+     * This expands the source from a {@code T[]} per element to a flat {@code T} per element. The kernel records the
+     * number of consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is owned
+     * by the caller.
      *
      * @param source the source chunk of T[] to expand
-     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to {@code source.get(i).length}
+     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is
+     *        equivalent to {@code source.get(i).length}
      * @return an unrolled/flattened chunk of T
      */
-    <T, A extends Any> WritableChunk<A> expand(ObjectChunk<T, A> source, WritableIntChunk<ChunkPositions> perElementLengthDest);
+    <T, A extends Any> WritableChunk<A> expand(ObjectChunk<T, A> source,
+            WritableIntChunk<ChunkPositions> perElementLengthDest);
 
     /**
-     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a {@code Chunk<T[]>}. The returned
-     * chunk is owned by the caller.
+     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a
+     * {@code Chunk<T[]>}. The returned chunk is owned by the caller.
      *
      * @param source the source chunk of T to contract
-     * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to {@code source.get(i).length}
+     * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
+     *        {@code source.get(i).length}
      * @param outChunk the returned chunk from an earlier record batch
      * @param outOffset the offset to start writing into {@code outChunk}
      * @param totalRows the total known rows for this column; if known (else 0)
      * @return a result chunk of T[]
      */
     <T, A extends Any> WritableObjectChunk<T, A> contract(
-            Chunk<A> source, IntChunk<ChunkPositions> perElementLengthDest, WritableChunk<A> outChunk, int outOffset, int totalRows);
+            Chunk<A> source, IntChunk<ChunkPositions> perElementLengthDest, WritableChunk<A> outChunk, int outOffset,
+            int totalRows);
 }

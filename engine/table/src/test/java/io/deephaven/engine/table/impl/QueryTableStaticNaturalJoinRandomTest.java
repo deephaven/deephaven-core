@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.TableOperationsDefaults;
@@ -85,7 +85,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
                         rightGenerator,
                         new IntGenerator()));
         final List<ColumnInfo.ColAttributes> leftKeyAttributes =
-                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Grouped)
+                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Indexed)
                         : Collections.emptyList();
         final QueryTable leftTable = getTable(false, leftSize, random,
                 initColumnInfos(new String[] {"JoinKey", "LeftSentinel"},

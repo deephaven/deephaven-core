@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -37,10 +38,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * A ColumnSource backed by in-memory arrays of data.
@@ -49,7 +46,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * that the column source can be incrementally expanded without copying data from one array to another.
  */
 public abstract class ArrayBackedColumnSource<T>
-        extends AbstractDeferredGroupingColumnSource<T>
+        extends AbstractColumnSource<T>
         implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 

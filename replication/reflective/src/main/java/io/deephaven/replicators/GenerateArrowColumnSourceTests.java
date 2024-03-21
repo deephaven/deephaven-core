@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import com.squareup.javapoet.AnnotationSpec;
@@ -234,17 +237,18 @@ public class GenerateArrowColumnSourceTests {
 
         String path = "extensions/arrow/src/test/java/io/deephaven/extensions/arrow/" + className + ".java";
         try {
-            final String header = Stream.of(
-                    "/*",
-                    " * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending",
-                    " */",
-                    "/*",
-                    " * ---------------------------------------------------------------------------------------------------------------------",
-                    " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
-                            + MethodHandles.lookup().lookupClass().getSimpleName() + " and regenerate",
-                    " * ---------------------------------------------------------------------------------------------------------------------",
-                    " */",
-                    "").collect(Collectors.joining(System.lineSeparator()));
+            String gradleTask = "generateArrowColumnTestSources";
+            Class<?> generatorClass = GenerateArrowColumnSourceTests.class;
+            final String header = String.join("\n",
+                    "//",
+                    "// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending",
+                    "//",
+                    "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                    "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
+                            + "\" to regenerate",
+                    "//",
+                    "// @formatter:off",
+                    "");
 
             Files.write(Paths.get(path), (header + javaFile).getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
