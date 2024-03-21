@@ -15,8 +15,7 @@ import io.deephaven.util.SafeCloseable;
 public interface ColumnIterator<DATA_TYPE> extends CloseableIterator<DATA_TYPE>, SafeCloseable {
 
     @Override
-    default void close() {
-    }
+    default void close() {}
 
     /**
      * @return The number of elements remaining in this ColumnIterator

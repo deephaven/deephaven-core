@@ -43,7 +43,7 @@ public class SafeCloseablePair<A extends AutoCloseable, B extends AutoCloseable>
     }
 
     public static <A extends SafeCloseable, B extends SafeCloseable> SafeCloseablePair<A, B> of(final A first,
-                                                                                                final B second) {
+            final B second) {
         return new SafeCloseablePair<>(first, second);
     }
 
