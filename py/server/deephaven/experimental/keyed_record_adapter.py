@@ -80,7 +80,7 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
                 for jj, key_cmpnt in enumerate(composite_key):
                     # Convert the key components from whatever Python type they happen to be to the appropriate
                     # Java type (from key_dtypes)
-                    composite_key_array[jj] = jpy.as_jobj(key_cmpnt, self.key_dtypes[jj].j_type)
+                    composite_key_array[jj] = jpy.convert(key_cmpnt, self.key_dtypes[jj].j_type)
 
                 data_keys_java_arg[ii] = composite_key_array
 
