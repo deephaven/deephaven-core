@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -58,8 +57,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaArrayClass.put('O', Object[].class);
     }
 
-
-
     /**
      * Ensure that the class initializer runs.
      */
@@ -85,14 +82,12 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     @Override
     public boolean isVectorizableReturnType() {
         parseSignature();
-        return vectorizableReturnTypes.contains(returnType);
+        return vectorizableReturnTypes.contains(signature.getReturnType());
     }
 
     private final PyObject pyCallable;
-
     private String signatureString = null;
-    private List<Parameter> parameters = new ArrayList<>();
-    private Class<?> returnType;
+    private Signature signature;
     private boolean vectorizable = false;
     private boolean vectorized = false;
     private Collection<ChunkArgument> chunkArguments;
@@ -125,7 +120,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                 ((ColumnChunkArgument) arg).setSourceChunkIndex(chunkSourceIndex);
             }
         }
-        return new ArgumentsChunked(chunkArguments, returnType, numbaVectorized);
+        return new ArgumentsChunked(chunkArguments, signature.getReturnType(), numbaVectorized);
     }
 
     /**
@@ -202,6 +197,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
 
         String pyEncodedParamsStr = signatureString.split("->")[0];
+        List<Parameter> parameters = new ArrayList<>();
         if (!pyEncodedParamsStr.isEmpty()) {
             String[] pyEncodedParams = pyEncodedParamsStr.split(",");
             for (int i = 0; i < pyEncodedParams.length; i++) {
@@ -228,15 +224,18 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             }
         }
 
-        returnType = pyUdfDecoratedCallable.getAttribute("return_type", null);
+        Class<?> returnType = pyUdfDecoratedCallable.getAttribute("return_type", null);
         if (returnType == null) {
             throw new IllegalStateException(
                     "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
         }
 
         if (returnType == boolean.class) {
-            this.returnType = Boolean.class;
+            returnType = Boolean.class;
         }
+
+        signature = new Signature(parameters, returnType);
+
     }
 
     private boolean isSafelyCastable(Set<Class<?>> types, Class<?> type) {
@@ -254,6 +253,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     public void verifyArguments(Class<?>[] argTypes) {
         String callableName = pyCallable.getAttribute("__name__").toString();
+        List<Parameter> parameters = signature.getParameters();
 
         for (int i = 0; i < argTypes.length; i++) {
             Set<Class<?>> types =
@@ -294,16 +294,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     }
 
     @Override
-    public List<Parameter> getParameters() {
-        return parameters;
-    }
-
-    @Override
-    public int getNumParameters() {
-        return parameters.size();
-    }
-
-    @Override
     public boolean isVectorized() {
         return vectorized;
     }
@@ -329,8 +319,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     }
 
     @Override
-    public Class<?> getReturnType() {
-        return returnType;
+    public Signature getSignature() {
+        return signature;
     }
 
 }

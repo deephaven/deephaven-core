@@ -20,10 +20,6 @@ public interface PyCallableWrapper {
 
     Object call(Object... args);
 
-    List<Parameter> getParameters();
-
-    int getNumParameters();
-
     boolean isVectorized();
 
     boolean isVectorizable();
@@ -34,9 +30,46 @@ public interface PyCallableWrapper {
 
     void addChunkArgument(ChunkArgument chunkArgument);
 
-    Class<?> getReturnType();
+    Signature getSignature();
 
     void verifyArguments(Class<?>[] argTypes);
+
+    class Parameter {
+        private final String name;
+        private final Set<Class<?>> possibleTypes;
+
+
+        public Parameter(String name, Set<Class<?>> possibleTypes) {
+            this.name = name;
+            this.possibleTypes = possibleTypes;
+        }
+
+        public Set<Class<?>> getPossibleTypes() {
+            return possibleTypes;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    class Signature {
+        private final List<Parameter> parameters;
+        private final Class<?> returnType;
+
+        public Signature(List<Parameter> parameters, Class<?> returnType) {
+            this.parameters = parameters;
+            this.returnType = returnType;
+        }
+
+        public List<Parameter> getParameters() {
+            return parameters;
+        }
+
+        public Class<?> getReturnType() {
+            return returnType;
+        }
+    }
 
     abstract class ChunkArgument {
         private final Class<?> type;
@@ -93,41 +126,5 @@ public interface PyCallableWrapper {
     }
 
     boolean isVectorizableReturnType();
-
-    class Signature {
-        private final List<Parameter> parameters;
-        private final Class<?> returnType;
-
-        public Signature(List<Parameter> parameters, Class<?> returnType) {
-            this.parameters = parameters;
-            this.returnType = returnType;
-        }
-
-        public List<Parameter> getParameters() {
-            return parameters;
-        }
-
-        public Class<?> getReturnType() {
-            return returnType;
-        }
-    }
-    class Parameter {
-        private final String name;
-        private final Set<Class<?>> possibleTypes;
-
-
-        public Parameter(String name, Set<Class<?>> possibleTypes) {
-            this.name = name;
-            this.possibleTypes = possibleTypes;
-        }
-
-        public Set<Class<?>> getPossibleTypes() {
-            return possibleTypes;
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
 
 }

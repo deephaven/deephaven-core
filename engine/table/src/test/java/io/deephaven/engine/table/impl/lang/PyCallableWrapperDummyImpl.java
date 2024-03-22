@@ -45,16 +45,6 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public List<Parameter> getParameters() {
-        return new ArrayList<>();
-    }
-
-    @Override
-    public int getNumParameters() {
-        return 0;
-    }
-
     public List<Class<?>> getParamTypes() {
         return parameterTypes;
     }
@@ -81,8 +71,8 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
     public void addChunkArgument(ChunkArgument ignored) {}
 
     @Override
-    public Class<?> getReturnType() {
-        return Object.class;
+    public Signature getSignature() {
+        return null;
     }
 
     @Override

@@ -1985,8 +1985,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 if (target == short.class)
                     return true;
             case ShortPrimitive:
-            case CharPrimitive:
-                if (target == int.class)
+            case CharPrimitive: // char is unsigned, so it's a lossless conversion to int
+                if (target == int.class) // this covers all the smaller integer types
                     return true;
             case IntPrimitive:
                 if (target == long.class)
@@ -2552,11 +2552,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         final PyCallableDetails pyCallableDetails = n.getData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS);
         final String pyMethodName = pyCallableDetails.pythonMethodName;
-        final Object paramValueRaw = queryScopeVariables.get(pyMethodName);
-        if (!(paramValueRaw instanceof PyCallableWrapper)) {
+        final Object methodVar = queryScopeVariables.get(pyMethodName);
+        if (!(methodVar instanceof PyCallableWrapper)) {
             return;
         }
-        final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
+        final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) methodVar;
         pyCallableWrapper.parseSignature();
         pyCallableWrapper.verifyArguments(argTypes);
     }
@@ -2608,7 +2608,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) paramValueRaw;
         pyCallableWrapper.parseSignature();
-        return Optional.ofNullable(pyCallableWrapper.getReturnType());
+        return Optional.ofNullable(pyCallableWrapper.getSignature().getReturnType());
     }
 
     @NotNull
@@ -2739,7 +2739,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         pyCallableWrapper.parseSignature();
         if (!pyCallableWrapper.isVectorizableReturnType()) {
             throw new PythonCallVectorizationFailure(
-                    "Python function return type is not supported: " + pyCallableWrapper.getReturnType());
+                    "Python function return type is not supported: "
+                            + pyCallableWrapper.getSignature().getReturnType());
         }
 
         // Python vectorized functions(numba, DH) return arrays of primitive/Object types. This will break the generated
@@ -2782,10 +2783,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         }
 
-        if (pyCallableWrapper.getNumParameters() != expressions.length) {
+        if (pyCallableWrapper.getSignature().getParameters().size() != expressions.length) {
             // note vectorization doesn't handle Python variadic arguments
             throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
-                    + pyCallableWrapper.getNumParameters() + " vs. " + expressions.length);
+                    + pyCallableWrapper.getSignature().getParameters().size() + " vs. " + expressions.length);
         }
     }
 
@@ -2794,9 +2795,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Expression[] expressions,
             Class<?>[] argTypes,
             PyCallableWrapper pyCallableWrapper) {
-        if (pyCallableWrapper.getNumParameters() != expressions.length) {
+        if (pyCallableWrapper.getSignature().getParameters().size() != expressions.length) {
             throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
-                    + pyCallableWrapper.getNumParameters() + " vs. " + expressions.length);
+                    + pyCallableWrapper.getSignature().getParameters().size() + " vs. " + expressions.length);
         }
 
         pyCallableWrapper.initializeChunkArguments();
