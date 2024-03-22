@@ -64,5 +64,6 @@ setup(
                    libraries=["dhcore_static"]
         )]),
     python_requires='>=3.8',
-    install_requires=[f"pydeephaven=={_version}"]
+    install_requires=[f"pydeephaven=={_version}"],
+    package_data={'pydeephaven_ticking': ['py.typed']}
 )
