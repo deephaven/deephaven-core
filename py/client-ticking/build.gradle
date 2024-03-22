@@ -13,8 +13,8 @@ dependencies {
 }
 
 evaluationDependsOn(':cpp-client')
-evaluationDependsOn Docker.registryProject('fedora39')
-evaluationDependsOn Docker.registryProject('ubi8')
+evaluationDependsOn Docker.registryProject('fedora')
+evaluationDependsOn Docker.registryProject('ubi-minimal')
 
 def prefix = '/opt/deephaven'
 
@@ -181,7 +181,7 @@ def testPyClientTicking = testPyClientTickingManyLinux(
     checksWheelSet,
     'testPyClientTicking',
     'pyClientTicking',
-    'ubi8')
+    'ubi-minimal')
 
 def wheelsSet = [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
 def pyClientTickingAllWheels = buildPyClientTickingManyLinux(String.join(' ', wheelsSet), 'pyClientTickingAllWheels')
@@ -190,7 +190,7 @@ def testPyClientTickingAllWheels = testPyClientTickingManyLinux(
     String.join(' ', wheelsSet),
     'testPyClientTickingAllWheels',
     'pyClientTickingAllWheels',
-    'fedora39')
+    'fedora')
 
 tasks.getByName('check').dependsOn(testPyClientTicking)
 tasks.getByName('testPyClientTickingPrepareDocker').dependsOn(pyClientTicking)
