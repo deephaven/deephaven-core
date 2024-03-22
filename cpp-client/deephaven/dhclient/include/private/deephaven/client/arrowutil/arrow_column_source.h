@@ -57,13 +57,14 @@ public:
       auto element = (*array_)[i];
       bool is_null;
       if (element.has_value()) {
-        ArrowValueConverter::Convert(*element, dest++);
+        ArrowValueConverter::Convert(*element, dest);
         is_null = false;
       } else {
         // placeholder
-        *dest++ = ElementType();
+        *dest = ElementType();
         is_null = true;
       }
+      ++dest;
       if (optional_null_flags != nullptr) {
         *optional_null_flags++ = is_null;
       }
