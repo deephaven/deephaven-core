@@ -58,10 +58,11 @@ public class IcebergTableLocationKey extends URITableLocationKey {
         // TODO: when/if ORC format supported, need to accept and validate it.
 
         // TODO: this file extension check is probably not needed (assuming we read the path from the manifest file)
-        //  correctly).
+        // correctly).
 
         if (!fileUri.getRawPath().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
-            throw new IllegalArgumentException("Iceberg data file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+            throw new IllegalArgumentException(
+                    "Iceberg data file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
         }
         return fileUri;
     }

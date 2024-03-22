@@ -101,10 +101,10 @@ final class IcebergColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @param hasGroupingTable Whether this column has an associated grouping table file
      */
     IcebergColumnLocation(@NotNull final IcebergTableLocation tableLocation,
-                          @NotNull final String columnName,
-                          @NotNull final String parquetColumnName,
-                          @Nullable final ColumnChunkReader[] columnChunkReaders,
-                          final boolean hasGroupingTable) {
+            @NotNull final String columnName,
+            @NotNull final String parquetColumnName,
+            @Nullable final ColumnChunkReader[] columnChunkReaders,
+            final boolean hasGroupingTable) {
         super(tableLocation, columnName);
         this.parquetColumnName = parquetColumnName;
         this.columnChunkReaders = columnChunkReaders;

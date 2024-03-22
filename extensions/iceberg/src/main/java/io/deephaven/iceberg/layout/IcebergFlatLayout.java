@@ -28,7 +28,8 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
     private final Map<URI, IcebergTableLocationKey> cache;
     private final ParquetInstructions readInstructions;
 
-    private static IcebergTableLocationKey locationKey(final URI fileUri, @NotNull final ParquetInstructions readInstructions) {
+    private static IcebergTableLocationKey locationKey(final URI fileUri,
+            @NotNull final ParquetInstructions readInstructions) {
         return new IcebergTableLocationKey(fileUri, 0, null, readInstructions);
     }
 

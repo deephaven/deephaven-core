@@ -51,8 +51,8 @@ public class IcebergTableLocation extends AbstractTableLocation {
     private volatile RowGroupReader[] rowGroupReaders;
 
     public IcebergTableLocation(@NotNull final TableKey tableKey,
-                                @NotNull final IcebergTableLocationKey tableLocationKey,
-                                @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final IcebergTableLocationKey tableLocationKey,
+            @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         final ParquetMetadata parquetMetadata;

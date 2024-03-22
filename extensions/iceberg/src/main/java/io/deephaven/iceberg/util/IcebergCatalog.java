@@ -144,7 +144,8 @@ public class IcebergCatalog {
             @Nullable final String snapshotId,
             final boolean isRefreshing) {
         // Validate that the user is not trying to subscribe to a snapshot.
-        Assert.eqFalse(isRefreshing && (snapshotId != null), "Must not specify a snapshot ID when subscribing to a table.");
+        Assert.eqFalse(isRefreshing && (snapshotId != null),
+                "Must not specify a snapshot ID when subscribing to a table.");
 
         // Load the table from the catalog
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
@@ -179,8 +180,8 @@ public class IcebergCatalog {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            final TableLocationKeyFinder<IcebergTableLocationKey> locationKeyFinder
-                    = new IcebergFlatLayout(snapshot, fileIO, instructions);
+            final TableLocationKeyFinder<IcebergTableLocationKey> locationKeyFinder =
+                    new IcebergFlatLayout(snapshot, fileIO, instructions);
 
             if (isRefreshing) {
                 keyFinder = locationKeyFinder;
