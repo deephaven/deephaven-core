@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static io.deephaven.parquet.table.layout.ParquetFileHelper.fileNameMatches;
+import static io.deephaven.parquet.table.layout.ParquetFileHelper.isNonHiddenParquetURI;
 
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
@@ -64,8 +64,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         try {
             provider.applyToChildURIs(tableRootDirectory, uri -> {
-                if (!fileNameMatches(uri)) {
-                    // Skip non-parquet URIs
+                if (!isNonHiddenParquetURI(uri)) {
                     return;
                 }
                 synchronized (this) {

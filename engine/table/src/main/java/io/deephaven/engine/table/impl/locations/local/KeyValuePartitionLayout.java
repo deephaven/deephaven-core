@@ -150,18 +150,18 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
     /**
      * Build location keys from a location table and a collection of target files.
      *
-     * @param <TABLE_LOCATION_KEY> The type of the location key
+     * @param <TLK> The type of the location key
      * @param <TARGET_FILE_TYPE> The type of the target files
      * @param locationTable The location table
      * @param targetFiles The target files
      * @param locationKeyObserver A consumer which will receive the location keys
      * @param keyFactory A factory for creating location keys
      */
-    public static <TABLE_LOCATION_KEY extends TableLocationKey, TARGET_FILE_TYPE> void buildLocationKeys(
+    public static <TLK extends TableLocationKey, TARGET_FILE_TYPE> void buildLocationKeys(
             @NotNull final Table locationTable,
             @NotNull final Deque<TARGET_FILE_TYPE> targetFiles,
-            @NotNull final Consumer<TABLE_LOCATION_KEY> locationKeyObserver,
-            final BiFunction<TARGET_FILE_TYPE, Map<String, Comparable<?>>, TABLE_LOCATION_KEY> keyFactory) {
+            @NotNull final Consumer<TLK> locationKeyObserver,
+            final BiFunction<TARGET_FILE_TYPE, Map<String, Comparable<?>>, TLK> keyFactory) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
         // Note that we allow the location table to define partition priority order.
         final String[] partitionKeys = locationTable.getDefinition().getColumnNamesArray();

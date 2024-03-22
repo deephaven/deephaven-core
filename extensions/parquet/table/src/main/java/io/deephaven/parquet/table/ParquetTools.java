@@ -97,7 +97,7 @@ public class ParquetTools {
      * @see ParquetFlatPartitionedLayout
      */
     public static Table readTable(@NotNull final String source) {
-        return readTableInternal(convertParquetSourceToURI(source), ParquetInstructions.EMPTY);
+        return readTableInternal(source, ParquetInstructions.EMPTY);
     }
 
     /**
@@ -128,7 +128,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableInternal(convertParquetSourceToURI(source), readInstructions);
+        return readTableInternal(source, readInstructions);
     }
 
     /**
@@ -184,19 +184,6 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
         return readTableInternal(sourceFile, readInstructions);
-    }
-
-    /**
-     * Convert a parquet source to a URI.
-     *
-     * @param source The path or URI of parquet file or directory to examine
-     * @return The URI
-     */
-    private static URI convertParquetSourceToURI(@NotNull final String source) {
-        if (source.endsWith(PARQUET_FILE_EXTENSION)) {
-            return convertToURI(source, false);
-        }
-        return convertToURI(source, true);
     }
 
     /**
@@ -687,23 +674,31 @@ public class ParquetTools {
     }
 
     /**
-     * Same as {@link #readTableInternal(File, ParquetInstructions)} but with a URI.
+     * Similar to {@link #readTableInternal(File, ParquetInstructions)} but with a string source.
      *
-     * @param source The source URI
+     * @param source The source path or URI
      * @param instructions Instructions for reading
      * @return A {@link Table}
      */
     private static Table readTableInternal(
-            @NotNull final URI source,
+            @NotNull final String source,
             @NotNull final ParquetInstructions instructions) {
-        if (!FILE_URI_SCHEME.equals(source.getScheme())) {
-            if (!source.getRawPath().endsWith(PARQUET_FILE_EXTENSION)) {
-                throw new IllegalArgumentException("This API currently does not support reading partitioned parquet " +
-                        "data from non-local sources. Please use the appropriate API for reading partitioned parquet.");
-            }
-            return readSingleFileTable(source, instructions);
+        final boolean isDirectory = !source.endsWith(PARQUET_FILE_EXTENSION);
+        final URI sourceURI = convertToURI(source, isDirectory);
+        if (FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
+            return readTableInternal(new File(sourceURI), instructions);
         }
-        return readTableInternal(new File(source), instructions);
+        if (!isDirectory) {
+            return readSingleFileTable(sourceURI, instructions);
+        }
+        if (source.endsWith(ParquetMetadataFileLayout.METADATA_FILE_NAME) ||
+                source.endsWith(ParquetMetadataFileLayout.COMMON_METADATA_FILE_NAME)) {
+            throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
+                    "from non local file systems");
+        }
+        // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(sourceURI, MAX_PARTITIONING_LEVELS_INFERENCE,
+                instructions), instructions);
     }
 
     private static boolean ignoreDotFiles(Path path) {
