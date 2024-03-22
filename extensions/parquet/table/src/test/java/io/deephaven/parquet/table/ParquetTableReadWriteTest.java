@@ -22,10 +22,8 @@ import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -345,23 +343,9 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
-        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someLong"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someInt", "someLong"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someLong", "someInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
+        verifyIndexingInfoExists(fromDisk, "someLong");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someLong");
+        verifyIndexingInfoExists(fromDisk, "someLong", "someInt");
     }
 
     @Test
@@ -382,23 +366,9 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
-        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someString"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someInt", "someString"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someString", "someInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
+        verifyIndexingInfoExists(fromDisk, "someString");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someString");
+        verifyIndexingInfoExists(fromDisk, "someString", "someInt");
     }
 
     @Test
@@ -419,33 +389,28 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
-        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someBigInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someInt", "someBigInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someBigInt", "someInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
+        verifyIndexingInfoExists(fromDisk, "someBigInt");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someBigInt");
+        verifyIndexingInfoExists(fromDisk, "someBigInt", "someInt");
     }
 
-    private void assertLookupFromTable(
+    private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
+        assertTrue(DataIndexer.hasDataIndex(table, columnNames));
+        final DataIndex fullIndex = DataIndexer.getDataIndex(table, columnNames);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(table, fullIndex, columnNames);
+    }
+
+    private static void assertLookupFromTable(
             final Table sourceTable,
             final DataIndex fullIndex,
-            final ColumnSource<?>[] columns) {
+            final String... columnNames) {
+        final ColumnSource<?>[] columns = Arrays.stream(columnNames).map(sourceTable::getColumnSource)
+                .toArray(ColumnSource[]::new);
         final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup(columns);
         final ColumnSource<RowSet> fullIndexRowSetColumn = fullIndex.rowSetColumn();
 
-        ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
+        final ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
 
         // Iterate through the entire source table and verify the lookup row set is valid and contains this row.
         try (final RowSet.Iterator rsIt = sourceTable.getRowSet().iterator();
@@ -594,7 +559,6 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void parquetWithIndexingDataAndMetadataTest() {
-        // TODO verify correctness of the indexing data
         final File parentDir = new File(rootFile, "tempDir");
         final int[] data = new int[500 * 4];
         for (int i = 0; i < data.length; i++) {
@@ -611,10 +575,12 @@ public final class ParquetTableReadWriteTest {
 
         final Table fromDisk = readTable(destFile);
         assertTableEquals(indexedTable, fromDisk);
+        verifyIndexingInfoExists(fromDisk, "vvv");
 
         final File metadataFile = new File(parentDir, "_metadata");
         final Table fromDiskWithMetadata = readTable(metadataFile);
         assertTableEquals(indexedTable, fromDiskWithMetadata);
+        verifyIndexingInfoExists(fromDiskWithMetadata, "vvv");
     }
 
     @Test
@@ -1079,7 +1045,7 @@ public final class ParquetTableReadWriteTest {
         Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView(
                 "PC1 =  (ii%2 == 0) ? `AA` : `BB`",
                 "PC2 = (int)(ii%3)",
-                "NPC1 =  (ii%2 == 0) ? `AA` : `BB`",
+                "NPC1 = (ii%2 == 0) ? `AA` : `BB`",
                 "NPC2 = (ii % 2 == 0)",
                 "NPC3 = (char)(65 + (ii % 2))",
                 "NPC4 = (byte)(ii % 2)",
