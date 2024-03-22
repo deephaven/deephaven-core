@@ -7,9 +7,16 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for classes that know how to export the elements of a given tuple type. Currently, supports element-wise
- * export to a {@link WritableColumnSource} without unnecessary boxing.
+ * export to a {@link WritableColumnSource} without unnecessary boxing, and possibly-boxing export as {code Object}.
  */
 public interface TupleExporter<TUPLE_TYPE> {
+
+    /**
+     * Get the number of elements in tuples supported by this TupleExporter.
+     *
+     * @return The number of elements in tuples supported by this TupleExporter
+     */
+    int length();
 
     /**
      * Export a single element from the tuple, identified by its element index, to the destination row key of the
@@ -26,122 +33,113 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param writableSource The destination
      * @param destinationIndexKey The destination row key
      */
-    <ELEMENT_TYPE> void exportElement(TUPLE_TYPE tuple, int elementIndex,
-            @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
+    <ELEMENT_TYPE> void exportElement(
+            @NotNull TUPLE_TYPE tuple,
+            int elementIndex,
+            @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource,
+            long destinationIndexKey);
 
     /**
-     * Export a single element from the tuple, identified by its element index, to an Object.
-     * 
+     * Export a single element (identified by {@code elementIndex}) from the tuple, boxing as necessary.
      * <p>
      * For the empty tuple, this is unsupported.
-     * <p>
-     * For singles, this will copy the sole element, possibly in boxed form.
-     * <p>
-     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
      * @param tuple The tuple to export an element from
      * @param elementIndex The element index to export
-     * @return The exported element, boxed as an Object as needed
+     * @return The exported element, boxed when necessary
      */
-    Object exportElement(TUPLE_TYPE tuple, int elementIndex);
-
-
-    /**
-     * Fill an Object[] with all element from the tuple.
-     *
-     * <p>
-     * For the empty tuple, this is unsupported.
-     * <p>
-     * For singles, this will copy the sole element, possibly in boxed form.
-     * <p>
-     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
-     *
-     * @param dest The destination Object[]
-     * @param tuple The tuple to export an element from
-     */
-    void exportAllTo(Object[] dest, TUPLE_TYPE tuple);
+    Object exportElement(@NotNull TUPLE_TYPE tuple, int elementIndex);
 
     /**
-     * Fill an Object[] with all element from the tuple, mapping the tuple elements to the destination array using the
-     * provided int[] map. This map contains the destination index for each tuple element in order.
-     * <p>
-     * Providing map == [1, 2, 0] means that the 0th element of the tuple will be written in dest[1], the 1st element of
-     * the tuple will be written in dest[2], and the 2nd element of the tuple will be written in dest[0].
+     * Fill an {@code Object[]} with all elements from the tuple, boxing as necessary.
      * <p>
      * For the empty tuple, this is unsupported.
-     * <p>
-     * For singles, this will copy the sole element, possibly in boxed form.
-     * <p>
-     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
-     * @param dest The destination Object[]
-     * @param tuple The tuple to export an element from
-     * @param map Instructions where to write each tuple element in `dest`
+     * @param dest The destination {@code Object[]}
+     * @param tuple The tuple to export from
      */
-    default void exportAllTo(Object[] dest, TUPLE_TYPE tuple, int[] map) {
-        // Ignore the map in the default implementation
-        exportAllTo(dest, tuple);
+    default void exportAllTo(@NotNull final Object[] dest, @NotNull final TUPLE_TYPE tuple) {
+        final int length = length();
+        for (int ei = 0; ei < length; ++ei) {
+            dest[ei] = exportElement(tuple, ei);
+        }
     }
 
     /**
-     * Export a single element from the tuple, identified by its element index, to an Object. If the tuple has been
-     * internally reinterpreted, return the reinterpreted value.
-     *
+     * Fill an {@code Object[]} with all elements from the tuple, boxing as necessary, mapping the tuple elements to the
+     * destination array using the provided {@code int[]} {code map}. This map contains the destination index for each
+     * tuple element in order.
+     * <p>
+     * Providing {@code map = new int{1, 2, 0}} means that the 0th element of the tuple will be written in
+     * {@code dest[1]}, the 1st element of the tuple will be written in {@code dest[2]}, and the 2nd element of the
+     * tuple will be written in {@code dest[0]}.
      * <p>
      * For the empty tuple, this is unsupported.
+     *
+     * @param dest The destination {@code Object[]}
+     * @param tuple The tuple to export from
+     * @param map Instructions where to write each tuple element in {@code dest}
+     */
+    default void exportAllTo(@NotNull final Object[] dest, @NotNull final TUPLE_TYPE tuple, @NotNull final int[] map) {
+        final int length = length();
+        for (int ei = 0; ei < length; ++ei) {
+            dest[ei] = exportElement(tuple, map[ei]);
+        }
+    }
+
+    /**
+     * Export a single element (identified by {@code elementIndex}) from the tuple, boxing as necessary. If the tuple
+     * has been internally reinterpreted, return the reinterpreted value.
      * <p>
-     * For singles, this will copy the sole element, possibly in boxed form.
-     * <p>
-     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
+     * For the empty tuple, this is unsupported.
      *
      * @param tuple The tuple to export an element from
      * @param elementIndex The element index to export
-     * @return The exported element, reinterpreted if internally reinterpreted, boxed as an Object as needed
+     * @return The exported element, reinterpreted if internally reinterpreted, boxed when necessary
      */
-    default Object exportElementReinterpreted(TUPLE_TYPE tuple, int elementIndex) {
+    default Object exportElementReinterpreted(@NotNull final TUPLE_TYPE tuple, final int elementIndex) {
         return exportElement(tuple, elementIndex);
     }
 
     /**
-     * Fill an Object[] with all element from the tuple. If the tuple has been internally reinterpreted, will fill with
-     * reinterpreted values.
-     *
+     * Fill an {@code Object[]} with all element from the tuple, boxing as necessary. If the tuple has been internally
+     * reinterpreted, will fill with reinterpreted values.
      * <p>
      * For the empty tuple, this is unsupported.
-     * <p>
-     * For singles, this will copy the sole element, possibly in boxed form.
-     * <p>
-     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
-     * @param dest The destination Object[]
-     * @param tuple The tuple to export an element from
+     * @param dest The destination {@code Object[]}
+     * @param tuple The tuple to export from
      */
-    default void exportAllReinterpretedTo(Object[] dest, TUPLE_TYPE tuple) {
-        exportAllTo(dest, tuple);
+    default void exportAllReinterpretedTo(@NotNull final Object[] dest, @NotNull final TUPLE_TYPE tuple) {
+        final int length = length();
+        for (int ei = 0; ei < length; ++ei) {
+            dest[ei] = exportElementReinterpreted(tuple, ei);
+        }
     }
 
     /**
-     * Fill an Object[] with all element from the tuple, mapping the tuple elements to the destination array using the
-     * provided int[] map. This map contains the destination index for each tuple element in order. will fill with
-     * reinterpreted values.
-     *
+     * Fill an Object[] with all element from the tuple, boxing as necessary, mapping the tuple elements to the
+     * destination array using the provided int[] map. This map contains the destination index for each tuple element in
+     * order. will fill with reinterpreted values.
      * <p>
-     * Providing map == [1, 2, 0] means that the 0th element of the tuple will be written in dest[1], the 1st element of
-     * the tuple will be written in dest[2], and the 2nd element of the tuple will be written in dest[0].
+     * Providing {@code map = new int{1, 2, 0}} means that the 0th element of the tuple will be written in
+     * {@code dest[1]}, the 1st element of the tuple will be written in {@code dest[2]}, and the 2nd element of the
+     * tuple will be written in {@code dest[0]}.
      * <p>
      * For the empty tuple, this is unsupported.
-     * <p>
-     * For singles, this will copy the sole element, possibly in boxed form.
-     * <p>
-     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
-     * @param dest The destination Object[]
-     * @param tuple The tuple to export an element from
-     * @param map Instructions where to write each tuple element in `dest`
+     * @param dest The destination {@code Object[]}
+     * @param tuple The tuple to export from
+     * @param map Instructions where to write each tuple element in {@code dest}
      */
-    default void exportAllReinterpretedTo(Object[] dest, TUPLE_TYPE tuple, int[] map) {
-        // Ignore the map in the default implementation
-        exportAllReinterpretedTo(dest, tuple);
+    default void exportAllReinterpretedTo(
+            @NotNull final Object[] dest,
+            @NotNull final TUPLE_TYPE tuple,
+            @NotNull final int[] map) {
+        final int length = length();
+        for (int ei = 0; ei < length; ++ei) {
+            dest[ei] = exportElementReinterpreted(tuple, map[ei]);
+        }
     }
 
     @FunctionalInterface
@@ -152,11 +150,11 @@ public interface TupleExporter<TUPLE_TYPE> {
          * intended to be compatible with both {@link TupleExporter#exportElement(Object, int)} and
          * {@link TupleExporter#exportElementReinterpreted(Object, int)}, and consequently does not specify whether the
          * result will be reinterpreted.
-         * 
+         *
          * @param tuple The tuple to export an element from
          * @param elementIndex The element index to export
-         * @return The exported element, boxed as an Object as needed
+         * @return The exported element, boxed when necessary
          */
-        Object exportElement(TUPLE_TYPE tuple, int elementIndex);
+        Object exportElement(@NotNull TUPLE_TYPE tuple, int elementIndex);
     }
 }
