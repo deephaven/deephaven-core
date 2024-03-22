@@ -115,7 +115,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
 
     if sys.version_info > (3, 8):
         import types
-        if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence):
+        if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence): # novermin
             component_type = t.__args__[0]
 
     if not component_type:
@@ -172,7 +172,7 @@ def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
     if sys.version_info.major == 3 and sys.version_info.minor >= 10:
         import types
-        if isinstance(t, types.UnionType):
+        if isinstance(t, types.UnionType): # novermin
             return True
 
     return isinstance(t, _GenericAlias) and t.__origin__ == Union
