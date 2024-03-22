@@ -25,14 +25,38 @@ public class FloatSetInclusionKernel implements SetInclusionKernel {
         this.inclusion = inclusion;
     }
 
-    @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk matches) {
-        matchValues(values.asFloatChunk(), matches);
+    FloatSetInclusionKernel(boolean inclusion) {
+        this.liveValues = new TFloatHashSet();
+        this.inclusion = inclusion;
     }
 
-    private void matchValues(FloatChunk<Values> values, WritableBooleanChunk matches) {
+    @Override
+    public void addItem(Object key) {
+        liveValues.add(TypeUtils.unbox((Float) key));
+    }
+
+    @Override
+    public void removeItem(Object key) {
+        liveValues.remove(TypeUtils.unbox((Float) key));
+    }
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
+        matchValues(values.asFloatChunk(), matches, inclusion);
+    }
+
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
+        matchValues(values.asFloatChunk(), matches, inclusionOverride);
+    }
+
+    private void matchValues(
+            FloatChunk<Values> values,
+            WritableBooleanChunk<?> matches,
+            boolean inclusionToUse) {
         for (int ii = 0; ii < values.size(); ++ii) {
-            matches.set(ii, liveValues.contains(values.get(ii)) == inclusion);
+            matches.set(ii, liveValues.contains(values.get(ii)) == inclusionToUse);
         }
         matches.setSize(values.size());
     }

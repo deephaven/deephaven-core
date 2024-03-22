@@ -73,6 +73,20 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
+    public void exportAllTo(Object[] dest, ArrayTuple tuple) {
+        for (int i = 0; i < dest.length; i++) {
+            dest[i] = tuple.getElement(i);
+        }
+    }
+
+    @Override
+    public void exportAllTo(Object[] dest, ArrayTuple tuple, int[] map) {
+        for (int i = 0; i < dest.length; i++) {
+            dest[map[i]] = tuple.getElement(i);
+        }
+    }
+
+    @Override
     public ChunkType getChunkType() {
         return ChunkType.Object;
     }
