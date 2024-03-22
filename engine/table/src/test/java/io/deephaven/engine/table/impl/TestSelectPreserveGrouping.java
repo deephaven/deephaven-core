@@ -7,7 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.TstUtils;
@@ -58,40 +58,38 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     }
 
     public void testPreserveGrouping() {
-        final Table x = TstUtils.testTable(TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+        final Table x = TstUtils.testTable(TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
-        final RowSetIndexer xIndexer = RowSetIndexer.of(x.getRowSet());
-        assertTrue(xIndexer.hasGrouping(x.getColumnSource("Sym")));
-        assertFalse(xIndexer.hasGrouping(x.getColumnSource("Sentinel")));
+
+        assertTrue(DataIndexer.hasDataIndex(x, "Sym"));
+        assertFalse(DataIndexer.hasDataIndex(x, "Sentinel"));
 
         QueryScope.addParam("switchColumnValue", 1);
         final Table xs = x.select("Sym", "SentinelDoubled=Sentinel*2", "Foo=switchColumnValue", "Sentinel");
         assertTableEquals(x, xs.view("Sym", "Sentinel"));
 
-        final RowSetIndexer xsIndexer = RowSetIndexer.of(xs.getRowSet());
-        assertTrue(xsIndexer.hasGrouping(xs.getColumnSource("Sym")));
-        assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("SentinelDoubled")));
-        assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Foo")));
-        assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Sentinel")));
+        assertTrue(DataIndexer.hasDataIndex(xs, "Sym"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "SentinelDoubled"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "Foo"));
+        assertFalse(DataIndexer.hasDataIndex(xs, "Sentinel"));
 
         final Table x2 = TstUtils.testTable(TstUtils.i(0, 1 << 16, 2 << 16, 3 << 16, 4 << 16, 5 << 16).toTracking(),
-                TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
 
         final Table xu = x2.update("Sym2=Sym");
         assertTableEquals(x2, xu.view("Sym=Sym2", "Sentinel"));
 
-        final RowSetIndexer xuIndexer = RowSetIndexer.of(xu.getRowSet());
-        assertTrue(xuIndexer.hasGrouping(xu.getColumnSource("Sym")));
-        assertTrue(xuIndexer.hasGrouping(xu.getColumnSource("Sym2")));
-        assertFalse(xuIndexer.hasGrouping(xu.getColumnSource("Sentinel")));
+        assertTrue(DataIndexer.hasDataIndex(xu, "Sym"));
+        assertTrue(DataIndexer.hasDataIndex(xu, "Sym2"));
+        assertFalse(DataIndexer.hasDataIndex(xu, "Sentinel"));
     }
 
     public void testPreserveDeferredGrouping() throws IOException {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            final ColumnHolder<?> symHolder = TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
+            final ColumnHolder<?> symHolder = TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
             final ColumnHolder<?> sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
@@ -99,11 +97,11 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             columns.put("Sym", TstUtils.getTestColumnSource(rowSet, symHolder));
             columns.put("Sentinel", TstUtils.getTestColumnSource(rowSet, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
-                    ColumnDefinition.ofString("Sym").withGrouping(),
+                    ColumnDefinition.ofString("Sym"),
                     ColumnDefinition.ofInt("Sentinel"));
             final Table x = new QueryTable(definition, rowSet, columns);
 
-            assertTrue(x.getDefinition().getColumn("Sym").isGrouping());
+            DataIndexer.getOrCreateDataIndex(x, "Sym");
 
             System.out.println(x.getDefinition());
             ParquetTools.writeTable(x, dest);
@@ -111,25 +109,23 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             final Table readBack = ParquetTools.readTable(dest);
             TableTools.showWithRowSet(readBack);
 
-            assertTrue(RowSetIndexer.of(readBack.getRowSet()).hasGrouping(readBack.getColumnSource("Sym")));
+            assertTrue(DataIndexer.hasDataIndex(readBack, "Sym"));
 
             final Table xs = x.select("Sym", "Sentinel=Sentinel*2", "Foo=Sym", "Sent2=Sentinel");
 
-            final RowSetIndexer xsIndexer = RowSetIndexer.of(xs.getRowSet());
-            assertTrue(xsIndexer.hasGrouping(xs.getColumnSource("Sym")));
-            assertTrue(xsIndexer.hasGrouping(xs.getColumnSource("Foo")));
+            assertTrue(DataIndexer.hasDataIndex(xs, "Sym"));
+            assertTrue(DataIndexer.hasDataIndex(xs, "Foo"));
             assertSame(xs.getColumnSource("Sym"), xs.getColumnSource("Foo"));
-            assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Sentinel")));
-            assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Sent2")));
+            assertFalse(DataIndexer.hasDataIndex(xs, "Sentinel"));
+            assertFalse(DataIndexer.hasDataIndex(xs, "Sent2"));
 
             final Table xs2 = x.select("Foo=Sym", "Sentinel=Sentinel*2", "Foo2=Foo", "Foo3=Sym");
 
-            final RowSetIndexer xs2Indexer = RowSetIndexer.of(xs.getRowSet());
-            assertTrue(xs2Indexer.hasGrouping(xs2.getColumnSource("Foo")));
-            assertFalse(xs2Indexer.hasGrouping(xs2.getColumnSource("Sentinel")));
-            assertTrue(xs2Indexer.hasGrouping(xs2.getColumnSource("Foo2")));
+            assertTrue(DataIndexer.hasDataIndex(xs2, "Foo"));
+            assertFalse(DataIndexer.hasDataIndex(xs2, "Sentinel"));
+            assertTrue(DataIndexer.hasDataIndex(xs2, "Foo2"));
             assertSame(xs2.getColumnSource("Foo2"), xs2.getColumnSource("Foo"));
-            assertTrue(xs2Indexer.hasGrouping(xs2.getColumnSource("Foo3")));
+            assertTrue(DataIndexer.hasDataIndex(xs2, "Foo3"));
         } finally {
             FileUtils.deleteRecursively(testDirectory);
         }

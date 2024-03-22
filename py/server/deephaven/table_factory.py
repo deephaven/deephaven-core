@@ -23,13 +23,13 @@ from deephaven.update_graph import auto_locking_ctx
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
-_JBaseArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.BaseArrayBackedInputTable")
 _JAppendOnlyArrayBackedInputTable = jpy.get_type(
     "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
 _JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
+_J_InputTableUpdater = jpy.get_type("io.deephaven.engine.util.input.InputTableUpdater")
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
@@ -235,13 +235,14 @@ class InputTable(Table):
 
     Users should always create InputTables through factory methods rather than directly from the constructor.
     """
-    j_object_type = _JBaseArrayBackedInputTable
 
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
         self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
         if not self.j_input_table:
             raise DHError("the provided table input is not suitable for input tables.")
+        if not _J_InputTableUpdater.jclass.isInstance(self.j_input_table):
+            raise DHError("the provided table's InputTable attribute type is not of InputTableUpdater type.")
 
     def add(self, table: Table) -> None:
         """Synchronously writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys

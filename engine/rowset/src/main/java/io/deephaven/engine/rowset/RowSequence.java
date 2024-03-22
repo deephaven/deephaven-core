@@ -191,6 +191,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * Using any {@code RowSequence} methods after {@code close()} is an error and may produce exceptions or undefined
      * results.
      */
+    @Override
     default void close() {}
 
     /**

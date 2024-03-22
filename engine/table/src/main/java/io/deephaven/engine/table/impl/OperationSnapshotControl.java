@@ -119,7 +119,7 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
                     .append("} snapshotCompletedConsistently: afterClockValue=").append(afterClockValue)
                     .append(", usedPreviousValues=").append(usedPreviousValues)
                     .append(", snapshotConsistent=").append(snapshotConsistent)
-                    .append(", last=").append(lastNotificationStep)
+                    .append(", lastNotificationStep=").append(lastNotificationStep)
                     .endl();
         }
 

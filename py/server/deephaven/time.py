@@ -5,6 +5,8 @@
 """ This module defines functions for handling Deephaven date/time data. """
 
 import datetime
+import sys
+import pytz
 from typing import Union, Optional, Literal
 
 import jpy
@@ -163,6 +165,62 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # region Conversions: Python To Java
 
+def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
+    """
+    Converts a Python time zone to a Java TimeZone.
+
+    Args:
+        tzi: time zone info
+
+    Returns:
+        Java TimeZone
+    """
+
+    if not tzi:
+        return None
+
+    # Handle pytz time zones
+
+    if isinstance(tzi, pytz.tzinfo.BaseTzInfo):
+        return _JDateTimeUtils.parseTimeZone(tzi.zone)
+
+    # Handle zoneinfo time zones
+    if sys.version_info >= (3, 9):
+        # novermin
+        import zoneinfo
+        if isinstance(tzi, zoneinfo.ZoneInfo):
+            return _JDateTimeUtils.parseTimeZone(tzi.key)
+
+    # Handle constant UTC offset time zones (datetime.timezone)
+
+    if isinstance(tzi, datetime.timezone):
+        offset = tzi.utcoffset(None)
+
+        if offset is None:
+            raise ValueError("Unable to determine the time zone UTC offset")
+
+        if not offset:
+            return _JDateTimeUtils.parseTimeZone("UTC")
+
+        if offset.microseconds != 0 or offset.seconds%60 != 0:
+            raise ValueError(f"Unsupported time zone offset contains fractions of a minute: {offset}")
+
+        ts = offset.total_seconds()
+
+        if ts >= 0:
+            sign = "+"
+        else:
+            sign = "-"
+            ts = -ts
+
+        hours = int(ts / 3600)
+        minutes = int((ts % 3600) / 60)
+        return _JDateTimeUtils.parseTimeZone(f"UTC{sign}{hours:02d}:{minutes:02d}")
+
+    details = "\n\t".join([f"type={type(tzi).mro()}"] +
+                                [f"obj.{attr}={getattr(tzi, attr)}" for attr in dir(tzi) if not attr.startswith("_")])
+    raise TypeError(f"Unsupported conversion: {str(type(tzi))} -> TimeZone\n\tDetails:\n\t{details}")
+
 
 def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]) -> \
         Optional[TimeZone]:
@@ -190,12 +248,15 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
         elif isinstance(tz, datetime.tzinfo):
-            return _JDateTimeUtils.parseTimeZone(str(tz))
+            return _tzinfo_to_j_time_zone(tz)
         elif isinstance(tz, datetime.datetime):
-            if not tz.tzname():
-                return _JDateTimeUtils.parseTimeZone(tz.astimezone().tzname())
+            tzi = tz.tzinfo
+            rst = _tzinfo_to_j_time_zone(tzi)
 
-            return _JDateTimeUtils.parseTimeZone(tz.tzname())
+            if not rst:
+                raise ValueError("datetime is not time zone aware")
+
+            return rst
         else:
             raise TypeError("Unsupported conversion: " + str(type(tz)) + " -> TimeZone")
     except TypeError as e:
