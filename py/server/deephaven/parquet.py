@@ -22,7 +22,6 @@ _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.Compre
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
-_COMPRESSION_CODEC_NAMES = Literal["UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD"]
 
 @dataclass
 class ColumnInstruction:
@@ -36,7 +35,7 @@ class ColumnInstruction:
 
 def _build_parquet_instructions(
     col_instructions: Optional[List[ColumnInstruction]] = None,
-    compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
+    compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     is_legacy_parquet: bool = False,
@@ -241,7 +240,7 @@ def write(
     path: str,
     col_definitions: Optional[List[Column]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
-    compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
+    compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
@@ -301,7 +300,7 @@ def write_partitioned(
         destination_dir: str,
         col_definitions: Optional[List[Column]] = None,
         col_instructions: Optional[List[ColumnInstruction]] = None,
-        compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
+        compression_codec_name: Optional[str] = None,
         max_dictionary_keys: Optional[int] = None,
         max_dictionary_size: Optional[int] = None,
         target_page_size: Optional[int] = None,
@@ -379,7 +378,7 @@ def batch_write(
     paths: List[str],
     col_definitions: List[Column],
     col_instructions: Optional[List[ColumnInstruction]] = None,
-    compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
+    compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
