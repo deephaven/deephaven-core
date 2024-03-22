@@ -51,6 +51,11 @@ public:
 
   [[nodiscard]]
   std::shared_ptr<ColumnSource> GetColumn(size_t column_index) const final {
+    if (column_index >= sources_.size()) {
+      auto message = fmt::format("Requested column index {} >= num columns {}", column_index,
+          sources_.size());
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
     return sources_[column_index];
   }
 

@@ -64,6 +64,7 @@ public:
         *dest = ElementType();
         is_null = true;
       }
+      ++dest;
       if (optional_null_flags != nullptr) {
         *optional_null_flags++ = is_null;
       }
@@ -187,6 +188,7 @@ private:
   internal::GenericBackingStore<ArrayType, ElementType> backingStore_;
 };
 
+using ArrowCharColumnSource = NumericArrowColumnSource<arrow::UInt16Array, char16_t>;
 using ArrowInt8ColumnSource = NumericArrowColumnSource<arrow::Int8Array, int8_t>;
 using ArrowInt16ColumnSource = NumericArrowColumnSource<arrow::Int16Array, int16_t>;
 using ArrowInt32ColumnSource = NumericArrowColumnSource<arrow::Int32Array, int32_t>;

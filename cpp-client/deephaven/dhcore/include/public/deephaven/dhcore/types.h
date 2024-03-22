@@ -390,6 +390,14 @@ private:
   int64_t nanos_ = 0;
 
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
+
+  friend bool operator==(const DateTime &lhs, const DateTime &rhs) {
+    return lhs.nanos_ == rhs.nanos_;
+  }
+
+  friend bool operator!=(const DateTime &lhs, const DateTime &rhs) {
+    return !(lhs == rhs);
+  }
 };
 }  // namespace deephaven::dhcore
 
