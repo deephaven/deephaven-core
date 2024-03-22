@@ -49,7 +49,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final Map<String, ColumnDefinition<?>> parentColumnMap,
             final SelectColumn[] selectColumns) {
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        initializeSelectColumns(parentColumnMap, selectColumns, QueryCompilerRequestProcessor.batch());
+        initializeSelectColumns(parentColumnMap, selectColumns, compilationProcessor);
         compilationProcessor.compile();
     }
 
