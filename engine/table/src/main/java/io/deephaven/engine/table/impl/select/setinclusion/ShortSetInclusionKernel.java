@@ -25,14 +25,38 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
         this.inclusion = inclusion;
     }
 
-    @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk matches) {
-        matchValues(values.asShortChunk(), matches);
+    ShortSetInclusionKernel(boolean inclusion) {
+        this.liveValues = new TShortHashSet();
+        this.inclusion = inclusion;
     }
 
-    private void matchValues(ShortChunk<Values> values, WritableBooleanChunk matches) {
+    @Override
+    public void addItem(Object key) {
+        liveValues.add(TypeUtils.unbox((Short) key));
+    }
+
+    @Override
+    public void removeItem(Object key) {
+        liveValues.remove(TypeUtils.unbox((Short) key));
+    }
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
+        matchValues(values.asShortChunk(), matches, inclusion);
+    }
+
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
+        matchValues(values.asShortChunk(), matches, inclusionOverride);
+    }
+
+    private void matchValues(
+            ShortChunk<Values> values,
+            WritableBooleanChunk<?> matches,
+            boolean inclusionToUse) {
         for (int ii = 0; ii < values.size(); ++ii) {
-            matches.set(ii, liveValues.contains(values.get(ii)) == inclusion);
+            matches.set(ii, liveValues.contains(values.get(ii)) == inclusionToUse);
         }
         matches.setSize(values.size());
     }

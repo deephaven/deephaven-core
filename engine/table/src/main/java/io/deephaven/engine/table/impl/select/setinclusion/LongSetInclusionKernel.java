@@ -25,14 +25,38 @@ public class LongSetInclusionKernel implements SetInclusionKernel {
         this.inclusion = inclusion;
     }
 
-    @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk matches) {
-        matchValues(values.asLongChunk(), matches);
+    LongSetInclusionKernel(boolean inclusion) {
+        this.liveValues = new TLongHashSet();
+        this.inclusion = inclusion;
     }
 
-    private void matchValues(LongChunk<Values> values, WritableBooleanChunk matches) {
+    @Override
+    public void addItem(Object key) {
+        liveValues.add(TypeUtils.unbox((Long) key));
+    }
+
+    @Override
+    public void removeItem(Object key) {
+        liveValues.remove(TypeUtils.unbox((Long) key));
+    }
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
+        matchValues(values.asLongChunk(), matches, inclusion);
+    }
+
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
+        matchValues(values.asLongChunk(), matches, inclusionOverride);
+    }
+
+    private void matchValues(
+            LongChunk<Values> values,
+            WritableBooleanChunk<?> matches,
+            boolean inclusionToUse) {
         for (int ii = 0; ii < values.size(); ++ii) {
-            matches.set(ii, liveValues.contains(values.get(ii)) == inclusion);
+            matches.set(ii, liveValues.contains(values.get(ii)) == inclusionToUse);
         }
         matches.setSize(values.size());
     }

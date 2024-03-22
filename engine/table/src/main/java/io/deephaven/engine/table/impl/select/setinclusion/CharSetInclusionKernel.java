@@ -21,14 +21,38 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
         this.inclusion = inclusion;
     }
 
-    @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk matches) {
-        matchValues(values.asCharChunk(), matches);
+    CharSetInclusionKernel(boolean inclusion) {
+        this.liveValues = new TCharHashSet();
+        this.inclusion = inclusion;
     }
 
-    private void matchValues(CharChunk<Values> values, WritableBooleanChunk matches) {
+    @Override
+    public void addItem(Object key) {
+        liveValues.add(TypeUtils.unbox((Character) key));
+    }
+
+    @Override
+    public void removeItem(Object key) {
+        liveValues.remove(TypeUtils.unbox((Character) key));
+    }
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
+        matchValues(values.asCharChunk(), matches, inclusion);
+    }
+
+
+    @Override
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
+        matchValues(values.asCharChunk(), matches, inclusionOverride);
+    }
+
+    private void matchValues(
+            CharChunk<Values> values,
+            WritableBooleanChunk<?> matches,
+            boolean inclusionToUse) {
         for (int ii = 0; ii < values.size(); ++ii) {
-            matches.set(ii, liveValues.contains(values.get(ii)) == inclusion);
+            matches.set(ii, liveValues.contains(values.get(ii)) == inclusionToUse);
         }
         matches.setSize(values.size());
     }

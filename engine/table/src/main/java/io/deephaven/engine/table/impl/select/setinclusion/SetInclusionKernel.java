@@ -35,4 +35,27 @@ public interface SetInclusionKernel {
                 throw new UnsupportedOperationException();
         }
     }
+
+    static SetInclusionKernel makeKernel(ChunkType type, boolean inclusion) {
+        switch (type) {
+            case Object:
+                return new ObjectSetInclusionKernel(inclusion);
+            case Char:
+                return new CharSetInclusionKernel(inclusion);
+            case Byte:
+                return new ByteSetInclusionKernel(inclusion);
+            case Short:
+                return new ShortSetInclusionKernel(inclusion);
+            case Int:
+                return new IntSetInclusionKernel(inclusion);
+            case Long:
+                return new LongSetInclusionKernel(inclusion);
+            case Double:
+                return new DoubleSetInclusionKernel(inclusion);
+            case Float:
+                return new FloatSetInclusionKernel(inclusion);
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
 }

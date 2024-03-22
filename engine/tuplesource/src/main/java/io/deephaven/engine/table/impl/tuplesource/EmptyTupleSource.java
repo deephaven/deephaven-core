@@ -48,6 +48,16 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
+    public void exportAllTo(Object[] dest, EmptyTuple tuple) {
+        throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
+    }
+
+    @Override
+    public void exportAllTo(Object[] dest, EmptyTuple tuple, int[] map) {
+        throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
+    }
+
+    @Override
     public ChunkType getChunkType() {
         return ChunkType.Object;
     }

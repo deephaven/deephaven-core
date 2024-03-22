@@ -139,6 +139,12 @@ public interface ColumnSource<T>
     }
 
     @Override
+    default void exportAllTo(Object[] dest, T tuple) {
+        Require.geqZero(dest.length, "dest.length");
+        dest[0] = tuple;
+    }
+
+    @Override
     ColumnSource<T> getPrevSource();
 
     /**

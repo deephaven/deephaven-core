@@ -45,6 +45,44 @@ public interface TupleExporter<TUPLE_TYPE> {
      */
     Object exportElement(TUPLE_TYPE tuple, int elementIndex);
 
+
+    /**
+     * Fill an Object[] with all element from the tuple.
+     *
+     * <p>
+     * For the empty tuple, this is unsupported.
+     * <p>
+     * For singles, this will copy the sole element, possibly in boxed form.
+     * <p>
+     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
+     *
+     * @param dest The destination Object[]
+     * @param tuple The tuple to export an element from
+     */
+    void exportAllTo(Object[] dest, TUPLE_TYPE tuple);
+
+    /**
+     * Fill an Object[] with all element from the tuple, mapping the tuple elements to the destination array using the
+     * provided int[] map. This map contains the destination index for each tuple element in order.
+     * <p>
+     * Providing map == [1, 2, 0] means that the 0th element of the tuple will be written in dest[1], the 1st element of
+     * the tuple will be written in dest[2], and the 2nd element of the tuple will be written in dest[0].
+     * <p>
+     * For the empty tuple, this is unsupported.
+     * <p>
+     * For singles, this will copy the sole element, possibly in boxed form.
+     * <p>
+     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
+     *
+     * @param dest The destination Object[]
+     * @param tuple The tuple to export an element from
+     * @param map Instructions where to write each tuple element in `dest`
+     */
+    default void exportAllTo(Object[] dest, TUPLE_TYPE tuple, int[] map) {
+        // Ignore the map in the default implementation
+        exportAllTo(dest, tuple);
+    }
+
     /**
      * Export a single element from the tuple, identified by its element index, to an Object. If the tuple has been
      * internally reinterpreted, return the reinterpreted value.
@@ -62,6 +100,48 @@ public interface TupleExporter<TUPLE_TYPE> {
      */
     default Object exportElementReinterpreted(TUPLE_TYPE tuple, int elementIndex) {
         return exportElement(tuple, elementIndex);
+    }
+
+    /**
+     * Fill an Object[] with all element from the tuple. If the tuple has been internally reinterpreted, will fill with
+     * reinterpreted values.
+     *
+     * <p>
+     * For the empty tuple, this is unsupported.
+     * <p>
+     * For singles, this will copy the sole element, possibly in boxed form.
+     * <p>
+     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
+     *
+     * @param dest The destination Object[]
+     * @param tuple The tuple to export an element from
+     */
+    default void exportAllReinterpretedTo(Object[] dest, TUPLE_TYPE tuple) {
+        exportAllTo(dest, tuple);
+    }
+
+    /**
+     * Fill an Object[] with all element from the tuple, mapping the tuple elements to the destination array using the
+     * provided int[] map. This map contains the destination index for each tuple element in order. will fill with
+     * reinterpreted values.
+     *
+     * <p>
+     * Providing map == [1, 2, 0] means that the 0th element of the tuple will be written in dest[1], the 1st element of
+     * the tuple will be written in dest[2], and the 2nd element of the tuple will be written in dest[0].
+     * <p>
+     * For the empty tuple, this is unsupported.
+     * <p>
+     * For singles, this will copy the sole element, possibly in boxed form.
+     * <p>
+     * For doubles and longer, this will copy the specified element without any unnecessary boxing.
+     *
+     * @param dest The destination Object[]
+     * @param tuple The tuple to export an element from
+     * @param map Instructions where to write each tuple element in `dest`
+     */
+    default void exportAllReinterpretedTo(Object[] dest, TUPLE_TYPE tuple, int[] map) {
+        // Ignore the map in the default implementation
+        exportAllReinterpretedTo(dest, tuple);
     }
 
     @FunctionalInterface
