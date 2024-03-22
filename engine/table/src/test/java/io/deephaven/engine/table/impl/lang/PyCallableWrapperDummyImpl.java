@@ -72,7 +72,7 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
 
     @Override
     public Signature getSignature() {
-        return null;
+        return new Signature(new ArrayList<>(), Void.class);
     }
 
     @Override
