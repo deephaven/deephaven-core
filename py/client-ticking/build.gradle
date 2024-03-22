@@ -80,7 +80,7 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
                         rm -f dist/pydeephaven_ticking*"${tag}"*.whl; \
                         mv -f wheelhouse/*.whl dist; \
                         pip3 install in-wheels/*.whl; \
-                        pip3 install --force --no-deps dist/pydeephaven_ticking*"${tag}"*.whl; \
+                        pip3 install --no-deps dist/pydeephaven_ticking*"${tag}"*.whl; \
                       done; \
                       ln dist/*.whl /out; \
                       cd /; \
