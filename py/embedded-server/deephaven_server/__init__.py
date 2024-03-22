@@ -32,7 +32,7 @@ def _start(args):
 
     jvm_args = [f"-Dauthentication.psk={args.key}"]
     if args.jvm_args is not None:
-        jvm_args += [args.jvm_args]
+        jvm_args += args.jvm_args.split()
 
     s = Server(host=args.host, port=args.port, jvm_args=jvm_args, dh_args=args.dh_args)
     s.start()
