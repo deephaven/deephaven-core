@@ -20,6 +20,28 @@ check_py_env()
 # https://docs.python.org/3/library/importlib.metadata.html#package-distributions
 __version__ = importlib.metadata.version('deephaven-server')
 
+
+def main():
+    """
+    Main entry point for the Deephaven embedded server application.
+    Accepts a command to start the application and the arguments to use.
+    Defaults to `start`, which starts the server.
+    """
+    parser = argparse.ArgumentParser(description="Start the Deephaven embedded server")
+    parser.add_argument("cmd", nargs="?", default="start", choices=["start"], help="Deephaven command to run")
+    parser.add_argument("-p", "--port", default=8080, type=int, help="The port to bind to")
+    parser.add_argument("--host", default="localhost", help="The host to bind to")
+    parser.add_argument("--key", default=None, help="The key to use. Will randomly generate one if not specified.")
+    parser.add_argument("--jvm-args", default=None, help="The JVM arguments to use")
+    parser.add_argument("--dh-args", default=None, help="The Deephaven arguments to use")
+    args = parser.parse_args()
+
+    if args.cmd == "start":
+        _start(args)
+    else:
+        parser.print_help()
+        sys.exit(1)
+
 def _start(args):
     """
     Start the Deephaven server with the given arguments.
@@ -52,24 +74,3 @@ def _start(args):
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
-
-def main():
-    """
-    Main entry point for the Deephaven embedded server application.
-    Accepts a command to start the application and the arguments to use.
-    Defaults to `start`, which starts the server.
-    """
-    parser = argparse.ArgumentParser(description="Start the Deephaven embedded server")
-    parser.add_argument("cmd", nargs="?", default="start", choices=["start"], help="Deephaven command to run")
-    parser.add_argument("-p", "--port", default=8080, type=int, help="The port to bind to")
-    parser.add_argument("--host", default="localhost", help="The host to bind to")
-    parser.add_argument("--key", default=None, help="The key to use. Will randomly generate one if not specified.")
-    parser.add_argument("--jvm-args", default=None, help="The JVM arguments to use")
-    parser.add_argument("--dh-args", default=None, help="The Deephaven arguments to use")
-    args = parser.parse_args()
-
-    if args.cmd == "start":
-        _start(args)
-    else:
-        parser.print_help()
-        sys.exit(1)
