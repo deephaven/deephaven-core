@@ -12,6 +12,7 @@
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
+using deephaven::dhcore::DateTime;
 using deephaven::dhcore::DeephavenConstants;
 
 namespace deephaven::client::tests {
@@ -27,6 +28,7 @@ TEST_CASE("Support all types", "[select]") {
   std::vector<float> float_data;
   std::vector<double> double_data;
   std::vector<std::string> string_data;
+  std::vector<DateTime> date_time_data;
 
   const int start_value = -8;
   const int end_value = 8;
@@ -40,6 +42,7 @@ TEST_CASE("Support all types", "[select]") {
     float_data.push_back(i * 123.456F);
     double_data.push_back(i * 987654.321);
     string_data.push_back(fmt::format("test {}", i));
+    date_time_data.push_back(DateTime::FromNanos(i));
   }
 
   TableMaker maker;
@@ -52,6 +55,7 @@ TEST_CASE("Support all types", "[select]") {
   maker.AddColumn("floatData", float_data);
   maker.AddColumn("doubleData", double_data);
   maker.AddColumn("stringData", string_data);
+  maker.AddColumn("dateTimeData", date_time_data);
 
   auto t = maker.MakeTable(tm.Client().GetManager());
 
@@ -67,7 +71,8 @@ TEST_CASE("Support all types", "[select]") {
       "longData", long_data,
       "floatData", float_data,
       "doubleData", double_data,
-      "stringData", string_data
+      "stringData", string_data,
+      "dateTimeData", date_time_data
   );
 }
 
