@@ -62,11 +62,8 @@ def _start(args):
     url = f"http://{args.host}:{args.port}/ide?psk={args.key}"
     webbrowser.open(url)
 
-    def print_info():
-        print(f"Deephaven is running at {url}")
-        print("Press Control-C to exit")
-
-    print_info()
+    print(f"Deephaven is running at {url}")
+    print("Press Control-C to exit")
 
     def signal_handler(sig, frame):
         print("Exiting Deephaven...")
