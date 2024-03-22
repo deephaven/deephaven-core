@@ -22,6 +22,7 @@ spotless {
 // image we will generate here as a base.
 // See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-multi
 evaluationDependsOn Docker.registryProject('cpp-clients-multi-base')
+evaluationDependsOn Docker.registryProject('manylinux2014_x86_64')
 
 configurations {
     cpp {}
@@ -152,7 +153,7 @@ def buildCppClientPyImage = Docker.registerDockerTask(project, 'cppClientPy') {
     }
 
     dockerfile {
-        from('quay.io/pypa/manylinux2014_x86_64:latest')
+        from('deephaven/manylinux2014_x86_64:local-build')
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix} \\
@@ -186,6 +187,7 @@ def buildCppClientPyImage = Docker.registerDockerTask(project, 'cppClientPy') {
         environmentVariable 'DH_PREFIX', prefix
         environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
+    parentContainers = [ Docker.registryTask(project, 'manylinux2014_x86_64') ]
 }
 
 deephavenDocker.shouldLogIfTaskFails testCppClient

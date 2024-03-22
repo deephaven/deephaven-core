@@ -13,6 +13,8 @@ dependencies {
 }
 
 evaluationDependsOn(':cpp-client')
+evaluationDependsOn Docker.registryProject('fedora39')
+evaluationDependsOn Docker.registryProject('ubi8')
 
 def prefix = '/opt/deephaven'
 
@@ -108,7 +110,7 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
         }
     }
     dockerfile {
-        from(image)
+        from("deephaven/${image}:local-build")
         runCommand("WHEELS_SET='${wheelsSet}'; PREFIX='${prefix}'; " +
                    '''set -eux ; \
                       DNF=`type microdnf >/dev/null 2>&1 && echo 'microdnf --disableplugin=subscription-manager' || echo 'dnf -q'`; \
@@ -158,7 +160,8 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ project.tasks.getByName(parentContainer) ]
+    parentContainers = [ project.tasks.getByName(parentContainer),
+                         Docker.registryTask(project, "${image}") ]
     entrypoint = ['bash', '-c',
                   "WHEELS_SET='${wheelsSet}'; " +
                   '''
@@ -178,7 +181,7 @@ def testPyClientTicking = testPyClientTickingManyLinux(
     checksWheelSet,
     'testPyClientTicking',
     'pyClientTicking',
-    'registry.access.redhat.com/ubi8/ubi-minimal:8.8')
+    'ubi8')
 
 def wheelsSet = [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
 def pyClientTickingAllWheels = buildPyClientTickingManyLinux(String.join(' ', wheelsSet), 'pyClientTickingAllWheels')
@@ -187,7 +190,7 @@ def testPyClientTickingAllWheels = testPyClientTickingManyLinux(
     String.join(' ', wheelsSet),
     'testPyClientTickingAllWheels',
     'pyClientTickingAllWheels',
-    'fedora:39')
+    'fedora39')
 
 tasks.getByName('check').dependsOn(testPyClientTicking)
 tasks.getByName('testPyClientTickingPrepareDocker').dependsOn(pyClientTicking)
