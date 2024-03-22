@@ -6,7 +6,7 @@
 Parquet files. """
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Literal
 
 import jpy
 
@@ -22,6 +22,7 @@ _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.Compre
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
+_COMPRESSION_CODEC_NAMES = Literal["UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD"]
 
 @dataclass
 class ColumnInstruction:
@@ -35,7 +36,7 @@ class ColumnInstruction:
 
 def _build_parquet_instructions(
     col_instructions: Optional[List[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
+    compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     is_legacy_parquet: bool = False,
@@ -240,7 +241,7 @@ def write(
     path: str,
     col_definitions: Optional[List[Column]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
+    compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
@@ -258,7 +259,7 @@ def write(
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the default compression codec to use, if not specified, defaults to SNAPPY.
-            Allowed values are "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "BROTLI", "LZ4", "LZ4_RAW", "ZSTD".
+            Allowed values are "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD".
         max_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a dictionary page
             before switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
@@ -300,7 +301,7 @@ def write_partitioned(
         destination_dir: str,
         col_definitions: Optional[List[Column]] = None,
         col_instructions: Optional[List[ColumnInstruction]] = None,
-        compression_codec_name: Optional[str] = None,
+        compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
         max_dictionary_keys: Optional[int] = None,
         max_dictionary_size: Optional[int] = None,
         target_page_size: Optional[int] = None,
@@ -322,7 +323,7 @@ def write_partitioned(
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the default compression codec to use, if not specified, defaults to SNAPPY.
-            Allowed values are "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "BROTLI", "LZ4", "LZ4_RAW", "ZSTD".
+            Allowed values are "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD".
         max_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a dictionary page
             before switching to non-dictionary encoding; never evaluated for non-String columns , defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
@@ -378,7 +379,7 @@ def batch_write(
     paths: List[str],
     col_definitions: List[Column],
     col_instructions: Optional[List[ColumnInstruction]] = None,
-    compression_codec_name: Optional[str] = None,
+    compression_codec_name: Optional[_COMPRESSION_CODEC_NAMES] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
@@ -401,7 +402,7 @@ def batch_write(
             implied by the table. Default is None, which means use the column definitions implied by the table
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use, if not specified, defaults to SNAPPY.
-            Allowed values are "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "BROTLI", "LZ4", "LZ4_RAW", "ZSTD".
+            Allowed values are "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD".
         max_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a dictionary page
             before switching to non-dictionary encoding; never evaluated for non-String columns , defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before

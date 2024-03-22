@@ -703,12 +703,12 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
                 ColumnDefinition.ofInt("PC2").withPartitioning(),
                 ColumnDefinition.ofLong("I"));
-        final Table inputData = ((QueryTable) TableTools.emptyTable(1_000_000)
+        final Table indexedtable = ((QueryTable) TableTools.emptyTable(1_000_000)
                 .updateView("PC1 = (int)(ii%3)",
                         "PC2 = (int)(ii%2)",
                         "I = ii"))
                 .withDefinitionUnsafe(definition);
-        DataIndexer.getOrCreateDataIndex(inputData, "I");
+        DataIndexer.getOrCreateDataIndex(indexedtable, "I");
         // TODO verify correctness of the indexing data
 
         final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
@@ -716,7 +716,7 @@ public final class ParquetTableReadWriteTest {
                 .setGenerateMetadataFiles(true)
                 .setBaseNameForPartitionedParquetData("data")
                 .build();
-        writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), writeInstructions);
+        writeKeyValuePartitionedTable(indexedtable, parentDir.getAbsolutePath(), writeInstructions);
 
         // Verify that metadata files are generated
         assertTrue(new File(parentDir, "_common_metadata").exists());
@@ -734,16 +734,16 @@ public final class ParquetTableReadWriteTest {
 
         final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
         fromDisk.where("I == 3").select();
-        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+        assertTableEquals(indexedtable.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
         final Table fromDiskWithMetadata = readTable(commonMetadata);
         fromDiskWithMetadata.where("I == 3").select();
-        assertTableEquals(inputData.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+        assertTableEquals(indexedtable.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
 
         // Write the same table without generating metadata files
         final File parentDirWithoutMetadata = new File(rootFile, "writeKeyValuePartitionedDataWithoutMetadata");
-        writeKeyValuePartitionedTable(inputData, parentDirWithoutMetadata.getAbsolutePath(), EMPTY);
+        writeKeyValuePartitionedTable(indexedtable, parentDirWithoutMetadata.getAbsolutePath(), EMPTY);
 
         // Verify that no metadata files are generated
         assertFalse(new File(parentDirWithoutMetadata, "_common_metadata").exists());

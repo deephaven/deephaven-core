@@ -168,9 +168,9 @@ public class ParquetTableWriter {
                         }
                         // We don't accumulate metadata from grouping files into the main metadata file
                         write(indexTable, indexTable.getDefinition(), writeInstructionsToUse,
-                                info.destFile.getAbsolutePath(),
-                                info.destFileForMetadata.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder(),
-                                NullParquetMetadataFileWriter.INSTANCE, computedCache);
+                                info.destFile.getAbsolutePath(), info.destFileForMetadata.getAbsolutePath(),
+                                Collections.emptyMap(), TableInfo.builder(), NullParquetMetadataFileWriter.INSTANCE,
+                                computedCache);
                     }
                 }
             }
