@@ -1968,38 +1968,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return false;
     }
 
-    public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
-        if (original == null || !original.isPrimitive() || target == null || !target.isPrimitive()
-                || original.equals(void.class) || target.equals(void.class)) {
-            throw new IllegalArgumentException("Arguments must be a primitive type (excluding void)!");
-        }
-
-        if (original.equals(target)) {
-            return true;
-        }
-
-        LanguageParserPrimitiveType originalEnum = LanguageParserPrimitiveType.getPrimitiveType(original);
-
-        switch (originalEnum) {
-            case BytePrimitive:
-                if (target == short.class)
-                    return true;
-            case ShortPrimitive:
-            case CharPrimitive: // char is unsigned, so it's a lossless conversion to int
-                if (target == int.class) // this covers all the smaller integer types
-                    return true;
-            case IntPrimitive:
-                if (target == long.class)
-                    return true;
-                break;
-            case FloatPrimitive:
-                if (target == double.class)
-                    return true;
-                break;
-        }
-
-        return false;
-    }
 
     private enum LanguageParserPrimitiveType {
         // Including "Enum" (or really, any differentiating string) in these names is important. They're used

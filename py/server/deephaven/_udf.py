@@ -113,7 +113,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     numpy ndarray, otherwise return None. """
     component_type = None
 
-    if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
+    if sys.version_info > (3, 8):
         import types
         if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence):
             component_type = t.__args__[0]
@@ -175,10 +175,7 @@ def _is_union_type(t: type) -> bool:
         if isinstance(t, types.UnionType):
             return True
 
-    if isinstance(t, _GenericAlias) and t.__origin__ == Union:
-        return True
-
-    return False
+    return isinstance(t, _GenericAlias) and t.__origin__ == Union
 
 
 def _parse_param(name: str, annotation: Any) -> _ParsedParam:
@@ -480,7 +477,6 @@ def _py_udf(fn: Callable):
     # build a signature string for vectorization by removing NoneType, array char '[', and comma from the encoded types
     # since vectorization only supports UDFs with a single signature and enforces an exact match, any non-compliant
     # signature (e.g. Union with more than 1 non-NoneType) will be rejected by the vectorizer.
-    sig_str_vectorization = re.sub(r"[\[N,]", "", p_sig.encoded)
     return_array = p_sig.ret_annotation.has_array
     ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
@@ -505,7 +501,6 @@ def _py_udf(fn: Callable):
         j_class = real_ret_dtype.qst_type.clazz()
 
     wrapper.return_type = j_class
-    # wrapper.signature = sig_str_vectorization
     wrapper.signature = p_sig.encoded
 
     return wrapper

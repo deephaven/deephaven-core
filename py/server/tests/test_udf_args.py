@@ -486,6 +486,15 @@ def f(x: {p_type}) -> bool:  # note typing
             t = empty_table(1).update(["X = i", "Y = (byte)(ii % 128)"]).group_by("X").update(["Z = f(Y.toArray())"])
             self.assertEqual(t.columns[2].data_type, dtypes.bool_)
 
+    def test_non_common_cases(self):
+        def f1(x: int) -> float:
+            ...
+
+        def f2(x: float) -> int:
+            ...
+
+        t = empty_table(1).update("X = f2(f1(ii))")
+        self.assertEqual(t.columns[0].data_type, dtypes.int_)
 
 if __name__ == "__main__":
     unittest.main()

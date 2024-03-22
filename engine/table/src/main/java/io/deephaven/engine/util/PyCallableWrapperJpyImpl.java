@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.NULL_CLASS;
-import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isLosslessWideningPrimitiveConversion;
 import static io.deephaven.util.type.TypeUtils.getUnboxedType;
 
 /**
@@ -51,7 +50,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaArrayClass.put('l', long[].class);
         numpyType2JavaArrayClass.put('f', float[].class);
         numpyType2JavaArrayClass.put('d', double[].class);
-        numpyType2JavaArrayClass.put('?', boolean[].class);
+        numpyType2JavaArrayClass.put('?', Boolean[].class);
         numpyType2JavaArrayClass.put('U', String[].class);
         numpyType2JavaArrayClass.put('M', Instant[].class);
         numpyType2JavaArrayClass.put('O', Object[].class);
@@ -200,8 +199,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         List<Parameter> parameters = new ArrayList<>();
         if (!pyEncodedParamsStr.isEmpty()) {
             String[] pyEncodedParams = pyEncodedParamsStr.split(",");
-            for (int i = 0; i < pyEncodedParams.length; i++) {
-                String[] paramDetail = pyEncodedParams[i].split(":");
+            for (String pyEncodedParam : pyEncodedParams) {
+                String[] paramDetail = pyEncodedParam.split(":");
                 String paramName = paramDetail[0];
                 String paramTypeCodes = paramDetail[1];
                 Set<Class<?>> possibleTypes = new HashSet<>();
@@ -211,9 +210,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         // skip the array type code
                         ti++;
                         possibleTypes.add(numpyType2JavaArrayClass.get(paramTypeCodes.charAt(ti)));
-                        if (paramTypeCodes.charAt(ti) == '?') {
-                            possibleTypes.add(Boolean[].class);
-                        }
                     } else if (typeCode == 'N') {
                         possibleTypes.add(NULL_CLASS);
                     } else {
@@ -250,14 +246,40 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         return false;
     }
 
+    public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
+        if (original == null || !original.isPrimitive() || target == null || !target.isPrimitive()
+                || original.equals(void.class) || target.equals(void.class)) {
+            throw new IllegalArgumentException("Arguments must be a primitive type (excluding void)!");
+        }
+
+        if (original.equals(target)) {
+            return true;
+        }
+
+        if (original.equals(byte.class)) {
+            return target == short.class || target == int.class || target == long.class;
+        } else if (original.equals(short.class) || original.equals(char.class)) { // char is unsigned, so it's a
+                                                                                  // lossless conversion to int
+            return target == int.class || target == long.class;
+        } else if (original.equals(int.class)) {
+            return target == long.class;
+        } else if (original.equals(float.class)) {
+            return target == double.class;
+        }
+
+        return false;
+    }
 
     public void verifyArguments(Class<?>[] argTypes) {
         String callableName = pyCallable.getAttribute("__name__").toString();
         List<Parameter> parameters = signature.getParameters();
 
         for (int i = 0; i < argTypes.length; i++) {
+            // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
+            // parameter. This is not ideal. We should consider a better way to handle this, i.e. a way to convey that
+            // the function is variadic.
             Set<Class<?>> types =
-                    parameters.get(i > parameters.size() - 1 ? parameters.size() - 1 : i).getPossibleTypes();
+                    parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
 
             // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
             // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
@@ -267,15 +289,14 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             }
 
             Class<?> t = getUnboxedType(argTypes[i]) == null ? argTypes[i] : getUnboxedType(argTypes[i]);
-            if (!types.contains(t) && !types.contains(Object.class)
-                    && !isSafelyCastable(types, t)) {
+            if (!types.contains(t) && !types.contains(Object.class) && !isSafelyCastable(types, t)) {
                 throw new IllegalArgumentException(
                         callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of "
                                 + parameters.get(i).getPossibleTypes() + ", got "
                                 + (argTypes[i].equals(NULL_CLASS) ? "null" : argTypes[i]));
             }
         }
-    };
+    }
 
     // In vectorized mode, we want to call the vectorized function directly.
     public PyObject vectorizedCallable() {

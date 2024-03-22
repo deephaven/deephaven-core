@@ -54,8 +54,7 @@ def fn(col) -> {np_dtype}:
             "np.str_": dtypes.string_array,
             "np.uint16": dtypes.char_array,
         }
-        # container_types = ["List", "Tuple", "list", "tuple", "Sequence", "np.ndarray"]
-        container_types = ["list"]
+        container_types = ["List", "Tuple", "list", "tuple", "Sequence", "np.ndarray"]
         for component_type, dh_dtype in component_types.items():
             for container_type in container_types:
                 with self.subTest(component_type=component_type, container_type=container_type):
@@ -67,6 +66,15 @@ def fn(col) -> {np_dtype}:
                     exec("\n".join([func_decl_str, func_body_str]), globals())
                     t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X").update(f"Z= fn(Y + 1)")
                     self.assertEqual(t.columns[2].data_type, dh_dtype)
+
+        container_types = ["bytes", "bytearray"]
+        for container_type in container_types:
+            with self.subTest(container_type=container_type):
+                func_decl_str = f"""def fn(col) -> {container_type}:"""
+                func_body_str = f"""    return {container_type}(col)"""
+                exec("\n".join([func_decl_str, func_body_str]), globals())
+                t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X").update(f"Z= fn(Y + 1)")
+                self.assertEqual(t.columns[2].data_type, dtypes.byte_array)
 
     def test_scalar_return_class_method_not_supported(self):
         for dh_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
