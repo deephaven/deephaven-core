@@ -7,7 +7,6 @@ import com.google.common.collect.Streams;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.CrossJoinHelper;
@@ -24,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,17 +94,17 @@ public class OuterJoinTools {
                 ? Arrays.stream(columnsToAdd).map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn()))
                 : table2.getDefinition().getColumnNames().stream().map(SourceColumn::new);
 
-        // we merge identity match columns, otherwise all left columns are to be null view columns
-        final Set<String> identityMatchColumns = Arrays.stream(columnsToMatch)
-                .filter(mp -> mp.leftColumn().equals(mp.rightColumn()))
+        // we merge match columns, otherwise all left columns are to be null view columns
+        final Set<String> matchColumns = Arrays.stream(columnsToMatch)
                 .map(MatchPair::leftColumn)
                 .collect(Collectors.toSet());
 
         // note that right sourced columns must be applied first to avoid any clashing column names
         final List<SelectColumn> rightColumns = Streams.concat(
-                identityMatchColumns.stream().map(SourceColumn::new), rightSourcedColumns,
+                rightSourcedColumns,
+                Arrays.stream(columnsToMatch).map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn())),
                 table1.getColumnSourceMap().entrySet().stream()
-                        .filter(entry -> !identityMatchColumns.contains(entry.getKey()))
+                        .filter(entry -> !matchColumns.contains(entry.getKey()))
                         .map(entry -> new NullSelectColumn<>(
                                 entry.getValue().getType(), entry.getValue().getComponentType(), entry.getKey())))
                 .collect(Collectors.toList());
