@@ -268,8 +268,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     initialKeysIterator.forEachRemaining(key -> {
                         addKeyUnchecked(key);
                         // TODO: if we are using a partial index, we are potentially adding duplicate sub-keys. Should
-                        // we
-                        // track the sub-keys in a hash set to avoid this?
+                        // we track the sub-keys in a hash set to avoid this?
                         staticLookupKeys.add(setKeySource.exportElementReinterpreted(key, offset));
                     });
                 } else if (subKeySize < keyColumnNames.length) {
@@ -285,8 +284,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                         }
                         final Object[] lookupKey = Arrays.copyOf(dest, subKeySize);
                         // TODO: if we are using a partial index, we are potentially adding duplicate sub-keys. Should
-                        // we
-                        // track the sub-keys in a hash set to avoid this?
+                        // we track the sub-keys in a hash set to avoid this?
                         staticLookupKeys.add(lookupKey);
                     });
                 } else {
@@ -303,8 +301,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     });
                 }
             }
-
-
 
             // We have computed the static lookup keys, we can release the set table and column source
             setTable = null;
