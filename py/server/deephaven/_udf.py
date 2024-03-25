@@ -156,14 +156,14 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     # when np.ndarray is used, the 1st argument is the component type
     if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
         import types
-        if isinstance(t, types.GenericAlias) and t.__origin__ == np.ndarray:
+        if isinstance(t, types.GenericAlias) and t.__origin__ == np.ndarray: # novermin
             nargs = len(t.__args__)
             if nargs == 1:
                 component_type = t.__args__[0]
             elif nargs == 2:  # for npt.NDArray[np.int64], etc.
                 a0 = t.__args__[0]
                 a1 = t.__args__[1]
-                if a0 == typing.Any and isinstance(a1, types.GenericAlias):
+                if a0 == typing.Any and isinstance(a1, types.GenericAlias): # novermin
                     component_type = a1.__args__[0]
     return component_type
 
