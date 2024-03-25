@@ -4,6 +4,7 @@
 package io.deephaven.clientsupport.gotorow;
 
 import io.deephaven.api.util.ConcurrentMethod;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -116,26 +117,22 @@ public class SeekRow {
                         row = findRow(rowSet, 0, (int) startingRow);
                         if (row >= 0) {
                             result.setValue(row);
-                            log.info().append("found 1").endl();
                             return true;
                         }
                         row = findRow(rowSet, (int) startingRow, (int) rowSet.size());
                         if (row >= 0) {
                             result.setValue(row);
-                            log.info().append("found 2").endl();
                             return true;
                         }
                     } else {
                         row = findRow(rowSet, (int) startingRow + 1, (int) rowSet.size());
                         if (row >= 0) {
                             result.setValue(row);
-                            log.info().append("found 3").endl();
                             return true;
                         }
                         row = findRow(rowSet, 0, (int) startingRow + 1);
                         if (row >= 0) {
                             result.setValue(row);
-                            log.info().append("found 4").endl();
                             return true;
                         }
                     }
