@@ -11,7 +11,13 @@ import io.deephaven.chunk.attributes.Values;
 import java.util.Collection;
 
 public interface SetInclusionKernel {
-    void matchValues(Chunk<Values> values, WritableBooleanChunk matches);
+    void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches);
+
+    void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride);
+
+    void addItem(Object key);
+
+    void removeItem(Object key);
 
     static SetInclusionKernel makeKernel(ChunkType type, Collection<Object> values, boolean inclusion) {
         switch (type) {
