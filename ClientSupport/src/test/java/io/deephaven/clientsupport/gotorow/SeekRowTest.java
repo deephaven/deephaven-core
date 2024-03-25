@@ -23,7 +23,7 @@ public class SeekRowTest {
     /**
      * Helper to verify that a given value can not be found no matter which row is started from
      *
-     * @param t the table to search
+     * @param t               the table to search
      * @param impossibleValue a value that isn't present in the table
      */
     public static void assertNotFound(int impossibleValue, Table t) {
@@ -38,14 +38,14 @@ public class SeekRowTest {
      * Helper to run SeekRow and validate that the discovered row is what was expected. Validates the
      * {@code expectedPosition} before running, to ensure test data makes sense.
      *
-     * @param t the table to search
-     * @param seekValue the value to search for
-     * @param seekForward true to seek forward, false to seek backward
-     * @param currentPosition the position to start searching
+     * @param t                the table to search
+     * @param seekValue        the value to search for
+     * @param seekForward      true to seek forward, false to seek backward
+     * @param currentPosition  the position to start searching
      * @param expectedPosition the next expected position of the seek value
      */
     private static void assertSeekPosition(Table t, int seekValue, boolean seekForward, int currentPosition,
-            int expectedPosition) {
+                                           int expectedPosition) {
         if (expectedPosition != -1) {
             // Confirm that the expected position matches
             assertEquals(seekValue, t.flatten().getColumnSource("num").getInt(expectedPosition));
@@ -62,13 +62,13 @@ public class SeekRowTest {
      * Helper to seek from every row in a table, and assert that a valid value can be found in a valid position from
      * each.
      *
-     * @param t the table to search
-     * @param seekValue the value to search for
-     * @param forwardPositions expected positions when searching forward, indexed on starting row
+     * @param t                 the table to search
+     * @param seekValue         the value to search for
+     * @param forwardPositions  expected positions when searching forward, indexed on starting row
      * @param backwardPositions expected positions when searching backwards, indexed on starting row
      */
     private static void assertSeekPositionAllRows(Table t, int seekValue, int[] forwardPositions,
-            int[] backwardPositions) {
+                                                  int[] backwardPositions) {
         assertEquals(t.size(), forwardPositions.length);
         assertEquals(t.size(), backwardPositions.length);
         for (int i = 0; i < t.size(); i++) {
@@ -80,17 +80,17 @@ public class SeekRowTest {
 
     /**
      * Helper to run asserts for int rows that are already sorted at initialization
-     * 
-     * @param data the data, must be sorted in ascending order already
-     * @param seekValue the value to search for
-     * @param ascForwardPositions expected positions when searching forwards for ascending data
-     * @param ascBackwardPositions expected positions when searching backwards for ascending data
-     * @param descForwardPositions expected positions when searching forwards for descending data
+     *
+     * @param data                  the data, must be sorted in ascending order already
+     * @param seekValue             the value to search for
+     * @param ascForwardPositions   expected positions when searching forwards for ascending data
+     * @param ascBackwardPositions  expected positions when searching backwards for ascending data
+     * @param descForwardPositions  expected positions when searching forwards for descending data
      * @param descBackwardPositions expected positions when searching backwards for descending data
      */
     private static void assertNaturallySorted(int[] data, int seekValue,
-            int[] ascForwardPositions, int[] ascBackwardPositions,
-            int[] descForwardPositions, int[] descBackwardPositions) {
+                                              int[] ascForwardPositions, int[] ascBackwardPositions,
+                                              int[] descForwardPositions, int[] descBackwardPositions) {
         // ascending tables
         Table ascUnsorted = TableTools.newTable(intCol("num", data));
         Table ascSorted = ascUnsorted.sort("num");
@@ -152,161 +152,162 @@ public class SeekRowTest {
     @Test
     public void mono1() {
         assertNaturallySorted(
-                new int[] {1}, 1,
-                new int[] {0},
-                new int[] {0},
-                new int[] {0},
-                new int[] {0});
+                new int[]{1}, 1,
+                new int[]{0},
+                new int[]{0},
+                new int[]{0},
+                new int[]{0});
     }
 
     @Test
     public void mono2() {
         assertNaturallySorted(
-                new int[] {1, 1}, 1,
-                new int[] {1, 0},
-                new int[] {1, 0},
-                new int[] {1, 0},
-                new int[] {1, 0});
+                new int[]{1, 1}, 1,
+                new int[]{1, 0},
+                new int[]{1, 0},
+                new int[]{1, 0},
+                new int[]{1, 0});
     }
 
     @Test
     public void mono3() {
         assertNaturallySorted(
-                new int[] {1, 1, 1}, 1,
-                new int[] {1, 2, 0},
-                new int[] {2, 0, 1},
-                new int[] {1, 2, 0},
-                new int[] {2, 0, 1});
+                new int[]{1, 1, 1}, 1,
+                new int[]{1, 2, 0},
+                new int[]{2, 0, 1},
+                new int[]{1, 2, 0},
+                new int[]{2, 0, 1});
     }
 
     @Test
     public void start1() {
         assertNaturallySorted(
-                new int[] {1, 2}, 1,
-                new int[] {0, 0},
-                new int[] {0, 0},
-                new int[] {1, 1},
-                new int[] {1, 1});
+                new int[]{1, 2}, 1,
+                new int[]{0, 0},
+                new int[]{0, 0},
+                new int[]{1, 1},
+                new int[]{1, 1});
     }
 
     @Test
     public void start2() {
         assertNaturallySorted(
-                new int[] {1, 1, 2}, 1,
-                new int[] {1, 0, 0},
-                new int[] {1, 0, 1},
-                new int[] {1, 2, 1},
-                new int[] {2, 2, 1});
+                new int[]{1, 1, 2}, 1,
+                new int[]{1, 0, 0},
+                new int[]{1, 0, 1},
+                new int[]{1, 2, 1},
+                new int[]{2, 2, 1});
     }
 
     @Test
     public void start3() {
         assertNaturallySorted(
-                new int[] {1, 1, 1, 2}, 1,
-                new int[] {1, 2, 0, 0},
-                new int[] {2, 0, 1, 2},
-                new int[] {1, 2, 3, 1},
-                new int[] {3, 3, 1, 2});
+                new int[]{1, 1, 1, 2}, 1,
+                new int[]{1, 2, 0, 0},
+                new int[]{2, 0, 1, 2},
+                new int[]{1, 2, 3, 1},
+                new int[]{3, 3, 1, 2});
     }
 
     @Test
     public void middle1() {
         assertNaturallySorted(
-                new int[] {1, 2, 3}, 2,
-                new int[] {1, 1, 1},
-                new int[] {1, 1, 1},
-                new int[] {1, 1, 1},
-                new int[] {1, 1, 1});
+                new int[]{1, 2, 3}, 2,
+                new int[]{1, 1, 1},
+                new int[]{1, 1, 1},
+                new int[]{1, 1, 1},
+                new int[]{1, 1, 1});
     }
 
     @Test
     public void middle2() {
         assertNaturallySorted(
-                new int[] {1, 2, 2, 3}, 2,
-                new int[] {1, 2, 1, 1},
-                new int[] {2, 2, 1, 2},
-                new int[] {1, 2, 1, 1},
-                new int[] {2, 2, 1, 2});
+                new int[]{1, 2, 2, 3}, 2,
+                new int[]{1, 2, 1, 1},
+                new int[]{2, 2, 1, 2},
+                new int[]{1, 2, 1, 1},
+                new int[]{2, 2, 1, 2});
     }
 
     @Test
     public void middle3() {
         assertNaturallySorted(
-                new int[] {1, 2, 2, 2, 3}, 2,
-                new int[] {1, 2, 3, 1, 1},
-                new int[] {3, 3, 1, 2, 3},
-                new int[] {1, 2, 3, 1, 1},
-                new int[] {3, 3, 1, 2, 3});
+                new int[]{1, 2, 2, 2, 3}, 2,
+                new int[]{1, 2, 3, 1, 1},
+                new int[]{3, 3, 1, 2, 3},
+                new int[]{1, 2, 3, 1, 1},
+                new int[]{3, 3, 1, 2, 3});
     }
 
     @Test
     public void end1() {
         assertNaturallySorted(
-                new int[] {1, 2}, 2,
-                new int[] {1, 1},
-                new int[] {1, 1},
-                new int[] {0, 0},
-                new int[] {0, 0});
+                new int[]{1, 2}, 2,
+                new int[]{1, 1},
+                new int[]{1, 1},
+                new int[]{0, 0},
+                new int[]{0, 0});
     }
 
     @Test
     public void end2() {
         assertNaturallySorted(
-                new int[] {1, 2, 2}, 2,
-                new int[] {1, 2, 1},
-                new int[] {2, 2, 1},
-                new int[] {1, 0, 0},
-                new int[] {1, 0, 1});
+                new int[]{1, 2, 2}, 2,
+                new int[]{1, 2, 1},
+                new int[]{2, 2, 1},
+                new int[]{1, 0, 0},
+                new int[]{1, 0, 1});
     }
 
     @Test
     public void end3() {
         assertNaturallySorted(
-                new int[] {1, 2, 2, 2}, 2,
-                new int[] {1, 2, 3, 1},
-                new int[] {3, 3, 1, 2},
-                new int[] {1, 2, 0, 0},
-                new int[] {2, 0, 1, 2});
+                new int[]{1, 2, 2, 2}, 2,
+                new int[]{1, 2, 3, 1},
+                new int[]{3, 3, 1, 2},
+                new int[]{1, 2, 0, 0},
+                new int[]{2, 0, 1, 2});
     }
 
     @Test
     public void notFound() {
         assertNaturallySorted(
-                new int[] {2, 4, 6}, 1,
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1});
+                new int[]{2, 4, 6}, 1,
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1});
         assertNaturallySorted(
-                new int[] {2, 4, 6}, 3,
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1});
+                new int[]{2, 4, 6}, 3,
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1});
         assertNaturallySorted(
-                new int[] {2, 4, 6}, 5,
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1});
+                new int[]{2, 4, 6}, 5,
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1});
         assertNaturallySorted(
-                new int[] {2, 4, 6}, 7,
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1},
-                new int[] {-1, -1, -1});
+                new int[]{2, 4, 6}, 7,
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1},
+                new int[]{-1, -1, -1});
     }
 
     @Test
     public void unsorted() {
         final Table t = newTable(intCol("num", 3, 1, 1, 2, 3, 1, 1, 2));
         assertSeekPositionAllRows(t, 1,
-                new int[] {1, 2, 5, 5, 5, 6, 1, 1},
-                new int[] {6, 6, 1, 2, 2, 2, 5, 6});
+                new int[]{1, 2, 5, 5, 5, 6, 1, 1},
+                new int[]{6, 6, 1, 2, 2, 2, 5, 6});
         assertSeekPositionAllRows(t, 2,
-                new int[] {3, 3, 3, 7, 7, 7, 7, 3},
-                new int[] {6, 6, 1, 2, 2, 2, 5, 6});
+                new int[]{3, 3, 3, 7, 7, 7, 7, 3},
+                new int[]{6, 6, 1, 2, 2, 2, 5, 6});
         assertSeekPositionAllRows(t, 3,
-                new int[] {4, 4, 4, 4, 0, 0, 0, 0},
-                new int[] {6, 6, 1, 2, 2, 2, 5, 6});
+                new int[]{4, 4, 4, 4, 0, 0, 0, 0},
+                new int[]{6, 6, 1, 2, 2, 2, 5, 6});
+    }
 }
