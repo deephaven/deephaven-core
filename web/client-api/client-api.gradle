@@ -10,6 +10,8 @@ plugins {
 }
 
 evaluationDependsOn(Docker.registryProject('selenium'))
+evaluationDependsOn ':web-shared-beans'
+evaluationDependsOn ':web-client-backplane'
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
@@ -37,18 +39,8 @@ Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
 
-//GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
-
-evaluationDependsOn ':web-shared-beans'
-evaluationDependsOn ':web-client-backplane'
-repositories {
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-    }
-}
 gwt {
-    gwtVersion = "2.12.0-instanceof-SNAPSHOT"
-//    gwtVersion = "2.11.0"
+    gwtVersion = Classpaths.GWT_VERSION
     modules 'io.deephaven.web.DeephavenApi'
 
     src += files(project.files(project(':web-shared-beans').sourceSets.main.allSource.srcDirs))
@@ -57,9 +49,7 @@ gwt {
 
     maxHeapSize '1024m'
 
-    extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005']
-
-    jsInteropExports{
+    jsInteropExports {
         setGenerate true
     }
 //    extraDir layout.buildDirectory.dir('gwt/extra')
