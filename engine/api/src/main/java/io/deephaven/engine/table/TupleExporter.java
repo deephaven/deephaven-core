@@ -16,7 +16,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      *
      * @return The number of elements in tuples supported by this TupleExporter
      */
-    int length();
+    int tupleLength();
 
     /**
      * Export a single element from the tuple, identified by its element index, to the destination row key of the
@@ -58,8 +58,8 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param dest The destination {@code Object[]}
      * @param tuple The tuple to export from
      */
-    default void exportAllTo(@NotNull final Object[] dest, @NotNull final TUPLE_TYPE tuple) {
-        final int length = length();
+    default void exportAllTo(final Object @NotNull [] dest, @NotNull final TUPLE_TYPE tuple) {
+        final int length = tupleLength();
         for (int ei = 0; ei < length; ++ei) {
             dest[ei] = exportElement(tuple, ei);
         }
@@ -80,10 +80,13 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param tuple The tuple to export from
      * @param map Instructions where to write each tuple element in {@code dest}
      */
-    default void exportAllTo(@NotNull final Object[] dest, @NotNull final TUPLE_TYPE tuple, @NotNull final int[] map) {
-        final int length = length();
+    default void exportAllTo(
+            final Object @NotNull [] dest,
+            @NotNull final TUPLE_TYPE tuple,
+            final int @NotNull [] map) {
+        final int length = tupleLength();
         for (int ei = 0; ei < length; ++ei) {
-            dest[ei] = exportElement(tuple, map[ei]);
+            dest[map[ei]] = exportElement(tuple, ei);
         }
     }
 
@@ -110,8 +113,8 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param dest The destination {@code Object[]}
      * @param tuple The tuple to export from
      */
-    default void exportAllReinterpretedTo(@NotNull final Object[] dest, @NotNull final TUPLE_TYPE tuple) {
-        final int length = length();
+    default void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final TUPLE_TYPE tuple) {
+        final int length = tupleLength();
         for (int ei = 0; ei < length; ++ei) {
             dest[ei] = exportElementReinterpreted(tuple, ei);
         }
@@ -133,12 +136,12 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param map Instructions where to write each tuple element in {@code dest}
      */
     default void exportAllReinterpretedTo(
-            @NotNull final Object[] dest,
+            final Object @NotNull [] dest,
             @NotNull final TUPLE_TYPE tuple,
-            @NotNull final int[] map) {
-        final int length = length();
+            final int @NotNull [] map) {
+        final int length = tupleLength();
         for (int ei = 0; ei < length; ++ei) {
-            dest[ei] = exportElementReinterpreted(tuple, map[ei]);
+            dest[map[ei]] = exportElementReinterpreted(tuple, ei);
         }
     }
 
