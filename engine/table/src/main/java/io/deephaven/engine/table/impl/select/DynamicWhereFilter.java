@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 /**
  * A where filter that extracts a set of inclusion or exclusion keys from a set table.
@@ -56,10 +55,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     /**
      * The optimal data index for this filter.
      */
-    @Nullable
-    private DataIndex sourceDataIndex;
-    private int[] tupleToIndexMap;
-    private int[] indexToTupleMap;
+    private @Nullable DataIndex sourceDataIndex;
+    private int @Nullable [] tupleToIndexMap;
+    private int @Nullable [] indexToTupleMap;
 
     private RecomputeListener listener;
     private QueryTable resultTable;
@@ -331,22 +329,24 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     /**
-     * Calculates a mapping from the index of a {@link ColumnSource} in the data index to the index of the corresponding
-     * {@link ColumnSource} in the key sources from the source table for a DynamicWhereFilter. This allows for mapping
-     * keys from the {@link #liveValues} to keys in the {@link #sourceDataIndex}.
+     * Calculates mappings from the offset of a {@link ColumnSource} in the {@code sourceDataIndex} to the offset of the
+     * corresponding {@link ColumnSource} in the key sources from the set or source table of a DynamicWhereFilter
+     * ({@code indexToTupleMap}, as well as the reverse ({@code tupleToIndexMap}). This allows for mapping keys from the
+     * {@link #liveValues} to keys in the {@link #sourceDataIndex}.
      */
     private void computeTupleIndexMaps() {
-
-        final ColumnSource<?>[] dataIndexSources = sourceDataIndex.keyColumnNamesByIndexedColumn().keySet()
+        final ColumnSource<?>[] dataIndexSources = Objects.requireNonNull(sourceDataIndex)
+                .keyColumnNamesByIndexedColumn()
+                .keySet()
                 .toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
-        // Pre-fill with the identity map
-        final int[] tupleToIndexMap = IntStream.range(0, sourceKeyColumns.length).toArray();
-        final int[] indexToTupleMap = Arrays.copyOf(tupleToIndexMap, tupleToIndexMap.length);
+        final int[] tupleToIndexMap = new int[sourceKeyColumns.length];
+        final int[] indexToTupleMap = new int[sourceKeyColumns.length];
 
         boolean sameOrder = true;
 
-        // The tuples will be in keySources order, we need to find the dataIndex offset for each keySource.
+        // The tuples will be in sourceKeyColumns order (same as set table key columns order). We need to find the
+        // dataIndex offset for each key source.
         // This is an N^2 loop but N is expected to be very small and this is called only at creation.
         for (int ii = 0; ii < sourceKeyColumns.length; ++ii) {
             for (int jj = 0; jj < dataIndexSources.length; ++jj) {
