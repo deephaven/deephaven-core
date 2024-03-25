@@ -369,6 +369,15 @@ public class TupleSourceCodeGenerator {
 
         code.append(NEW_LINE);
 
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final int tupleLength() {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("return 2;").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
         code.append(indenter).append("@SuppressWarnings(\"unchecked\")").append(NEW_LINE);
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
@@ -729,6 +738,15 @@ public class TupleSourceCodeGenerator {
         addReinterpretedUnboxing(type3, indenter, code, "values[2]", false);
         indenter.decreaseLevel(2);
         code.append(indenter).append(");").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final int tupleLength() {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("return 3;").append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 
