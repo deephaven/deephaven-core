@@ -265,19 +265,25 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (setTable == null && setKeySource != null) {
             // The setTable is static, and we can release the setKeySource. Before we do, let's convert the tuples in
             // liveValues to be lookup keys in the sourceDataIndex (if lookup keys are needed).
-            if (sourceDataIndex != null && sourceDataIndex.keyColumns().length > 1) {
+            if (sourceDataIndex != null) {
                 staticSetLookupKeys = new ArrayList<>(liveValues.size());
-
                 final int indexKeySize = sourceDataIndex.keyColumns().length;
-                final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
-                        ? tupleToKeyMappingFunction()
-                        : tupleToPartialKeyMappingFunction();
+                if (indexKeySize > 1) {
+                    final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
+                            ? tupleToKeyMappingFunction()
+                            : tupleToPartialKeyMappingFunction();
 
-                liveValues.forEach(key -> {
-                    final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
-                    // Store a copy because the mapping function returns the same array each invocation.
-                    staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
-                });
+                    liveValues.forEach(key -> {
+                        final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
+                        // Store a copy because the mapping function returns the same array each invocation.
+                        staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
+                    });
+                } else {
+                    final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
+                    liveValues.forEach(key -> {
+                        staticSetLookupKeys.add(setKeySource.exportElement(key, keyOffset));
+                    });
+                }
                 // No reason to keep the tuples around anymore, the SetInclusionKernel has copies for running
                 // filterLinear()
                 liveValues.clear();
@@ -494,7 +500,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         final Function<Object, Object> keyMappingFunction;
         if (staticSetLookupKeys != null) {
             values = staticSetLookupKeys;
-            keyMappingFunction = (final Object key) -> key;
+            keyMappingFunction = Function.identity();
         } else {
             values = liveValues;
             keyMappingFunction = tupleToKeyMappingFunction();
@@ -530,41 +536,32 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
             final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
-            if (sourceDataIndex.keyColumnNames().size() == 1) {
-                // Only one indexed source, so we can use the RowSetLookup directly on the right sub-key.
-                final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                liveValues.forEach(key -> {
-                    final Object lookupKey = setKeySource == null ? key : setKeySource.exportElement(key, keyOffset);
-                    final long rowKey = rowKeyLookup.apply(lookupKey, false);
-                    final RowSet rowSet = rowSetColumn.get(rowKey);
-                    if (rowSet != null) {
-                        try (final RowSet intersected = rowSet.intersect(selection)) {
-                            possiblyMatching.insert(intersected);
-                        }
-                    }
-                });
+            final Collection<Object> values;
+            final Function<Object, Object> keyMappingFunction;
+
+            if (staticSetLookupKeys != null) {
+                values = staticSetLookupKeys;
+                keyMappingFunction = Function.identity();
             } else {
-                final Collection<Object> values;
-                final Function<Object, Object> keyMappingFunction;
-                if (staticSetLookupKeys != null) {
-                    values = staticSetLookupKeys;
-                    keyMappingFunction = (final Object key) -> key;
+                values = liveValues;
+                if (sourceDataIndex.keyColumnNames().size() == 1) {
+                    final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
+                    keyMappingFunction = (final Object key) -> setKeySource.exportElement(key, keyOffset);
                 } else {
-                    values = liveValues;
                     keyMappingFunction = tupleToPartialKeyMappingFunction();
                 }
-
-                values.forEach(key -> {
-                    final Object mappedKey = keyMappingFunction.apply(key);
-                    final long rowKey = rowKeyLookup.apply(mappedKey, false);
-                    final RowSet rowSet = rowSetColumn.get(rowKey);
-                    if (rowSet != null) {
-                        try (final RowSet intersected = rowSet.intersect(selection)) {
-                            possiblyMatching.insert(intersected);
-                        }
-                    }
-                });
             }
+
+            values.forEach(key -> {
+                final Object lookupKey = keyMappingFunction.apply(key);
+                final long rowKey = rowKeyLookup.apply(lookupKey, false);
+                final RowSet rowSet = rowSetColumn.get(rowKey);
+                if (rowSet != null) {
+                    try (final RowSet intersected = rowSet.intersect(selection)) {
+                        possiblyMatching.insert(intersected);
+                    }
+                }
+            });
 
             // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
             matching = filterLinear(possiblyMatching, true);
