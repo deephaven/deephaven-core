@@ -2511,8 +2511,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         final String invokedMethodName = n.getNameAsString();
 
         if (GET_ATTRIBUTE_METHOD_NAME.equals(invokedMethodName)) {
-            // Only PyCallableWrapper.getAttribute()/PyCallableWrapper.call() may be invoked from the query language.
-            // UDF type checks are not currently supported for getAttribute() calls.
+            // Currently Python UDF handling is only supported for top module level function(callable) calls.
+            // The getAttribute() calls which is needed to support Python method calls, which is beyond the scope of
+            // current implementation. So we are skipping the argument verification for getAttribute() calls.
             return;
         }
         if (!n.containsData(QueryLanguageParserDataKeys.PY_CALLABLE_DETAILS)) {

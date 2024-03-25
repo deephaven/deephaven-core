@@ -8,7 +8,8 @@ import unittest
 import numpy as np
 import numpy.typing as npt
 
-from deephaven import empty_table, DHError, dtypes
+from deephaven import empty_table, DHError, dtypes, new_table
+from deephaven.column import int_col
 from deephaven.dtypes import double_array, int32_array, long_array, int16_array, char_array, int8_array, \
     float32_array
 from tests.testbase import BaseTestCase
@@ -495,6 +496,24 @@ def f(x: {p_type}) -> bool:  # note typing
 
         t = empty_table(1).update("X = f2(f1(ii))")
         self.assertEqual(t.columns[0].data_type, dtypes.int_)
+
+    def test_varargs(self):
+        cols = ["A", "B", "C", "D"]
+
+        def my_sum(p1: np.int32, *args: np.int64) -> int:
+            return sum(args)
+
+        t = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
+        result = t.update(f"X = my_sum({','.join(cols)})")
+        self.assertEqual(result.columns[4].data_type, dtypes.int64)
+
+        def my_sum_error(p1: np.int32, *args: np.int16) -> int:
+            return sum(args)
+        with self.assertRaises(DHError) as cm:
+            t.update(f"X = my_sum_error({','.join(cols)})")
+        self.assertRegex(str(cm.exception), "my_sum_error: Expected argument .* got int")
+
+
 
 if __name__ == "__main__":
     unittest.main()
