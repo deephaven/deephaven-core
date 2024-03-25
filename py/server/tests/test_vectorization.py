@@ -15,7 +15,7 @@ import deephaven._udf as _udf
 from deephaven._udf import _dh_vectorize as dh_vectorize
 from tests.testbase import BaseTestCase
 
-from tests.test_udf_numpy_args import _J_TYPE_NULL_MAP, _J_TYPE_NP_DTYPE_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
+from tests.test_udf_args import _J_TYPE_NULL_MAP, _J_TYPE_NP_DTYPE_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
 
 
 class VectorizationTestCase(BaseTestCase):
@@ -253,6 +253,7 @@ class VectorizationTestCase(BaseTestCase):
         source = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
         result = source.update(f"X = my_sum({','.join(cols)})")
         self.assertEqual(len(cols) + 1, len(result.columns))
+        self.assertEqual(_udf.vectorized_count, 0)
 
     def test_enclosed_by_parentheses(self):
         def sinc(x) -> np.double:
@@ -269,7 +270,7 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
 
     def test_optional_annotations(self):
-        def pyfunc(p1: np.int32, p2: np.int32, p3: Optional[np.int32]) -> Optional[int]:
+        def pyfunc(p1: np.int32, p2: np.int64, p3: Optional[np.int32]) -> Optional[int]:
             total = p1 + p2 + p3
             return None if total % 3 == 0 else total
 
