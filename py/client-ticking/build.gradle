@@ -193,7 +193,16 @@ def testPyClientTickingAllWheels = testPyClientTickingManyLinux(
     'pyClientTickingAllWheels',
     'fedora')
 
-tasks.getByName('check').dependsOn(testPyClientTicking)
-tasks.getByName('testPyClientTickingPrepareDocker').dependsOn(pyClientTicking)
-tasks.getByName('testPyClientTickingAllWheelsPrepareDocker').dependsOn(pyClientTickingAllWheels)
+assemble.dependsOn buildPyClientTicking
+
+check.dependsOn testPyClientTicking
+
+tasks.named('testPyClientTickingPrepareDocker') { task ->
+    task.dependsOn pyClientTicking
+}
+
+tasks.named('testPyClientTickingAllWheelsPrepareDocker') { task ->
+    task.dependsOn pyClientTickingAllWheels
+}
+
 deephavenDocker.shouldLogIfTaskFails testPyClientTicking
