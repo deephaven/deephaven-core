@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -39,8 +40,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private final MatchPair[] matchPairs;
     private final boolean inclusion;
 
+    // TODO: This is only used when we have a source table data index and it's populated before we know the source
+    // table. Is there a better way to handle this? Would be great to eliminate this and read SetKernel internal
+    // set instead but those are commonly unboxed trove sets.
     private final Set<Object> liveValues;
-    private List<Object> staticLookupKeys;
 
     @SuppressWarnings("FieldCanBeLocal")
     @ReferentialIntegrity
@@ -48,8 +51,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     private final SetInclusionKernel setKernel;
 
-    private QueryTable setTable;
+    private final QueryTable setTable;
     private TupleSource<Object> setKeySource;
+    private List<Object> staticSetLookupKeys;
 
     private ColumnSource<?>[] sourceKeyColumns;
     /**
@@ -72,24 +76,27 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         this.matchPairs = setColumnsNames;
         this.inclusion = inclusion;
 
-        // We will use tuples even when there are multiple key columns.
+        // We will use tuples when there are multiple key columns.
         liveValues = new HashSet<>();
 
+        // Use reinterpreted column sources for the set table tuple source.
         final ColumnSource<?>[] setColumns = Arrays.stream(matchPairs)
-                .map(mp -> setTable.getColumnSource(mp.rightColumn())).toArray(ColumnSource[]::new);
-
-        this.setTable = setTable;
+                .map(mp -> setTable.getColumnSource(mp.rightColumn()))
+                .map(ReinterpretUtils::maybeConvertToPrimitive)
+                .toArray(ColumnSource[]::new);
         setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
+        setKernel = SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
+
+        // Fill liveValues and the set kernel with the initial keys from the set table.
+        if (setTable.getRowSet().isNonempty()) {
+            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
+                    setKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
+                initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
+            }
+        }
 
         if (setTable.isRefreshing()) {
-            setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
-            setKernel = SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
-            if (setTable.getRowSet().isNonempty()) {
-                try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                        setKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
-                    initialKeysIterator.forEachRemaining(this::addKey);
-                }
-            }
+            this.setTable = setTable;
 
             final String[] setColumnNames =
                     Arrays.stream(matchPairs).map(MatchPair::rightColumn).toArray(String[]::new);
@@ -181,8 +188,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
             manage(setUpdateListener);
         } else {
+            this.setTable = null;
             setUpdateListener = null;
-            setKernel = SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
         }
     }
 
@@ -191,15 +198,17 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
      */
     private DynamicWhereFilter(
             @NotNull final Set<Object> liveValues,
+            @Nullable final TupleSource<Object> setKeySource,
+            @NotNull final SetInclusionKernel setKernel,
             final boolean inclusion,
             final MatchPair... setColumnsNames) {
         this.liveValues = liveValues;
-        this.matchPairs = setColumnsNames;
+        this.setKeySource = setKeySource;
+        this.setKernel = setKernel;
         this.inclusion = inclusion;
+        this.matchPairs = setColumnsNames;
         setTable = null;
-        setKeySource = null;
         setUpdateListener = null;
-        setKernel = SetInclusionKernel.makeKernel(ChunkType.Object, liveValues, inclusion);
     }
 
     @Override
@@ -253,57 +262,27 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             }
         }
 
-        // Under certain conditions, we will pre-compute all the lookup keys from the set table.
-        if (keyColumnNames.length > 1
-                && sourceDataIndex != null
-                && !setTable.isRefreshing()
-                && setTable.getRowSet().isNonempty()) {
-            staticLookupKeys = new ArrayList<>(liveValues);
-            final int subKeySize = sourceDataIndex.keyColumnNames().size();
+        if (setTable == null && setKeySource != null) {
+            // The setTable is static, and we can release the setKeySource. Before we do, let's convert the tuples in
+            // liveValues to be lookup keys in the sourceDataIndex (if lookup keys are needed).
+            if (sourceDataIndex != null && sourceDataIndex.keyColumns().length > 1) {
+                staticSetLookupKeys = new ArrayList<>(liveValues.size());
 
-            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    setKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
-                if (subKeySize == 1) {
-                    final int offset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                    initialKeysIterator.forEachRemaining(key -> {
-                        addKeyUnchecked(key);
-                        // TODO: if we are using a partial index, we are potentially adding duplicate sub-keys. Should
-                        // we track the sub-keys in a hash set to avoid this?
-                        staticLookupKeys.add(setKeySource.exportElementReinterpreted(key, offset));
-                    });
-                } else if (subKeySize < keyColumnNames.length) {
-                    // We are using a partial index so our lookup keys are smaller than the setTable tuple
-                    final Object[] dest = new Object[keyColumnNames.length];
-                    initialKeysIterator.forEachRemaining(key -> {
-                        addKeyUnchecked(key);
+                final int indexKeySize = sourceDataIndex.keyColumns().length;
+                final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
+                        ? tupleToKeyMappingFunction()
+                        : tupleToPartialKeyMappingFunction();
 
-                        if (tupleToIndexMap == null) {
-                            setKeySource.exportAllReinterpretedTo(dest, key);
-                        } else {
-                            setKeySource.exportAllReinterpretedTo(dest, key, tupleToIndexMap);
-                        }
-                        final Object[] lookupKey = Arrays.copyOf(dest, subKeySize);
-                        // TODO: if we are using a partial index, we are potentially adding duplicate sub-keys. Should
-                        // we track the sub-keys in a hash set to avoid this?
-                        staticLookupKeys.add(lookupKey);
-                    });
-                } else {
-                    initialKeysIterator.forEachRemaining(key -> {
-                        addKeyUnchecked(key);
-
-                        final Object[] dest = new Object[keyColumnNames.length];
-                        if (tupleToIndexMap == null) {
-                            setKeySource.exportAllReinterpretedTo(dest, key);
-                        } else {
-                            setKeySource.exportAllReinterpretedTo(dest, key, tupleToIndexMap);
-                        }
-                        staticLookupKeys.add(dest);
-                    });
-                }
+                liveValues.forEach(key -> {
+                    final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
+                    // Store a copy because the mapping function returns the same array each invocation.
+                    staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
+                });
+                // No reason to keep the tuples around anymore, the SetInclusionKernel has copies for running
+                // filterLinear()
+                liveValues.clear();
             }
 
-            // We have computed the static lookup keys, we can release the set table and column source
-            setTable = null;
             setKeySource = null;
         }
 
@@ -331,19 +310,26 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
      * {@link #liveValues} to keys in the {@link #sourceDataIndex}.
      */
     private void computeTupleIndexMaps() {
-        final ColumnSource<?>[] dataIndexSources = Objects.requireNonNull(sourceDataIndex)
+        assert sourceDataIndex != null;
+
+        if (sourceDataIndex.keyColumns().length == 1) {
+            // Trivial mapping, no need to compute anything.
+            return;
+        }
+
+        final ColumnSource<?>[] dataIndexSources = sourceDataIndex
                 .keyColumnNamesByIndexedColumn()
                 .keySet()
                 .toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
+        // Bi-directional mapping (note that the sizes can be different, e.g. partial matching).
         final int[] tupleToIndexMap = new int[sourceKeyColumns.length];
-        final int[] indexToTupleMap = new int[sourceKeyColumns.length];
+        final int[] indexToTupleMap = new int[dataIndexSources.length];
 
         boolean sameOrder = true;
 
         // The tuples will be in sourceKeyColumns order (same as set table key columns order). We need to find the
         // dataIndex offset for each key source.
-        // This is an N^2 loop but N is expected to be very small and this is called only at creation.
         for (int ii = 0; ii < sourceKeyColumns.length; ++ii) {
             for (int jj = 0; jj < dataIndexSources.length; ++jj) {
                 if (sourceKeyColumns[ii] == dataIndexSources[jj]) {
@@ -361,18 +347,84 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     @NotNull
-    private Function<Object, Object> compoundKeyMappingFunction() {
+    private Function<Object, Object> tupleToKeyMappingFunction() {
         final Object[] keysInDataIndexOrder = new Object[sourceKeyColumns.length];
         if (tupleToIndexMap == null) {
-            return (final Object key) -> {
-                setKeySource.exportAllReinterpretedTo(keysInDataIndexOrder, key);
+            return (final Object tupleKey) -> {
+                setKeySource.exportAllTo(keysInDataIndexOrder, tupleKey);
                 return keysInDataIndexOrder;
             };
         }
-        return (final Object key) -> {
-            setKeySource.exportAllReinterpretedTo(keysInDataIndexOrder, key, tupleToIndexMap);
+        return (final Object tupleKey) -> {
+            setKeySource.exportAllTo(keysInDataIndexOrder, tupleKey, tupleToIndexMap);
             return keysInDataIndexOrder;
         };
+    }
+
+    @NotNull
+    private Function<Object, Object> tupleToPartialKeyMappingFunction() {
+        assert sourceDataIndex != null;
+
+        final int partialKeySize = sourceDataIndex.keyColumns().length;
+
+        // This function is not needed when the partial key is a single column and should not be called.
+        Require.geq(partialKeySize, "partialKeySize", 2, "2");
+
+        final Object[] keysInDataIndexOrder = new Object[partialKeySize];
+        // TODO: decide if this is ridiculous or clever. Trying to avoid looping inside the lambda if possible and
+        // selected the size > 3 case to match the size of non-array tuples before allowing looping.
+        if (indexToTupleMap == null) {
+            if (partialKeySize > 3) {
+                return (final Object tupleKey) -> {
+                    for (int ii = 0; ii < partialKeySize; ++ii) {
+                        keysInDataIndexOrder[ii] = setKeySource.exportElement(tupleKey, ii);
+                    }
+                    return keysInDataIndexOrder;
+                };
+            } else if (partialKeySize == 3) {
+                return (final Object tupleKey) -> {
+                    keysInDataIndexOrder[0] = setKeySource.exportElement(tupleKey, 0);
+                    keysInDataIndexOrder[1] = setKeySource.exportElement(tupleKey, 1);
+                    keysInDataIndexOrder[2] = setKeySource.exportElement(tupleKey, 2);
+                    return keysInDataIndexOrder;
+                };
+            } else {
+                return (final Object tupleKey) -> {
+                    keysInDataIndexOrder[0] = setKeySource.exportElement(tupleKey, 0);
+                    keysInDataIndexOrder[1] = setKeySource.exportElement(tupleKey, 1);
+                    return keysInDataIndexOrder;
+                };
+            }
+        } else {
+            if (partialKeySize > 3) {
+                return (final Object tupleKey) -> {
+                    for (int ii = 0; ii < partialKeySize; ++ii) {
+                        keysInDataIndexOrder[ii] = setKeySource.exportElement(tupleKey, indexToTupleMap[ii]);
+                    }
+                    return keysInDataIndexOrder;
+                };
+            } else if (partialKeySize == 3) {
+                final int index0 = indexToTupleMap[0];
+                final int index1 = indexToTupleMap[1];
+                final int index2 = indexToTupleMap[2];
+
+                return (final Object tupleKey) -> {
+                    keysInDataIndexOrder[0] = setKeySource.exportElement(tupleKey, index0);
+                    keysInDataIndexOrder[1] = setKeySource.exportElement(tupleKey, index1);
+                    keysInDataIndexOrder[2] = setKeySource.exportElement(tupleKey, index2);
+                    return keysInDataIndexOrder;
+                };
+            } else {
+                final int index0 = indexToTupleMap[0];
+                final int index1 = indexToTupleMap[1];
+
+                return (final Object tupleKey) -> {
+                    keysInDataIndexOrder[0] = setKeySource.exportElement(tupleKey, index0);
+                    keysInDataIndexOrder[1] = setKeySource.exportElement(tupleKey, index1);
+                    return keysInDataIndexOrder;
+                };
+            }
+        }
     }
 
     @Override
@@ -438,26 +490,17 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
-        if (staticLookupKeys != null) {
-            staticLookupKeys.forEach(key -> {
-                final long rowKey = rowKeyLookup.apply(key, false);
-                final RowSet rowSet = rowSetColumn.get(rowKey);
-                if (rowSet != null) {
-                    if (inclusion) {
-                        try (final RowSet intersected = rowSet.intersect(selection)) {
-                            filtered.insert(intersected);
-                        }
-                    } else {
-                        filtered.remove(rowSet);
-                    }
-                }
-            });
-            return filtered;
+        final Collection<Object> values;
+        final Function<Object, Object> keyMappingFunction;
+        if (staticSetLookupKeys != null) {
+            values = staticSetLookupKeys;
+            keyMappingFunction = (final Object key) -> key;
+        } else {
+            values = liveValues;
+            keyMappingFunction = tupleToKeyMappingFunction();
         }
 
-        final Function<Object, Object> keyMappingFunction = compoundKeyMappingFunction();
-
-        liveValues.forEach(key -> {
+        values.forEach(key -> {
             final Object mappedKey = keyMappingFunction.apply(key);
             final long rowKey = rowKeyLookup.apply(mappedKey, false);
             final RowSet rowSet = rowSetColumn.get(rowKey);
@@ -489,53 +532,38 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
             if (sourceDataIndex.keyColumnNames().size() == 1) {
                 // Only one indexed source, so we can use the RowSetLookup directly on the right sub-key.
-                if (staticLookupKeys != null) {
-                    staticLookupKeys.forEach(key -> {
-                        final long rowKey = rowKeyLookup.apply(key, false);
-                        final RowSet rowSet = rowSetColumn.get(rowKey);
-                        if (rowSet != null) {
-                            try (final RowSet intersected = rowSet.intersect(selection)) {
-                                possiblyMatching.insert(intersected);
-                            }
+                final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
+                liveValues.forEach(key -> {
+                    final Object lookupKey = setKeySource == null ? key : setKeySource.exportElement(key, keyOffset);
+                    final long rowKey = rowKeyLookup.apply(lookupKey, false);
+                    final RowSet rowSet = rowSetColumn.get(rowKey);
+                    if (rowSet != null) {
+                        try (final RowSet intersected = rowSet.intersect(selection)) {
+                            possiblyMatching.insert(intersected);
                         }
-                    });
-                } else {
-                    final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                    liveValues.forEach(key -> {
-                        final Object lookupKey = setKeySource.exportElement(key, keyOffset);
-                        final long rowKey = rowKeyLookup.apply(lookupKey, false);
-                        final RowSet rowSet = rowSetColumn.get(rowKey);
-                        if (rowSet != null) {
-                            try (final RowSet intersected = rowSet.intersect(selection)) {
-                                possiblyMatching.insert(intersected);
-                            }
-                        }
-                    });
-                }
+                    }
+                });
             } else {
-                if (staticLookupKeys != null) {
-                    staticLookupKeys.forEach(key -> {
-                        final long rowKey = rowKeyLookup.apply(key, false);
-                        final RowSet rowSet = rowSetColumn.get(rowKey);
-                        if (rowSet != null) {
-                            try (final RowSet intersected = rowSet.intersect(selection)) {
-                                possiblyMatching.insert(intersected);
-                            }
-                        }
-                    });
+                final Collection<Object> values;
+                final Function<Object, Object> keyMappingFunction;
+                if (staticSetLookupKeys != null) {
+                    values = staticSetLookupKeys;
+                    keyMappingFunction = (final Object key) -> key;
                 } else {
-                    final Function<Object, Object> keyMappingFunction = compoundKeyMappingFunction();
-                    liveValues.forEach(key -> {
-                        final Object mappedKey = keyMappingFunction.apply(key);
-                        final long rowKey = rowKeyLookup.apply(mappedKey, false);
-                        final RowSet rowSet = rowSetColumn.get(rowKey);
-                        if (rowSet != null) {
-                            try (final RowSet intersected = rowSet.intersect(selection)) {
-                                possiblyMatching.insert(intersected);
-                            }
-                        }
-                    });
+                    values = liveValues;
+                    keyMappingFunction = tupleToPartialKeyMappingFunction();
                 }
+
+                values.forEach(key -> {
+                    final Object mappedKey = keyMappingFunction.apply(key);
+                    final long rowKey = rowKeyLookup.apply(mappedKey, false);
+                    final RowSet rowSet = rowSetColumn.get(rowKey);
+                    if (rowSet != null) {
+                        try (final RowSet intersected = rowSet.intersect(selection)) {
+                            possiblyMatching.insert(intersected);
+                        }
+                    }
+                });
             }
 
             // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
@@ -556,7 +584,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
-        final TupleSource<Object> tmpKeySource = TupleSourceFactory.makeTupleSource(sourceKeyColumns);
+        // We need to compare reinterpreted source tuples against reinterpreted set tuples.
+        final ColumnSource<?>[] reinterpretedSources = Arrays.stream(sourceKeyColumns)
+                .map(ReinterpretUtils::maybeConvertToPrimitive)
+                .toArray(ColumnSource[]::new);
+        final TupleSource<Object> tmpKeySource = TupleSourceFactory.makeTupleSource(reinterpretedSources);
 
         final int maxChunkSize = getChunkSize(selection);
         // @formatter:off
@@ -615,7 +647,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @Override
     public DynamicWhereFilter copy() {
         if (setTable == null) {
-            return new DynamicWhereFilter(liveValues, inclusion, matchPairs);
+            // Including setKeySource covers the case where we have not converted the tuples in liveValues to index
+            // lookup keys.
+            return new DynamicWhereFilter(liveValues, setKeySource, setKernel, inclusion, matchPairs);
         }
         return new DynamicWhereFilter(setTable, inclusion, matchPairs);
     }
