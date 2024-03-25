@@ -9,11 +9,11 @@ import jpy
 import numpy as np
 
 from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, \
-    input_table, time
+    input_table, time, _wrapper
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
-from deephaven.table_factory import DynamicTableWriter, ring_table
+from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
 from deephaven.stream import blink_to_append_only, stream_to_append_only
@@ -21,6 +21,7 @@ from deephaven.stream import blink_to_append_only, stream_to_append_only
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JTable = jpy.get_type("io.deephaven.engine.table.Table")
 
 
 @dataclass
@@ -327,12 +328,16 @@ class TableFactoryTestCase(BaseTestCase):
         col_defs = {c.name: c.data_type for c in t.columns}
         with self.subTest("from table definition"):
             append_only_input_table = input_table(col_defs=col_defs)
+            self.assertEqual(append_only_input_table.key_names, [])
+            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(col_defs=col_defs, key_cols="String")
+            self.assertEqual(keyed_input_table.key_names, ["String"])
+            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
@@ -340,11 +345,15 @@ class TableFactoryTestCase(BaseTestCase):
 
         with self.subTest("from init table"):
             append_only_input_table = input_table(init_table=t)
+            self.assertEqual(append_only_input_table.key_names, [])
+            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(init_table=t, key_cols="String")
+            self.assertEqual(keyed_input_table.key_names, ["String"])
+            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
@@ -355,12 +364,24 @@ class TableFactoryTestCase(BaseTestCase):
             append_only_input_table = input_table(init_table=t)
             with self.assertRaises(DHError) as cm:
                 append_only_input_table.delete(t)
-            self.assertIn("not allowed.", str(cm.exception))
+            self.assertIn("doesn\'t support delete operation", str(cm.exception))
 
             keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
+            self.assertEqual(keyed_input_table.key_names, ["String", "Double"])
+            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String" and col.name != "Double"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
+
+        with self.subTest("custom input table creation"):
+            place_holder_input_table = empty_table(1).update_view(["Key=`A`", "Value=10"]).with_attributes({_JTable.INPUT_TABLE_ATTRIBUTE: "Placeholder IT"}).j_table
+
+            with self.assertRaises(DHError) as cm:
+                InputTable(place_holder_input_table)
+            self.assertIn("not of InputTableUpdater type", str(cm.exception))
+
+            self.assertTrue(isinstance(_wrapper.wrap_j_object(place_holder_input_table), Table))
+
 
     def test_ring_table(self):
         cols = [
@@ -418,6 +439,43 @@ class TableFactoryTestCase(BaseTestCase):
                                                dhtu.to_j_instant("2022-01-01T00:00:00 ET")]))
         self.wait_ticking_table_update(t5, row_count=1, timeout=5)
         self.assertEqual(t5.size, 1)
+
+    def test_input_table_empty_data(self):
+        from deephaven import update_graph as ugp
+        from deephaven import execution_context as ec
+
+        ug = ec.get_exec_ctx().update_graph
+        cm = ugp.exclusive_lock(ug)
+
+        with cm:
+            t = time_table("PT1s", blink_table=True)
+            it = input_table({c.name: c.data_type for c in t.columns}, key_cols="Timestamp")
+            it.add(t)
+            self.assertEqual(it.size, 0)
+            it.delete(t)
+            self.assertEqual(it.size, 0)
+
+        t = empty_table(0).update("Timestamp=nowSystem()")
+        it.add(t)
+        self.assertEqual(it.size, 0)
+        it.delete(t)
+        self.assertEqual(it.size, 0)
+
+    def test_j_input_wrapping(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+        col_defs = {c.name: c.data_type for c in t.columns}
+        append_only_input_table = input_table(col_defs=col_defs)
+
+        it = _wrapper.wrap_j_object(append_only_input_table.j_table)
+        self.assertTrue(isinstance(it, InputTable))
+
+        t = _wrapper.wrap_j_object(t.j_object)
+        self.assertFalse(isinstance(t, InputTable))
+        self.assertTrue(isinstance(t, Table))
 
 
 if __name__ == '__main__':

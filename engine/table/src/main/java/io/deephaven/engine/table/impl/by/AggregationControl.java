@@ -3,11 +3,13 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Stateless "control" class for giving external code (e.g. unit tests) knobs to turn w.r.t. to how aggregations should
@@ -22,10 +24,11 @@ public class AggregationControl {
     private static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
 
     public static final AggregationControl DEFAULT = new AggregationControl();
-    public static final AggregationControl DEFAULT_FOR_OPERATOR = new AggregationControl() {
+
+    public static final AggregationControl IGNORE_INDEXING = new AggregationControl() {
         @Override
-        public boolean considerGrouping(@NotNull Table table, @NotNull ColumnSource<?>[] sources) {
-            return sources.length == 1;
+        public DataIndex dataIndexToUse(@NotNull final Table table, @NotNull final String... keyColumnNames) {
+            return null;
         }
     };
 
@@ -42,17 +45,41 @@ public class AggregationControl {
         return DEFAULT_MAX_LOAD_FACTOR;
     }
 
-    public boolean considerGrouping(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {
-        return !inputTable.isRefreshing() && sources.length == 1;
+    /**
+     * Get a {@link BasicDataIndex} to use for aggregating {@code table} by {@code keyColumnNames}.
+     * <p>
+     * This call should be enclosed within a {@link io.deephaven.engine.liveness.LivenessScope} to ensure liveness is
+     * not unintentionally leaked for any new {@link BasicDataIndex indexes} or {@link Table tables} created. If a
+     * non-{@code null} {@link DataIndex#isRefreshing()} is returned, it will have been managed by the enclosing
+     * {@link io.deephaven.engine.liveness.LivenessScope}.
+     * <p>
+     * If a non-{@code null} result is returned, it will have transformed as needed to ensure that the
+     * {@link BasicDataIndex#table()} is sorted by first row key.
+     *
+     * @param table The {@link Table} to aggregate
+     * @param keyColumnNames The column names to aggregate by
+     * @return The {@link DataIndex} to use, or {@code null} if no index should be used
+     */
+    @Nullable
+    public BasicDataIndex dataIndexToUse(@NotNull final Table table, @NotNull final String... keyColumnNames) {
+        final DataIndex preTransformDataIndex = DataIndexer.getDataIndex(table, keyColumnNames);
+        if (preTransformDataIndex == null) {
+            return null;
+        }
+        Assert.eq(table.isRefreshing(), "table.isRefreshing()",
+                preTransformDataIndex.isRefreshing(), "preTransformDataIndex.isRefreshing()");
+        // Note that this transformation uses only concurrent table operations.
+        final BasicDataIndex transformedDataIndex = preTransformDataIndex.transform(DataIndexTransformer.builder()
+                .sortByFirstRowKey(true)
+                .build());
+        Assert.eq(table.isRefreshing(), "table.isRefreshing()",
+                transformedDataIndex.isRefreshing(), "transformedDataIndex.isRefreshing()");
+        return transformedDataIndex;
     }
 
-    public boolean shouldProbeShift(final long shiftSize, final int numStates) {
-        return shiftSize <= numStates * 2;
-    }
-
-    boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping,
+    boolean considerSymbolTables(@NotNull final Table inputTable, final boolean indexed,
             @NotNull final ColumnSource<?>[] sources) {
-        return !inputTable.isRefreshing() && !useGrouping && sources.length == 1
+        return !inputTable.isRefreshing() && !indexed && sources.length == 1
                 && SymbolTableSource.hasSymbolTable(sources[0], inputTable.getRowSet());
     }
 

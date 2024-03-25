@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -29,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -251,6 +251,7 @@ public final class TimeTable extends QueryTable implements Runnable {
                 final boolean invertMatch,
                 final boolean usePrev,
                 final boolean caseInsensitive,
+                @Nullable final DataIndex dataIndex,
                 @NotNull final RowSet selection,
                 final Object... keys) {
             if (startTime == null) {
@@ -282,14 +283,6 @@ public final class TimeTable extends QueryTable implements Runnable {
             final WritableRowSet matching = matchingSet.build();
             matching.retain(selection);
             return matching;
-        }
-
-        @Override
-        public Map<Instant, RowSet> getValuesMapping(RowSet subRange) {
-            final Map<Instant, RowSet> result = new LinkedHashMap<>();
-            subRange.forAllRowKeys(
-                    ii -> result.put(computeInstant(ii), RowSetFactory.fromKeys(ii)));
-            return result;
         }
 
         @Override
@@ -401,6 +394,7 @@ public final class TimeTable extends QueryTable implements Runnable {
                     final boolean invertMatch,
                     final boolean usePrev,
                     final boolean caseInsensitive,
+                    @Nullable final DataIndex dataIndex,
                     @NotNull final RowSet selection,
                     final Object... keys) {
                 if (startTime == null) {
@@ -432,14 +426,6 @@ public final class TimeTable extends QueryTable implements Runnable {
                 final WritableRowSet matching = matchingSet.build();
                 matching.retain(selection);
                 return matching;
-            }
-
-            @Override
-            public Map<Long, RowSet> getValuesMapping(RowSet subRange) {
-                final Map<Long, RowSet> result = new LinkedHashMap<>();
-                subRange.forAllRowKeys(
-                        ii -> result.put(box(computeNanos(ii)), RowSetFactory.fromKeys(ii)));
-                return result;
             }
 
             @Override

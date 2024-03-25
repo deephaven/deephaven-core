@@ -5,19 +5,22 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -92,13 +95,15 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         this.updateSourceRegistrar = updateSourceRegistrar;
 
         final boolean isRefreshing = updateSourceRegistrar != null;
-        columnSourceManager = componentFactory.createColumnSourceManager(isRefreshing, ColumnToCodecMappings.EMPTY,
-                definition.getColumns() // NB: this is the *re-written* definition passed to the super-class
-                                        // constructor.
-        );
-        if (isRefreshing) {
-            // NB: There's no reason to start out trying to group, if this is a refreshing table.
-            columnSourceManager.disableGrouping();
+        try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
+            columnSourceManager = componentFactory.createColumnSourceManager(
+                    isRefreshing,
+                    ColumnToCodecMappings.EMPTY,
+                    definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
+            );
+            if (isRefreshing) {
+                manage(columnSourceManager);
+            }
         }
 
         setRefreshing(isRefreshing);
@@ -108,7 +113,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     /**
      * Force this table to determine its initial state (available locations, size, RowSet) if it hasn't already done so.
      */
-    private void initialize() {
+    protected final void initialize() {
         initializeAvailableLocations();
         initializeLocationSizes();
     }
@@ -128,8 +133,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
     }
 
-    @SuppressWarnings("WeakerAccess")
-    protected final void initializeAvailableLocations() {
+    private void initializeAvailableLocations() {
         if (locationsInitialized) {
             return;
         }
@@ -187,29 +191,22 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = refreshLocationSizes().toTracking();
+                        try {
+                            rowSet = columnSourceManager.initialize();
+                        } catch (Exception e) {
+                            throw new TableDataException("Error initializing location sizes", e);
+                        }
                         if (!isRefreshing()) {
                             return;
                         }
-                        rowSet.initializePreviousValue();
-                        final long currentClockValue = getUpdateGraph().clock().currentValue();
-                        setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
-                                ? LogicalClock.getStep(currentClockValue) - 1
-                                : LogicalClock.getStep(currentClockValue));
+                        initializeLastNotificationStep(getUpdateGraph().clock());
                     });
             locationSizesInitialized = true;
         }
     }
 
-    private WritableRowSet refreshLocationSizes() {
-        try {
-            return columnSourceManager.refresh();
-        } catch (Exception e) {
-            throw new TableDataException("Error refreshing location sizes", e);
-        }
-    }
-
     private class LocationChangePoller extends InstrumentedTableUpdateSource {
+
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
@@ -228,14 +225,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
             maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
 
-            // NB: This class previously had functionality to notify "location listeners", but it was never used.
+            // This class previously had functionality to notify "location listeners", but it was never used.
             // Resurrect from git history if needed.
             if (!locationSizesInitialized) {
                 // We don't want to start polling size changes until the initial RowSet has been computed.
                 return;
             }
 
-            final RowSet added = refreshLocationSizes();
+            final RowSet added = columnSourceManager.refresh();
             if (added.isEmpty()) {
                 return;
             }
@@ -244,6 +241,12 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
 
+        @Override
+        protected void onRefreshError(@NotNull final Exception error) {
+            super.onRefreshError(error);
+            // Be sure that the ColumnSourceManager is aware
+            columnSourceManager.deliverError(error, entry);
+        }
     }
 
     /**
@@ -268,6 +271,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
                     @Override
                     public boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
+                        // This impl cannot call super.subscribeForUpdates(), because we must subscribe to the actual
+                        // (uncoalesced) SourceTable.
                         return addUpdateListenerUncoalesced(listener, lastNotificationStep);
                     }
                 });
@@ -286,8 +291,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
                             @Override
                             protected void destroy() {
-                                // NB: This implementation cannot call super.destroy() for the same reason as the swap
-                                // listener
+                                // This impl cannot call super.destroy() because we must unsubscribe from the actual
+                                // (uncoalesced) SourceTable.
                                 removeUpdateListenerUncoalesced(this);
                             }
                         };

@@ -6,23 +6,18 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.Instant;
-import java.util.Map;
 
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
 
-    public ReplayLastByGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn,
-            Replayer replayer, String[] groupingColumns) {
-        super("ReplayLastByGroupedTable", rowSet, input, timeColumn, replayer,
+    public ReplayLastByGroupedTable(Table source, String timeColumn, Replayer replayer, String[] groupingColumns) {
+        super("ReplayLastByGroupedTable", source, timeColumn, replayer,
                 WritableRowRedirection.FACTORY.createRowRedirection(100), groupingColumns);
-        // noinspection unchecked
-        replayer.registerTimeSource(rowSet, (ColumnSource<Instant>) input.get(timeColumn));
+        replayer.registerTimeSource(source.getRowSet(), source.getColumnSource(timeColumn, Instant.class));
     }
 
     @Override

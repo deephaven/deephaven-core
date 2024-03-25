@@ -52,7 +52,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         List<String> columnDataTypes = new ArrayList<>();
         List<String> columnTypes = new ArrayList<>();
         List<Boolean> columnPartitioning = new ArrayList<>();
-        List<Boolean> columnGrouping = new ArrayList<>();
         for (ColumnDefinition<?> cDef : getDefinition().getColumns()) {
             columnNames.add(cDef.getName());
             final Class<?> dataType = cDef.getDataType();
@@ -60,15 +59,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
             columnDataTypes.add(dataTypeName == null ? dataType.getName() : dataTypeName);
             columnTypes.add(cDef.getColumnType().name());
             columnPartitioning.add(cDef.isPartitioning());
-            columnGrouping.add(cDef.isGrouping());
         }
-        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning", "IsGrouping"};
+        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning"};
         final Object[] resultValues = {
                 columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 columnDataTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 columnTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 columnPartitioning.toArray(new Boolean[0]),
-                columnGrouping.toArray(new Boolean[0]),
         };
 
         return new InMemoryTable(resultColumnNames, resultValues);

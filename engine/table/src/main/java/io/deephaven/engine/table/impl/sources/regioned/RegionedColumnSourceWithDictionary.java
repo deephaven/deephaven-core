@@ -3,17 +3,13 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -231,6 +227,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
+            // noinspection resource
             symbolTableRowSet = symbolTableIndexBuilder.build().toTracking();
         }
 
@@ -274,7 +271,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
     private final class SymbolTableUpdateListener extends BaseTable.ListenerImpl {
 
-        private final BaseTable symbolTable;
+        private final BaseTable<?> symbolTable;
         private final ModifiedColumnSet emptyModifiedColumns;
 
         private SymbolTableUpdateListener(@NotNull final String description, @NotNull final Table sourceTable,
@@ -299,6 +296,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             }
 
             final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactory.builderSequential();
+            // noinspection unchecked
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);

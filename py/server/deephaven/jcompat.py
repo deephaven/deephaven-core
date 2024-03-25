@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from deephaven import dtypes, DHError
-from deephaven._wrapper import unwrap, wrap_j_object
+from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
 from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, _J_ARRAY_NP_TYPE_MAP
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
@@ -304,3 +304,33 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         s = pd.Series(data=np_array, copy=False)
 
     return s
+
+
+class AutoCloseable(JObjectWrapper):
+    """A context manager wrapper to allow Java AutoCloseable to be used in with statements.
+    
+    When constructing a new instance, the Java AutoCloseable must not be closed."""
+
+    j_object_type = jpy.get_type("java.lang.AutoCloseable")
+
+    def __init__(self, j_auto_closeable):
+        self._j_auto_closeable = j_auto_closeable
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def close(self):
+        if not self.closed:
+            self.closed = True
+            self._j_auto_closeable.close()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_auto_closeable

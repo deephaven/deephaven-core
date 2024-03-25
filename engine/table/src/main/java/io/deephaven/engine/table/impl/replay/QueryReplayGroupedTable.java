@@ -3,19 +3,23 @@
 //
 package io.deephaven.engine.table.impl.replay;
 
+
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.table.impl.TupleSourceFactory;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.PriorityQueue;
 
 public abstract class QueryReplayGroupedTable extends ReplayTableBase implements Runnable {
 
@@ -38,8 +42,8 @@ public abstract class QueryReplayGroupedTable extends ReplayTableBase implements
 
         private final RowSet.Iterator iterator;
         private final ColumnSource<Instant> columnSource;
-        Instant lastTime;
-        long lastIndex;
+        protected Instant lastTime;
+        protected long lastIndex;
         public final long pos;
 
         private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<Instant> columnSource, long pos) {
@@ -50,7 +54,7 @@ public abstract class QueryReplayGroupedTable extends ReplayTableBase implements
             lastTime = columnSource.get(lastIndex);
         }
 
-        IteratorsAndNextTime next() {
+        protected IteratorsAndNextTime next() {
             if (iterator.hasNext()) {
                 lastIndex = iterator.nextLong();
                 lastTime = columnSource.get(lastIndex);
@@ -71,33 +75,32 @@ public abstract class QueryReplayGroupedTable extends ReplayTableBase implements
 
     protected QueryReplayGroupedTable(
             @NotNull final String description,
-            @NotNull final TrackingRowSet rowSet,
-            @NotNull final Map<String, ? extends ColumnSource<?>> input,
+            @NotNull final Table source,
             @NotNull final String timeColumn,
             @NotNull final Replayer replayer,
             @NotNull final WritableRowRedirection rowRedirection,
             @NotNull final String[] groupingColumns) {
 
-        super(description, RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
+        super(description, RowSetFactory.empty().toTracking(),
+                getResultSources(source.getColumnSourceMap(), rowRedirection));
         this.rowRedirection = rowRedirection;
         this.replayer = Objects.requireNonNull(replayer, "replayer");
 
-        Map<Object, RowSet> grouping;
 
-        final ColumnSource<?>[] columnSources =
-                Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
-        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
-        grouping = RowSetIndexer.of(rowSet).getGrouping(tupleSource);
+        final BasicDataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, groupingColumns);
+        final Table indexTable = dataIndex.table();
 
-        // noinspection unchecked
-        ColumnSource<Instant> timeSource = (ColumnSource<Instant>) input.get(timeColumn);
+        ColumnSource<Instant> timeSource = source.getColumnSource(timeColumn, Instant.class);
         int pos = 0;
-        for (RowSet groupRowSet : grouping.values()) {
-            RowSet.Iterator iterator = groupRowSet.iterator();
-            if (iterator.hasNext()) {
-                allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
+        try (final CloseableIterator<RowSet> it = indexTable.columnIterator(dataIndex.rowSetColumnName())) {
+            while (it.hasNext()) {
+                RowSet.Iterator iterator = it.next().iterator();
+                if (iterator.hasNext()) {
+                    allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
+                }
             }
         }
+
         run();
     }
 }

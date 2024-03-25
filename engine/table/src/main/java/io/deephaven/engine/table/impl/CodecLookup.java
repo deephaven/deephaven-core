@@ -3,14 +3,13 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
+import io.deephaven.util.codec.*;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.util.codec.CodecCache;
-import io.deephaven.util.codec.ExternalizableCodec;
-import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.util.codec.SerializableCodec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -145,6 +144,10 @@ public class CodecLookup {
      * @return The default {@link ObjectCodec}
      */
     public static <TYPE> ObjectCodec<TYPE> getDefaultCodec(@NotNull final Class<TYPE> dataType) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5262): Eliminate reliance on RowSetCodec
+        if (dataType.equals(RowSet.class)) {
+            return CodecCache.DEFAULT.getCodec(RowSetCodec.class.getName(), null);
+        }
         if (Externalizable.class.isAssignableFrom(dataType)) {
             return CodecCache.DEFAULT.getCodec(ExternalizableCodec.class.getName(), dataType.getName());
         }

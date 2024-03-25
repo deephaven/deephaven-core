@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -111,15 +112,15 @@ public class TstUtils {
     }
 
     /**
-     * Create a grouped column holder from the given chunk.
+     * Create an indexed column holder from the given chunk.
      *
      * @param name the name of the column
      * @param type the type of the column
      * @param componentType the component type of the column if applicable
      * @param chunkData the data in an chunk for this column
-     * @return the new ColumnHolder with the grouping attribute set
+     * @return the new ColumnHolder with the indexed attribute set
      */
-    public static <T> ColumnHolder<T> groupedColumnHolderForChunk(
+    public static <T> ColumnHolder<T> indexedColumnHolderForChunk(
             String name, Class<T> type, Class<?> componentType, Chunk<Values> chunkData) {
         return ColumnHolder.makeForChunk(name, type, componentType, true, chunkData);
     }
@@ -209,7 +210,7 @@ public class TstUtils {
     }
 
     @SafeVarargs
-    public static <T> ColumnHolder<T> colGrouped(String name, T... data) {
+    public static <T> ColumnHolder<T> colIndexed(String name, T... data) {
         return ColumnHolder.createColumnHolder(name, true, data);
     }
 
@@ -551,29 +552,80 @@ public class TstUtils {
         return getTable(true, size, random, columnInfos);
     }
 
-    public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo<?, ?>[] columnInfos) {
+    public static QueryTable getTable(
+            final boolean refreshing,
+            final int size,
+            @NotNull final Random random,
+            @NotNull final ColumnInfo<?, ?>[] columnInfos) {
         final TrackingWritableRowSet rowSet = getInitialIndex(size, random).toTracking();
-        final ColumnHolder<?>[] sources = new ColumnHolder[columnInfos.length];
+        final ColumnHolder<?>[] columnHolders = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnInfos.length; i++) {
-            sources[i] = columnInfos[i].generateInitialColumn(rowSet, random);
+            columnHolders[i] = columnInfos[i].generateInitialColumn(rowSet, random);
         }
         if (refreshing) {
-            return testRefreshingTable(rowSet, sources);
+            return testRefreshingTable(rowSet, columnHolders);
         } else {
-            return testTable(rowSet, sources);
+            return testTable(rowSet, columnHolders);
         }
     }
 
-    public static QueryTable testTable(ColumnHolder<?>... columnHolders) {
-        final WritableRowSet rowSet = RowSetFactory.flat(columnHolders[0].size());
-        return testTable(rowSet.toTracking(), columnHolders);
+    private static QueryTable testTable(
+            final boolean refreshing,
+            final boolean flat,
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
+        final QueryTable queryTable = new QueryTable(rowSet, columns);
+        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        if (refreshing) {
+            queryTable.setRefreshing(true);
+        }
+        if (flat) {
+            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()");
+            queryTable.setFlat();
+        }
+
+        // Add indexes for the indexed columns.
+        for (ColumnHolder<?> columnHolder : columnHolders) {
+            if (columnHolder.indexed) {
+                // This mechanism is only safe in a reachability/liveness sense if we're enclosed in a LivenessScope
+                // that enforces strong reachability.
+                DataIndexer.getOrCreateDataIndex(queryTable, columnHolder.name);
+            }
+        }
+
+        return queryTable;
     }
 
-    public static QueryTable testTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
-        QueryTable queryTable = new QueryTable(rowSet, columns);
-        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
-        return queryTable;
+    public static QueryTable testTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(false, false, rowSet, columnHolders);
+    }
+
+    public static QueryTable testRefreshingTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, false, rowSet, columnHolders);
+    }
+
+    public static QueryTable testFlatRefreshingTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, true, rowSet, columnHolders);
+    }
+
+    private static QueryTable testTable(final boolean refreshing, @NotNull final ColumnHolder<?>... columnHolders) {
+        final WritableRowSet rowSet = RowSetFactory.flat(columnHolders[0].size());
+        return testTable(refreshing, false, rowSet.toTracking(), columnHolders);
+    }
+
+    public static QueryTable testTable(@NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(false, columnHolders);
+    }
+
+    public static QueryTable testRefreshingTable(@NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, columnHolders);
     }
 
     @NotNull
@@ -584,29 +636,6 @@ public class TstUtils {
             columns.put(columnHolder.name, getTestColumnSource(rowSet, columnHolder));
         }
         return columns;
-    }
-
-    public static QueryTable testRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        final QueryTable queryTable = testTable(rowSet, columnHolders);
-        queryTable.setRefreshing(true);
-        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
-        return queryTable;
-    }
-
-    public static QueryTable testFlatRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
-        return new QueryTable(rowSet, getColumnSourcesFromHolders(rowSet, columnHolders)) {
-            {
-                setRefreshing(true);
-                setFlat();
-            }
-        };
-    }
-
-    public static QueryTable testRefreshingTable(ColumnHolder<?>... columnHolders) {
-        final QueryTable queryTable = testTable(columnHolders);
-        queryTable.setRefreshing(true);
-        return queryTable;
     }
 
     public static ColumnSource<?> getTestColumnSource(RowSet rowSet, ColumnHolder<?> columnHolder) {
@@ -674,9 +703,6 @@ public class TstUtils {
             } else {
                 result = new ObjectTestSource<>(columnHolder.dataType, rowSet, chunkData);
             }
-        }
-        if (columnHolder.grouped) {
-            result.setGroupToRange(result.getValuesMapping(rowSet));
         }
         return result;
     }

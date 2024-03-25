@@ -91,12 +91,6 @@ public interface TrackingRowSet extends RowSet {
      * Minimal interface for optional, opaque indexer objects hosted by TrackingRowSet instances.
      */
     interface Indexer {
-
-        /**
-         * Callback for the host TrackingRowSet to report a modification that may invalidate cached indexing
-         * information.
-         */
-        void rowSetChanged();
     }
 
     /**
@@ -107,6 +101,13 @@ public interface TrackingRowSet extends RowSet {
      * @return An opaque indexer object associated with this TrackingRowSet
      */
     <INDEXER_TYPE extends Indexer> INDEXER_TYPE indexer(@NotNull Function<TrackingRowSet, INDEXER_TYPE> indexerFactory);
+
+    /**
+     * Get an opaque {@link Indexer} object previously associated with this TrackingRowSet.
+     *
+     * @return An opaque indexer object associated with this TrackingRowSet, or {@code null} if none has been set
+     */
+    <INDEXER_TYPE extends Indexer> INDEXER_TYPE indexer();
 
     @Override
     default TrackingWritableRowSet writableCast() {

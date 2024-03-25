@@ -12,6 +12,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.UncoalescedTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
@@ -38,6 +39,7 @@ import java.util.stream.LongStream;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link ParquetTools}.
@@ -165,13 +167,16 @@ public class TestParquetTools {
 
         test = TableTools.newTable(TableDefinition.of(
                 ColumnDefinition.ofInt("anInt"),
-                ColumnDefinition.ofString("aString").withGrouping()),
+                ColumnDefinition.ofString("aString")),
                 col("anInt", 1, 2, 3),
                 col("aString", "ab", "ab", "bc"));
+
+        DataIndexer.getOrCreateDataIndex(test, "aString");
         path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);
+
         test2 = ParquetTools.readTable(new File(path));
-        TestCase.assertNotNull(test2.getColumnSource("aString").getGroupToRange());
+        assertTrue(DataIndexer.hasDataIndex(test2, "aString"));
         test2.close();
     }
 

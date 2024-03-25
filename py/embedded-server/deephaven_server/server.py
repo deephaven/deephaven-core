@@ -9,6 +9,8 @@ from .start_jvm import start_jvm
 
 # This is explicitly not a JObjectWrapper, as that would require importing deephaven and jpy
 # before the JVM was running.
+
+
 class Server:
     """
     Represents a Deephaven server that can be created from Python.
@@ -24,7 +26,13 @@ class Server:
     def port(self):
         return self.j_server.getPort()
 
-    def __init__(self, host: Optional[str] = None, port: Optional[int] = None, jvm_args: Optional[List[str]] = None, dh_args: Dict[str, str] = {}):
+    def __init__(
+            self,
+            host: Optional[str] = None,
+            port: Optional[int] = None,
+            jvm_args: Optional[List[str]] = None,
+            dh_args: Dict[str, str] = {},
+            extra_classpath: Optional[List[str]] = None):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.
         """
@@ -34,8 +42,11 @@ class Server:
         if Server.instance is not None:
             from deephaven import DHError
             raise DHError('Cannot create more than one instance of the server')
+        if extra_classpath is None:
+            extra_classpath = []
+
         # given the jvm args, ensure that the jvm has started
-        start_jvm(jvm_args=jvm_args)
+        start_jvm(jvm_args=jvm_args, extra_classpath=extra_classpath)
 
         # it is now safe to import jpy
         import jpy

@@ -3,12 +3,18 @@
 //
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.table.BasicDataIndex;
+import io.deephaven.engine.table.Table;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Building block for Deephaven "source" tables, with helper methods for discovering locations and their sizes. A
@@ -76,6 +82,47 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      * Initialize or run state information.
      */
     void refresh();
+
+    /**
+     * Get an ordered list of columns this location is sorted by.
+     * 
+     * @return A non-null ordered list of {@link SortColumn SortColumns}
+     */
+    @NotNull
+    List<SortColumn> getSortedColumns();
+
+    /**
+     * Get a list of the columns by which this location is indexed
+     *
+     * @return A non-null list of {@code String[]} arrays containing the key column names for each existing index
+     */
+    @NotNull
+    List<String[]> getDataIndexColumns();
+
+    /**
+     * Check if this TableLocation has a data index for the specified columns.
+     * 
+     * @param columns The set of columns to check for
+     * @return Whether the TableLocation has an index for the specified columns
+     *
+     * @apiNote Implementations must guarantee that the result of this method remains constant over the life of an
+     *          instance, and is consistent with the result of {@link #getDataIndex(String...)}.
+     */
+    boolean hasDataIndex(@NotNull String... columns);
+
+    /**
+     * Get the data index table for the specified set of columns. Note that the order of columns does not matter here.
+     *
+     * @param columns The key columns for the index
+     * @return The index table or null if one does not exist
+     * @apiNote If this TableLocation is not static, the returned table must be {@link Table#isRefreshing() refreshing},
+     *          and should be updated to reflect changes in a manner that is consistent with the results provided to a
+     *          subscriber.
+     * @implNote Implementations should attempt to provide a lazily-coalesced result wherever possible, allowing work to
+     *           be deferred or parallelized.
+     */
+    @Nullable
+    BasicDataIndex getDataIndex(@NotNull String... columns);
 
     /**
      * @param name The column name

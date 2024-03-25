@@ -9,7 +9,6 @@ import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.BitMaskingColumnSource;
@@ -29,6 +28,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
+import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.LeftInput;
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 /**
@@ -138,8 +138,8 @@ public class CrossJoinHelper {
             final boolean leftOuterJoin) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
-        try (final BucketingContext bucketingContext =
-                new BucketingContext("join", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
+        try (final BucketingContext bucketingContext = new BucketingContext("join",
+                leftTable, rightTable, columnsToMatch, columnsToAdd, control, false, false)) {
             // TODO: if we have a single column of unique values, and the range is small, we can use a simplified table
             // if (!rightTable.isRefreshing()
             // && control.useUniqueTable(uniqueValues, maximumUniqueValue, minumumUniqueValue)){ (etc)
@@ -165,7 +165,8 @@ public class CrossJoinHelper {
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                    final WritableRowSet resultRowSet = control.buildLeft(leftTable, rightTable)
+                    // noinspection resource
+                    final WritableRowSet resultRowSet = bucketingContext.buildParameters.firstBuildFrom() == LeftInput
                             ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
                                     bucketingContext.rightSources)
                             : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
@@ -187,6 +188,7 @@ public class CrossJoinHelper {
                 jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
+                // noinspection resource
                 final TrackingWritableRowSet resultRowSet =
                         jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).toTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
@@ -287,6 +289,7 @@ public class CrossJoinHelper {
             jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
             jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
+            // noinspection resource
             final TrackingWritableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
@@ -402,7 +405,7 @@ public class CrossJoinHelper {
 
                             final RowSetBuilderRandom leftRowsToVisitForRightRmBuilder = RowSetFactory.builderRandom();
                             tracker.forAllModifiedSlots(slotState -> {
-                                if (slotState.leftRowSet.size() > 0 && slotState.rightRemoved.isNonempty()) {
+                                if (!slotState.leftRowSet.isEmpty() && slotState.rightRemoved.isNonempty()) {
                                     leftRowsToVisitForRightRmBuilder.addRowSet(slotState.leftRowSet);
                                 }
                             });
@@ -441,7 +444,7 @@ public class CrossJoinHelper {
                                     leftOuterJoin ? RowSetFactory.builderRandom() : null;
                             final RowSetBuilderRandom modsToVisit = RowSetFactory.builderRandom();
                             tracker.forAllModifiedSlots(slotState -> {
-                                if (slotState.leftRowSet.size() == 0) {
+                                if (slotState.leftRowSet.isEmpty()) {
                                     return;
                                 }
                                 if (slotState.rightAdded.isNonempty()) {
@@ -504,7 +507,7 @@ public class CrossJoinHelper {
                                 // removals might generate shifts, so let's add those to our RowSet
                                 final RowSetBuilderRandom rmsToVisit = RowSetFactory.builderRandom();
                                 tracker.forAllModifiedSlots(slotState -> {
-                                    if (slotState.leftRowSet.size() > 0 && slotState.rightRemoved.isNonempty()) {
+                                    if (!slotState.leftRowSet.isEmpty() && slotState.rightRemoved.isNonempty()) {
                                         rmsToVisit.addRowSet(slotState.leftRowSet);
                                     }
                                 });
@@ -1025,7 +1028,7 @@ public class CrossJoinHelper {
         try (final WritableRowSet currRight = rightTable.getRowSet().copy()) {
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             final MutableLong currRightShift = new MutableLong();
-            if (currRight.size() == 0) {
+            if (currRight.isEmpty()) {
                 if (leftOuterJoin) {
                     leftTable.getRowSet().forAllRowKeys((currIdx) -> {
                         final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
@@ -1041,6 +1044,7 @@ public class CrossJoinHelper {
                 });
                 crossJoinState.setRightEmpty(false);
             }
+            // noinspection resource
             resultRowSet = builder.build().toTracking();
         }
 
@@ -1343,14 +1347,14 @@ public class CrossJoinHelper {
             leftTable.addUpdateListener(leftRecorder);
             rightTable.addUpdateListener(rightRecorder);
             result.addParentReference(mergedListener);
-        } else if (leftTable.isRefreshing() && rightTable.size() > 0) {
+        } else if (leftTable.isRefreshing() && !rightTable.isEmpty()) {
             leftTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
                     onUpdate.accept(upstream, null);
                 }
             });
-        } else if (rightTable.isRefreshing() && leftTable.size() > 0) {
+        } else if (rightTable.isRefreshing() && !leftTable.isEmpty()) {
             rightTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
