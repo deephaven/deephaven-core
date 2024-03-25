@@ -143,7 +143,7 @@ public class SeekRow {
                     return true;
                 }));
 
-        log.info().append(result.getValue()).endl();
+        Assert.neqNull(result.getValue(), "result.getValue()");
         return result.getValue();
     }
 
