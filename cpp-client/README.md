@@ -47,10 +47,12 @@ on them anymore so we do notguarantee they are current for those platforms.
 
    Edit your local copy of the script if necessary to reflect your selection
    of build tools and build target;
-   defaults point to Ubuntu system's g++, cmake, and a Debug build target for cmake.
-   Comments in the script will help you in identifying customization points.
-   Note however that defaults are tested by any deviation from defaults may require
-   manual modification of other files later, when building the C++ client proper.
+   defaults point to Ubuntu system's g++, cmake, and a `RelWithDebInfo` build target
+   for cmake.
+   Comments in the script will help you identifying customization points.
+   Note however that defaults are tested, variations are not;
+   any deviation from defaults may require manual modification of other files later,
+   when building the C++ client proper.
 
    Example:
    ```
