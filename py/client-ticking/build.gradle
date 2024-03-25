@@ -36,6 +36,7 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
         from(layout.projectDirectory) {
             include 'setup.py'
             include 'README.md'
+            include 'src/**/py.typed'
             include 'src/**/*.py'
             include 'src/**/*.pyx'
             include 'src/**/*.pxd'
