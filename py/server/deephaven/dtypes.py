@@ -176,7 +176,7 @@ _PRIMITIVE_DTYPE_NULL_MAP = {
 }
 
 _BUILDABLE_ARRAY_DTYPE_MAP = {
-    bool_: bool_array,
+    bool_: boolean_array,
     byte: int8_array,
     char: char_array,
     int16: int16_array,

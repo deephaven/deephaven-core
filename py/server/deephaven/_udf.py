@@ -457,7 +457,7 @@ def _convert_args(p_sig: _ParsedSignature, args: Tuple[Any, ...]) -> List[Any]:
     return converted_args
 
 
-def _py_udf(fn: Callable):
+def _udf_parser(fn: Callable):
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
     Python and Java. This decorator is intended for use by the Deephaven query engine and should not be used by
     users.
@@ -481,18 +481,20 @@ def _py_udf(fn: Callable):
     ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
     @wraps(fn)
-    def wrapper(*args, **kwargs):
-        converted_args = _convert_args(p_sig, args)
-        # kwargs are not converted because they are not used in the UDFs
-        ret = fn(*converted_args, **kwargs)
-        if return_array:
-            return dtypes.array(ret_dtype, ret)
-        elif ret_dtype == dtypes.PyObject:
-            return ret
-        else:
-            return _scalar(ret, ret_dtype)
+    def _udf_decorator(arg_types: str):
+        def _wrapper(*args, **kwargs):
+            converted_args = _convert_args(p_sig, args)
+            # kwargs are not converted because they are not used in the UDFs
+            ret = fn(*converted_args, **kwargs)
+            if return_array:
+                return dtypes.array(ret_dtype, ret)
+            elif ret_dtype == dtypes.PyObject:
+                return ret
+            else:
+                return _scalar(ret, ret_dtype)
+        return _wrapper
 
-    wrapper.j_name = ret_dtype.j_name
+    _udf_decorator.j_name = ret_dtype.j_name
     real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
 
     if hasattr(ret_dtype.j_type, 'jclass'):
@@ -500,10 +502,10 @@ def _py_udf(fn: Callable):
     else:
         j_class = real_ret_dtype.qst_type.clazz()
 
-    wrapper.return_type = j_class
-    wrapper.signature = p_sig.encoded
+    _udf_decorator.return_type = j_class
+    _udf_decorator.signature = p_sig.encoded
 
-    return wrapper
+    return _udf_decorator
 
 
 def _dh_vectorize(fn):
