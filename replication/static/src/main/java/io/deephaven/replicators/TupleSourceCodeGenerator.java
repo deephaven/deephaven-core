@@ -369,6 +369,15 @@ public class TupleSourceCodeGenerator {
 
         code.append(NEW_LINE);
 
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final int tupleLength() {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("return 2;").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
         code.append(indenter).append("@SuppressWarnings(\"unchecked\")").append(NEW_LINE);
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
@@ -419,7 +428,7 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final void exportAllTo(@NotNull Object[] dest, @NotNull final ")
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
                 .append(" tuple) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -433,9 +442,9 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final void exportAllTo(@NotNull Object[] dest, @NotNull final ")
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
-                .append(" tuple, @NotNull final int[] map) {").append(NEW_LINE);
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("dest[map[0]] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
                 .append(";").append(NEW_LINE);
@@ -484,7 +493,7 @@ public class TupleSourceCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter)
-                .append("public final void exportAllReinterpretedTo(@NotNull Object[] dest, @NotNull final ")
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
                 .append(" tuple) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -513,9 +522,9 @@ public class TupleSourceCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter)
-                .append("public final void exportAllReinterpretedTo(@NotNull Object[] dest, @NotNull final ")
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
-                .append(" tuple, @NotNull final int[] map) {").append(NEW_LINE);
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
         indenter.increaseLevel();
         if (type1.isReinterpreted()) {
             code.append(indenter).append("dest[map[0]] = ")
@@ -734,6 +743,15 @@ public class TupleSourceCodeGenerator {
 
         code.append(NEW_LINE);
 
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final int tupleLength() {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("return 3;").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
         code.append(indenter).append("@SuppressWarnings(\"unchecked\")").append(NEW_LINE);
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
@@ -795,7 +813,7 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final void exportAllTo(@NotNull Object[] dest, @NotNull final ")
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
                 .append(" tuple) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -811,9 +829,9 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
-        code.append(indenter).append("public final void exportAllTo(@NotNull Object[] dest, @NotNull final ")
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
-                .append(" tuple, @NotNull final int[] map) {").append(NEW_LINE);
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("dest[map[0]] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
                 .append(";").append(NEW_LINE);
@@ -847,7 +865,7 @@ public class TupleSourceCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter)
-                .append("public final void exportAllReinterpretedTo(@NotNull Object[] dest, @NotNull final ")
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
                 .append(" tuple) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -885,9 +903,9 @@ public class TupleSourceCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter)
-                .append("public final void exportAllReinterpretedTo(@NotNull Object[] dest, @NotNull final ")
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
                 .append(tupleClassName)
-                .append(" tuple, @NotNull final int[] map) {").append(NEW_LINE);
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
         indenter.increaseLevel();
         if (type1.isReinterpreted()) {
             code.append(indenter).append("dest[map[0]] = ")

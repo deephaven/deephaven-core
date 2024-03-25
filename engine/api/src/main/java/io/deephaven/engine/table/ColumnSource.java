@@ -126,20 +126,29 @@ public interface ColumnSource<T>
     }
 
     @Override
-    default <ELEMENT_TYPE> void exportElement(final T tuple, final int elementIndex,
+    @FinalDefault
+    default int tupleLength() {
+        return 1;
+    }
+
+    @Override
+    @FinalDefault
+    default <ELEMENT_TYPE> void exportElement(@NotNull final T tuple, final int elementIndex,
             @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple);
     }
 
     @Override
-    default Object exportElement(T tuple, int elementIndex) {
+    @FinalDefault
+    default Object exportElement(@NotNull final T tuple, final int elementIndex) {
         Require.eqZero(elementIndex, "elementIndex");
         return tuple;
     }
 
     @Override
-    default void exportAllTo(Object[] dest, T tuple) {
+    @FinalDefault
+    default void exportAllTo(final Object @NotNull [] dest, @NotNull final T tuple) {
         Require.geqZero(dest.length, "dest.length");
         dest[0] = tuple;
     }
