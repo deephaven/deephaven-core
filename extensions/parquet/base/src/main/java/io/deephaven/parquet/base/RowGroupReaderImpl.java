@@ -12,13 +12,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 final class RowGroupReaderImpl implements RowGroupReader {
     private final RowGroup rowGroup;

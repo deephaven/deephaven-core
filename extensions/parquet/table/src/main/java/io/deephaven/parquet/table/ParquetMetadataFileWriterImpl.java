@@ -104,7 +104,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     }
 
     /**
-     * Add parquet metadata for the provided parquet file the combined metadata file.
+     * Add parquet metadata for the provided parquet file to the combined metadata file.
      *
      * @param parquetFilePath The parquet file destination path
      * @param metadata The parquet metadata
@@ -255,13 +255,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
 
     private static String getRelativePath(final String parquetFilePath, final Path metadataRootDirAbsPath) {
         final Path parquetFileAbsPath = new File(parquetFilePath).getAbsoluteFile().toPath();
-        final String relativePath = metadataRootDirAbsPath.relativize(parquetFileAbsPath).toString();
-        // Remove leading slashes from the relative path
-        int pos = 0;
-        while (pos < relativePath.length() && relativePath.charAt(pos) == '/') {
-            pos++;
-        }
-        return relativePath.substring(pos);
+        return metadataRootDirAbsPath.relativize(parquetFileAbsPath).toString();
     }
 
     private void writeMetadataFile(final ParquetMetadata metadataFooter, final String outputPath) throws IOException {

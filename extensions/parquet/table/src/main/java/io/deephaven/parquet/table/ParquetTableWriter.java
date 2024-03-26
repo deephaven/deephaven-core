@@ -166,7 +166,6 @@ public class ParquetTableWriter {
                                     .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
                                     .build();
                         }
-                        // We don't accumulate metadata from grouping files into the main metadata file
                         write(indexTable, indexTable.getDefinition(), writeInstructionsToUse,
                                 info.destFile.getAbsolutePath(), info.destFileForMetadata.getAbsolutePath(),
                                 Collections.emptyMap(), TableInfo.builder(), NullParquetMetadataFileWriter.INSTANCE,

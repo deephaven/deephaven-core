@@ -724,8 +724,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * "PC=partition1/table-0.parquet", "PC=partition1/table-1.parquet", etc., where PC is a partitioning
          * column.</li>
          * <li>The token {@value #UUID_TOKEN} will be replaced with a random UUID. For example, a base name of
-         * "table-{uuid}" will result in files named like
-         * "table-8e8ab6b2-62f2-40d1-8191-1c5b70c5f330.parquet.parquet".</li>
+         * "table-{uuid}" will result in files named like "table-8e8ab6b2-62f2-40d1-8191-1c5b70c5f330.parquet".</li>
          * <li>The token {@value #PARTITIONS_TOKEN} will be replaced with an underscore-delimited, concatenated string
          * of partition values. For example, a base name of "{partitions}-table" will result in files like
          * "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are

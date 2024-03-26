@@ -614,7 +614,9 @@ public class ParquetTools {
      * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
      * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
      * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
-     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}.
+     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. This method does
+     * not write any indexes as sidecar tables to disk. To write indexes, use
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions, String[][])}.
      *
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
@@ -658,7 +660,9 @@ public class ParquetTools {
      * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
      * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
      * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
-     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}.
+     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. This method does
+     * not write any indexes as sidecar tables to disk. To write indexes, use
+     * {@link #writeKeyValuePartitionedTable(PartitionedTable, TableDefinition, String, ParquetInstructions, String[][])}.
      *
      * @param partitionedTable The partitioned table to write
      * @param definition table definition to use (instead of the one implied by the table itself)
@@ -798,27 +802,38 @@ public class ParquetTools {
         } else {
             partitioningColumnsSchema = null;
         }
-        final Map<String, Map<ParquetCacheTags, Object>> computedCache =
-                buildComputedCache(() -> sourceTable.orElseGet(partitionedTable::merge), leafDefinition);
         final Table[] partitionedDataArray = partitionedData.toArray(Table[]::new);
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // TODO(deephaven-core#5292): Optimize creating index on constituent tables
-            addIndexesToTables(partitionedDataArray, indexColumnArr);
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache =
+                    buildComputedCache(() -> sourceTable.orElseGet(partitionedTable::merge), leafDefinition);
+            // Store hard reference to prevent indexes from being garbage collected
+            final List<DataIndex> dataIndexes = addIndexesToTables(partitionedDataArray, indexColumnArr);
             writeParquetTablesImpl(partitionedDataArray, leafDefinition, writeInstructions,
                     destinations.toArray(File[]::new), indexColumnArr, partitioningColumnsSchema,
                     new File(destinationRoot), computedCache);
+            if (dataIndexes != null) {
+                dataIndexes.clear();
+            }
         }
     }
 
-    private static void addIndexesToTables(@NotNull final Table[] tables,
+    /**
+     * Add data indexes to provided tables, if not present, and return a list of hard references to the indexes.
+     */
+    @Nullable
+    private static List<DataIndex> addIndexesToTables(@NotNull final Table[] tables,
             @Nullable final String[][] indexColumnArr) {
-        if (indexColumnArr != null && indexColumnArr.length != 0) {
-            for (final Table table : tables) {
-                for (final String[] indexCols : indexColumnArr) {
-                    DataIndexer.getOrCreateDataIndex(table, indexCols);
-                }
+        if (indexColumnArr == null || indexColumnArr.length == 0) {
+            return null;
+        }
+        final List<DataIndex> dataIndexes = new ArrayList<>(indexColumnArr.length * tables.length);
+        for (final Table table : tables) {
+            for (final String[] indexCols : indexColumnArr) {
+                dataIndexes.add(DataIndexer.getOrCreateDataIndex(table, indexCols));
             }
         }
+        return dataIndexes;
     }
 
     /**
