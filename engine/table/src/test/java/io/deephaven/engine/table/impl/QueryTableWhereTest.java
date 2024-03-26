@@ -550,6 +550,8 @@ public abstract class QueryTableWhereTest {
 
         DataIndexer.getOrCreateDataIndex(filteredTable, "Sym");
         DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol", "shortCol");
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
@@ -563,6 +565,23 @@ public abstract class QueryTableWhereTest {
 
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "charCol", "Sym")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "charCol", "Sym")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
+
+                EvalNugget.from(
+                        () -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
+                EvalNugget.from(
+                        () -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
+
+                EvalNugget.from(
+                        () -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
+                EvalNugget.from(
+                        () -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
+
         };
 
         validate(en);
