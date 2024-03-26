@@ -93,10 +93,7 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
 }}
 
-def checksWheelSet = '3.9:cp39-cp39'
-def buildPyClientTicking = buildPyClientTickingManyLinux(checksWheelSet, 'pyClientTicking')
-
-def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image -> Docker.registerDockerTask(project, taskName ) {
+def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image -> Docker.registerDockerTask(project, taskName) {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
     copyIn {
@@ -106,7 +103,7 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
         from(layout.projectDirectory) {
             include 'tests/**'
         }
-        from(layout.buildDirectory.dir('wheel')) {
+        from(parentContainer.get().outputs) {
             into 'pyt-wheels'
         }
     }
@@ -161,8 +158,7 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ project.tasks.getByName(parentContainer),
-                         Docker.registryTask(project, "${image}") ]
+    parentContainers = [ parentContainer.get(), Docker.registryTask(project, "${image}") ]
     entrypoint = ['bash', '-c',
                   "WHEELS_SET='${wheelsSet}'; " +
                   '''
@@ -174,35 +170,44 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
                   done
                   ''']
     copyOut {
-        into layout.buildDirectory.dir('test-results')
+        into layout.buildDirectory.dir(taskName + '-test-results')
     }
 }}
 
-def testPyClientTicking = testPyClientTickingManyLinux(
-    checksWheelSet,
-    'testPyClientTicking',
-    'pyClientTicking',
-    'ubi-minimal')
+def isCi = System.getenv().getOrDefault("CI", "false") == "true"
 
-def wheelsSet = [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
-def pyClientTickingAllWheels = buildPyClientTickingManyLinux(String.join(' ', wheelsSet), 'pyClientTickingAllWheels')
+def assembleWheelsSet = isCi
+        ? [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
+        : [ '3.9:cp39-cp39' ]
 
-def testPyClientTickingAllWheels = testPyClientTickingManyLinux(
-    String.join(' ', wheelsSet),
-    'testPyClientTickingAllWheels',
-    'pyClientTickingAllWheels',
-    'fedora')
+def pyClientTickingWheels = buildPyClientTickingManyLinux(
+        String.join(' ', assembleWheelsSet),
+        'pyClientTickingWheels')
 
-assemble.dependsOn buildPyClientTicking
+def testPyClientTickingUbiMinimal = testPyClientTickingManyLinux(
+        // image does not have python3.10, python3.12 package
+        String.join(' ', assembleWheelsSet - [ '3.10:cp310-cp310', '3.12:cp312-cp312' ]),
+        'testPyClientTickingUbiMinimal',
+        pyClientTickingWheels,
+        'ubi-minimal')
+
+def testPyClientTickingFedora = testPyClientTickingManyLinux(
+        String.join(' ', assembleWheelsSet),
+        'testPyClientTickingFedora',
+        pyClientTickingWheels,
+        'fedora')
+
+def testPyClientTicking = project.tasks.register('testPyClientTicking') {
+    dependsOn testPyClientTickingUbiMinimal
+    dependsOn testPyClientTickingFedora
+    doLast {
+        testPyClientTickingUbiMinimal.get().state.rethrowFailure()
+        testPyClientTickingFedora.get().state.rethrowFailure()
+    }
+}
+
+assemble.dependsOn pyClientTickingWheels
 
 check.dependsOn testPyClientTicking
-
-tasks.named('testPyClientTickingPrepareDocker') { task ->
-    task.dependsOn pyClientTicking
-}
-
-tasks.named('testPyClientTickingAllWheelsPrepareDocker') { task ->
-    task.dependsOn pyClientTickingAllWheels
-}
 
 deephavenDocker.shouldLogIfTaskFails testPyClientTicking
