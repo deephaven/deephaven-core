@@ -177,7 +177,7 @@ def testPyClientTickingManyLinux = { String wheelsSet, String taskName, TaskProv
 def isCi = System.getenv().getOrDefault('CI', 'false') == 'true'
 
 // TODO: remove this false, this is just to get us back to CI that doesn't run out of disk
-def assembleWheelsSet = isCi || false
+def assembleWheelsSet = isCi && false
         ? [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
         : [ '3.9:cp39-cp39' ]
 
