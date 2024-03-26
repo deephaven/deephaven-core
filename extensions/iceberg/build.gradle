@@ -1,0 +1,74 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Iceberg: Support to read iceberg catalogs.'
+
+ext {
+    icebergVersion = '1.4.3'
+    hadoopVersion = '3.3.6'
+}
+
+dependencies {
+    api project(':engine-api')
+    api project(':engine-stringset')
+    api project(':engine-table')
+
+    implementation project(':engine-table')
+    implementation project(':engine-base')
+    implementation project(':log-factory')
+    implementation project(':Configuration')
+    implementation depTrove3
+
+    compileOnly depAnnotations
+
+    Classpaths.inheritAutoService(project)
+    Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+
+    Classpaths.inheritParquetHadoop(project)
+    implementation project(':extensions-parquet-base')
+    implementation project(':extensions-parquet-table')
+    implementation project(':extensions-s3')
+
+    implementation "org.apache.iceberg:iceberg-api:${icebergVersion}"
+    implementation "org.apache.iceberg:iceberg-core:${icebergVersion}"
+    implementation "org.apache.iceberg:iceberg-core:${icebergVersion}:tests"
+    implementation "org.apache.iceberg:iceberg-aws:${icebergVersion}"
+    implementation "org.apache.iceberg:iceberg-azure:${icebergVersion}"
+    implementation "org.apache.iceberg:iceberg-gcp:${icebergVersion}"
+    implementation "org.apache.iceberg:iceberg-bundled-guava:${icebergVersion}"
+
+    implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+    implementation "org.apache.hadoop:hadoop-hdfs-client:${hadoopVersion}"
+
+    runtimeOnly "org.apache.iceberg:iceberg-aws-bundle:${icebergVersion}"
+    runtimeOnly "org.apache.iceberg:iceberg-azure-bundle:${icebergVersion}"
+    runtimeOnly "org.apache.iceberg:iceberg-gcp-bundle:${icebergVersion}"
+
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
+    implementation 'org.apache.httpcomponents.core5:httpcore5:5.2.4'
+
+    implementation 'com.google.guava:guava:33.0.0-jre'
+
+    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
+    implementation 'org.postgresql:postgresql:42.7.1'
+
+
+    testImplementation depCommonsCompress
+    testImplementation depCommonsIo
+    testImplementation project(':engine-test-utils'),
+            TestTools.projectDependency(project, 'engine-base')
+
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+TestTools.addEngineOutOfBandTest(project)
