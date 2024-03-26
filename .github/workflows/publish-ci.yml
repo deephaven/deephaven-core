@@ -87,8 +87,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.DEEPHAVENCORE_PYPI_TOKEN }}
           packages_dir: py/server/build/wheel/
         continue-on-error: true
 
@@ -96,8 +94,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.DEEPHAVENSERVER_PYPI_TOKEN }}
           packages_dir: py/embedded-server/build/wheel/
         continue-on-error: true
 
@@ -105,9 +101,14 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
           packages_dir: py/client/build/wheel/
+        continue-on-error: true
+
+      - name: Publish pydeephaven-ticking to PyPi
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages_dir: py/client-ticking/build/wheel/
         continue-on-error: true
 
       - name: Publish @deephaven/jsapi-types to npmjs
