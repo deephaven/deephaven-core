@@ -375,59 +375,20 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         Assert.gt(partialKeySize, "partialKeySize", 1);
 
         final Object[] keysInDataIndexOrder = new Object[partialKeySize];
-        // TODO: decide if this is ridiculous or clever. Trying to avoid looping inside the lambda if possible and
-        // selected the size > 3 case to match the size of non-array tuples before allowing looping.
         if (indexToTupleMap == null) {
-            if (partialKeySize > 3) {
-                return (final Object tupleKey) -> {
-                    for (int ii = 0; ii < partialKeySize; ++ii) {
-                        keysInDataIndexOrder[ii] = sourceKeySource.exportElement(tupleKey, ii);
-                    }
-                    return keysInDataIndexOrder;
-                };
-            } else if (partialKeySize == 3) {
-                return (final Object tupleKey) -> {
-                    keysInDataIndexOrder[0] = sourceKeySource.exportElement(tupleKey, 0);
-                    keysInDataIndexOrder[1] = sourceKeySource.exportElement(tupleKey, 1);
-                    keysInDataIndexOrder[2] = sourceKeySource.exportElement(tupleKey, 2);
-                    return keysInDataIndexOrder;
-                };
-            } else {
-                return (final Object tupleKey) -> {
-                    keysInDataIndexOrder[0] = sourceKeySource.exportElement(tupleKey, 0);
-                    keysInDataIndexOrder[1] = sourceKeySource.exportElement(tupleKey, 1);
-                    return keysInDataIndexOrder;
-                };
-            }
+            return (final Object tupleKey) -> {
+                for (int ii = 0; ii < partialKeySize; ++ii) {
+                    keysInDataIndexOrder[ii] = sourceKeySource.exportElement(tupleKey, ii);
+                }
+                return keysInDataIndexOrder;
+            };
         } else {
-            if (partialKeySize > 3) {
-                return (final Object tupleKey) -> {
-                    for (int ii = 0; ii < partialKeySize; ++ii) {
-                        keysInDataIndexOrder[ii] = sourceKeySource.exportElement(tupleKey, indexToTupleMap[ii]);
-                    }
-                    return keysInDataIndexOrder;
-                };
-            } else if (partialKeySize == 3) {
-                final int index0 = indexToTupleMap[0];
-                final int index1 = indexToTupleMap[1];
-                final int index2 = indexToTupleMap[2];
-
-                return (final Object tupleKey) -> {
-                    keysInDataIndexOrder[0] = sourceKeySource.exportElement(tupleKey, index0);
-                    keysInDataIndexOrder[1] = sourceKeySource.exportElement(tupleKey, index1);
-                    keysInDataIndexOrder[2] = sourceKeySource.exportElement(tupleKey, index2);
-                    return keysInDataIndexOrder;
-                };
-            } else {
-                final int index0 = indexToTupleMap[0];
-                final int index1 = indexToTupleMap[1];
-
-                return (final Object tupleKey) -> {
-                    keysInDataIndexOrder[0] = sourceKeySource.exportElement(tupleKey, index0);
-                    keysInDataIndexOrder[1] = sourceKeySource.exportElement(tupleKey, index1);
-                    return keysInDataIndexOrder;
-                };
-            }
+            return (final Object tupleKey) -> {
+                for (int ii = 0; ii < partialKeySize; ++ii) {
+                    keysInDataIndexOrder[ii] = sourceKeySource.exportElement(tupleKey, indexToTupleMap[ii]);
+                }
+                return keysInDataIndexOrder;
+            };
         }
     }
 
