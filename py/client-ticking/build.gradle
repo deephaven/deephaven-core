@@ -28,7 +28,7 @@ deephavenDocker {
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
 
-def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDockerTask(project, taskName) {
+def buildPyClientTickingManyLinux = { String wheelsSet, String taskName -> Docker.registerDockerTask(project, taskName) {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
@@ -88,12 +88,12 @@ def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDock
                       rm -fr "${PREFIX}/src/py-client-ticking"
                    ''')
 
-        environmentVariable 'LD_LIBRARY_PATH', ""  // avoid conflict with libarrow.13.0.0.so
+        environmentVariable 'LD_LIBRARY_PATH', ''  // avoid conflict with libarrow.13.0.0.so
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
 }}
 
-def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image -> Docker.registerDockerTask(project, taskName) {
+def testPyClientTickingManyLinux = { String wheelsSet, String taskName, TaskProvider<? extends Task> parentContainer, String image -> Docker.registerDockerTask(project, taskName) {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
     copyIn {
@@ -131,9 +131,9 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
                         /out/report \
                         /project/tests                      
                    ''')
-        copyFile('tests/', "/project/tests/")
-        copyFile('dep-wheels/', "/project/dep-wheels")
-        copyFile('pyt-wheels/', "/project/pyt-wheels")
+        copyFile('tests/', '/project/tests/')
+        copyFile('dep-wheels/', '/project/dep-wheels')
+        copyFile('pyt-wheels/', '/project/pyt-wheels')
         workingDir('/project')
         runCommand("WHEELS_SET='${wheelsSet}'; " +
                    '''set -eux ; \
@@ -158,7 +158,7 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ parentContainer.get(), Docker.registryTask(project, "${image}") ]
+    parentContainers = [ parentContainer.get(), Docker.registryTask(project, image.toString()) ]
     entrypoint = ['bash', '-c',
                   "WHEELS_SET='${wheelsSet}'; " +
                   '''
@@ -170,11 +170,11 @@ def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image
                   done
                   ''']
     copyOut {
-        into layout.buildDirectory.dir(taskName + '-test-results')
+        into layout.buildDirectory.dir("${taskName}-test-results")
     }
 }}
 
-def isCi = System.getenv().getOrDefault("CI", "false") == "true"
+def isCi = System.getenv().getOrDefault('CI', 'false') == 'true'
 
 def assembleWheelsSet = isCi
         ? [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
