@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.base.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,18 +61,22 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+    public void list(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
         try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
-            childFileStream.map(Path::toUri).forEach(processor);
+            // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+            // the processor.
+            childFileStream.map(path -> FileUtils.convertToURI(path, false)).forEach(processor);
         }
     }
 
     @Override
-    public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+    public void walk(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
         try (final Stream<Path> childFileStream = Files.walk(Path.of(directoryURI))) {
-            childFileStream.map(Path::toUri).forEach(processor);
+            // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+            // the processor.
+            childFileStream.map(path -> FileUtils.convertToURI(path, false)).forEach(processor);
         }
     }
 

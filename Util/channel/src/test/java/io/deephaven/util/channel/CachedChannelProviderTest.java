@@ -217,12 +217,12 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException {
+        public void list(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException {
             // Do nothing
         }
 
         @Override
-        public void applyToChildURIsRecursively(@NotNull URI directoryURI, @NotNull Consumer<URI> processor)
+        public void walk(@NotNull URI directoryURI, @NotNull Consumer<URI> processor)
                 throws IOException {
             // Do nothing
         }

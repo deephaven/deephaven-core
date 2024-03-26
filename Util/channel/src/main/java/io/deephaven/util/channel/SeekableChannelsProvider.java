@@ -88,22 +88,22 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) throws IOException;
 
     /**
-     * Applies the supplied action on the list of file URIs contained inside the given directory. The logic is
-     * non-recursive.
+     * Applies the supplied action on the list of URIs contained inside the given directory. The logic is non-recursive.
+     * Note that the URIs supplied to the processor will be file URIs (not ending with "/") irrespective of whether the
+     * URI corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
      *
      * @param directoryURI The URI of the directory to list
      * @param processor A method to apply to the URIs in the directory
      */
-    void applyToChildURIs(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
-    // TODO where should this code be kept, because it doesn't have anything to do with the channel provider
-    // but it does need the s3 stuff, like how to build a client, etc. that is present here. Also, what should I name
-    // it?
+    void list(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
 
     /**
-     * Applies the supplied action on the list of file URIs contained inside the given directory recursively.
+     * Applies the supplied action on the list of file URIs contained inside the given directory recursively. Note that
+     * the URIs supplied to the processor will be file URIs (not ending with "/") irrespective of whether the URI
+     * corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
      *
      * @param directoryURI The URI of the directory to list
      * @param processor A method to apply to the URIs in the directory
      */
-    void applyToChildURIsRecursively(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
+    void walk(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
 }

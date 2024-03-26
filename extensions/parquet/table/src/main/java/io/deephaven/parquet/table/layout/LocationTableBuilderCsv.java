@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
@@ -34,7 +35,7 @@ public final class LocationTableBuilderCsv implements LocationTableBuilder {
     private int locationCount;
 
     public LocationTableBuilderCsv(@NotNull final File tableRootDirectory) {
-        this(tableRootDirectory.toURI());
+        this(FileUtils.convertToURI(tableRootDirectory, true));
     }
 
     LocationTableBuilderCsv(@NotNull final URI tableRootDirectory) {

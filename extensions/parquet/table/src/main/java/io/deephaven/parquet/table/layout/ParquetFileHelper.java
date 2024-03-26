@@ -14,7 +14,7 @@ final class ParquetFileHelper {
      */
     private static final Pattern HIDDEN_FILE_PATTERN = Pattern.compile("(^|/)\\.[^/]+");
 
-    static boolean isNonHiddenParquetURI(final URI uri) { // TODO better names for this file
+    static boolean isVisibleParquetURI(final URI uri) {
         final String path = uri.getPath();
         if (!path.endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
             return false;

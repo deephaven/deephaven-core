@@ -4,12 +4,15 @@
 package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.base.verify.Require;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from S3.
@@ -19,7 +22,7 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
 
     static final String S3_URI_SCHEME = "s3";
 
-    private static volatile S3SeekableChannelProvider instance;
+    private static final Map<S3Instructions, S3SeekableChannelProvider> providerMap = new ConcurrentHashMap<>();
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
@@ -34,14 +37,7 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
             }
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
-        final S3Instructions s3Instructions = (S3Instructions) config;
-        if (instance == null || s3Instructions != instance.getS3Instructions()) {
-            synchronized (S3SeekableChannelProvider.class) {
-                if (instance == null || !s3Instructions.equals(instance.getS3Instructions())) {
-                    instance = new S3SeekableChannelProvider(s3Instructions);
-                }
-            }
-        }
-        return instance;
+        final S3Instructions s3Instructions = (S3Instructions) Require.neqNull(config, "config");
+        return providerMap.computeIfAbsent(s3Instructions, S3SeekableChannelProvider::new);
     }
 }

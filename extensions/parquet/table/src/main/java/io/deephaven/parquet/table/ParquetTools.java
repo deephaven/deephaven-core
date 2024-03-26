@@ -968,12 +968,12 @@ public class ParquetTools {
      *
      * <p>
      * Callers wishing to be more explicit and skip the inference step may prefer to call
-     * {@link #readKeyValuePartitionedTable(File, ParquetInstructions, TableDefinition)}.
+     * {@link #readKeyValuePartitionedTable(String, ParquetInstructions, TableDefinition)}.
      *
      * @param directory the path or URI for the root directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, int, ParquetInstructions)
+     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, int, ParquetInstructions)
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
      */
     public static Table readKeyValuePartitionedTable(
@@ -1014,8 +1014,7 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, TableDefinition,
-     *      ParquetInstructions)
+     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, TableDefinition, ParquetInstructions)
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
      */
     public static Table readKeyValuePartitionedTable(
@@ -1055,13 +1054,13 @@ public class ParquetTools {
      *
      * <p>
      * Callers wishing to be more explicit and skip the inference step may prefer to call
-     * {@link #readFlatPartitionedTable(File, ParquetInstructions, TableDefinition)}.
+     * {@link #readFlatPartitionedTable(String, ParquetInstructions, TableDefinition)}.
      *
      * @param directory the path or URI for the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
      */
     public static Table readFlatPartitionedTable(
             @NotNull final String directory,
@@ -1098,7 +1097,7 @@ public class ParquetTools {
      * @param tableDefinition the table definition
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
      */
     public static Table readFlatPartitionedTable(
             @NotNull final String directory,

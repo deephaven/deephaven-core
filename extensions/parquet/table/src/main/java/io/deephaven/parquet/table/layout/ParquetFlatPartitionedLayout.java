@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -18,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static io.deephaven.parquet.table.layout.ParquetFileHelper.isNonHiddenParquetURI;
+import static io.deephaven.parquet.table.layout.ParquetFileHelper.isVisibleParquetURI;
 
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
@@ -35,12 +36,12 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     private final ParquetInstructions readInstructions;
 
     /**
-     * @param tableRootDirectoryFile The directory to search for .parquet files.
+     * @param tableRootDirectory The directory to search for .parquet files.
      * @param readInstructions the instructions for customizations while reading
      */
-    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectoryFile,
+    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory,
             @NotNull final ParquetInstructions readInstructions) {
-        this(tableRootDirectoryFile.toURI(), readInstructions);
+        this(FileUtils.convertToURI(tableRootDirectory, true), readInstructions);
     }
 
     /**
@@ -63,11 +64,11 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         try {
-            provider.applyToChildURIs(tableRootDirectory, uri -> {
-                if (!isNonHiddenParquetURI(uri)) {
+            provider.list(tableRootDirectory, uri -> {
+                if (!isVisibleParquetURI(uri)) {
                     return;
                 }
-                synchronized (this) {
+                synchronized (ParquetFlatPartitionedLayout.this) {
                     ParquetTableLocationKey locationKey = cache.get(uri);
                     if (locationKey == null) {
                         locationKey = locationKey(uri, readInstructions);

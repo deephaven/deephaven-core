@@ -50,7 +50,7 @@ public class ParquetKeyValuePartitionedLayout extends URIListKeyValuePartitionLa
             @NotNull final TableDefinition tableDefinition,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableRootDirectory,
-                ParquetFileHelper::isNonHiddenParquetURI,
+                ParquetFileHelper::isVisibleParquetURI,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
@@ -69,7 +69,7 @@ public class ParquetKeyValuePartitionedLayout extends URIListKeyValuePartitionLa
             final int maxPartitioningLevels,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableRootDirectory,
-                ParquetFileHelper::isNonHiddenParquetURI,
+                ParquetFileHelper::isVisibleParquetURI,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
                 maxPartitioningLevels);
@@ -85,7 +85,7 @@ public class ParquetKeyValuePartitionedLayout extends URIListKeyValuePartitionLa
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         final Consumer<Consumer<URI>> uriListSupplier = (final Consumer<URI> uriProcessor) -> {
             try {
-                provider.applyToChildURIsRecursively(tableRootDirectory, uriProcessor);
+                provider.walk(tableRootDirectory, uriProcessor);
             } catch (final IOException e) {
                 throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
             }

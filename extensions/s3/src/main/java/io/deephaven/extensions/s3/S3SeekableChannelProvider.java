@@ -119,7 +119,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public void applyToChildURIs(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+    public void list(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("requesting list of child URIs for directory: {}", directoryURI);
@@ -128,7 +128,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public void applyToChildURIsRecursively(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
+    public void walk(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
             throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("requesting recursive list of child URIs for directory: {}", directoryURI);

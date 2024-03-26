@@ -653,7 +653,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readSampleParquetFilesFromS3Test1() {
+    public void readSampleParquetFilesFromDeephavenS3Bucket() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
@@ -691,8 +691,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readSampleParquetFilesFromS3Test2() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+    public void readSampleParquetFilesFromPublicS3() {
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
                 .readAheadCount(1)
@@ -701,6 +700,7 @@ public final class ParquetTableReadWriteTest {
                 .maxCacheSize(32)
                 .connectionTimeout(Duration.ofSeconds(1))
                 .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.anonymous())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -723,11 +723,11 @@ public final class ParquetTableReadWriteTest {
 
         ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                readInstructions, tableDefinition).select();
+                readInstructions, tableDefinition).head(10).select();
 
         ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions, tableDefinition).select();
+                readInstructions, tableDefinition).head(10).select();
     }
 
     @Test

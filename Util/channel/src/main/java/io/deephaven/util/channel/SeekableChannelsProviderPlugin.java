@@ -19,7 +19,8 @@ public interface SeekableChannelsProviderPlugin {
     boolean isCompatible(@NotNull URI uri, @Nullable Object config);
 
     /**
-     * Create a {@link SeekableChannelsProvider} for the given URI and config object.
+     * Create a {@link SeekableChannelsProvider} for the given URI and config object. The caller should not close the
+     * provider object since it may be shared among multiple consumers.
      */
     SeekableChannelsProvider createProvider(@NotNull URI uri, @Nullable Object object);
 }
