@@ -7,15 +7,20 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import io.deephaven.chunk.*;
+import gnu.trove.iterator.TDoubleIterator;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.set.TDoubleSet;
 import gnu.trove.set.hash.TDoubleHashSet;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class DoubleSetInclusionKernel implements SetInclusionKernel {
+
     private final TDoubleSet liveValues;
     private final boolean inclusion;
 
@@ -31,20 +36,48 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void addItem(Object key) {
-        liveValues.add(TypeUtils.unbox((Double) key));
+    public boolean add(Object key) {
+        return liveValues.add(TypeUtils.unbox((Double) key));
     }
 
     @Override
-    public void removeItem(Object key) {
-        liveValues.remove(TypeUtils.unbox((Double) key));
+    public boolean remove(Object key) {
+        return liveValues.remove(TypeUtils.unbox((Double) key));
+    }
+
+    @Override
+    public int size() {
+        return liveValues.size();
+    }
+
+    private static final class Iterator implements java.util.Iterator<Object> {
+
+        private final TDoubleIterator inner;
+
+        private Iterator(@NotNull final TDoubleIterator inner) {
+            this.inner = inner;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return inner.hasNext();
+        }
+
+        @Override
+        public Double next() {
+            return TypeUtils.box(inner.next());
+        }
+    }
+
+    @Override
+    public java.util.Iterator<Object> iterator() {
+        return new Iterator(liveValues.iterator());
     }
 
     @Override
     public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
         matchValues(values.asDoubleChunk(), matches, inclusion);
     }
-
 
     @Override
     public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
