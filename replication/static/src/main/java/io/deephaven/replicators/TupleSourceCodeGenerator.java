@@ -369,6 +369,15 @@ public class TupleSourceCodeGenerator {
 
         code.append(NEW_LINE);
 
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final int tupleLength() {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("return 2;").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
         code.append(indenter).append("@SuppressWarnings(\"unchecked\")").append(NEW_LINE);
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
@@ -419,6 +428,34 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("dest[0] = ").append(type1.getBoxingText("tuple.getFirstElement()")).append(";")
+                .append(NEW_LINE);
+        code.append(indenter).append("dest[1] = ").append(type2.getBoxingText("tuple.getSecondElement()")).append(";")
+                .append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("dest[map[0]] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
+                .append(";").append(NEW_LINE);
+        code.append(indenter).append("dest[map[1]] = ").append(type2.getBoxingText("tuple.getSecondElement()"))
+                .append(";").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final Object exportElementReinterpreted(@NotNull final ")
                 .append(tupleClassName).append(" tuple, int elementIndex) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -452,6 +489,64 @@ public class TupleSourceCodeGenerator {
         code.append(indenter.decreaseLevel()).append("}").append(NEW_LINE);
         code.append(indenter).append("destination.setSize(chunkSize);").append(NEW_LINE);
         code.append(indenter.decreaseLevel()).append("}").append(NEW_LINE);
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter)
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        if (type1.isReinterpreted()) {
+            code.append(indenter).append("dest[0] = ")
+                    .append(forPrimitive(type1.elementClassName).getBoxingText("tuple.getFirstElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[0] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        if (type2.isReinterpreted()) {
+            code.append(indenter).append("dest[1] = ")
+                    .append(forPrimitive(type2.elementClassName).getBoxingText("tuple.getSecondElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[1] = ").append(type2.getBoxingText("tuple.getSecondElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter)
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        if (type1.isReinterpreted()) {
+            code.append(indenter).append("dest[map[0]] = ")
+                    .append(forPrimitive(type1.elementClassName).getBoxingText("tuple.getFirstElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[map[0]] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        if (type2.isReinterpreted()) {
+            code.append(indenter).append("dest[map[1]] = ")
+                    .append(forPrimitive(type2.elementClassName).getBoxingText("tuple.getSecondElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[map[1]] = ").append(type2.getBoxingText("tuple.getSecondElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
         code.append(NEW_LINE);
 
         code.append(indenter).append("/** {@link ").append(TWO_COLUMN_FACTORY_SIMPLE_NAME)
@@ -648,6 +743,15 @@ public class TupleSourceCodeGenerator {
 
         code.append(NEW_LINE);
 
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final int tupleLength() {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("return 3;").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
         code.append(indenter).append("@SuppressWarnings(\"unchecked\")").append(NEW_LINE);
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
@@ -709,6 +813,38 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("dest[0] = ").append(type1.getBoxingText("tuple.getFirstElement()")).append(";")
+                .append(NEW_LINE);
+        code.append(indenter).append("dest[1] = ").append(type2.getBoxingText("tuple.getSecondElement()")).append(";")
+                .append(NEW_LINE);
+        code.append(indenter).append("dest[2] = ").append(type3.getBoxingText("tuple.getThirdElement()")).append(";")
+                .append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter).append("public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        code.append(indenter).append("dest[map[0]] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
+                .append(";").append(NEW_LINE);
+        code.append(indenter).append("dest[map[1]] = ").append(type2.getBoxingText("tuple.getSecondElement()"))
+                .append(";").append(NEW_LINE);
+        code.append(indenter).append("dest[map[2]] = ").append(type3.getBoxingText("tuple.getThirdElement()"))
+                .append(";").append(NEW_LINE);
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final Object exportElementReinterpreted(@NotNull final ")
                 .append(tupleClassName).append(" tuple, int elementIndex) {").append(NEW_LINE);
         indenter.increaseLevel();
@@ -726,6 +862,82 @@ public class TupleSourceCodeGenerator {
                 .append(NEW_LINE);
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter)
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        if (type1.isReinterpreted()) {
+            code.append(indenter).append("dest[0] = ")
+                    .append(forPrimitive(type1.elementClassName).getBoxingText("tuple.getFirstElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[0] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        if (type2.isReinterpreted()) {
+            code.append(indenter).append("dest[1] = ")
+                    .append(forPrimitive(type2.elementClassName).getBoxingText("tuple.getSecondElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[1] = ").append(type2.getBoxingText("tuple.getSecondElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        if (type3.isReinterpreted()) {
+            code.append(indenter).append("dest[2] = ")
+                    .append(forPrimitive(type3.elementClassName).getBoxingText("tuple.getThirdElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[2] = ").append(type3.getBoxingText("tuple.getThirdElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
+
+        code.append(indenter).append("@Override").append(NEW_LINE);
+        code.append(indenter)
+                .append("public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ")
+                .append(tupleClassName)
+                .append(" tuple, final int @NotNull [] map) {").append(NEW_LINE);
+        indenter.increaseLevel();
+        if (type1.isReinterpreted()) {
+            code.append(indenter).append("dest[map[0]] = ")
+                    .append(forPrimitive(type1.elementClassName).getBoxingText("tuple.getFirstElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[map[0]] = ").append(type1.getBoxingText("tuple.getFirstElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        if (type2.isReinterpreted()) {
+            code.append(indenter).append("dest[map[1]] = ")
+                    .append(forPrimitive(type2.elementClassName).getBoxingText("tuple.getSecondElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[map[1]] = ").append(type2.getBoxingText("tuple.getSecondElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        if (type3.isReinterpreted()) {
+            code.append(indenter).append("dest[map[2]] = ")
+                    .append(forPrimitive(type3.elementClassName).getBoxingText("tuple.getThirdElement()")).append(";")
+                    .append(NEW_LINE);
+        } else {
+            code.append(indenter).append("dest[map[2]] = ").append(type3.getBoxingText("tuple.getThirdElement()"))
+                    .append(";")
+                    .append(NEW_LINE);
+        }
+        indenter.decreaseLevel();
+        code.append(indenter).append('}').append(NEW_LINE);
+
+        code.append(NEW_LINE);
 
         code.append(NEW_LINE);
 
