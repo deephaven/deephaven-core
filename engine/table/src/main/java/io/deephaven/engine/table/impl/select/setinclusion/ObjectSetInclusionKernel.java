@@ -10,8 +10,10 @@ import io.deephaven.chunk.attributes.Values;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 
 public class ObjectSetInclusionKernel implements SetInclusionKernel {
+
     private final Collection<Object> liveValues;
     private final boolean inclusion;
 
@@ -26,13 +28,23 @@ public class ObjectSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void addItem(Object key) {
-        liveValues.add(key);
+    public boolean add(Object key) {
+        return liveValues.add(key);
     }
 
     @Override
-    public void removeItem(Object key) {
-        liveValues.remove(key);
+    public boolean remove(Object key) {
+        return liveValues.remove(key);
+    }
+
+    @Override
+    public int size() {
+        return liveValues.size();
+    }
+
+    @Override
+    public Iterator<Object> iterator() {
+        return liveValues.iterator();
     }
 
     @Override

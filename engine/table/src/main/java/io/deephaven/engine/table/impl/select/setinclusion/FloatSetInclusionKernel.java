@@ -7,15 +7,20 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import io.deephaven.chunk.*;
+import gnu.trove.iterator.TFloatIterator;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.set.TFloatSet;
 import gnu.trove.set.hash.TFloatHashSet;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class FloatSetInclusionKernel implements SetInclusionKernel {
+
     private final TFloatSet liveValues;
     private final boolean inclusion;
 
@@ -31,20 +36,48 @@ public class FloatSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void addItem(Object key) {
-        liveValues.add(TypeUtils.unbox((Float) key));
+    public boolean add(Object key) {
+        return liveValues.add(TypeUtils.unbox((Float) key));
     }
 
     @Override
-    public void removeItem(Object key) {
-        liveValues.remove(TypeUtils.unbox((Float) key));
+    public boolean remove(Object key) {
+        return liveValues.remove(TypeUtils.unbox((Float) key));
+    }
+
+    @Override
+    public int size() {
+        return liveValues.size();
+    }
+
+    private static final class Iterator implements java.util.Iterator<Object> {
+
+        private final TFloatIterator inner;
+
+        private Iterator(@NotNull final TFloatIterator inner) {
+            this.inner = inner;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return inner.hasNext();
+        }
+
+        @Override
+        public Float next() {
+            return TypeUtils.box(inner.next());
+        }
+    }
+
+    @Override
+    public java.util.Iterator<Object> iterator() {
+        return new Iterator(liveValues.iterator());
     }
 
     @Override
     public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
         matchValues(values.asFloatChunk(), matches, inclusion);
     }
-
 
     @Override
     public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
