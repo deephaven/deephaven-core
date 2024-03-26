@@ -36,7 +36,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     private static final int CHUNK_SIZE = 1 << 16;
 
-    private final MatchPair[] matchPairs;
+    private final MatchPair[] sourceToSetColumnNamePairs;
     private final boolean inclusion;
 
     @SuppressWarnings("FieldCanBeLocal")
@@ -64,15 +64,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     public DynamicWhereFilter(
             @NotNull final QueryTable setTable,
             final boolean inclusion,
-            final MatchPair... setColumnsNames) {
+            final MatchPair... sourceToSetColumnNamePairs) {
         if (setTable.isRefreshing()) {
             updateGraph.checkInitiateSerialTableOperation();
         }
-        this.matchPairs = setColumnsNames;
+        this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
         this.inclusion = inclusion;
 
         // Use reinterpreted column sources for the set table tuple source.
-        final ColumnSource<?>[] setColumns = Arrays.stream(matchPairs)
+        final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
                 .map(mp -> setTable.getColumnSource(mp.rightColumn()))
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
@@ -92,10 +92,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             this.setTable = setTable;
 
             final String[] setColumnNames =
-                    Arrays.stream(matchPairs).map(MatchPair::rightColumn).toArray(String[]::new);
+                    Arrays.stream(this.sourceToSetColumnNamePairs).map(MatchPair::rightColumn).toArray(String[]::new);
             final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
             setUpdateListener = new InstrumentedTableUpdateListenerAdapter(
-                    "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", setTable, false) {
+                    "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")", setTable, false) {
 
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
@@ -193,11 +193,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             @NotNull final Class<?> @NotNull [] setKeyTypes,
             @NotNull final SetInclusionKernel setKernel,
             final boolean inclusion,
-            final MatchPair... setColumnsNames) {
+            final MatchPair... sourceToSetColumnNamePairs) {
         this.setKeyTypes = setKeyTypes;
         this.setKernel = setKernel;
         this.inclusion = inclusion;
-        this.matchPairs = setColumnsNames;
+        this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
         setTable = null;
         setUpdateListener = null;
     }
@@ -235,8 +235,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
         getUpdateGraph(this, sourceTable);
-        final String[] keyColumnNames = MatchPair.getLeftColumns(matchPairs);
-        sourceKeyColumns = Arrays.stream(matchPairs)
+        final String[] keyColumnNames = MatchPair.getLeftColumns(sourceToSetColumnNamePairs);
+        sourceKeyColumns = Arrays.stream(sourceToSetColumnNamePairs)
                 .map(mp -> sourceTable.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
         try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
             sourceDataIndex = optimalIndex(sourceTable, keyColumnNames);
@@ -433,7 +433,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     @Override
     public List<String> getColumns() {
-        return Arrays.asList(MatchPair.getLeftColumns(matchPairs));
+        return Arrays.asList(MatchPair.getLeftColumns(sourceToSetColumnNamePairs));
     }
 
     @Override
@@ -624,9 +624,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     @Override
     public DynamicWhereFilter copy() {
         if (setTable == null) {
-            return new DynamicWhereFilter(setKeyTypes, setKernel, inclusion, matchPairs);
+            return new DynamicWhereFilter(setKeyTypes, setKernel, inclusion, sourceToSetColumnNamePairs);
         }
-        return new DynamicWhereFilter(setTable, inclusion, matchPairs);
+        return new DynamicWhereFilter(setTable, inclusion, sourceToSetColumnNamePairs);
     }
 
     @Override
@@ -637,7 +637,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("DynamicWhereFilter(").append(MatchPair.MATCH_PAIR_ARRAY_FORMATTER, matchPairs)
-                .append(")");
+        return logOutput.append("DynamicWhereFilter(")
+                .append(MatchPair.MATCH_PAIR_ARRAY_FORMATTER, sourceToSetColumnNamePairs)
+                .append(')');
     }
 }
