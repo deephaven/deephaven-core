@@ -12,10 +12,7 @@ import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
 import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
@@ -28,6 +25,7 @@ import java.util.PrimitiveIterator;
 import java.util.TreeMap;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
+@Deprecated
 public class SubscriptionTableData {
     @JsFunction
     private interface ArrayCopy {
@@ -493,8 +491,8 @@ public class SubscriptionTableData {
                 JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
                 rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
             }
-            if (column.getFormatColumnIndex() != null) {
-                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatColumnIndex()]);
+            if (column.getFormatStringColumnIndex() != null) {
+                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 numberFormat = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             if (column.getFormatStringColumnIndex() != null) {
@@ -617,8 +615,8 @@ public class SubscriptionTableData {
                 JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
                 rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
             }
-            if (column.getFormatColumnIndex() != null) {
-                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatColumnIndex()]);
+            if (column.getFormatStringColumnIndex() != null) {
+                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 numberFormat = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             if (column.getFormatStringColumnIndex() != null) {

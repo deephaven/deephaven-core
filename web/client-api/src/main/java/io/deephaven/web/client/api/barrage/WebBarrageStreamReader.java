@@ -101,8 +101,8 @@ public class WebBarrageStreamReader {
                 msg.addColumnData = new WebBarrageMessage.AddColumnData[columnTypes.length];
                 for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                     msg.addColumnData[ci] = new WebBarrageMessage.AddColumnData();
-                    msg.addColumnData[ci].type = columnTypes[ci];
-                    msg.addColumnData[ci].componentType = componentTypes[ci];
+                    // msg.addColumnData[ci].type = columnTypes[ci];
+                    // msg.addColumnData[ci].componentType = componentTypes[ci];
                     msg.addColumnData[ci].data = new ArrayList<>();
 
                     // create an initial chunk of the correct size
@@ -118,8 +118,8 @@ public class WebBarrageStreamReader {
                 msg.modColumnData = new WebBarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                 for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                     msg.modColumnData[ci] = new WebBarrageMessage.ModColumnData();
-                    msg.modColumnData[ci].type = columnTypes[ci];
-                    msg.modColumnData[ci].componentType = componentTypes[ci];
+                    // msg.modColumnData[ci].type = columnTypes[ci];
+                    // msg.modColumnData[ci].componentType = componentTypes[ci];
                     msg.modColumnData[ci].data = new ArrayList<>();
 
                     final BarrageModColumnMetadata mcd = metadata.modColumnNodes(ci);

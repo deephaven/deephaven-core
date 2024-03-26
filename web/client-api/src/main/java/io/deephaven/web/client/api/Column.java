@@ -10,6 +10,7 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -21,7 +22,6 @@ import java.util.stream.IntStream.Builder;
 public class Column {
     private final int index;
 
-    private final Integer formatColumnIndex;
     private final Integer styleColumnIndex;
     private final Integer formatStringColumnIndex;
 
@@ -75,7 +75,7 @@ public class Column {
             boolean inputTableKeyColumn, boolean isSortable) {
         this.jsIndex = jsIndex;
         this.index = index;
-        this.formatColumnIndex = formatColumnIndex;
+        assert Objects.equals(formatColumnIndex, styleColumnIndex);
         this.styleColumnIndex = styleColumnIndex;
         this.type = type;
         this.name = name;
@@ -170,14 +170,6 @@ public class Column {
         this.constituentType = constituentType;
     }
 
-    /**
-     * @deprecated Prefer {@link #getFormatStringColumnIndex()}.
-     */
-    @Deprecated
-    public Integer getFormatColumnIndex() {
-        return formatColumnIndex;
-    }
-
     public Integer getFormatStringColumnIndex() {
         return formatStringColumnIndex;
     }
@@ -266,7 +258,6 @@ public class Column {
     public String toString() {
         return "Column{" +
                 "index=" + index +
-                ", formatColumnIndex=" + formatColumnIndex +
                 ", styleColumnIndex=" + styleColumnIndex +
                 ", formatStringColumnIndex=" + formatStringColumnIndex +
                 ", type='" + type + '\'' +
@@ -285,9 +276,6 @@ public class Column {
 
         if (index != column.index)
             return false;
-        if (formatColumnIndex != null ? !formatColumnIndex.equals(column.formatColumnIndex)
-                : column.formatColumnIndex != null)
-            return false;
         if (styleColumnIndex != null ? !styleColumnIndex.equals(column.styleColumnIndex)
                 : column.styleColumnIndex != null)
             return false;
@@ -302,7 +290,6 @@ public class Column {
     @Override
     public int hashCode() {
         int result = index;
-        result = 31 * result + (formatColumnIndex != null ? formatColumnIndex.hashCode() : 0);
         result = 31 * result + (styleColumnIndex != null ? styleColumnIndex.hashCode() : 0);
         result = 31 * result + (formatStringColumnIndex != null ? formatStringColumnIndex.hashCode() : 0);
         result = 31 * result + type.hashCode();
@@ -311,12 +298,12 @@ public class Column {
     }
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
-        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+        return new Column(jsIndex, index, formatStringColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
-        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+        return new Column(jsIndex, index, formatStringColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
     }
 }

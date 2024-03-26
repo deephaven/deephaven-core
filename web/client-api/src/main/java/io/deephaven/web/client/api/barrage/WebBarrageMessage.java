@@ -15,16 +15,16 @@ import java.util.BitSet;
 public class WebBarrageMessage {
     public static class ModColumnData {
         public RangeSet rowsModified;
-        public Class<?> type;
-        public Class<?> componentType;
+        // public Class<?> type;
+        // public Class<?> componentType;
         public ArrayList<Chunk<Values>> data;
-        public ChunkType chunkType;
+        // public ChunkType chunkType;
     }
     public static class AddColumnData {
-        public Class<?> type;
-        public Class<?> componentType;
+        // public Class<?> type;
+        // public Class<?> componentType;
         public ArrayList<Chunk<Values>> data;
-        public ChunkType chunkType;
+        // public ChunkType chunkType;
     }
 
     public long firstSeq = -1;

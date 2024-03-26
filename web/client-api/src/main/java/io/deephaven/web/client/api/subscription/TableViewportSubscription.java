@@ -66,12 +66,15 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * <p>
  * Note that if the caller does close an instance, this shuts down the JsTable's use of this (while the converse is not
  * true), providing a way to stop the server from streaming updates to the client.
- *
+ * <p>
  * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
  * retain an instance of this, you have two choices - either only use it to call `close()` on it to stop the table's
  * viewport without creating a new one, or listen directly to this object instead of the table for data events, and
  * always call `close()` when finished. Calling any method on this object other than close() will result in it
  * continuing to live on after `setViewport` is called on the original table, or after the table is modified.
+ *
+ *
+ *
  */
 @TsInterface
 @TsName(namespace = "dh")
@@ -133,7 +136,7 @@ public class TableViewportSubscription extends HasEventHandling {
                 });
                 // TODO handle updateInterval core#188
                 Column[] columnsToSub = table.isBlinkTable() ? Js.uncheckedCast(table.getColumns()) : columns;
-                table.setInternalViewport(firstRow, lastRow, columnsToSub);
+                // table.setInternalViewport(firstRow, lastRow, columnsToSub);
 
                 // Listen for events and refire them on ourselves, optionally on the original table
                 table.addEventListener(JsTable.EVENT_UPDATED, this::refire);
@@ -213,7 +216,7 @@ public class TableViewportSubscription extends HasEventHandling {
         copy.then(table -> {
             if (!table.isBlinkTable()) {
                 // we only set blink table viewports once; and that's in the constructor
-                table.setInternalViewport(firstRow, lastRow, columns);
+                // table.setInternalViewport(firstRow, lastRow, columns);
             }
             return Promise.resolve(table);
         });

@@ -3,14 +3,18 @@
 //
 package io.deephaven.web.client.api.barrage.data;
 
+import com.google.flatbuffers.FlatBufferBuilder;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -19,7 +23,55 @@ import java.util.NavigableSet;
 import java.util.PrimitiveIterator;
 import java.util.TreeMap;
 
+/**
+ * In contrast to the server implementation, the JS API holds the "table" as distinct from the "subscription", so that
+ * developers are acutely aware of extra async costs in requesting data, and can clearly indicate how much data is
+ * requested. This class represents a barrage subscription for the JS API, and exposes access to the data presently
+ * available on the client.
+ */
 public abstract class WebBarrageSubscription {
+
+    public static final boolean COLUMNS_AS_LIST = false;
+    public static final int MAX_MESSAGE_SIZE = 10_000_000;
+    public static final int BATCH_SIZE = 100_000;
+
+    public static WebBarrageSubscription subscribe(ClientTableState cts, ViewportChangedHandler viewportChangedHandler,
+            DataChangedHandler dataChangedHandler) {
+
+        if (cts.getTableDef().getAttributes().isBlinkTable()) {
+            return new BlinkImpl(cts, viewportChangedHandler, dataChangedHandler);
+        }
+        return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler);
+    }
+
+    public static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns, @Nullable RangeSet viewport,
+            io.deephaven.extensions.barrage.BarrageSubscriptionOptions options) {
+        FlatBufferBuilder sub = new FlatBufferBuilder(1024);
+        int colOffset = BarrageSubscriptionRequest.createColumnsVector(sub, columns.toByteArray());
+        int viewportOffset = 0;
+        if (viewport != null) {
+            viewportOffset =
+                    BarrageSubscriptionRequest.createViewportVector(sub, CompressedRangeSetReader.writeRange(viewport));
+        }
+        int optionsOffset = options.appendTo(sub);
+        int tableTicketOffset = BarrageSubscriptionRequest.createTicketVector(sub, tableTicket);
+        BarrageSubscriptionRequest.addColumns(sub, colOffset);
+        BarrageSubscriptionRequest.addViewport(sub, viewportOffset);
+        BarrageSubscriptionRequest.addSubscriptionOptions(sub, optionsOffset);
+        BarrageSubscriptionRequest.addTicket(sub, tableTicketOffset);
+        sub.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(sub));
+
+        return sub;
+    }
+
+    public interface ViewportChangedHandler {
+        void onServerViewportChanged(RangeSet serverViewport, BitSet serverColumns, boolean serverReverseViewport);
+    }
+    public interface DataChangedHandler {
+        void onDataChanged(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted,
+                BitSet modifiedColumnSet);
+    }
+
     public interface WebDataSink {
         void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator);
 
@@ -27,6 +79,8 @@ public abstract class WebBarrageSubscription {
     }
 
     protected final ClientTableState state;
+    protected final ViewportChangedHandler viewportChangedHandler;
+    protected final DataChangedHandler dataChangedHandler;
     protected final RangeSet currentRowSet = RangeSet.empty();
 
     protected long capacity = 0;
@@ -36,22 +90,23 @@ public abstract class WebBarrageSubscription {
     protected BitSet serverColumns;
     protected boolean serverReverseViewport;
 
-    public WebBarrageSubscription(ClientTableState state) {
+    public WebBarrageSubscription(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
+            DataChangedHandler dataChangedHandler) {
         this.state = state;
         destSources = new WebDataSink[state.getTableDef().getColumns().length];
+        this.viewportChangedHandler = viewportChangedHandler;
+        this.dataChangedHandler = dataChangedHandler;
     }
 
-    protected abstract void applyUpdates(WebBarrageMessage message);
+    public abstract void applyUpdates(WebBarrageMessage message);
 
     protected void updateServerViewport(RangeSet viewport, BitSet columns, boolean reverseViewport) {
         serverViewport = viewport;
         serverColumns = columns == null || columns.cardinality() == numColumns() ? null : columns;
         serverReverseViewport = reverseViewport;
-
-        // TODO viewport change event?
     }
 
-    private int numColumns() {
+    protected int numColumns() {
         return getDefinition().getColumns().length;
     }
 
@@ -62,6 +117,8 @@ public abstract class WebBarrageSubscription {
     public RangeSet getCurrentRowSet() {
         return currentRowSet;
     }
+
+    public abstract <T> T getData(long key, int col);
 
     protected boolean isSubscribedColumn(int ii) {
         return serverColumns == null || serverColumns.get(ii);
@@ -74,13 +131,14 @@ public abstract class WebBarrageSubscription {
 
         private final Mode mode;
 
-        public BlinkImpl(ClientTableState state) {
-            super(state);
-            mode = Mode.APPEND;
+        public BlinkImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
+                DataChangedHandler dataChangedHandler) {
+            super(state, viewportChangedHandler, dataChangedHandler);
+            mode = Mode.BLINK;
         }
 
         @Override
-        protected void applyUpdates(WebBarrageMessage message) {
+        public void applyUpdates(WebBarrageMessage message) {
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
             }
@@ -115,6 +173,12 @@ public abstract class WebBarrageSubscription {
                     assert !destIterator.hasNext();
                 }
             }
+
+            if (message.isSnapshot) {
+                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
+            }
+            dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, RangeSet.empty(), message.shifted,
+                    new BitSet(0));
         }
     }
 
@@ -122,12 +186,13 @@ public abstract class WebBarrageSubscription {
         private RangeSet freeset = new RangeSet();
         private final TreeMap<Long, Long> redirectedIndexes = new TreeMap<>();
 
-        public RedirectedImpl(ClientTableState state) {
-            super(state);
+        public RedirectedImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
+                DataChangedHandler dataChangedHandler) {
+            super(state, viewportChangedHandler, dataChangedHandler);
         }
 
         @Override
-        protected void applyUpdates(WebBarrageMessage message) {
+        public void applyUpdates(WebBarrageMessage message) {
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
             }
@@ -150,7 +215,7 @@ public abstract class WebBarrageSubscription {
             // Apply shifts
 
             // Shift moved rows in the redir index
-            boolean hasReverseShift = false;
+            boolean hasReverseShift = COLUMNS_AS_LIST;
             final ShiftedRange[] shiftedRanges = message.shifted;
             RangeSetBulkHelper currentRowsetShifter =
                     new RangeSetBulkHelper(currentRowSet, RangeSetBulkHelper.Operation.APPEND);
@@ -241,11 +306,14 @@ public abstract class WebBarrageSubscription {
                 }
             }
 
+            BitSet modifiedColumnSet = new BitSet(numColumns());
             for (int ii = 0; ii < message.modColumnData.length; ii++) {
                 WebBarrageMessage.ModColumnData column = message.modColumnData[ii];
                 if (column.rowsModified.isEmpty()) {
                     continue;
                 }
+
+                modifiedColumnSet.set(ii);
 
                 PrimitiveIterator.OfLong destIterator = column.rowsModified.indexIterator();
                 for (int j = 0; j < column.data.size(); j++) {
@@ -260,13 +328,19 @@ public abstract class WebBarrageSubscription {
                 newPopulated.rangeIterator().forEachRemaining(newPopulated::removeRange);
                 freeRows(populatedRows);
             }
+
+            if (message.isSnapshot) {
+                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
+            }
+            dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, totalMods, message.shifted,
+                    modifiedColumnSet);
         }
 
         private RangeSet getFreeRows(long size) {
             if (size <= 0) {
                 return RangeSet.empty();
             }
-            boolean needsResizing = false;
+            boolean needsResizing = COLUMNS_AS_LIST;
             final RangeSet result;
             if (capacity == 0) {
                 capacity = Long.highestOneBit(Math.max(size * 2, 8));

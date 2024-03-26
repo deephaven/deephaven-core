@@ -73,8 +73,8 @@ public class ViewportRow implements TableData.Row {
         if (rowStyleColumn != null) {
             rowColors = rowStyleColumn.getAtAsAny(offsetInSnapshot).asLong();
         }
-        if (column.getFormatColumnIndex() != null) {
-            JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatColumnIndex()]);
+        if (column.getFormatStringColumnIndex() != null) {
+            JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
             numberFormat = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
         if (column.getFormatStringColumnIndex() != null) {

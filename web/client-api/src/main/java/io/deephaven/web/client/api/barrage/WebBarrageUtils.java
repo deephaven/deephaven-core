@@ -16,7 +16,6 @@ import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.*;
 import jsinterop.base.Js;
 import org.apache.arrow.flatbuf.Buffer;
-import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
@@ -86,47 +85,7 @@ public class WebBarrageUtils {
     public static ColumnDefinition[] readColumnDefinitions(Schema schema) {
         ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
         for (int i = 0; i < schema.fieldsLength(); i++) {
-            cols[i] = new ColumnDefinition();
-            Field f = schema.fields(i);
-            Map<String, String> fieldMetadata =
-                    keyValuePairs("deephaven:", f.customMetadataLength(), f::customMetadata);
-            cols[i].setName(f.name());
-            cols[i].setColumnIndex(i);
-            cols[i].setType(fieldMetadata.get("type"));
-            cols[i].setIsSortable("true".equals(fieldMetadata.get("isSortable")));
-            cols[i].setStyleColumn("true".equals(fieldMetadata.get("isStyle")));
-            cols[i].setFormatColumn("true".equals(fieldMetadata.get("isDateFormat"))
-                    || "true".equals(fieldMetadata.get("isNumberFormat")));
-            cols[i].setForRow("true".equals(fieldMetadata.get("isRowStyle")));
-
-            String formatColumnName = fieldMetadata.get("dateFormatColumn");
-            if (formatColumnName == null) {
-                formatColumnName = fieldMetadata.get("numberFormatColumn");
-            }
-            cols[i].setFormatColumnName(formatColumnName);
-
-            cols[i].setStyleColumnName(fieldMetadata.get("styleColumn"));
-
-            if (fieldMetadata.containsKey("inputtable.isKey")) {
-                cols[i].setInputTableKeyColumn("true".equals(fieldMetadata.get("inputtable.isKey")));
-            }
-
-            cols[i].setDescription(fieldMetadata.get("description"));
-
-            cols[i].setPartitionColumn("true".equals(fieldMetadata.get("isPartitioning")));
-
-            cols[i].setHierarchicalExpandByColumn(
-                    "true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn")));
-            cols[i].setHierarchicalRowDepthColumn(
-                    "true".equals(fieldMetadata.get("hierarchicalTable.isRowDepthColumn")));
-            cols[i].setHierarchicalRowExpandedColumn(
-                    "true".equals(fieldMetadata.get("hierarchicalTable.isRowExpandedColumn")));
-            cols[i].setRollupAggregatedNodeColumn(
-                    "true".equals(fieldMetadata.get("rollupTable.isAggregatedNodeColumn")));
-            cols[i].setRollupConstituentNodeColumn(
-                    "true".equals(fieldMetadata.get("rollupTable.isConstituentNodeColumn")));
-            cols[i].setRollupGroupByColumn("true".equals(fieldMetadata.get("rollupTable.isGroupByColumn")));
-            cols[i].setRollupAggregationInputColumn(fieldMetadata.get("rollupTable.aggregationInputColumnName"));
+            cols[i] = new ColumnDefinition(i, schema.fields(i));
         }
         return cols;
     }
