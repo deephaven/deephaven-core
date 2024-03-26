@@ -305,9 +305,9 @@ public class SeekRowTest {
                 new int[] {6, 6, 1, 2, 2, 2, 5, 6});
         assertSeekPositionAllRows(t, 2,
                 new int[] {3, 3, 3, 7, 7, 7, 7, 3},
-                new int[] {6, 6, 1, 2, 2, 2, 5, 6});
+                new int[] {7, 7, 7, 7, 3, 3, 3, 3});
         assertSeekPositionAllRows(t, 3,
                 new int[] {4, 4, 4, 4, 0, 0, 0, 0},
-                new int[] {6, 6, 1, 2, 2, 2, 5, 6});
+                new int[] {4, 0, 0, 0, 0, 4, 4, 4});
     }
 }
