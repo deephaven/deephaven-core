@@ -587,6 +587,10 @@ class ParquetTestCase(BaseTestCase):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
         # TODO(deephaven-core#5064): Add support for local S3 testing
 
+    def verify_index_files(self, index_dir_path, expected_num_index_files=1):
+        self.assertTrue(os.path.exists(index_dir_path))
+        self.assertTrue(len(os.listdir(index_dir_path)) == expected_num_index_files)
+
     def test_write_partitioned_data(self):
         source = new_table([
             string_col("X", ["Aa", "Bb", "Aa", "Cc", "Bb", "Aa", "Bb", "Bb", "Cc"]),
@@ -639,6 +643,12 @@ class ParquetTestCase(BaseTestCase):
         verify_table_from_disk(read(root_dir))
 
         shutil.rmtree(root_dir)
+        write_partitioned(partitioned_table, destination_dir=root_dir, index_columns=[["Y"], ["Y", "Number"]])
+        verify_table_from_disk(read(root_dir))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y"))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y,Number"))
+
+        shutil.rmtree(root_dir)
         write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
                           base_name=base_name, max_dictionary_keys=max_dictionary_keys)
         verify_table_from_disk(read(root_dir))
@@ -659,6 +669,32 @@ class ParquetTestCase(BaseTestCase):
         shutil.rmtree(root_dir)
         write_partitioned(source, col_definitions=definition, destination_dir=root_dir)
         verify_table_from_disk(read(root_dir))
+
+        shutil.rmtree(root_dir)
+        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+                          index_columns=[["Y"], ["Y", "Number"]])
+        verify_table_from_disk(read(root_dir))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y"))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y,Number"))
+
+    def test_write_with_index_columns(self):
+        first_table = empty_table(10).update(formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"])
+        write(first_table, "data_from_dh.parquet", index_columns=[["x"], ["y", "z"]])
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(first_table, from_disk)
+        self.verify_index_files(".dh_metadata/indexes/x")
+        self.verify_index_files(".dh_metadata/indexes/y,z")
+        shutil.rmtree(".dh_metadata")
+
+        second_table = empty_table(10).update(formulas=["x=i*5", "y=(double)(i/5.0)", "z=(double)(i*i*i)"])
+        batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]],
+                    col_definitions=first_table.columns)
+        from_disk_first_table = read("X.parquet")
+        self.assert_table_equals(first_table, from_disk_first_table)
+        from_disk_second_table = read("Y.parquet")
+        self.assert_table_equals(second_table, from_disk_second_table)
+        self.verify_index_files(".dh_metadata/indexes/x", expected_num_index_files=2)
+        self.verify_index_files(".dh_metadata/indexes/y,z", expected_num_index_files=2)
 
 
 if __name__ == '__main__':

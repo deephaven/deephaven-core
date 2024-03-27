@@ -91,8 +91,8 @@ public class ParquetTableWriter {
                 final File destFile) {
             this.indexColumnNames = indexColumnNames;
             this.parquetColumnNames = parquetColumnNames;
-            this.destFileForMetadata = destFileForMetadata;
-            this.destFile = destFile;
+            this.destFileForMetadata = destFileForMetadata.getAbsoluteFile();
+            this.destFile = destFile.getAbsoluteFile();
         }
     }
 
@@ -143,7 +143,7 @@ public class ParquetTableWriter {
         try {
             if (indexInfoList != null) {
                 cleanupFiles = new ArrayList<>(indexInfoList.size());
-                final Path destDirPath = Paths.get(destFilePath).getParent();
+                final Path destDirPath = new File(destFilePath).getAbsoluteFile().getParentFile().toPath();
                 for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                     try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
                         // This will retrieve an existing index if one exists, or create a new one if not

@@ -220,6 +220,10 @@ def _j_file_array(paths: List[str]):
     return jpy.array("java.io.File", [_JFile(el) for el in paths])
 
 
+def _j_array_of_array_of_string(data_indexes: List[List[str]]):
+    return jpy.array("[Ljava.lang.String;", [jpy.array("java.lang.String", index_cols) for index_cols in data_indexes])
+
+
 def delete(path: str) -> None:
     """ Deletes a Parquet table on disk.
 
@@ -245,6 +249,7 @@ def write(
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
+    index_columns: Optional[List[List[str]]] = None
 ) -> None:
     """ Write a table to a Parquet file.
 
@@ -268,6 +273,11 @@ def write(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
+        index_columns (Optional[List[List[str]]]): Lists containing the column names for indexes to persist. The write
+            operation will store the index info as sidecar tables. By default, data indexes to write are determined by
+            those present on the source table. This argument is used to narrow the set of indexes to write, or to be
+            explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
+            will be computed on demand.
 
     Raises:
         DHError
@@ -282,15 +292,18 @@ def write(
             for_read=False,
             generate_metadata_files=generate_metadata_files,
         )
-
-        table_definition = None
         if col_definitions is not None:
             table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-
-        if table_definition:
-            _JParquetTools.writeTable(table.j_table, path, table_definition, write_instructions)
         else:
-            _JParquetTools.writeTable(table.j_table, _JFile(path), write_instructions)
+            table_definition = table._definition
+
+        if index_columns:
+            table_array = jpy.array("io.deephaven.engine.table.Table", [table.j_table])
+            index_columns_array = _j_array_of_array_of_string(index_columns)
+            _JParquetTools.writeParquetTables(table_array, table_definition, write_instructions,
+                                              _j_file_array([path]), index_columns_array)
+        else:
+            _JParquetTools.writeTable(table.j_table, path, table_definition, write_instructions)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
@@ -306,6 +319,7 @@ def write_partitioned(
         target_page_size: Optional[int] = None,
         base_name: Optional[str] = None,
         generate_metadata_files: Optional[bool] = None,
+        index_columns: Optional[List[List[str]]] = None
 ) -> None:
     """ Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
     directory structure. For example, for a partitioned column "date", we will have a directory structure like
@@ -344,6 +358,11 @@ def write_partitioned(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
+        index_columns (Optional[List[List[str]]]): Lists containing the column names for indexes to persist. The write
+            operation will store the index info as sidecar tables. By default, data indexes to write are determined by
+            those present on the source table. This argument is used to narrow the set of indexes to write, or to be
+            explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
+            will be computed on demand.
 
     Raises:
         DHError
@@ -364,11 +383,20 @@ def write_partitioned(
         if col_definitions is not None:
             table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
 
-        if table_definition:
-            _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
-                                                         write_instructions)
+        if index_columns:
+            index_columns_array = _j_array_of_array_of_string(index_columns)
+            if table_definition:
+                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
+                                                             write_instructions, index_columns_array)
+            else:
+                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions,
+                                                             index_columns_array)
         else:
-            _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
+            if table_definition:
+                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
+                                                             write_instructions)
+            else:
+                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
@@ -382,23 +410,19 @@ def batch_write(
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
-    grouping_cols: Optional[List[str]] = None,
     generate_metadata_files: Optional[bool] = None,
+    index_columns: Optional[List[List[str]]] = None
 ):
     """ Writes tables to disk in parquet format to a supplied set of paths.
-
-    If you specify grouping columns, there must already be grouping information for those columns in the sources.
-    This can be accomplished with .groupBy(<grouping columns>).ungroup() or .sort(<grouping column>).
 
     Note that either all the tables are written out successfully or none is.
 
     Args:
         tables (List[Table]): the source tables
-        paths (List[str]): the destinations paths. Any non existing directories in the paths provided are
+        paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        col_definitions (Optional[List[Column]]): the column definitions to use for writing, instead of the definitions
-            implied by the table. Default is None, which means use the column definitions implied by the table
+        col_definitions (List[Column]): the column definitions to use for writing.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -407,11 +431,15 @@ def batch_write(
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
         target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
-        grouping_cols (Optional[List[str]]): the group column names
         generate_metadata_files (Optional[bool]): whether to generate parquet _metadata and _common_metadata files,
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
+        index_columns (Optional[List[List[str]]]): Lists containing the column names for indexes to persist. The write
+            operation will store the index info as sidecar tables. By default, data indexes to write are determined by
+            those present on the source table. This argument is used to narrow the set of indexes to write, or to be
+            explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
+            will be computed on demand.
 
     Raises:
         DHError
@@ -429,9 +457,10 @@ def batch_write(
 
         table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
 
-        if grouping_cols:
+        if index_columns:
+            index_columns_array = _j_array_of_array_of_string(index_columns)
             _JParquetTools.writeParquetTables([t.j_table for t in tables], table_definition, write_instructions,
-                                              _j_file_array(paths), grouping_cols)
+                                              _j_file_array(paths), index_columns_array)
         else:
             _JParquetTools.writeTables([t.j_table for t in tables], table_definition,
                                        _j_file_array(paths))
