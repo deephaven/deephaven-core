@@ -95,7 +95,7 @@ class Classpaths {
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
     // Only bump this in concert w/ BORINGSSL_VERSION
-    static final String GRPC_VERSION = '1.58.0'
+    static final String GRPC_VERSION = '1.62.2'
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
