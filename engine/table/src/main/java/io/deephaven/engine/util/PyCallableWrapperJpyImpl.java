@@ -64,6 +64,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
     }
 
+    private String argTypesStr = null;
+
     /**
      * Ensure that the class initializer runs.
      */
@@ -98,7 +100,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private boolean vectorized = false;
     private Collection<ChunkArgument> chunkArguments;
     private boolean numbaVectorized;
-    private PyObject unwrapped;
     private PyObject pyUdfDecorator;
     private PyObject pyUdfWrapper;
 
@@ -171,20 +172,13 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         pyCallable
                                 + " has multiple signatures; this is not currently supported for numba vectorized/guvectorized functions");
             }
-            unwrapped = pyCallable;
-            // since vectorization doesn't support array type parameters, don't flag numba guvectorized as vectorized
             numbaVectorized = isNumbaVectorized;
             vectorized = isNumbaVectorized;
-        } else if (pyCallable.hasAttribute("dh_vectorized")) {
-            unwrapped = pyCallable.getAttribute("callable");
-            numbaVectorized = false;
-            vectorized = true;
         } else {
-            unwrapped = pyCallable;
             numbaVectorized = false;
             vectorized = false;
         }
-        pyUdfDecorator = dh_udf_module.call("_udf_parser", unwrapped);
+        pyUdfDecorator = dh_udf_module.call("_udf_parser", pyCallable);
         signatureString = pyUdfDecorator.getAttribute("signature").toString();
     }
 
@@ -323,21 +317,25 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         if (argTypesStr.length() > 0) {
             argTypesStr.deleteCharAt(argTypesStr.length() - 1);
         }
-        pyUdfWrapper = pyUdfDecorator.call("__call__", argTypesStr.toString());
+        this.argTypesStr = argTypesStr.toString();
+        // pyUdfWrapper = pyUdfDecorator.call("__call__", this.argTypesStr, false);
     }
 
     // In vectorized mode, we want to call the vectorized function directly.
     public PyObject vectorizedCallable() {
-        if (numbaVectorized || vectorized) {
+        if (numbaVectorized) {
             return pyCallable;
         } else {
-            return dh_udf_module.call("_dh_vectorize", unwrapped);
+            return pyUdfDecorator.call("__call__", this.argTypesStr, true);
         }
     }
 
     // In non-vectorized mode, we want to call the udf decorated function or the original function.
     @Override
     public Object call(Object... args) {
+        if (argTypesStr != null && pyUdfWrapper == null) {
+            pyUdfWrapper = pyUdfDecorator.call("__call__", this.argTypesStr, false);
+        }
         PyObject pyCallable = this.pyUdfWrapper != null ? this.pyUdfWrapper : this.pyCallable;
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
     }

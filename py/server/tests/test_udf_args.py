@@ -163,30 +163,19 @@ def test_udf(col: Optional[{np_type}]) -> bool:
     def test_j_scalar_to_py_null(self):
         col1_formula = "Col1 = i % 10"
         for data_type, null_name in _J_TYPE_NULL_MAP.items():
-            col2_formula = f"Col2 = i % 3 == 0? {null_name} : ({data_type})i"
+            col2_formula = f"Col2 = i % 2 == 0? {null_name} : ({data_type})i"
             with self.subTest(data_type):
                 np_type = _J_TYPE_NP_DTYPE_MAP[data_type]
                 func = f"""
 def test_udf(col: {np_type}) -> bool:
-    if np.isnan(col):
+    if col is None:
         return True
-    else:
-        if not isinstance(col, {np_type}):
-            return True
-        return False
 """
                 exec(func, globals())
                 with self.subTest(data_type):
                     tbl = empty_table(100).update([col1_formula, col2_formula])
-                    # for floating point types, DH nulls are auto converted to np.nan
-                    # for integer types, DH nulls in the array raise exceptions
-                    if data_type in ("float", "double"):
-                        res = tbl.update("Col3 = test_udf(Col2)")
-                        self.assertEqual(4, res.to_string().count("true"))
-                    else:
-                        with self.assertRaises(DHError) as cm:
-                            res = tbl.update("Col3 = test_udf(Col2)")
-                        self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
+                    res = tbl.update("Col3 = test_udf(Col2)")
+                    self.assertEqual(0, res.to_string(num_rows=10, cols="Col3").count("true"))
 
                 func = f"""
 def test_udf(col: Optional[{np_type}]) -> bool:
@@ -201,7 +190,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 with self.subTest(data_type):
                     tbl = empty_table(100).update([col1_formula, col2_formula])
                     res = tbl.update("Col3 = test_udf(Col2)")
-                    self.assertEqual(4, res.to_string().count("true"))
+                    self.assertEqual(5, res.to_string(num_rows=10, cols="Col3").count("true"))
 
     def test_weird_cases(self):
         with self.subTest("f"):
