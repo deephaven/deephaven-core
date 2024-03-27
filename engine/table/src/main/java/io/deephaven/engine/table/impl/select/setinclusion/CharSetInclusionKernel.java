@@ -4,10 +4,9 @@
 package io.deephaven.engine.table.impl.select.setinclusion;
 
 import gnu.trove.iterator.TCharIterator;
-import io.deephaven.chunk.CharChunk;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.set.TCharSet;
 import gnu.trove.set.hash.TCharHashSet;
@@ -20,24 +19,24 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
     private final TCharSet liveValues;
     private final boolean inclusion;
 
-    CharSetInclusionKernel(Collection<Object> liveValues, boolean inclusion) {
+    CharSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
         this.liveValues = new TCharHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Character) x)));
         this.inclusion = inclusion;
     }
 
-    CharSetInclusionKernel(boolean inclusion) {
+    CharSetInclusionKernel(final boolean inclusion) {
         this.liveValues = new TCharHashSet();
         this.inclusion = inclusion;
     }
 
     @Override
-    public boolean add(Object key) {
+    public boolean add(@NotNull final Object key) {
         return liveValues.add(TypeUtils.unbox((Character) key));
     }
 
     @Override
-    public boolean remove(Object key) {
+    public boolean remove(@NotNull final Object key) {
         return liveValues.remove(TypeUtils.unbox((Character) key));
     }
 
@@ -71,22 +70,49 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
-        matchValues(values.asCharChunk(), matches, inclusion);
+    public void matchValues(
+            @NotNull final Chunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results) {
+        matchValues(values.asCharChunk(), keys, results, inclusion);
     }
 
     @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
-        matchValues(values.asCharChunk(), matches, inclusionOverride);
+    public void matchValues(
+            @NotNull final Chunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results,
+            final boolean inclusionOverride) {
+        if (inclusionOverride) {
+            matchValues(values.asCharChunk(), keys, results);
+        } else {
+            matchValuesInvert(values.asCharChunk(), keys, results);
+        }
     }
 
     private void matchValues(
-            CharChunk<Values> values,
-            WritableBooleanChunk<?> matches,
-            boolean inclusionToUse) {
+            @NotNull final CharChunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results) {
+        results.setSize(0);
         for (int ii = 0; ii < values.size(); ++ii) {
-            matches.set(ii, liveValues.contains(values.get(ii)) == inclusionToUse);
+            final char checkValue = values.get(ii);
+            if (liveValues.contains(checkValue)) {
+                results.add(keys.get(ii));
+            }
         }
-        matches.setSize(values.size());
+    }
+
+    private void matchValuesInvert(
+            @NotNull final CharChunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results) {
+        results.setSize(0);
+        for (int ii = 0; ii < values.size(); ++ii) {
+            final char checkValue = values.get(ii);
+            if (!liveValues.contains(checkValue)) {
+                results.add(keys.get(ii));
+            }
+        }
     }
 }

@@ -8,10 +8,9 @@
 package io.deephaven.engine.table.impl.select.setinclusion;
 
 import gnu.trove.iterator.TShortIterator;
-import io.deephaven.chunk.ShortChunk;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.set.TShortSet;
 import gnu.trove.set.hash.TShortHashSet;
@@ -24,24 +23,24 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
     private final TShortSet liveValues;
     private final boolean inclusion;
 
-    ShortSetInclusionKernel(Collection<Object> liveValues, boolean inclusion) {
+    ShortSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
         this.liveValues = new TShortHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Short) x)));
         this.inclusion = inclusion;
     }
 
-    ShortSetInclusionKernel(boolean inclusion) {
+    ShortSetInclusionKernel(final boolean inclusion) {
         this.liveValues = new TShortHashSet();
         this.inclusion = inclusion;
     }
 
     @Override
-    public boolean add(Object key) {
+    public boolean add(@NotNull final Object key) {
         return liveValues.add(TypeUtils.unbox((Short) key));
     }
 
     @Override
-    public boolean remove(Object key) {
+    public boolean remove(@NotNull final Object key) {
         return liveValues.remove(TypeUtils.unbox((Short) key));
     }
 
@@ -75,22 +74,49 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches) {
-        matchValues(values.asShortChunk(), matches, inclusion);
+    public void matchValues(
+            @NotNull final Chunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results) {
+        matchValues(values.asShortChunk(), keys, results, inclusion);
     }
 
     @Override
-    public void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride) {
-        matchValues(values.asShortChunk(), matches, inclusionOverride);
+    public void matchValues(
+            @NotNull final Chunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results,
+            final boolean inclusionOverride) {
+        if (inclusionOverride) {
+            matchValues(values.asShortChunk(), keys, results);
+        } else {
+            matchValuesInvert(values.asShortChunk(), keys, results);
+        }
     }
 
     private void matchValues(
-            ShortChunk<Values> values,
-            WritableBooleanChunk<?> matches,
-            boolean inclusionToUse) {
+            @NotNull final ShortChunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results) {
+        results.setSize(0);
         for (int ii = 0; ii < values.size(); ++ii) {
-            matches.set(ii, liveValues.contains(values.get(ii)) == inclusionToUse);
+            final short checkValue = values.get(ii);
+            if (liveValues.contains(checkValue)) {
+                results.add(keys.get(ii));
+            }
         }
-        matches.setSize(values.size());
+    }
+
+    private void matchValuesInvert(
+            @NotNull final ShortChunk<Values> values,
+            @NotNull final LongChunk<OrderedRowKeys> keys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results) {
+        results.setSize(0);
+        for (int ii = 0; ii < values.size(); ++ii) {
+            final short checkValue = values.get(ii);
+            if (!liveValues.contains(checkValue)) {
+                results.add(keys.get(ii));
+            }
+        }
     }
 }

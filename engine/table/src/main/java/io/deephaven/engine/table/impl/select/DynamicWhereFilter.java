@@ -537,21 +537,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         // @formatter:off
         try (final ColumnSource.GetContext keyGetContext = sourceKeySource.makeGetContext(maxChunkSize);
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
-             final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(maxChunkSize)) {
+             final WritableLongChunk<OrderedRowKeys> matchingKeys = WritableLongChunk.makeWritableChunk(maxChunkSize)) {
             // @formatter:on
 
             while (selectionIterator.hasMore()) {
                 final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
                 final LongChunk<OrderedRowKeys> selectionRowKeyChunk = selectionChunk.asRowKeyChunk();
                 final Chunk<Values> keyChunk = Chunk.downcast(sourceKeySource.getChunk(keyGetContext, selectionChunk));
-                setKernel.matchValues(keyChunk, matches, filterInclusion);
-
-                final int thisChunkSize = keyChunk.size();
-                for (int ii = 0; ii < thisChunkSize; ++ii) {
-                    if (matches.get(ii)) {
-                        filteredRowSetBuilder.appendKey(selectionRowKeyChunk.get(ii));
-                    }
-                }
+                setKernel.matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                filteredRowSetBuilder.appendOrderedRowKeysChunk(matchingKeys);
             }
         }
 
