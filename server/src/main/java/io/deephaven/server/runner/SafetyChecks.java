@@ -130,7 +130,7 @@ public final class SafetyChecks {
     /**
      * A safety check for end-of-life JDKs, see
      * <a href="https://www.oracle.com/java/technologies/java-se-support-roadmap.html">Oracle Java SE Support
-     * Roadmap</a>.
+     * Roadmap</a>. This will throw an exception when the {@link Runtime#version()} is 1 year past the EOL date.
      */
     public static final class JDK_END_OF_LIFE {
 
@@ -151,6 +151,7 @@ public final class SafetyChecks {
                 Map.entry(24, LocalDate.of(2025, Month.SEPTEMBER, 30)),
                 Map.entry(25, LocalDate.of(2033, Month.SEPTEMBER, 30)));
 
+
         private static void check() {
             if (!isEnabled(JDK_END_OF_LIFE.class)) {
                 return;
@@ -160,7 +161,7 @@ public final class SafetyChecks {
             if (eolDate == null) {
                 return;
             }
-            if (LocalDate.now().isAfter(eolDate)) {
+            if (LocalDate.now().isAfter(eolDate.plusYears(1))) {
                 throw exception(JDK_END_OF_LIFE.class, String.format(
                         "The current JDK feature version %d is end-of-life as of %s. We recommend updating to a non end-of-life JDK.",
                         version.feature(), eolDate));
