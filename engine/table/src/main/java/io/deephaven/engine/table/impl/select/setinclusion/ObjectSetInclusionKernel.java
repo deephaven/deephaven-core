@@ -52,7 +52,7 @@ public class ObjectSetInclusionKernel implements SetInclusionKernel {
             @NotNull final Chunk<Values> values,
             @NotNull final LongChunk<OrderedRowKeys> keys,
             @NotNull WritableLongChunk<OrderedRowKeys> results) {
-        matchValues(values.asObjectChunk(), keys, results, inclusion);
+        matchValues(values, keys, results, inclusion);
     }
 
     @Override

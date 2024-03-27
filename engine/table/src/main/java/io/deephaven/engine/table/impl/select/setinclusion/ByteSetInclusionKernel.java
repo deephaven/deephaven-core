@@ -78,7 +78,7 @@ public class ByteSetInclusionKernel implements SetInclusionKernel {
             @NotNull final Chunk<Values> values,
             @NotNull final LongChunk<OrderedRowKeys> keys,
             @NotNull WritableLongChunk<OrderedRowKeys> results) {
-        matchValues(values.asByteChunk(), keys, results, inclusion);
+        matchValues(values, keys, results, inclusion);
     }
 
     @Override

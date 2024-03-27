@@ -78,7 +78,7 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
             @NotNull final Chunk<Values> values,
             @NotNull final LongChunk<OrderedRowKeys> keys,
             @NotNull WritableLongChunk<OrderedRowKeys> results) {
-        matchValues(values.asShortChunk(), keys, results, inclusion);
+        matchValues(values, keys, results, inclusion);
     }
 
     @Override
