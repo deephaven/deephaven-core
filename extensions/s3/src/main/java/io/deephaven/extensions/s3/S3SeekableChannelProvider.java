@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -25,9 +26,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -35,7 +34,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -146,17 +144,15 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private Stream<URI> createStream(@NotNull final URI directory, final boolean isRecursive) {
         // The following iterator fetches URIs from S3 in batches and creates a stream
         final Iterator<URI> iterator = new Iterator<>() {
-            private final List<URI> currentBatch = new ArrayList<>();
-            private boolean fetchedAllURIs;
+            private Iterator<URI> currentBatchIt;
             private String continuationToken;
-            private int currentIndex;
 
             @Override
             public boolean hasNext() {
-                if (currentIndex < currentBatch.size()) {
+                if (currentBatchIt != null && currentBatchIt.hasNext()) {
                     return true;
                 }
-                if (fetchedAllURIs) {
+                if (currentBatchIt != null && continuationToken == null) {
                     return false;
                 }
                 try {
@@ -164,7 +160,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("Failed to fetch next batch of URIs from S3", e);
                 }
-                return currentIndex < currentBatch.size();
+                Assert.neqNull(currentBatchIt, "currentBatch");
+                return currentBatchIt.hasNext();
             }
 
             @Override
@@ -172,12 +169,10 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 if (!hasNext()) {
                     throw new NoSuchElementException("No more URIs available in the directory");
                 }
-                return currentBatch.get(currentIndex++);
+                return currentBatchIt.next();
             }
 
             private void fetchNextBatch() throws IOException {
-                currentIndex = 0;
-                currentBatch.clear();
                 final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
                 final String bucketName = s3DirectoryURI.bucket().orElseThrow();
                 final String directoryKey = s3DirectoryURI.key().orElseThrow();
@@ -197,18 +192,18 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                     throw handleS3Exception(e, String.format("fetching list of files in directory %s", directory),
                             s3Instructions);
                 }
-                response.contents().stream()
+                currentBatchIt = response.contents().stream()
                         .filter(s3Object -> !s3Object.key().equals(directoryKey))
                         .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
-                        .forEach(currentBatch::add);
+                        .iterator();
                 // If the response is truncated, fetch the next page using the continuation token from the response
                 // Usually the response is truncated when there are more than 1000 objects in the bucket
                 // TODO Test this
-                fetchedAllURIs = !response.isTruncated();
                 continuationToken = response.nextContinuationToken();
             }
         };
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator,
+                Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.NONNULL), false);
     }
 
     @Override

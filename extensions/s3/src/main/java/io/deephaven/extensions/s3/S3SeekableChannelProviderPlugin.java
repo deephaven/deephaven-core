@@ -11,8 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from S3.
@@ -21,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class S3SeekableChannelProviderPlugin implements SeekableChannelsProviderPlugin {
 
     static final String S3_URI_SCHEME = "s3";
-
-    private static final Map<S3Instructions, S3SeekableChannelProvider> providerMap = new ConcurrentHashMap<>();
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {

@@ -66,8 +66,7 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
         final Set<String> takenNames = new HashSet<>();
         final List<String> partitionKeys = new ArrayList<>();
         final boolean[] registered = {false}; // Hack to make the variable final
-        // TODO Should I use something that orders the operations instead of forEach, like convert it to an array first?
-        uriStream.forEach(uri -> {
+        uriStream.forEachOrdered(uri -> {
             final Collection<String> partitionValues = new ArrayList<>();
             final String fileRelativePath = uri.getPath().substring(tableRootDirectory.getPath().length());
             getPartitions(fileRelativePath, partitionKeys, partitionValues, takenNames, registered[0]);
