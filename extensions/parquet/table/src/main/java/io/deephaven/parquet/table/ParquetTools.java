@@ -804,9 +804,9 @@ public class ParquetTools {
         }
         final Table[] partitionedDataArray = partitionedData.toArray(Table[]::new);
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            // TODO(deephaven-core#5292): Optimize creating index on constituent tables
             final Map<String, Map<ParquetCacheTags, Object>> computedCache =
                     buildComputedCache(() -> sourceTable.orElseGet(partitionedTable::merge), leafDefinition);
+            // TODO(deephaven-core#5292): Optimize creating index on constituent tables
             // Store hard reference to prevent indexes from being garbage collected
             final List<DataIndex> dataIndexes = addIndexesToTables(partitionedDataArray, indexColumnArr);
             writeParquetTablesImpl(partitionedDataArray, leafDefinition, writeInstructions,
