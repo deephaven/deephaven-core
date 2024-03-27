@@ -2527,7 +2527,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         final PyCallableWrapper pyCallableWrapper = (PyCallableWrapper) methodVar;
         pyCallableWrapper.parseSignature();
-        pyCallableWrapper.verifyArguments(argTypes);
+        pyCallableWrapper.verifyArgumentsAndMakeUdfWrapper(argTypes);
     }
 
     private Optional<CastExpr> makeCastExpressionForPyCallable(Class<?> retType, MethodCallExpr callMethodCall) {

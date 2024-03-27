@@ -8,7 +8,7 @@ import sys
 import typing
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import wraps
+from functools import wraps, partial
 from typing import Callable, List, Any, Union, Tuple, _GenericAlias, Set, Optional, Sequence
 
 import pandas as pd
@@ -37,10 +37,12 @@ _SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O
 @dataclass
 class _ParsedParam:
     name: Union[str, int] = field(init=True)
-    orig_types: Set[type] = field(default_factory=set)
-    encoded_types: Set[str] = field(default_factory=set)
+    orig_types: List[type] = field(default_factory=list)
+    effective_types: List[type] = field(default_factory=list)
+    encoded_types: List[str] = field(default_factory=list)
     none_allowed: bool = False
     has_array: bool = False
+    converter: Callable = None
     int_char: str = None
     floating_char: str = None
 
@@ -178,12 +180,13 @@ def _is_union_type(t: type) -> bool:
     return isinstance(t, _GenericAlias) and t.__origin__ == Union
 
 
-def _parse_param(name: str, annotation: Any) -> _ParsedParam:
+def _parse_param(name: str, annotation: Union[type, dtypes.DType]) -> _ParsedParam:
     """ Parse a parameter annotation in a function's signature """
     p_param = _ParsedParam(name)
 
     if annotation is inspect._empty:
-        p_param.encoded_types.add("O")
+        p_param.effective_types.append(object)
+        p_param.encoded_types.append("O")
         p_param.none_allowed = True
     elif _is_union_type(annotation):
         for t in annotation.__args__:
@@ -193,15 +196,18 @@ def _parse_param(name: str, annotation: Any) -> _ParsedParam:
     return p_param
 
 
-def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type, str]) -> None:
+def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type, dtypes.DType]) -> None:
     """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
-    p_param.orig_types.add(t)
+    p_param.orig_types.append(t)
 
     # if the annotation is a DH DType instance, we'll use its numpy type
     if isinstance(t, dtypes.DType):
         t = t.np_type
+        p_param.effective_types.append(np.dtype(t).type)
+    else:
+        p_param.effective_types.append(t)
 
     tc = _encode_param_type(t)
     if "[" in tc:
@@ -220,7 +226,7 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
                                   f"types: {p_param.floating_char}, {tc}. this is not supported because it is not "
                                   f"clear which Deephaven null value to use when checking for nulls in the argument")
         p_param.floating_char = tc
-    p_param.encoded_types.add(tc)
+    p_param.encoded_types.append(tc)
 
 
 def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
@@ -275,7 +281,8 @@ if numba:
             if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
                 for i, p in enumerate(params):
                     pa = _ParsedParam(i + 1)
-                    pa.encoded_types.add(p)
+                    pa.encoded_types.append(p)
+                    pa.effective_types.append(np.dtype(p).type)
                     if p in _NUMPY_INT_TYPE_CODES:
                         pa.int_char = p
                     if p in _NUMPY_FLOATING_TYPE_CODES:
@@ -292,10 +299,12 @@ if numba:
                 for i, (p, d) in enumerate(zip(params, input_decl)):
                     pa = _ParsedParam(i + 1)
                     if d:
-                        pa.encoded_types.add("[" + p)
+                        pa.encoded_types.append("[" + p)
+                        pa.effective_types.append(np.dtype(p).type)
                         pa.has_array = True
                     else:
-                        pa.encoded_types.add(p)
+                        pa.encoded_types.append(p)
+                        pa.effective_types.append(np.dtype(p).type)
                         if p in _NUMPY_INT_TYPE_CODES:
                             pa.int_char = p
                         if p in _NUMPY_FLOATING_TYPE_CODES:
@@ -318,7 +327,8 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
     if fn.nin > 0:
         for i in range(fn.nin):
             pa = _ParsedParam(i + 1)
-            pa.encoded_types.add("O")
+            pa.encoded_types.append("O")
+            pa.effective_types.append(object)
             p_sig.params.append(pa)
     p_sig.ret_annotation = _ParsedReturnAnnotation()
     p_sig.ret_annotation.encoded_type = "O"
@@ -354,7 +364,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return p_sig
 
 
-def _is_from_np_type(param_types: Set[type], np_type_char: str) -> bool:
+def _is_from_np_type(param_types: List[type], np_type_char: str) -> bool:
     """ Determine if the given numpy type char comes for a numpy type in the given set of parameter type annotations"""
     for t in param_types:
         if issubclass(t, np.generic) and np.dtype(t).char == np_type_char:
@@ -388,7 +398,8 @@ def _convert_arg(param: _ParsedParam, arg: Any) -> Any:
         else:
             raise TypeError(f"Argument {param.name!r}: {arg} is not compatible with annotation {param.encoded_types}")
     else:  # if the arg is not a Java array
-        specific_types = param.encoded_types - {"N", "O"}  # remove NoneType and object type
+        # specific_types = param.encoded_types - ["N", "O"]  # remove NoneType and object type
+        specific_types = [t for t in param.encoded_types if t != "N" and t != "O"]
         if specific_types:
             for t in specific_types:
                 if t.startswith("["):
@@ -481,9 +492,49 @@ def _udf_parser(fn: Callable):
     ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
     @wraps(fn)
-    def _udf_decorator(arg_types: str):
+    def _udf_decorator(encoded_arg_types: str):
+        auto_arg_conv = True
+        arg_type_strs = encoded_arg_types.split(",")
+        if all([t == "O" for t in arg_type_strs]):
+            if  p_sig.ret_annotation.encoded_type == "O":
+                return fn
+            else:
+                auto_arg_conv = False
+
+        for arg_type_str, param in zip(arg_type_strs, p_sig.params):
+            for encoded_type_char, effective_type in zip(param.encoded_types, param.effective_types):
+                if encoded_type_char == arg_type_str:
+                    if arg_type_str.startswith("["):
+                        dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))
+                        param.converter = partial(_j_array_to_numpy_array, dtype, conv_null=False,
+                                                                             type_promotion=False)
+                    else:
+                        if effective_type in {object, str} :
+                            param.converter = None
+                        elif effective_type == np.datetime64:
+                            param.converter = to_np_datetime64
+                        else:
+                            param.converter = effective_type
+                            if "N" in param.encoded_types:
+                                if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(encoded_type_char):
+                                    param.converter = partial(lambda nv, x: None if x == nv else effective_type(x),
+                                                          null_value)
+                    break
+            else: # if the loop didn't break, it means that the parameter is either not type hinted or has a generic object type
+                param.converter = None
+
+        if all([param.converter is None for param in p_sig.params]):
+            if p_sig.ret_annotation.encoded_type == "O":
+                return fn
+            else:
+                auto_arg_conv = False
+
         def _wrapper(*args, **kwargs):
-            converted_args = _convert_args(p_sig, args)
+            if auto_arg_conv:
+                converted_args = [param.converter(arg) if param.converter else arg
+                                  for param, arg in zip(p_sig.params, args)]
+            else:
+                converted_args = args
             # kwargs are not converted because they are not used in the UDFs
             ret = fn(*converted_args, **kwargs)
             if return_array:

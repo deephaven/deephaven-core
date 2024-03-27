@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.NULL_CLASS;
-import static io.deephaven.util.type.TypeUtils.getUnboxedType;
 
 /**
  * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call() varargs
@@ -238,16 +237,16 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     }
 
-    private boolean isSafelyCastable(Set<Class<?>> types, Class<?> type) {
+    private Class<?> findSafelyCastable(Set<Class<?>> types, Class<?> type) {
         for (Class<?> t : types) {
             if (t.isAssignableFrom(type)) {
-                return true;
+                return t;
             }
             if (t.isPrimitive() && type.isPrimitive() && isLosslessWideningPrimitiveConversion(type, t)) {
-                return true;
+                return t;
             }
         }
-        return false;
+        return null;
     }
 
     public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
@@ -274,37 +273,57 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         return false;
     }
 
-    public void verifyArguments(Class<?>[] argTypes) {
+    public void verifyArgumentsAndMakeUdfWrapper(Class<?>[] argTypes) {
         String callableName = pyCallable.getAttribute("__name__").toString();
         List<Parameter> parameters = signature.getParameters();
 
-        String argTypesStr = "";
+        StringBuilder argTypesStr = new StringBuilder();
         for (int i = 0; i < argTypes.length; i++) {
+            Class<?> argType = argTypes[i];
+
             // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
             // parameter. This is not ideal. We should look for a better way to handle this, i.e. a way to convey that
             // the function is variadic.
             Set<Class<?>> types =
                     parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
 
+
             // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
             // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
-            // check for Object type input
-            if (argTypes[i] == Object.class) {
-                argTypesStr += "O";
+            // check for Object type input but instead use the only available type in the set or just Object.
+            if (argType == Object.class) {
+                if (types.size() == 1) {
+                    argType = types.iterator().next();
+                    if (argType.isArray())
+                        argTypesStr.append('[');
+                    argTypesStr.append(javaClass2NumpyType.get(argType)).append(',');
+                    continue;
+                }
+                argTypesStr.append("O,");
                 continue;
             }
 
-            Class<?> t = getUnboxedType(argTypes[i]) == null ? argTypes[i] : getUnboxedType(argTypes[i]);
-            t = argTypes[i];
-            if (!types.contains(t) && !types.contains(Object.class) && !isSafelyCastable(types, t)) {
-                throw new IllegalArgumentException(
-                        callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of "
-                                + parameters.get(i).getPossibleTypes() + ", got "
-                                + (argTypes[i].equals(NULL_CLASS) ? "null" : argTypes[i]));
+            if (!types.contains(argType) && !types.contains(Object.class)) {
+                Class<?> t = findSafelyCastable(types, argType);
+                if (t == null) {
+                    throw new IllegalArgumentException(
+                            callableName + ": " + "Expected argument (" + parameters.get(i).getName()
+                                    + ") to be one of "
+                                    + parameters.get(i).getPossibleTypes() + ", got "
+                                    + (argType.equals(NULL_CLASS) ? "null" : argType));
+                }
+                argType = t;
             }
-            argTypesStr += javaClass2NumpyType.get(argTypes[i]);
+            if (argType.isArray()) {
+                argTypesStr.append('[');
+            }
+            argTypesStr.append(javaClass2NumpyType.get(argType)).append(',');
         }
-        pyUdfWrapper = pyUdfDecorator.call("__call__", argTypesStr);
+
+        if (argTypesStr.length() > 0) {
+            argTypesStr.deleteCharAt(argTypesStr.length() - 1);
+        }
+        pyUdfWrapper = pyUdfDecorator.call("__call__", argTypesStr.toString());
     }
 
     // In vectorized mode, we want to call the vectorized function directly.

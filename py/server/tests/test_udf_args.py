@@ -45,7 +45,7 @@ _J_TYPE_J_ARRAY_TYPE_MAP = {
 }
 
 
-class UDFNumpyTest(BaseTestCase):
+class UdfArgsTest(BaseTestCase):
     def test_j_to_py_no_annotation_no_null(self):
         col1_formula = "Col1 = i % 10"
         for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
@@ -106,7 +106,7 @@ def test_udf(col1, col2: np.ndarray[{np_dtype}]) -> bool:
                 func_str = f"""
 def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
     return (isinstance(col1, int) and isinstance(col2, np.ndarray) and col2.dtype.type == 
-    {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(col2) != np.mean( col2))
+    {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(col2) == np.mean( col2))
                 """
                 exec(func_str, globals())
 
@@ -116,10 +116,13 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                     res = tbl.update("Col3 = test_udf(Col1, Col2)")
                     self.assertEqual(10, res.to_string().count("true"))
                 else:
-                    with self.assertRaises(DHError) as cm:
-                        tbl.update("Col3 = test_udf(Col1, Col2)")
-                    self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
-                                                        "array does not support ")
+                    res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                    self.assertEqual(10, res.to_string().count("true"))
+
+                    # with self.assertRaises(DHError) as cm:
+                    #     tbl.update("Col3 = test_udf(Col1, Col2)")
+                    # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
+                    #                                     "array does not support ")
 
     def test_j_scalar_to_py_no_null(self):
         col1_formula = "Col1 = i % 10"
@@ -201,94 +204,107 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                     self.assertEqual(4, res.to_string().count("true"))
 
     def test_weird_cases(self):
-        def f(p1: Union[np.ndarray[typing.Any], None]) -> bool:
-            return bool(p1)
+        with self.subTest("f"):
+            def f(p1: Union[np.ndarray[typing.Any], None]) -> bool:
+                return bool(p1)
 
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(10).update(["X1 = f(i)"])
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(10).update(["X1 = f(i)"])
 
-        def f1(p1: Union[np.int16, np.int32]) -> bool:
-            return bool(p1)
+        with self.subTest("f1"):
+            def f1(p1: Union[np.int16, np.int32]) -> bool:
+                return bool(p1)
 
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(10).update(["X1 = f1(i)"])
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(10).update(["X1 = f1(i)"])
 
-        def f11(p1: Union[float, np.float32]) -> bool:
-            return bool(p1)
+        with self.subTest("f11"):
+            def f11(p1: Union[float, np.float32]) -> bool:
+                return bool(p1)
 
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(10).update(["X1 = f11(i)"])
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(10).update(["X1 = f11(i)"])
 
-        def f2(p1: Union[np.int32, np.float64]) -> Union[Optional[bool]]:
-            return bool(p1)
+        with self.subTest("f2"):
+            def f2(p1: Union[np.int32, np.float64]) -> Union[Optional[bool]]:
+                return bool(p1)
 
-        t = empty_table(10).update(["X1 = f2(i)"])
-        self.assertEqual(t.columns[0].data_type, dtypes.bool_)
-        self.assertEqual(9, t.to_string().count("true"))
+            t = empty_table(10).update(["X1 = f2(i)"])
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+            self.assertEqual(9, t.to_string().count("true"))
 
-        def f21(p1: Union[np.int16, np.float64]) -> Union[Optional[bool], int]:
-            return bool(p1)
+        with self.subTest("f21"):
+            def f21(p1: Union[np.int16, np.float64]) -> Union[Optional[bool], int]:
+                return bool(p1)
 
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(10).update(["X1 = f21(i)"])
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(10).update(["X1 = f21(i)"])
 
-        def f3(p1: Union[np.int32, np.float64], p2=None) -> bool:
-            return bool(p1)
+        with self.subTest("f3"):
+            def f3(p1: Union[np.int32, np.float64], p2=None) -> bool:
+                return bool(p1)
 
-        t = empty_table(10).update(["X1 = f3(i)"])
-        self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+            t = empty_table(10).update(["X1 = f3(i)"])
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
-        def f4(p1: Union[np.int16, np.float64], p2=None) -> bool:
-            return bool(p1)
+        with self.subTest("f4"):
+            def f4(p1: Union[np.int16, np.float64], p2=None) -> bool:
+                return bool(p1)
 
-        t = empty_table(10).update(["X1 = f4((double)i)"])
-        self.assertEqual(t.columns[0].data_type, dtypes.bool_)
-        with self.assertRaises(DHError) as cm:
-            t = empty_table(10).update(["X1 = f4(now())"])
-        self.assertRegex(str(cm.exception), "f4: Expected .* got .*Instant")
+            t = empty_table(10).update(["X1 = f4((double)i)"])
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(10).update(["X1 = f4(now())"])
+            self.assertRegex(str(cm.exception), "f4: Expected .* got .*Instant")
 
-        def f41(p1: Union[np.int16, np.float64, Union[Any]], p2=None) -> bool:
-            return bool(p1)
+        with self.subTest("f41"):
+            def f41(p1: Union[np.int16, np.float64, Union[Any]], p2=None) -> bool:
+                return bool(p1)
 
-        t = empty_table(10).update(["X1 = f41(now())"])
-        self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+            t = empty_table(10).update(["X1 = f41(now())"])
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
-        def f42(p1: Union[np.int16, np.float64, np.datetime64], p2=None) -> bool:
-            return p1.dtype.char == "M"
+        with self.subTest("f42"):
+            def f42(p1: Union[np.int16, np.float64, np.datetime64], p2=None) -> bool:
+                return p1.dtype.char == "M"
 
-        t = empty_table(10).update(["X1 = f42(now())"])
-        self.assertEqual(t.columns[0].data_type, dtypes.bool_)
-        self.assertEqual(10, t.to_string().count("true"))
+            t = empty_table(10).update(["X1 = f42(now())"])
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+            self.assertEqual(10, t.to_string().count("true"))
 
-        def f5(col1, col2: np.ndarray[np.int32]) -> bool:
-            return np.nanmean(col2) == np.mean(col2)
+        with self.subTest("f5"):
+            def f5(col1, col2: np.ndarray[np.int32]) -> bool:
+                return np.nanmean(col2) == np.mean(col2)
+
+            t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
+            t = t.update(["X1 = f5(X, Y)"])
+            with self.assertRaises(DHError) as cm:
+                t = t.update(["X1 = f5(X, null)"])
+            self.assertRegex(str(cm.exception), "f5: Expected .* got null")
+
+        with self.subTest("f51"):
+            def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
+                return np.nanmean(col2) == np.mean(col2)
+
+            t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
+            t = t.update(["X1 = f51(X, Y)"])
+            with self.assertRaises(DHError) as cm:
+                t = t.update(["X1 = f51(X, null)"])
+            self.assertRegex(str(cm.exception), "unsupported operand type.*NoneType")
 
         t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
-        t = t.update(["X1 = f5(X, Y)"])
-        with self.assertRaises(DHError) as cm:
-            t = t.update(["X1 = f5(X, null)"])
-        self.assertRegex(str(cm.exception), "f5: Expected .* got null")
 
-        def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
-            return np.nanmean(col2) == np.mean(col2)
+        with self.subTest("f6"):
+            def f6(*args: np.int32, col2: np.ndarray[np.int32]) -> bool:
+                return np.nanmean(col2) == np.mean(col2)
 
-        t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
-        t = t.update(["X1 = f51(X, Y)"])
-        with self.assertRaises(DHError) as cm:
-            t = t.update(["X1 = f51(X, null)"])
-        self.assertRegex(str(cm.exception), "unsupported operand type.*NoneType")
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f6(X, Y)"])
+            self.assertIn("missing 1 required keyword-only argument", str(cm.exception))
 
-        t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
-
-        def f6(*args: np.int32, col2: np.ndarray[np.int32]) -> bool:
-            return np.nanmean(col2) == np.mean(col2)
-        with self.assertRaises(DHError) as cm:
-            t1 = t.update(["X1 = f6(X, Y)"])
-        self.assertIn("missing 1 required keyword-only argument", str(cm.exception))
-
-        with self.assertRaises(DHError) as cm:
-            t1 = t.update(["X1 = f6(X, Y=null)"])
-        self.assertIn("f6: Expected argument (col2) to be one of [class [I], got boolean", str(cm.exception))
+            with self.assertRaises(DHError) as cm:
+                t1 = t.update(["X1 = f6(X, Y=null)"])
+            self.assertIn("f6: Expected argument (col2) to be one of [class [I], got boolean", str(cm.exception))
 
     def test_str_bool_datetime_array(self):
         with self.subTest("str"):
@@ -328,10 +344,12 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return bool(len(p1))
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X")
-            with self.assertRaises(DHError) as cm:
-                t1 = t.update(["X1 = f3(Y)"])
-            self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
-                                                "array does not support ")
+            t1 = t.update(["X1 = f3(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            # with self.assertRaises(DHError) as cm:
+            #     t1 = t.update(["X1 = f3(Y)"])
+            # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
+            #                                     "array does not support ")
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"]).group_by("X")
             t1 = t.update(["X1 = f3(Y)"])
@@ -351,9 +369,11 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return p1 is None
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
-            with self.assertRaises(DHError) as cm:
-                t1 = t.update(["X1 = f1(Y)"])
-            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
+            t1 = t.update(["X1 = f1(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            # with self.assertRaises(DHError) as cm:
+            #     t1 = t.update(["X1 = f1(Y)"])
+            # self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f11(p1: Union[str, None], p2=None) -> bool:
                 return p1 is None
@@ -362,12 +382,15 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
         with self.subTest("datetime"):
             def f2(p1: np.datetime64, p2=None) -> bool:
-                return p1 is None
+                return p1.dtype.type == np.datetime64 if p1 is not None else False
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
-            with self.assertRaises(DHError) as cm:
-                t1 = t.update(["X1 = f2(Y)"])
-            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("false"))
+            # with self.assertRaises(DHError) as cm:
+            #     t1 = t.update(["X1 = f2(Y)"])
+            # self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
                 return p1 is None
@@ -376,17 +399,17 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
         with self.subTest("boolean"):
             def f3(p1: np.bool_, p2=None) -> bool:
-                return p1 is None
+                return p1 == True
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])
-            with self.assertRaises(DHError) as cm:
-                t1 = t.update(["X1 = f3(Y)"])
-            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
+            t1 = t.update(["X1 = f3(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("false"))
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])
             t1 = t.update(["X1 = f3(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            self.assertEqual(0, t1.to_string("X1").count("true"))
+            self.assertEqual(5, t1.to_string("X1").count("true"))
 
             def f31(p1: Optional[np.bool_], p2=None) -> bool:
                 return p1 is None
@@ -435,6 +458,7 @@ def f(x: {p_type}) -> bool:  # note typing
             with self.subTest(p_type):
                 func_str = f"""
 def f(x: {p_type}) -> bool:  # note typing
+    print(type(x))
     return type(x) == {p_type}
 """
                 exec(func_str, globals())
@@ -512,7 +536,6 @@ def f(x: {p_type}) -> bool:  # note typing
         with self.assertRaises(DHError) as cm:
             t.update(f"X = my_sum_error({','.join(cols)})")
         self.assertRegex(str(cm.exception), "my_sum_error: Expected argument .* got int")
-
 
 
 if __name__ == "__main__":
