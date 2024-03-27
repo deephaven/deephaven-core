@@ -38,6 +38,6 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
         final S3Instructions s3Instructions = (S3Instructions) Require.neqNull(config, "config");
-        return providerMap.computeIfAbsent(s3Instructions, S3SeekableChannelProvider::new);
+        return new S3SeekableChannelProvider(s3Instructions);
     }
 }

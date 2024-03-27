@@ -8,7 +8,7 @@ import io.deephaven.csv.CsvTools;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.local.LocationTableBuilder;
+import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -21,10 +21,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * {@link LocationTableBuilder LocationTableBuilder} implementation that uses the default Deephaven CSV parser for type
- * inference and coercion.
+ * {@link KeyValuePartitionLayout.LocationTableBuilder LocationTableBuilder} implementation that uses the default
+ * Deephaven CSV parser for type inference and coercion.
  */
-public final class LocationTableBuilderCsv implements LocationTableBuilder {
+public final class LocationTableBuilderCsv implements KeyValuePartitionLayout.LocationTableBuilder {
 
     private static final String LS = System.lineSeparator();
 

@@ -62,9 +62,9 @@ public abstract class S3SeekableChannelTestBase {
         putObject("empty.txt", RequestBody.empty());
         final URI uri = uri("empty.txt");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
-        final SeekableChannelsProvider providerImpl = providerImpl(uri);
-        final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
         try (
+                final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
                 final SeekableChannelContext context = provider.makeContext();
                 final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
             assertThat(readChannel.read(buffer)).isEqualTo(-1);
@@ -82,9 +82,9 @@ public abstract class S3SeekableChannelTestBase {
         }, numBytes));
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
-        final SeekableChannelsProvider providerImpl = providerImpl(uri);
-        final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
         try (
+                final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
                 final SeekableChannelContext context = provider.makeContext();
                 final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
             for (long p = 0; p < numBytes; ++p) {

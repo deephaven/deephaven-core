@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.base.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -12,11 +13,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -217,14 +220,13 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public void list(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException {
-            // Do nothing
+        public final Stream<URI> list(@NotNull final URI directory) {
+            return Stream.empty();
         }
 
         @Override
-        public void walk(@NotNull URI directoryURI, @NotNull Consumer<URI> processor)
-                throws IOException {
-            // Do nothing
+        public final Stream<URI> walk(@NotNull final URI directory) {
+            return Stream.empty();
         }
 
         @Override

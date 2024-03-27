@@ -31,11 +31,48 @@ import java.util.function.Supplier;
  * tableRootDirectory/Country=France/City=Paris/parisData.parquet
  * </pre>
  * 
- * Traversal is depth-first, and assumes that target files will only be found at a single depth.
+ * Traversal is depth-first, and assumes that target files will only be found at a single depth. This class is
+ * specialized for handling of files. For handling of URIs, see {@link URIStreamKeyValuePartitionLayout}.
  *
  * @implNote Column names will be legalized via {@link NameValidator#legalizeColumnName(String, Set)}.
  */
 public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements TableLocationKeyFinder<TLK> {
+
+    /**
+     * Interface for implementations to perform type coercion and specify a table of partition values for observed table
+     * locations.
+     */
+    public interface LocationTableBuilder {
+
+        /**
+         * Register an ordered collection of {@link String strings} representing partition keys. This should be called
+         * exactly once, and before any calls to {@link #acceptLocation(Collection) acceptLocation}.
+         *
+         * @param partitionKeys The partition keys to register
+         */
+        void registerPartitionKeys(@NotNull Collection<String> partitionKeys);
+
+        /**
+         * Accept an ordered collection of {@link String strings} representing partition values for a particular table
+         * location, parallel to a previously-registered collection of partition keys. Should be called after a single
+         * call to {@link #registerPartitionKeys(Collection) registerPartitionKeys}.
+         *
+         * @param partitionValueStrings The partition values to accept. Must have the same length as the
+         *        previously-registered partition keys.
+         */
+        void acceptLocation(@NotNull Collection<String> partitionValueStrings);
+
+        /**
+         * Build a {@link Table} with one column per partition key specified in
+         * {@link #registerPartitionKeys(Collection) registerPartitionKeys}, and one row per location provided via
+         * {@link #acceptLocation(Collection) acceptLocation}, with cell values parallel to that location's partition
+         * values after any appropriate conversion has been applied. The implementation is responsible for determining
+         * the appropriate column types.
+         *
+         * @return The {@link Table}
+         */
+        Table build();
+    }
 
     private final File tableRootDirectory;
     private final Predicate<Path> pathFilter;

@@ -76,23 +76,17 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public void list(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
-            throws IOException {
-        try (final Stream<Path> childFileStream = Files.list(Path.of(directoryURI))) {
-            // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
-            // the processor.
-            childFileStream.map(path -> FileUtils.convertToURI(path, false)).forEach(processor);
-        }
+    public Stream<URI> list(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.list(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
     }
 
     @Override
-    public void walk(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
-            throws IOException {
-        try (final Stream<Path> childFileStream = Files.walk(Path.of(directoryURI))) {
-            // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
-            // the processor.
-            childFileStream.map(path -> FileUtils.convertToURI(path, false)).forEach(processor);
-        }
+    public Stream<URI> walk(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.walk(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
     }
 
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {

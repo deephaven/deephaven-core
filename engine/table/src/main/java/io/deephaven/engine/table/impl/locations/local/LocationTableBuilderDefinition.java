@@ -22,10 +22,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * {@link LocationTableBuilder LocationTableBuilder} implementation that uses the a {@link TableDefinition} and
- * {@link PartitionParser PartitionParsers} to assemble location tables.
+ * {@link KeyValuePartitionLayout.LocationTableBuilder LocationTableBuilder} implementation that uses the a
+ * {@link TableDefinition} and {@link PartitionParser PartitionParsers} to assemble location tables.
  */
-public final class LocationTableBuilderDefinition implements LocationTableBuilder {
+public final class LocationTableBuilderDefinition implements KeyValuePartitionLayout.LocationTableBuilder {
 
     /**
      * The partitioning columns, mapped from name to state, in definition order.

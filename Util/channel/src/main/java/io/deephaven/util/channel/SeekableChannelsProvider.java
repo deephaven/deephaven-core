@@ -12,7 +12,7 @@ import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 
@@ -88,22 +88,20 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) throws IOException;
 
     /**
-     * Applies the supplied action on the list of URIs contained inside the given directory. The logic is non-recursive.
-     * Note that the URIs supplied to the processor will be file URIs (not ending with "/") irrespective of whether the
-     * URI corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
-     *
-     * @param directoryURI The URI of the directory to list
-     * @param processor A method to apply to the URIs in the directory
+     * @param directory the URI of the directory to list
+     * @return a stream the URIs contained inside the given directory. The logic is non-recursive. Note that the URIs
+     *         supplied by the stream will be file URIs (not ending with "/") irrespective of whether the URI
+     *         corresponds to a file or a directory. The caller should manage file vs. directory handling in the
+     *         processor. Also, the caller is responsible for closing the stream.
      */
-    void list(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
+    Stream<URI> list(@NotNull URI directory) throws IOException;
 
     /**
-     * Applies the supplied action on the list of file URIs contained inside the given directory recursively. Note that
-     * the URIs supplied to the processor will be file URIs (not ending with "/") irrespective of whether the URI
-     * corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
-     *
-     * @param directoryURI The URI of the directory to list
-     * @param processor A method to apply to the URIs in the directory
+     * @param directory the URI of the directory to walk
+     * @return a stream of URIs contained inside the given directory recursively. Note that the URIs supplied by the
+     *         stream will be file URIs (not ending with "/") irrespective of whether the URI corresponds to a file or a
+     *         directory. The caller should manage file vs. directory handling in the processor. Also, the caller is
+     *         responsible for closing the stream.
      */
-    void walk(@NotNull URI directoryURI, @NotNull Consumer<URI> processor) throws IOException;
+    Stream<URI> walk(@NotNull URI directory) throws IOException;
 }

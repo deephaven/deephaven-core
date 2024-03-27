@@ -8,8 +8,9 @@ import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
-import io.deephaven.engine.table.impl.locations.local.URIListKeyValuePartitionLayout;
+import io.deephaven.engine.table.impl.locations.local.URIStreamKeyValuePartitionLayout;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 
@@ -36,7 +38,11 @@ import static io.deephaven.base.FileUtils.convertToURI;
  *           NameValidator.legalizeColumnName}.</li>
  *           </ul>
  */
-public class ParquetKeyValuePartitionedLayout extends URIListKeyValuePartitionLayout<ParquetTableLocationKey> {
+public class ParquetKeyValuePartitionedLayout
+        extends URIStreamKeyValuePartitionLayout<ParquetTableLocationKey>
+        implements TableLocationKeyFinder<ParquetTableLocationKey> {
+
+    private final ParquetInstructions readInstructions;
 
     public ParquetKeyValuePartitionedLayout(
             @NotNull final File tableRootDirectory,
@@ -54,7 +60,7 @@ public class ParquetKeyValuePartitionedLayout extends URIListKeyValuePartitionLa
                 () -> new LocationTableBuilderDefinition(tableDefinition),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
-        initListSupplier(readInstructions);
+        this.readInstructions = readInstructions;
     }
 
     public ParquetKeyValuePartitionedLayout(
@@ -73,23 +79,22 @@ public class ParquetKeyValuePartitionedLayout extends URIListKeyValuePartitionLa
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
                 maxPartitioningLevels);
-        initListSupplier(readInstructions);
+        this.readInstructions = readInstructions;
     }
 
     public String toString() {
         return ParquetKeyValuePartitionedLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
     }
 
-    private void initListSupplier(@NotNull final ParquetInstructions readInstructions) {
+    @Override
+    public final void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
-        final Consumer<Consumer<URI>> uriListSupplier = (final Consumer<URI> uriProcessor) -> {
-            try {
-                provider.walk(tableRootDirectory, uriProcessor);
-            } catch (final IOException e) {
-                throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
-            }
-        };
-        setURIListSupplier(uriListSupplier);
+        try (final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
+            final Stream<URI> filteredStream = uriStream.filter(ParquetFileHelper::isVisibleParquetURI);
+            findKeys(filteredStream, locationKeyObserver);
+        } catch (final IOException e) {
+            throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
+        }
     }
 }

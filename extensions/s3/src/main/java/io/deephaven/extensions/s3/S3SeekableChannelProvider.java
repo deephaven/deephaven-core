@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -24,11 +25,19 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 
@@ -119,56 +128,87 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public void list(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
-            throws IOException {
+    public Stream<URI> list(@NotNull final URI directory) {
         if (log.isDebugEnabled()) {
-            log.debug("requesting list of child URIs for directory: {}", directoryURI);
+            log.debug("requesting list of child URIs for directory: {}", directory);
         }
-        applyToChildURIsHelper(directoryURI, processor, false);
+        return createStream(directory, false);
     }
 
     @Override
-    public void walk(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor)
-            throws IOException {
+    public Stream<URI> walk(@NotNull final URI directory) {
         if (log.isDebugEnabled()) {
-            log.debug("requesting recursive list of child URIs for directory: {}", directoryURI);
+            log.debug("requesting list of child URIs for directory: {}", directory);
         }
-        applyToChildURIsHelper(directoryURI, processor, true);
+        return createStream(directory, true);
     }
 
-    private void applyToChildURIsHelper(@NotNull final URI directoryURI, @NotNull final Consumer<URI> processor,
-            final boolean isRecursive) throws IOException {
-        final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directoryURI);
-        final String bucketName = s3DirectoryURI.bucket().orElseThrow();
-        final String directoryKey = s3DirectoryURI.key().orElseThrow();
-        final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
-                .bucket(bucketName)
-                .prefix(s3DirectoryURI.key().orElseThrow());
-        if (!isRecursive) {
-            // Add a delimiter to the request if we don't want to fetch all files recursively
-            requestBuilder.delimiter("/");
-        }
-        String continuationToken = null;
-        final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
-        ListObjectsV2Response response;
-        do {
-            final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
-            try {
-                response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
-            } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                throw handleS3Exception(e, String.format("fetching list of files in directory %s", directoryURI),
-                        s3Instructions);
-            }
-            response.contents().stream()
-                    .filter(s3Object -> !s3Object.key().equals(directoryKey)) // Skip the directory itself
-                    .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
-                    .forEach(processor);
+    private Stream<URI> createStream(@NotNull final URI directory, final boolean isRecursive) {
+        // The following iterator fetches URIs from S3 in batches and creates a stream
+        final Iterator<URI> iterator = new Iterator<>() {
+            private final List<URI> currentBatch = new ArrayList<>();
+            private boolean fetchedAllURIs;
+            private String continuationToken;
+            private int currentIndex;
 
-            // If the response is truncated, fetch the next page using the continuation token from the response
-            // Usually the response is truncated when there are more than 1000 objects in the bucket
-            // TODO Test this
-            continuationToken = response.nextContinuationToken();
-        } while (response.isTruncated());
+            @Override
+            public boolean hasNext() {
+                if (currentIndex < currentBatch.size()) {
+                    return true;
+                }
+                if (fetchedAllURIs) {
+                    return false;
+                }
+                try {
+                    fetchNextBatch();
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("Failed to fetch next batch of URIs from S3", e);
+                }
+                return currentIndex < currentBatch.size();
+            }
+
+            @Override
+            public URI next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException("No more URIs available in the directory");
+                }
+                return currentBatch.get(currentIndex++);
+            }
+
+            private void fetchNextBatch() throws IOException {
+                currentIndex = 0;
+                currentBatch.clear();
+                final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
+                final String bucketName = s3DirectoryURI.bucket().orElseThrow();
+                final String directoryKey = s3DirectoryURI.key().orElseThrow();
+                final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
+                        .bucket(bucketName)
+                        .prefix(s3DirectoryURI.key().orElseThrow());
+                if (!isRecursive) {
+                    // Add a delimiter to the request if we don't want to fetch all files recursively
+                    requestBuilder.delimiter("/");
+                }
+                final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
+                final ListObjectsV2Response response;
+                final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
+                try {
+                    response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
+                } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+                    throw handleS3Exception(e, String.format("fetching list of files in directory %s", directory),
+                            s3Instructions);
+                }
+                response.contents().stream()
+                        .filter(s3Object -> !s3Object.key().equals(directoryKey))
+                        .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
+                        .forEach(currentBatch::add);
+                // If the response is truncated, fetch the next page using the continuation token from the response
+                // Usually the response is truncated when there are more than 1000 objects in the bucket
+                // TODO Test this
+                fetchedAllURIs = !response.isTruncated();
+                continuationToken = response.nextContinuationToken();
+            }
+        };
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
     }
 
     @Override

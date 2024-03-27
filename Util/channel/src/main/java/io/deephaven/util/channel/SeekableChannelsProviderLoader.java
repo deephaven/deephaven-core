@@ -39,8 +39,7 @@ public final class SeekableChannelsProviderLoader {
     /**
      * Create a new {@link SeekableChannelsProvider} based on given URI and object using the plugins loaded by the
      * {@link ServiceLoader}. For example, for a "S3" URI, we will create a {@link SeekableChannelsProvider} which can
-     * read files from S3. The caller should not close the provider object since it may be shared among multiple
-     * consumers.
+     * read files from S3.
      *
      * @param uri The URI
      * @param object An optional object to pass to the {@link SeekableChannelsProviderPlugin} implementations.

@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static io.deephaven.parquet.table.layout.ParquetFileHelper.isVisibleParquetURI;
 
@@ -63,11 +64,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
-        try {
-            provider.list(tableRootDirectory, uri -> {
-                if (!isVisibleParquetURI(uri)) {
-                    return;
-                }
+        try (final Stream<URI> stream = provider.list(tableRootDirectory)) {
+            stream.filter(ParquetFileHelper::isVisibleParquetURI).forEach(uri -> {
                 synchronized (ParquetFlatPartitionedLayout.this) {
                     ParquetTableLocationKey locationKey = cache.get(uri);
                     if (locationKey == null) {
