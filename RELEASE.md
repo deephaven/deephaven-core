@@ -49,8 +49,8 @@ It may also be useful for release management purposes to ensure that no unexpect
 It is released to [GitHub releases](https://github.com/deephaven/deephaven-core/releases) in the [syft](https://github.com/anchore/syft) json format.
 
 ### Deephaven python client
-The Deephaven python client is released as the `pydeephaven` wheel at [PyPi](https://pypi.org/project/pydeephaven/) and
-`pydeephaven-ticking` wheels at [PyPi](https://pypi.org/project/pydeephaven-ticking/).
+The Deephaven python client wheels are released on PyPi as [`pydeephaven`](https://pypi.org/project/pydeephaven/) and
+[`pydeephaven-ticking`](https://pypi.org/project/pydeephaven-ticking/).
 
 ### Deephaven go client
 The Deephaven go client is released as a [Go package](https://pkg.go.dev/github.com/deephaven/deephaven-core/go).
@@ -162,7 +162,8 @@ If this step fails, the deephaven-server wheel from the "Upload Artifacts" step 
 The "Publish pydeephaven to PyPi" uploads the pydeephaven wheel to [PyPi](https://pypi.org/project/pydeephaven/).
 If this step fails, the pydeephaven wheel from the "Upload Artifacts" step can be uploaded manually.
 
-There is no automatic uploads for the pydeephaven-ticking wheels to [PyPi](https://pypi.org/project/pydeephaven-ticking/).
+The "Publish pydeephaven-ticking to PyPi" uploads the pydeephaven-ticking wheels to [PyPi](https://pypi.org/project/pydeephaven-ticking/).
+If this step fails, the pydeephaven-ticking wheel from the "Upload Artifacts" step can be uploaded manually.
 
 The "Publish @deephaven/jsapi-types to npmjs" uploads the TypeScript tarball to [NPM](https://www.npmjs.com/package/@deephaven/jsapi-types).
 If this step fails, the deephaven-jsapi-types tarball from the "Upload Artifacts" step can be uploaded manually.
