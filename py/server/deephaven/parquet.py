@@ -273,11 +273,12 @@ def write(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
-        index_columns (Optional[List[List[str]]]): Lists containing the column names for indexes to persist. The write
-            operation will store the index info as sidecar tables. By default, data indexes to write are determined by
-            those present on the source table. This argument is used to narrow the set of indexes to write, or to be
-            explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-            will be computed on demand.
+        index_columns (Optional[List[List[str]]]): list of list containing the column names for indexes to persist. The
+            write operation will store the index info for the provided columns as sidecar tables. For example, if the
+            input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for ["Col1"] and for
+            ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the source table.
+            This argument can be used to narrow the set of indexes to write, or to be explicit about the expected set of
+            indexes present on all sources. Indexes that are specified but missing will be computed on demand.
 
     Raises:
         DHError
@@ -358,11 +359,12 @@ def write_partitioned(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
-        index_columns (Optional[List[List[str]]]): Lists containing the column names for indexes to persist. The write
-            operation will store the index info as sidecar tables. By default, data indexes to write are determined by
-            those present on the source table. This argument is used to narrow the set of indexes to write, or to be
-            explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-            will be computed on demand.
+        index_columns (Optional[List[List[str]]]): list of list containing the column names for indexes to persist. The
+            write operation will store the index info for the provided columns as sidecar tables. For example, if the
+            input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for ["Col1"] and for
+            ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the source table.
+            This argument can be used to narrow the set of indexes to write, or to be explicit about the expected set of
+            indexes present on all sources. Indexes that are specified but missing will be computed on demand.
 
     Raises:
         DHError
@@ -435,11 +437,12 @@ def batch_write(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
-        index_columns (Optional[List[List[str]]]): Lists containing the column names for indexes to persist. The write
-            operation will store the index info as sidecar tables. By default, data indexes to write are determined by
-            those present on the source table. This argument is used to narrow the set of indexes to write, or to be
-            explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-            will be computed on demand.
+        index_columns (Optional[List[List[str]]]): list of list containing the column names for indexes to persist. The
+            write operation will store the index info for the provided columns as sidecar tables. For example, if the
+            input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for ["Col1"] and for
+            ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the source table.
+            This argument can be used to narrow the set of indexes to write, or to be explicit about the expected set of
+            indexes present on all sources. Indexes that are specified but missing will be computed on demand.
 
     Raises:
         DHError
