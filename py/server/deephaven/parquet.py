@@ -6,7 +6,7 @@
 Parquet files. """
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Sequence
 
 import jpy
 
@@ -220,8 +220,8 @@ def _j_file_array(paths: List[str]):
     return jpy.array("java.io.File", [_JFile(el) for el in paths])
 
 
-def _j_array_of_array_of_string(data_indexes: List[List[str]]):
-    return jpy.array("[Ljava.lang.String;", [jpy.array("java.lang.String", index_cols) for index_cols in data_indexes])
+def _j_array_of_array_of_string(index_columns: Sequence[Sequence[str]]):
+    return jpy.array("[Ljava.lang.String;", [jpy.array("java.lang.String", index_cols) for index_cols in index_columns])
 
 
 def delete(path: str) -> None:
@@ -249,7 +249,7 @@ def write(
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[List[List[str]]] = None
+    index_columns: Optional[Sequence[Sequence[str]]] = None
 ) -> None:
     """ Write a table to a Parquet file.
 
@@ -273,13 +273,13 @@ def write(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
-        index_columns (Optional[List[List[str]]]): list of list containing the column names for indexes to persist. The
-            write operation will store the index info for the provided columns as sidecar tables. For example, if the
-            input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for ["Col1"] and for
-            ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the source table.
-            This argument can be used to narrow the set of indexes to write, or to be explicit about the expected set of
-            indexes present on all sources. Indexes that are specified but missing will be computed on demand.
-
+        index_columns (Optional[Sequence[Sequence[str]]]): sequence of sequence containing the column names for indexes
+            to persist. The write operation will store the index info for the provided columns as sidecar tables. For
+            example, if the input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for
+            ["Col1"] and for ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the
+            source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
+            expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
+            demand.
     Raises:
         DHError
     """
@@ -320,7 +320,7 @@ def write_partitioned(
         target_page_size: Optional[int] = None,
         base_name: Optional[str] = None,
         generate_metadata_files: Optional[bool] = None,
-        index_columns: Optional[List[List[str]]] = None
+        index_columns: Optional[Sequence[Sequence[str]]] = None
 ) -> None:
     """ Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
     directory structure. For example, for a partitioned column "date", we will have a directory structure like
@@ -359,12 +359,13 @@ def write_partitioned(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
-        index_columns (Optional[List[List[str]]]): list of list containing the column names for indexes to persist. The
-            write operation will store the index info for the provided columns as sidecar tables. For example, if the
-            input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for ["Col1"] and for
-            ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the source table.
-            This argument can be used to narrow the set of indexes to write, or to be explicit about the expected set of
-            indexes present on all sources. Indexes that are specified but missing will be computed on demand.
+        index_columns (Optional[Sequence[Sequence[str]]]): sequence of sequence containing the column names for indexes
+            to persist. The write operation will store the index info for the provided columns as sidecar tables. For
+            example, if the input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for
+            ["Col1"] and for ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the
+            source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
+            expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
+            demand.
 
     Raises:
         DHError
@@ -413,7 +414,7 @@ def batch_write(
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[List[List[str]]] = None
+    index_columns: Optional[Sequence[Sequence[str]]] = None
 ):
     """ Writes tables to disk in parquet format to a supplied set of paths.
 
@@ -437,12 +438,13 @@ def batch_write(
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
             files.
-        index_columns (Optional[List[List[str]]]): list of list containing the column names for indexes to persist. The
-            write operation will store the index info for the provided columns as sidecar tables. For example, if the
-            input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for ["Col1"] and for
-            ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the source table.
-            This argument can be used to narrow the set of indexes to write, or to be explicit about the expected set of
-            indexes present on all sources. Indexes that are specified but missing will be computed on demand.
+        index_columns (Optional[Sequence[Sequence[str]]]): sequence of sequence containing the column names for indexes
+            to persist. The write operation will store the index info for the provided columns as sidecar tables. For
+            example, if the input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for
+            ["Col1"] and for ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the
+            source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
+            expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
+            demand.
 
     Raises:
         DHError
