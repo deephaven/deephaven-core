@@ -745,8 +745,10 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
                 .build();
-        ParquetTools.readFlatPartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
-                readInstructions).select();
+        final Table table = ParquetTools.readFlatPartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
+                readInstructions);
+        final Table expected = emptyTable(30).update("A = (int)i % 10");
+        assertTableEquals(expected, table);
     }
 
     @Test
@@ -764,8 +766,11 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
                 .build();
-        ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
-                readInstructions).select();
+        final Table table =
+                ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
+                        readInstructions);
+        final Table expected = emptyTable(30).update("A = (int)i % 10");
+        assertTableEquals(expected, table);
     }
 
     @Test
@@ -783,8 +788,20 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
                 .build();
-        ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
-                readInstructions).select();
+        final Table table =
+                ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
+                        readInstructions);
+        final List<ColumnDefinition<?>> partitioningColumns = table.getDefinition().getPartitioningColumns();
+        assertEquals(3, partitioningColumns.size());
+        assertEquals("PC1", partitioningColumns.get(0).getName());
+        assertEquals("PC2", partitioningColumns.get(1).getName());
+        assertEquals("PC3", partitioningColumns.get(2).getName());
+        assertEquals(100, table.size());
+        assertEquals(3, table.selectDistinct("PC1").size());
+        assertEquals(2, table.selectDistinct("PC2").size());
+        assertEquals(2, table.selectDistinct("PC3").size());
+        assertEquals(100, table.selectDistinct("I").size());
+        assertEquals(1, table.selectDistinct("J").size());
     }
 
     @Test
