@@ -3,19 +3,22 @@
 //
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
 import java.util.Collection;
 import java.util.Iterator;
 
 public interface SetInclusionKernel {
 
-    void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches);
+    void matchValues(Chunk<Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
 
-    void matchValues(Chunk<Values> values, WritableBooleanChunk<?> matches, boolean inclusionOverride);
+    void matchValues(
+            Chunk<Values> values,
+            LongChunk<OrderedRowKeys> keys,
+            WritableLongChunk<OrderedRowKeys> results,
+            boolean inclusionOverride);
 
     boolean add(Object key);
 
