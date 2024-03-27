@@ -96,7 +96,7 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
                 // Ignore empty directory names
                 continue;
             }
-            final String[] components = dirName.split("=");
+            final String[] components = dirName.split("=", 2);
             if (components.length != 2) {
                 throw new TableDataException("Unexpected directory name format (not key=value) at "
                         + new File(tableRootDirectory.getPath(), path));

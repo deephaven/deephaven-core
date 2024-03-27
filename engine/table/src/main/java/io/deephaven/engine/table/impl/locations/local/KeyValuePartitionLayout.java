@@ -131,7 +131,7 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
                             }
                             if (++columnCount > 0) {
                                 // We're descending and past the root
-                                final String[] components = dirName.split("=");
+                                final String[] components = dirName.split("=", 2);
                                 if (components.length != 2) {
                                     throw new TableDataException(
                                             "Unexpected directory name format (not key=value) at " + dir);
