@@ -194,7 +194,7 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
      * @param locationKeyObserver A consumer which will receive the location keys
      * @param keyFactory A factory for creating location keys
      */
-    public static <TLK extends TableLocationKey, TARGET_FILE_TYPE> void buildLocationKeys(
+    static <TLK extends TableLocationKey, TARGET_FILE_TYPE> void buildLocationKeys(
             @NotNull final Table locationTable,
             @NotNull final Deque<TARGET_FILE_TYPE> targetFiles,
             @NotNull final Consumer<TLK> locationKeyObserver,

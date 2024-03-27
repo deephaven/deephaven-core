@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static io.deephaven.parquet.table.layout.ParquetFileHelper.isVisibleParquetURI;
-
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */

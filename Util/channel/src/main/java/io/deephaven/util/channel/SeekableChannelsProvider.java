@@ -88,20 +88,22 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) throws IOException;
 
     /**
+     * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.
+     * Note that the URIs supplied by the stream will be file URIs (not ending with "/") irrespective of whether the URI
+     * corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
+     *
      * @param directory the URI of the directory to list
-     * @return a stream the URIs contained inside the given directory. The logic is non-recursive. Note that the URIs
-     *         supplied by the stream will be file URIs (not ending with "/") irrespective of whether the URI
-     *         corresponds to a file or a directory. The caller should manage file vs. directory handling in the
-     *         processor. Also, the caller is responsible for closing the stream.
+     * @return The {@link Stream} of {@link URI}s
      */
     Stream<URI> list(@NotNull URI directory) throws IOException;
 
     /**
+     * Returns a stream of URIs, the elements of which are all the entries in the directory. The listing is recursive.
+     * Note that the URIs supplied by the stream will be file URIs (not ending with "/") irrespective of whether the URI
+     * corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
+     *
      * @param directory the URI of the directory to walk
-     * @return a stream of URIs contained inside the given directory recursively. Note that the URIs supplied by the
-     *         stream will be file URIs (not ending with "/") irrespective of whether the URI corresponds to a file or a
-     *         directory. The caller should manage file vs. directory handling in the processor. Also, the caller is
-     *         responsible for closing the stream.
+     * @return The {@link Stream} of {@link URI}s
      */
     Stream<URI> walk(@NotNull URI directory) throws IOException;
 }

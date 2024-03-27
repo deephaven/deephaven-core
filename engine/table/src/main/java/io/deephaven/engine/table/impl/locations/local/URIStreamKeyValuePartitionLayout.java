@@ -22,14 +22,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout.buildLocationKeys;
 
 /**
- * Extracts a Key-Value partitioned layout from a stream of URIs.
+ * Extracts a Key-Value partitioned layout from a stream of URIs. This class is inspired from
+ * {@link KeyValuePartitionLayout}, but for URIs instead of files.
  */
 public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
 
@@ -37,17 +37,19 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
     private final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory;
     private final BiFunction<URI, Map<String, Comparable<?>>, TLK> keyFactory;
     private final int maxPartitioningLevels;
+    private final String fileSeparator;
 
     public URIStreamKeyValuePartitionLayout(
             @NotNull final URI tableRootDirectory,
-            @NotNull final Predicate<URI> pathFilter,
             @NotNull final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory,
             @NotNull final BiFunction<URI, Map<String, Comparable<?>>, TLK> keyFactory,
-            final int maxPartitioningLevels) {
+            final int maxPartitioningLevels,
+            @NotNull final String fileSeparator) {
         this.tableRootDirectory = tableRootDirectory;
         this.locationTableBuilderFactory = locationTableBuilderFactory;
         this.keyFactory = keyFactory;
         this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
+        this.fileSeparator = fileSeparator;
     }
 
     public String toString() {
@@ -64,7 +66,7 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
         final Set<String> takenNames = new HashSet<>();
         final List<String> partitionKeys = new ArrayList<>();
         final boolean[] registered = {false}; // Hack to make the variable final
-        // TODO Should I use something that orders the operations?
+        // TODO Should I use something that orders the operations instead of forEach, like convert it to an array first?
         uriStream.forEach(uri -> {
             final Collection<String> partitionValues = new ArrayList<>();
             final String fileRelativePath = uri.getPath().substring(tableRootDirectory.getPath().length());
@@ -86,48 +88,45 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
             @NotNull final Set<String> takenNames,
             final boolean registered) {
         int partitioningColumnIndex = 0;
-        int start = 0;
-        // TODO Should I just do a split instead of iteration
-        for (int i = 0; i < path.length(); i++) {
-            // Find the next directory name delimited by "/" or end of the string
-            if (path.charAt(i) != '/') {
+        // Split the path to get the subdirectory names
+        final String[] subDirs = path.split(fileSeparator);
+        for (int i = 0; i < subDirs.length - 1; i++) {
+            final String dirName = subDirs[i];
+            if (dirName.isEmpty()) {
+                // Ignore empty directory names
                 continue;
             }
-            if (start < i) { // Ignore empty directory names
-                final String dirName = path.substring(start, i);
-                final String[] components = dirName.split("=");
-                if (components.length != 2) {
-                    throw new TableDataException("Unexpected directory name format (not key=value) at "
-                            + new File(tableRootDirectory.getPath(), path));
-                }
-                if (partitioningColumnIndex == maxPartitioningLevels) {
-                    throw new TableDataException("Too many partitioning levels at " + path + ", maximum " +
-                            "expected partitioning levels are " + maxPartitioningLevels);
-                }
-                // TODO Is this legalizing adding any value?
-                final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
-                if (registered) {
-                    // We have already seen another parquet file in the tree, so compare the
-                    // partitioning levels against the previous ones
-                    if (partitioningColumnIndex >= partitionKeys.size()) {
-                        throw new TableDataException("Too many partitioning levels at " + path + " (expected "
-                                + partitionKeys.size() + ") based on earlier parquet files in the tree.");
-                    }
-                    if (!partitionKeys.get(partitioningColumnIndex).equals(columnKey)) {
-                        throw new TableDataException(String.format(
-                                "Column name mismatch at column index %d: expected %s found %s at %s",
-                                partitioningColumnIndex, partitionKeys.get(partitioningColumnIndex), columnKey,
-                                path));
-                    }
-                } else {
-                    // This is the first parquet file in the tree, so accumulate the partitioning levels
-                    partitionKeys.add(columnKey);
-                }
-                final String columnValue = components[1];
-                partitionValues.add(columnValue);
-                partitioningColumnIndex++;
+            final String[] components = dirName.split("=");
+            if (components.length != 2) {
+                throw new TableDataException("Unexpected directory name format (not key=value) at "
+                        + new File(tableRootDirectory.getPath(), path));
             }
-            start = i + 1;
+            if (partitioningColumnIndex == maxPartitioningLevels) {
+                throw new TableDataException("Too many partitioning levels at " + path + ", maximum " +
+                        "expected partitioning levels are " + maxPartitioningLevels);
+            }
+            // TODO Is this legalizing adding any value?
+            final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
+            if (registered) {
+                // We have already seen another parquet file in the tree, so compare the
+                // partitioning levels against the previous ones
+                if (partitioningColumnIndex >= partitionKeys.size()) {
+                    throw new TableDataException("Too many partitioning levels at " + path + " (expected "
+                            + partitionKeys.size() + ") based on earlier parquet files in the tree.");
+                }
+                if (!partitionKeys.get(partitioningColumnIndex).equals(columnKey)) {
+                    throw new TableDataException(String.format(
+                            "Column name mismatch at column index %d: expected %s found %s at %s",
+                            partitioningColumnIndex, partitionKeys.get(partitioningColumnIndex), columnKey,
+                            path));
+                }
+            } else {
+                // This is the first parquet file in the tree, so accumulate the partitioning levels
+                partitionKeys.add(columnKey);
+            }
+            final String columnValue = components[1];
+            partitionValues.add(columnValue);
+            partitioningColumnIndex++;
         }
     }
 }

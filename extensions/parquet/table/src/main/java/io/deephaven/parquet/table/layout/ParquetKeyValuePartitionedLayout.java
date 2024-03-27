@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 /**
  * Key-Value partitioned layout for Parquet data.
@@ -56,10 +57,10 @@ public class ParquetKeyValuePartitionedLayout
             @NotNull final TableDefinition tableDefinition,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableRootDirectory,
-                ParquetFileHelper::isVisibleParquetURI,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
-                Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
+                Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()),
+                FILE_URI_SCHEME.equals(tableRootDirectory.getScheme()) ? File.separator : "/");
         this.readInstructions = readInstructions;
     }
 
@@ -75,10 +76,10 @@ public class ParquetKeyValuePartitionedLayout
             final int maxPartitioningLevels,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableRootDirectory,
-                ParquetFileHelper::isVisibleParquetURI,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
-                maxPartitioningLevels);
+                maxPartitioningLevels,
+                FILE_URI_SCHEME.equals(tableRootDirectory.getScheme()) ? File.separator : "/");
         this.readInstructions = readInstructions;
     }
 
