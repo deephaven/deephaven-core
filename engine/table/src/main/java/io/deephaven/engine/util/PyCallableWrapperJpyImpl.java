@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.NULL_CLASS;
-import static io.deephaven.util.type.TypeUtils.getUnboxedType;
 
 /**
  * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call() varargs
@@ -30,6 +29,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
     private static final Map<Character, Class<?>> numpyType2JavaArrayClass = new HashMap<>();
 
+    private static final Map<Class<?>, Character> javaClass2NumpyType = new HashMap<>();
+
     static {
         numpyType2JavaClass.put('b', byte.class);
         numpyType2JavaClass.put('h', short.class);
@@ -38,7 +39,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaClass.put('l', long.class);
         numpyType2JavaClass.put('f', float.class);
         numpyType2JavaClass.put('d', double.class);
-        numpyType2JavaClass.put('?', boolean.class);
+        numpyType2JavaClass.put('?', Boolean.class);
         numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('M', Instant.class);
         numpyType2JavaClass.put('O', Object.class);
@@ -54,6 +55,13 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaArrayClass.put('U', String[].class);
         numpyType2JavaArrayClass.put('M', Instant[].class);
         numpyType2JavaArrayClass.put('O', Object[].class);
+
+        for (Map.Entry<Character, Class<?>> classClassEntry : numpyType2JavaClass.entrySet()) {
+            javaClass2NumpyType.put(classClassEntry.getValue(), classClassEntry.getKey());
+        }
+        for (Map.Entry<Character, Class<?>> classClassEntry : numpyType2JavaArrayClass.entrySet()) {
+            javaClass2NumpyType.put(classClassEntry.getValue(), classClassEntry.getKey());
+        }
     }
 
     /**
@@ -64,7 +72,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     // TODO: support for vectorizing functions that return arrays
     // https://github.com/deephaven/deephaven-core/issues/4649
     private static final Set<Class<?>> vectorizableReturnTypes = Set.of(
-            boolean.class, boolean[].class,
             Boolean.class, Boolean[].class,
             byte.class, byte[].class,
             short.class, short[].class,
@@ -91,8 +98,9 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private boolean vectorized = false;
     private Collection<ChunkArgument> chunkArguments;
     private boolean numbaVectorized;
-    private PyObject unwrapped;
-    private PyObject pyUdfDecoratedCallable;
+    private PyObject pyUdfDecorator;
+    private PyObject pyUdfWrapper;
+    private String argTypesStr = null;
 
     public PyCallableWrapperJpyImpl(PyObject pyCallable) {
         this.pyCallable = pyCallable;
@@ -163,21 +171,14 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         pyCallable
                                 + " has multiple signatures; this is not currently supported for numba vectorized/guvectorized functions");
             }
-            unwrapped = pyCallable;
-            // since vectorization doesn't support array type parameters, don't flag numba guvectorized as vectorized
             numbaVectorized = isNumbaVectorized;
             vectorized = isNumbaVectorized;
-        } else if (pyCallable.hasAttribute("dh_vectorized")) {
-            unwrapped = pyCallable.getAttribute("callable");
-            numbaVectorized = false;
-            vectorized = true;
         } else {
-            unwrapped = pyCallable;
             numbaVectorized = false;
             vectorized = false;
         }
-        pyUdfDecoratedCallable = dh_udf_module.call("_py_udf", unwrapped);
-        signatureString = pyUdfDecoratedCallable.getAttribute("signature").toString();
+        pyUdfDecorator = dh_udf_module.call("_udf_parser", pyCallable);
+        signatureString = pyUdfDecorator.getAttribute("signature").toString();
     }
 
 
@@ -220,30 +221,25 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             }
         }
 
-        Class<?> returnType = pyUdfDecoratedCallable.getAttribute("return_type", null);
+        Class<?> returnType = pyUdfDecorator.getAttribute("return_type", null);
         if (returnType == null) {
             throw new IllegalStateException(
                     "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
         }
-
-        if (returnType == boolean.class) {
-            returnType = Boolean.class;
-        }
-
         signature = new Signature(parameters, returnType);
 
     }
 
-    private boolean isSafelyCastable(Set<Class<?>> types, Class<?> type) {
+    private Class<?> findSafelyCastable(Set<Class<?>> types, Class<?> type) {
         for (Class<?> t : types) {
             if (t.isAssignableFrom(type)) {
-                return true;
+                return t;
             }
             if (t.isPrimitive() && type.isPrimitive() && isLosslessWideningPrimitiveConversion(type, t)) {
-                return true;
+                return t;
             }
         }
-        return false;
+        return null;
     }
 
     public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
@@ -274,43 +270,75 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         String callableName = pyCallable.getAttribute("__name__").toString();
         List<Parameter> parameters = signature.getParameters();
 
+        StringBuilder argTypesStr = new StringBuilder();
         for (int i = 0; i < argTypes.length; i++) {
+            Class<?> argType = argTypes[i];
+
             // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
-            // parameter. This is not ideal. We should consider a better way to handle this, i.e. a way to convey that
+            // parameter. This is not ideal. We should look for a better way to handle this, i.e. a way to convey that
             // the function is variadic.
+            if (parameters.size() == 0) {
+                throw new IllegalArgumentException(
+                        callableName + ": " + "Expected no arguments, got " + argTypes.length);
+            }
             Set<Class<?>> types =
                     parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
 
+
             // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
             // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
-            // check for Object type input
-            if (argTypes[i] == Object.class) {
+            // check for Object type but instead if there is only one possible type, we'll use that type.
+            if (argType == Object.class) {
+                if (types.size() == 1) {
+                    argType = types.iterator().next();
+                    if (argType.isArray())
+                        argTypesStr.append('[');
+                    argTypesStr.append(javaClass2NumpyType.get(argType)).append(',');
+                    continue;
+                }
+                argTypesStr.append("O,");
                 continue;
             }
 
-            Class<?> t = getUnboxedType(argTypes[i]) == null ? argTypes[i] : getUnboxedType(argTypes[i]);
-            if (!types.contains(t) && !types.contains(Object.class) && !isSafelyCastable(types, t)) {
-                throw new IllegalArgumentException(
-                        callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of "
-                                + parameters.get(i).getPossibleTypes() + ", got "
-                                + (argTypes[i].equals(NULL_CLASS) ? "null" : argTypes[i]));
+            if (!types.contains(argType) && !types.contains(Object.class)) {
+                Class<?> t = findSafelyCastable(types, argType);
+                if (t == null) {
+                    throw new IllegalArgumentException(
+                            callableName + ": " + "Expected argument (" + parameters.get(i).getName()
+                                    + ") to be either one of "
+                                    + parameters.get(i).getPossibleTypes() + " or their compatible ones, got "
+                                    + (argType.equals(NULL_CLASS) ? "null" : argType));
+                }
+                argType = t;
             }
+            if (argType.isArray()) {
+                argTypesStr.append('[');
+            }
+            argTypesStr.append(javaClass2NumpyType.get(argType)).append(',');
         }
+
+        if (argTypesStr.length() > 0) {
+            argTypesStr.deleteCharAt(argTypesStr.length() - 1);
+        }
+        this.argTypesStr = argTypesStr.toString();
     }
 
     // In vectorized mode, we want to call the vectorized function directly.
     public PyObject vectorizedCallable() {
-        if (numbaVectorized || vectorized) {
+        if (numbaVectorized) {
             return pyCallable;
         } else {
-            return dh_udf_module.call("_dh_vectorize", unwrapped);
+            return pyUdfDecorator.call("__call__", this.argTypesStr, true);
         }
     }
 
     // In non-vectorized mode, we want to call the udf decorated function or the original function.
     @Override
     public Object call(Object... args) {
-        PyObject pyCallable = this.pyUdfDecoratedCallable != null ? this.pyUdfDecoratedCallable : this.pyCallable;
+        if (argTypesStr != null && pyUdfWrapper == null) {
+            pyUdfWrapper = pyUdfDecorator.call("__call__", this.argTypesStr, false);
+        }
+        PyObject pyCallable = this.pyUdfWrapper != null ? this.pyUdfWrapper : this.pyCallable;
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
     }
 
