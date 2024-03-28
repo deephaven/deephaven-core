@@ -28,10 +28,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Unit tests for {@link TestKeyValuePartitionLayout}.
+ * Unit tests for {@link FileKeyValuePartitionLayout}.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class TestKeyValuePartitionLayout {
+public class TestFileKeyValuePartitionLayout {
 
     @Rule
     final public EngineCleanup framework = new EngineCleanup();

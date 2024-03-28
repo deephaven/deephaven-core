@@ -9,7 +9,6 @@ import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -43,8 +42,7 @@ import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
  */
-@VisibleForTesting
-public final class S3SeekableChannelProvider implements SeekableChannelsProvider {
+final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     /**
      * We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
@@ -52,13 +50,7 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
      */
     private static final BufferPool BUFFER_POOL = new BufferPool(S3Instructions.MAX_FRAGMENT_SIZE);
 
-    private static final int DEFAULT_MAX_KEYS_PER_BATCH = 1000;
-    private static int maxKeysPerBatch = DEFAULT_MAX_KEYS_PER_BATCH;
-
-    @VisibleForTesting
-    public static void setMaxKeysPerBatch(final int maxKeysPerBatch) {
-        S3SeekableChannelProvider.maxKeysPerBatch = maxKeysPerBatch;
-    }
+    private static final int MAX_KEYS_PER_BATCH = 1000;
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
@@ -185,7 +177,7 @@ public final class S3SeekableChannelProvider implements SeekableChannelsProvider
                 final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                         .bucket(bucketName)
                         .prefix(s3DirectoryURI.key().orElseThrow())
-                        .maxKeys(maxKeysPerBatch);
+                        .maxKeys(MAX_KEYS_PER_BATCH);
                 if (!isRecursive) {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
