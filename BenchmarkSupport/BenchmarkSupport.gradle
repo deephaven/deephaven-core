@@ -30,6 +30,7 @@ dependencies {
     implementation project(':Base')
     implementation project(':engine-table')
     implementation project(':extensions-parquet-table')
+    implementation project(':extensions-parquet-base')
     implementation project(':Configuration')
     implementation 'org.openjdk.jmh:jmh-core:1.20'
 

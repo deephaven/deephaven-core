@@ -15,9 +15,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
@@ -26,8 +26,6 @@ import static io.deephaven.base.FileUtils.convertToURI;
  */
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
-    private static final String MAGIC_STR = "PAR1";
-    static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public static final String FILE_URI_SCHEME = "file";
 
     public final FileMetaData fileMetaData;

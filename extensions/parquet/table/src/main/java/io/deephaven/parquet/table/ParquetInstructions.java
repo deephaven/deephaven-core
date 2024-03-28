@@ -8,6 +8,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
@@ -115,6 +116,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultTargetPageSize;
     }
 
+    private static final boolean DEFAULT_GENERATE_METADATA_FILES = false;
+
+    static final String UUID_TOKEN = "{uuid}";
+    static final String PARTITIONS_TOKEN = "{partitions}";
+    static final String FILE_INDEX_TOKEN = "{i}";
+    private static final String DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA = UUID_TOKEN;
+
     public ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
@@ -163,6 +171,20 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @return if the data source is refreshing
      */
     public abstract boolean isRefreshing();
+
+    /**
+     * @return should we generate {@value ParquetUtils#METADATA_FILE_NAME} and
+     *         {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files while writing parquet files?
+     */
+    public abstract boolean generateMetadataFiles();
+
+
+    /**
+     * @return the base name for partitioned parquet data. Check
+     *         {@link Builder#setBaseNameForPartitionedParquetData(String) setBaseNameForPartitionedParquetData} for
+     *         more details about different tokens that can be used in the base name.
+     */
+    public abstract String baseNameForPartitionedParquetData();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -238,6 +260,16 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public boolean isRefreshing() {
             return DEFAULT_IS_REFRESHING;
         }
+
+        @Override
+        public boolean generateMetadataFiles() {
+            return DEFAULT_GENERATE_METADATA_FILES;
+        }
+
+        @Override
+        public String baseNameForPartitionedParquetData() {
+            return DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA;
+        }
     };
 
     private static class ColumnInstructions {
@@ -306,6 +338,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final int targetPageSize;
         private final boolean isRefreshing;
         private final Object specialInstructions;
+        private final boolean generateMetadataFiles;
+        private final String baseNameForPartitionedParquetData;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -316,7 +350,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final boolean isLegacyParquet,
                 final int targetPageSize,
                 final boolean isRefreshing,
-                final Object specialInstructions) {
+                final Object specialInstructions,
+                final boolean generateMetadataFiles,
+                final String baseNameForPartitionedParquetData) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -326,6 +362,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.targetPageSize = targetPageSize;
             this.isRefreshing = isRefreshing;
             this.specialInstructions = specialInstructions;
+            this.generateMetadataFiles = generateMetadataFiles;
+            this.baseNameForPartitionedParquetData = baseNameForPartitionedParquetData;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -419,6 +457,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return specialInstructions;
         }
 
+        @Override
+        public boolean generateMetadataFiles() {
+            return generateMetadataFiles;
+        }
+
+        @Override
+        public String baseNameForPartitionedParquetData() {
+            return baseNameForPartitionedParquetData;
+        }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
             // noinspection unchecked
@@ -471,6 +518,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
         private Object specialInstructions;
+        private boolean generateMetadataFiles = DEFAULT_GENERATE_METADATA_FILES;
+        private String baseNameForPartitionedParquetData = DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA;
 
         public Builder() {}
 
@@ -647,6 +696,47 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * Set whether to generate {@value ParquetUtils#METADATA_FILE_NAME} and
+         * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files while writing parquet files. On setting this parameter,
+         * <ul>
+         * <li>When writing a single parquet file, metadata files will be generated in the same parent directory as the
+         * parquet file.
+         * <li>When writing multiple parquet files in a single write call, the writing code insists that all parquet
+         * files should be written to the same parent directory, and only then metadata files will be generated in the
+         * same parent directory.
+         * <li>When writing key-value partitioned parquet data, metadata files are generated in the root directory of
+         * the partitioned parquet files.
+         * </ul>
+         */
+        public Builder setGenerateMetadataFiles(final boolean generateMetadataFiles) {
+            this.generateMetadataFiles = generateMetadataFiles;
+            return this;
+        }
+
+        /**
+         * Set the base name for partitioned parquet data. This is used to generate the file name for partitioned
+         * parquet files, and therefore, this parameter is only used when writing partitioned parquet data. Users can
+         * provide the following tokens to be replaced in the base name:
+         * <ul>
+         * <li>The token {@value #FILE_INDEX_TOKEN} will be replaced with an automatically incremented integer for files
+         * in a directory. For example, a base name of "table-{i}" will result in files named like
+         * "PC=partition1/table-0.parquet", "PC=partition1/table-1.parquet", etc., where PC is a partitioning
+         * column.</li>
+         * <li>The token {@value #UUID_TOKEN} will be replaced with a random UUID. For example, a base name of
+         * "table-{uuid}" will result in files named like "table-8e8ab6b2-62f2-40d1-8191-1c5b70c5f330.parquet".</li>
+         * <li>The token {@value #PARTITIONS_TOKEN} will be replaced with an underscore-delimited, concatenated string
+         * of partition values. For example, a base name of "{partitions}-table" will result in files like
+         * "PC1=partition1/PC2=partitionA/PC1=partition1_PC2=partitionA-table.parquet", where "PC1" and "PC2" are
+         * partitioning columns.</li>
+         * </ul>
+         * The default value of this parameter is {@value #DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA}.
+         */
+        public Builder setBaseNameForPartitionedParquetData(final String baseNameForPartitionedParquetData) {
+            this.baseNameForPartitionedParquetData = baseNameForPartitionedParquetData;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -655,7 +745,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
-                    specialInstructions);
+                    specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData);
         }
     }
 

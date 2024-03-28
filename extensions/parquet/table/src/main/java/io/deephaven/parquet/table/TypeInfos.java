@@ -116,6 +116,10 @@ public class TypeInfos {
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
+    /**
+     * Get the precision and scale for a given big decimal column. If already cached, fetch it directly, else compute it
+     * by scanning the entire column and store the values in the cache.
+     */
     public static PrecisionAndScale getPrecisionAndScale(
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,

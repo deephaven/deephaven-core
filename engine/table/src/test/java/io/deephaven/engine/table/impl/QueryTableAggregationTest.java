@@ -37,7 +37,6 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.test.types.OutOfBandTest;
@@ -75,6 +74,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -3951,7 +3951,7 @@ public class QueryTableAggregationTest {
         final TableDefaults result = testTable(stringCol("Symbol", syms),
                 intCol("Value", values));
 
-        final File outputFile = new File(directory, "disk_table" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+        final File outputFile = new File(directory, "disk_table" + PARQUET_FILE_EXTENSION);
 
         ParquetTools.writeTable(result, outputFile, result.getDefinition());
 

@@ -16,19 +16,22 @@ import org.apache.parquet.hadoop.metadata.*;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.internal.hadoop.metadata.IndexReference;
 import org.apache.parquet.schema.MessageType;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE;
 import static org.apache.parquet.format.Util.writeFileMetaData;
 
 public final class ParquetFileWriter {
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
-    private static final int OUTPUT_BUFFER_SIZE = 1 << 18;
 
     private final PositionedBufferedOutputStream bufferedOutput;
     private final MessageType type;
@@ -38,23 +41,29 @@ public final class ParquetFileWriter {
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
+    private final String destFilePathForMetadata;
+    private final ParquetMetadataFileWriter metadataFileWriter;
 
     public ParquetFileWriter(
-            final String filePath,
+            final String destFilePath,
+            final String destFilePathForMetadata,
             final SeekableChannelsProvider channelsProvider,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
             final String codecName,
-            final Map<String, String> extraMetaData) throws IOException {
+            final Map<String, String> extraMetaData,
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws IOException {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        bufferedOutput = new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(filePath, false),
-                OUTPUT_BUFFER_SIZE);
-        bufferedOutput.write(ParquetFileReader.MAGIC);
+        bufferedOutput = new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(destFilePath, false),
+                PARQUET_OUTPUT_BUFFER_SIZE);
+        bufferedOutput.write(MAGIC);
         this.type = type;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
+        this.destFilePathForMetadata = destFilePathForMetadata;
+        this.metadataFileWriter = metadataFileWriter;
     }
 
     public RowGroupWriter addRowGroup(final long size) {
@@ -70,19 +79,22 @@ public final class ParquetFileWriter {
         serializeOffsetIndexes();
         final ParquetMetadata footer =
                 new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
-        serializeFooter(footer);
+        serializeFooter(footer, bufferedOutput);
+        metadataFileWriter.addParquetFileMetadata(destFilePathForMetadata, footer);
         // Flush any buffered data and close the channel
         bufferedOutput.close();
         compressorAdapter.close();
     }
 
-    private void serializeFooter(final ParquetMetadata footer) throws IOException {
+    public static void serializeFooter(final ParquetMetadata footer,
+            final PositionedBufferedOutputStream bufferedOutput)
+            throws IOException {
         final long footerIndex = bufferedOutput.position();
         final org.apache.parquet.format.FileMetaData parquetMetadata =
                 metadataConverter.toParquetMetadata(VERSION, footer);
         writeFileMetaData(parquetMetadata, bufferedOutput);
         BytesUtils.writeIntLittleEndian(bufferedOutput, (int) (bufferedOutput.position() - footerIndex));
-        bufferedOutput.write(ParquetFileReader.MAGIC);
+        bufferedOutput.write(MAGIC);
     }
 
     private void serializeOffsetIndexes() throws IOException {
