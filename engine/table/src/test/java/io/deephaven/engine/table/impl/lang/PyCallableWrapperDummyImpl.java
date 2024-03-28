@@ -76,7 +76,7 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
     }
 
     @Override
-    public void verifyArgumentsAndMakeUdfWrapper(Class<?>[] argTypes) {
+    public void verifyArguments(Class<?>[] argTypes) {
 
     }
 

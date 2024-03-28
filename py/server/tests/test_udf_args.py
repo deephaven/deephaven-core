@@ -293,7 +293,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f6(X, Y=null)"])
-            self.assertIn("f6: Expected argument (col2) to be one of [class [I], got boolean", str(cm.exception))
+            self.assertRegex(str(cm.exception), "f6: Expected argument \(col2\) to be either .* got boolean")
 
     def test_str_bool_datetime_array(self):
         with self.subTest("str"):
@@ -360,9 +360,6 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
             t1 = t.update(["X1 = f1(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            # with self.assertRaises(DHError) as cm:
-            #     t1 = t.update(["X1 = f1(Y)"])
-            # self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f11(p1: Union[str, None], p2=None) -> bool:
                 return p1 is None
@@ -377,9 +374,6 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t1 = t.update(["X1 = f2(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string().count("false"))
-            # with self.assertRaises(DHError) as cm:
-            #     t1 = t.update(["X1 = f2(Y)"])
-            # self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
 
             def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
                 return p1 is None

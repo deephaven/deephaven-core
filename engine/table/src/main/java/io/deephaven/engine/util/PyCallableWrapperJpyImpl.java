@@ -64,8 +64,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         }
     }
 
-    private String argTypesStr = null;
-
     /**
      * Ensure that the class initializer runs.
      */
@@ -102,6 +100,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private boolean numbaVectorized;
     private PyObject pyUdfDecorator;
     private PyObject pyUdfWrapper;
+    private String argTypesStr = null;
 
     public PyCallableWrapperJpyImpl(PyObject pyCallable) {
         this.pyCallable = pyCallable;
@@ -267,7 +266,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         return false;
     }
 
-    public void verifyArgumentsAndMakeUdfWrapper(Class<?>[] argTypes) {
+    public void verifyArguments(Class<?>[] argTypes) {
         String callableName = pyCallable.getAttribute("__name__").toString();
         List<Parameter> parameters = signature.getParameters();
 
@@ -278,13 +277,16 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
             // parameter. This is not ideal. We should look for a better way to handle this, i.e. a way to convey that
             // the function is variadic.
+            if (parameters.size() == 0) {
+                throw new IllegalArgumentException(callableName + ": " + "Expected no arguments, got " + argTypes.length);
+            }
             Set<Class<?>> types =
                     parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
 
 
             // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
             // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
-            // check for Object type input but instead use the only available type in the set or just Object.
+            // check for Object type but instead if there is only one possible type, we'll use that type.
             if (argType == Object.class) {
                 if (types.size() == 1) {
                     argType = types.iterator().next();
@@ -302,8 +304,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                 if (t == null) {
                     throw new IllegalArgumentException(
                             callableName + ": " + "Expected argument (" + parameters.get(i).getName()
-                                    + ") to be one of "
-                                    + parameters.get(i).getPossibleTypes() + ", got "
+                                    + ") to be either one of "
+                                    + parameters.get(i).getPossibleTypes() + " or their compatible ones, got "
                                     + (argType.equals(NULL_CLASS) ? "null" : argType));
                 }
                 argType = t;
@@ -318,7 +320,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             argTypesStr.deleteCharAt(argTypesStr.length() - 1);
         }
         this.argTypesStr = argTypesStr.toString();
-        // pyUdfWrapper = pyUdfDecorator.call("__call__", this.argTypesStr, false);
     }
 
     // In vectorized mode, we want to call the vectorized function directly.

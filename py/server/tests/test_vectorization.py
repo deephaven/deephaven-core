@@ -28,38 +28,23 @@ class VectorizationTestCase(BaseTestCase):
         _udf.vectorized_count = 0
         super().tearDown()
 
-    # def test_vectorization_exceptions(self):
-    #     t = empty_table(1)
-    #
-    #     @dh_vectorize
-    #     def vectorized_func(p1, p2):
-    #         return p1 + p2
-    #
-    #     def auto_func(p1, p2):
-    #         return p1 + p2
-    #
-    #     @dh_vectorize
-    #     def no_param_func():
-    #         return random.randint(0, 100)
-    #
-    #     with self.subTest("parameter number mismatch"):
-    #         with self.assertRaises(DHError) as cm:
-    #             t1 = t.update("X = vectorized_func(i)")
-    #         self.assertRegex(str(cm.exception), r".*count.*mismatch", )
-    #
-    #         with self.assertRaises(DHError) as cm:
-    #             t1 = t.update("X = auto_func(i)")
-    #         self.assertRegex(str(cm.exception), r"missing 1 required positional argument", )
-    #
-    #     with self.subTest("can't cast return value"):
-    #         with self.assertRaises(DHError) as cm:
-    #             t1 = t.update("X = (float)vectorized_func(i, ii)")
-    #         self.assertIn("can't be cast", str(cm.exception))
-    #
-    #     with self.subTest("not be part of another expression"):
-    #         with self.assertRaises(DHError) as cm:
-    #             t1 = t.update("X = k + vectorized_func(i, ii)")
-    #         self.assertIn("in another expression", str(cm.exception))
+    def test_vectorization_exceptions(self):
+        t = empty_table(1)
+
+        def auto_func(p1, p2):
+            return p1 + p2
+
+        def no_param_func():
+            return random.randint(0, 100)
+
+        with self.assertRaises(DHError) as cm:
+            t1 = t.update("X = auto_func(i)")
+        self.assertRegex(str(cm.exception), r"missing 1 required positional argument" )
+
+        with self.assertRaises(DHError) as cm:
+            t1 = t.update("X = (float)no_param_func(i, ii)")
+        self.assertIn("Expected no arguments", str(cm.exception))
+
 
     def test_column_used_twice(self):
         def py_plus(p1, p2) -> int:

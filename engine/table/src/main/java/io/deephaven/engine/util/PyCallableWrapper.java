@@ -32,7 +32,7 @@ public interface PyCallableWrapper {
 
     Signature getSignature();
 
-    void verifyArgumentsAndMakeUdfWrapper(Class<?>[] argTypes);
+    void verifyArguments(Class<?>[] argTypes);
 
     class Parameter {
         private final String name;
