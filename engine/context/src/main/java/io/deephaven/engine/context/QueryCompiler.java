@@ -5,6 +5,7 @@ package io.deephaven.engine.context;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -246,7 +247,7 @@ public class QueryCompiler {
     /**
      * Compiles all requests.
      *
-     * @param requests The compilation requests
+     * @param requests The compilation requests; these must be independent of each other
      * @param resolvers The resolvers to use for delivering compilation results
      */
     public void compile(
@@ -304,6 +305,11 @@ public class QueryCompiler {
                 resolvers[ii].complete(allFutures[ii].get());
             } catch (ExecutionException err) {
                 resolvers[ii].completeExceptionally(err.getCause());
+            } catch (InterruptedException err) {
+                // This can only occur if we are interrupted while waiting for the future to complete from another
+                // compilation request.
+                Assert.notEquals(resolvers[ii], "resolvers[ii]", allFutures[ii], "allFutures[ii]");
+                resolvers[ii].completeExceptionally(err);
             } catch (Throwable err) {
                 resolvers[ii].completeExceptionally(err);
             }
@@ -503,7 +509,7 @@ public class QueryCompiler {
                     continue;
                 }
 
-                while (true) {
+                next_probe: while (true) {
                     final int pi = state.nextProbeIndex++;
                     final String packageNameSuffix = "c_" + basicHashText[ii]
                             + (pi == 0 ? "" : ("p" + pi))
@@ -522,6 +528,13 @@ public class QueryCompiler {
 
                     state.packageName = request.getPackageName(packageNameSuffix);
                     state.fqClassName = state.packageName + "." + request.className();
+
+                    for (int jj = 0; jj < ii; ++jj) {
+                        if (states[jj].fqClassName.equals(state.fqClassName)) {
+                            // collision within batch
+                            continue next_probe;
+                        }
+                    }
 
                     // Ask the classloader to load an existing class with this name. This might:
                     // 1. Fail to find a class (returning null)
