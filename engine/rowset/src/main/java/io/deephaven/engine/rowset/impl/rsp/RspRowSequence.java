@@ -134,7 +134,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         this.cardBeforeStartIdx = cardBeforeStartIdx;
         this.cardBeforeEndIdx = cardBeforeEndIdx;
         this.firstKey = firstKey;
-        closeRowSequenceAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
         lastKey = -1;
     }
 

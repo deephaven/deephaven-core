@@ -361,7 +361,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     private void reset(final long startPos, final int startIdx, final long startOffset,
             final int endIdx, final long endOffset, final long size) {
         if (sar != null) {
-            closeRowSequenceAsChunkImpl();
+            invalidateRowSequenceAsChunkImpl();
         }
         this.startPos = startPos;
         this.startIdx = startIdx;
