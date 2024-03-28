@@ -43,8 +43,6 @@ class _ParsedParam:
     none_allowed: bool = False
     has_array: bool = False
     converter: Callable = None
-    int_char: str = None
-    floating_char: str = None
 
 
 @dataclass
@@ -220,18 +218,6 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
         p_param.has_array = True
     if tc in {"N", "O"}:
         p_param.none_allowed = True
-    if tc in _NUMPY_INT_TYPE_CODES:
-        if p_param.int_char and p_param.int_char != tc:
-            raise DHError(message=f"multiple integer types in annotation: {annotation}, "
-                                  f"types: {p_param.int_char}, {tc}. this is not supported because it is not "
-                                  f"clear which Deephaven null value to use when checking for nulls in the argument")
-        p_param.int_char = tc
-    if tc in _NUMPY_FLOATING_TYPE_CODES:
-        if p_param.floating_char and p_param.floating_char != tc:
-            raise DHError(message=f"multiple floating types in annotation: {annotation}, "
-                                  f"types: {p_param.floating_char}, {tc}. this is not supported because it is not "
-                                  f"clear which Deephaven null value to use when checking for nulls in the argument")
-        p_param.floating_char = tc
     p_param.encoded_types.append(tc)
 
 
@@ -294,10 +280,6 @@ if numba:
                     pa = _ParsedParam(i + 1)
                     pa.encoded_types.append(p)
                     pa.effective_types.append(np.dtype(p).type)
-                    if p in _NUMPY_INT_TYPE_CODES:
-                        pa.int_char = p
-                    if p in _NUMPY_FLOATING_TYPE_CODES:
-                        pa.floating_char = p
                     p_sig.params.append(pa)
             else:  # GUFunc
                 # An example: @guvectorize([(int64[:], int64[:], int64[:])], "(m),(n)->(n)"
@@ -316,10 +298,6 @@ if numba:
                     else:
                         pa.encoded_types.append(p)
                         pa.effective_types.append(np.dtype(p).type)
-                        if p in _NUMPY_INT_TYPE_CODES:
-                            pa.int_char = p
-                        if p in _NUMPY_FLOATING_TYPE_CODES:
-                            pa.floating_char = p
                     p_sig.params.append(pa)
 
                 if output_decl:

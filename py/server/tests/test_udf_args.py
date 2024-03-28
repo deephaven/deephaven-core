@@ -204,8 +204,8 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             def f1(p1: Union[np.int16, np.int32]) -> bool:
                 return bool(p1)
 
-            with self.assertRaises(DHError) as cm:
-                t = empty_table(10).update(["X1 = f1(i)"])
+            t = empty_table(10).update(["X1 = f1(i)"])
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         with self.subTest("f11"):
             def f11(p1: Union[float, np.float32]) -> bool:
