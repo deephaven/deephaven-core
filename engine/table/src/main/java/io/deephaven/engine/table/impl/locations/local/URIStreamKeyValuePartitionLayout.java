@@ -71,9 +71,11 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
             final String fileRelativePath = uri.getPath().substring(tableRootDirectory.getPath().length());
             getPartitions(fileRelativePath, partitionKeys, partitionValues, takenNames, registered[0]);
             if (!registered[0]) {
+                // Use the first path to find the partition keys and then use the same partition keys for the rest
                 locationTableBuilder.registerPartitionKeys(partitionKeys);
                 registered[0] = true;
             }
+            // Use the partition values from each path to build the location table
             locationTableBuilder.acceptLocation(partitionValues);
             targetURIs.add(uri);
         });

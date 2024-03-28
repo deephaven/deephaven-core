@@ -34,6 +34,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.extensions.s3.S3SeekableChannelProvider;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -821,6 +822,8 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition ookla_table_definition = TableDefinition.of(
                 ColumnDefinition.ofInt("quarter").withPartitioning(),
                 ColumnDefinition.ofString("quadkey"));
+        // Set a smaller batch size to test batching of responses
+        S3SeekableChannelProvider.setMaxKeysPerBatch(2);
         ParquetTools.readKeyValuePartitionedTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
                 readInstructions, ookla_table_definition).head(10).select();
     }

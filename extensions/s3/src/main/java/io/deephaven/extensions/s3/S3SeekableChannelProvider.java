@@ -9,6 +9,7 @@ import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -42,13 +43,22 @@ import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
  */
-final class S3SeekableChannelProvider implements SeekableChannelsProvider {
+@VisibleForTesting
+public final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     /**
      * We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
      * There can be a performance penalty though if the fragment size is much smaller than the maximum size.
      */
     private static final BufferPool BUFFER_POOL = new BufferPool(S3Instructions.MAX_FRAGMENT_SIZE);
+
+    private static final int DEFAULT_MAX_KEYS_PER_BATCH = 1000;
+    private static int maxKeysPerBatch = DEFAULT_MAX_KEYS_PER_BATCH;
+
+    @VisibleForTesting
+    public static void setMaxKeysPerBatch(final int maxKeysPerBatch) {
+        S3SeekableChannelProvider.maxKeysPerBatch = maxKeysPerBatch;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
@@ -60,10 +70,6 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
         this.s3AsyncClient = buildClient(s3Instructions);
         this.s3Instructions = s3Instructions;
-    }
-
-    S3Instructions getS3Instructions() {
-        return s3Instructions;
     }
 
     private static S3AsyncClient buildClient(@NotNull S3Instructions s3Instructions) {
@@ -178,7 +184,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 final String directoryKey = s3DirectoryURI.key().orElseThrow();
                 final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                         .bucket(bucketName)
-                        .prefix(s3DirectoryURI.key().orElseThrow());
+                        .prefix(s3DirectoryURI.key().orElseThrow())
+                        .maxKeys(maxKeysPerBatch);
                 if (!isRecursive) {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
@@ -197,8 +204,6 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                         .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
                         .iterator();
                 // If the response is truncated, fetch the next page using the continuation token from the response
-                // Usually the response is truncated when there are more than 1000 objects in the bucket
-                // TODO Test this
                 continuationToken = response.nextContinuationToken();
             }
         };
