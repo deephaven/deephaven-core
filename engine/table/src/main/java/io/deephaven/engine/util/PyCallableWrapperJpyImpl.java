@@ -278,7 +278,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             // parameter. This is not ideal. We should look for a better way to handle this, i.e. a way to convey that
             // the function is variadic.
             if (parameters.size() == 0) {
-                throw new IllegalArgumentException(callableName + ": " + "Expected no arguments, got " + argTypes.length);
+                throw new IllegalArgumentException(
+                        callableName + ": " + "Expected no arguments, got " + argTypes.length);
             }
             Set<Class<?>> types =
                     parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
