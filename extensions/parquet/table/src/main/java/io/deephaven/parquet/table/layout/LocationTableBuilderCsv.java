@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -26,13 +28,17 @@ public final class LocationTableBuilderCsv implements KeyValuePartitionLayout.Lo
 
     private static final String LS = System.lineSeparator();
 
-    private final File tableRootDirectory;
+    private final URI tableRootDirectory;
 
     private List<String> partitionKeys;
     private StringBuilder csvBuilder;
     private int locationCount;
 
     public LocationTableBuilderCsv(@NotNull final File tableRootDirectory) {
+        this(FileUtils.convertToURI(tableRootDirectory, true));
+    }
+
+    LocationTableBuilderCsv(@NotNull final URI tableRootDirectory) {
         this.tableRootDirectory = tableRootDirectory;
     }
 

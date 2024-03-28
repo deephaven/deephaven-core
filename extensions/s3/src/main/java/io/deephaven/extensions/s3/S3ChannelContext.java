@@ -5,6 +5,7 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
 import io.deephaven.util.channel.SeekableChannelContext;
+import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -23,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,20 +32,26 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 /**
- * Context object used to store read-ahead buffers for efficiently reading from S3.
+ * Context object used to store read-ahead buffers for efficiently reading from S3. A single context object can only be
+ * associated with a single URI at a time.
  */
 final class S3ChannelContext implements SeekableChannelContext {
     private static final Logger log = LoggerFactory.getLogger(S3ChannelContext.class);
-    private static final long UNINITIALIZED_SIZE = -1;
+    static final long UNINITIALIZED_SIZE = -1;
+    private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
 
     private final S3AsyncClient client;
-    final S3Instructions instructions;
+    private final S3Instructions instructions;
     private final BufferPool bufferPool;
 
+    /**
+     * The URI associated with this context. A single context object can only be associated with a single URI at a time.
+     * But it can be re-associated with a different URI after closing.
+     */
     private S3Uri uri;
 
     /**
-     * Used to cache recently fetched fragments for faster lookup
+     * Used to cache recently fetched fragments from the {@link #uri} for faster lookup.
      */
     private final Request[] requests;
 
@@ -59,18 +65,27 @@ final class S3ChannelContext implements SeekableChannelContext {
      */
     private long numFragments;
 
+    private GetObjectRequest.Builder getObjectRequestBuilder;
+
     S3ChannelContext(S3AsyncClient client, S3Instructions instructions, BufferPool bufferPool) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
         this.bufferPool = Objects.requireNonNull(bufferPool);
         requests = new Request[instructions.maxCacheSize()];
+        uri = null;
         size = UNINITIALIZED_SIZE;
+        numFragments = UNINITIALIZED_NUM_FRAGMENTS;
+        getObjectRequestBuilder = null;
         if (log.isDebugEnabled()) {
             log.debug("creating context: {}", ctxStr());
         }
     }
 
-    void verifyOrSetUri(S3Uri uri) {
+    S3Uri getUri() {
+        return uri;
+    }
+
+    void verifyOrSetUri(@Nullable final S3Uri uri) {
         if (this.uri == null) {
             this.uri = Objects.requireNonNull(uri);
         } else if (!this.uri.equals(uri)) {
@@ -88,12 +103,12 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
     }
 
-    public long size() throws IOException {
+    long size() throws IOException {
         ensureSize();
         return size;
     }
 
-    public int fill(final long position, ByteBuffer dest) throws IOException {
+    int fill(final long position, ByteBuffer dest) throws IOException {
         final int destRemaining = dest.remaining();
         if (destRemaining == 0) {
             return 0;
@@ -129,6 +144,9 @@ final class S3ChannelContext implements SeekableChannelContext {
         return filled;
     }
 
+    /**
+     * Close the context, cancelling all outstanding requests and releasing all resources associated with it.
+     */
     @Override
     public void close() {
         if (log.isDebugEnabled()) {
@@ -141,6 +159,10 @@ final class S3ChannelContext implements SeekableChannelContext {
                 requests[i] = null;
             }
         }
+        // Reset the internal state
+        uri = null;
+        size = UNINITIALIZED_SIZE;
+        numFragments = UNINITIALIZED_NUM_FRAGMENTS;
     }
 
     // --------------------------------------------------------------------------------------------------
@@ -230,7 +252,7 @@ final class S3ChannelContext implements SeekableChannelContext {
                 try {
                     fullFragment = getFullFragment();
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                    throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()));
+                    throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()), instructions);
                 }
                 // fullFragment has limit == capacity. This lets us have safety around math and ability to simply
                 // clear to reset.
@@ -320,7 +342,10 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         private GetObjectRequest getObjectRequest() {
-            return GetObjectRequest.builder()
+            if (getObjectRequestBuilder == null) {
+                getObjectRequestBuilder = GetObjectRequest.builder();
+            }
+            return getObjectRequestBuilder
                     .bucket(uri.bucket().orElseThrow())
                     .key(uri.key().orElseThrow())
                     .range("bytes=" + from + "-" + to)
@@ -422,7 +447,8 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
     }
 
-    private IOException handleS3Exception(final Exception e, final String operationDescription) {
+    static IOException handleS3Exception(final Exception e, final String operationDescription,
+            final S3Instructions instructions) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
             return new IOException(String.format("Thread interrupted while %s", operationDescription), e);
@@ -459,7 +485,7 @@ final class S3ChannelContext implements SeekableChannelContext {
                             .build())
                     .get(instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-            throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()));
+            throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()), instructions);
         }
         setSize(headObjectResponse.contentLength());
     }

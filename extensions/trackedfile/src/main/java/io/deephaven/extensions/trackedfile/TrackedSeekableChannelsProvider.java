@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.trackedfile;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
@@ -20,8 +21,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Stream;
 
 import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProviderPlugin.FILE_URI_SCHEME;
 
@@ -69,6 +72,20 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
                 : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
+    }
+
+    @Override
+    public Stream<URI> list(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.list(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
+    }
+
+    @Override
+    public Stream<URI> walk(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.walk(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
     }
 
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {

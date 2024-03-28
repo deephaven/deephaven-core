@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
+import io.deephaven.base.verify.Require;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -17,7 +18,7 @@ import java.net.URI;
 @AutoService(SeekableChannelsProviderPlugin.class)
 public final class S3SeekableChannelProviderPlugin implements SeekableChannelsProviderPlugin {
 
-    private static final String S3_URI_SCHEME = "s3";
+    static final String S3_URI_SCHEME = "s3";
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
@@ -32,7 +33,7 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
             }
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
-        final S3Instructions s3Instructions = (S3Instructions) config;
+        final S3Instructions s3Instructions = (S3Instructions) Require.neqNull(config, "config");
         return new S3SeekableChannelProvider(s3Instructions);
     }
 }

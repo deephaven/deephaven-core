@@ -31,7 +31,8 @@ import java.util.function.Supplier;
  * tableRootDirectory/Country=France/City=Paris/parisData.parquet
  * </pre>
  * 
- * Traversal is depth-first, and assumes that target files will only be found at a single depth.
+ * Traversal is depth-first, and assumes that target files will only be found at a single depth. This class is
+ * specialized for handling of files. For handling of URIs, see {@link URIStreamKeyValuePartitionLayout}.
  *
  * @implNote Column names will be legalized via {@link NameValidator#legalizeColumnName(String, Set)}.
  */
@@ -55,7 +56,7 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
          * Accept an ordered collection of {@link String strings} representing partition values for a particular table
          * location, parallel to a previously-registered collection of partition keys. Should be called after a single
          * call to {@link #registerPartitionKeys(Collection) registerPartitionKeys}.
-         * 
+         *
          * @param partitionValueStrings The partition values to accept. Must have the same length as the
          *        previously-registered partition keys.
          */
@@ -180,7 +181,24 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
         }
 
         final Table locationTable = locationTableBuilder.build();
+        buildLocationKeys(locationTable, targetFiles, locationKeyObserver, keyFactory);
+    }
 
+    /**
+     * Build location keys from a location table and a collection of target files.
+     *
+     * @param <TLK> The type of the location key
+     * @param <TARGET_FILE_TYPE> The type of the target files
+     * @param locationTable The location table
+     * @param targetFiles The target files
+     * @param locationKeyObserver A consumer which will receive the location keys
+     * @param keyFactory A factory for creating location keys
+     */
+    static <TLK extends TableLocationKey, TARGET_FILE_TYPE> void buildLocationKeys(
+            @NotNull final Table locationTable,
+            @NotNull final Deque<TARGET_FILE_TYPE> targetFiles,
+            @NotNull final Consumer<TLK> locationKeyObserver,
+            final BiFunction<TARGET_FILE_TYPE, Map<String, Comparable<?>>, TLK> keyFactory) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
         // Note that we allow the location table to define partition priority order.
         final String[] partitionKeys = locationTable.getDefinition().getColumnNamesArray();
