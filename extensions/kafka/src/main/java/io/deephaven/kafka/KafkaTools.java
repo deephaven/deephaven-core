@@ -70,6 +70,7 @@ import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.processor.NamedObjectProcessor;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -610,6 +611,21 @@ public class KafkaTools {
         public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
                 List<String> columnNames) {
             return objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from a named object processor provider. It must be capable
+         * of supporting {@code byte[]}.
+         *
+         *
+         * @param provider the named object processor provider
+         * @return the Kafka key or value spec
+         */
+        public static KeyOrValueSpec objectProcessorSpec(NamedObjectProcessor.Provider provider) {
+            final NamedObjectProcessor<? super byte[]> namedProcessor =
+                    (NamedObjectProcessor<? super byte[]>) provider.named(byte[].class);
+            return objectProcessorSpec(new ByteArrayDeserializer(), namedProcessor.processor(),
+                    namedProcessor.columnNames());
         }
     }
 

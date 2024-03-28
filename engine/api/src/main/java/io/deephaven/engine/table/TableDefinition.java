@@ -12,6 +12,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.type.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map.Entry;
@@ -49,11 +50,35 @@ public class TableDefinition implements LogOutputAppendable {
         return new TableDefinition(definitions);
     }
 
-    public static TableDefinition from(@NotNull final Iterable<ColumnHeader<?>> headers) {
+    public static TableDefinition from(@NotNull final Iterable<? extends ColumnHeader<?>> headers) {
         final List<ColumnDefinition<?>> definitions = new ArrayList<>();
         for (ColumnHeader<?> columnHeader : headers) {
             final ColumnDefinition<?> columnDefinition = ColumnDefinition.from(columnHeader);
             definitions.add(columnDefinition);
+        }
+        return new TableDefinition(definitions);
+    }
+
+    public static TableDefinition from(
+            final Collection<String> columnNames,
+            final Collection<Type<?>> columnTypes) {
+        final int size = columnNames.size();
+        if (columnTypes.size() != size) {
+            throw new IllegalArgumentException("todo");
+        }
+        final List<ColumnDefinition<?>> definitions = new ArrayList<>(size);
+        final Iterator<String> names = columnNames.iterator();
+        final Iterator<Type<?>> types = columnTypes.iterator();
+        while (names.hasNext()) {
+            if (!types.hasNext()) {
+                throw new IllegalStateException("Iterator / Collection error");
+            }
+            final String name = names.next();
+            final Type<?> type = types.next();
+            definitions.add(ColumnDefinition.of(name, type));
+        }
+        if (types.hasNext()) {
+            throw new IllegalStateException("Iterator / Collection error");
         }
         return new TableDefinition(definitions);
     }

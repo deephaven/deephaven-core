@@ -110,7 +110,7 @@ class Classpaths {
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
-    static final String JACKSON_VERSION = '2.14.1'
+    static final String JACKSON_VERSION = '2.16.1'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '8.1.1'

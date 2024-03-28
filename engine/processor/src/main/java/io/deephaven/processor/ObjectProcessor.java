@@ -19,8 +19,8 @@ import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.Type;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * An interface for processing data from one or more input objects into output chunks on a 1-to-1 input record to output
@@ -142,6 +142,15 @@ public interface ObjectProcessor<T> {
     }
 
     /**
+     * The number of outputs. Equivalent to {@code outputTypes().size()}.
+     *
+     * @return the number of outputs
+     */
+    default int size() {
+        return outputTypes().size();
+    }
+
+    /**
      * The logical output types {@code this} instance processes. The size and types correspond to the expected size and
      * {@link io.deephaven.chunk.ChunkType chunk types} for {@link #processAll(ObjectChunk, List)} as specified by
      * {@link #chunkType(Type)}.
@@ -168,4 +177,16 @@ public interface ObjectProcessor<T> {
      *        at least {@code in.size()}
      */
     void processAll(ObjectChunk<? extends T, ?> in, List<WritableChunk<?>> out);
+
+    interface Provider {
+
+        /**
+         * Creates an object processor that can process the input type {@code inputType}.
+         *
+         * @param inputType the input type
+         * @return the object processor
+         * @param <T> the input type
+         */
+        <T> ObjectProcessor<? super T> processor(Class<T> inputType);
+    }
 }

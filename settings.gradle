@@ -266,6 +266,18 @@ project(':extensions-trackedfile').projectDir = file('extensions/trackedfile')
 include(':extensions-s3')
 project(':extensions-s3').projectDir = file('extensions/s3')
 
+include(':extensions-json')
+project(':extensions-json').projectDir = file('extensions/json')
+
+include(':extensions-json-jackson')
+project(':extensions-json-jackson').projectDir = file('extensions/json-jackson')
+
+include(':extensions-json-table')
+project(':extensions-json-table').projectDir = file('extensions/json-table')
+
+include(':extensions-bson-jackson')
+project(':extensions-bson-jackson').projectDir = file('extensions/bson-jackson')
+
 include(':plugin')
 
 include(':plugin-dagger')
