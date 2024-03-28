@@ -73,20 +73,16 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public void close() {
-        closeSortedArrayRowSequence();
-    }
-
-    protected final void closeSortedArrayRowSequence() {
         if (sar == null) {
             return;
         }
         sar.release();
         sar = null;
-        closeRowSequenceAsChunkImpl();
+        super.close();
     }
 
     @Override
-    public Iterator getRowSequenceIterator() {
+    public RowSequence.Iterator getRowSequenceIterator() {
         return new Iterator(this);
     }
 
@@ -383,10 +379,9 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
                 if (SortedRanges.DEBUG) {
                     throw new IllegalStateException();
                 }
-                // We purposely /do not/ close the RspRowSequence part as it will get reused.
-                // The API doc for Iterator states that clients should /never/ call close. So that we eneded up here
-                // means
-                // there is some kind of bug.
+                // We purposely /do not/ close the SortedRangesRowSequence part as it will get reused.
+                // The API doc for Iterator states that clients should /never/ call close. So that we ended up here
+                // means there is some kind of bug.
                 closeRowSequenceAsChunkImpl();
             }
         }

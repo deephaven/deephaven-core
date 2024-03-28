@@ -57,7 +57,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public TrackingWritableRowSet toTracking() {
         final TrackingWritableRowSet result = new TrackingWritableRowSetImpl(innerSet);
         innerSet = null; // Force NPE on use after tracking
-        closeRowSequenceAsChunkImpl();
+        super.close();
         return result;
     }
 
@@ -66,7 +66,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public void close() {
         innerSet.ixRelease();
         innerSet = null; // Force NPE on use after close
-        closeRowSequenceAsChunkImpl();
+        super.close();
     }
 
     @VisibleForTesting
