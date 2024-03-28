@@ -25,29 +25,35 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout.buildLocationKeys;
-
 /**
- * Extracts a Key-Value partitioned layout from a stream of URIs. This class is inspired from
- * {@link KeyValuePartitionLayout}, but for URIs instead of files.
+ * Extracts a key-value partitioned table layout from a stream of URIs.
  */
-public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
+public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey>
+        extends KeyValuePartitionLayout<TLK, URI> {
 
     protected final URI tableRootDirectory;
-    private final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory;
-    private final BiFunction<URI, Map<String, Comparable<?>>, TLK> keyFactory;
+    private final Supplier<FileKeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory;
     private final int maxPartitioningLevels;
     private final String fileSeparator;
 
+    /**
+     * @param tableRootDirectory The directory to traverse from
+     * @param locationTableBuilderFactory Factory for {@link LocationTableBuilder builders} used to organize partition
+     *        information; as builders are typically stateful, a new builder is created each time this
+     *        {@link KeyValuePartitionLayout} is used to {@link #findKeys(Consumer) find keys}
+     * @param keyFactory Factory function used to generate table location keys from target files and partition values
+     * @param maxPartitioningLevels Maximum partitioning levels to traverse. Must be {@code >= 0}. {@code 0} means only
+     *        look at files in {@code tableRootDirectory} and find no partitions.
+     */
     public URIStreamKeyValuePartitionLayout(
             @NotNull final URI tableRootDirectory,
-            @NotNull final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory,
+            @NotNull final Supplier<FileKeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory,
             @NotNull final BiFunction<URI, Map<String, Comparable<?>>, TLK> keyFactory,
             final int maxPartitioningLevels,
             @NotNull final String fileSeparator) {
+        super(keyFactory);
         this.tableRootDirectory = tableRootDirectory;
         this.locationTableBuilderFactory = locationTableBuilderFactory;
-        this.keyFactory = keyFactory;
         this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
         this.fileSeparator = fileSeparator;
     }
@@ -80,7 +86,7 @@ public class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey> {
             targetURIs.add(uri);
         });
         final Table locationTable = locationTableBuilder.build();
-        buildLocationKeys(locationTable, targetURIs, locationKeyObserver, keyFactory);
+        buildLocationKeys(locationTable, targetURIs, locationKeyObserver);
     }
 
     private void getPartitions(@NotNull final String path,
