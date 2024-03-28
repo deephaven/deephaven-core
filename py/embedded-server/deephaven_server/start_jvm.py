@@ -43,8 +43,6 @@ DEFAULT_JVM_ARGS = [
     # Disable JIT in certain cases
     '-XX:+UnlockDiagnosticVMOptions',
     f"-XX:CompilerDirectivesFile={_compiler_directives()}",
-    # (deephaven-core#2500): Remove DisableIntrinsic for currentThread
-    '-XX:DisableIntrinsic=_currentThread',
     f"-XX:VMOptionsFile={_default_vmoptions()}",
 ]
 

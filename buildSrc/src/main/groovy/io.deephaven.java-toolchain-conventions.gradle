@@ -94,9 +94,9 @@ def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
   def compilerDirectivesText = new JsonBuilder([{
     match (['*.*'] as List)
-    // Note: there seems to be a bug where this option doesn't actually get picked up
-    // So using '-XX:DisableIntrinsic=_currentThread' explicitly
-    // DisableIntrinsic('_currentThread')
+    // Note: historically, there seemed to be a bug in the JVMs where DisableIntrinsic('_currentThread') didn't actually
+    // get picked up from this source. Any new options added here should have sufficient due diligence to ensure they
+    // are being picked up as appropriate.
   }]).toPrettyString()
   it.inputs.property('compilerDirectivesText', compilerDirectivesText)
   it.outputs.file(compilerDirectivesFile)
@@ -109,8 +109,6 @@ def compilerArgs = { String compilerDirectivesFile ->
   return [
           '-XX:+UnlockDiagnosticVMOptions',
           "-XX:CompilerDirectivesFile=${compilerDirectivesFile}",
-          // (deephaven-core#2500): Remove DisableIntrinsic for currentThread
-          '-XX:DisableIntrinsic=_currentThread',
           // '-XX:+CompilerDirectivesPrint',
           // '-XX:+LogCompilation',
   ]

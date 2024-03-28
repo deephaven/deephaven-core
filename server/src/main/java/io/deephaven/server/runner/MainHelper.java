@@ -107,6 +107,9 @@ public class MainHelper {
         // Capture the original System.out and System.err early
         PrintStreamGlobals.init();
 
+        // Safety checks
+        SafetyChecks.check();
+
         // Since our dagger injection happens later, we need to provider a static way to get the LogBuffer (for example,
         // logback configuration may reference LogBufferAppender).
         LogBufferGlobal.setInstance(new LogBufferInterceptor(Integer.getInteger("logBuffer.history", 1024)));
