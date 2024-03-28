@@ -56,8 +56,8 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
     private final class Sink implements AbstractServerStream.Sink {
 
         @Override
-        public void writeHeaders(Metadata headers) {
-            writeMetadataToStream(headers, false);
+        public void writeHeaders(Metadata headers, boolean flush) {
+            writeMetadataToStream(headers, flush, false);
         }
 
         /**
@@ -68,7 +68,7 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
          * Headers/trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The trailer
          * response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the message.
          */
-        private void writeMetadataToStream(Metadata headers, boolean closeBitSet) {
+        private void writeMetadataToStream(Metadata headers, boolean flush, boolean closeBitSet) {
             byte[][] serializedHeaders = TransportFrameUtil.toHttp2Headers(headers);
             // Total up the size of the payload: 4 bytes for multiplexing framing, 5 bytes for the prefix, and each
             // header needs a colon delimiter, and to end with \r\n
@@ -85,6 +85,9 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
             message.flip();
             try {
                 websocketSession.getBasicRemote().sendBinary(message);
+                if (flush && websocketSession.getBasicRemote().getBatchingAllowed()) {
+                    websocketSession.getBasicRemote().flushBatch();
+                }
             } catch (IOException e) {
                 // rethrowing from this method adds nonsense to the logs; onError will be invoked automatically
             }
@@ -135,7 +138,7 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
                         new Object[] {logId, trailers, headersSent, status});
             }
 
-            writeMetadataToStream(trailers, true);
+            writeMetadataToStream(trailers, true, true);
             transportState().runOnTransportThread(() -> {
                 transportState().complete();
             });
