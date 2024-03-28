@@ -501,10 +501,10 @@ def f(x: {p_type}) -> bool:  # note typing
             self.assertEqual(t.columns[2].data_type, dtypes.bool_)
 
     def test_non_common_cases(self):
-        def f1(x: int) -> float:
+        def f1(x: int) -> Optional[float]:
             ...
 
-        def f2(x: float) -> int:
+        def f2(x: float) -> Optional[int]:
             ...
 
         t = empty_table(1).update("X = f2(f1(ii))")

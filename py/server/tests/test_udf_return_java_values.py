@@ -15,14 +15,14 @@ from deephaven import empty_table, dtypes, DHError
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NP_DTYPE_MAP = {
-    dtypes.double: "np.float64",
-    dtypes.float32: "np.float32",
-    dtypes.int32: "np.int32",
-    dtypes.long: "np.int64",
-    dtypes.short: "np.int16",
-    dtypes.byte: "np.int8",
-    dtypes.bool_: "np.bool_",
-    dtypes.string: "np.str_",
+    # dtypes.double: "np.float64",
+    # dtypes.float32: "np.float32",
+    # dtypes.int32: "np.int32",
+    # dtypes.long: "np.int64",
+    # dtypes.short: "np.int16",
+    # dtypes.byte: "np.int8",
+    # dtypes.bool_: "np.bool_",
+    # dtypes.string: "np.str_",
     dtypes.char: "np.uint16",
 }
 

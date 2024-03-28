@@ -53,6 +53,7 @@ class _ParsedReturnAnnotation:
     encoded_type: str = None
     none_allowed: bool = False
     has_array: bool = False
+    converter: Callable = None
 
 
 @dataclass
@@ -244,8 +245,10 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
     if _is_union_type(annotation) and len(annotation.__args__) == 2:
         # if the annotation is a Union of two types, we'll use the non-None type
         if annotation.__args__[1] == type(None):  # noqa: E721
+            pra.none_allowed = True
             t = annotation.__args__[0]
         elif annotation.__args__[0] == type(None):  # noqa: E721
+            pra.none_allowed = True
             t = annotation.__args__[1]
 
     # if the annotation is a DH DType instance, we'll use its numpy type
@@ -258,7 +261,44 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
         pra.has_array = True
     else:
         pra.encoded_type = _np_dtype_char(t)
+
+    _prepare_return_converter(pra)
+
     return pra
+
+
+def _prepare_return_converter(pra: _ParsedReturnAnnotation) -> None:
+    """ Set the converter function for the return annotation """
+    t = pra.encoded_type
+    if t == 'H':
+        if pra.none_allowed:
+            pra.converter = lambda x: dtypes.Character(int(x)) if x is not None else None
+        else:
+            pra.converter = lambda x: dtypes.Character(int(x))
+    elif t in _NUMPY_INT_TYPE_CODES:
+        if pra.none_allowed:
+            null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
+            pra.converter = partial(lambda nv, x: nv if x is None else int(x), null_value)
+        else:
+            pra.converter = int
+    elif t in _NUMPY_FLOATING_TYPE_CODES:
+        if pra.none_allowed:
+            null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
+            pra.converter = partial(lambda nv, x: nv if x is None else float(x), null_value)
+        else:
+            pra.converter = float
+    elif t == '?':
+        if pra.none_allowed:
+            pra.converter = lambda x: bool(x) if x is not None else None
+        else:
+            pra.converter = bool
+    elif t == 'U':
+        pra.converter = str
+    elif t == 'M':
+        from deephaven.time import to_j_instant
+        pra.converter = to_j_instant
+    else:
+        pra.converter = None
 
 
 if numba:
@@ -277,6 +317,7 @@ if numba:
             p_sig.params = []
             p_sig.ret_annotation = _ParsedReturnAnnotation()
             p_sig.ret_annotation.encoded_type = rt_char
+            _prepare_return_converter(p_sig.ret_annotation)
 
             if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
                 for i, p in enumerate(params):
@@ -332,6 +373,7 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
             p_sig.params.append(pa)
     p_sig.ret_annotation = _ParsedReturnAnnotation()
     p_sig.ret_annotation.encoded_type = "O"
+    _prepare_return_converter(p_sig.ret_annotation)
     return p_sig
 
 
@@ -543,10 +585,11 @@ def _udf_parser(fn: Callable):
                 ret = fn(*converted_args, **kwargs)
                 if return_array:
                     return dtypes.array(ret_dtype, ret)
-                elif ret_dtype == dtypes.PyObject:
-                    return ret
-                else: # TODO use specific converters for datetime, string, and other types
-                    return _scalar(ret, ret_dtype)
+                else:
+                    return p_sig.ret_annotation.converter(ret) if p_sig.ret_annotation.converter else ret
+                        # \
+                        #     if p_sig.ret_annotation.converter and ret is not None \
+                        #     else ret
             return _wrapper
         else: # for vectorization
             def _vectorization_wrapper(*args):
@@ -572,15 +615,18 @@ def _udf_parser(fn: Callable):
                         ret = fn(*converted_args)
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
-                        else: # TODO use specific converters for datetime, string, and other types
-                            chunk_result[i] = _scalar(ret, ret_dtype)
+                        else:
+                            chunk_result[i] = p_sig.ret_annotation.converter(ret) if p_sig.ret_annotation.converter else ret
                 else:
                     for i in range(chunk_size):
                         ret = fn()
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
-                        else: # TODO use specific converters for datetime, string, and other types
-                            chunk_result[i] = _scalar(ret, ret_dtype)
+                        else:
+                            chunk_result[i] = p_sig.ret_annotation.converter(ret) if p_sig.ret_annotation.converter else ret
+                            # \
+                            #         if p_sig.ret_annotation.converter and ret is not None \
+                            #         else ret
 
                 return chunk_result
 
