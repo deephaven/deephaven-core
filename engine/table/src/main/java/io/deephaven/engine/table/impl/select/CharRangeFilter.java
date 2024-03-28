@@ -63,7 +63,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         if (chunkFilter != null) {
             return;
         }

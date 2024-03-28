@@ -165,11 +165,6 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
-        inner.updateColumnDefinitionsFromTopLayer(columnDefinitions);
-    }
-
-    @Override
     public void startTrackingPrev() {
         rowRedirection.startTrackingPrevValues();
         inner.startTrackingPrev();

@@ -57,7 +57,7 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
             }
 
             @Override
-            public void init(TableDefinition tableDefinition) {}
+            public void init(@NotNull final TableDefinition tableDefinition) {}
 
             @NotNull
             @Override

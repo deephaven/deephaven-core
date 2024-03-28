@@ -87,7 +87,7 @@ public class FunctionalColumnLong<S> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         // noinspection unchecked
         final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {
@@ -104,6 +104,11 @@ public class FunctionalColumnLong<S> implements SelectColumn {
     @Override
     public Class<?> getReturnedType() {
         return long.class;
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return null;
     }
 
     @Override

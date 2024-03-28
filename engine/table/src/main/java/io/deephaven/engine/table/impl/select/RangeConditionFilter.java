@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -129,18 +130,25 @@ public class RangeConditionFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (filter != null) {
             return;
         }
 
-        final ColumnDefinition def = tableDefinition.getColumn(columnName);
+        final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
 
-        final Class colClass = def.getDataType();
+        final Class<?> colClass = def.getDataType();
 
         if (colClass == double.class || colClass == Double.class) {
             filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition, value);
@@ -179,7 +187,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
             }
         }
 
-        filter.init(tableDefinition);
+        filter.init(tableDefinition, compilationProcessor);
     }
 
     public static char parseCharFilter(String value) {

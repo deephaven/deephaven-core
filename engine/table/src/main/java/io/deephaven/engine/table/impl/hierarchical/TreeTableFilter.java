@@ -151,7 +151,10 @@ public class TreeTableFilter {
         parentIdColumnName = tree.getParentIdentifierColumn();
         sourceRowLookup = tree.getSourceRowLookup();
         this.filters = filters;
-        Arrays.stream(filters).forEach((final WhereFilter filter) -> filter.init(source.getDefinition()));
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(filters)
+                .forEach((final WhereFilter filter) -> filter.init(source.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
 
         idSource = source.getColumnSource(tree.getIdentifierColumn().name());
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());

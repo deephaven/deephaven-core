@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit LazyCachingSupplier and run "./gradlew replicateCachingSupplier" to regenerate
+// ****** Edit SoftCachingSupplier and run "./gradlew replicateCachingSupplier" to regenerate
 //
 // @formatter:off
 package io.deephaven.util.datastructures;
@@ -18,7 +18,7 @@ import java.util.function.Function;
  *
  * @param <OUTPUT_TYPE> the type of results supplied by this function
  */
-public final class LazyCachingFunction<INPUT_TYPE, OUTPUT_TYPE> implements Function<INPUT_TYPE, OUTPUT_TYPE> {
+public final class SoftCachingFunction<INPUT_TYPE, OUTPUT_TYPE> implements Function<INPUT_TYPE, OUTPUT_TYPE> {
 
     private final Function<INPUT_TYPE, OUTPUT_TYPE> internalFunction;
 
@@ -29,7 +29,7 @@ public final class LazyCachingFunction<INPUT_TYPE, OUTPUT_TYPE> implements Funct
      *
      * @param internalFunction The {@link Function} to wrap. Must be safely repeatable and must not return {@code null}.
      */
-    public LazyCachingFunction(@NotNull final Function<INPUT_TYPE, OUTPUT_TYPE> internalFunction) {
+    public SoftCachingFunction(@NotNull final Function<INPUT_TYPE, OUTPUT_TYPE> internalFunction) {
         this.internalFunction = internalFunction;
     }
 

@@ -10,6 +10,7 @@ plugins {
 apply from: "$rootDir/gradle/web-common.gradle"
 
 dependencies {
+    implementation project(':Util')
     api project(':open-api-shared-fu')
     implementation project(':log-factory')
     api project(':proto:proto-backplane-grpc')

@@ -93,9 +93,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
+
         return Arrays.stream(whereFilters)
                 .map((final WhereFilter filter) -> {
-                    filter.init(parent.getDefinition());
                     // Ensure we gather the correct dependencies when building a snapshot control.
                     return filter.beginOperation(parent);
                 }).collect(SafeCloseableList.COLLECTOR);

@@ -9,7 +9,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.util.datastructures.LazyCachingSupplier;
+import io.deephaven.util.datastructures.SoftCachingSupplier;
 import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +47,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
     ChunkDictionary(
             @NotNull final Lookup<T> lookup,
             @NotNull final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
-        this.valuesSupplier = new LazyCachingSupplier<>(() -> {
+        this.valuesSupplier = new SoftCachingSupplier<>(() -> {
             // We use NULL channel context here and rely on materialization logic to provide the correct context
             final Dictionary dictionary = dictionarySupplier.apply(SeekableChannelContext.NULL);
             final T[] values = ObjectChunk.makeArray(dictionary.getMaxId() + 1);
@@ -56,7 +56,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
             }
             return ObjectChunk.chunkWrap(values);
         });
-        this.reverseMapSupplier = new LazyCachingSupplier<>(() -> {
+        this.reverseMapSupplier = new SoftCachingSupplier<>(() -> {
             final ObjectChunk<T, ATTR> values = getChunk();
             final TObjectIntMap<T> reverseMap = new TObjectIntHashMap<>(values.size());
             for (int vi = 0; vi < values.size(); ++vi) {

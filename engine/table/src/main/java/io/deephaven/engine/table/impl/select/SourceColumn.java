@@ -46,7 +46,7 @@ public class SourceColumn implements SelectColumn {
         this(NameValidator.validateColumnName(sourceName), NameValidator.validateColumnName(destName), true);
     }
 
-    private SourceColumn(String sourceName, String destName, boolean unused) {
+    private SourceColumn(@NotNull final String sourceName, @NotNull final String destName, boolean unused) {
         this.sourceName = sourceName;
         this.destName = destName;
     }
@@ -61,7 +61,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         sourceDefinition = columnDefinitionMap.get(sourceName);
         if (sourceDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
@@ -76,6 +76,15 @@ public class SourceColumn implements SelectColumn {
             return sourceDefinition.getDataType();
         }
         return sourceColumn.getType();
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        // Try to be a little flexible, depending on whether initInputs or initDef was called.
+        if (sourceDefinition != null) {
+            return sourceDefinition.getComponentType();
+        }
+        return sourceColumn.getComponentType();
     }
 
     @Override

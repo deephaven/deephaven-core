@@ -464,9 +464,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
         final TableDefinition definition = target.constituentDefinition();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(definition);
+            whereFilter.init(definition, compilationProcessor);
         }
+        compilationProcessor.compile();
         return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(whereFilters))));
     }
 

@@ -20,6 +20,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
@@ -163,12 +164,13 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final String formula,
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
-            @NotNull final TableDefinition tableDef
+            @NotNull final TableDefinition tableDef,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
-                paramToken, formulaColumnMap, tableDef);
+                paramToken, formulaColumnMap, tableDef, compilationProcessor);
         // region constructor
         // endregion constructor
     }

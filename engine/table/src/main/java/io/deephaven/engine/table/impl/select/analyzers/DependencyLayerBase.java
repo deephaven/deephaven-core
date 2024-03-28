@@ -36,14 +36,6 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
         this.myModifiedColumnSet = mcsBuilder;
     }
 
-
-    @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
-        final ColumnDefinition<?> cd =
-                ColumnDefinition.fromGenericType(name, columnSource.getType(), columnSource.getComponentType());
-        columnDefinitions.put(name, cd);
-    }
-
     @Override
     void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
         // Later-defined columns override earlier-defined columns. So we satisfy column dependencies "on the way

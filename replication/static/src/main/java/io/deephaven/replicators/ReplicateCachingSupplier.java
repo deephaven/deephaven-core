@@ -8,9 +8,9 @@ import java.io.IOException;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
 
 public class ReplicateCachingSupplier {
-    private static final String LAZY_CACHING_SUPPLIER_DIR = "Util/src/main/java/io/deephaven/util/datastructures/";
-    private static final String LAZY_CACHING_SUPPLIER_PATH = LAZY_CACHING_SUPPLIER_DIR + "LazyCachingSupplier.java";
-    private static final String LAZY_CACHING_FUNCTION_PATH = LAZY_CACHING_SUPPLIER_DIR + "LazyCachingFunction.java";
+    private static final String SOFT_CACHING_SUPPLIER_DIR = "Util/src/main/java/io/deephaven/util/datastructures/";
+    private static final String SOFT_CACHING_SUPPLIER_PATH = SOFT_CACHING_SUPPLIER_DIR + "SoftCachingSupplier.java";
+    private static final String SOFT_CACHING_FUNCTION_PATH = SOFT_CACHING_SUPPLIER_DIR + "SoftCachingFunction.java";
 
     private static final String[] NO_EXCEPTIONS = new String[0];
 
@@ -22,7 +22,7 @@ public class ReplicateCachingSupplier {
                 {"Supplier", "Function"},
                 {"supplier", "function"},
         };
-        replaceAll("replicateCachingSupplier", LAZY_CACHING_SUPPLIER_PATH, LAZY_CACHING_FUNCTION_PATH, null,
+        replaceAll("replicateCachingSupplier", SOFT_CACHING_SUPPLIER_PATH, SOFT_CACHING_FUNCTION_PATH, null,
                 NO_EXCEPTIONS, pairs);
     }
 }

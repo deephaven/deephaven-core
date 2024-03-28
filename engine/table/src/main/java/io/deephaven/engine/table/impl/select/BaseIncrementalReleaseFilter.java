@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Base class for filters that will release more rows of a table on each UGP cycle.
- *
+ * <p>
  * The use case is for benchmarks that want to replay a table in order to better understand incremental processing
  * capacity.
  */
@@ -67,7 +67,7 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         initialized = true;
         if (!started) {
             return;

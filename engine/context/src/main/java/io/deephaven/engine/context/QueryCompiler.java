@@ -5,16 +5,18 @@ package io.deephaven.engine.context;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
-import io.deephaven.base.Pair;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.util.SynchronizedJavaFileManager;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
+import io.deephaven.util.CompletionStageFuture;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.tools.*;
 import java.io.*;
@@ -31,9 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QueryCompiler {
+
     private static final Logger log = LoggerFactory.getLogger(QueryCompiler.class);
     /**
      * We pick a number just shy of 65536, leaving a little elbow room for good luck.
@@ -56,9 +57,9 @@ public class QueryCompiler {
     private static final long CODEGEN_TIMEOUT_MS_DEFAULT = TimeUnit.SECONDS.toMillis(10); // 10 seconds
     private static final String CODEGEN_LOOP_DELAY_PROP = "QueryCompiler.codegen.retry.delay";
     private static final long CODEGEN_LOOP_DELAY_MS_DEFAULT = 100;
-    private static final long codegenTimeoutMs =
+    private static final long CODEGEN_TIMEOUT_MS =
             Configuration.getInstance().getLongWithDefault(CODEGEN_TIMEOUT_PROP, CODEGEN_TIMEOUT_MS_DEFAULT);
-    private static final long codegenLoopDelayMs =
+    private static final long CODEGEN_LOOP_DELAY_MS =
             Configuration.getInstance().getLongWithDefault(CODEGEN_LOOP_DELAY_PROP, CODEGEN_LOOP_DELAY_MS_DEFAULT);
 
     private static boolean logEnabled = Configuration.getInstance().getBoolean("QueryCompiler.logEnabledDefault");
@@ -76,7 +77,7 @@ public class QueryCompiler {
         return new QueryCompiler(queryCompilerDir.toFile());
     }
 
-    private final Map<String, CompletableFuture<Class<?>>> knownClasses = new HashMap<>();
+    private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
 
     private final String[] dynamicPatterns = new String[] {DYNAMIC_GROOVY_CLASS_PREFIX, FORMULA_PREFIX};
 
@@ -125,7 +126,7 @@ public class QueryCompiler {
     /**
      * Enables or disables compilation logging.
      *
-     * @param logEnabled Whether or not logging should be enabled
+     * @param logEnabled Whether logging should be enabled
      * @return The value of {@code logEnabled} before calling this method.
      */
     public static boolean setLogEnabled(boolean logEnabled) {
@@ -204,66 +205,108 @@ public class QueryCompiler {
     }
 
     public void setParentClassLoader(final ClassLoader parentClassLoader) {
+        // noinspection NonAtomicOperationOnVolatileField
         ucl = new WritableURLClassLoader(ucl.getURLs(), parentClassLoader);
-    }
-
-    public final Class<?> compile(String className, String classBody, String packageNameRoot) {
-        return compile(className, classBody, packageNameRoot, null, Collections.emptyMap());
-    }
-
-    public final Class<?> compile(String className, String classBody, String packageNameRoot,
-            Map<String, Class<?>> parameterClasses) {
-        return compile(className, classBody, packageNameRoot, null, parameterClasses);
-    }
-
-    public final Class<?> compile(String className, String classBody, String packageNameRoot, StringBuilder codeLog) {
-        return compile(className, classBody, packageNameRoot, codeLog, Collections.emptyMap());
     }
 
     /**
      * Compile a class.
      *
-     * @param className Class name
-     * @param classBody Class body, before update with "$CLASS_NAME$" replacement and package name prefixing
-     * @param packageNameRoot Package name prefix
-     * @param codeLog Optional "log" for final class code
-     * @param parameterClasses Generic parameters, empty if none required
-     * @return The compiled class
+     * @param request The compilation request
      */
-    public Class<?> compile(@NotNull final String className,
-            @NotNull final String classBody,
-            @NotNull final String packageNameRoot,
-            @Nullable final StringBuilder codeLog,
-            @NotNull final Map<String, Class<?>> parameterClasses) {
-        CompletableFuture<Class<?>> future;
-        final boolean alreadyExists;
+    public Class<?> compile(@NotNull final QueryCompilerRequest request) {
+        final CompletionStageFuture.Resolver<Class<?>> resolver = CompletionStageFuture.make();
+        compile(request, resolver);
+        try {
+            return resolver.getFuture().get();
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new UncheckedDeephavenException("Error while compiling class", cause);
+        } catch (InterruptedException e) {
+            throw new UncheckedDeephavenException("Interrupted while compiling class", e);
+        }
+    }
+
+    /**
+     * Compile a class.
+     *
+     * @param request The compilation request
+     * @param resolver The resolver to use for delivering compilation results
+     */
+    public void compile(
+            @NotNull final QueryCompilerRequest request,
+            @NotNull final CompletionStageFuture.Resolver<Class<?>> resolver) {
+        // noinspection unchecked
+        compile(new QueryCompilerRequest[] {request}, new CompletionStageFuture.Resolver[] {resolver});
+    }
+
+    /**
+     * Compiles all requests.
+     *
+     * @param requests The compilation requests
+     * @param resolvers The resolvers to use for delivering compilation results
+     */
+    public void compile(
+            @NotNull final QueryCompilerRequest[] requests,
+            @NotNull final CompletionStageFuture.Resolver<Class<?>>[] resolvers) {
+        if (requests.length == 0) {
+            return;
+        }
+        if (requests.length != resolvers.length) {
+            throw new IllegalArgumentException("Requests and resolvers must be the same length");
+        }
+
+        // noinspection unchecked
+        final CompletionStageFuture<Class<?>>[] allFutures = new CompletionStageFuture[requests.length];
+
+        final List<QueryCompilerRequest> newRequests = new ArrayList<>();
+        final List<CompletionStageFuture.Resolver<Class<?>>> newResolvers = new ArrayList<>();
 
         synchronized (this) {
-            future = knownClasses.get(classBody);
-            if (future != null) {
-                alreadyExists = true;
-            } else {
-                future = new CompletableFuture<>();
-                knownClasses.put(classBody, future);
-                alreadyExists = false;
+            for (int ii = 0; ii < requests.length; ++ii) {
+                final QueryCompilerRequest request = requests[ii];
+                final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers[ii];
+
+                CompletionStageFuture<Class<?>> future =
+                        knownClasses.putIfAbsent(request.classBody(), resolver.getFuture());
+                if (future == null) {
+                    newRequests.add(request);
+                    newResolvers.add(resolver);
+                    future = resolver.getFuture();
+                }
+                allFutures[ii] = future;
             }
         }
 
-        // Someone else has already made the future. I'll just wait for the answer.
-        if (alreadyExists) {
+        if (!newResolvers.isEmpty()) {
+            // It's my job to fulfill these futures.
             try {
-                return future.get();
-            } catch (InterruptedException | ExecutionException error) {
-                throw new UncheckedDeephavenException(error);
+                compileHelper(newRequests, newResolvers);
+            } catch (RuntimeException e) {
+                // These failures are not applicable to a single request, so we can't just complete the future and
+                // leave the failure in the cache.
+                synchronized (this) {
+                    for (int ii = 0; ii < newRequests.size(); ++ii) {
+                        if (newResolvers.get(ii).completeExceptionally(e)) {
+                            knownClasses.remove(newRequests.get(ii).classBody());
+                        }
+                    }
+                }
+                throw e;
             }
         }
 
-        // It's my job to fulfill the future.
-        try {
-            return compileHelper(className, classBody, packageNameRoot, codeLog, parameterClasses, future);
-        } catch (RuntimeException e) {
-            future.completeExceptionally(e);
-            throw e;
+        for (int ii = 0; ii < requests.length; ++ii) {
+            try {
+                resolvers[ii].complete(allFutures[ii].get());
+            } catch (ExecutionException err) {
+                resolvers[ii].completeExceptionally(err.getCause());
+            } catch (Throwable err) {
+                resolvers[ii].completeExceptionally(err);
+            }
         }
     }
 
@@ -416,89 +459,183 @@ public class QueryCompiler {
         return sb.toString();
     }
 
-    private Class<?> compileHelper(@NotNull final String className,
-            @NotNull final String classBody,
-            @NotNull final String packageNameRoot,
-            @Nullable final StringBuilder codeLog,
-            @NotNull final Map<String, Class<?>> parameterClasses,
-            @NotNull final CompletableFuture<Class<?>> resultFuture) {
+    private static class CompilationState {
+        int nextProbeIndex;
+        boolean complete;
+        String packageName;
+        String fqClassName;
+    }
+
+    private void compileHelper(
+            @NotNull final List<QueryCompilerRequest> requests,
+            @NotNull final List<CompletionStageFuture.Resolver<Class<?>>> resolvers) {
         final MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
             throw new UncheckedDeephavenException("Unable to create SHA-256 hashing digest", e);
         }
-        final String basicHashText =
-                ByteUtils.byteArrToHex(digest.digest(classBody.getBytes(StandardCharsets.UTF_8)));
 
-        for (int pi = 0; pi < MAX_CLASS_COLLISIONS; ++pi) {
-            final String packageNameSuffix = "c_" + basicHashText
-                    + (pi == 0 ? "" : ("p" + pi))
-                    + "v" + JAVA_CLASS_VERSION;
-            final String packageName = (packageNameRoot.isEmpty()
-                    ? packageNameSuffix
-                    : packageNameRoot + (packageNameRoot.endsWith(".") ? "" : ".") + packageNameSuffix);
-            final String fqClassName = packageName + "." + className;
+        final String[] basicHashText = new String[requests.size()];
+        for (int ii = 0; ii < requests.size(); ++ii) {
+            basicHashText[ii] = ByteUtils.byteArrToHex(digest.digest(
+                    requests.get(ii).classBody().getBytes(StandardCharsets.UTF_8)));
+        }
 
-            // Ask the classloader to load an existing class with this name. This might:
-            // 1. Fail to find a class (returning null)
-            // 2. Find a class whose body has the formula we are looking for
-            // 3. Find a class whose body has a different formula (hash collision)
-            Class<?> result = tryLoadClassByFqName(fqClassName, parameterClasses);
-            if (result == null) {
-                // Couldn't find one, so try to create it. This might:
-                // A. succeed
-                // B. Lose a race to another process on the same file system which is compiling the identical formula
-                // C. Lose a race to another process on the same file system compiling a different formula that
-                // happens to have the same hash (same packageName).
-                // However, regardless of A-C, there will be *some* class being found (i.e. tryLoadClassByFqName won't
-                // return null).
-                maybeCreateClass(className, classBody, packageName, fqClassName);
+        int numComplete = 0;
+        final CompilationState[] states = new CompilationState[requests.size()];
+        for (int ii = 0; ii < requests.size(); ++ii) {
+            states[ii] = new CompilationState();
+        }
 
-                // We could be running on a screwy filesystem that is slow (e.g. NFS).
-                // If we wrote a file and can't load it ... then give the filesystem some time.
-                result = tryLoadClassByFqName(fqClassName, parameterClasses);
-                try {
-                    final long deadline = System.currentTimeMillis() + codegenTimeoutMs - codegenLoopDelayMs;
-                    while (result == null && System.currentTimeMillis() < deadline) {
-                        Thread.sleep(codegenLoopDelayMs);
-                        result = tryLoadClassByFqName(fqClassName, parameterClasses);
-                    }
-                } catch (InterruptedException ignored) {
-                    // we got interrupted, just quit looping and ignore it.
+        /*
+         * @formatter:off
+         * 1. try to resolve without compiling; retain next hash to try
+         * 2. compile all remaining with a single compilation task
+         * 3. goto step 1 if any are unresolved
+         * @formatter:on
+         */
+
+        while (numComplete < requests.size()) {
+            for (int ii = 0; ii < requests.size(); ++ii) {
+                final CompilationState state = states[ii];
+                if (state.complete) {
+                    continue;
                 }
 
-                if (result == null) {
+                while (true) {
+                    final int pi = state.nextProbeIndex++;
+                    final String packageNameSuffix = "c_" + basicHashText[ii]
+                            + (pi == 0 ? "" : ("p" + pi))
+                            + "v" + JAVA_CLASS_VERSION;
+
+                    final QueryCompilerRequest request = requests.get(ii);
+                    if (pi >= MAX_CLASS_COLLISIONS) {
+                        Exception err = new IllegalStateException("Found too many collisions for package name root "
+                                + request.packageNameRoot() + ", class name=" + request.className() + ", class body "
+                                + "hash=" + basicHashText[ii] + " - contact Deephaven support!");
+                        resolvers.get(ii).completeExceptionally(err);
+                        state.complete = true;
+                        ++numComplete;
+                        break;
+                    }
+
+                    state.packageName = request.getPackageName(packageNameSuffix);
+                    state.fqClassName = state.packageName + "." + request.className();
+
+                    // Ask the classloader to load an existing class with this name. This might:
+                    // 1. Fail to find a class (returning null)
+                    // 2. Find a class whose body has the formula we are looking for
+                    // 3. Find a class whose body has a different formula (hash collision)
+                    Class<?> result = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
+                    if (result == null) {
+                        break; // we'll try to compile it
+                    }
+
+                    if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolvers.get(ii),
+                            result)) {
+                        state.complete = true;
+                        ++numComplete;
+                        break;
+                    }
+                }
+            }
+
+            if (numComplete == requests.size()) {
+                return;
+            }
+
+            // Couldn't resolve at least one of the requests, so try a round of compilation.
+            final List<CompilationRequestAttempt> compilationRequestAttempts = new ArrayList<>();
+            for (int ii = 0; ii < requests.size(); ++ii) {
+                final CompilationState state = states[ii];
+                if (!state.complete) {
+                    final QueryCompilerRequest request = requests.get(ii);
+                    compilationRequestAttempts.add(new CompilationRequestAttempt(
+                            request,
+                            state.packageName,
+                            state.fqClassName,
+                            resolvers.get(ii)));
+                }
+            }
+
+            maybeCreateClasses(compilationRequestAttempts);
+
+            // We could be running on a screwy filesystem that is slow (e.g. NFS). If we wrote a file and can't load it
+            // ... then give the filesystem some time. All requests should use the same deadline.
+            final long deadline = System.currentTimeMillis() + CODEGEN_TIMEOUT_MS - CODEGEN_LOOP_DELAY_MS;
+            for (int ii = 0; ii < requests.size(); ++ii) {
+                final CompilationState state = states[ii];
+                if (state.complete) {
+                    continue;
+                }
+
+                final QueryCompilerRequest request = requests.get(ii);
+                final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers.get(ii);
+                if (resolver.getFuture().isDone()) {
+                    state.complete = true;
+                    ++numComplete;
+                    continue;
+                }
+
+                // This request may have:
+                // A. succeeded
+                // B. Lost a race to another process on the same file system which is compiling the identical formula
+                // C. Lost a race to another process on the same file system compiling a different formula that collides
+
+                Class<?> clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
+                try {
+                    while (clazz == null && System.currentTimeMillis() < deadline) {
+                        // noinspection BusyWait
+                        Thread.sleep(CODEGEN_LOOP_DELAY_MS);
+                        clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
+                    }
+                } catch (final InterruptedException ie) {
+                    throw new UncheckedDeephavenException("Interrupted while waiting for codegen", ie);
+                }
+
+                // However, regardless of A-C, there will be *some* class being found
+                if (clazz == null) {
                     throw new IllegalStateException("Should have been able to load *some* class here");
                 }
-            }
 
-            final String identifyingFieldValue = loadIdentifyingField(result);
-
-            // If the class we found was indeed the class we were looking for, then complete the future and return it.
-            if (classBody.equals(identifyingFieldValue)) {
-                if (codeLog != null) {
-                    // If the caller wants a textual copy of the code we either made, or just found in the cache.
-                    codeLog.append(makeFinalCode(className, classBody, packageName));
+                if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
+                    state.complete = true;
+                    ++numComplete;
                 }
-                resultFuture.complete(result);
-                synchronized (this) {
-                    // Note we are doing something kind of subtle here. We are removing an entry whose key was matched
-                    // by value equality and replacing it with a value-equal but reference-different string that is a
-                    // static member of the class we just loaded. This should be easier on the garbage collector because
-                    // we are replacing a calculated value with a classloaded value and so in effect we are
-                    // "canonicalizing" the string. This is important because these long strings stay in knownClasses
-                    // forever.
-                    knownClasses.remove(identifyingFieldValue);
-                    knownClasses.put(identifyingFieldValue, resultFuture);
-                }
-                return result;
             }
-            // Try the next hash name
         }
-        throw new IllegalStateException("Found too many collisions for package name root " + packageNameRoot
-                + ", class name=" + className
-                + ", class body hash=" + basicHashText + " - contact Deephaven support!");
+    }
+
+    private boolean completeIfResultMatchesQueryCompilerRequest(
+            final String packageName,
+            final QueryCompilerRequest request,
+            final CompletionStageFuture.Resolver<Class<?>> resolver,
+            final Class<?> result) {
+        final String identifyingFieldValue = loadIdentifyingField(result);
+        if (!request.classBody().equals(identifyingFieldValue)) {
+            return false;
+        }
+
+        // If the caller wants a textual copy of the code we either made, or just found in the cache.
+        request.codeLog()
+                .ifPresent(sb -> sb.append(makeFinalCode(request.className(), request.classBody(), packageName)));
+
+        // If the class we found was indeed the class we were looking for, then complete the future and return it.
+        resolver.complete(result);
+
+        synchronized (this) {
+            // Note we are doing something kind of subtle here. We are removing an entry whose key was matched
+            // by value equality and replacing it with a value-equal but reference-different string that is a
+            // static member of the class we just loaded. This should be easier on the garbage collector because
+            // we are replacing a calculated value with a classloaded value and so in effect we are
+            // "canonicalizing" the string. This is important because these long strings stay in knownClasses
+            // forever.
+            knownClasses.remove(identifyingFieldValue);
+            knownClasses.put(identifyingFieldValue, resolver.getFuture());
+        }
+
+        return true;
     }
 
     private Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {
@@ -589,11 +726,19 @@ public class QueryCompiler {
     }
 
     private static class JavaSourceFromString extends SimpleJavaFileObject {
+        final String description;
         final String code;
+        final CompletionStageFuture.Resolver<Class<?>> resolver;
 
-        JavaSourceFromString(String name, String code) {
+        JavaSourceFromString(
+                final String description,
+                final String name,
+                final String code,
+                final CompletionStageFuture.Resolver<Class<?>> resolver) {
             super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
+            this.description = description;
             this.code = code;
+            this.resolver = resolver;
         }
 
         public CharSequence getCharContent(boolean ignoreEncodingErrors) {
@@ -601,56 +746,59 @@ public class QueryCompiler {
         }
     }
 
-    private static class JavaSourceFromFile extends SimpleJavaFileObject {
-        private static final int JAVA_LENGTH = Kind.SOURCE.extension.length();
-        final String code;
+    private static class CompilationRequestAttempt {
+        final String description;
+        final String fqClassName;
+        final String finalCode;
+        final String packageName;
+        final String[] splitPackageName;
+        final QueryCompilerRequest request;
+        final CompletionStageFuture.Resolver<Class<?>> resolver;
 
-        private JavaSourceFromFile(File basePath, File file) {
-            super(URI.create("string:///" + createName(basePath, file).replace('.', '/') + Kind.SOURCE.extension),
-                    Kind.SOURCE);
-            try {
-                this.code = FileUtils.readTextFile(file);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        private CompilationRequestAttempt(
+                @NotNull final QueryCompilerRequest request,
+                @NotNull final String packageName,
+                @NotNull final String fqClassName,
+                @NotNull final CompletionStageFuture.Resolver<Class<?>> resolver) {
+            this.description = request.description();
+            this.fqClassName = fqClassName;
+            this.resolver = resolver;
+            this.packageName = packageName;
+            this.request = request;
+
+            finalCode = makeFinalCode(request.className(), request.classBody(), packageName);
+
+            if (logEnabled) {
+                log.info().append("Generating code ").append(finalCode).endl();
+            }
+
+            splitPackageName = packageName.split("\\.");
+            if (splitPackageName.length == 0) {
+                final Exception err = new UncheckedDeephavenException(String.format(
+                        "packageName %s expected to have at least one .", packageName));
+                resolver.completeExceptionally(err);
             }
         }
 
-        private static String createName(File basePath, File file) {
-            final String base = basePath.getAbsolutePath();
-            final String fileName = file.getAbsolutePath();
-            if (!fileName.startsWith(base)) {
-                throw new IllegalArgumentException(file + " is not in " + basePath);
+        public void ensureDirectories(@NotNull final String rootPath) {
+            if (splitPackageName.length == 0) {
+                // we've already failed
+                return;
             }
-            final String basename = fileName.substring(base.length());
-            if (basename.endsWith(".java")) {
-                return basename.substring(0, basename.length() - JAVA_LENGTH);
-            } else {
-                return basename;
-            }
+
+            final String[] truncatedSplitPackageName = Arrays.copyOf(splitPackageName, splitPackageName.length - 1);
+            final Path rootPathWithPackage = Paths.get(rootPath, truncatedSplitPackageName);
+            final File rpf = rootPathWithPackage.toFile();
+            QueryCompiler.ensureDirectories(rpf, () -> "Couldn't create package directories: " + rootPathWithPackage);
         }
 
-        @Override
-        public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-            return code;
+        public JavaSourceFromString makeSource() {
+            return new JavaSourceFromString(description, fqClassName, finalCode, resolver);
         }
     }
 
-    private void maybeCreateClass(String className, String code, String packageName, String fqClassName) {
-        final String finalCode = makeFinalCode(className, code, packageName);
-
-        if (logEnabled) {
-            log.info().append("Generating code ").append(finalCode).endl();
-        }
-
-        final File ctxClassDestination = getClassDestination();
-
-        final String[] splitPackageName = packageName.split("\\.");
-        if (splitPackageName.length == 0) {
-            throw new UncheckedDeephavenException(String.format(
-                    "packageName %s expected to have at least one .", packageName));
-        }
-        final String[] truncatedSplitPackageName = Arrays.copyOf(splitPackageName, splitPackageName.length - 1);
-
+    private void maybeCreateClasses(
+            @NotNull final List<CompilationRequestAttempt> requests) {
         // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
         // directories (e.g. io/deephaven/test) if they are not already there. This will be useful later.
         // Also create a temp directory e.g. /tmp/workspace/cache/classes/temporaryCompilationDirectory12345
@@ -663,125 +811,190 @@ public class QueryCompiler {
         final String rootPathAsString;
         final String tempDirAsString;
         try {
-            rootPathAsString = ctxClassDestination.getAbsolutePath();
-            final Path rootPathWithPackage = Paths.get(rootPathAsString, truncatedSplitPackageName);
-            final File rpf = rootPathWithPackage.toFile();
-            ensureDirectories(rpf, () -> "Couldn't create package directories: " + rootPathWithPackage);
+            rootPathAsString = getClassDestination().getAbsolutePath();
             final Path tempPath =
                     Files.createTempDirectory(Paths.get(rootPathAsString), "temporaryCompilationDirectory");
             tempDirAsString = tempPath.toFile().getAbsolutePath();
+
+            for (final CompilationRequestAttempt request : requests) {
+                request.ensureDirectories(rootPathAsString);
+            }
         } catch (IOException ioe) {
-            throw new UncheckedIOException(ioe);
+            Exception err = new UncheckedIOException(ioe);
+            for (final CompilationRequestAttempt request : requests) {
+                request.resolver.completeExceptionally(err);
+            }
+            return;
         }
 
+
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
+        }
+
+        final JavaFileManager fileManager = new SynchronizedJavaFileManager(
+                compiler.getStandardFileManager(null, null, null));
+
+        boolean exceptionCaught = false;
         try {
-            maybeCreateClassHelper(fqClassName, finalCode, splitPackageName, rootPathAsString, tempDirAsString);
+            final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
+            int parallelismFactor = operationInitializer.parallelismFactor();
+
+            int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
+            if (parallelismFactor == 1 || requestsPerTask >= requests.size()) {
+                maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
+                        0, requests.size());
+            } else {
+                int numTasks = (requests.size() + requestsPerTask - 1) / requestsPerTask;
+                final Future<?>[] tasks = new Future[numTasks];
+                for (int jobId = 0; jobId < numTasks; ++jobId) {
+                    final int startInclusive = jobId * requestsPerTask;
+                    final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
+                    tasks[jobId] = operationInitializer.submit(() -> {
+                        maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
+                                startInclusive, endExclusive);
+                    });
+                }
+                for (int jobId = 0; jobId < numTasks; ++jobId) {
+                    try {
+                        tasks[jobId].get();
+                    } catch (Exception err) {
+                        throw new UncheckedDeephavenException("Exception waiting for compilation task", err);
+                    }
+                }
+            }
+        } catch (final Throwable t) {
+            exceptionCaught = true;
+            throw t;
         } finally {
             try {
                 FileUtils.deleteRecursively(new File(tempDirAsString));
             } catch (Exception e) {
                 // ignore errors here
             }
-        }
-    }
 
-    private void maybeCreateClassHelper(String fqClassName, String finalCode, String[] splitPackageName,
-            String rootPathAsString, String tempDirAsString) {
-        final StringWriter compilerOutput = new StringWriter();
-
-        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) {
-            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
-        }
-
-        final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
-        final List<String> compilerOptions = Arrays.asList("-d", tempDirAsString, "-cp", classPathAsString);
-
-        final JavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
-
-        boolean result = false;
-        boolean exceptionThrown = false;
-        try {
-            result = compiler.getTask(compilerOutput,
-                    fileManager,
-                    null,
-                    compilerOptions,
-                    null,
-                    Collections.singletonList(new JavaSourceFromString(fqClassName, finalCode)))
-                    .call();
-        } catch (final Throwable err) {
-            exceptionThrown = true;
-            throw err;
-        } finally {
             try {
                 fileManager.close();
-            } catch (final IOException ioe) {
-                if (!exceptionThrown) {
+            } catch (IOException ioe) {
+                if (!exceptionCaught) {
                     // noinspection ThrowFromFinallyBlock
                     throw new UncheckedIOException("Could not close JavaFileManager", ioe);
                 }
             }
         }
-        if (!result) {
-            throw new UncheckedDeephavenException("Error compiling class " + fqClassName + ":\n" + compilerOutput);
+    }
+
+    private void maybeCreateClassHelper(
+            @NotNull final JavaCompiler compiler,
+            @NotNull final JavaFileManager fileManager,
+            @NotNull final List<CompilationRequestAttempt> requests,
+            @NotNull final String rootPathAsString,
+            @NotNull final String tempDirAsString,
+            final int startInclusive,
+            final int endExclusive) {
+        final List<CompilationRequestAttempt> toRetry = new ArrayList<>();
+        // If any of our requests fail to compile then the JavaCompiler will not write any class files at all. The
+        // non-failing requests will be retried in a second pass that is expected to succeed. This enables us to
+        // fulfill futures independent of each other; otherwise a single failure would taint all requests in a batch.
+        final boolean wantRetry = maybeCreateClassHelper2(compiler,
+                fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive, toRetry);
+        if (!wantRetry) {
+            return;
         }
+
+        final List<CompilationRequestAttempt> ignored = new ArrayList<>();
+        if (maybeCreateClassHelper2(compiler,
+                fileManager, toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(), ignored)) {
+            // We only retried compilation units that did not fail on the first pass, so we should not have any failures
+            // on the second pass.
+            throw new IllegalStateException("Unexpected failure during second pass of compilation");
+        }
+    }
+
+    private boolean maybeCreateClassHelper2(
+            @NotNull final JavaCompiler compiler,
+            @NotNull final JavaFileManager fileManager,
+            @NotNull final List<CompilationRequestAttempt> requests,
+            @NotNull final String rootPathAsString,
+            @NotNull final String tempDirAsString,
+            final int startInclusive,
+            final int endExclusive,
+            List<CompilationRequestAttempt> toRetry) {
+        final StringWriter compilerOutput = new StringWriter();
+
+        final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
+        final List<String> compilerOptions = Arrays.asList(
+                "-d", tempDirAsString,
+                "-cp", classPathAsString,
+                // this option allows the compiler to attempt to process all source files even if some of them fail
+                "--should-stop=ifError=GENERATE");
+
+        final MutableInt numFailures = new MutableInt(0);
+        compiler.getTask(compilerOutput,
+                fileManager,
+                diagnostic -> {
+                    if (diagnostic.getKind() != Diagnostic.Kind.ERROR) {
+                        return;
+                    }
+
+                    final JavaSourceFromString source = (JavaSourceFromString) diagnostic.getSource();
+                    final UncheckedDeephavenException err = new UncheckedDeephavenException("Error Compiling "
+                            + source.description + "\n" + diagnostic.getMessage(Locale.getDefault()));
+                    if (source.resolver.completeExceptionally(err)) {
+                        // only count the first failure for each source
+                        numFailures.increment();
+                    }
+                },
+                compilerOptions,
+                null,
+                requests.subList(startInclusive, endExclusive).stream()
+                        .map(CompilationRequestAttempt::makeSource)
+                        .collect(Collectors.toList()))
+                .call();
+
+        final boolean wantRetry = numFailures.intValue() > 0 && numFailures.intValue() != endExclusive - startInclusive;
+
         // The above has compiled into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
         // class files}
         // We want to atomically move it to e.g.
         // /tmp/workspace/cache/classes/io/deephaven/test/cm12862183232603186v52_0/{various class files}
-        Path srcDir = Paths.get(tempDirAsString, splitPackageName);
-        Path destDir = Paths.get(rootPathAsString, splitPackageName);
-        try {
-            Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException ioe) {
-            // The move might have failed for a variety of bad reasons. However, if the reason was because
-            // we lost the race to some other process, that's a harmless/desirable outcome, and we can ignore
-            // it.
-            if (!Files.exists(destDir)) {
-                throw new UncheckedIOException("Move failed for some reason other than destination already existing",
-                        ioe);
+        requests.subList(startInclusive, endExclusive).forEach(request -> {
+            final Path srcDir = Paths.get(tempDirAsString, request.splitPackageName);
+            final Path destDir = Paths.get(rootPathAsString, request.splitPackageName);
+            try {
+                Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException ioe) {
+                // The name "isDone" might be misleading here. We haven't called "complete" on the successful
+                // futures yet, so the only way they would be "done" at this point is if they completed
+                // exceptionally.
+                final boolean hasException = request.resolver.getFuture().isDone();
+
+                if (wantRetry && !Files.exists(srcDir)) {
+                    // The move failed and the source directory does not exist.
+                    if (!hasException) {
+                        // This source actually succeeded in compiling, but was not written because some other source
+                        // failed to compile. Let's schedule this work to try again.
+                        toRetry.add(request);
+                        return;
+                    }
+                }
+
+                if (!Files.exists(destDir) && !hasException) {
+                    // Propagate an error here only if the destination does not exist; ignoring issues related to
+                    // collisions with another process.
+                    request.resolver.completeExceptionally(new UncheckedIOException(
+                            "Move failed for some reason other than destination already existing", ioe));
+                }
             }
-        }
+        });
+
+        return wantRetry;
     }
 
     /**
-     * Try to compile the set of files, returning a pair of success and compiler output.
-     *
-     * @param basePath the base path for the java classes
-     * @param javaFiles the java source files
-     * @return a Pair of success, and the compiler output
-     */
-    private Pair<Boolean, String> tryCompile(File basePath, Collection<File> javaFiles) throws IOException {
-        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) {
-            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
-        }
-
-        final File outputDirectory = Files.createTempDirectory("temporaryCompilationDirectory").toFile();
-
-        try {
-            final StringWriter compilerOutput = new StringWriter();
-            final String javaClasspath = getJavaClassPath();
-
-            final Collection<JavaFileObject> javaFileObjects = javaFiles.stream()
-                    .map(f -> new JavaSourceFromFile(basePath, f)).collect(Collectors.toList());
-
-            final boolean result = compiler.getTask(compilerOutput, null, null,
-                    Arrays.asList("-d", outputDirectory.getAbsolutePath(), "-cp",
-                            getClassPath() + File.pathSeparator + javaClasspath),
-                    null, javaFileObjects).call();
-
-            return new Pair<>(result, compilerOutput.toString());
-        } finally {
-            FileUtils.deleteRecursively(outputDirectory);
-        }
-    }
-
-    /**
-     * Retrieve the java class path from our existing Java class path, and IntelliJ/TeamCity environment variables.
-     *
-     * @return
+     * @return the java class path from our existing Java class path, and IntelliJ/TeamCity environment variables
      */
     private static String getJavaClassPath() {
         String javaClasspath;
@@ -792,14 +1005,17 @@ public class QueryCompiler {
             if (teamCityWorkDir != null) {
                 // We are running in TeamCity, get the classpath differently
                 final File[] classDirs = new File(teamCityWorkDir + "/_out_/classes").listFiles();
-
-                for (File f : classDirs) {
-                    javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
+                if (classDirs != null) {
+                    for (File f : classDirs) {
+                        javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
+                    }
                 }
-                final File[] testDirs = new File(teamCityWorkDir + "/_out_/test-classes").listFiles();
 
-                for (File f : testDirs) {
-                    javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
+                final File[] testDirs = new File(teamCityWorkDir + "/_out_/test-classes").listFiles();
+                if (testDirs != null) {
+                    for (File f : testDirs) {
+                        javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
+                    }
                 }
 
                 final File[] jars = FileUtils.findAllFiles(new File(teamCityWorkDir + "/lib"));
@@ -835,7 +1051,7 @@ public class QueryCompiler {
                             // use the default path separator
                             final String filePaths = Stream.of(extendedClassPath.split("file:/"))
                                     .map(String::trim)
-                                    .filter(fileName -> fileName.length() > 0)
+                                    .filter(fileName -> !fileName.isEmpty())
                                     .collect(Collectors.joining(File.pathSeparator));
 
                             // Remove the classpath jar in question, and expand it with the files from the manifest

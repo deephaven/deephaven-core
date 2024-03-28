@@ -118,11 +118,6 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
-        inner.updateColumnDefinitionsFromTopLayer(columnDefinitions);
-    }
-
-    @Override
     public void startTrackingPrev() {
         throw new UnsupportedOperationException("StaticFlattenLayer is used in only non-refreshing scenarios");
     }

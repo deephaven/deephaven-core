@@ -32,13 +32,13 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl {
 
     /**
      * The chunkFilter can be applied to the columns native type.
-     *
+     * <p>
      * In practice, this is for non-reinterpretable DateTimes.
      */
     ChunkFilter chunkFilter;
     /**
-     * If the column can be be reinterpreted to a long, then we should prefer to use the longFilter instead.
-     *
+     * If the column can be reinterpreted to a long, then we should prefer to use the longFilter instead.
+     * <p>
      * In practice, this is used for reinterpretable DateTimes.
      */
     ChunkFilter longFilter;

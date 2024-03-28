@@ -85,7 +85,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {}
+    public void init(@NotNull final TableDefinition tableDefinition) {}
 
     @NotNull
     @Override

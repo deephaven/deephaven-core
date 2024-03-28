@@ -38,11 +38,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
@@ -282,7 +279,12 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final String... groupByColumnNames) {
         switch (type) {
             case NORMAL:
-                return new NormalConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
+                final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                        QueryCompilerRequestProcessor.batch();
+                final AggregationContext aggContext = new NormalConverter(
+                        table, requireStateChangeRecorder, compilationProcessor, groupByColumnNames).build();
+                compilationProcessor.compile();
+                return aggContext;
             case ROLLUP_BASE:
                 return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
@@ -664,12 +666,15 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
+        private final QueryCompilerRequestProcessor compilationProcessor;
 
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
+                @NotNull final QueryCompilerRequestProcessor compilationProcessor,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
+            this.compilationProcessor = compilationProcessor;
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -744,7 +749,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
-                    true, formula.formula(), formula.paramToken(), MatchPair.fromPairs(resultPairs));
+                    true, formula.formula(), formula.paramToken(), compilationProcessor,
+                    MatchPair.fromPairs(resultPairs));
             addNoInputOperator(formulaChunkedOperator);
         }
 

@@ -12,6 +12,7 @@ import java.util.Map;
 
 public interface FormulaFactory {
     Formula createFormula(
+            String columnName,
             TrackingRowSet rowSet,
             boolean initLazyMap, Map<String, ? extends ColumnSource> columnsToData,
             QueryScopeParam... params);
