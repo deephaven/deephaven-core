@@ -20,11 +20,11 @@ class DataIndex(JObjectWrapper):
     j_object_type = _JDataIndex
 
     def __init__(self, j_data_index: jpy.JType):
-        self._j_data_indexer = j_data_index
+        self._j_data_index = j_data_index
 
     @property
     def j_object(self) -> jpy.JType:
-        return self._j_data_indexer
+        return self._j_data_index
 
     @property
     def keys(self) -> List[str]:
@@ -33,7 +33,7 @@ class DataIndex(JObjectWrapper):
         Returns:
             the key columns
         """
-        return j_list_to_list(self._j_data_indexer.keyColumnNames())
+        return j_list_to_list(self._j_data_index.keyColumnNames())
 
     @property
     def table(self) -> Table:
@@ -42,7 +42,7 @@ class DataIndex(JObjectWrapper):
         Returns:
             the backing table
         """
-        return Table(self._j_data_indexer.table())
+        return Table(self._j_data_index.table())
 
 
 
@@ -60,19 +60,23 @@ def has_data_index(table: Table, key_cols: List[str]) -> bool:
 
 def get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
     """Gets a DataIndex for the given key columns. Returns None if the DataIndex does not exist.
+    Note that the returned DataIndex will be managed with the enclosing liveness scope, which means it is users'
+    responsibility to keep the DataIndex live and reachable by following the rules of liveness scope.
 
     Args:
         table (Table): the table to get the DataIndex from
         key_cols (List[str]): the key columns
 
     Returns:
-        DataIndex: the DataIndex
+        DataIndex or None
     """
     j_di = _JDataIndexer.getDataIndex(table.j_table, key_cols)
     return DataIndex(j_di) if j_di else None
 
 def create_data_index(table: Table, key_cols: List[str]) -> DataIndex:
-    """Creates a DataIndex for the given key columns. If the DataIndex already exists, returns it.
+    """Creates a DataIndex for the given key columns on the provided table. If the DataIndex already exists, returns it.
+    Note that the returned DataIndex will be managed with the enclosing liveness scope, which means it is users'
+    responsibility to keep the DataIndex live and reachable by following the rules of liveness scope.
 
     Args:
         table (Table): the table to create the DataIndex for

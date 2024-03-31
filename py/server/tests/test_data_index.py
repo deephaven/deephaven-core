@@ -34,8 +34,11 @@ class DataIndexTestCase(BaseTestCase):
 
     def test_backing_table(self):
         self.assertEqual(3, len(self.data_index.table.columns))
+        self.assertEqual(10, self.data_index.table.size)
         di = create_data_index(self.data_index.table, self.data_index.keys[0:1])
         self.assertEqual(1, len(di.keys))
+        self.assertEqual(3, di.table.size)
+
 
 if __name__ == '__main__':
     unittest.main()
