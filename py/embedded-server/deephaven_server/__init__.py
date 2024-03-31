@@ -3,10 +3,10 @@
 #
 
 import importlib.metadata
+import click
 import secrets
 import signal
 import sys
-import argparse
 import webbrowser
 
 from .start_jvm import DEFAULT_JVM_PROPERTIES, DEFAULT_JVM_ARGS, start_jvm
@@ -21,52 +21,55 @@ check_py_env()
 __version__ = importlib.metadata.version('deephaven-server')
 
 
-def main():
+@click.group()
+def cli():
     """
-    Main entry point for the Deephaven embedded server application.
+    Command-line interface entry point for the Deephaven embedded server application.
     Accepts a command to start the application and the arguments to use.
-    Defaults to `start`, which starts the server.
     """
-    parser = argparse.ArgumentParser(description="Start the Deephaven embedded server")
-    parser.add_argument("cmd", nargs="?", default="start", choices=["start"], help="Deephaven command to run. Defaults to start.")
-    parser.add_argument("-p", "--port", default=8080, type=int, help="The port to bind to. Defaults to 8080.")
-    parser.add_argument("--host", default="localhost", help="The host to bind to. Defaults to localhost.")
-    parser.add_argument("--key", default=None, help="The key to use. Uses a randomly generated key if not specified.")
-    parser.add_argument("--jvm-args", default=None, help="The JVM arguments to use.")
-    parser.add_argument("--dh-args", default=None, help="The Deephaven arguments to use.")
-    args = parser.parse_args()
+    pass
 
-    if args.cmd == "start":
-        _start(args)
+@cli.command()
+@click.option("--host", default="localhost", help="The host to bind to. Defaults to localhost.")
+@click.option("--port", default=None, type=int, help="The port to bind to.")
+@click.option("--key", default=None, help="The key to use. Uses a randomly generated key if not specified.")
+@click.option("--anonymous", is_flag=True, help="Start the server in anonymous mode. Cannot be used if key is specified.")
+@click.option("--jvm-args", default=None, help="The JVM arguments to use.")
+def server(host, port, key, anonymous, jvm_args):
+    """
+    Start the Deephaven server.
+    """
+    click.echo("Starting Deephaven server...")
+
+    if anonymous and key is not None:
+        raise click.ClickException("Cannot specify both --anonymous and --key")
+
+    if jvm_args is None:
+        jvm_args = ''
+    jvm_args = jvm_args.split()
+
+    if anonymous:
+        jvm_args += [f"-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"]
     else:
-        parser.print_help()
-        sys.exit(1)
+        if key is None:
+            key = secrets.token_urlsafe(32)
+        jvm_args += [f"-Dauthentication.psk={key}"]
 
-def _start(args):
-    """
-    Start the Deephaven server with the given arguments.
-
-    Args:
-        args: The arguments parsed using argparse to use to start the server.
-    """
-    if args.key is None:
-        args.key = secrets.token_urlsafe(32)
-
-    jvm_args = [f"-Dauthentication.psk={args.key}"]
-    if args.jvm_args is not None:
-        jvm_args += args.jvm_args.split()
-
-    s = Server(host=args.host, port=args.port, jvm_args=jvm_args, dh_args=args.dh_args)
+    s = Server(host=host, port=port, jvm_args=jvm_args)
     s.start()
 
-    url = f"http://{args.host}:{args.port}/ide?psk={args.key}"
+    url = f"http://{host}:{s.port}/ide"
+
+    if key is not None:
+        url += f"?psk={key}"
+
     webbrowser.open(url)
 
-    print(f"Deephaven is running at {url}")
-    print("Press Control-C to exit")
+    click.echo(f"Deephaven is running at {url}")
+    click.echo("Press Control-C to exit")
 
     def signal_handler(sig, frame):
-        print("Exiting Deephaven...")
+        click.echo("Exiting Deephaven...")
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
