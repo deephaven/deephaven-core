@@ -15,8 +15,13 @@ from deephaven.table import Table
 _JDataIndexer = jpy.get_type("io.deephaven.engine.table.impl.indexer.DataIndexer")
 _JDataIndex = jpy.get_type("io.deephaven.engine.table.DataIndex")
 
+
 class DataIndex(JObjectWrapper):
-    """A DataIndex is an index used to improve the speed of data access operations for a Deephaven table.  The index applies to one or more indexed (key) column(s) of a Deephaven table."""
+    """A DataIndex is an index used to improve the speed of data access operations for a Deephaven table.  The index
+    applies to one or more indexed (key) column(s) of a Deephaven table.
+
+    Note that a DataIndex itself is backed by a table."""
+
     j_object_type = _JDataIndex
 
     def __init__(self, j_data_index: jpy.JType):
@@ -28,22 +33,13 @@ class DataIndex(JObjectWrapper):
 
     @property
     def keys(self) -> List[str]:
-        """Returns the names of the columns indexed by the DataIndex.
-
-        Returns:
-            the key columns
-        """
+        """The names of the columns indexed by the DataIndex. """
         return j_list_to_list(self._j_data_index.keyColumnNames())
 
     @property
     def table(self) -> Table:
-        """the backing table of the DataIndex.
-
-        Returns:
-            the backing table
-        """
+        """The backing table of the DataIndex."""
         return Table(self._j_data_index.table())
-
 
 
 def has_data_index(table: Table, key_cols: List[str]) -> bool:
@@ -51,43 +47,41 @@ def has_data_index(table: Table, key_cols: List[str]) -> bool:
 
     Args:
         table (Table): the table to check
-        key_cols (List[str]): the key columns to check
+        key_cols (List[str]): the names of the key columns indexed
 
     Returns:
         bool: True if the table has a DataIndex, False otherwise
     """
     return _JDataIndexer.hasDataIndex(table.j_table, key_cols)
 
+
 def get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
     """Gets a DataIndex for the given key columns. Returns None if the DataIndex does not exist.
-    Note that the returned DataIndex will be managed with the enclosing liveness scope, which means it is users'
-    responsibility to keep the DataIndex live and reachable by following the rules of liveness scope.
 
     Args:
         table (Table): the table to get the DataIndex from
-        key_cols (List[str]): the key columns
+        key_cols (List[str]): the names of the key columns indexed
 
     Returns:
-        DataIndex or None
+        a DataIndex or None
     """
     j_di = _JDataIndexer.getDataIndex(table.j_table, key_cols)
     return DataIndex(j_di) if j_di else None
 
+
 def create_data_index(table: Table, key_cols: List[str]) -> DataIndex:
-    """Creates a DataIndex for the given key columns on the provided table. If the DataIndex already exists, it is returned without recomputation.
-    
-    Note that the returned DataIndex will be managed with the enclosing liveness scope, which means it is users'
-    responsibility to keep the DataIndex live and reachable by following the rules of liveness scope.
+    """Creates a DataIndex for the given key columns on the provided table. If the DataIndex already exists, it is
+    returned without rebuilding.
 
     Args:
         table (Table): the table to index
-        key_cols (List[str]): the key columns
+        key_cols (List[str]): the names of the key columns to index
 
     Returns:
-        DataIndex: the DataIndex
+        a DataIndex
 
     Raises:
-        DHError: if the DataIndex cannot be created
+        DHError
     """
     try:
         return DataIndex(_JDataIndexer.getOrCreateDataIndex(table.j_table, key_cols))
