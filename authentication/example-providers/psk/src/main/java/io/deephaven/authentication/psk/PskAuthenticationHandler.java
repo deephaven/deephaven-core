@@ -12,7 +12,7 @@ import io.deephaven.io.logger.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -75,5 +75,10 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
                 .endl();
         logger.warn().append("================================================================================").endl();
         logger.warn().nl().nl().nl().nl().endl();
+    }
+
+    @Override
+    public List<String> urls(String targetUrl) {
+        return List.of(targetUrl + "/?psk=" + PSK);
     }
 }

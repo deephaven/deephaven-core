@@ -7,8 +7,37 @@ import sys
 
 from .start_jvm import start_jvm
 
-# This is explicitly not a JObjectWrapper, as that would require importing deephaven and jpy
+# These classes are explicitly not JObjectWrapper, as that would require importing deephaven and jpy
 # before the JVM was running.
+
+
+class ServerConfig:
+    @property
+    def j_object(self):
+        return self.j_server_config
+
+    @property
+    def target_url_or_default(self) -> str:
+        return self.j_server_config.targetUrlOrDefault()
+
+    def __init__(self, j_server_config):
+        self.j_server_config = j_server_config
+
+
+class AuthenticationHandler:
+    @property
+    def j_object(self):
+        return self.j_authentication_handler
+
+    @property
+    def auth_type(self) -> str:
+        return self.j_authentication_handler.getAuthType()
+
+    def urls(self, target_url: str) -> List[str]:
+        return list(self.j_authentication_handler.urls(target_url).toArray())
+
+    def __init__(self, j_authentication_handler):
+        self.j_authentication_handler = j_authentication_handler
 
 
 class Server:
@@ -23,16 +52,28 @@ class Server:
         return self.j_server
 
     @property
-    def port(self):
+    def port(self) -> int:
         return self.j_server.getPort()
 
+    @property
+    def server_config(self) -> ServerConfig:
+        return ServerConfig(self.j_server.serverConfig())
+
+    @property
+    def authentication_handlers(self) -> List[AuthenticationHandler]:
+        return [
+            AuthenticationHandler(j_auth_handler)
+            for j_auth_handler in self.j_server.authenticationHandlers().toArray()
+        ]
+
     def __init__(
-            self,
-            host: Optional[str] = None,
-            port: Optional[int] = None,
-            jvm_args: Optional[List[str]] = None,
-            dh_args: Dict[str, str] = {},
-            extra_classpath: Optional[List[str]] = None):
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        jvm_args: Optional[List[str]] = None,
+        dh_args: Dict[str, str] = {},
+        extra_classpath: Optional[List[str]] = None,
+    ):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.
         """
@@ -41,7 +82,8 @@ class Server:
         # If the server was already created, emit an error to warn away from trying again
         if Server.instance is not None:
             from deephaven import DHError
-            raise DHError('Cannot create more than one instance of the server')
+
+            raise DHError("Cannot create more than one instance of the server")
         if extra_classpath is None:
             extra_classpath = []
 
@@ -52,11 +94,14 @@ class Server:
         import jpy
 
         # Create a python-wrapped java server that we can reference to talk to the platform
-        self.j_server = jpy.get_type('io.deephaven.python.server.EmbeddedServer')(host, port, dh_args)
+        self.j_server = jpy.get_type("io.deephaven.python.server.EmbeddedServer")(
+            host, port, dh_args
+        )
 
         # Obtain references to the deephaven logbuffer and redirect stdout/stderr to it. Note that we should not import
         # this until after jpy has started.
         from deephaven_internal.stream import TeeStream
+
         sys.stdout = TeeStream.split(sys.stdout, self.j_server.getStdout())
         sys.stderr = TeeStream.split(sys.stderr, self.j_server.getStderr())
 

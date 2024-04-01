@@ -8,6 +8,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.configuration.Configuration;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -38,6 +39,11 @@ public class AnonymousAuthenticationHandler implements AuthenticationRequestHand
         } else {
             log.info().append("Anonymous authentication is enabled. Listening on ").append(targetUrl).endl();
         }
+    }
+
+    @Override
+    public List<String> urls(String targetUrl) {
+        return List.of(targetUrl);
     }
 
     @Override
