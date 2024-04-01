@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 """This module provides the ability to create, check, and retrieve DataIndex objects from Deephaven tables."""
+
 from typing import List, Optional
 
 import jpy
@@ -15,8 +16,7 @@ _JDataIndexer = jpy.get_type("io.deephaven.engine.table.impl.indexer.DataIndexer
 _JDataIndex = jpy.get_type("io.deephaven.engine.table.DataIndex")
 
 class DataIndex(JObjectWrapper):
-    """A DataIndex represents a Deephaven data index object which is built on one or more indexed (key) column(s) of
-    A Deephaven table."""
+    """A DataIndex is an index used to improve the speed of data access operations for a Deephaven table.  The index applies to one or more indexed (key) column(s) of a Deephaven table."""
     j_object_type = _JDataIndex
 
     def __init__(self, j_data_index: jpy.JType):
@@ -28,7 +28,7 @@ class DataIndex(JObjectWrapper):
 
     @property
     def keys(self) -> List[str]:
-        """the key column names of the DataIndex.
+        """Returns the names of the columns indexed by the DataIndex.
 
         Returns:
             the key columns
@@ -74,12 +74,13 @@ def get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
     return DataIndex(j_di) if j_di else None
 
 def create_data_index(table: Table, key_cols: List[str]) -> DataIndex:
-    """Creates a DataIndex for the given key columns on the provided table. If the DataIndex already exists, returns it.
+    """Creates a DataIndex for the given key columns on the provided table. If the DataIndex already exists, it is returned without recomputation.
+    
     Note that the returned DataIndex will be managed with the enclosing liveness scope, which means it is users'
     responsibility to keep the DataIndex live and reachable by following the rules of liveness scope.
 
     Args:
-        table (Table): the table to create the DataIndex for
+        table (Table): the table to index
         key_cols (List[str]): the key columns
 
     Returns:

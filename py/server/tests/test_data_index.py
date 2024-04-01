@@ -22,6 +22,7 @@ class DataIndexTestCase(BaseTestCase):
         self.assertFalse(has_data_index(self.table, ["X", "Z"]))
         self.assertFalse(has_data_index(self.table_nodi, ["X", "Y"]))
         self.assertFalse(has_data_index(self.table_nodi, ["X"]))
+        self.assertFalse(has_data_index(self.table_nodi, ["X", "Z"]))
 
     def test_get_data_index(self):
         self.assertIsNotNone(get_data_index(self.table, ["X", "Y"]))
