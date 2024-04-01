@@ -354,13 +354,6 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return p_sig
 
 
-# def _is_from_np_type(param_types: List[type], np_type_char: str) -> bool:
-#     """ Determine if the given numpy type char comes for a numpy type in the given set of parameter type annotations"""
-#     for t in param_types:
-#         if issubclass(t, np.generic) and np.dtype(t).char == np_type_char:
-#             return True
-#     return False
-
 def _prepare_auto_arg_conv(p_sig: _ParsedSignature, encoded_arg_types: str) -> bool:
     """ Determine whether the auto argument conversion should be used and set the converter functions for the
     parameters."""
@@ -387,6 +380,8 @@ def _prepare_auto_arg_conv(p_sig: _ParsedSignature, encoded_arg_types: str) -> b
                             if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(param_type_str))):
                                 param.converter = partial(lambda nv, x: None if x == nv else effective_type(x),
                                                       null_value)
+                        if param.converter in {int, float, bool}: # JPY does the conversion for these types
+                            param.converter = None
                 break
         else: # if the loop didn't break, it means that the parameter is either not type hinted or has a generic object type
             param.converter = None
