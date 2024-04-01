@@ -68,20 +68,6 @@ artifacts {
     }
 }
 
-def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
-    t.systemProperties = [
-            'gwt.args': ['-runStyle HtmlUnit',
-                         '-ea',
-                         '-style PRETTY',
-                         "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
-            ].join(' '),
-            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
-    ]
-    t.include '**/ClientUnitTestSuite.class'
-    t.useJUnit()
-    t.scanForTestClasses = false
-}
-
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
@@ -135,6 +121,28 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
     task.removeVolumes.set true
 }
 
+def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
+    t.finalizedBy(deephavenDocker.endTask, stopSelenium)
+    doFirst {
+        def webdriverUrl = "http://localhost:${seleniumPort}/"
+        t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
+                                      '-ea',
+                                      '-style PRETTY',
+                                      "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
+        ].join(' '))
+        t.classpath += tasks.getByName('gwtCompile').src
+    }
+    t.finalizedBy(deephavenDocker.endTask)
+    t.systemProperties = [
+            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
+            'webdriver.test.host':'host.docker.internal',
+    ]
+    t.include '**/ClientUnitTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
@@ -150,7 +158,7 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     }
     t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
-            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+            'gwt.persistentunitcachedir': layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
             'webdriver.test.host':'host.docker.internal',
     ]
     t.include '**/ClientIntegrationTestSuite.class'

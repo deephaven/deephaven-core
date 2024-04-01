@@ -6,6 +6,7 @@ package io.deephaven.web;
 import com.google.gwt.junit.tools.GWTTestSuite;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormatTestGwt;
 import io.deephaven.web.client.api.i18n.JsNumberFormatTestGwt;
+import io.deephaven.web.client.fu.LazyPromiseTestGwt;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -17,6 +18,7 @@ public class ClientUnitTestSuite extends GWTTestSuite {
         TestSuite suite = new TestSuite("Deephaven JS API Unit Test Suite");
         suite.addTestSuite(JsDateTimeFormatTestGwt.class);
         suite.addTestSuite(JsNumberFormatTestGwt.class);
+        suite.addTestSuite(LazyPromiseTestGwt.class);
         return suite;
     }
 }
