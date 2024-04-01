@@ -16,6 +16,7 @@ import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.base.ParquetFileReader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -143,21 +144,20 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final Map<String, PartitionParser> partitionKeyToParser = partitioningColumns.stream().collect(toMap(
                 ColumnDefinition::getName,
                 cd -> PartitionParser.lookupSupported(cd.getDataType(), cd.getComponentType())));
-        final Map<String, TIntList> fileNameToRowGroupIndices = new LinkedHashMap<>();
+        final Map<String, TIntList> filePathToRowGroupIndices = new LinkedHashMap<>();
         final List<RowGroup> rowGroups = metadataFileReader.fileMetaData.getRow_groups();
         final int numRowGroups = rowGroups.size();
         for (int rgi = 0; rgi < numRowGroups; ++rgi) {
-            fileNameToRowGroupIndices
-                    .computeIfAbsent(rowGroups.get(rgi).getColumns().get(0).getFile_path(), fn -> new TIntArrayList())
-                    .add(rgi);
+            final String relativePath =
+                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
+            filePathToRowGroupIndices.computeIfAbsent(relativePath, fn -> new TIntArrayList()).add(rgi);
         }
         final File directory = metadataFile.getParentFile();
         final MutableInt partitionOrder = new MutableInt(0);
-        keys = fileNameToRowGroupIndices.entrySet().stream().map(entry -> {
-            final String filePathString = entry.getKey();
+        keys = filePathToRowGroupIndices.entrySet().stream().map(entry -> {
+            final String relativePathString = entry.getKey();
             final int[] rowGroupIndices = entry.getValue().toArray();
-
-            if (filePathString == null || filePathString.isEmpty()) {
+            if (relativePathString == null || relativePathString.isEmpty()) {
                 throw new TableDataException(String.format(
                         "Missing parquet file name for row groups %s in %s",
                         Arrays.toString(rowGroupIndices), metadataFile));
@@ -165,12 +165,12 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             final LinkedHashMap<String, Comparable<?>> partitions =
                     partitioningColumns.isEmpty() ? null : new LinkedHashMap<>();
             if (partitions != null) {
-                final Path filePath = Paths.get(filePathString);
+                final Path filePath = Paths.get(relativePathString);
                 final int numPartitions = filePath.getNameCount() - 1;
                 if (numPartitions != partitioningColumns.size()) {
                     throw new TableDataException(String.format(
                             "Unexpected number of path elements in %s for partitions %s",
-                            filePathString, partitions.keySet()));
+                            relativePathString, partitions.keySet()));
                 }
                 final boolean useHiveStyle = filePath.getName(0).toString().contains("=");
                 for (int pi = 0; pi < numPartitions; ++pi) {
@@ -182,7 +182,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                         if (pathComponents.length != 2) {
                             throw new TableDataException(String.format(
                                     "Unexpected path format found for hive-style partitioning from %s for %s",
-                                    filePathString, metadataFile));
+                                    relativePathString, metadataFile));
                         }
                         partitionKey = instructions.getColumnNameFromParquetColumnNameOrDefault(pathComponents[0]);
                         partitionValueRaw = pathComponents[1];
@@ -195,16 +195,16 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     if (partitions.containsKey(partitionKey)) {
                         throw new TableDataException(String.format(
                                 "Unexpected duplicate partition key %s when parsing %s for %s",
-                                partitionKey, filePathString, metadataFile));
+                                partitionKey, relativePathString, metadataFile));
                     }
                     partitions.put(partitionKey, partitionValue);
                 }
             }
-            final File partitionFile = new File(directory, filePathString);
+            final File partitionFile = new File(directory, relativePathString);
             final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFile,
                     partitionOrder.getAndIncrement(), partitions, inputInstructions);
             tlk.setFileReader(metadataFileReader);
-            tlk.setMetadata(getParquetMetadataForFile(filePathString, metadataFileMetadata));
+            tlk.setMetadata(getParquetMetadataForFile(relativePathString, metadataFileMetadata));
             tlk.setRowGroupIndices(rowGroupIndices);
             return tlk;
         }).collect(Collectors.toList());

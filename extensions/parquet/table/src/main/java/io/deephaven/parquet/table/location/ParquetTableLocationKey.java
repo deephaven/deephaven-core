@@ -9,6 +9,7 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -190,7 +191,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // While it seems that row group *could* have column chunks splayed out into multiple files,
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
-            final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
+            final String filePath =
+                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
             return filePath == null || convertToURI(filePath, false).equals(uri);
         }).toArray();
     }

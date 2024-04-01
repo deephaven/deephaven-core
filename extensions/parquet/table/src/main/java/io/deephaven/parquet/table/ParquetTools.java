@@ -319,12 +319,12 @@ public class ParquetTools {
         writeTables(new Table[] {sourceTable}, definition, new File[] {destFile}, writeInstructions);
     }
 
-    private static File getShadowFile(File destFile) {
+    private static File getShadowFile(final File destFile) {
         return new File(destFile.getParent(), ".NEW_" + destFile.getName());
     }
 
     @VisibleForTesting
-    static File getBackupFile(File destFile) {
+    static File getBackupFile(final File destFile) {
         return new File(destFile.getParent(), ".OLD_" + destFile.getName());
     }
 
@@ -339,15 +339,16 @@ public class ParquetTools {
      * Generates the index file path relative to the table destination file path.
      *
      * @param tableDest Destination path for the main table containing these indexing columns
-     * @param columnNames Array of names of the indexing columns
+     * @param columnNames Array of indexing column names
      *
      * @return The relative index file path. For example, for table with destination {@code "table.parquet"} and
      *         indexing column {@code "IndexingColName"}, the method will return
-     *         {@code ".dh_metadata/indexes/IndexingColName/index_IndexingColName_table.parquet"}
+     *         {@code ".dh_metadata/indexes/IndexingColName/index_IndexingColName_table.parquet"} on unix systems.
      */
     public static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String[] columnNames) {
         final String columns = String.join(",", columnNames);
-        return String.format(".dh_metadata/indexes/%s/index_%s_%s", columns, columns, tableDest.getName());
+        return String.format(".dh_metadata%sindexes%s%s%sindex_%s_%s", File.separator, File.separator, columns,
+                File.separator, columns, tableDest.getName());
     }
 
     /**

@@ -1433,7 +1433,7 @@ public final class ParquetTableReadWriteTest {
 
     private static Table readParquetFileFromGitLFS(final File dest) {
         try {
-            return readSingleFileTable(dest, EMPTY);
+            return readTable(dest, EMPTY);
         } catch (final RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
                 final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
@@ -1621,6 +1621,18 @@ public final class ParquetTableReadWriteTest {
     public void basicWriteTests() {
         basicWriteTestsImpl(SINGLE_WRITER);
         basicWriteTestsImpl(MULTI_WRITER);
+    }
+
+    @Test
+    public void readPartitionedDataGeneratedOnWindows() {
+        final String path = ParquetTableReadWriteTest.class
+                .getResource("/referencePartitionedDataFromWindows").getFile();
+        final Table partitionedDataFromWindows = readParquetFileFromGitLFS(new File(path)).select();
+        final Table expected = TableTools.newTable(
+                longCol("year", 2019, 2020, 2021, 2021, 2022, 2022),
+                longCol("n_legs", 5, 2, 4, 100, 2, 4),
+                stringCol("animal", "Brittle stars", "Flamingo", "Dog", "Centipede", "Parrot", "Horse"));
+        assertTableEquals(expected, partitionedDataFromWindows.sort("year"));
     }
 
     private static void basicWriteTestsImpl(TestParquetTableWriter writer) {
