@@ -5,7 +5,7 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Tuple, Literal, Optional
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Optional
 
 import jpy
 import numpy as np
@@ -13,7 +13,7 @@ import pandas as pd
 
 from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
-from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, _J_ARRAY_NP_TYPE_MAP
+from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -255,26 +255,48 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
         np_array = np.array(j_array, np.object_)
 
     if conv_null:
-        if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
-            if dtype in (dtypes.float32, dtypes.float64):
-                np_array = np.copy(np_array)
-                np_array[np_array == dh_null] = np.nan
-            else:
-                if dtype is dtypes.bool_:  # needs to change its type to byte for dh null detection
-                    np_array = np.frombuffer(np_array, np.byte)
-
-                if any(np_array[np_array == dh_null]):
-                    if not type_promotion:
-                        raise DHError(f"Problem creating numpy array.  Java {dtype} array contains Deephaven null values, but numpy {np_array.dtype} array does not support null values")
-                    np_array = np_array.astype(np.float64)
-                    np_array[np_array == dh_null] = np.nan
-                else:
-                    if dtype is dtypes.bool_:  # needs to change its type back to bool
-                        np_array = np.frombuffer(np_array, np.bool_)
-                    return np_array
+        return dh_nulls_to_nan(np_array, type_promotion)
 
     return np_array
 
+def dh_nulls_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndarray:
+    """Converts Deephaven primitive null values in the given numpy array to np.nan.
+    No conversion is performed on non-primitive types.
+
+    Args:
+        np_array (np.ndarray): The numpy array to convert
+        type_promotion (bool): When False, integer, boolean, or character arrays containing Deephaven nulls yield
+            an exception. When True, integer, boolean, or character arrays containing Deephaven nulls are converted
+            to np.float64 arrays and Deephaven null values are converted to np.nan. numpy arrays of float or double
+            types are not affected by this flag and Deephaven nulls will always be converted to np.nan. Defaults to
+            True.
+
+    Returns:
+        np.ndarray: The numpy array with Deephaven nulls converted to np.nan.
+
+    Raises:
+        DHError
+    """
+    dtype = dtypes.from_np_dtype(np_array.dtype)
+    if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
+        if dtype in (dtypes.float32, dtypes.float64):
+            np_array = np.copy(np_array)
+            np_array[np_array == dh_null] = np.nan
+        else:
+            if dtype is dtypes.bool_:  # needs to change its type to byte for dh null detection
+                np_array = np.frombuffer(np_array, np.byte)
+
+            if any(np_array[np_array == dh_null]):
+                if not type_promotion:
+                    raise DHError(message="failed to converting DH nulls to np.nan in the numpy array. The array is "
+                                          "of integer type and contains Deephaven null values but type_promotion is False")
+                np_array = np_array.astype(np.float64)
+                np_array[np_array == dh_null] = np.nan
+            else:
+                if dtype is dtypes.bool_:  # needs to change its type back to bool
+                    np_array = np.frombuffer(np_array, np.bool_)
+                return np_array
+    return np_array
 
 def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.Series:
     """Produce a copy of the specified Java array as a pandas.Series object.
