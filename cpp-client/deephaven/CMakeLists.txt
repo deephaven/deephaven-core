@@ -23,28 +23,34 @@ if(${SANITIZE_ADDRESS} STREQUAL "ON")
   link_libraries("-fsanitize=address")
 endif()
 
-add_subdirectory(dhclient)
-add_subdirectory(dhcore)
-add_subdirectory(tests)
-add_subdirectory(examples)
+option(DHCORE_ONLY "Only build dhcore, skip rest" OFF)
 
-install(DIRECTORY dhclient/include/public/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
+add_subdirectory(dhcore)
+if(NOT DHCORE_ONLY)
+    add_subdirectory(dhclient)
+    add_subdirectory(tests)
+    add_subdirectory(examples)
+endif()
 
 install(DIRECTORY dhcore/include/public/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
-install(TARGETS dhclient dhcore_static dhcore
-    EXPORT deephavenConfig
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
+if(NOT DHCORE_ONLY)
+    install(DIRECTORY dhclient/include/public/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
 
-install(EXPORT deephavenConfig
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deephaven
-    NAMESPACE deephaven::
-    )
+    install(TARGETS dhclient dhcore_static dhcore
+        EXPORT deephavenConfig
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+
+    install(EXPORT deephavenConfig
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deephaven
+        NAMESPACE deephaven::
+        )
+endif()

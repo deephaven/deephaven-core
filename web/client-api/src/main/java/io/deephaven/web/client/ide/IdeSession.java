@@ -138,6 +138,11 @@ public class IdeSession extends HasEventHandling {
                 .then(connection::getHierarchicalTable);
     }
 
+    public Promise<JsPartitionedTable> getPartitionedTable(String name) {
+        return connection.getVariableDefinition(name, JsVariableType.PARTITIONEDTABLE)
+                .then(connection::getPartitionedTable);
+    }
+
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         return connection.getJsObject(definitionObject);
     }

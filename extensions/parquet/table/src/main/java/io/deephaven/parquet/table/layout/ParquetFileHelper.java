@@ -3,10 +3,10 @@
 //
 package io.deephaven.parquet.table.layout;
 
-import io.deephaven.parquet.table.ParquetTableWriter;
-
 import java.net.URI;
 import java.util.regex.Pattern;
+
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
 
 final class ParquetFileHelper {
     /**
@@ -16,7 +16,7 @@ final class ParquetFileHelper {
 
     static boolean isVisibleParquetURI(final URI uri) {
         final String path = uri.getPath();
-        if (!path.endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
+        if (!path.endsWith(PARQUET_FILE_EXTENSION)) {
             return false;
         }
         // Look for hidden directories or files in the path

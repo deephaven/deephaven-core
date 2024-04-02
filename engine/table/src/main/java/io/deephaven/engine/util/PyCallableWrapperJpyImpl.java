@@ -10,12 +10,10 @@ import org.jpy.PyModule;
 import org.jpy.PyObject;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.NULL_CLASS;
+import static io.deephaven.util.type.TypeUtils.getUnboxedType;
 
 /**
  * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call() varargs
@@ -30,6 +28,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     private static final PyModule dh_udf_module = PyModule.importModule("deephaven._udf");
 
     private static final Map<Character, Class<?>> numpyType2JavaClass = new HashMap<>();
+    private static final Map<Character, Class<?>> numpyType2JavaArrayClass = new HashMap<>();
 
     static {
         numpyType2JavaClass.put('b', byte.class);
@@ -43,6 +42,18 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('M', Instant.class);
         numpyType2JavaClass.put('O', Object.class);
+
+        numpyType2JavaArrayClass.put('b', byte[].class);
+        numpyType2JavaArrayClass.put('h', short[].class);
+        numpyType2JavaArrayClass.put('H', char[].class);
+        numpyType2JavaArrayClass.put('i', int[].class);
+        numpyType2JavaArrayClass.put('l', long[].class);
+        numpyType2JavaArrayClass.put('f', float[].class);
+        numpyType2JavaArrayClass.put('d', double[].class);
+        numpyType2JavaArrayClass.put('?', Boolean[].class);
+        numpyType2JavaArrayClass.put('U', String[].class);
+        numpyType2JavaArrayClass.put('M', Instant[].class);
+        numpyType2JavaArrayClass.put('O', Object[].class);
     }
 
     /**
@@ -70,14 +81,12 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     @Override
     public boolean isVectorizableReturnType() {
         parseSignature();
-        return vectorizableReturnTypes.contains(returnType);
+        return vectorizableReturnTypes.contains(signature.getReturnType());
     }
 
     private final PyObject pyCallable;
-
-    private String signature = null;
-    private List<Class<?>> paramTypes;
-    private Class<?> returnType;
+    private String signatureString = null;
+    private Signature signature;
     private boolean vectorizable = false;
     private boolean vectorized = false;
     private Collection<ChunkArgument> chunkArguments;
@@ -110,7 +119,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                 ((ColumnChunkArgument) arg).setSourceChunkIndex(chunkSourceIndex);
             }
         }
-        return new ArgumentsChunked(chunkArguments, returnType, numbaVectorized);
+        return new ArgumentsChunked(chunkArguments, signature.getReturnType(), numbaVectorized);
     }
 
     /**
@@ -168,12 +177,13 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             vectorized = false;
         }
         pyUdfDecoratedCallable = dh_udf_module.call("_py_udf", unwrapped);
-        signature = pyUdfDecoratedCallable.getAttribute("signature").toString();
+        signatureString = pyUdfDecoratedCallable.getAttribute("signature").toString();
     }
+
 
     @Override
     public void parseSignature() {
-        if (signature != null) {
+        if (signatureString != null) {
             return;
         }
 
@@ -181,35 +191,110 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
         // the 'types' field of a vectorized function follows the pattern of '[ilhfdb?O]*->[ilhfdb?O]',
         // eg. [ll->d] defines two int64 (long) arguments and a double return type.
-        if (signature == null || signature.isEmpty()) {
+        if (signatureString == null || signatureString.isEmpty()) {
             throw new IllegalStateException("Signature should always be available.");
         }
 
-        List<Class<?>> paramTypes = new ArrayList<>();
-        for (char numpyTypeChar : signature.toCharArray()) {
-            if (numpyTypeChar != '-') {
-                Class<?> paramType = numpyType2JavaClass.get(numpyTypeChar);
-                if (paramType == null) {
-                    throw new IllegalStateException(
-                            "Parameters of vectorized functions should always be of integral, floating point, boolean, String, or Object type: "
-                                    + numpyTypeChar + " of " + signature);
+        String pyEncodedParamsStr = signatureString.split("->")[0];
+        List<Parameter> parameters = new ArrayList<>();
+        if (!pyEncodedParamsStr.isEmpty()) {
+            String[] pyEncodedParams = pyEncodedParamsStr.split(",");
+            for (String pyEncodedParam : pyEncodedParams) {
+                String[] paramDetail = pyEncodedParam.split(":");
+                String paramName = paramDetail[0];
+                String paramTypeCodes = paramDetail[1];
+                Set<Class<?>> possibleTypes = new HashSet<>();
+                for (int ti = 0; ti < paramTypeCodes.length(); ti++) {
+                    char typeCode = paramTypeCodes.charAt(ti);
+                    if (typeCode == '[') {
+                        // skip the array type code
+                        ti++;
+                        possibleTypes.add(numpyType2JavaArrayClass.get(paramTypeCodes.charAt(ti)));
+                    } else if (typeCode == 'N') {
+                        possibleTypes.add(NULL_CLASS);
+                    } else {
+                        possibleTypes.add(numpyType2JavaClass.get(typeCode));
+                    }
                 }
-                paramTypes.add(paramType);
-            } else {
-                break;
+                parameters.add(new Parameter(paramName, possibleTypes));
             }
         }
 
-        this.paramTypes = paramTypes;
-
-        returnType = pyUdfDecoratedCallable.getAttribute("return_type", null);
+        Class<?> returnType = pyUdfDecoratedCallable.getAttribute("return_type", null);
         if (returnType == null) {
             throw new IllegalStateException(
                     "Python functions should always have an integral, floating point, boolean, String, arrays, or Object return type");
         }
 
         if (returnType == boolean.class) {
-            this.returnType = Boolean.class;
+            returnType = Boolean.class;
+        }
+
+        signature = new Signature(parameters, returnType);
+
+    }
+
+    private boolean isSafelyCastable(Set<Class<?>> types, Class<?> type) {
+        for (Class<?> t : types) {
+            if (t.isAssignableFrom(type)) {
+                return true;
+            }
+            if (t.isPrimitive() && type.isPrimitive() && isLosslessWideningPrimitiveConversion(type, t)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
+        if (original == null || !original.isPrimitive() || target == null || !target.isPrimitive()
+                || original.equals(void.class) || target.equals(void.class)) {
+            throw new IllegalArgumentException("Arguments must be a primitive type (excluding void)!");
+        }
+
+        if (original.equals(target)) {
+            return true;
+        }
+
+        if (original.equals(byte.class)) {
+            return target == short.class || target == int.class || target == long.class;
+        } else if (original.equals(short.class) || original.equals(char.class)) { // char is unsigned, so it's a
+                                                                                  // lossless conversion to int
+            return target == int.class || target == long.class;
+        } else if (original.equals(int.class)) {
+            return target == long.class;
+        } else if (original.equals(float.class)) {
+            return target == double.class;
+        }
+
+        return false;
+    }
+
+    public void verifyArguments(Class<?>[] argTypes) {
+        String callableName = pyCallable.getAttribute("__name__").toString();
+        List<Parameter> parameters = signature.getParameters();
+
+        for (int i = 0; i < argTypes.length; i++) {
+            // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
+            // parameter. This is not ideal. We should consider a better way to handle this, i.e. a way to convey that
+            // the function is variadic.
+            Set<Class<?>> types =
+                    parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
+
+            // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
+            // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
+            // check for Object type input
+            if (argTypes[i] == Object.class) {
+                continue;
+            }
+
+            Class<?> t = getUnboxedType(argTypes[i]) == null ? argTypes[i] : getUnboxedType(argTypes[i]);
+            if (!types.contains(t) && !types.contains(Object.class) && !isSafelyCastable(types, t)) {
+                throw new IllegalArgumentException(
+                        callableName + ": " + "Expected argument (" + parameters.get(i).getName() + ") to be one of "
+                                + parameters.get(i).getPossibleTypes() + ", got "
+                                + (argTypes[i].equals(NULL_CLASS) ? "null" : argTypes[i]));
+            }
         }
     }
 
@@ -227,11 +312,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     public Object call(Object... args) {
         PyObject pyCallable = this.pyUdfDecoratedCallable != null ? this.pyUdfDecoratedCallable : this.pyCallable;
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
-    }
-
-    @Override
-    public List<Class<?>> getParamTypes() {
-        return paramTypes;
     }
 
     @Override
@@ -260,8 +340,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     }
 
     @Override
-    public Class<?> getReturnType() {
-        return returnType;
+    public Signature getSignature() {
+        return signature;
     }
 
 }

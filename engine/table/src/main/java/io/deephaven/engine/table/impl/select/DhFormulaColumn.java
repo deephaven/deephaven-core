@@ -238,7 +238,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             PyObject vectorized = pyCallableWrapper.vectorizedCallable();
             formulaColumnPython = FormulaColumnPython.create(this.columnName,
                     DeephavenCompatibleFunction.create(vectorized,
-                            pyCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
+                            pyCallableWrapper.getSignature().getReturnType(),
+                            this.analyzedFormula.sourceDescriptor.sources,
                             argumentsChunked,
                             true));
             formulaColumnPython.initDef(columnDefinitionMap);
