@@ -38,25 +38,16 @@ dependencies {
     implementation "org.apache.iceberg:iceberg-core:${icebergVersion}"
     implementation "org.apache.iceberg:iceberg-core:${icebergVersion}:tests"
     implementation "org.apache.iceberg:iceberg-aws:${icebergVersion}"
-    implementation "org.apache.iceberg:iceberg-azure:${icebergVersion}"
-    implementation "org.apache.iceberg:iceberg-gcp:${icebergVersion}"
+    // implementation "org.apache.iceberg:iceberg-azure:${icebergVersion}"
+    // implementation "org.apache.iceberg:iceberg-gcp:${icebergVersion}"
     implementation "org.apache.iceberg:iceberg-bundled-guava:${icebergVersion}"
 
     implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
     implementation "org.apache.hadoop:hadoop-hdfs-client:${hadoopVersion}"
 
     runtimeOnly "org.apache.iceberg:iceberg-aws-bundle:${icebergVersion}"
-    runtimeOnly "org.apache.iceberg:iceberg-azure-bundle:${icebergVersion}"
-    runtimeOnly "org.apache.iceberg:iceberg-gcp-bundle:${icebergVersion}"
-
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
-    implementation 'org.apache.httpcomponents.core5:httpcore5:5.2.4'
-
-    implementation 'com.google.guava:guava:33.0.0-jre'
-
-    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
-    implementation 'org.postgresql:postgresql:42.7.1'
-
+    // runtimeOnly "org.apache.iceberg:iceberg-azure-bundle:${icebergVersion}"
+    // runtimeOnly "org.apache.iceberg:iceberg-gcp-bundle:${icebergVersion}"
 
     testImplementation depCommonsCompress
     testImplementation depCommonsIo
