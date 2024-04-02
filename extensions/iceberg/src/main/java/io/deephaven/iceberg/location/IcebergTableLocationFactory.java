@@ -5,16 +5,10 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.impl.NonexistentTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
-import java.net.URI;
-
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 /**
  * {@link TableLocationFactory} for {@link IcebergTableLocation}s.
@@ -31,11 +25,6 @@ public final class IcebergTableLocationFactory implements TableLocationFactory<T
     public TableLocation makeLocation(@NotNull final TableKey tableKey,
             @NotNull final IcebergTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
-        final URI fileURI = locationKey.getURI();
-        if (!FILE_URI_SCHEME.equals(fileURI.getScheme()) || new File(fileURI).exists()) {
-            return new IcebergTableLocation(tableKey, locationKey, readInstructions);
-        } else {
-            return new NonexistentTableLocation(tableKey, locationKey);
-        }
+        return new IcebergTableLocation(tableKey, locationKey, readInstructions);
     }
 }

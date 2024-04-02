@@ -38,6 +38,7 @@ dependencies {
     implementation "org.apache.iceberg:iceberg-core:${icebergVersion}"
     implementation "org.apache.iceberg:iceberg-core:${icebergVersion}:tests"
     implementation "org.apache.iceberg:iceberg-aws:${icebergVersion}"
+    // The following lines can be uncommented when we enable support for Azure and GCP
     // implementation "org.apache.iceberg:iceberg-azure:${icebergVersion}"
     // implementation "org.apache.iceberg:iceberg-gcp:${icebergVersion}"
     implementation "org.apache.iceberg:iceberg-bundled-guava:${icebergVersion}"
@@ -45,9 +46,10 @@ dependencies {
     implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
     implementation "org.apache.hadoop:hadoop-hdfs-client:${hadoopVersion}"
 
-    runtimeOnly "org.apache.iceberg:iceberg-aws-bundle:${icebergVersion}"
+    // The following lines can be uncommented when we enable support for Azure and GCP
+    // runtimeOnly "org.apache.iceberg:iceberg-aws-bundle:${icebergVersion}"
     // runtimeOnly "org.apache.iceberg:iceberg-azure-bundle:${icebergVersion}"
-    // runtimeOnly "org.apache.iceberg:iceberg-gcp-bundle:${icebergVersion}"
+    runtimeOnly "org.apache.iceberg:iceberg-gcp-bundle:${icebergVersion}"
 
     testImplementation depCommonsCompress
     testImplementation depCommonsIo

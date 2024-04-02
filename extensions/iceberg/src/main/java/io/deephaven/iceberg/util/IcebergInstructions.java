@@ -81,17 +81,22 @@ public abstract class IcebergInstructions {
     /**
      * The AWS access key, used to identify the user interacting with services.
      */
-    public abstract String s3AccessKeyId();
+    public abstract Optional<String> s3AccessKeyId();
 
     /**
      * The AWS secret access key, used to authenticate the user interacting with services.
      */
-    public abstract String s3SecretAccessKey();
+    public abstract Optional<String> s3SecretAccessKey();
 
     /**
      * The AWS region to use for this connection.
      */
-    public abstract String s3Region();
+    public abstract Optional<String> s3Region();
+
+    /**
+     * The {@link io.deephaven.extensions.s3.S3Instructions} to use for reading the Iceberg data files.
+     */
+    public abstract Optional<Object> readInstructions();
 
     public interface Builder {
         Builder catalogImpl(CATALOG_IMPL catalogImpl);
@@ -110,6 +115,9 @@ public abstract class IcebergInstructions {
 
         Builder s3Region(String s3Region);
 
+        @SuppressWarnings("unused")
+        Builder readInstructions(Object readInstructions);
+
         IcebergInstructions build();
     }
 
@@ -126,20 +134,4 @@ public abstract class IcebergInstructions {
             throw new IllegalArgumentException("warehouseLocation must be provided");
         }
     }
-
-    @Check
-    final void checkS3Fields() {
-        if (fileIOImpl() == FILEIO_IMPL.S3) {
-            if (s3AccessKeyId() == null || s3AccessKeyId().isEmpty()) {
-                throw new IllegalArgumentException("When using S3 FileIO, s3AccessKeyId must be provided");
-            }
-            if (s3SecretAccessKey() == null || s3SecretAccessKey().isEmpty()) {
-                throw new IllegalArgumentException("When using S3 FileIO, s3SecretAccessKey must be provided");
-            }
-            if (s3Region() == null || s3Region().isEmpty()) {
-                throw new IllegalArgumentException("When using S3 FileIO, s3Region must be provided");
-            }
-        }
-    }
-
 }

@@ -69,18 +69,24 @@ public class IcebergCatalog {
 
         properties.put(CatalogProperties.FILE_IO_IMPL, instructions.fileIOImpl().value);
         if (instructions.fileIOImpl() == IcebergInstructions.FILEIO_IMPL.S3) {
-            final S3Instructions.Builder builder = S3Instructions.builder()
-                    .credentials(Credentials.basic(instructions.s3AccessKeyId(), instructions.s3SecretAccessKey()))
-                    .regionName(instructions.s3Region());
-
-            properties.put(AwsClientProperties.CLIENT_REGION, instructions.s3Region());
-            properties.put(S3FileIOProperties.ACCESS_KEY_ID, instructions.s3AccessKeyId());
-            properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, instructions.s3SecretAccessKey());
+            // Configure the properties map from the Iceberg instructions.
+            if (instructions.s3AccessKeyId().isPresent() && instructions.s3SecretAccessKey().isPresent()) {
+                properties.put(S3FileIOProperties.ACCESS_KEY_ID, instructions.s3AccessKeyId().get());
+                properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, instructions.s3SecretAccessKey().get());
+            }
+            if (instructions.s3Region().isPresent()) {
+                properties.put(AwsClientProperties.CLIENT_REGION, instructions.s3Region().get());
+            }
             if (instructions.s3EndpointOverride().isPresent()) {
                 properties.put(S3FileIOProperties.ENDPOINT, instructions.s3EndpointOverride().get());
-                builder.endpointOverride(instructions.s3EndpointOverride().get());
             }
-            s3Instructions = builder.build();
+
+            // The user may have provided readInstructions. If they did, we'll use them for the data file access.
+            // Otherwise we need to build one from the properties.
+            s3Instructions = instructions.readInstructions().isPresent()
+                    ? (S3Instructions) instructions.readInstructions().get()
+                    : buildS3Instructions(properties);
+
             // TODO: create a FileIO interface wrapping the Deephaven S3SeekableByteChannel/Provider
             fileIO = CatalogUtil.loadFileIO(instructions.fileIOImpl().value, properties, conf);
         } else {
@@ -89,6 +95,22 @@ public class IcebergCatalog {
 
         final String catalogName = name != null ? name : "IcebergTableDataService-" + instructions.catalogURI();
         catalog.initialize(catalogName, properties);
+    }
+
+    private static S3Instructions buildS3Instructions(final Map<String, String> properties) {
+        final S3Instructions.Builder builder = S3Instructions.builder();
+        if (properties.containsKey(S3FileIOProperties.ACCESS_KEY_ID)
+                && properties.containsKey(S3FileIOProperties.SECRET_ACCESS_KEY)) {
+            builder.credentials(Credentials.basic(properties.get(S3FileIOProperties.ACCESS_KEY_ID),
+                    properties.get(S3FileIOProperties.SECRET_ACCESS_KEY)));
+        }
+        if (properties.containsKey(AwsClientProperties.CLIENT_REGION)) {
+            builder.regionName(properties.get(AwsClientProperties.CLIENT_REGION));
+        }
+        if (properties.containsKey(S3FileIOProperties.ENDPOINT)) {
+            builder.endpointOverride(properties.get(S3FileIOProperties.ENDPOINT));
+        }
+        return builder.build();
     }
 
     @SuppressWarnings("unused")
