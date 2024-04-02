@@ -87,7 +87,7 @@ if (!hasProperty('selenium.port')) {
 }
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
-    t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
+    t.dependsOn(Docker.registryTask(project, 'selenium'), createDeephavenGrpcApiNetwork)
     t.targetImageId('deephaven/selenium:local-build')
     t.containerName.set(seleniumContainerId)
     // Advised by the selenium documentation
@@ -122,8 +122,8 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
 }
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
-    t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
-    t.finalizedBy(deephavenDocker.endTask, stopSelenium)
+    t.dependsOn(seleniumHealthy)
+    t.finalizedBy(stopSelenium)
     doFirst {
         def webdriverUrl = "http://localhost:${seleniumPort}/"
         t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
@@ -133,7 +133,6 @@ def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
         ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
     }
-    t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
             'webdriver.test.host':'host.docker.internal',
@@ -142,6 +141,7 @@ def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
     t.useJUnit()
     t.scanForTestClasses = false
 }
+
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
@@ -156,7 +156,6 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
         ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
     }
-    t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.persistentunitcachedir': layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
             'webdriver.test.host':'host.docker.internal',
