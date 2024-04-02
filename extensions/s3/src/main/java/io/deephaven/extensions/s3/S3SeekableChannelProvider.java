@@ -199,8 +199,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                         .filter(s3Object -> !s3Object.key().equals(directoryKey))
                         .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
                         .iterator();
-                // If the response is truncated, the following token will not be null. Fetch the next page using the
-                // token value from this response
+                // The following token is null when the last batch is fetched.
                 continuationToken = response.nextContinuationToken();
             }
         };
