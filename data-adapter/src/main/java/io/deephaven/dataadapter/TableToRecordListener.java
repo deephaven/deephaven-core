@@ -76,7 +76,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
      * @param recordsProcessedListener Listener notified when record processing is complete, after the
      *        {@link #recordConsumer}/{@link #removedRecordConsumer} are called for a batch of records. If not
      *        {@code null}, this is invoked at the end of {@link #onUpdate} when {@code async==false}, and after each
-     *        time the queue is drained & processed when {@code async==true}.
+     *        time the queue is drained/processed when {@code async==true}.
      */
     public TableToRecordListener(@NotNull final String description,
             @NotNull final Table table,
