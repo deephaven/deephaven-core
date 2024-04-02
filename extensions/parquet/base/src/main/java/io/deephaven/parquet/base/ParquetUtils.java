@@ -6,8 +6,9 @@ package io.deephaven.parquet.base;
 import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.regex.Pattern;
+
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 public final class ParquetUtils {
 
@@ -28,14 +29,6 @@ public final class ParquetUtils {
     public static final String METADATA_KEY = "deephaven";
 
     /**
-     * Used as a filter to select relevant parquet files while reading all files in a directory.
-     */
-    public static boolean fileNameMatches(final Path path) {
-        final String fileName = path.getFileName().toString();
-        return fileName.endsWith(PARQUET_FILE_EXTENSION) && fileName.charAt(0) != '.';
-    }
-
-    /**
      * @return the key value derived from the file path, used for storing each file's metadata in the combined
      *         {@value #METADATA_FILE_NAME} and {@value #COMMON_METADATA_FILE_NAME} files.
      */
@@ -51,7 +44,9 @@ public final class ParquetUtils {
         if (!path.endsWith(PARQUET_FILE_EXTENSION)) {
             return false;
         }
-        // Look for hidden directories or files in the path
-        return !HIDDEN_FILE_PATTERN.matcher(path).find();
+        if (FILE_URI_SCHEME.equals(uri.getScheme())) {
+            return !HIDDEN_FILE_PATTERN.matcher(path).find();
+        }
+        return true;
     }
 }

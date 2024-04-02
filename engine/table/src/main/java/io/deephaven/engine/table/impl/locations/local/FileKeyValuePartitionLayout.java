@@ -79,7 +79,6 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
         try {
             Files.walkFileTree(tableRootDirectory.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS),
                     maxPartitioningLevels + 1, new SimpleFileVisitor<>() {
-                        final Set<String> takenNames = new HashSet<>();
                         final List<String> partitionKeys = new ArrayList<>();
                         final List<String> partitionValues = new ArrayList<>();
                         boolean registered;
@@ -101,8 +100,9 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
                                     throw new TableDataException(
                                             "Unexpected directory name format (not key=value) at " + dir);
                                 }
-                                final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
-                                takenNames.add(columnKey);
+                                // We use an empty set to allow duplicate partition keys across files
+                                final String columnKey =
+                                        NameValidator.legalizeColumnName(components[0], Collections.emptySet());
                                 final int columnIndex = columnCount - 1;
                                 if (columnCount > partitionKeys.size()) {
                                     partitionKeys.add(columnKey);

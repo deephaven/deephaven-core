@@ -15,6 +15,7 @@ import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -114,8 +115,8 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
                 throw new TableDataException("Too many partitioning levels at " + relativePathString + ", maximum " +
                         "expected partitioning levels are " + maxPartitioningLevels);
             }
-            final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
-            takenNames.add(columnKey);
+            // We use an empty set to allow duplicate partition keys across files
+            final String columnKey = NameValidator.legalizeColumnName(components[0], Collections.emptySet());
             if (registered) {
                 // We have already seen another parquet file in the tree, so compare the
                 // partitioning levels against the previous ones
