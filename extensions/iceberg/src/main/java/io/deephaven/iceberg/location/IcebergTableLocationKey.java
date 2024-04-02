@@ -22,7 +22,6 @@ public class IcebergTableLocationKey extends URITableLocationKey {
     private static final String IMPLEMENTATION_NAME = IcebergTableLocationKey.class.getSimpleName();
 
     final FileFormat format;
-
     final URITableLocationKey internalTableLocationKey;
 
     /**
@@ -59,19 +58,7 @@ public class IcebergTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Returns {@code true} if a previous file reader has been created, or if one was successfully created on-demand.
-     *
-     * <p>
-     * When {@code false}, this may mean that the file:
-     * <ol>
-     * <li>does not exist, or is otherwise inaccessible</li>
-     * <li>is in the process of being written, and is not yet a valid parquet file</li>
-     * <li>is _not_ a parquet file</li>
-     * <li>is a corrupt parquet file</li>
-     * </ol>
-     *
-     *
-     * @return true if the file reader exists or was successfully created
+     * See {@link ParquetTableLocationKey#verifyFileReader()}.
      */
     public synchronized boolean verifyFileReader() {
         if (format == FileFormat.PARQUET) {

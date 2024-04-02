@@ -32,6 +32,11 @@ public class IcebergToolsTest extends TestCase {
                 .build();
     }
 
+    @Test
+    public void testNothing() {
+        // Dummy to prevent JUnit from complaining about no tests
+    }
+
     // TODO: discuss how to perform tests since they require a full MiniIO + Iceberg setup
 
     // @Test

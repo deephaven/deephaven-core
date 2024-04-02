@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -35,20 +36,14 @@ public class IcebergTools {
         for (final Types.NestedField field : schema.columns()) {
             final String name = field.name();
             final Type type = field.type();
-            try {
-                final io.deephaven.qst.type.Type<?> qstType = convertPrimitiveType(type);
-                final ColumnDefinition<?> column;
-                if (partitionNames.contains(name)) {
-                    column = ColumnDefinition.of(name, qstType).withPartitioning();
-                } else {
-                    column = ColumnDefinition.of(name, qstType);
-                }
-                columns.add(column);
-            } catch (UnsupportedOperationException e) {
-                // TODO: Currently will silently skip the column. Would it be better to skip and warn the user or
-                // break and declare failure? We don't have a mechanism for skipping columns, do we need an overload
-                // with a supplied table definition?
+            final io.deephaven.qst.type.Type<?> qstType = convertPrimitiveType(type);
+            final ColumnDefinition<?> column;
+            if (partitionNames.contains(name)) {
+                column = ColumnDefinition.of(name, qstType).withPartitioning();
+            } else {
+                column = ColumnDefinition.of(name, qstType);
             }
+            columns.add(column);
         }
 
         return TableDefinition.of(columns);
@@ -84,7 +79,9 @@ public class IcebergTools {
                 return io.deephaven.qst.type.Type.find(byte[].class);
             }
         }
-        throw new UnsupportedOperationException("Unsupported type: " + typeId);
+        throw new TableDataException(
+                "Unsupported iceberg column type " + typeId.name() +
+                        " with logical type " + typeId.javaClass());
     }
 
     private IcebergTools() {}

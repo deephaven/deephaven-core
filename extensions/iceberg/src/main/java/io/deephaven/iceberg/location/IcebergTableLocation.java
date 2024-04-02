@@ -25,7 +25,7 @@ public class IcebergTableLocation implements TableLocation {
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
 
-    AbstractTableLocation internalTableLocation;
+    private final AbstractTableLocation internalTableLocation;
 
     public IcebergTableLocation(@NotNull final TableKey tableKey,
             @NotNull final IcebergTableLocationKey tableLocationKey,
@@ -54,7 +54,8 @@ public class IcebergTableLocation implements TableLocation {
     }
 
     @Override
-    public @NotNull ImmutableTableLocationKey getKey() {
+    @NotNull
+    public ImmutableTableLocationKey getKey() {
         return tableLocationKey;
     }
 
@@ -79,12 +80,14 @@ public class IcebergTableLocation implements TableLocation {
     }
 
     @Override
-    public @NotNull List<SortColumn> getSortedColumns() {
+    @NotNull
+    public List<SortColumn> getSortedColumns() {
         return internalTableLocation.getSortedColumns();
     }
 
     @Override
-    public @NotNull List<String[]> getDataIndexColumns() {
+    @NotNull
+    public List<String[]> getDataIndexColumns() {
         return internalTableLocation.getDataIndexColumns();
     }
 
@@ -94,17 +97,20 @@ public class IcebergTableLocation implements TableLocation {
     }
 
     @Override
-    public @Nullable BasicDataIndex getDataIndex(@NotNull String... columns) {
+    @Nullable
+    public BasicDataIndex getDataIndex(@NotNull String... columns) {
         return internalTableLocation.getDataIndex(columns);
     }
 
     @Override
-    public @NotNull ColumnLocation getColumnLocation(@NotNull CharSequence name) {
+    @NotNull
+    public ColumnLocation getColumnLocation(@NotNull CharSequence name) {
         return internalTableLocation.getColumnLocation(name);
     }
 
     @Override
-    public @NotNull Object getStateLock() {
+    @NotNull
+    public Object getStateLock() {
         return internalTableLocation.getStateLock();
     }
 

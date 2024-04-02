@@ -7,7 +7,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +22,7 @@ import java.util.function.Consumer;
  * Iceberg {@link TableLocationKeyFinder location finder} for tables without partitions that will discover data files
  * from a {@link org.apache.iceberg.Snapshot}
  */
-public final class IcebergPartitionedLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
+public final class IcebergKeyValuePartitionedLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     private final Snapshot tableSnapshot;
     private final FileIO fileIO;
     private final String[] partitionColumns;
@@ -44,7 +43,7 @@ public final class IcebergPartitionedLayout implements TableLocationKeyFinder<Ic
      * @param partitionColumns The columns to use for partitioning.
      * @param readInstructions The instructions for customizations while reading.
      */
-    public IcebergPartitionedLayout(
+    public IcebergKeyValuePartitionedLayout(
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final String[] partitionColumns,

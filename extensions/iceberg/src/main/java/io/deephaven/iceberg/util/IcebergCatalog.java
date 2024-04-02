@@ -17,7 +17,7 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
-import io.deephaven.iceberg.layout.IcebergPartitionedLayout;
+import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -44,13 +44,13 @@ public class IcebergCatalog {
     private final S3Instructions s3Instructions;
 
     /**
-     * Construct an IcebergCatalog given a set of configurable instructions..
+     * Construct an IcebergCatalog given a set of configurable instructions.
      *
      * @param name The optional service name
      */
     IcebergCatalog(final @Nullable String name, final IcebergInstructions instructions) {
         // Set up the properties map for the Iceberg catalog
-        Map<String, String> properties = new HashMap<>();
+        final Map<String, String> properties = new HashMap<>();
 
         final Configuration conf = new Configuration();
 
@@ -181,7 +181,7 @@ public class IcebergCatalog {
                     partitionSpec.fields().stream().map(PartitionField::name).toArray(String[]::new);
 
             // Create the partitioning column location key finder
-            keyFinder = new IcebergPartitionedLayout(
+            keyFinder = new IcebergKeyValuePartitionedLayout(
                     snapshot,
                     fileIO,
                     partitionColumns,

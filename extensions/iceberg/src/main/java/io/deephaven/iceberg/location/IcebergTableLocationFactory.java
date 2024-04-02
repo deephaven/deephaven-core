@@ -31,8 +31,8 @@ public final class IcebergTableLocationFactory implements TableLocationFactory<T
     public TableLocation makeLocation(@NotNull final TableKey tableKey,
             @NotNull final IcebergTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
-        final URI parquetFileURI = locationKey.getURI();
-        if (!FILE_URI_SCHEME.equals(parquetFileURI.getScheme()) || new File(parquetFileURI).exists()) {
+        final URI fileURI = locationKey.getURI();
+        if (!FILE_URI_SCHEME.equals(fileURI.getScheme()) || new File(fileURI).exists()) {
             return new IcebergTableLocation(tableKey, locationKey, readInstructions);
         } else {
             return new NonexistentTableLocation(tableKey, locationKey);
