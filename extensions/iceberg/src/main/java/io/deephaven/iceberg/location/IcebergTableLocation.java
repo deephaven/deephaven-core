@@ -1,10 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.iceberg.location;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -12,6 +14,9 @@ import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.FileFormat;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public class IcebergTableLocation implements TableLocation {
 
@@ -71,6 +76,26 @@ public class IcebergTableLocation implements TableLocation {
     @Override
     public void refresh() {
         internalTableLocation.refresh();
+    }
+
+    @Override
+    public @NotNull List<SortColumn> getSortedColumns() {
+        return internalTableLocation.getSortedColumns();
+    }
+
+    @Override
+    public @NotNull List<String[]> getDataIndexColumns() {
+        return internalTableLocation.getDataIndexColumns();
+    }
+
+    @Override
+    public boolean hasDataIndex(@NotNull String... columns) {
+        return internalTableLocation.hasDataIndex(columns);
+    }
+
+    @Override
+    public @Nullable BasicDataIndex getDataIndex(@NotNull String... columns) {
+        return internalTableLocation.getDataIndex(columns);
     }
 
     @Override
