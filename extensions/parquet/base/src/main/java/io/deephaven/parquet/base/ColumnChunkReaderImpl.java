@@ -10,6 +10,7 @@ import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import io.deephaven.util.datastructures.LazyCachingFunction;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -41,18 +42,13 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final ColumnChunk columnChunk;
     private final SeekableChannelsProvider channelsProvider;
-    /**
-     * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
-     */
-    private final URI rootURI;
     private final CompressorAdapter decompressor;
     private final ColumnDescriptor path;
-    private final OffsetIndex offsetIndex;
+    private OffsetIndexReader offsetIndexReader;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
     private final PageMaterializerFactory nullMaterializerFactory;
-
-    private URI uri;
+    private final URI columnChunkURI;
     /**
      * Number of rows in the row group of this column chunk.
      */
@@ -63,11 +59,9 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final String version;
 
     ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, URI rootURI,
-            MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes, final long numRows,
-            final String version) {
+            MessageType type, List<Type> fieldTypes, final long numRows, final String version) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
-        this.rootURI = rootURI;
         this.path = type
                 .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
@@ -76,12 +70,22 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         } else {
             decompressor = CompressorAdapter.PASSTHRU;
         }
-        this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new LazyCachingFunction<>(this::getDictionary);
         this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
         this.numRows = numRows;
         this.version = version;
+        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
+            final String relativePath = FilenameUtils.separatorsToSystem(columnChunk.getFile_path());
+            this.columnChunkURI = convertToURI(Path.of(rootURI).resolve(relativePath), false);
+        } else {
+            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
+            this.columnChunkURI = rootURI;
+        }
+        // Construct the reader object but don't read the offset index yet
+        this.offsetIndexReader = (columnChunk.isSetOffset_index_offset())
+                ? new OffsetIndexReaderImpl(channelsProvider, columnChunk, columnChunkURI)
+                : OffsetIndexReader.NULL;
     }
 
     @Override
@@ -99,8 +103,16 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         return path.getMaxRepetitionLevel();
     }
 
-    public OffsetIndex getOffsetIndex() {
-        return offsetIndex;
+    @Override
+    public boolean hasOffsetIndex() {
+        return columnChunk.isSetOffset_index_offset();
+    }
+
+    @Override
+    public OffsetIndex getOffsetIndex(final SeekableChannelContext context) {
+        // Reads and caches the offset index if it hasn't been read yet. Throws an exception if the offset index cannot
+        // be read from this source
+        return offsetIndexReader.getOffsetIndex(context);
     }
 
     @Override
@@ -109,23 +121,15 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public final ColumnPageDirectAccessor getPageAccessor() {
+    public ColumnPageDirectAccessor getPageAccessor(final OffsetIndex offsetIndex) {
         if (offsetIndex == null) {
             throw new UnsupportedOperationException("Cannot use direct accessor without offset index");
         }
-        return new ColumnPageDirectAccessorImpl();
+        return new ColumnPageDirectAccessorImpl(offsetIndex);
     }
 
     private URI getURI() {
-        if (uri != null) {
-            return uri;
-        }
-        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
-            return uri = convertToURI(Path.of(rootURI).resolve(columnChunk.getFile_path()), false);
-        } else {
-            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
-            return uri = rootURI;
-        }
+        return columnChunkURI;
     }
 
     @Override
@@ -308,7 +312,11 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
 
-        ColumnPageDirectAccessorImpl() {}
+        private final OffsetIndex offsetIndex;
+
+        ColumnPageDirectAccessorImpl(final OffsetIndex offsetIndex) {
+            this.offsetIndex = offsetIndex;
+        }
 
         @Override
         public ColumnPageReader getPageReader(final int pageNum, final SeekableChannelContext channelContext) {
