@@ -8,7 +8,6 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.NonexistentTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.parquet.table.ParquetInstructions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,10 +20,9 @@ import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
  * {@link TableLocationFactory} for {@link IcebergTableLocation}s.
  */
 public final class IcebergTableLocationFactory implements TableLocationFactory<TableKey, IcebergTableLocationKey> {
+    private final Object readInstructions;
 
-    private final ParquetInstructions readInstructions;
-
-    public IcebergTableLocationFactory(@NotNull final ParquetInstructions readInstructions) {
+    public IcebergTableLocationFactory(@NotNull final Object readInstructions) {
         this.readInstructions = readInstructions;
     }
 

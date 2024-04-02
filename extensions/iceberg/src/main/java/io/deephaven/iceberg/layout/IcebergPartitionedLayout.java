@@ -6,9 +6,7 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.CloseableIterator;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,14 +25,15 @@ public final class IcebergPartitionedLayout implements TableLocationKeyFinder<Ic
     private final Snapshot tableSnapshot;
     private final FileIO fileIO;
     private final String[] partitionColumns;
-    private final ParquetInstructions readInstructions;
+    private final Object readInstructions;
     private final Map<URI, IcebergTableLocationKey> cache;
 
     private static IcebergTableLocationKey locationKey(
+            final FileFormat format,
             final URI fileUri,
             final Map<String, Comparable<?>> partitions,
-            @NotNull final ParquetInstructions readInstructions) {
-        return new IcebergTableLocationKey(fileUri, 0, partitions, readInstructions);
+            @NotNull final Object readInstructions) {
+        return new IcebergTableLocationKey(format, fileUri, 0, partitions, readInstructions);
     }
 
     /**
@@ -47,7 +46,7 @@ public final class IcebergPartitionedLayout implements TableLocationKeyFinder<Ic
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final String[] partitionColumns,
-            @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final Object readInstructions) {
         this.tableSnapshot = tableSnapshot;
         this.fileIO = fileIO;
         this.partitionColumns = partitionColumns;
@@ -77,7 +76,7 @@ public final class IcebergPartitionedLayout implements TableLocationKeyFinder<Ic
                         for (int ii = 0; ii < partitionColumns.length; ++ii) {
                             partitions.put(partitionColumns[ii], (Comparable<?>) partitionData.get(ii));
                         }
-                        locationKey = locationKey(fileUri, partitions, readInstructions);
+                        locationKey = locationKey(df.format(), fileUri, partitions, readInstructions);
                         if (!locationKey.verifyFileReader()) {
                             continue;
                         }

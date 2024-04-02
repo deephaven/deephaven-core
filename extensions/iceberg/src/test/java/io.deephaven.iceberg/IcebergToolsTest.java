@@ -32,23 +32,35 @@ public class IcebergToolsTest extends TestCase {
                 .build();
     }
 
-    @Test
-    public void testListTables() {
-        final IcebergCatalog catalog = IcebergTools.createCatalog("minio-iceberg", instructions);
+    // TODO: discuss how to perform tests since they require a full MiniIO + Iceberg setup
 
-        final Namespace ns = Namespace.of("nyc");
-        final List<TableIdentifier> tables = catalog.listTables(ns);
-    }
-
-    @Test
-    public void testOpenTable() {
-        final IcebergCatalog catalog = IcebergTools.createCatalog("minio-iceberg", instructions);
-
-        final Namespace ns = Namespace.of("nyc");
-        final TableIdentifier tableId = TableIdentifier.of(ns, "taxis_partitioned");
-        io.deephaven.engine.table.Table table = catalog.readTable(tableId);
-
-        TableTools.showWithRowSet(table, 100, DateTimeUtils.timeZone(), System.out);
-    }
-
+    // @Test
+    // public void testListTables() {
+    // final IcebergCatalog catalog = IcebergTools.loadCatalog("minio-iceberg", instructions);
+    //
+    // final Namespace ns = Namespace.of("nyc");
+    // final List<TableIdentifier> tables = catalog.listTables(ns);
+    // }
+    //
+    // @Test
+    // public void testOpenTable() {
+    // final IcebergCatalog catalog = IcebergTools.loadCatalog("minio-iceberg", instructions);
+    //
+    // final Namespace ns = Namespace.of("nyc");
+    // final TableIdentifier tableId = TableIdentifier.of(ns, "taxis_partitioned");
+    // io.deephaven.engine.table.Table table = catalog.readTable(tableId);
+    //
+    // TableTools.showWithRowSet(table, 100, DateTimeUtils.timeZone(), System.out);
+    // }
+    //
+    // @Test
+    // public void testOpenAllTypesTable() {
+    // final IcebergCatalog catalog = IcebergTools.loadCatalog("minio-iceberg", instructions);
+    //
+    // final Namespace ns = Namespace.of("sample");
+    // final TableIdentifier tableId = TableIdentifier.of(ns, "all_types");
+    // io.deephaven.engine.table.Table table = catalog.readTable(tableId);
+    //
+    // TableTools.showWithRowSet(table, 100, DateTimeUtils.timeZone(), System.out);
+    // }
 }

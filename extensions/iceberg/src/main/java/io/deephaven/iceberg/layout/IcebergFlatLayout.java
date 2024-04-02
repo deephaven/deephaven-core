@@ -6,9 +6,7 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.CloseableIterator;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,11 +24,13 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
     private final Snapshot tableSnapshot;
     private final FileIO fileIO;
     private final Map<URI, IcebergTableLocationKey> cache;
-    private final ParquetInstructions readInstructions;
+    private final Object readInstructions;
 
-    private static IcebergTableLocationKey locationKey(final URI fileUri,
-            @NotNull final ParquetInstructions readInstructions) {
-        return new IcebergTableLocationKey(fileUri, 0, null, readInstructions);
+    private static IcebergTableLocationKey locationKey(
+            final FileFormat format,
+            final URI fileUri,
+            @NotNull final Object readInstructions) {
+        return new IcebergTableLocationKey(format, fileUri, 0, null, readInstructions);
     }
 
     /**
@@ -40,7 +40,7 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
     public IcebergFlatLayout(
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final Object readInstructions) {
         this.tableSnapshot = tableSnapshot;
         this.fileIO = fileIO;
         this.readInstructions = readInstructions;
@@ -63,7 +63,7 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
                     final URI fileUri = URI.create(df.path().toString());
                     IcebergTableLocationKey locationKey = cache.get(fileUri);
                     if (locationKey == null) {
-                        locationKey = locationKey(fileUri, readInstructions);
+                        locationKey = locationKey(df.format(), fileUri, readInstructions);
                         if (!locationKey.verifyFileReader()) {
                             continue;
                         }

@@ -3,25 +3,16 @@
  */
 package io.deephaven.iceberg.location;
 
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
-import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetTableWriter;
-import io.deephaven.parquet.table.ParquetTools;
-import org.apache.parquet.format.RowGroup;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import org.apache.iceberg.FileFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.
@@ -30,10 +21,9 @@ public class IcebergTableLocationKey extends URITableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = IcebergTableLocationKey.class.getSimpleName();
 
-    private ParquetFileReader fileReader;
-    private ParquetMetadata metadata;
-    private int[] rowGroupIndices;
-    private final ParquetInstructions readInstructions;
+    final FileFormat format;
+
+    final URITableLocationKey internalTableLocationKey;
 
     /**
      * Construct a new IcebergTableLocationKey for the supplied {@code fileUri} and {@code partitions}.
@@ -46,25 +36,21 @@ public class IcebergTableLocationKey extends URITableLocationKey {
      * @param readInstructions the instructions for customizations while reading
      */
     public IcebergTableLocationKey(
+            final FileFormat format,
             @NotNull final URI fileUri,
             final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
-            @NotNull final ParquetInstructions readInstructions) {
-        super(validateIcebergDataFile(fileUri), order, partitions);
-        this.readInstructions = readInstructions;
-    }
-
-    private static URI validateIcebergDataFile(@NotNull final URI fileUri) {
-        // TODO: when/if ORC format supported, need to accept and validate it.
-
-        // TODO: this file extension check is probably not needed (assuming we read the path from the manifest file)
-        // correctly).
-
-        if (!fileUri.getRawPath().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
-            throw new IllegalArgumentException(
-                    "Iceberg data file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+            @NotNull final Object readInstructions) {
+        super(fileUri, order, partitions);
+        this.format = format;
+        if (format == FileFormat.PARQUET) {
+            // This constructor will perform validation of the parquet file
+            final ParquetInstructions parquetInstructions = (ParquetInstructions) readInstructions;
+            this.internalTableLocationKey =
+                    new ParquetTableLocationKey(fileUri, order, partitions, parquetInstructions);
+        } else {
+            throw new IllegalArgumentException("Unsupported file format: " + format);
         }
-        return fileUri;
     }
 
     @Override
@@ -73,8 +59,7 @@ public class IcebergTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Returns {@code true} if a previous {@link ParquetFileReader} has been created, or if one was successfully created
-     * on-demand.
+     * Returns {@code true} if a previous file reader has been created, or if one was successfully created on-demand.
      *
      * <p>
      * When {@code false}, this may mean that the file:
@@ -85,107 +70,14 @@ public class IcebergTableLocationKey extends URITableLocationKey {
      * <li>is a corrupt parquet file</li>
      * </ol>
      *
-     * Callers wishing to handle these cases more explicit may call
-     * {@link ParquetTools#getParquetFileReaderChecked(URI, ParquetInstructions)}.
      *
      * @return true if the file reader exists or was successfully created
      */
     public synchronized boolean verifyFileReader() {
-        if (fileReader != null) {
-            return true;
+        if (format == FileFormat.PARQUET) {
+            return ((ParquetTableLocationKey) internalTableLocationKey).verifyFileReader();
+        } else {
+            throw new IllegalArgumentException("Unsupported file format: " + format);
         }
-        try {
-            fileReader = ParquetTools.getParquetFileReaderChecked(uri, readInstructions);
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Get a previously-{@link #setFileReader(ParquetFileReader) set} or on-demand created {@link ParquetFileReader} for
-     * this location key's {@code file}.
-     *
-     * @return A {@link ParquetFileReader} for this location key's {@code file}.
-     */
-    public synchronized ParquetFileReader getFileReader() {
-        if (fileReader != null) {
-            return fileReader;
-        }
-        return fileReader = ParquetTools.getParquetFileReader(uri, readInstructions);
-    }
-
-    /**
-     * Set the {@link ParquetFileReader} that will be returned by {@link #getFileReader()}. Pass {@code null} to force
-     * on-demand construction at the next invocation. Always clears cached {@link ParquetMetadata} and {@link RowGroup}
-     * indices.
-     *
-     * @param fileReader The new {@link ParquetFileReader}
-     */
-    public synchronized void setFileReader(final ParquetFileReader fileReader) {
-        this.fileReader = fileReader;
-        this.metadata = null;
-        this.rowGroupIndices = null;
-    }
-
-    /**
-     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or on-demand created {@link ParquetMetadata} for this
-     * location key's {@code file}.
-     *
-     * @return A {@link ParquetMetadata} for this location key's {@code file}.
-     */
-    public synchronized ParquetMetadata getMetadata() {
-        if (metadata != null) {
-            return metadata;
-        }
-        try {
-            return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getURI(), e);
-        }
-    }
-
-    /**
-     * Set the {@link ParquetMetadata} that will be returned by {@link #getMetadata()} ()}. Pass {@code null} to force
-     * on-demand construction at the next invocation.
-     *
-     * @param metadata The new {@link ParquetMetadata}
-     */
-    public synchronized void setMetadata(final ParquetMetadata metadata) {
-        this.metadata = metadata;
-    }
-
-    /**
-     * Get previously-{@link #setRowGroupIndices(int[]) set} or on-demand created {@link RowGroup} indices for this
-     * location key's current {@link ParquetFileReader}.
-     *
-     * @return {@link RowGroup} indices for this location key's current {@link ParquetFileReader}.
-     */
-    public synchronized int[] getRowGroupIndices() {
-        if (rowGroupIndices != null) {
-            return rowGroupIndices;
-        }
-        final List<RowGroup> rowGroups = getFileReader().fileMetaData.getRow_groups();
-        return rowGroupIndices = IntStream.range(0, rowGroups.size()).filter(rgi -> {
-            // 1. We can safely assume there's always at least one column. Our tools will refuse to write a
-            // column-less table, and other readers we've tested fail catastrophically.
-            // 2. null file path means the column is local to the file the metadata was read from (which had
-            // better be this file, in that case).
-            // 3. We're assuming row groups are contained within a single file.
-            // While it seems that row group *could* have column chunks splayed out into multiple files,
-            // we're not expecting that in this code path. To support it, discovery tools should figure out
-            // the row groups for a partition themselves and call setRowGroupReaders.
-            final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null || new File(filePath).getAbsoluteFile().toURI().equals(uri);
-        }).toArray();
-    }
-
-    /**
-     * Set the {@link RowGroup} indices that will be returned by {@link #getRowGroupIndices()}
-     *
-     * @param rowGroupIndices The new {@link RowGroup} indices
-     */
-    public synchronized void setRowGroupIndices(final int[] rowGroupIndices) {
-        this.rowGroupIndices = rowGroupIndices;
     }
 }

@@ -3,99 +3,37 @@
  */
 package io.deephaven.iceberg.location;
 
-import io.deephaven.chunk.attributes.Values;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocationState;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
-import io.deephaven.parquet.base.ColumnChunkReader;
-import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetSchemaReader;
-import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
-import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.util.channel.SeekableChannelContext;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import org.apache.parquet.column.ColumnDescriptor;
-import org.apache.parquet.format.RowGroup;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import org.apache.iceberg.FileFormat;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.util.*;
-import java.util.stream.IntStream;
+public class IcebergTableLocation implements TableLocation {
 
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+    private static final String IMPLEMENTATION_NAME = IcebergTableLocation.class.getSimpleName();
 
-public class IcebergTableLocation extends AbstractTableLocation {
+    private final ImmutableTableKey tableKey;
+    private final ImmutableTableLocationKey tableLocationKey;
 
-    private static final String IMPLEMENTATION_NAME = IcebergColumnLocation.class.getSimpleName();
-
-    private final ParquetInstructions readInstructions;
-    private final ParquetFileReader parquetFileReader;
-    private final int[] rowGroupIndices;
-
-    private final RowGroup[] rowGroups;
-    private final RegionedPageStore.Parameters regionParameters;
-    private final Map<String, String[]> parquetColumnNameToPath;
-    private final Map<String, GroupingColumnInfo> groupingColumns;
-    private final Map<String, ColumnTypeInfo> columnTypes;
-    private final String version;
-
-    private volatile RowGroupReader[] rowGroupReaders;
+    AbstractTableLocation internalTableLocation;
 
     public IcebergTableLocation(@NotNull final TableKey tableKey,
             @NotNull final IcebergTableLocationKey tableLocationKey,
-            @NotNull final ParquetInstructions readInstructions) {
-        super(tableKey, tableLocationKey, false);
-        this.readInstructions = readInstructions;
-        final ParquetMetadata parquetMetadata;
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (tableLocationKey) {
-            parquetFileReader = tableLocationKey.getFileReader();
-            parquetMetadata = tableLocationKey.getMetadata();
-            rowGroupIndices = tableLocationKey.getRowGroupIndices();
-        }
+            @NotNull final Object readInstructions) {
+        this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
+        this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
 
-        final int rowGroupCount = rowGroupIndices.length;
-        rowGroups = IntStream.of(rowGroupIndices)
-                .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
-                .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
-                .toArray(RowGroup[]::new);
-        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
-        regionParameters = new RegionedPageStore.Parameters(
-                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
-
-        parquetColumnNameToPath = new HashMap<>();
-        for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
-            final String[] path = column.getPath();
-            if (path.length > 1) {
-                parquetColumnNameToPath.put(path[0], path);
-            }
-        }
-
-        // TODO (https://github.com/deephaven/deephaven-core/issues/958):
-        // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
-        // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
-        // Obvious issues included grouping table paths, codecs, etc.
-        // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
-        final Optional<TableInfo> tableInfo =
-                ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
-        groupingColumns = tableInfo.map(TableInfo::groupingColumnMap).orElse(Collections.emptyMap());
-        columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
-        version = tableInfo.map(TableInfo::version).orElse(null);
-
-        if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
-            // We do not have the last modified time for non-file URIs
-            handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
+        if (tableLocationKey.format == FileFormat.PARQUET) {
+            this.internalTableLocation = new ParquetTableLocation(tableKey,
+                    (ParquetTableLocationKey) tableLocationKey.internalTableLocationKey,
+                    (ParquetInstructions) readInstructions);
         } else {
-            handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
+            throw new IllegalArgumentException("Unsupported file format: " + tableLocationKey.format);
         }
     }
 
@@ -105,75 +43,58 @@ public class IcebergTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public void refresh() {}
-
-    IcebergTableLocationKey getParquetKey() {
-        return (IcebergTableLocationKey) getKey();
-    }
-
-    ParquetInstructions getReadInstructions() {
-        return readInstructions;
-    }
-
-    SeekableChannelsProvider getChannelProvider() {
-        return parquetFileReader.getChannelsProvider();
-    }
-
-    RegionedPageStore.Parameters getRegionParameters() {
-        return regionParameters;
-    }
-
-    public Map<String, GroupingColumnInfo> getGroupingColumns() {
-        return groupingColumns;
-    }
-
-    public Map<String, ColumnTypeInfo> getColumnTypes() {
-        return columnTypes;
-    }
-
-    private RowGroupReader[] getRowGroupReaders() {
-        RowGroupReader[] local;
-        if ((local = rowGroupReaders) != null) {
-            return local;
-        }
-        synchronized (this) {
-            if ((local = rowGroupReaders) != null) {
-                return local;
-            }
-            return rowGroupReaders = IntStream.of(rowGroupIndices)
-                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, version))
-                    .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
-                    .toArray(RowGroupReader[]::new);
-        }
-    }
-
     @NotNull
-    @Override
-    protected IcebergColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
-        final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-        final List<String> nameList =
-                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders;
-        try (final SeekableChannelContext channelContext = getChannelProvider().makeSingleUseContext()) {
-            columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                    .map(rgr -> rgr.getColumnChunk(nameList, channelContext)).toArray(ColumnChunkReader[]::new);
-        }
-        final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
-        return new IcebergColumnLocation<>(this, columnName, parquetColumnName,
-                exists ? columnChunkReaders : null,
-                exists && groupingColumns.containsKey(parquetColumnName));
+    public ImmutableTableKey getTableKey() {
+        return tableKey;
     }
 
-    private RowSet computeIndex() {
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
+    @Override
+    public @NotNull ImmutableTableLocationKey getKey() {
+        return tableLocationKey;
+    }
 
-        for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
-            final long subRegionSize = rowGroups[rgi].getNum_rows();
-            final long subRegionFirstKey = (long) rgi << regionParameters.regionMaskNumBits;
-            final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
-            sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);
-        }
-        return sequentialBuilder.build();
+    @Override
+    public boolean supportsSubscriptions() {
+        return internalTableLocation.supportsSubscriptions();
+    }
+
+    @Override
+    public void subscribe(@NotNull Listener listener) {
+        internalTableLocation.subscribe(listener);
+    }
+
+    @Override
+    public void unsubscribe(@NotNull Listener listener) {
+        internalTableLocation.unsubscribe(listener);
+    }
+
+    @Override
+    public void refresh() {
+        internalTableLocation.refresh();
+    }
+
+    @Override
+    public @NotNull ColumnLocation getColumnLocation(@NotNull CharSequence name) {
+        return internalTableLocation.getColumnLocation(name);
+    }
+
+    @Override
+    public @NotNull Object getStateLock() {
+        return internalTableLocation.getStateLock();
+    }
+
+    @Override
+    public RowSet getRowSet() {
+        return internalTableLocation.getRowSet();
+    }
+
+    @Override
+    public long getSize() {
+        return internalTableLocation.getSize();
+    }
+
+    @Override
+    public long getLastModifiedTimeMillis() {
+        return internalTableLocation.getLastModifiedTimeMillis();
     }
 }
