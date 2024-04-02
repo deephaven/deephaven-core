@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
@@ -60,7 +61,7 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
             for (final ManifestFile manifestFile : manifestFiles) {
                 final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, fileIO);
                 for (DataFile df : reader) {
-                    final URI fileUri = URI.create(df.path().toString());
+                    final URI fileUri = FileUtils.convertToURI(df.path().toString(), false);
                     IcebergTableLocationKey locationKey = cache.get(fileUri);
                     if (locationKey == null) {
                         locationKey = locationKey(df.format(), fileUri, readInstructions);

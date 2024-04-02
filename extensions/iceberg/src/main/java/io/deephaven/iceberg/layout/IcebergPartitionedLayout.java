@@ -3,9 +3,11 @@
 //
 package io.deephaven.iceberg.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
@@ -68,8 +70,7 @@ public final class IcebergPartitionedLayout implements TableLocationKeyFinder<Ic
             for (final ManifestFile manifestFile : manifestFiles) {
                 final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, fileIO);
                 for (DataFile df : reader) {
-                    final URI fileUri = URI.create(df.path().toString());
-
+                    final URI fileUri = FileUtils.convertToURI(df.path().toString(), false);
                     IcebergTableLocationKey locationKey = cache.get(fileUri);
                     if (locationKey == null) {
                         final PartitionData partitionData = (PartitionData) df.partition();
