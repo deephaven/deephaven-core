@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/subscription/subscribe_thread.h"
 
@@ -24,12 +24,15 @@ using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::VerboseCast;
+using deephaven::client::arrowutil::ArrowBooleanColumnSource;
+using deephaven::client::arrowutil::ArrowCharColumnSource;
+using deephaven::client::arrowutil::ArrowDateTimeColumnSource;
+using deephaven::client::arrowutil::ArrowFloatColumnSource;
+using deephaven::client::arrowutil::ArrowDoubleColumnSource;
 using deephaven::client::arrowutil::ArrowInt8ColumnSource;
 using deephaven::client::arrowutil::ArrowInt16ColumnSource;
 using deephaven::client::arrowutil::ArrowInt32ColumnSource;
 using deephaven::client::arrowutil::ArrowInt64ColumnSource;
-using deephaven::client::arrowutil::ArrowBooleanColumnSource;
-using deephaven::client::arrowutil::ArrowDateTimeColumnSource;
 using deephaven::client::arrowutil::ArrowStringColumnSource;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
@@ -275,8 +278,23 @@ struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
     return arrow::Status::OK();
   }
 
+  arrow::Status Visit(const arrow::FloatArray &array) final {
+    result_ = ArrowFloatColumnSource::Create(std::move(storage_), &array);
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::DoubleArray &array) final {
+    result_ = ArrowDoubleColumnSource::Create(std::move(storage_), &array);
+    return arrow::Status::OK();
+  }
+
   arrow::Status Visit(const arrow::BooleanArray &array) final {
     result_ = ArrowBooleanColumnSource::Create(std::move(storage_), &array);
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::UInt16Array &array) final {
+    result_ = ArrowCharColumnSource::Create(std::move(storage_), &array);
     return arrow::Status::OK();
   }
 

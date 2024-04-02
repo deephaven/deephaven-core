@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -32,10 +35,10 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
             final BigInteger currentVal = objectValueChunk.get(pos);
 
             final boolean isCurrentNull = currentVal == null;
-            if(curVal == null) {
+            if (curVal == null) {
                 curVal = isCurrentNull ? null : currentVal;
             } else {
-                if(!isCurrentNull) {
+                if (!isCurrentNull) {
                     curVal = curVal.add(objectValueChunk.get(pos));
                 }
             }

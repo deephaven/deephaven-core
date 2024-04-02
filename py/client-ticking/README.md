@@ -33,39 +33,39 @@ you will continue to use that venv here.
 ### Install Cython in the venv
 
 If you've exited your venv, re-activate it with something like:
-```
+``` shell
 source ~/py/cython/bin/activate
 ```
 
 Then run 
-```
+``` shell
 pip3 install cython
 ```
 
 ### Build the shared library:
 
-```
+``` shell
 cd ${DHROOT}/py/client-ticking
 ```
 
-```
+``` shell
 # Ensure the DHCPP environment variable is set per the instructions above
-rm -rf build  # Ensure we clean the remnants of any pre-existing build.
-CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i
+rm -rf build dist  # Ensure we clean the remnants of any pre-existing build.
+DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) CFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i
 ```
 
 ### Install pydeephaven-ticking
 
 Build the wheel with
 
-```
-python3 setup.py bdist_wheel
+``` shell
+DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) python3 setup.py bdist_wheel
 ```
 
 Then install the package.
 Note the actual name of the `.whl` file may be different depending on system details.
 
-```
+``` shell
 pip3 install --force --no-deps dist/pydeephaven_ticking-<x.y.z>-cp310-cp310-linux_x86_64.whl
 ```
 
@@ -78,7 +78,7 @@ one from the PyPI repository.
 
 Run python from the venv while in this directory, and try this sample Python program:
 
-```
+``` python
 import pydeephaven as dh
 import time
 session = dh.Session() # assuming Deephaven Community Edition is running locally with the default configuration

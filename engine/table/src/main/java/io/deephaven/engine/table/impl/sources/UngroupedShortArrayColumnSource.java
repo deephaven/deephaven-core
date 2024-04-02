@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit UngroupedCharArrayColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit UngroupedCharArrayColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -13,7 +12,8 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
-public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short> implements MutableColumnSourceGetDefaults.ForShort {
+public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short>
+        implements MutableColumnSourceGetDefaults.ForShort {
     private ColumnSource<short[]> innerSource;
 
     @Override
@@ -32,10 +32,10 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
         if (rowKey < 0) {
             return NULL_SHORT;
         }
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         short[] array = innerSource.get(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return NULL_SHORT;
         }
         return array[offset];
@@ -47,9 +47,9 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
             return NULL_SHORT;
         }
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         short[] array = innerSource.getPrev(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return NULL_SHORT;
         }
         return array[offset];

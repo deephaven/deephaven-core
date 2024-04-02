@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -38,7 +38,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
 
     public CharRangeFilter(String columnName, char val1, char val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-        if(CharComparisons.gt(val1, val2)) {
+        if (CharComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
         } else {
@@ -70,7 +70,8 @@ public class CharRangeFilter extends AbstractRangeFilter {
 
         final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
-            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
+                    + tableDefinition.getColumnNames());
         }
 
         final Class<?> colClass = TypeUtils.getUnboxedTypeIfBoxed(def.getDataType());
@@ -111,22 +112,25 @@ public class CharRangeFilter extends AbstractRangeFilter {
             return selection.copy();
         }
 
-        //noinspection unchecked
-        final ColumnSource<Character> charColumnSource = (ColumnSource<Character>)columnSource;
+        // noinspection unchecked
+        final ColumnSource<Character> charColumnSource = (ColumnSource<Character>) columnSource;
 
         final char startValue = reverse ? upper : lower;
         final char endValue = reverse ? lower : upper;
         final boolean startInclusive = reverse ? upperInclusive : lowerInclusive;
         final boolean endInclusive = reverse ? lowerInclusive : upperInclusive;
-        final int compareSign = reverse ? - 1 : 1;
+        final int compareSign = reverse ? -1 : 1;
 
-        long lowerBoundMin = bound(selection, usePrev, charColumnSource, 0, selection.size(), startValue, startInclusive, compareSign, false);
-        long upperBoundMin = bound(selection, usePrev, charColumnSource, lowerBoundMin, selection.size(), endValue, endInclusive, compareSign, true);
+        long lowerBoundMin = bound(selection, usePrev, charColumnSource, 0, selection.size(), startValue,
+                startInclusive, compareSign, false);
+        long upperBoundMin = bound(selection, usePrev, charColumnSource, lowerBoundMin, selection.size(), endValue,
+                endInclusive, compareSign, true);
 
         return selection.subSetByPositionRange(lowerBoundMin, upperBoundMin);
     }
 
-    private long bound(RowSet selection, boolean usePrev, ColumnSource<Character> longColumnSource, long minPosition, long maxPosition, char targetValue, boolean inclusive, int compareSign, boolean end) {
+    private long bound(RowSet selection, boolean usePrev, ColumnSource<Character> longColumnSource, long minPosition,
+            long maxPosition, char targetValue, boolean inclusive, int compareSign, boolean end) {
         while (minPosition < maxPosition) {
             final long midPos = (minPosition + maxPosition) / 2;
             final long midIdx = selection.get(midPos);

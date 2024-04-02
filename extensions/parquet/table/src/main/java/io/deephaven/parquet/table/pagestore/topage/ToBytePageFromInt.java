@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ToCharPageFromInt and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ToCharPageFromInt and run "./gradlew replicateToPage" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
@@ -22,7 +21,7 @@ public class ToBytePageFromInt<ATTR extends Any> implements ToPage<ATTR, byte[]>
 
     public static <ATTR extends Any> ToBytePageFromInt<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || byte.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 
@@ -52,8 +51,8 @@ public class ToBytePageFromInt<ATTR extends Any> implements ToPage<ATTR, byte[]>
     @Override
     @NotNull
     public final byte[] convertResult(Object result) {
-        int [] from = (int []) result;
-        byte [] to = new byte [from.length];
+        int[] from = (int[]) result;
+        byte[] to = new byte[from.length];
 
         for (int i = 0; i < from.length; ++i) {
             to[i] = (byte) from[i];

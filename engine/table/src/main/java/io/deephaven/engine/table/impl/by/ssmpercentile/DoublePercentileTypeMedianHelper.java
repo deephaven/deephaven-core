@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatPercentileTypeMedianHelper and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatPercentileTypeMedianHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.engine.table.WritableColumnSource;
@@ -22,7 +21,7 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
     DoublePercentileTypeMedianHelper(double percentile, WritableColumnSource resultColumn) {
         super(percentile, resultColumn);
         this.percentile = percentile;
-        this.resultColumn = (DoubleArraySource)resultColumn;
+        this.resultColumn = (DoubleArraySource) resultColumn;
     }
 
     @Override
@@ -34,7 +33,7 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
         if (totalSize == 0) {
             return setResult(destination, NULL_DOUBLE);
         } else {
-            final long targetLo = (int)((totalSize - 1) * percentile) + 1;
+            final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);
             } else if (loSize > targetLo) {
@@ -42,10 +41,11 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                final double divisor = (double)2.0;
-                return setResult(destination, (((DoubleSegmentedSortedMultiset)ssmLo).getMaxDouble() + ((DoubleSegmentedSortedMultiset)ssmHi).getMinDouble()) / divisor);
+                final double divisor = (double) 2.0;
+                return setResult(destination, (((DoubleSegmentedSortedMultiset) ssmLo).getMaxDouble()
+                        + ((DoubleSegmentedSortedMultiset) ssmHi).getMinDouble()) / divisor);
             } else {
-                return setResult(destination, ((DoubleSegmentedSortedMultiset)ssmLo).getMaxDouble());
+                return setResult(destination, ((DoubleSegmentedSortedMultiset) ssmLo).getMaxDouble());
             }
         }
     }

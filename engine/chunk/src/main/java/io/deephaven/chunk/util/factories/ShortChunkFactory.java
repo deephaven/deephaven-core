@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFactory and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -42,28 +41,28 @@ public class ShortChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> ShortChunk<ATTR> chunkWrap(Object array) {
-        final short[] typedArray = (short[])array;
+        final short[] typedArray = (short[]) array;
         return ShortChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ShortChunk<ATTR> chunkWrap(Object array, int offset, int capacity) {
-        final short[] typedArray = (short[])array;
+        final short[] typedArray = (short[]) array;
         return ShortChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ShortChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        ShortChunk<ATTR>[] typedArray = (ShortChunk<ATTR>[])array;
+        ShortChunk<ATTR>[] typedArray = (ShortChunk<ATTR>[]) array;
         return ShortChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ShortChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-        ShortChunk<ATTR>[] typedArray = (ShortChunk<ATTR>[])array;
+        ShortChunk<ATTR>[] typedArray = (ShortChunk<ATTR>[]) array;
         return ShortChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -95,14 +94,15 @@ public class ShortChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> WritableShortChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        final short[] realType = (short[])array;
+        final short[] realType = (short[]) array;
         return WritableShortChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableShortChunk<ATTR>[] actual = (WritableShortChunk<ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableShortChunk<ATTR>[] actual = (WritableShortChunk<ATTR>[]) array;
         return WritableShortChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

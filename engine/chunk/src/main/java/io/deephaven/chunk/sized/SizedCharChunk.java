@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.sized;
 
 import io.deephaven.chunk.WritableCharChunk;
@@ -15,7 +15,7 @@ import io.deephaven.util.SafeCloseable;
 public final class SizedCharChunk<T extends Any> implements SafeCloseable {
     private WritableCharChunk<T> chunk;
 
-    public SizedCharChunk(){}
+    public SizedCharChunk() {}
 
     public SizedCharChunk(final int initialSize) {
         chunk = WritableCharChunk.makeWritableChunk(initialSize);
@@ -33,7 +33,7 @@ public final class SizedCharChunk<T extends Any> implements SafeCloseable {
     /**
      * Ensure the underlying chunk has a capacity of at least {@code capacity}, preserving data.
      *
-     * The data and size of the returned chunk are undefined.  If you must maintain the data, then use
+     * The data and size of the returned chunk are undefined. If you must maintain the data, then use
      * {@link #ensureCapacityPreserve(int)}.
      *
      * @param capacity the minimum capacity for the chunk.
@@ -55,7 +55,7 @@ public final class SizedCharChunk<T extends Any> implements SafeCloseable {
      *
      * If the chunk has existing data, then it is copied to the new chunk.
      *
-     * If the underlying chunk already exists, then the size of the chunk is the original size.  If the chunk did not
+     * If the underlying chunk already exists, then the size of the chunk is the original size. If the chunk did not
      * exist, then the size of the returned chunk is zero.
      *
      * @param capacity the minimum capacity for the chunk.

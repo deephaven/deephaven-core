@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -61,8 +61,11 @@ public interface ColumnChunkReader {
     interface ColumnPageDirectAccessor {
         /**
          * Directly access a page reader for a given page number.
+         * 
+         * @param pageNum The page number to access.
+         * @param channelContext The channel context to use for constructing the reader
          */
-        ColumnPageReader getPageReader(int pageNum);
+        ColumnPageReader getPageReader(int pageNum, SeekableChannelContext channelContext);
     }
 
     /**

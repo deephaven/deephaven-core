@@ -54,5 +54,6 @@ setup(
     install_requires=['pyarrow',
                       'bitstring',
                       'grpcio',
-                      'protobuf']
+                      'protobuf'],
+    package_data={'pydeephaven': ['py.typed']}
 )

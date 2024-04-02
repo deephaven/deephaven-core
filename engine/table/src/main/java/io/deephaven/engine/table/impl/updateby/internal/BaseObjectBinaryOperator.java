@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.chunk.Chunk;
@@ -40,8 +43,8 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     }
 
     public BaseObjectBinaryOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @NotNull final Class<T> type) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final Class<T> type) {
         super(pair, affectingColumns, type);
     }
 

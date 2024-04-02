@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableConstantCharSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ImmutableConstantCharSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import java.time.Instant;
@@ -98,7 +97,7 @@ public class ImmutableConstantLongSource
             @NotNull FillContext context,
             @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        fillChunkUnordered(context , dest, keys);
+        fillChunkUnordered(context, dest, keys);
     }
 
     @Override

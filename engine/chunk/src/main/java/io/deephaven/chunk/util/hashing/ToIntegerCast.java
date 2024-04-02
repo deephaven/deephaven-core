@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.attributes.Any;
@@ -8,11 +8,11 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 
-public interface ToIntegerCast<T extends Any>  extends ToIntFunctor<T> {
+public interface ToIntegerCast<T extends Any> extends ToIntFunctor<T> {
     IntChunk<? extends T> apply(Chunk<? extends T> input);
 
     /**
-     * Create an IntFunctor that casts the values in an input chunk to an int.  An optional offset is applied to each
+     * Create an IntFunctor that casts the values in an input chunk to an int. An optional offset is applied to each
      * value after the cast.
      *
      * @param type the type of chunk, must be an integral primitive type

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.chunk.WritableIntChunk;
@@ -14,8 +14,9 @@ import java.nio.IntBuffer;
 
 final class IntTransfer extends FillingPrimitiveTransfer<WritableIntChunk<Values>, IntBuffer> {
     static IntTransfer create(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
-                              final int targetPageSizeInBytes) {
-        final int targetElementsPerPage = Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));
+            final int targetPageSizeInBytes) {
+        final int targetElementsPerPage =
+                Math.toIntExact(Math.min(tableRowSet.size(), targetPageSizeInBytes / Integer.BYTES));
         final int[] backingArray = new int[targetElementsPerPage];
         return new IntTransfer(
                 columnSource,

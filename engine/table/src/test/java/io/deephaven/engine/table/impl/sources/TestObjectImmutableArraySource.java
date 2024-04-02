@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.WritableObjectChunk;
@@ -20,10 +20,11 @@ public class TestObjectImmutableArraySource extends AbstractObjectColumnSourceTe
     @Override
     ImmutableObjectArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final ImmutableObjectArraySource<String> immutableObjectArraySource = new ImmutableObjectArraySource<>(String.class, null);
+        final ImmutableObjectArraySource<String> immutableObjectArraySource =
+                new ImmutableObjectArraySource<>(String.class, null);
         immutableObjectArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = immutableObjectArraySource.makeFillFromContext(capacity);
-             final WritableObjectChunk<?, Values> nullChunk = WritableObjectChunk.makeWritableChunk(capacity)) {
+                final WritableObjectChunk<?, Values> nullChunk = WritableObjectChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);
             immutableObjectArraySource.fillFromChunk(ffc, nullChunk, RowSetFactory.flat(capacity));
         }

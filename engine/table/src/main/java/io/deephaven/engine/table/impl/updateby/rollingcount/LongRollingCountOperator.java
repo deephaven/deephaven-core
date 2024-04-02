@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingCountOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingCountOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
@@ -43,6 +45,7 @@ public class LongRollingCountOperator extends BaseLongUpdateByOperator {
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
             influencerValuesChunk = valueChunks[0].asLongChunk();
         }
+
         @Override
         public void push(int pos, int count) {
             buffer.ensureRemaining(count);
@@ -97,8 +100,8 @@ public class LongRollingCountOperator extends BaseLongUpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
@@ -112,8 +115,8 @@ public class LongRollingCountOperator extends BaseLongUpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

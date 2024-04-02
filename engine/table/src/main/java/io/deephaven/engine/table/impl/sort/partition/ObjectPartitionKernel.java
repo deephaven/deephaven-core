@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPartitionKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharPartitionKernel and run "./gradlew replicateSortKernel" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.partition;
 
 import java.util.Objects;
@@ -43,11 +42,11 @@ public class ObjectPartitionKernel {
             pivotValues = WritableObjectChunk.makeWritableChunk(numPartitions - 1);
             pivotKeys = WritableLongChunk.makeWritableChunk(numPartitions - 1);
             if (preserveEquality) {
-                //noinspection unchecked
+                // noinspection unchecked
                 accumulatedKeys = new WritableLongChunk[numPartitions * 2 - 1];
                 builders = new RowSetBuilderSequential[numPartitions * 2 - 1];
             } else {
-                //noinspection unchecked
+                // noinspection unchecked
                 accumulatedKeys = new WritableLongChunk[numPartitions];
                 builders = new RowSetBuilderSequential[numPartitions];
             }
@@ -72,13 +71,18 @@ public class ObjectPartitionKernel {
             return partitions;
         }
 
-//        public void showPivots() {
-//            System.out.println("[" + IntStream.range(0, pivotValues.size()).mapToObj(pivotValues::get).map(ObjectPartitionKernel::format).collect(Collectors.joining(",")) + "]");
-//            System.out.println("[" + IntStream.range(0, pivotKeys.size()).mapToObj(pivotKeys::get).map(Object::toString).collect(Collectors.joining(",")) + "]");
-//        }
+        // public void showPivots() {
+        // System.out.println("[" + IntStream.range(0,
+        // pivotValues.size()).mapToObj(pivotValues::get).map(ObjectPartitionKernel::format).collect(Collectors.joining(","))
+        // + "]");
+        // System.out.println("[" + IntStream.range(0,
+        // pivotKeys.size()).mapToObj(pivotKeys::get).map(Object::toString).collect(Collectors.joining(",")) + "]");
+        // }
 
-        public ObjectLongTuple [] getPivots() {
-            return IntStream.range(0, pivotValues.size()).mapToObj(ii -> new ObjectLongTuple(pivotValues.get(ii), pivotKeys.get(ii))).toArray(ObjectLongTuple[]::new);
+        public ObjectLongTuple[] getPivots() {
+            return IntStream.range(0, pivotValues.size())
+                    .mapToObj(ii -> new ObjectLongTuple(pivotValues.get(ii), pivotKeys.get(ii)))
+                    .toArray(ObjectLongTuple[]::new);
         }
 
         @Override
@@ -91,22 +95,24 @@ public class ObjectPartitionKernel {
         }
     }
 
-//    private static String format(Object last) {
-//        if (last >= 'A' && last <= 'Z') {
-//            return Object.toString(last);
-//        }
-//        return String.format("0x%04x", (int) last);
-//    }
+    // private static String format(Object last) {
+    // if (last >= 'A' && last <= 'Z') {
+    // return Object.toString(last);
+    // }
+    // return String.format("0x%04x", (int) last);
+    // }
 
-    public static PartitionKernelContext createContext(RowSet rowSet, ColumnSource<Object> columnSource, int chunkSize, int nPartitions, boolean preserveEquality) {
+    public static PartitionKernelContext createContext(RowSet rowSet, ColumnSource<Object> columnSource,
+            int chunkSize, int nPartitions, boolean preserveEquality) {
         final PartitionKernelContext context = new PartitionKernelContext(chunkSize, nPartitions, preserveEquality);
 
         try (final WritableLongChunk<RowKeys> tempPivotKeys = WritableLongChunk.makeWritableChunk(nPartitions * 3);
-             final WritableObjectChunk<Object, Any> tempPivotValues = WritableObjectChunk.makeWritableChunk(nPartitions * 3)) {
+                final WritableObjectChunk<Object, Any> tempPivotValues = WritableObjectChunk.makeWritableChunk(nPartitions * 3)) {
 
             samplePivots(rowSet, nPartitions, tempPivotKeys, tempPivotValues, columnSource);
 
-            // copy from the oversized chunk, which was used for sorting into the chunk which we will use for our binary searches
+            // copy from the oversized chunk, which was used for sorting into the chunk which we will use for our binary
+            // searches
             for (int ii = 0; ii < tempPivotKeys.size(); ++ii) {
                 context.pivotKeys.set(ii, tempPivotKeys.get(ii));
                 context.pivotValues.set(ii, tempPivotValues.get(ii));
@@ -117,9 +123,10 @@ public class ObjectPartitionKernel {
     }
 
     // the sample pivots function could be smarter; in that if we are reading a block, there is a strong argument to
-    // sample the entirety of the relevant values within the block from disk.  We might also want to do a complete
+    // sample the entirety of the relevant values within the block from disk. We might also want to do a complete
     // linear pass so that we can determine ideal pivots (or maybe if a radix based approach is better).
-    private static void samplePivots(RowSet rowSet, int nPartitions, WritableLongChunk<RowKeys> pivotKeys, WritableObjectChunk<Object, Any> pivotValues, ColumnSource<Object> columnSource) {
+    private static void samplePivots(RowSet rowSet, int nPartitions, WritableLongChunk<RowKeys> pivotKeys,
+            WritableObjectChunk<Object, Any> pivotValues, ColumnSource<Object> columnSource) {
         pivotKeys.setSize(0);
         final int pivotsRequired = nPartitions - 1;
         final int samplesRequired = pivotsRequired * 3;
@@ -152,7 +159,7 @@ public class ObjectPartitionKernel {
      *
      * @param context our context, containing the pivots
      * @param indexKeys a chunk of row keys to partition
-     * @param values  a chunk of values that go with the row keys
+     * @param values a chunk of values that go with the row keys
      */
     public static void partition(PartitionKernelContext context, LongChunk<RowKeys> indexKeys, ObjectChunk values) {
         final int accumulatedChunkSize = context.chunkSize;
@@ -167,7 +174,8 @@ public class ObjectPartitionKernel {
                 if (context.preserveEquality) {
                     partition = binarySearchPreserve(context.pivotValues, 0, context.pivotValues.size(), searchValue);
                 } else {
-                    partition = binarySearchTieIndex(context.pivotValues, context.pivotKeys, 0, context.pivotValues.size(), searchValue, searchKey);
+                    partition = binarySearchTieIndex(context.pivotValues, context.pivotKeys, 0,
+                            context.pivotValues.size(), searchValue, searchKey);
                 }
                 context.accumulatedKeys[partition].add(searchKey);
                 if (context.accumulatedKeys[partition].size() == accumulatedChunkSize) {
@@ -200,7 +208,7 @@ public class ObjectPartitionKernel {
             final Object compareValue = pivotValues.get(mid);
             if (eq(searchValue, compareValue)) {
                 return mid * 2 + 1;
-            } else if (lt(searchValue , compareValue)) {
+            } else if (lt(searchValue, compareValue)) {
                 hi = mid;
             } else {
                 lo = mid + 1;
@@ -209,7 +217,8 @@ public class ObjectPartitionKernel {
         return lo * 2;
     }
 
-    private static int binarySearchTieIndex(ObjectChunk pivotValues, LongChunk<RowKeys> pivotKeys, int lo, int hi, Object searchValue, long searchKey) {
+    private static int binarySearchTieIndex(ObjectChunk pivotValues, LongChunk<RowKeys> pivotKeys, int lo, int hi,
+            Object searchValue, long searchKey) {
         while (lo != hi) {
             final int mid = (lo + hi) / 2;
             final Object compareValue = pivotValues.get(mid);

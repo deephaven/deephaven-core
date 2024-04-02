@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
@@ -22,6 +22,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.
@@ -70,7 +72,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     private static URI validateParquetFile(@NotNull final File file) {
-        return validateParquetFile(file.toURI());
+        return validateParquetFile(convertToURI(file, false));
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
@@ -189,7 +191,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
             final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null || new File(filePath).getAbsoluteFile().toURI().equals(uri);
+            return filePath == null || convertToURI(filePath, false).equals(uri);
         }).toArray();
     }
 

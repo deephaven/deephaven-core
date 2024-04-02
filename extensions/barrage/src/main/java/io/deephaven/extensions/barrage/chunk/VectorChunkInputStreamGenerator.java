@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
@@ -79,7 +79,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
     @Override
     public DrainableColumn getInputStream(final StreamReaderOptions options,
-                                          @Nullable final RowSet subset) throws IOException {
+            @Nullable final RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
     }
@@ -99,7 +99,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                 final MutableInt off = new MutableInt();
                 subset.forAllRowKeys(key -> {
                     final int startOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));
-                    final int endOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME,  key + 1));
+                    final int endOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key + 1));
                     final int idx = off.incrementAndGet();
                     myOffsets.set(idx, endOffset - startOffset + myOffsets.get(idx - 1));
                     if (endOffset > startOffset) {
@@ -122,7 +122,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllRowKeys(i -> {
-                    if (chunk.get((int)i) == null) {
+                    if (chunk.get((int) i) == null) {
                         ++cachedNullCount;
                     }
                 });
@@ -143,7 +143,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
 
             // offsets
-            long numOffsetBytes = Integer.BYTES * (((long)numElements) + (numElements > 0 ? 1 : 0));
+            long numOffsetBytes = Integer.BYTES * (((long) numElements) + (numElements > 0 ? 1 : 0));
             final long bytesExtended = numOffsetBytes & REMAINDER_MOD_8_MASK;
             if (bytesExtended > 0) {
                 numOffsetBytes += 8 - bytesExtended;
@@ -253,7 +253,8 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
         if (nodeInfo.numElements == 0) {
             try (final WritableChunk<Values> ignored = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter, is,
+                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter,
+                    is,
                     null, 0, 0)) {
                 if (outChunk != null) {
                     return outChunk.asWritableObjectChunk();
@@ -265,7 +266,8 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         final WritableObjectChunk<Vector<?>, Values> chunk;
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
-             final WritableIntChunk<ChunkPositions> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
+                final WritableIntChunk<ChunkPositions> offsets =
+                        WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
             for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
@@ -295,7 +297,8 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
             final VectorExpansionKernel kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentType);
             try (final WritableChunk<Values> inner = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter, is,
+                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter,
+                    is,
                     null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 

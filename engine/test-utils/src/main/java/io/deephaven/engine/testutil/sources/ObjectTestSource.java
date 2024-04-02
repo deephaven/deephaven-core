@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTestSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharTestSource and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.testutil.sources;
 
 import io.deephaven.base.verify.Assert;
@@ -77,8 +76,6 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
-        setGroupToRange(null);
-
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("rowSet=" + rowSet + ", data size=" + vs.size());
         }
@@ -111,8 +108,6 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
     @Override
     public synchronized void remove(RowSet rowSet) {
-        setGroupToRange(null);
-
         maybeInitializePrevForStep();
         rowSet.forAllRowKeys(data::remove);
     }
@@ -120,7 +115,6 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
     @Override
     public synchronized void shift(long startKeyInclusive, long endKeyInclusive, long shiftDelta) {
         maybeInitializePrevForStep();
-        setGroupToRange(null);
 
         // Note: moving to the right, we need to start with rightmost data first.
         final long dir = shiftDelta > 0 ? -1 : 1;

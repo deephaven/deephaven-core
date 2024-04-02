@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -37,7 +37,10 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> asCharChunk = values.asCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -47,7 +50,10 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> asCharChunk = values.asCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -57,12 +63,14 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asCharChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asCharChunk(), destination, 0, values.size());
     }
 
@@ -73,22 +81,28 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> newAsCharChunk = newValues.asCharChunk();
         final CharChunk<? extends Values> oldAsCharChunk = previousValues.asCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, modifyChunk(oldAsCharChunk, newAsCharChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii,
+                    modifyChunk(oldAsCharChunk, newAsCharChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return modifyChunk(previousValues.asCharChunk(), newValues.asCharChunk(), destination, 0, newValues.size());
     }
 
-    private boolean modifyChunk(CharChunk<? extends Values> oldValues, CharChunk<? extends Values> newValues, long destination, int chunkStart, int chunkSize) {
+    private boolean modifyChunk(CharChunk<? extends Values> oldValues, CharChunk<? extends Values> newValues,
+            long destination, int chunkStart, int chunkSize) {
         final MutableInt oldNonNullCount = new MutableInt(0);
         final MutableInt newNonNullCount = new MutableInt(0);
         final long oldSum = doSum(chunkStart, chunkSize, oldNonNullCount, oldValues);
@@ -102,7 +116,8 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
         return updateInternal(destination, -sum, -nonNullCount.intValue());
     }
 
-    private long doSum(int chunkStart, int chunkSize, MutableInt nonNullCount, CharChunk<? extends Values> asCharChunk) {
+    private long doSum(int chunkStart, int chunkSize, MutableInt nonNullCount,
+            CharChunk<? extends Values> asCharChunk) {
         if (absolute) {
             return SumCharChunk.sumCharChunkAbs(asCharChunk, chunkStart, chunkSize, nonNullCount);
         } else {
@@ -187,7 +202,8 @@ public class CharChunkedSumOperator implements IterativeChunkedAggregationOperat
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         resultColumn.fillChunk(context, destination, rowSequence);
     }
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -51,6 +51,8 @@ protected:
 template<typename T>
 class GenericChunk final : public Chunk {
 public:
+  using value_type = T;
+
   /**
    * Factory method. Create a Chunk having the specified size, with a privately allocated buffer.
    */

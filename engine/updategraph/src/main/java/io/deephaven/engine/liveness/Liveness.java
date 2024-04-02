@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.liveness;
 
 import io.deephaven.configuration.Configuration;
@@ -35,7 +35,7 @@ public final class Liveness {
             Configuration.getInstance().getBooleanWithDefault("Liveness.heapDump", false);
 
     static final boolean CLEANUP_LOG_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", true);
+            Configuration.getInstance().getBooleanWithDefault("Liveness.cleanupLogEnabled", false);
 
     private static final long OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS = 1000L;
 

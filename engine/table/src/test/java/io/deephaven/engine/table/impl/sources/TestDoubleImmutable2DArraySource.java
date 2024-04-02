@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharacterImmutable2DArraySource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharacterImmutable2DArraySource and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.WritableDoubleChunk;
@@ -27,7 +26,7 @@ public class TestDoubleImmutable2DArraySource extends AbstractDoubleColumnSource
         final Immutable2DDoubleArraySource flatDoubleArraySource = new Immutable2DDoubleArraySource(12);
         flatDoubleArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatDoubleArraySource.makeFillFromContext(capacity);
-             final WritableDoubleChunk nullChunk = WritableDoubleChunk.makeWritableChunk(capacity)) {
+                final WritableDoubleChunk nullChunk = WritableDoubleChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);
             flatDoubleArraySource.fillFromChunk(ffc, nullChunk, RowSetFactory.flat(capacity));
         }

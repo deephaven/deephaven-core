@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time;
 
 import io.deephaven.base.CompareUtils;
@@ -1837,6 +1837,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.lowerBin(instant, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second), second));
 
+        TestCase.assertEquals(DateTimeUtils.lowerBin(instant, Duration.ofMinutes(1)),
+                DateTimeUtils.lowerBin(instant, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((Instant) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.lowerBin(instant, second), TZ_AL),
@@ -1854,6 +1859,10 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second), second));
 
+        TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, Duration.ofMinutes(1)),
+                DateTimeUtils.lowerBin(zdt, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((ZonedDateTime) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, (Duration) null));
     }
 
     public void testLowerBinWithOffset() {
@@ -1871,6 +1880,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.lowerBin(instant, second, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second, second), second, second));
 
+        TestCase.assertEquals(DateTimeUtils.lowerBin(instant, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.lowerBin(instant, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.lowerBin((Instant) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, Duration.ofMinutes(1), (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:11:00 NY").withZoneSameInstant(TZ_AL),
@@ -1881,6 +1896,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, second, second),
                 DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second, second), second, second));
+
+        TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.lowerBin(zdt, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.lowerBin((ZonedDateTime) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, Duration.ofMinutes(1), (Duration) null));
     }
 
     public void testUpperBin() {
@@ -1902,6 +1923,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.upperBin(instant, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(instant, second), second));
 
+        TestCase.assertEquals(DateTimeUtils.upperBin(instant, Duration.ofMinutes(1)),
+                DateTimeUtils.upperBin(instant, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((Instant) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:14:02 NY").withZoneSameInstant(TZ_AL),
@@ -1915,6 +1941,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.upperBin(zdt, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second), second));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(zdt, Duration.ofMinutes(1)),
+                DateTimeUtils.upperBin(zdt, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, Duration.ofMinutes(1)));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, (Duration) null));
     }
 
     public void testUpperBinWithOffset() {
@@ -1932,6 +1963,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.upperBin(instant, second, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(instant, second, second), second, second));
 
+        TestCase.assertEquals(DateTimeUtils.upperBin(instant, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.upperBin(instant, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.upperBin((Instant) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, Duration.ofMinutes(1), (Duration) null));
+
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
         TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:16:00 NY").withZoneSameInstant(TZ_AL),
@@ -1942,6 +1979,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.upperBin(zdt, second, second),
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second, second), second, second));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(zdt, Duration.ofMinutes(1), Duration.ofSeconds(2)),
+                DateTimeUtils.upperBin(zdt, minute, 2 * second));
+        TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, Duration.ofMinutes(1), Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, (Duration) null, Duration.ofSeconds(2)));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, Duration.ofMinutes(1), (Duration) null));
     }
 
     public void testPlusLocalDate() {
@@ -2566,13 +2609,22 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testHourOfDay() {
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
+        final LocalTime lt = dt3.toLocalTime();
 
-        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt2, TZ_JP));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt2, null));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null, TZ_JP));
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt2, TZ_JP, true));
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt2, TZ_JP, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt2, null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt2, null, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null, TZ_JP, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null, TZ_JP, false));
 
-        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt3));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null));
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt3, true));
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt3, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null, false));
+
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(lt));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -2580,36 +2632,54 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final Instant dstI11 = DateTimeUtils.plus(dstMid1, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt11 = DateTimeUtils.toZonedDateTime(dstI11, ZoneId.of("America/Denver"));
-        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI11, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt11));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI11, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI11, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt11, true));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt11, false));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt11.toLocalTime()));
 
         final Instant dstI12 = DateTimeUtils.plus(dstMid1, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt12 = DateTimeUtils.toZonedDateTime(dstI12, ZoneId.of("America/Denver"));
-        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstI12, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstZdt12));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstI12, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstI12, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstZdt12, true));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstZdt12, false));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstZdt12.toLocalTime()));
 
         final Instant dstI13 = DateTimeUtils.plus(dstMid1, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt13 = DateTimeUtils.toZonedDateTime(dstI13, ZoneId.of("America/Denver"));
-        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstI13, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstZdt13));
+        TestCase.assertEquals(4, DateTimeUtils.hourOfDay(dstI13, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstI13, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(4, DateTimeUtils.hourOfDay(dstZdt13, true));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstZdt13, false));
+        TestCase.assertEquals(4, DateTimeUtils.hourOfDay(dstZdt13.toLocalTime()));
 
 
         final Instant dstMid2 = DateTimeUtils.parseInstant("2023-11-05T00:00:00 America/Denver");
 
         final Instant dstI21 = DateTimeUtils.plus(dstMid2, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt21 = DateTimeUtils.toZonedDateTime(dstI21, ZoneId.of("America/Denver"));
-        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI21, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt21));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI21, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI21, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt21, true));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt21, false));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt21.toLocalTime()));
 
         final Instant dstI22 = DateTimeUtils.plus(dstMid2, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt22 = DateTimeUtils.toZonedDateTime(dstI22, ZoneId.of("America/Denver"));
-        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstI22, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstZdt22));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstI22, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstI22, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt22, true));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstZdt22, false));
+        TestCase.assertEquals(1, DateTimeUtils.hourOfDay(dstZdt22.toLocalTime()));
 
         final Instant dstI23 = DateTimeUtils.plus(dstMid2, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt23 = DateTimeUtils.toZonedDateTime(dstI23, ZoneId.of("America/Denver"));
-        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstI23, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstZdt23));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstI23, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstI23, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstZdt23, true));
+        TestCase.assertEquals(3, DateTimeUtils.hourOfDay(dstZdt23, false));
+        TestCase.assertEquals(2, DateTimeUtils.hourOfDay(dstZdt23.toLocalTime()));
     }
 
     public void testMinuteOfHour() {
@@ -2627,13 +2697,22 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testMinuteOfDay() {
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
+        final LocalTime lt = dt3.toLocalTime();
 
-        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(dt2, TZ_JP));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt2, null));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null, TZ_JP));
+        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(dt2, TZ_JP, true));
+        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(dt2, TZ_JP, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt2, null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt2, null, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null, TZ_JP, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null, TZ_JP, false));
 
-        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(dt3));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null));
+        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(dt3, true));
+        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(dt3, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null, false));
+
+        TestCase.assertEquals(11 * 60 + 23, DateTimeUtils.minuteOfDay(lt));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -2642,20 +2721,37 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI11 = DateTimeUtils.plus(dstMid1, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt11 = DateTimeUtils.toZonedDateTime(dstI11, ZoneId.of("America/Denver"));
         TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
-                DateTimeUtils.minuteOfDay(dstI11, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt11));
+                DateTimeUtils.minuteOfDay(dstI11, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstI11, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt11, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt11, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt11.toLocalTime()));
 
         final Instant dstI12 = DateTimeUtils.plus(dstMid1, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt12 = DateTimeUtils.toZonedDateTime(dstI12, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstI12, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
-                DateTimeUtils.minuteOfDay(dstI12, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt12));
+                DateTimeUtils.minuteOfDay(dstI12, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt12, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt12, false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt12.toLocalTime()));
 
         final Instant dstI13 = DateTimeUtils.plus(dstMid1, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt13 = DateTimeUtils.toZonedDateTime(dstI13, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstI13, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
-                DateTimeUtils.minuteOfDay(dstI13, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt13));
+                DateTimeUtils.minuteOfDay(dstI13, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt13, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt13, false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt13.toLocalTime()));
 
 
         final Instant dstMid2 = DateTimeUtils.parseInstant("2023-11-05T00:00:00 America/Denver");
@@ -2663,20 +2759,37 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI21 = DateTimeUtils.plus(dstMid2, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt21 = DateTimeUtils.toZonedDateTime(dstI21, ZoneId.of("America/Denver"));
         TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
-                DateTimeUtils.minuteOfDay(dstI21, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt21));
+                DateTimeUtils.minuteOfDay(dstI21, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstI21, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt21, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt21, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt21.toLocalTime()));
 
         final Instant dstI22 = DateTimeUtils.plus(dstMid2, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt22 = DateTimeUtils.toZonedDateTime(dstI22, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstI22, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
-                DateTimeUtils.minuteOfDay(dstI22, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt22));
+                DateTimeUtils.minuteOfDay(dstI22, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt22, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt22, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt22.toLocalTime()));
 
         final Instant dstI23 = DateTimeUtils.plus(dstMid2, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt23 = DateTimeUtils.toZonedDateTime(dstI23, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstI23, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
-                DateTimeUtils.minuteOfDay(dstI23, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt23));
+                DateTimeUtils.minuteOfDay(dstI23, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE, DateTimeUtils.minuteOfDay(dstZdt23, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt23, false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MINUTE,
+                DateTimeUtils.minuteOfDay(dstZdt23.toLocalTime()));
     }
 
     public void testSecondOfMinute() {
@@ -2694,13 +2807,22 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testSecondOfDay() {
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
+        final LocalTime lt = dt3.toLocalTime();
 
-        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(dt2, TZ_JP));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt2, null));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null, TZ_JP));
+        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(dt2, TZ_JP, true));
+        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(dt2, TZ_JP, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt2, null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt2, null, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null, TZ_JP, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null, TZ_JP, false));
 
-        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(dt3));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null));
+        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(dt3, true));
+        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(dt3, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null, false));
+
+        TestCase.assertEquals(11 * 60 * 60 + 23 * 60 + 45, DateTimeUtils.secondOfDay(lt));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -2709,20 +2831,37 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI11 = DateTimeUtils.plus(dstMid1, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt11 = DateTimeUtils.toZonedDateTime(dstI11, ZoneId.of("America/Denver"));
         TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
-                DateTimeUtils.secondOfDay(dstI11, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt11));
+                DateTimeUtils.secondOfDay(dstI11, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstI11, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt11, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt11, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt11.toLocalTime()));
 
         final Instant dstI12 = DateTimeUtils.plus(dstMid1, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt12 = DateTimeUtils.toZonedDateTime(dstI12, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstI12, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
-                DateTimeUtils.secondOfDay(dstI12, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt12));
+                DateTimeUtils.secondOfDay(dstI12, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt12, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt12, false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt12.toLocalTime()));
 
         final Instant dstI13 = DateTimeUtils.plus(dstMid1, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt13 = DateTimeUtils.toZonedDateTime(dstI13, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstI13, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
-                DateTimeUtils.secondOfDay(dstI13, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt13));
+                DateTimeUtils.secondOfDay(dstI13, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt13, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt13, false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt13.toLocalTime()));
 
 
         final Instant dstMid2 = DateTimeUtils.parseInstant("2023-11-05T00:00:00 America/Denver");
@@ -2730,20 +2869,37 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI21 = DateTimeUtils.plus(dstMid2, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt21 = DateTimeUtils.toZonedDateTime(dstI21, ZoneId.of("America/Denver"));
         TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
-                DateTimeUtils.secondOfDay(dstI21, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt21));
+                DateTimeUtils.secondOfDay(dstI21, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstI21, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt21, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt21, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt21.toLocalTime()));
 
         final Instant dstI22 = DateTimeUtils.plus(dstMid2, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt22 = DateTimeUtils.toZonedDateTime(dstI22, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstI22, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
-                DateTimeUtils.secondOfDay(dstI22, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt22));
+                DateTimeUtils.secondOfDay(dstI22, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt22, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt22, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt22.toLocalTime()));
 
         final Instant dstI23 = DateTimeUtils.plus(dstMid2, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt23 = DateTimeUtils.toZonedDateTime(dstI23, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstI23, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
-                DateTimeUtils.secondOfDay(dstI23, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt23));
+                DateTimeUtils.secondOfDay(dstI23, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND, DateTimeUtils.secondOfDay(dstZdt23, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt23, false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.SECOND,
+                DateTimeUtils.secondOfDay(dstZdt23.toLocalTime()));
     }
 
     public void testNanosOfSecond() {
@@ -2775,12 +2931,17 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final LocalTime lt = dt3.toLocalTime();
         final long expectedNanos = 123456789L + 1_000_000_000L * (45 + 23 * 60 + 11 * 60 * 60);
 
-        TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(dt2, TZ_JP));
-        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt2, null));
-        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(null, TZ_JP));
+        TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(dt2, TZ_JP, true));
+        TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(dt2, TZ_JP, false));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt2, null, true));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt2, null, false));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(null, TZ_JP, true));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(null, TZ_JP, false));
 
-        TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(dt3));
-        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((ZonedDateTime) null));
+        TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(dt3, true));
+        TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(dt3, false));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((ZonedDateTime) null, true));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((ZonedDateTime) null, false));
 
         TestCase.assertEquals(expectedNanos, DateTimeUtils.nanosOfDay(lt));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((LocalTime) null));
@@ -2792,23 +2953,33 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI11 = DateTimeUtils.plus(dstMid1, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt11 = DateTimeUtils.toZonedDateTime(dstI11, ZoneId.of("America/Denver"));
         final LocalTime dstLt11 = dstZdt11.toLocalTime();
-        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI11, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt11));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI11, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI11, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt11, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt11, false));
         TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstLt11));
 
 
         final Instant dstI12 = DateTimeUtils.plus(dstMid1, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt12 = DateTimeUtils.toZonedDateTime(dstI12, ZoneId.of("America/Denver"));
         final LocalTime dstLt12 = dstZdt12.toLocalTime();
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI12, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt12));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI12, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI12, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt12, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt12, false));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstLt12)); // Adjusted
 
         final Instant dstI13 = DateTimeUtils.plus(dstMid1, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt13 = DateTimeUtils.toZonedDateTime(dstI13, ZoneId.of("America/Denver"));
         final LocalTime dstLt13 = dstZdt13.toLocalTime();
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI13, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt13));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI13, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI13, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt13, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt13, false));
         TestCase.assertEquals(4 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstLt13)); // Adjusted
 
 
@@ -2817,22 +2988,31 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI21 = DateTimeUtils.plus(dstMid2, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt21 = DateTimeUtils.toZonedDateTime(dstI21, ZoneId.of("America/Denver"));
         final LocalTime dstLt21 = dstZdt21.toLocalTime();
-        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI21, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt21));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI21, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI21, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt21, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt21, false));
         TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstLt21));
 
         final Instant dstI22 = DateTimeUtils.plus(dstMid2, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt22 = DateTimeUtils.toZonedDateTime(dstI22, ZoneId.of("America/Denver"));
         final LocalTime dstLt22 = dstZdt22.toLocalTime();
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI22, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt22));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI22, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI22, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt22, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt22, false));
         TestCase.assertEquals(DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstLt22)); // Adjusted
 
         final Instant dstI23 = DateTimeUtils.plus(dstMid2, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt23 = DateTimeUtils.toZonedDateTime(dstI23, ZoneId.of("America/Denver"));
         final LocalTime dstLt23 = dstZdt23.toLocalTime();
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstI23, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt23));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI23, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR,
+                DateTimeUtils.nanosOfDay(dstI23, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt23, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstZdt23, false));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR, DateTimeUtils.nanosOfDay(dstLt23)); // Adjusted
     }
 
@@ -2851,13 +3031,24 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testMillisOfDay() {
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
+        final LocalTime lt = dt3.toLocalTime();
 
-        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.millisOfDay(dt2, TZ_JP));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt2, null));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null, TZ_JP));
+        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60),
+                DateTimeUtils.millisOfDay(dt2, TZ_JP, true));
+        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60),
+                DateTimeUtils.millisOfDay(dt2, TZ_JP, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt2, null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt2, null, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null, TZ_JP, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null, TZ_JP, false));
 
-        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.millisOfDay(dt3));
-        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null));
+        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.millisOfDay(dt3, true));
+        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.millisOfDay(dt3, false));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null, true));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null, false));
+
+        TestCase.assertEquals(123L + 1_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.millisOfDay(lt));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay((LocalTime) null));
 
         // Test daylight savings time
 
@@ -2866,20 +3057,35 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI11 = DateTimeUtils.plus(dstMid1, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt11 = DateTimeUtils.toZonedDateTime(dstI11, ZoneId.of("America/Denver"));
         TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
-                DateTimeUtils.millisOfDay(dstI11, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt11));
+                DateTimeUtils.millisOfDay(dstI11, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstI11, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt11, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt11, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstZdt11.toLocalTime()));
 
         final Instant dstI12 = DateTimeUtils.plus(dstMid1, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt12 = DateTimeUtils.toZonedDateTime(dstI12, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstI12, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
-                DateTimeUtils.millisOfDay(dstI12, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt12));
+                DateTimeUtils.millisOfDay(dstI12, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt12, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt12, false));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstZdt12.toLocalTime()));
 
         final Instant dstI13 = DateTimeUtils.plus(dstMid1, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt13 = DateTimeUtils.toZonedDateTime(dstI13, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstI13, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
-                DateTimeUtils.millisOfDay(dstI13, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt13));
+                DateTimeUtils.millisOfDay(dstI13, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt13, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt13, false));
+        TestCase.assertEquals(4 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstZdt13.toLocalTime()));
 
 
         final Instant dstMid2 = DateTimeUtils.parseInstant("2023-11-05T00:00:00 America/Denver");
@@ -2887,20 +3093,35 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dstI21 = DateTimeUtils.plus(dstMid2, DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt21 = DateTimeUtils.toZonedDateTime(dstI21, ZoneId.of("America/Denver"));
         TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
-                DateTimeUtils.millisOfDay(dstI21, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt21));
+                DateTimeUtils.millisOfDay(dstI21, ZoneId.of("America/Denver"), true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstI21, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt21, true));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt21, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstZdt21.toLocalTime()));
 
         final Instant dstI22 = DateTimeUtils.plus(dstMid2, 2 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt22 = DateTimeUtils.toZonedDateTime(dstI22, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstI22, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
-                DateTimeUtils.millisOfDay(dstI22, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt22));
+                DateTimeUtils.millisOfDay(dstI22, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt22, true));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt22, false));
+        TestCase.assertEquals(DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstZdt22.toLocalTime()));
 
         final Instant dstI23 = DateTimeUtils.plus(dstMid2, 3 * DateTimeUtils.HOUR);
         final ZonedDateTime dstZdt23 = DateTimeUtils.toZonedDateTime(dstI23, ZoneId.of("America/Denver"));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstI23, ZoneId.of("America/Denver"), true));
         TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
-                DateTimeUtils.millisOfDay(dstI23, ZoneId.of("America/Denver")));
-        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt23));
+                DateTimeUtils.millisOfDay(dstI23, ZoneId.of("America/Denver"), false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt23, true));
+        TestCase.assertEquals(3 * DateTimeUtils.HOUR / DateTimeUtils.MILLI, DateTimeUtils.millisOfDay(dstZdt23, false));
+        TestCase.assertEquals(2 * DateTimeUtils.HOUR / DateTimeUtils.MILLI,
+                DateTimeUtils.millisOfDay(dstZdt23.toLocalTime()));
     }
 
     public void testMicrosOfSecond() {

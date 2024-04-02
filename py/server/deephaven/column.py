@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 """ This module implements the Column class and functions that work with Columns. """
@@ -25,8 +25,6 @@ _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.comm
 class ColumnType(Enum):
     NORMAL = _JColumnDefinitionType.Normal
     """ A regular column. """
-    GROUPING = _JColumnDefinitionType.Grouping
-    """ A grouping column. """
     PARTITIONING = _JColumnDefinitionType.Partitioning
     """ A partitioning column. """
 

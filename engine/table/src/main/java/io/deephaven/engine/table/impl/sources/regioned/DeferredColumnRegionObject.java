@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
@@ -20,7 +20,8 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
         implements ColumnRegionObject<DATA_TYPE, ATTR> {
 
-    DeferredColumnRegionObject(final long pageMask, @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> resultRegionFactory) {
+    DeferredColumnRegionObject(final long pageMask,
+            @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> resultRegionFactory) {
         super(pageMask, resultRegionFactory);
     }
 
@@ -41,8 +42,8 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
 
     @Override
     public boolean gatherDictionaryValuesRowSet(@NotNull final RowSet.SearchIterator keysToVisit,
-                                                @NotNull final RowSequence.Iterator knownKeys,
-                                                @NotNull final RowSetBuilderSequential sequentialBuilder) {
+            @NotNull final RowSequence.Iterator knownKeys,
+            @NotNull final RowSetBuilderSequential sequentialBuilder) {
         return getResultRegion().gatherDictionaryValuesRowSet(keysToVisit, knownKeys, sequentialBuilder);
     }
 

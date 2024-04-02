@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.WritableIntChunk;
@@ -16,7 +16,7 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
     SafeCloseable makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 
     /**
-     * Allow our managers to do a little bit of work at the very start of the update cycle.  We have this method so that
+     * Allow our managers to do a little bit of work at the very start of the update cycle. We have this method so that
      * even if nothing is to be done, we rehash a little bit on each cycle to avoid always rehashing when there is other
      * work to be done.
      */
@@ -24,9 +24,9 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     void startTrackingPrevValues();
 
-    void remove(SafeCloseable pc, RowSequence rowSequence, ColumnSource<?> [] sources,
+    void remove(SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions);
 
-    void findModifications(SafeCloseable pc, RowSequence rowSequence, ColumnSource<?> [] sources,
+    void findModifications(SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions);
 }

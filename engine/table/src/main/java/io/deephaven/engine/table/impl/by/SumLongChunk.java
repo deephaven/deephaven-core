@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit SumCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit SumCharChunk and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.Any;
@@ -45,14 +44,15 @@ public class SumLongChunk {
     /**
      * Produce the sum and sum of squares of a longacter chunk, as doubles.
      */
-    static double sum2LongChunk(LongChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
+    static double sum2LongChunk(LongChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount,
+            MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
             final long value = values.get(ii);
             if (value != QueryConstants.NULL_LONG) {
-                //noinspection UnnecessaryLocalVariable
+                // noinspection UnnecessaryLocalVariable
                 final double doubleValue = value;
                 sum += doubleValue;
                 sum2 += doubleValue * doubleValue;
@@ -68,13 +68,14 @@ public class SumLongChunk {
         if (val == QueryConstants.NULL_LONG) {
             return val;
         } else if (val < 0) {
-            return (long)-val;
+            return (long) -val;
         } else {
             return val;
         }
     }
 
-    static long sumLongChunkAbs(LongChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumLongChunkAbs(LongChunk<? extends Any> values, int chunkStart, int chunkSize,
+            MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

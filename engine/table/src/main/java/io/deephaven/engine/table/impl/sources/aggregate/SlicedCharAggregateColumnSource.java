@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.base.ClampUtil;
@@ -74,7 +74,7 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
+        final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -103,7 +103,7 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
+        final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -118,12 +118,12 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
         final LongChunk<OrderedRowKeys> keyChunk = rowSequence.asRowKeyChunk();
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(ctx.groupRowSetGetContext, rowSequence).asObjectChunk();
-        final LongChunk<? extends Values> startChunk = startSource != null ?
-                startSource.getChunk(ctx.startGetContext, rowSequence).asLongChunk()
-                : null;
-        final LongChunk<? extends Values> endChunk = endSource != null ?
-                endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
-                : null;
+        final LongChunk<? extends Values> startChunk =
+                startSource != null ? startSource.getChunk(ctx.startGetContext, rowSequence).asLongChunk()
+                        : null;
+        final LongChunk<? extends Values> endChunk =
+                endSource != null ? endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
+                        : null;
 
         final WritableObjectChunk<CharVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
@@ -144,7 +144,7 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
 
                 final long rowSetSize = bucketRowSet.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
+                final long end = ClampUtil.clampLong(0, rowSetSize, rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -162,12 +162,12 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
         final LongChunk<OrderedRowKeys> keyChunk = rowSequence.asRowKeyChunk();
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(ctx.groupRowSetGetContext, rowSequence).asObjectChunk();
-        final LongChunk<? extends Values> startPrevChunk = startSource != null ?
-                startSource.getPrevChunk(ctx.startGetContext, rowSequence).asLongChunk()
-                : null;
-        final LongChunk<? extends Values> endPrevChunk = endSource != null ?
-                endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
-                : null;
+        final LongChunk<? extends Values> startPrevChunk =
+                startSource != null ? startSource.getPrevChunk(ctx.startGetContext, rowSequence).asLongChunk()
+                        : null;
+        final LongChunk<? extends Values> endPrevChunk =
+                endSource != null ? endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
+                        : null;
 
         final WritableObjectChunk<CharVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
@@ -191,7 +191,7 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
 
                 final long rowSetSize = groupRowSetToUse.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
+                final long end = ClampUtil.clampLong(0, rowSetSize, rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);

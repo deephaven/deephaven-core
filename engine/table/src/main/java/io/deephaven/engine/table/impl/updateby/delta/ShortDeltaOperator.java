@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharDeltaOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharDeltaOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.delta;
 
 import io.deephaven.api.updateby.DeltaControl;
@@ -58,10 +60,10 @@ public class ShortDeltaOperator extends BaseShortUpdateByOperator {
                 curVal = control.nullBehavior() == NullBehavior.NullDominates
                         ? NULL_SHORT
                         : (control.nullBehavior() == NullBehavior.ZeroDominates
-                            ? (short)0
-                            : currentVal);
+                                ? (short) 0
+                                : currentVal);
             } else {
-                curVal = (short)(currentVal - lastVal);
+                curVal = (short) (currentVal - lastVal);
             }
 
             lastVal = currentVal;
@@ -71,10 +73,10 @@ public class ShortDeltaOperator extends BaseShortUpdateByOperator {
     public ShortDeltaOperator(
             @NotNull final MatchPair pair,
             @NotNull final DeltaControl control
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         this.control = control;
         // region constructor
         // endregion constructor

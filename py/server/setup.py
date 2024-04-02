@@ -56,7 +56,7 @@ setup(
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=0.15.0',
+        'jpy>=0.16.0',
         'deephaven-plugin>=0.6.0',
         'numpy',
         'pandas>=1.5.0',
@@ -72,5 +72,6 @@ setup(
     },
     entry_points={
         'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
-    }
+    },
+    package_data={'deephaven': ['py.typed']}
 )

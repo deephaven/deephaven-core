@@ -1,9 +1,10 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
-import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
-import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;

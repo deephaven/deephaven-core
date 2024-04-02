@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit WritableCharChunkChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit WritableCharChunkChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -14,7 +13,7 @@ import io.deephaven.chunk.attributes.Any;
 public class WritableLongChunkChunk<ATTR extends Any> extends LongChunkChunk<ATTR> implements WritableChunkChunk<ATTR> {
 
     public static <ATTR extends Any> WritableLongChunk<ATTR>[] makeArray(int capacity) {
-        //noinspection unchecked
+        // noinspection unchecked
         return new WritableLongChunk[capacity];
     }
 
@@ -26,7 +25,8 @@ public class WritableLongChunkChunk<ATTR extends Any> extends LongChunkChunk<ATT
         return new WritableLongChunkChunk<>(data, 0, data.length);
     }
 
-    public static <ATTR extends Any> WritableLongChunkChunk<ATTR> writableChunkWrap(WritableLongChunk<ATTR>[] data, int offset, int size) {
+    public static <ATTR extends Any> WritableLongChunkChunk<ATTR> writableChunkWrap(WritableLongChunk<ATTR>[] data,
+            int offset, int size) {
         return new WritableLongChunkChunk<>(data, offset, size);
     }
 

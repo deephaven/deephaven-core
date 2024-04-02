@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharUnboxer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharUnboxer and run "./gradlew replicateUnboxerKernel" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.util.unboxer;
 
 import io.deephaven.chunk.*;
@@ -32,11 +31,13 @@ class ShortUnboxer implements ChunkUnboxer.UnboxerKernel {
     }
 
     @Override
-    public void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
+    public void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableChunk<? extends Values> primitives,
+            int sourceOffset, int destOffset) {
         unboxTo(boxed, primitives.asWritableShortChunk(), sourceOffset, destOffset);
     }
 
-    public static void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableShortChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
+    public static void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableShortChunk<? extends Values> primitives,
+            int sourceOffset, int destOffset) {
         final ObjectChunk<Short, ? extends Values> shortChunk = boxed.asObjectChunk();
         for (int ii = 0; ii < boxed.size(); ++ii) {
             primitives.set(ii + destOffset, TypeUtils.unbox(shortChunk.get(ii + sourceOffset)));

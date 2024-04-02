@@ -6,12 +6,15 @@ import io.deephaven.tools.docker.Architecture
 
 description 'Parquet Table: Integrating Engine tables with Parquet'
 
-configurations {
-    brotliTestImplementation.extendsFrom(testImplementation)
-}
+
 
 sourceSets {
     brotliTest {}
+}
+
+// Order matters, declare configurations after sourceSets https://github.com/gradle/gradle/issues/26255
+configurations {
+    brotliTestImplementation.extendsFrom(testImplementation)
 }
 
 dependencies {
@@ -64,23 +67,6 @@ if (Architecture.fromHost() == Architecture.AMD64) {
         classpath = sourceSets.brotliTest.runtimeClasspath
         testClassesDirs = sourceSets.brotliTest.output.classesDirs
     })
-}
-
-spotless {
-    java {
-        targetExclude(
-                '**/*Boolean*.java',
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java',
-                '**/*Transfer*.java',
-        )
-    }
 }
 
 TestTools.addEngineOutOfBandTest(project)

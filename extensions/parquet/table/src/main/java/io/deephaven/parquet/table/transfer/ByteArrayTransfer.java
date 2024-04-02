@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharArrayTransfer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharArrayTransfer and run "./gradlew replicateParquetTransferObjects" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -16,7 +15,7 @@ import java.nio.IntBuffer;
 
 final class ByteArrayTransfer extends PrimitiveArrayAndVectorTransfer<byte[], byte[], IntBuffer> {
     ByteArrayTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                      final int targetPageSizeInBytes) {
+            final int targetPageSizeInBytes) {
         // We encode primitive bytes as primitive ints
         super(columnSource, tableRowSet, targetPageSizeInBytes / Integer.BYTES, targetPageSizeInBytes,
                 IntBuffer.allocate(targetPageSizeInBytes / Integer.BYTES), Integer.BYTES);

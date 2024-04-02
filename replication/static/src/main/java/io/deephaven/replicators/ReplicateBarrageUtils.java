@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -19,10 +19,13 @@ public class ReplicateBarrageUtils {
             "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk";
 
     public static void main(final String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CHUNK_PACKAGE + "/CharChunkInputStreamGenerator.java");
-        ReplicatePrimitiveCode.charToAllButBoolean(CHUNK_PACKAGE + "/array/CharArrayExpansionKernel.java");
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/CharChunkInputStreamGenerator.java");
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/array/CharArrayExpansionKernel.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CHUNK_PACKAGE + "/vector/CharVectorExpansionKernel.java");
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/vector/CharVectorExpansionKernel.java");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/IntVectorExpansionKernel.java", "Int");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/LongVectorExpansionKernel.java", "Long");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/DoubleVectorExpansionKernel.java", "Double");

@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableWritableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableWritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -52,18 +51,19 @@ public class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_BASE> WritableDoubleChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableDoubleChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asWritableDoubleChunk(), offset, capacity);
     }
 
     @Override
     public <ATTR extends ATTR_BASE> WritableDoubleChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
-        final double[] typedArray = (double[])array;
+        final double[] typedArray = (double[]) array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
     public <ATTR extends ATTR_BASE> WritableDoubleChunk<ATTR> resetFromArray(Object array) {
-        final double[] typedArray = (double[])array;
+        final double[] typedArray = (double[]) array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
@@ -72,7 +72,8 @@ public class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_BASE> WritableDoubleChunk<ATTR> resetFromTypedChunk(WritableDoubleChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableDoubleChunk<ATTR> resetFromTypedChunk(WritableDoubleChunk<ATTR> other,
+            int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -83,7 +84,7 @@ public class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         return (WritableDoubleChunk<ATTR>) this;
     }
 }
