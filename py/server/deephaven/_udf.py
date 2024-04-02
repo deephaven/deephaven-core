@@ -5,9 +5,13 @@
 import inspect
 import re
 import sys
+import typing
 from dataclasses import dataclass, field
+from datetime import datetime
 from functools import wraps
-from typing import Callable, List, Any, Union, Tuple, _GenericAlias, Set
+from typing import Callable, List, Any, Union, Tuple, _GenericAlias, Set, Optional, Sequence
+
+import pandas as pd
 
 from deephaven._dep import soft_dependency
 
@@ -17,16 +21,15 @@ import numpy
 import numpy as np
 
 from deephaven import DHError, dtypes
-from deephaven.dtypes import _np_ndarray_component_type, _np_dtype_char, _NUMPY_INT_TYPE_CODES, \
-    _NUMPY_FLOATING_TYPE_CODES, _component_np_dtype_char, _J_ARRAY_NP_TYPE_MAP, _PRIMITIVE_DTYPE_NULL_MAP, _scalar, \
-    _BUILDABLE_ARRAY_DTYPE_MAP
+from deephaven.dtypes import _NUMPY_INT_TYPE_CODES, _NUMPY_FLOATING_TYPE_CODES, _J_ARRAY_NP_TYPE_MAP, \
+    _PRIMITIVE_DTYPE_NULL_MAP, _scalar, \
+    _BUILDABLE_ARRAY_DTYPE_MAP, DType
 from deephaven.jcompat import _j_array_to_numpy_array
 from deephaven.time import to_np_datetime64
 
 # For unittest vectorization
 test_vectorization = False
 vectorized_count = 0
-
 
 _SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O"}
 
@@ -64,7 +67,7 @@ class _ParsedSignature:
         then the return type char. If a parameter or the return of the function is not annotated,
         the default 'O' - object type, will be used.
         """
-        param_str = ",".join(["".join(p.encoded_types) for p in self.params])
+        param_str = ",".join([str(p.name) + ":" + "".join(p.encoded_types) for p in self.params])
         # ret_annotation has only one parsed annotation, and it might be Optional which means it contains 'N' in the
         # encoded type. We need to remove it.
         return_type_code = re.sub(r"[N]", "", self.ret_annotation.encoded_type)
@@ -80,7 +83,7 @@ def _encode_param_type(t: type) -> str:
         return "N"
 
     # find the component type if it is numpy ndarray
-    component_type = _np_ndarray_component_type(t)
+    component_type = _component_np_dtype_char(t)
     if component_type:
         t = component_type
 
@@ -92,6 +95,89 @@ def _encode_param_type(t: type) -> str:
     return tc
 
 
+def _np_dtype_char(t: Union[type, str]) -> str:
+    """Returns the numpy dtype character code for the given type."""
+    try:
+        np_dtype = np.dtype(t if t else "object")
+        if np_dtype.kind == "O":
+            if t in (datetime, pd.Timestamp):
+                return "M"
+    except TypeError:
+        np_dtype = np.dtype("object")
+
+    return np_dtype.char
+
+
+def _component_np_dtype_char(t: type) -> Optional[str]:
+    """Returns the numpy dtype character code for the given type's component type if the type is a Sequence type or
+    numpy ndarray, otherwise return None. """
+    component_type = None
+
+    if sys.version_info > (3, 8):
+        import types
+        if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence): # novermin
+            component_type = t.__args__[0]
+
+    if not component_type:
+        if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
+            component_type = t.__args__[0]
+            # if the component type is a DType, get its numpy type
+            if isinstance(component_type, DType):
+                component_type = component_type.np_type
+
+    if not component_type:
+        if t == bytes or t == bytearray:
+                return "b"
+
+    if not component_type:
+        component_type = _np_ndarray_component_type(t)
+
+    if component_type:
+        return _np_dtype_char(component_type)
+    else:
+        return None
+
+
+def _np_ndarray_component_type(t: type) -> Optional[type]:
+    """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
+
+    # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
+    # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
+    # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
+    # component type
+    component_type = None
+    if sys.version_info.major == 3 and sys.version_info.minor == 8:
+        if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
+            component_type = t.__args__[1].__args__[0]
+    # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
+    # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
+    # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
+    # the 1st argument is the component type
+    # when np.ndarray is used, the 1st argument is the component type
+    if not component_type and sys.version_info.major == 3 and sys.version_info.minor > 8:
+        import types
+        if isinstance(t, types.GenericAlias) and t.__origin__ == np.ndarray: # novermin
+            nargs = len(t.__args__)
+            if nargs == 1:
+                component_type = t.__args__[0]
+            elif nargs == 2:  # for npt.NDArray[np.int64], etc.
+                a0 = t.__args__[0]
+                a1 = t.__args__[1]
+                if a0 == typing.Any and isinstance(a1, types.GenericAlias): # novermin
+                    component_type = a1.__args__[0]
+    return component_type
+
+
+def _is_union_type(t: type) -> bool:
+    """Return True if the type is a Union type"""
+    if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+        import types
+        if isinstance(t, types.UnionType): # novermin
+            return True
+
+    return isinstance(t, _GenericAlias) and t.__origin__ == Union
+
+
 def _parse_param(name: str, annotation: Any) -> _ParsedParam:
     """ Parse a parameter annotation in a function's signature """
     p_param = _ParsedParam(name)
@@ -99,7 +185,7 @@ def _parse_param(name: str, annotation: Any) -> _ParsedParam:
     if annotation is inspect._empty:
         p_param.encoded_types.add("O")
         p_param.none_allowed = True
-    elif isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union:
+    elif _is_union_type(annotation):
         for t in annotation.__args__:
             _parse_type_no_nested(annotation, p_param, t)
     else:
@@ -149,7 +235,7 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 
     t = annotation
     pra.orig_type = t
-    if isinstance(annotation, _GenericAlias) and annotation.__origin__ == Union and len(annotation.__args__) == 2:
+    if _is_union_type(annotation) and len(annotation.__args__) == 2:
         # if the annotation is a Union of two types, we'll use the non-None type
         if annotation.__args__[1] == type(None):  # noqa: E721
             t = annotation.__args__[0]
@@ -170,7 +256,8 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 
 
 if numba:
-    def _parse_numba_signature(fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
+    def _parse_numba_signature(
+            fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
         """ Parse a numba function's signature"""
         sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
         if sigs:
@@ -261,7 +348,8 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
             t = eval(p.annotation, fn.__globals__) if isinstance(p.annotation, str) else p.annotation
             p_sig.params.append(_parse_param(n, t))
 
-        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation, str) else sig.return_annotation
+        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation,
+                                                                      str) else sig.return_annotation
         p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
@@ -389,7 +477,6 @@ def _py_udf(fn: Callable):
     # build a signature string for vectorization by removing NoneType, array char '[', and comma from the encoded types
     # since vectorization only supports UDFs with a single signature and enforces an exact match, any non-compliant
     # signature (e.g. Union with more than 1 non-NoneType) will be rejected by the vectorizer.
-    sig_str_vectorization = re.sub(r"[\[N,]", "", p_sig.encoded)
     return_array = p_sig.ret_annotation.has_array
     ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
 
@@ -414,7 +501,7 @@ def _py_udf(fn: Callable):
         j_class = real_ret_dtype.qst_type.clazz()
 
     wrapper.return_type = j_class
-    wrapper.signature = sig_str_vectorization
+    wrapper.signature = p_sig.encoded
 
     return wrapper
 

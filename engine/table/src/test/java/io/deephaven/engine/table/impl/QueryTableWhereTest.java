@@ -232,26 +232,49 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testWhereInDependency() {
-        testWhereInDependencyInternal(false, false);
+        testWhereInDependencyInternal(false, false, true, true);
+        testWhereInDependencyInternal(false, false, true, false);
+        testWhereInDependencyInternal(false, false, false, true);
+        testWhereInDependencyInternal(false, false, false, false);
     }
 
     @Test
     public void testWhereInDependencyIndexed() {
-        testWhereInDependencyInternal(true, false);
-        testWhereInDependencyInternal(false, true);
-        testWhereInDependencyInternal(true, true);
+        testWhereInDependencyInternal(true, false, true, true);
+        testWhereInDependencyInternal(true, false, true, false);
+        testWhereInDependencyInternal(true, false, false, true);
+        testWhereInDependencyInternal(true, false, false, false);
+
+        testWhereInDependencyInternal(false, true, true, true);
+        testWhereInDependencyInternal(false, true, true, false);
+        testWhereInDependencyInternal(false, true, false, true);
+        testWhereInDependencyInternal(false, true, false, false);
+
+        testWhereInDependencyInternal(true, true, true, true);
+        testWhereInDependencyInternal(true, true, true, false);
+        testWhereInDependencyInternal(true, true, false, true);
+        testWhereInDependencyInternal(true, true, false, false);
     }
 
-    private void testWhereInDependencyInternal(boolean filterIndexed, boolean setIndexed) {
-        final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),
-                col("A", 1, 2, 3, 4, 5, 6), col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
+    private void testWhereInDependencyInternal(
+            boolean filterIndexed,
+            boolean setIndexed,
+            boolean sourceRefreshing,
+            boolean setRefreshing) {
+
+        final QueryTable tableToFilter = sourceRefreshing
+                ? testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(), col("A", 1, 2, 3, 4, 5, 6),
+                        col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'))
+                : testTable(i(10, 11, 12, 13, 14, 15).toTracking(), col("A", 1, 2, 3, 4, 5, 6),
+                        col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
         if (filterIndexed) {
             DataIndexer.getOrCreateDataIndex(tableToFilter, "A");
             DataIndexer.getOrCreateDataIndex(tableToFilter, "B");
         }
 
-        final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
-                col("A", 1, 2, 3), col("B", 2, 4, 6));
+        final QueryTable setTable = setRefreshing
+                ? testRefreshingTable(i(100, 101, 102).toTracking(), col("A", 1, 2, 3), col("B", 2, 4, 6))
+                : testTable(i(100, 101, 102).toTracking(), col("A", 1, 2, 3), col("B", 2, 4, 6));
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
         if (setIndexed) {
@@ -280,17 +303,19 @@ public abstract class QueryTableWhereTest {
             TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
         });
 
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(setTable, i(103), col("A", 5), col("B", 8));
-            setTable.notifyListeners(i(103), i(), i());
-        });
+        if (setRefreshing) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(setTable, i(103), col("A", 5), col("B", 8));
+                setTable.notifyListeners(i(103), i(), i());
+            });
 
-        TableTools.show(composed);
+            TableTools.show(composed);
 
-        final Table expected =
-                TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
+            final Table expected =
+                    TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
 
-        assertTableEquals(composed, expected);
+            assertTableEquals(composed, expected);
+        }
     }
 
     @Test
@@ -351,17 +376,35 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testWhereDynamicInIncremental() {
-        testWhereDynamicIncrementalInternal(false, false);
+        testWhereDynamicIncrementalInternal(false, false, true, true);
+        testWhereDynamicIncrementalInternal(false, false, true, false);
+        testWhereDynamicIncrementalInternal(false, false, false, true);
+        testWhereDynamicIncrementalInternal(false, false, false, false);
     }
 
     @Test
     public void testWhereDynamicInIncrementalIndexed() {
-        testWhereDynamicIncrementalInternal(true, false);
-        testWhereDynamicIncrementalInternal(false, true);
-        testWhereDynamicIncrementalInternal(true, true);
+        testWhereDynamicIncrementalInternal(true, false, true, true);
+        testWhereDynamicIncrementalInternal(true, false, true, false);
+        testWhereDynamicIncrementalInternal(true, false, false, true);
+        testWhereDynamicIncrementalInternal(true, false, false, false);
+
+        testWhereDynamicIncrementalInternal(false, true, true, true);
+        testWhereDynamicIncrementalInternal(false, true, true, false);
+        testWhereDynamicIncrementalInternal(false, true, false, true);
+        testWhereDynamicIncrementalInternal(false, true, false, false);
+
+        testWhereDynamicIncrementalInternal(true, true, true, true);
+        testWhereDynamicIncrementalInternal(true, true, true, false);
+        testWhereDynamicIncrementalInternal(true, true, false, true);
+        testWhereDynamicIncrementalInternal(true, true, false, false);
     }
 
-    private static void testWhereDynamicIncrementalInternal(boolean filterIndexed, boolean setIndexed) {
+    private static void testWhereDynamicIncrementalInternal(
+            boolean filterIndexed,
+            boolean setIndexed,
+            boolean sourceRefreshing,
+            boolean setRefreshing) {
         final ColumnInfo<?, ?>[] setInfo;
         final ColumnInfo<?, ?>[] filteredInfo;
 
@@ -372,7 +415,7 @@ public abstract class QueryTableWhereTest {
         final String[] columnNames =
                 new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
 
-        final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
+        final QueryTable setTable = getTable(setRefreshing, setSize, random, setInfo = initColumnInfos(
                 columnNames,
                 new SetGenerator<>("aa", "bb"),
                 new IntGenerator(0, 10),
@@ -393,16 +436,17 @@ public abstract class QueryTableWhereTest {
             DataIndexer.getOrCreateDataIndex(setTable, "Sym", "intCol");
         }
 
-        final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
-                columnNames,
-                new SetGenerator<>("aa", "bb", "cc", "dd"),
-                new IntGenerator(0, 20),
-                new DoubleGenerator(0, 100),
-                new CharGenerator('a', 'z'),
-                new ByteGenerator((byte) 0, (byte) 127),
-                new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
-                new LongGenerator(1500, 2500),
-                new ShortGenerator((short) 400, (short) 700)));
+        final QueryTable filteredTable = getTable(sourceRefreshing, filteredSize, random,
+                filteredInfo = initColumnInfos(
+                        columnNames,
+                        new SetGenerator<>("aa", "bb", "cc", "dd"),
+                        new IntGenerator(0, 20),
+                        new DoubleGenerator(0, 100),
+                        new CharGenerator('a', 'z'),
+                        new ByteGenerator((byte) 0, (byte) 127),
+                        new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
+                        new LongGenerator(1500, 2500),
+                        new ShortGenerator((short) 400, (short) 700)));
 
         if (filterIndexed) {
             // Add an index on every column but "doubleCol"
@@ -436,31 +480,42 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
         };
 
+        validate(en);
+
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 100; step++) {
             final boolean modSet = random.nextInt(10) < 1;
             final boolean modFiltered = random.nextBoolean();
 
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modSet) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            setSize, random, setTable, setInfo);
-                }
-            });
-            validate(en);
+            if (setRefreshing) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (modSet) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                setSize, random, setTable, setInfo);
+                    }
+                });
+                validate(en);
+            }
 
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modFiltered) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            filteredSize, random, filteredTable, filteredInfo);
-                }
-            });
-            validate(en);
+            if (sourceRefreshing) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (modFiltered) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                filteredSize, random, filteredTable, filteredInfo);
+                    }
+                });
+                validate(en);
+            }
         }
     }
 
     @Test
-    public void testWhereInDynamicPartialIndexed() {
+    public void testWhereInDynamicPartial() {
+        testWhereInDynamicPartialIndexedInternal(true);
+        testWhereInDynamicPartialIndexedInternal(false);
+    }
+
+    private void testWhereInDynamicPartialIndexedInternal(final boolean setRefreshing) {
         final ColumnInfo<?, ?>[] setInfo;
         final ColumnInfo<?, ?>[] filteredInfo;
 
@@ -471,7 +526,7 @@ public abstract class QueryTableWhereTest {
         final String[] columnNames =
                 new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
 
-        final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
+        final QueryTable setTable = getTable(setRefreshing, setSize, random, setInfo = initColumnInfos(
                 columnNames,
                 new SetGenerator<>("aa", "bb"),
                 new IntGenerator(0, 10),
@@ -495,26 +550,56 @@ public abstract class QueryTableWhereTest {
 
         DataIndexer.getOrCreateDataIndex(filteredTable, "Sym");
         DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol", "shortCol");
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "Sym")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "Sym")),
+
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "intCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "intCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "charCol", "Sym")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "charCol", "Sym")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
+
+                EvalNugget.from(
+                        () -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
+                EvalNugget.from(
+                        () -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
+
+                EvalNugget.from(
+                        () -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
+                EvalNugget.from(
+                        () -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
+
         };
+
+        validate(en);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 100; step++) {
             final boolean modSet = random.nextInt(10) < 1;
             final boolean modFiltered = random.nextBoolean();
 
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modSet) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            setSize, random, setTable, setInfo);
-                }
-            });
-            validate(en);
+            if (setRefreshing) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (modSet) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                setSize, random, setTable, setInfo);
+                    }
+                });
+                validate(en);
+            }
 
             updateGraph.runWithinUnitTestCycle(() -> {
                 if (modFiltered) {

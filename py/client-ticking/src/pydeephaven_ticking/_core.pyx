@@ -514,8 +514,13 @@ cdef class BarrageProcessor:
             column_sources.push_back(cs)
             sizes.push_back(len(values))
 
-        result = self._barrage_processor.ProcessNextChunk(column_sources, sizes, &raw_metadata[0],
-            raw_metadata.shape[0])
+        cdef const void *mdptr = NULL
+        cdef size_t mdsize = 0
+        if raw_metadata is not None:
+            mdptr = &raw_metadata[0]
+            mdsize = raw_metadata.shape[0]
+        result = self._barrage_processor.ProcessNextChunk(column_sources, sizes, mdptr, mdsize)
+
         if result.has_value():
             return TickingUpdate.create(deref(result))
         return None

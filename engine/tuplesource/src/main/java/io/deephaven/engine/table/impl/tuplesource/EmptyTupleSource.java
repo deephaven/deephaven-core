@@ -43,7 +43,22 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public Object exportElement(EmptyTuple tuple, int elementIndex) {
+    public int tupleLength() {
+        return 1;
+    }
+
+    @Override
+    public Object exportElement(@NotNull EmptyTuple tuple, int elementIndex) {
+        throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
+    }
+
+    @Override
+    public void exportAllTo(Object @NotNull [] dest, @NotNull EmptyTuple tuple) {
+        throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
+    }
+
+    @Override
+    public void exportAllTo(Object @NotNull [] dest, @NotNull EmptyTuple tuple, int @NotNull [] map) {
         throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
     }
 
