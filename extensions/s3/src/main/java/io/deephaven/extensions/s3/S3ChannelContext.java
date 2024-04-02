@@ -65,8 +65,6 @@ final class S3ChannelContext implements SeekableChannelContext {
      */
     private long numFragments;
 
-    private GetObjectRequest.Builder getObjectRequestBuilder;
-
     S3ChannelContext(S3AsyncClient client, S3Instructions instructions, BufferPool bufferPool) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
@@ -75,7 +73,6 @@ final class S3ChannelContext implements SeekableChannelContext {
         uri = null;
         size = UNINITIALIZED_SIZE;
         numFragments = UNINITIALIZED_NUM_FRAGMENTS;
-        getObjectRequestBuilder = null;
         if (log.isDebugEnabled()) {
             log.debug("creating context: {}", ctxStr());
         }
@@ -342,10 +339,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         private GetObjectRequest getObjectRequest() {
-            if (getObjectRequestBuilder == null) {
-                getObjectRequestBuilder = GetObjectRequest.builder();
-            }
-            return getObjectRequestBuilder
+            return GetObjectRequest.builder()
                     .bucket(uri.bucket().orElseThrow())
                     .key(uri.key().orElseThrow())
                     .range("bytes=" + from + "-" + to)

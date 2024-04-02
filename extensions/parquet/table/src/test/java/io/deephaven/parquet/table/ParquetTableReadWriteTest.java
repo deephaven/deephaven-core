@@ -125,7 +125,7 @@ public final class ParquetTableReadWriteTest {
     private static final ParquetInstructions REFRESHING = ParquetInstructions.builder().setIsRefreshing(true).build();
 
     // TODO(deephaven-core#5064): Add support for local S3 testing
-    // The following tests are disabled by default, as they require a AWS access key and secret key to be set
+    // The following tests are disabled by default, as they are verifying against a remote system
     private static final boolean ENABLE_S3_TESTING =
             Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
@@ -1335,6 +1335,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readSampleParquetFilesFromPublicS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
                 .readAheadCount(1)
@@ -1449,6 +1450,7 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void readKeyValuePartitionedParquetFromPublicS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
                 .readAheadCount(1)

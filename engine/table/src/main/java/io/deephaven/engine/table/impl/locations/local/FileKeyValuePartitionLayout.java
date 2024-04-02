@@ -102,6 +102,7 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
                                             "Unexpected directory name format (not key=value) at " + dir);
                                 }
                                 final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
+                                takenNames.add(columnKey);
                                 final int columnIndex = columnCount - 1;
                                 if (columnCount > partitionKeys.size()) {
                                     partitionKeys.add(columnKey);

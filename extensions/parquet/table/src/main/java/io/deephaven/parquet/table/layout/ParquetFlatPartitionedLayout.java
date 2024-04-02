@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.layout;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -63,7 +64,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         try (final Stream<URI> stream = provider.list(tableRootDirectory)) {
-            stream.filter(ParquetFileHelper::isVisibleParquetURI).forEach(uri -> {
+            stream.filter(ParquetUtils::isVisibleParquetURI).forEach(uri -> {
                 synchronized (ParquetFlatPartitionedLayout.this) {
                     ParquetTableLocationKey locationKey = cache.get(uri);
                     if (locationKey == null) {

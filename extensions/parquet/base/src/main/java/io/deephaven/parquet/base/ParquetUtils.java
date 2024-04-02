@@ -4,8 +4,10 @@
 package io.deephaven.parquet.base;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
 
 public final class ParquetUtils {
 
@@ -39,5 +41,17 @@ public final class ParquetUtils {
      */
     public static String getPerFileMetadataKey(final String filePath) {
         return "deephaven_per_file_" + filePath.replace(File.separatorChar, '_');
+    }
+
+    /** Pattern to detect hidden files or directories in a path string. */
+    private static final Pattern HIDDEN_FILE_PATTERN = Pattern.compile("(^|/)\\.[^/]+");
+
+    public static boolean isVisibleParquetURI(final URI uri) {
+        final String path = uri.getPath();
+        if (!path.endsWith(PARQUET_FILE_EXTENSION)) {
+            return false;
+        }
+        // Look for hidden directories or files in the path
+        return !HIDDEN_FILE_PATTERN.matcher(path).find();
     }
 }

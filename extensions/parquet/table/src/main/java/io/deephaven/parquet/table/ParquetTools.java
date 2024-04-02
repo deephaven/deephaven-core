@@ -1242,8 +1242,7 @@ public class ParquetTools {
         if (!isDirectory) {
             return readSingleFileTable(sourceURI, instructions);
         }
-        if (source.endsWith(ParquetMetadataFileLayout.METADATA_FILE_NAME) ||
-                source.endsWith(ParquetMetadataFileLayout.COMMON_METADATA_FILE_NAME)) {
+        if (source.endsWith(METADATA_FILE_NAME) || source.endsWith(COMMON_METADATA_FILE_NAME)) {
             throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
                     "from non local file systems");
         }

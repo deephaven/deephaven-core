@@ -147,11 +147,15 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
             @Override
             public boolean hasNext() {
-                if (currentBatchIt != null && currentBatchIt.hasNext()) {
-                    return true;
-                }
-                if (currentBatchIt != null && continuationToken == null) {
-                    return false;
+                if (currentBatchIt != null) {
+                    if (currentBatchIt.hasNext()) {
+                        return true;
+                    }
+                    // End of current batch
+                    if (continuationToken == null) {
+                        // End of the directory
+                        return false;
+                    }
                 }
                 try {
                     fetchNextBatch();
@@ -195,7 +199,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                         .filter(s3Object -> !s3Object.key().equals(directoryKey))
                         .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
                         .iterator();
-                // If the response is truncated, fetch the next page using the continuation token from the response
+                // If the response is truncated, the following token will not be null. Fetch the next page using the
+                // token value from this response
                 continuationToken = response.nextContinuationToken();
             }
         };

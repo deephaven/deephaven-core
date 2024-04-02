@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.table.impl.locations.local.URIStreamKeyValuePartitionLayout;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -83,16 +84,12 @@ public class ParquetKeyValuePartitionedLayout
         this.readInstructions = readInstructions;
     }
 
-    public String toString() {
-        return ParquetKeyValuePartitionedLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
-    }
-
     @Override
     public final void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         try (final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
-            final Stream<URI> filteredStream = uriStream.filter(ParquetFileHelper::isVisibleParquetURI);
+            final Stream<URI> filteredStream = uriStream.filter(ParquetUtils::isVisibleParquetURI);
             findKeys(filteredStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);

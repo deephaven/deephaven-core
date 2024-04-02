@@ -32,7 +32,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         extends KeyValuePartitionLayout<TLK, URI> {
 
     protected final URI tableRootDirectory;
-    private final Supplier<FileKeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory;
+    private final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory;
     private final int maxPartitioningLevels;
     private final String fileSeparator;
 
@@ -47,7 +47,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
      */
     public URIStreamKeyValuePartitionLayout(
             @NotNull final URI tableRootDirectory,
-            @NotNull final Supplier<FileKeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory,
+            @NotNull final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory,
             @NotNull final BiFunction<URI, Map<String, Comparable<?>>, TLK> keyFactory,
             final int maxPartitioningLevels,
             @NotNull final String fileSeparator) {
@@ -58,8 +58,9 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         this.fileSeparator = fileSeparator;
     }
 
+    @Override
     public String toString() {
-        return URIStreamKeyValuePartitionLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
+        return getClass().getSimpleName() + '[' + tableRootDirectory + ']';
     }
 
     /**
@@ -74,8 +75,8 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         final boolean[] registered = {false}; // Hack to make the variable final
         uriStream.forEachOrdered(uri -> {
             final Collection<String> partitionValues = new ArrayList<>();
-            final String fileRelativePath = uri.getPath().substring(tableRootDirectory.getPath().length());
-            getPartitions(fileRelativePath, partitionKeys, partitionValues, takenNames, registered[0]);
+            final URI relativePath = tableRootDirectory.relativize(uri);
+            getPartitions(relativePath, partitionKeys, partitionValues, takenNames, registered[0]);
             if (!registered[0]) {
                 // Use the first path to find the partition keys and then use the same partition keys for the rest
                 locationTableBuilder.registerPartitionKeys(partitionKeys);
@@ -89,14 +90,15 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         buildLocationKeys(locationTable, targetURIs, locationKeyObserver);
     }
 
-    private void getPartitions(@NotNull final String path,
+    private void getPartitions(@NotNull final URI relativePath,
             @NotNull final List<String> partitionKeys,
             @NotNull final Collection<String> partitionValues,
             @NotNull final Set<String> takenNames,
             final boolean registered) {
+        final String relativePathString = relativePath.getPath();
         int partitioningColumnIndex = 0;
         // Split the path to get the subdirectory names
-        final String[] subDirs = path.split(fileSeparator);
+        final String[] subDirs = relativePathString.split(fileSeparator);
         for (int i = 0; i < subDirs.length - 1; i++) {
             final String dirName = subDirs[i];
             if (dirName.isEmpty()) {
@@ -106,26 +108,26 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             final String[] components = dirName.split("=", 2);
             if (components.length != 2) {
                 throw new TableDataException("Unexpected directory name format (not key=value) at "
-                        + new File(tableRootDirectory.getPath(), path));
+                        + new File(tableRootDirectory.getPath(), relativePathString));
             }
             if (partitioningColumnIndex == maxPartitioningLevels) {
-                throw new TableDataException("Too many partitioning levels at " + path + ", maximum " +
+                throw new TableDataException("Too many partitioning levels at " + relativePathString + ", maximum " +
                         "expected partitioning levels are " + maxPartitioningLevels);
             }
-            // TODO Is this legalizing adding any value?
             final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
+            takenNames.add(columnKey);
             if (registered) {
                 // We have already seen another parquet file in the tree, so compare the
                 // partitioning levels against the previous ones
                 if (partitioningColumnIndex >= partitionKeys.size()) {
-                    throw new TableDataException("Too many partitioning levels at " + path + " (expected "
+                    throw new TableDataException("Too many partitioning levels at " + relativePathString + " (expected "
                             + partitionKeys.size() + ") based on earlier parquet files in the tree.");
                 }
                 if (!partitionKeys.get(partitioningColumnIndex).equals(columnKey)) {
                     throw new TableDataException(String.format(
                             "Column name mismatch at column index %d: expected %s found %s at %s",
                             partitioningColumnIndex, partitionKeys.get(partitioningColumnIndex), columnKey,
-                            path));
+                            relativePathString));
                 }
             } else {
                 // This is the first parquet file in the tree, so accumulate the partitioning levels
