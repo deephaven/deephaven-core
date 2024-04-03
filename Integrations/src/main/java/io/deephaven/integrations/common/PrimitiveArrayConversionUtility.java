@@ -64,7 +64,7 @@ public class PrimitiveArrayConversionUtility {
      * {@link DateTimeUtils#epochNanosToInstant(long)}. This is the (psuedo)inverse of `translateArrayLongToInstant`.
      *
      * @param array - the long array
-     * @return the corresponding DateTime array
+     * @return the corresponding Instant array
      */
     public static Instant[] translateArrayLongToInstant(final long[] array) {
         final Instant[] out = new Instant[array.length];
@@ -79,7 +79,7 @@ public class PrimitiveArrayConversionUtility {
      * {@link DateTimeUtils#parseInstant(String)}.
      *
      * @param array - the string array
-     * @return the corresponding DateTime array
+     * @return the corresponding Instant array
      */
     public static Instant[] translateArrayStringToInstant(final String[] array) {
         final Instant[] out = new Instant[array.length];
