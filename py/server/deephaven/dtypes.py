@@ -233,7 +233,7 @@ def _instant_array(data: Sequence) -> jpy.JType:
     # it to reduce the number of round trips to the JVM
     if not isinstance(data, np.ndarray):
         try:
-            # Pandas drops unrecognized time zones, so it may handle time zones incorrectly
+            # Pandas drops unrecognized time zones, so it may handle time zones incorrectly when parsing strings
             if not any(isinstance(i, str) for i in data):
                 data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
         except Exception as e:
