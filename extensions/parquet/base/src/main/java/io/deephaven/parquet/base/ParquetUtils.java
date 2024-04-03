@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 public final class ParquetUtils {
 
@@ -35,20 +36,21 @@ public final class ParquetUtils {
     }
 
     /**
-     * Check if the provided file is a parquet file and none of its parents are hidden.
+     * Check if the provided path points to a non-hidden parquet file, and that none of its parents (till rootDir) are
+     * hidden.
      */
-    public static boolean isVisibleParquetFile(@NotNull final File inputFile) {
-        final String fileName = inputFile.getName();
+    public static boolean isVisibleParquetFile(@NotNull final Path rootDir, @NotNull final Path filePath) {
+        final String fileName = filePath.getFileName().toString();
         if (!fileName.endsWith(PARQUET_FILE_EXTENSION) || fileName.charAt(0) == '.') {
             return false;
         }
-        File parent = inputFile.getParentFile();
-        while (parent != null) {
-            final String parentName = parent.getName();
+        Path parent = filePath.getParent();
+        while (parent != null && !parent.equals(rootDir)) {
+            final String parentName = parent.getFileName().toString();
             if (!parentName.isEmpty() && parentName.charAt(0) == '.') {
                 return false;
             }
-            parent = parent.getParentFile();
+            parent = parent.getParent();
         }
         return true;
     }

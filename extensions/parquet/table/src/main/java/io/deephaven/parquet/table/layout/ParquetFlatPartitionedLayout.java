@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
@@ -67,14 +68,16 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         final boolean isFileURI = FILE_URI_SCHEME.equals(tableRootDirectory.getScheme());
         try (final Stream<URI> stream = provider.list(tableRootDirectory)) {
-            stream.filter(uri -> {
-                if (isFileURI) {
+            final Predicate<URI> uriFilter;
+            if (isFileURI) {
+                uriFilter = uri -> {
                     final String filename = new File(uri).getName();
                     return filename.endsWith(ParquetUtils.PARQUET_FILE_EXTENSION) && filename.charAt(0) != '.';
-                } else {
-                    return uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
-                }
-            }).forEach(uri -> {
+                };
+            } else {
+                uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+            }
+            stream.filter(uriFilter).forEach(uri -> {
                 synchronized (ParquetFlatPartitionedLayout.this) {
                     ParquetTableLocationKey locationKey = cache.get(uri);
                     if (locationKey == null) {

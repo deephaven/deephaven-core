@@ -21,8 +21,11 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
@@ -91,14 +94,14 @@ public class ParquetKeyValuePartitionedLayout
                 tableRootDirectory, readInstructions.getSpecialInstructions());
         final boolean isFileURI = FILE_URI_SCHEME.equals(tableRootDirectory.getScheme());
         try (final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
-            final Stream<URI> filteredStream = uriStream.filter(uri -> {
-                if (isFileURI) {
-                    final URI relativeUri = tableRootDirectory.relativize(uri);
-                    return isVisibleParquetFile(new File(relativeUri.getPath()));
-                } else {
-                    return uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
-                }
-            });
+            final Predicate<URI> uriFilter;
+            if (isFileURI) {
+                final Path rootDir = Path.of(tableRootDirectory);
+                uriFilter = uri -> isVisibleParquetFile(rootDir, Path.of(uri));
+            } else {
+                uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+            }
+            final Stream<URI> filteredStream = uriStream.filter(uriFilter);
             findKeys(filteredStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
