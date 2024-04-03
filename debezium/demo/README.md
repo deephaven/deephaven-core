@@ -34,12 +34,12 @@ and ensure you can launch a regular version of Deephaven
 as per the instructions there.  Once that works, stop that
 Deephaven instance, and continue below.
 
-Start docker-compose with the compose file in this
+Start docker compose with the compose file in this
 directory:
 
 ```
 cd debezium/demo
-docker-compose up --build
+docker compose up --build
 ```
 
 Then start a Deephaven web console (will be in python mode
