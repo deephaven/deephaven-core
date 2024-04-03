@@ -115,6 +115,7 @@ def seleniumHealthy = project.tasks.register('seleniumHealthy', WaitForHealthyCo
     task.containerId.set(seleniumContainerId)
 }
 def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer) { task ->
+    task.finalizedBy removeDeephavenGrpcApiNetwork
     task.dependsOn startSelenium
     task.targetContainerId seleniumContainerId
     task.force.set true
