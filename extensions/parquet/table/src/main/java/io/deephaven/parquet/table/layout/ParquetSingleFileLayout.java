@@ -15,25 +15,25 @@ import java.util.function.Consumer;
  * Parquet {@link TableLocationKeyFinder location finder} that will discover a single file.
  */
 public final class ParquetSingleFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
-    private final URI parquetFileURI;
+    private final URI parquetFileUri;
     private final ParquetInstructions readInstructions;
 
     /**
-     * @param parquetFileURI URI of single parquet file to find
+     * @param parquetFileUri URI of single parquet file to find
      * @param readInstructions the instructions for customizations while reading
      */
-    public ParquetSingleFileLayout(@NotNull final URI parquetFileURI,
+    public ParquetSingleFileLayout(@NotNull final URI parquetFileUri,
             @NotNull final ParquetInstructions readInstructions) {
-        this.parquetFileURI = parquetFileURI;
+        this.parquetFileUri = parquetFileUri;
         this.readInstructions = readInstructions;
     }
 
     public String toString() {
-        return ParquetSingleFileLayout.class.getSimpleName() + '[' + parquetFileURI + ']';
+        return ParquetSingleFileLayout.class.getSimpleName() + '[' + parquetFileUri + ']';
     }
 
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        locationKeyObserver.accept(new ParquetTableLocationKey(parquetFileURI, 0, null, readInstructions));
+        locationKeyObserver.accept(new ParquetTableLocationKey(parquetFileUri, 0, null, readInstructions));
     }
 }

@@ -6,11 +6,7 @@ package io.deephaven.parquet.base;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
-
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 public final class ParquetUtils {
 
