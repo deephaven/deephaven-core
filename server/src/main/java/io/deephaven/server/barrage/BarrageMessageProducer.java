@@ -264,7 +264,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 final BitSet subscribedColumns, final BitSet modifiedColumns) {
             this.step = step;
             this.deltaColumnOffset = deltaColumnOffset;
-            this.update = TableUpdateImpl.copy(update); // TODO: can this be acquire()
+            this.update = TableUpdateImpl.copy(update);
             this.recordedAdds = recordedAdds;
             this.recordedMods = recordedMods;
             this.subscribedColumns = subscribedColumns;

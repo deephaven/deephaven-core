@@ -56,9 +56,8 @@ public class TickSuppressor {
             @Override
             public void onUpdate(TableUpdate upstream) {
                 final TableUpdateImpl downstream = new TableUpdateImpl();
-                // TODO: can we remove these copies?
-                downstream.added = upstream.added().copy().union(upstream.modified());
-                downstream.removed = upstream.removed().copy().union(upstream.getModifiedPreShift());
+                downstream.added = upstream.added().union(upstream.modified());
+                downstream.removed = upstream.removed().union(upstream.getModifiedPreShift());
                 downstream.modified = RowSetFactory.empty();
                 downstream.shifted = upstream.shifted();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
