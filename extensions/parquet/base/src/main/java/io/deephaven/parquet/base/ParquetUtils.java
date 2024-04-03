@@ -3,6 +3,8 @@
 //
 package io.deephaven.parquet.base;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -36,20 +38,21 @@ public final class ParquetUtils {
         return "deephaven_per_file_" + filePath.replace(File.separatorChar, '_');
     }
 
-    public static boolean isVisibleParquetURI(final URI uri) {
-        final String path = uri.getPath();
-        if (!path.endsWith(PARQUET_FILE_EXTENSION)) {
+    /**
+     * Check if the provided file is a parquet file and none of its parents are hidden.
+     */
+    public static boolean isVisibleParquetFile(@NotNull final File inputFile) {
+        final String fileName = inputFile.getName();
+        if (!fileName.endsWith(PARQUET_FILE_EXTENSION) || fileName.charAt(0) == '.') {
             return false;
         }
-        if (FILE_URI_SCHEME.equals(uri.getScheme())) {
-            File file = new File(uri).getAbsoluteFile();
-            while (file != null) {
-                final String fileName = file.getName();
-                if (!fileName.isEmpty() && fileName.charAt(0) == '.') {
-                    return false;
-                }
-                file = file.getParentFile();
+        File parent = inputFile.getParentFile();
+        while (parent != null) {
+            final String parentName = parent.getName();
+            if (!parentName.isEmpty() && parentName.charAt(0) == '.') {
+                return false;
             }
+            parent = parent.getParentFile();
         }
         return true;
     }

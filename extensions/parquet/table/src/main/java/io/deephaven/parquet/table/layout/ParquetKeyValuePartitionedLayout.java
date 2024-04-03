@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetUtils.isVisibleParquetFile;
 
 /**
  * Key-Value partitioned layout for Parquet data.
@@ -88,8 +89,16 @@ public class ParquetKeyValuePartitionedLayout
     public final void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
+        final boolean isFileURI = FILE_URI_SCHEME.equals(tableRootDirectory.getScheme());
         try (final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
-            final Stream<URI> filteredStream = uriStream.filter(ParquetUtils::isVisibleParquetURI);
+            final Stream<URI> filteredStream = uriStream.filter(uri -> {
+                if (isFileURI) {
+                    final URI relativeUri = tableRootDirectory.relativize(uri);
+                    return isVisibleParquetFile(new File(relativeUri.getPath()));
+                } else {
+                    return uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+                }
+            });
             findKeys(filteredStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);

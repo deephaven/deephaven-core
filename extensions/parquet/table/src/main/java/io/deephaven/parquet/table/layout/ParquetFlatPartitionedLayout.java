@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */
@@ -63,8 +65,16 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
+        final boolean isFileURI = FILE_URI_SCHEME.equals(tableRootDirectory.getScheme());
         try (final Stream<URI> stream = provider.list(tableRootDirectory)) {
-            stream.filter(ParquetUtils::isVisibleParquetURI).forEach(uri -> {
+            stream.filter(uri -> {
+                if (isFileURI) {
+                    final String filename = new File(uri).getName();
+                    return filename.endsWith(ParquetUtils.PARQUET_FILE_EXTENSION) && filename.charAt(0) != '.';
+                } else {
+                    return uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+                }
+            }).forEach(uri -> {
                 synchronized (ParquetFlatPartitionedLayout.this) {
                     ParquetTableLocationKey locationKey = cache.get(uri);
                     if (locationKey == null) {
