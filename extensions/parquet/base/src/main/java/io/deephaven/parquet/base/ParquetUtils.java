@@ -36,16 +36,20 @@ public final class ParquetUtils {
         return "deephaven_per_file_" + filePath.replace(File.separatorChar, '_');
     }
 
-    /** Pattern to detect hidden files or directories in a path string. */
-    private static final Pattern HIDDEN_FILE_PATTERN = Pattern.compile("(^|/)\\.[^/]+");
-
     public static boolean isVisibleParquetURI(final URI uri) {
         final String path = uri.getPath();
         if (!path.endsWith(PARQUET_FILE_EXTENSION)) {
             return false;
         }
         if (FILE_URI_SCHEME.equals(uri.getScheme())) {
-            return !HIDDEN_FILE_PATTERN.matcher(path).find();
+            File file = new File(uri).getAbsoluteFile();
+            while (file != null) {
+                final String fileName = file.getName();
+                if (!fileName.isEmpty() && fileName.charAt(0) == '.') {
+                    return false;
+                }
+                file = file.getParentFile();
+            }
         }
         return true;
     }
