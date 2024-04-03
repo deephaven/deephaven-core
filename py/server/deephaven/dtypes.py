@@ -229,6 +229,12 @@ def _instant_array(data: Sequence) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
     or integers in nanoseconds, to a Java array of Instant values. """
 
+    if isinstance(data, np.ndarray) and data.dtype.kind == 'U':
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
+
+    if all((d == None or isinstance(d, str)) for d in data):
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
+
     # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
     # it to reduce the number of round trips to the JVM
     if not isinstance(data, np.ndarray):
@@ -248,8 +254,7 @@ def _instant_array(data: Sequence) -> jpy.JType:
         else:
             raise Exception(f"Unexpected dtype: {data.dtype.kind}")
 
-        data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
-        return data
+        return _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
     if not isinstance(data, instant_array.j_type):
         from deephaven.time import to_j_instant
