@@ -40,9 +40,7 @@ def buildPyClientTickingManyLinux = { String wheelsSet, String taskName -> Docke
             include 'src/**/*.py'
             include 'src/**/*.pyx'
             include 'src/**/*.pxd'
-        }
-        from(configurations.pythonWheel) {
-            into 'wheels'
+            include 'pyClientTickingWheels/entrypoint.sh'
         }
     }
     copyOut {
@@ -55,40 +53,15 @@ def buildPyClientTickingManyLinux = { String wheelsSet, String taskName -> Docke
                         '${prefix}/log' \\
                         '${prefix}/src/py-client-ticking/src' \\
                         '${prefix}/src/py-client-ticking/in-wheels'
-
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
-        copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
-        runCommand("PREFIX='${prefix}'; WHEELS_SET='${wheelsSet}'; DEEPHAVEN_VERSION='${project.version}';" +
-                   '''set -eux ; \
-                      cd "${PREFIX}/src/py-client-ticking"; \
-                      . "${PREFIX}/env.sh"; \
-                      ORIG_PATH="$PATH"; \
-                      for spec in ${WHEELS_SET}; do \
-                        tag=`echo "$spec" | cut -d: -f 2`; \
-                        rm -f *.cpp *.so; \
-                        PATH="/opt/python/${tag}/bin:$ORIG_PATH"; \
-                        pip3 install cython; \
-                        MAKEFLAGS="-j${NCPUS}" \
-                          CFLAGS="-I${DHCPP}/include" \
-                          LDFLAGS="-L${DHCPP}/lib" \
-                          DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
-                          python3 setup.py build_ext -i; \
-                        DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
-                        auditwheel repair dist/pydeephaven_ticking*"${tag}"*.whl; \
-                        rm -f dist/pydeephaven_ticking*"${tag}"*.whl; \
-                        mv -f wheelhouse/*.whl dist; \
-                        pip3 install in-wheels/*.whl; \
-                        pip3 install --no-deps dist/pydeephaven_ticking*"${tag}"*.whl; \
-                      done; \
-                      ln dist/*.whl /out; \
-                      cd /; \
-                      rm -fr "${PREFIX}/src/py-client-ticking"
-                   ''')
-
-        environmentVariable 'LD_LIBRARY_PATH', ''  // avoid conflict with libarrow.13.0.0.so
+        copyFile('pyClientTickingWheels/entrypoint.sh', '/entrypoint.sh')
+        environmentVariable 'PREFIX', prefix
+        environmentVariable 'WHEELS_SET', wheelsSet
+        environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
+        entrypoint = ['/entrypoint.sh']
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
 }}
@@ -102,6 +75,7 @@ def testPyClientTickingManyLinux = { String wheelsSet, String taskName, TaskProv
         }
         from(layout.projectDirectory) {
             include 'tests/**'
+            include 'testPyClientTicking/entrypoint.sh'
         }
         from(parentContainer.get().outputs) {
             into 'pyt-wheels'
@@ -134,41 +108,22 @@ def testPyClientTickingManyLinux = { String wheelsSet, String taskName, TaskProv
         copyFile('tests/', '/project/tests/')
         copyFile('dep-wheels/', '/project/dep-wheels')
         copyFile('pyt-wheels/', '/project/pyt-wheels')
+        copyFile('testPyClientTicking/entrypoint.sh', '/entrypoint.sh')
         workingDir('/project')
-        runCommand("WHEELS_SET='${wheelsSet}'; " +
-                   '''set -eux ; \
-                      for spec in ${WHEELS_SET}; do \
-                        pyver=`echo "$spec" | cut -d: -f 1`; \
-                        tag=`echo "$spec" | cut -d: -f 2`; \
-                        [ -f /project/pyt-wheels/pydeephaven_ticking*"${tag}"*.whl ]; \
-                        source "/project/$pyver/bin/activate"; \
-                        pip install unittest-xml-reporting; \
-                        pip install /project/dep-wheels/*.whl; \
-                        pip install /project/pyt-wheels/pydeephaven_ticking*"${tag}"*.whl; \
-                        deactivate; \
-                     done
-                   ''')
-
         //
         // Setup for test run.
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
+        environmentVariable 'PREFIX', prefix
+        environmentVariable 'WHEELS_SET', wheelsSet
+        environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
+        entrypoint = ['/entrypoint.sh']
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ parentContainer.get(), Docker.registryTask(project, image.toString()) ]
-    entrypoint = ['bash', '-c',
-                  "WHEELS_SET='${wheelsSet}'; " +
-                  '''
-                  for spec in ${WHEELS_SET}; do \
-                    pyver=`echo "$spec" | cut -d: -f 1`; \
-                    source "/project/$pyver/bin/activate"; \
-                    "python$pyver" -m xmlrunner discover tests -v -o "/out/report/$pyver"; \
-                    deactivate
-                  done
-                  ''']
     copyOut {
         into layout.buildDirectory.dir("${taskName}-test-results")
     }
@@ -176,8 +131,7 @@ def testPyClientTickingManyLinux = { String wheelsSet, String taskName, TaskProv
 
 def isCi = System.getenv().getOrDefault('CI', 'false') == 'true'
 
-// TODO: remove this false, this is just to get us back to CI that doesn't run out of disk
-def assembleWheelsSet = isCi && false
+def assembleWheelsSet = isCi
         ? [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
         : [ '3.9:cp39-cp39' ]
 
