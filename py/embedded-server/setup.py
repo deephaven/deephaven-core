@@ -65,7 +65,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'deephaven = deephaven_server:cli',
+            'deephaven = deephaven_server.cli:cli',
         ],
     },
 )
