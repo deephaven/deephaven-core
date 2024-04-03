@@ -19,10 +19,12 @@ class DataIndexTestCase(BaseTestCase):
                                                   "Z=ii*2"])
 
     def test_create_data_index(self):
+        self.assertFalse(has_data_index(self.table, ["X", "Z"]))
         di = create_data_index(self.table, ["X", "Z"])
-        self.assertIsNotNone(self.data_index)
-        self.assertEqual(2, len(self.data_index.keys))
-        self.assertEqual(10, self.data_index.table.size)
+        self.assertTrue(has_data_index(self.table, ["X", "Z"]))
+        self.assertIsNotNone(di)
+        self.assertEqual(2, len(di.keys))
+        self.assertEqual(10, di.table.size)
 
         with self.assertRaises(DHError):
             create_data_index(self.table, ["X", "W"])
