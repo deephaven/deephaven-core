@@ -79,6 +79,7 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
 
     /**
      * Provide a list of URLs that the user can visit to authenticate. Adds the `psk` query parameter to the target URL.
+     * 
      * @param targetUrl the base url of the hosted UI
      * @return The targetUrl with the PSK query parameter appended
      */

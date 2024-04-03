@@ -91,6 +91,7 @@ public class EmbeddedServer {
 
     /**
      * Create an embedded server with the given host and port.
+     * 
      * @param host the host to bind to
      * @param port the port to bind to
      * @param dict Deprecated, no longer used.
@@ -105,6 +106,7 @@ public class EmbeddedServer {
 
     /**
      * Create an embedded server with the given host and port.
+     * 
      * @param host the host to bind to
      * @param port the port to bind to
      * @throws IOException if the server cannot be started
@@ -161,6 +163,7 @@ public class EmbeddedServer {
 
     /**
      * Provide access to the server configuration.
+     * 
      * @return the server configuration
      */
     public ServerConfig serverConfig() {
@@ -169,6 +172,7 @@ public class EmbeddedServer {
 
     /**
      * Provide access to the authentication handlers.
+     * 
      * @return the authentication handlers
      */
     public Collection<AuthenticationRequestHandler> authenticationHandlers() {
