@@ -119,7 +119,6 @@ class Server:
         host: Optional[str] = None,
         port: Optional[int] = None,
         jvm_args: Optional[List[str]] = None,
-        dh_args: Dict[str, str] = {},
         extra_classpath: Optional[List[str]] = None,
     ):
         """
@@ -142,9 +141,7 @@ class Server:
         import jpy
 
         # Create a python-wrapped java server that we can reference to talk to the platform
-        self.j_server = jpy.get_type("io.deephaven.python.server.EmbeddedServer")(
-            host, port, dh_args
-        )
+        self.j_server = jpy.get_type("io.deephaven.python.server.EmbeddedServer")(host, port)
 
         # Obtain references to the deephaven logbuffer and redirect stdout/stderr to it. Note that we should not import
         # this until after jpy has started.

@@ -89,7 +89,27 @@ public class EmbeddedServer {
     @Inject
     Map<String, AuthenticationRequestHandler> authenticationHandlers;
 
+    /**
+     * Create an embedded server with the given host and port.
+     * @param host the host to bind to
+     * @param port the port to bind to
+     * @param dict Deprecated, no longer used.
+     * @throws IOException if the server cannot be started
+     *
+     * @deprecated use {@link #EmbeddedServer(String, Integer)} instead. dict is not used.
+     */
     public EmbeddedServer(String host, Integer port, PyObject dict) throws IOException {
+        this(host, port);
+    }
+
+
+    /**
+     * Create an embedded server with the given host and port.
+     * @param host the host to bind to
+     * @param port the port to bind to
+     * @throws IOException if the server cannot be started
+     */
+    public EmbeddedServer(String host, Integer port) throws IOException {
         // Redirect System.out and err to the python equivelents, in case python has (or will) redirected them.
         PyModule sys = PyModule.importModule("sys");
         System.setOut(new PrintStream(new PyLogOutputStream(() -> sys.getAttribute("stdout"))));

@@ -50,7 +50,7 @@ def server(host, port, key, anonymous, jvm_args):
     """
     click.echo("Starting Deephaven server...")
 
-    if anonymous and key is not None:
+    if anonymous is not None and key is not None:
         raise click.ClickException("Cannot specify both --anonymous and --key")
 
     if jvm_args is None:
