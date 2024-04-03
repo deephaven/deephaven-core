@@ -5,50 +5,50 @@
 // ****** Edit CharVectorColumnWrapper and run "./gradlew replicateVectorColumnWrappers" to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.vector;
+package io.deephaven.engine.table.vectors;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.ResettableWritableLongChunk;
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.ResettableWritableFloatChunk;
+import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.iterators.*;
-import io.deephaven.vector.LongSubVector;
-import io.deephaven.vector.LongVector;
+import io.deephaven.vector.FloatSubVector;
+import io.deephaven.vector.FloatVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong.maybeConcat;
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong.repeat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat.maybeConcat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.vectors.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class LongVectorColumnWrapper extends LongVector.Indirect {
+public class FloatVectorColumnWrapper extends FloatVector.Indirect {
 
     private static final long serialVersionUID = -2715269662143763674L;
 
-    private final ColumnSource<Long> columnSource;
+    private final ColumnSource<Float> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public LongVectorColumnWrapper(
-            @NotNull final ColumnSource<Long> columnSource,
+    public FloatVectorColumnWrapper(
+            @NotNull final ColumnSource<Float> columnSource,
             @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public LongVectorColumnWrapper(
-            @NotNull final ColumnSource<Long> columnSource,
+    public FloatVectorColumnWrapper(
+            @NotNull final ColumnSource<Float> columnSource,
             @NotNull final RowSet rowSet,
             final long startPadding,
             final long endPadding) {
@@ -60,18 +60,18 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
     }
 
     @Override
-    public long get(long index) {
+    public float get(long index) {
         index -= startPadding;
 
         if (index < 0 || index >= rowSet.size()) {
-            return NULL_LONG;
+            return NULL_FLOAT;
         }
 
-        return columnSource.getLong(rowSet.get(index));
+        return columnSource.getFloat(rowSet.get(index));
     }
 
     @Override
-    public LongVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+    public FloatVector subVector(long fromIndexInclusive, long toIndexExclusive) {
         fromIndexInclusive -= startPadding;
         toIndexExclusive -= startPadding;
 
@@ -85,32 +85,32 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
                 ? toIndexExclusive - fromIndexInclusive
                 : Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new LongVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
+        return new FloatVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
                 newStartPadding, newEndPadding);
     }
 
     @Override
-    public LongVector subVectorByPositions(final long[] positions) {
-        return new LongSubVector(this, positions);
+    public FloatVector subVectorByPositions(final long[] positions) {
+        return new FloatSubVector(this, positions);
     }
 
     @Override
-    public long[] toArray() {
+    public float[] toArray() {
         return toArray(false, Integer.MAX_VALUE);
     }
 
-    public long[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
+    public float[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
         if (shouldBeNullIfOutOfBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
         final int size = (int) Math.min(size(), maxSize);
-        final long[] result = new long[size];
+        final float[] result = new float[size];
         int nextFillIndex;
 
         final int startPaddingFillAmount = (int) Math.min(startPadding, size);
         if (startPaddingFillAmount > 0) {
-            Arrays.fill(result, 0, startPaddingFillAmount, NULL_LONG);
+            Arrays.fill(result, 0, startPaddingFillAmount, NULL_FLOAT);
             nextFillIndex = startPaddingFillAmount;
         } else {
             nextFillIndex = 0;
@@ -122,15 +122,15 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
             if (contextSize == rowSetFillAmount) {
                 try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize)) {
                     columnSource.fillChunk(fillContext,
-                            WritableLongChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
+                            WritableFloatChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
                     nextFillIndex += rowSetFillAmount;
                 }
             } else {
                 // @formatter:off
                 try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize);
                      final RowSequence.Iterator rowsIterator = rowSet.getRowSequenceIterator();
-                     final ResettableWritableLongChunk<Values> chunk =
-                             ResettableWritableLongChunk.makeResettableChunk()) {
+                     final ResettableWritableFloatChunk<Values> chunk =
+                             ResettableWritableFloatChunk.makeResettableChunk()) {
                     // @formatter:on
                     while (rowsIterator.hasMore()) {
                         final int maxFillSize = Math.min(contextSize, size - nextFillIndex);
@@ -145,21 +145,21 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
 
         final int endPaddingFillAmount = (int) Math.min(endPadding, size - nextFillIndex);
         if (endPaddingFillAmount > 0) {
-            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, NULL_LONG);
+            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, NULL_FLOAT);
         }
 
         return result;
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
-                return new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
+                return new ChunkedFloatColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
                         rowSet.firstRowKey(), rowSetSize);
             } else {
-                return new SerialLongColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+                return new SerialFloatColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
             }
         }
 
@@ -188,17 +188,17 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
             includedRows = 0;
         }
 
-        final CloseablePrimitiveIteratorOfLong initialNullsIterator = includedInitialNulls > 0
-                ? repeat(NULL_LONG, includedInitialNulls)
+        final CloseablePrimitiveIteratorOfFloat initialNullsIterator = includedInitialNulls > 0
+                ? repeat(NULL_FLOAT, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfLong rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
-                ? new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+        final CloseablePrimitiveIteratorOfFloat rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedFloatColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
-                        ? new SerialLongColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
+                        ? new SerialFloatColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-        final CloseablePrimitiveIteratorOfLong finalNullsIterator = remaining > 0
-                ? repeat(NULL_LONG, remaining)
+        final CloseablePrimitiveIteratorOfFloat finalNullsIterator = remaining > 0
+                ? repeat(NULL_FLOAT, remaining)
                 : null;
         return maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
     }

@@ -5,22 +5,22 @@
 // ****** Edit CharVectorColumnWrapperTest and run "./gradlew replicateVectorColumnWrappers" to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.vector;
+package io.deephaven.engine.table.vectors;
 
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.IntVectorTest;
+import io.deephaven.engine.table.vectors.LongVectorColumnWrapper;import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link IntVectorTest} implementation for {@link IntVectorColumnWrapper}.
+ * {@link LongVectorTest} implementation for {@link io.deephaven.engine.table.vectors.LongVectorColumnWrapper}.
  */
-public class IntVectorColumnWrapperTest extends IntVectorTest {
+public class LongVectorColumnWrapperTest extends LongVectorTest {
 
     @Override
-    protected IntVector makeTestVector(@NotNull final int... data) {
-        return new IntVectorColumnWrapper(
+    protected LongVector makeTestVector(@NotNull final long... data) {
+        return new LongVectorColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(data),
                 RowSetFactory.flat(data.length));
     }
