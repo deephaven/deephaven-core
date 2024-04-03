@@ -516,8 +516,8 @@ class Session:
     def input_table(self, schema: pa.Schema = None, init_table: Table = None,
                     key_cols: Union[str, List[str]] = None, blink_table: bool = False) -> InputTable:
         """Creates an InputTable from either Arrow schema or initial table.  When blink_table is True, the InputTable
-        will be a blink table. When blink_table is False (default), if key columns are provided, the InputTable will be
-        keyed, otherwise it will be append-only.
+        will be a blink table. When blink_table is False (default), the InputTable will be
+        keyed if key columns are provided, otherwise it will be append-only.
 
         Args:
             schema (pa.Schema): the schema for the InputTable
