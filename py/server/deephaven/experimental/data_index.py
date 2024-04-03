@@ -55,7 +55,7 @@ def has_data_index(table: Table, key_cols: List[str]) -> bool:
     return _JDataIndexer.hasDataIndex(table.j_table, key_cols)
 
 
-def get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
+def _get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
     """Gets a DataIndex for the given key columns. Returns None if the DataIndex does not exist.
 
     Args:
@@ -69,21 +69,25 @@ def get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
     return DataIndex(j_di) if j_di else None
 
 
-def create_data_index(table: Table, key_cols: List[str]) -> DataIndex:
-    """Creates a DataIndex for the given key columns on the provided table. If the DataIndex already exists, it is
-    returned without rebuilding.
+def data_index(table: Table, key_cols: List[str], create_if_absent: bool = True) -> Optional[DataIndex]:
+    """Gets the DataIndex for the given key columns on the provided table. When the DataIndex already exists, returns it.
+    When the DataIndex doesn't already exist, if create_if_absent is True, creates the DataIndex first then returns it;
+    otherwise returns None.
 
     Args:
         table (Table): the table to index
         key_cols (List[str]): the names of the key columns to index
+        create_if_absent (bool): if True, create the DataIndex if it does not already exist, default is True
 
     Returns:
-        a DataIndex
+        a DataIndex or None
 
     Raises:
         DHError
     """
     try:
+        if not create_if_absent:
+            return _get_data_index(table, key_cols)
         return DataIndex(_JDataIndexer.getOrCreateDataIndex(table.j_table, key_cols))
     except Exception as e:
         raise DHError(e, "failed to create DataIndex.") from e
