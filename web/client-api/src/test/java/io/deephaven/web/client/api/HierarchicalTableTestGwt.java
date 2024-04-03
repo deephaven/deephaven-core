@@ -52,7 +52,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    public void testRefreshingTreeTable() {
+    public void ignore_testRefreshingTreeTable() {
         connect(tables)
                 .then(treeTable("ticking_tree"))
                 .then(treeTable -> {

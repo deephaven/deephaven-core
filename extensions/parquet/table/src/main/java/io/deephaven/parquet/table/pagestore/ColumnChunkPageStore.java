@@ -37,7 +37,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     final PageCache<ATTR> pageCache;
-    private final ColumnChunkReader columnChunkReader;
+    final ColumnChunkReader columnChunkReader;
     private final long mask;
     private final ToPage<ATTR, ?> toPage;
 
@@ -62,7 +62,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private static boolean canUseOffsetIndexBasedPageStore(
             @NotNull final ColumnChunkReader columnChunkReader,
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        if (columnChunkReader.getOffsetIndex() == null) {
+        if (!columnChunkReader.hasOffsetIndex()) {
             return false;
         }
         final String version = columnChunkReader.getVersion();
