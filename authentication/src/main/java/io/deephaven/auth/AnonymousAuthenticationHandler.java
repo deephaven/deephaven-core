@@ -41,6 +41,13 @@ public class AnonymousAuthenticationHandler implements AuthenticationRequestHand
         }
     }
 
+    /**
+     * Return the targetUrl as the only valid url for this handler.
+     * With anonymous authentication there's no query parameters to add, so just return the targetUrl.
+     *
+     * @param targetUrl the base url of the hosted UI
+     * @return a list containing the targetUrl
+     */
     @Override
     public List<String> urls(String targetUrl) {
         return List.of(targetUrl);

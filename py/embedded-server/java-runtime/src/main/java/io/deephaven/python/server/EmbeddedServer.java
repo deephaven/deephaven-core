@@ -139,10 +139,18 @@ public class EmbeddedServer {
         return new LogBufferOutputStream(logBuffer, LogLevel.STDERR, 256, 1 << 19);
     }
 
+    /**
+     * Provide access to the server configuration.
+     * @return the server configuration
+     */
     public ServerConfig serverConfig() {
         return serverConfig;
     }
 
+    /**
+     * Provide access to the authentication handlers.
+     * @return the authentication handlers
+     */
     public Collection<AuthenticationRequestHandler> authenticationHandlers() {
         return authenticationHandlers.values();
     }

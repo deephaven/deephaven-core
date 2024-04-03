@@ -12,32 +12,62 @@ from .start_jvm import start_jvm
 
 
 class ServerConfig:
+    """
+    Represents the configuration of a Deephaven server.
+    """
+
+    def __init__(self, j_server_config):
+        self.j_server_config = j_server_config
+
     @property
     def j_object(self):
         return self.j_server_config
 
     @property
     def target_url_or_default(self) -> str:
-        return self.j_server_config.targetUrlOrDefault()
+        """
+        Returns the target URL to bring up the Web UI.
 
-    def __init__(self, j_server_config):
-        self.j_server_config = j_server_config
+        Returns:
+            The target URL to bring up the Web UI.
+        """
+        return self.j_server_config.targetUrlOrDefault()
 
 
 class AuthenticationHandler:
+    """
+    Represents an authentication handler for a Deephaven server.
+    """
+    def __init__(self, j_authentication_handler):
+        self.j_authentication_handler = j_authentication_handler
+
     @property
     def j_object(self):
         return self.j_authentication_handler
 
     @property
     def auth_type(self) -> str:
+        """
+        Get the authentication type for this handler.
+
+        Returns:
+            The authentication type for this handler.
+        """
         return self.j_authentication_handler.getAuthType()
 
     def urls(self, target_url: str) -> List[str]:
-        return list(self.j_authentication_handler.urls(target_url).toArray())
+        """
+        Get the URLs for this authentication handler.
 
-    def __init__(self, j_authentication_handler):
-        self.j_authentication_handler = j_authentication_handler
+        Args:
+            target_url: The target URL where the Web UI is hosted.
+
+        Returns:
+            The URLs provided by this authentication handler to open the Web UI with authentication.
+            For example, with pre-shared key authentication, it could add a query param with the pre-shared key.
+
+        """
+        return list(self.j_authentication_handler.urls(target_url).toArray())
 
 
 class Server:
@@ -53,14 +83,32 @@ class Server:
 
     @property
     def port(self) -> int:
+        """
+        Get the port the server is running on.
+
+        Returns:
+            The port the server is running on.
+        """
         return self.j_server.getPort()
 
     @property
     def server_config(self) -> ServerConfig:
+        """
+        Get the configuration of the server.
+
+        Returns:
+            The configuration of the server.
+        """
         return ServerConfig(self.j_server.serverConfig())
 
     @property
     def authentication_handlers(self) -> List[AuthenticationHandler]:
+        """
+        Get the authentication handlers for the server.
+
+        Returns:
+            The authentication handlers for the server.
+        """
         return [
             AuthenticationHandler(j_auth_handler)
             for j_auth_handler in self.j_server.authenticationHandlers().toArray()
