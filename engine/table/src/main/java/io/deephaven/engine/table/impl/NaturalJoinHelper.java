@@ -354,8 +354,8 @@ class NaturalJoinHelper {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 checkRightTableSizeZeroKeys(leftTable, rightTable, exactMatch);
-                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                                final TableUpdateImpl downstream =
+                                        TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                                 leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                         downstream.modifiedColumnSet);
                                 result.notifyListeners(downstream);
@@ -476,14 +476,13 @@ class NaturalJoinHelper {
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
-            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
             rowRedirection.removeAll(upstream.removed());
 
             try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
                 rowRedirection.applyShift(prevRowSet, upstream.shifted());
             }
 
-            downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
             leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 
             if (upstream.modifiedColumnSet().containsAny(leftKeyColumns)) {

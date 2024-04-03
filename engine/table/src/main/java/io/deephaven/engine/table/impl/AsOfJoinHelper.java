@@ -249,8 +249,6 @@ public class AsOfJoinHelper {
                 stampPair, columnsToAdd, order == SortingOrder.Descending, disallowExactMatch), leftTable, result) {
             @Override
             public void onUpdate(TableUpdate upstream) {
-                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-
                 rowRedirection.removeAll(upstream.removed());
 
                 final boolean keysModified = upstream.modifiedColumnSet().containsAny(leftKeysOrStamps);
@@ -296,7 +294,8 @@ public class AsOfJoinHelper {
                     }
                 }
 
-                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                final TableUpdateImpl downstream =
+                        TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                 leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
                 if (keysModified) {
                     downstream.modifiedColumnSet().setAll(allRightColumns);
@@ -1478,8 +1477,6 @@ public class AsOfJoinHelper {
                                     leftTable, result) {
                                 @Override
                                 public void onUpdate(TableUpdate upstream) {
-                                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-
                                     rowRedirection.removeAll(upstream.removed());
 
                                     final boolean stampModified = upstream.modified().isNonempty()
@@ -1504,7 +1501,8 @@ public class AsOfJoinHelper {
                                                 compactedRightStampKeys, rowRedirection);
                                     }
 
-                                    downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                                    final TableUpdateImpl downstream =
+                                            TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                                     leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                             downstream.modifiedColumnSet());
                                     if (stampModified) {

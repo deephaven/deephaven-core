@@ -55,10 +55,12 @@ public class TickSuppressor {
                 "convertModificationsToAddsAndRemoves", input, resultTable) {
             @Override
             public void onUpdate(TableUpdate upstream) {
-                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                downstream.added = upstream.added().union(upstream.modified());
-                downstream.removed = upstream.removed().union(upstream.getModifiedPreShift());
+                final TableUpdateImpl downstream = new TableUpdateImpl();
+                // TODO: can we remove these copies?
+                downstream.added = upstream.added().copy().union(upstream.modified());
+                downstream.removed = upstream.removed().copy().union(upstream.getModifiedPreShift());
                 downstream.modified = RowSetFactory.empty();
+                downstream.shifted = upstream.shifted();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 resultTable.notifyListeners(downstream);
             }
@@ -121,9 +123,8 @@ public class TickSuppressor {
 
                     @Override
                     public void onUpdate(TableUpdate upstream) {
-                        final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-
+                        final TableUpdateImpl downstream =
+                                TableUpdateImpl.copy(upstream, resultTable.getModifiedColumnSetForUpdates());
                         if (downstream.modified().isEmpty()) {
                             identityTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                     downstream.modifiedColumnSet());

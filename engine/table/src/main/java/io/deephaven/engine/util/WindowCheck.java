@@ -346,7 +346,8 @@ public class WindowCheck {
                 // now add the new timestamps
                 addRowSequence(upstream.added(), rowKeyToEntry != null);
 
-                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                final TableUpdateImpl downstream =
+                        TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
 
                 try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
@@ -355,7 +356,6 @@ public class WindowCheck {
                 }
 
                 // everything that was added, removed, or modified stays added removed or modified
-                downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                 if (downstream.modified.isNonempty()) {
                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
                     downstream.modifiedColumnSet.setAll(mcsResultWindowColumn);
