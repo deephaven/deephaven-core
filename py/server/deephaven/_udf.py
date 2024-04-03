@@ -203,7 +203,7 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
     if isinstance(t, type) and issubclass(t, np.generic):
          warnings.warn(f"numpy scalar type {t} is used to annotate parameter '{p_param.name}'. Note that conversion of "
                        f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
-                       f"types such as int, float, bool, etc. If possible, consider using these types "
+                       f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
                        f"instead.")
 
     # if the annotation is a DH DType instance, we'll use its numpy type
