@@ -9,6 +9,8 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 public abstract class RowSequenceAsChunkImpl implements RowSequence {
 
     private WritableLongChunk<OrderedRowKeys> keyIndicesChunk;
@@ -99,10 +101,17 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
     abstract public long rangesCountUpperBound();
 
     @Override
+    @OverridingMethodsMustInvokeSuper
     public void close() {
         closeRowSequenceAsChunkImpl();
     }
 
+    /**
+     * Close any resources associated with this RowSequenceAsChunkImpl. This is the implementation for {@link #close()
+     * close}, made available for subclasses that have a need to release parent class resources independently of their
+     * own {@link #close() close} implementation. Most uses should prefer to {@link #invalidateRowSequenceAsChunkImpl()
+     * invalidate}, instead.
+     */
     protected final void closeRowSequenceAsChunkImpl() {
         if (keyIndicesChunk != null) {
             keyIndicesChunk.close();

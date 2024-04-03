@@ -191,6 +191,10 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         return session -> session.getTreeTable(tableName);
     }
 
+    public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsPartitionedTable> partitionedTable(String tableName) {
+        return session -> session.getPartitionedTable(tableName);
+    }
+
     /**
      * Utility method to report Promise errors to the unit test framework
      */

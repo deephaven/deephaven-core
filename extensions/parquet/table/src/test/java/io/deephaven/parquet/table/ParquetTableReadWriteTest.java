@@ -14,13 +14,16 @@ import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
 import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -39,6 +42,7 @@ import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
@@ -70,16 +74,44 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.Objects;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.parquet.table.ParquetTools.*;
+import static io.deephaven.engine.util.TableTools.booleanCol;
+import static io.deephaven.engine.util.TableTools.byteCol;
+import static io.deephaven.engine.util.TableTools.charCol;
+import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.emptyTable;
+import static io.deephaven.engine.util.TableTools.floatCol;
+import static io.deephaven.engine.util.TableTools.instantCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.merge;
+import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.shortCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.parquet.table.ParquetTools.readFlatPartitionedTable;
+import static io.deephaven.parquet.table.ParquetTools.readKeyValuePartitionedTable;
+import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
+import static io.deephaven.parquet.table.ParquetTools.readTable;
+import static io.deephaven.parquet.table.ParquetTools.writeParquetTables;
+import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
+import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.*;
 
@@ -311,23 +343,9 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
-        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someLong"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someInt", "someLong"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someLong", "someInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
+        verifyIndexingInfoExists(fromDisk, "someLong");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someLong");
+        verifyIndexingInfoExists(fromDisk, "someLong", "someInt");
     }
 
     @Test
@@ -348,23 +366,9 @@ public final class ParquetTableReadWriteTest {
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
-        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someString"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someInt", "someString"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someString", "someInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
+        verifyIndexingInfoExists(fromDisk, "someString");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someString");
+        verifyIndexingInfoExists(fromDisk, "someString", "someInt");
     }
 
     @Test
@@ -380,39 +384,33 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(testTable, "someBigInt");
         DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someBigInt");
 
-
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
         writeTable(testTable, dest);
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
-        ColumnSource<?>[] columns = Arrays.stream(new String[] {"someBigInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        DataIndex fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someInt", "someBigInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
-
-        columns = Arrays.stream(new String[] {"someBigInt", "someInt"}).map(fromDisk::getColumnSource)
-                .toArray(ColumnSource[]::new);
-        fullIndex = DataIndexer.of(fromDisk.getRowSet()).getDataIndex(columns);
-        Assert.neqNull(fullIndex, "fullIndex");
-        assertLookupFromTable(fromDisk, fullIndex, columns);
+        verifyIndexingInfoExists(fromDisk, "someBigInt");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someBigInt");
+        verifyIndexingInfoExists(fromDisk, "someBigInt", "someInt");
     }
 
-    private void assertLookupFromTable(
+    private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
+        assertTrue(DataIndexer.hasDataIndex(table, columnNames));
+        final DataIndex fullIndex = DataIndexer.getDataIndex(table, columnNames);
+        Assert.neqNull(fullIndex, "fullIndex");
+        assertLookupFromTable(table, fullIndex, columnNames);
+    }
+
+    private static void assertLookupFromTable(
             final Table sourceTable,
             final DataIndex fullIndex,
-            final ColumnSource<?>[] columns) {
+            final String... columnNames) {
+        final ColumnSource<?>[] columns = Arrays.stream(columnNames).map(sourceTable::getColumnSource)
+                .toArray(ColumnSource[]::new);
         final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup(columns);
         final ColumnSource<RowSet> fullIndexRowSetColumn = fullIndex.rowSetColumn();
 
-        ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
+        final ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
 
         // Iterate through the entire source table and verify the lookup row set is valid and contains this row.
         try (final RowSet.Iterator rsIt = sourceTable.getRowSet().iterator();
@@ -537,6 +535,651 @@ public final class ParquetTableReadWriteTest {
         writeTable(table, dest, writeInstructions);
         checkSingleTable(table, dest);
     }
+
+    @Test
+    public void basicParquetWithMetadataTest() {
+        final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        final String filename = "basicParquetWithMetadataTest.parquet";
+        final File destFile = new File(rootFile, filename);
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeTable(table, destFile, writeInstructions);
+
+        final File metadataFile = new File(rootFile, "_metadata");
+        assertTrue(metadataFile.exists());
+        assertTrue(new File(rootFile, "_common_metadata").exists());
+
+        final Table fromDisk = readTable(destFile);
+        assertTableEquals(table, fromDisk);
+
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(table, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void parquetWithIndexingDataAndMetadataTest() {
+        final File parentDir = new File(rootFile, "tempDir");
+        final int[] data = new int[500 * 4];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i / 4;
+        }
+        final Table indexedTable = newTable(TableTools.intCol("vvv", data));
+        DataIndexer.getOrCreateDataIndex(indexedTable, "vvv");
+
+        final File destFile = new File(parentDir, "parquetWithIndexingDataAndMetadataTest.parquet");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeTable(indexedTable, destFile, writeInstructions);
+
+        final Table fromDisk = readTable(destFile);
+        assertTableEquals(indexedTable, fromDisk);
+        verifyIndexingInfoExists(fromDisk, "vvv");
+
+        final File metadataFile = new File(parentDir, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(indexedTable, fromDiskWithMetadata);
+        verifyIndexingInfoExists(fromDiskWithMetadata, "vvv");
+    }
+
+    @Test
+    public void flatPartitionedParquetWithMetadataTest() throws IOException {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
+        final File firstDataFile = new File(parentDir, "data1.parquet");
+        final File secondDataFile = new File(parentDir, "data2.parquet");
+
+        // Write without any metadata files
+        writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), ParquetInstructions.EMPTY,
+                new File[] {firstDataFile, secondDataFile}, null);
+        final Table source = readTable(parentDir).select();
+
+        // Now write with metadata files
+        parentDir.delete();
+        parentDir.mkdir();
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), writeInstructions,
+                new File[] {firstDataFile, secondDataFile}, null);
+
+        final Table fromDisk = readTable(parentDir);
+        assertTableEquals(source, fromDisk);
+
+        final File metadataFile = new File(parentDir, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(source, fromDiskWithMetadata);
+
+        // Now replace the underlying data files with empty files and read the size from metadata file verifying that
+        // we can read the size without touching the data
+        firstDataFile.delete();
+        firstDataFile.createNewFile();
+        secondDataFile.delete();
+        secondDataFile.createNewFile();
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
+
+        // Now write with flat partitioned parquet files to different directories with metadata file
+        parentDir.delete();
+        final File updatedSecondDataFile = new File(rootFile, "testDir/data2.parquet");
+        try {
+            writeParquetTables(new Table[] {someTable, someTable}, someTable.getDefinition(), writeInstructions,
+                    new File[] {firstDataFile, updatedSecondDataFile}, null);
+            fail("Expected exception when writing the metadata files for tables with different parent directories");
+        } catch (final RuntimeException expected) {
+        }
+    }
+
+    @Test
+    public void flatPartitionedParquetWithBigDecimalMetadataTest() throws IOException {
+        final File parentDir = new File(rootFile, "tempDir");
+
+        // Both tables have different precision for big decimal column
+        final Table firstTable = TableTools.emptyTable(5).update("bdColumn = java.math.BigDecimal.valueOf((double)ii)");
+        final Table secondTable =
+                TableTools.emptyTable(5).update("bdColumn = java.math.BigDecimal.valueOf((double)(ii*0.001))");
+        final File firstDataFile = new File(parentDir, "data1.parquet");
+        final File secondDataFile = new File(parentDir, "data2.parquet");
+
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        final Table[] sources = new Table[] {firstTable, secondTable};
+        writeParquetTables(sources, firstTable.getDefinition(), writeInstructions,
+                new File[] {firstDataFile, secondDataFile}, null);
+
+        // Merge the tables and compute the precision and scale as per the union of the two tables
+        final Table expected =
+                maybeFixBigDecimal(PartitionedTableFactory.ofTables(firstTable.getDefinition(), sources).merge());
+
+        final Table fromDisk = readTable(parentDir).select();
+        assertTableEquals(expected, fromDisk);
+        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata"));
+        assertTableEquals(expected, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithIntegerPartitionsTest() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table indexedtable = ((QueryTable) TableTools.emptyTable(1_000_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+        DataIndexer.getOrCreateDataIndex(indexedtable, "I");
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(indexedtable, parentDir.getAbsolutePath(), writeInstructions);
+
+        // Verify that metadata files are generated
+        assertTrue(new File(parentDir, "_common_metadata").exists());
+        assertTrue(new File(parentDir, "_metadata").exists());
+
+        // Verify that the partitioning and indexing data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            for (int PC2 = 0; PC2 <= 1; PC2++) {
+                final File dir = new File(parentDir, "PC1=" + PC1 + File.separator + "PC2=" + PC2);
+                assertTrue(dir.exists() && dir.isDirectory());
+                final File dataFile = new File(dir, "data.parquet");
+                assertTrue(dataFile.exists() && dataFile.isFile());
+                final File indexFile = new File(dir, ".dh_metadata/indexes/I/index_I_data.parquet");
+                assertTrue(indexFile.exists() && indexFile.isFile());
+            }
+        }
+
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        verifyIndexingInfoExists(fromDisk, "I");
+        fromDisk.where("I == 3").select();
+        assertTableEquals(indexedtable.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        fromDiskWithMetadata.where("I == 3").select();
+        assertTableEquals(indexedtable.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        // Write the same table without generating metadata files
+        final File parentDirWithoutMetadata = new File(rootFile, "writeKeyValuePartitionedDataWithoutMetadata");
+        writeKeyValuePartitionedTable(indexedtable, parentDirWithoutMetadata.getAbsolutePath(), EMPTY);
+
+        // Verify that no metadata files are generated
+        assertFalse(new File(parentDirWithoutMetadata, "_common_metadata").exists());
+        assertFalse(new File(parentDirWithoutMetadata, "_metadata").exists());
+
+        // Verify that the partitioning and indexing data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            for (int PC2 = 0; PC2 <= 1; PC2++) {
+                final File dir = new File(parentDirWithoutMetadata, "PC1=" + PC1 + File.separator + "PC2=" + PC2);
+                assertTrue(dir.exists() && dir.isDirectory());
+                final File[] fileList = dir.listFiles();
+                for (final File dataFile : fileList) {
+                    // hidden indexing data
+                    assertTrue(dataFile.getName().equals(".dh_metadata")
+                            || dataFile.getName().endsWith(".parquet"));
+                }
+            }
+        }
+        final Table fromDiskWithoutMetadata = readKeyValuePartitionedTable(parentDirWithoutMetadata, EMPTY);
+        assertTableEquals(fromDisk, fromDiskWithoutMetadata);
+        verifyIndexingInfoExists(fromDiskWithoutMetadata, "I");
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoNonPartitioningColumnsTest() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning());
+        final Table inputData = ((QueryTable) TableTools.emptyTable(20)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        try {
+            writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), writeInstructions);
+            fail("Expected exception when writing the partitioned table with no non-partitioning columns");
+        } catch (final RuntimeException expected) {
+        }
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNonUniqueKeys() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (int)(ii%3)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+        final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
+        final Table internalTable = partitionedTable.table();
+        final Table internalTableDuplicated = merge(internalTable, internalTable);
+        final PartitionedTable partitionedTableWithDuplicatedKeys = PartitionedTableFactory.of(internalTableDuplicated);
+        assertFalse(partitionedTableWithDuplicatedKeys.uniqueKeys());
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNonUniqueKeys");
+        ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("{partitions}-data")
+                .build();
+        try {
+            writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                    writeInstructions);
+            fail("Expected exception when writing the partitioned table with non-unique keys without {i} or {uuid} in "
+                    + "base name");
+        } catch (final RuntimeException expected) {
+        }
+
+        // Write the partitioned table with non-unique keys with {i} in the base name
+        writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("{partitions}-data-{i}")
+                .build();
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                writeInstructions);
+
+        // Verify that the partitioned data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            final File dir = new File(parentDir, "PC1=" + PC1 + File.separator);
+            assertTrue(dir.exists() && dir.isDirectory());
+            final String[] dataFileList = dir.list();
+            assertEquals(2, dataFileList.length);
+            for (final String dataFile : dataFileList) {
+                assertTrue(dataFile.equals("PC1=" + PC1 + "-data-0.parquet") ||
+                        dataFile.equals("PC1=" + PC1 + "-data-1.parquet"));
+            }
+        }
+
+        final Table expected = merge(inputData, inputData);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+
+        FileUtils.deleteRecursively(parentDir);
+
+        // Write the partitioned table with non-unique keys with {uuid} in the base name
+        writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("data-{uuid}")
+                .build();
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                writeInstructions);
+
+        // Verify that the partitioned data exists with uuid in names
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            final File dir = new File(parentDir, "PC1=" + PC1 + File.separator);
+            assertTrue(dir.exists() && dir.isDirectory());
+            final String[] dataFileList = dir.list();
+            assertEquals(2, dataFileList.length);
+            for (final String dataFile : dataFileList) {
+                assertTrue(dataFile.startsWith("data-") && dataFile.endsWith(".parquet"));
+            }
+        }
+
+        FileUtils.deleteRecursively(parentDir);
+
+        // Write the partitioned table with non-unique keys without a base name
+        writeKeyValuePartitionedTable(partitionedTableWithDuplicatedKeys, parentDir.getAbsolutePath(),
+                writeInstructions);
+
+        // Verify that the partitioned data exists with uuid in names
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            final File dir = new File(parentDir, "PC1=" + PC1 + File.separator);
+            assertTrue(dir.exists() && dir.isDirectory());
+            final String[] dataFileList = dir.list();
+            assertEquals(2, dataFileList.length);
+            for (final String dataFile : dataFileList) {
+                assertTrue(dataFile.endsWith(".parquet"));
+            }
+        }
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNullKeys() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (ii%2==0)? null : (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+        final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNullKeys");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(partitionedTable, parentDir.getAbsolutePath(), writeInstructions);
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata")).select();
+        assertTableEquals(inputData.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithMixedPartitionsTest() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofChar("PC2"),
+                ColumnDefinition.ofString("PC3"),
+                ColumnDefinition.ofInt("PC4").withPartitioning(),
+                ColumnDefinition.ofLong("II"),
+                ColumnDefinition.ofInt("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (char)(65 + (ii % 2))",
+                        "PC3 = java.time.LocalDate.ofEpochDay(i%2).toString()",
+                        "PC4 = (int)(ii%4)",
+                        "II = ii",
+                        "I = i"))
+                .withDefinitionUnsafe(definition);
+
+        // We skip one partitioning and one non partitioing column in the definition, and add some more partitioning
+        // and non-partitioning columns
+        final TableDefinition tableDefinitionToWrite = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofChar("PC2").withPartitioning(),
+                ColumnDefinition.ofString("PC3").withPartitioning(),
+                ColumnDefinition.ofInt("I"),
+                ColumnDefinition.ofInt("J"));
+
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData, tableDefinitionToWrite, parentDir.getPath(), writeInstructions);
+
+        // Verify that the partitioned data exists
+        for (int PC1 = 0; PC1 <= 2; PC1++) {
+            for (int idx = 0; idx <= 1; idx++) {
+                final char PC2 = (char) ('A' + idx);
+                final String PC3 = java.time.LocalDate.ofEpochDay(idx).toString();
+                final File dir = new File(parentDir, "PC1=" + PC1 + File.separator + "PC2=" + PC2 +
+                        File.separator + "PC3=" + PC3);
+                assertTrue(dir.exists() && dir.isDirectory());
+                final String[] dataFileList = dir.list();
+                assertEquals(1, dataFileList.length);
+                assertTrue(dataFileList[0].endsWith(".parquet"));
+            }
+        }
+
+        // Give then updated table definition used to write the data, we drop the column "II" and add a new column "J"
+        final Table expected = inputData.dropColumns("II", "PC4").updateView("J = (int)null");
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        assertTableEquals(expected.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(expected.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        // Delete some files from the partitioned data and read the required rows to verify that we only read the
+        // required partitions
+        FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=0"));
+        FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=1"));
+        assertTableEquals(expected.where("PC1 == 2").sort("PC1", "PC2", "PC3"),
+                readTable(commonMetadata).where("PC1 == 2").sort("PC1", "PC2", "PC3"));
+    }
+
+    @Test
+    public void someMoreKeyValuePartitionedTestsWithComplexKeys() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("symbol").withPartitioning(),
+                ColumnDefinition.ofString("epic_collection_id"),
+                ColumnDefinition.ofString("epic_request_id"),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("symbol = (i % 2 == 0) ? `AA` : `BB`",
+                        "epic_collection_id = (i % 2 == 0) ? `fss_tick%1234%4321` : `fss_tick%5678%8765`",
+                        "epic_request_id = (i % 2 == 0) ? `223ea-asd43` : `98dce-oiu23`",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "someTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        final String[] partitioningCols = new String[] {"symbol", "epic_collection_id", "epic_request_id"};
+        final PartitionedTable partitionedTable = inputData.partitionBy(partitioningCols);
+        writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
+
+        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        for (final String col : partitioningCols) {
+            assertTrue(fromDisk.getDefinition().getColumn(col).isPartitioning());
+        }
+        assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
+                fromDisk.sort("symbol", "epic_collection_id"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
+                fromDiskWithMetadata.sort("symbol", "epic_collection_id"));
+    }
+
+    @Test
+    public void testAllPartitioningColumnTypes() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofBoolean("PC2").withPartitioning(),
+                ColumnDefinition.ofChar("PC3").withPartitioning(),
+                ColumnDefinition.ofByte("PC4").withPartitioning(),
+                ColumnDefinition.ofShort("PC5").withPartitioning(),
+                ColumnDefinition.ofInt("PC6").withPartitioning(),
+                ColumnDefinition.ofLong("PC7").withPartitioning(),
+                ColumnDefinition.ofFloat("PC8").withPartitioning(),
+                ColumnDefinition.ofDouble("PC9").withPartitioning(),
+                ColumnDefinition.of("PC10", Type.find(BigInteger.class)).withPartitioning(),
+                ColumnDefinition.of("PC11", Type.find(BigDecimal.class)).withPartitioning(),
+                ColumnDefinition.of("PC12", Type.find(Instant.class)).withPartitioning(),
+                ColumnDefinition.of("PC13", Type.find(LocalDate.class)).withPartitioning(),
+                ColumnDefinition.of("PC14", Type.find(LocalTime.class)).withPartitioning(),
+                ColumnDefinition.ofInt("data"));
+
+        final Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView(
+                "PC1 =  (ii%2 == 0) ? null: ((ii%3 == 0) ? `AA` : `BB`)",
+                "PC2 = (ii%2 == 0) ? null : (ii % 3 == 0)",
+                "PC3 = (ii%2 == 0) ? null : (char)(65 + (ii % 2))",
+                "PC4 = (ii%2 == 0) ? null : (byte)(ii % 2)",
+                "PC5 = (ii%2 == 0) ? null : (short)(ii % 2)",
+                "PC6 = (ii%2 == 0) ? null : (int)(ii%3)",
+                "PC7 = (ii%2 == 0) ? null : (long)(ii%2)",
+                "PC8 = (ii%2 == 0) ? null : (float)(ii % 2)",
+                "PC9 = (ii%2 == 0) ? null : (double)(ii % 2)",
+                "PC10 = (ii%2 == 0) ? null : java.math.BigInteger.valueOf(ii)",
+                "PC11 = (ii%2 == 0) ? null : ((ii%3 == 0) ? java.math.BigDecimal.valueOf((double)ii) : java.math.BigDecimal.valueOf((double)(ii*0.001)))",
+                "PC12 = (ii%2 == 0) ? null : java.time.Instant.ofEpochSecond(ii)",
+                "PC13 = (ii%2 == 0) ? null : java.time.LocalDate.ofEpochDay(ii)",
+                "PC14 = (ii%2 == 0) ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
+                "data = (int)(ii)"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "testAllPartitioningColumnTypes");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions);
+
+        // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings
+        // Therefore, we cannot compare the tables directly
+        readKeyValuePartitionedTable(parentDir, EMPTY).select();
+
+        // Reading with metadata file should deduce the correct type, so we can compare the tables
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final String[] partitioningColumns = definition.getPartitioningColumns().stream()
+                .map(ColumnDefinition::getName).toArray(String[]::new);
+        assertTableEquals(inputData.sort(partitioningColumns), fromDiskWithMetadata.sort(partitioningColumns));
+    }
+
+    @Test
+    public void testAllNonPartitioningColumnTypes() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofString("NPC1"),
+                ColumnDefinition.ofBoolean("NPC2"),
+                ColumnDefinition.ofChar("NPC3"),
+                ColumnDefinition.ofByte("NPC4"),
+                ColumnDefinition.ofShort("NPC5"),
+                ColumnDefinition.ofInt("NPC6"),
+                ColumnDefinition.ofLong("NPC7"),
+                ColumnDefinition.ofFloat("NPC8"),
+                ColumnDefinition.ofDouble("NPC9"),
+                ColumnDefinition.of("NPC10", Type.find(BigInteger.class)),
+                ColumnDefinition.of("bdColumn", Type.find(BigDecimal.class)),
+                ColumnDefinition.of("NPC12", Type.find(Instant.class)),
+                ColumnDefinition.of("NPC13", Type.find(LocalDate.class)),
+                ColumnDefinition.of("NPC14", Type.find(LocalTime.class)));
+
+        Table inputData = ((QueryTable) TableTools.emptyTable(10).updateView(
+                "PC1 =  (ii%2 == 0) ? `AA` : `BB`",
+                "PC2 = (int)(ii%3)",
+                "NPC1 = (ii%2 == 0) ? `AA` : `BB`",
+                "NPC2 = (ii % 2 == 0)",
+                "NPC3 = (char)(65 + (ii % 2))",
+                "NPC4 = (byte)(ii % 2)",
+                "NPC5 = (short)(ii % 2)",
+                "NPC6 = (int)(ii%3)",
+                "NPC7 = (long)(ii%2)",
+                "NPC8 = (float)(ii % 2)",
+                "NPC9 = (double)(ii % 2)",
+                "NPC10 = java.math.BigInteger.valueOf(ii)",
+                "bdColumn = (ii%2 == 0) ? java.math.BigDecimal.valueOf((double)ii) : java.math.BigDecimal.valueOf((double)(ii*0.001))",
+                "NPC12 = java.time.Instant.ofEpochSecond(ii)",
+                "NPC13 = java.time.LocalDate.ofEpochDay(ii)",
+                "NPC14 = java.time.LocalTime.of(i%24, i%60, (i+10)%60)"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "testAllNonPartitioningColumnTypes");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+
+        // The First API we test is passing the table directly without any table definition
+        writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions);
+
+        // Store the big decimal with the precision and scale consistent with what we write to parquet
+        final Table bigDecimalFixedInputData = maybeFixBigDecimal(inputData);
+
+        final String[] partitioningColumns = definition.getPartitioningColumns().stream()
+                .map(ColumnDefinition::getName).toArray(String[]::new);
+        {
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
+                    fromDiskWithMetadata.sort(partitioningColumns));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API we test is to pass additional indexing columns
+        final String indexColumn = "NPC5";
+        final String[][] indexColumns = new String[][] {{indexColumn}};
+        {
+            writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions, indexColumns);
+            assertFalse(DataIndexer.hasDataIndex(inputData, indexColumn));
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            verifyIndexingInfoExists(fromDisk, indexColumn);
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
+                    fromDiskWithMetadata.sort(partitioningColumns));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API we test is passing the partitioned table without any table definition
+        final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
+        {
+            writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
+                    fromDiskWithMetadata.sort(partitioningColumns));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API we test is to pass additional indexing columns with partitioned table and no definition
+        {
+            writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions, indexColumns);
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            verifyIndexingInfoExists(fromDisk, "NPC5");
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
+                    fromDiskWithMetadata.sort(partitioningColumns));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API we test is passing the regular table with an updated table definition where we drop
+        // some partitioning columns and non-partitioning columns and add some new non-partitioning columns
+        final List<ColumnDefinition<?>> oldColumns = definition.getColumns();
+        final List<ColumnDefinition<?>> newColumns = oldColumns.stream()
+                .filter(cd -> (cd.getName() != "PC2") && (cd.getName() != "NPC6"))
+                .collect(Collectors.toList());
+        newColumns.add(ColumnDefinition.ofInt("NPC15"));
+        final TableDefinition newDefinition = TableDefinition.of(newColumns);
+        final Table expected = bigDecimalFixedInputData.dropColumns("PC2", "NPC6").updateView("NPC15 = (int)null");
+        {
+            writeKeyValuePartitionedTable(inputData, newDefinition, parentDir.getAbsolutePath(), writeInstructions);
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API to test takes table with updated definition and additional indexing columns
+        {
+            writeKeyValuePartitionedTable(inputData, newDefinition, parentDir.getAbsolutePath(), writeInstructions,
+                    indexColumns);
+            assertFalse(DataIndexer.hasDataIndex(inputData, indexColumn));
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            verifyIndexingInfoExists(fromDisk, indexColumn);
+            assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API we test is passing the partitioned table with an updated table definition
+        {
+            writeKeyValuePartitionedTable(partitionedTable, newDefinition, parentDir.getPath(), writeInstructions);
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+            FileUtils.deleteRecursively(parentDir);
+        }
+
+        // Next API we test is passing the indexing columns with partitioned table and an updated table definition
+        {
+            writeKeyValuePartitionedTable(partitionedTable, newDefinition, parentDir.getPath(), writeInstructions,
+                    indexColumns);
+            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            verifyIndexingInfoExists(fromDisk, "NPC5");
+            assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
+            FileUtils.deleteRecursively(parentDir);
+        }
+    }
+
 
     @Test
     public void testVectorColumns() {
@@ -790,7 +1433,7 @@ public final class ParquetTableReadWriteTest {
 
     private static Table readParquetFileFromGitLFS(final File dest) {
         try {
-            return readSingleFileTable(dest, EMPTY);
+            return readTable(dest, EMPTY);
         } catch (final RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
                 final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
@@ -978,6 +1621,18 @@ public final class ParquetTableReadWriteTest {
     public void basicWriteTests() {
         basicWriteTestsImpl(SINGLE_WRITER);
         basicWriteTestsImpl(MULTI_WRITER);
+    }
+
+    @Test
+    public void readPartitionedDataGeneratedOnWindows() {
+        final String path = ParquetTableReadWriteTest.class
+                .getResource("/referencePartitionedDataFromWindows").getFile();
+        final Table partitionedDataFromWindows = readParquetFileFromGitLFS(new File(path)).select();
+        final Table expected = TableTools.newTable(
+                longCol("year", 2019, 2020, 2021, 2021, 2022, 2022),
+                longCol("n_legs", 5, 2, 4, 100, 2, 4),
+                stringCol("animal", "Brittle stars", "Flamingo", "Dog", "Centipede", "Parrot", "Horse"));
+        assertTableEquals(expected, partitionedDataFromWindows.sort("year"));
     }
 
     private static void basicWriteTestsImpl(TestParquetTableWriter writer) {
@@ -1448,7 +2103,7 @@ public final class ParquetTableReadWriteTest {
         readChangedUnderlyingFileTestsImpl(MULTI_WRITER);
     }
 
-    public void readChangedUnderlyingFileTestsImpl(TestParquetTableWriter writer) {
+    private void readChangedUnderlyingFileTestsImpl(TestParquetTableWriter writer) {
         // Write a table to parquet file and read it back
         final Table tableToSave = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "readChangedUnderlyingFileTests.parquet";
@@ -1468,9 +2123,9 @@ public final class ParquetTableReadWriteTest {
 
         // Read back fromDisk. Since the underlying file has changed, we expect this to fail.
         try {
-            fromDisk.coalesce();
-            TestCase.fail("Expected TableDataException");
-        } catch (TableDataException ignored) {
+            fromDisk.select();
+            TestCase.fail("Expected exception");
+        } catch (RuntimeException ignored) {
             // expected
         }
     }

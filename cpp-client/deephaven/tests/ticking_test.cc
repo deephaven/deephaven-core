@@ -249,11 +249,6 @@ TEST_CASE("Ticking Table all the data is eventually present", "[ticking]") {
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
 
-  tm.RunScript(R"(from deephaven.time import dh_now
-Zamboni = dh_now()
-)");
-  // would like the above to say Zamboni = DateTimeUtils.fromEpochSecond(0)
-
   auto table = tm.TimeTable("PT0:00:0.5")
       .Update({"II = (int)((ii * 7) % 10)",
           "Bytes = (byte)II",
