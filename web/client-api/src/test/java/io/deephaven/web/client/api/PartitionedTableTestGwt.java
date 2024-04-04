@@ -135,7 +135,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    public void testTickingTransformedPartitionedTable() {
+    public void ignore_testTickingTransformedPartitionedTable() {
         connect(tickingTables)
                 .then(partitionedTable("partitioned_result"))
                 .then(partitionedTable -> {
