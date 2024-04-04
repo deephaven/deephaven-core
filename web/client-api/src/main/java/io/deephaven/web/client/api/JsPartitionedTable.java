@@ -83,6 +83,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         return widget.refetch().then(w -> {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
+            return w.getExportedObjects()[0].fetch();
+        }).then(result -> {
+            keys = (JsTable) result;
+
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
@@ -97,15 +101,13 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
             for (int i = 0; i < keyColumnNames.length; i++) {
                 String name = keyColumnNames.getAt(i);
-                ColumnDefinition columnDefinition = tableDefinition.getColumnsByName().get(false).get(name);
-                keyColumnTypes.add(columnDefinition.getType());
-                keyColumns[keyColumns.length] = columns[columnDefinition.getColumnIndex()];
+                Column keyColumn = keys.findColumn(name);
+                keyColumnTypes.add(keyColumn.getType());
+                keyColumns[keyColumns.length] = keyColumn;
             }
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
-            return w.getExportedObjects()[0].fetch();
-        }).then(result -> {
-            keys = (JsTable) result;
+
             // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
             keys.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
             keys.addEventListener(JsTable.EVENT_RECONNECT, event -> {

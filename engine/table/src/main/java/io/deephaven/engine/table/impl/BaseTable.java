@@ -964,14 +964,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
-            final TableUpdate downstream;
-            if (!canReuseModifiedColumnSet) {
-                final TableUpdateImpl upstreamCopy = TableUpdateImpl.copy(upstream);
-                upstreamCopy.modifiedColumnSet = ModifiedColumnSet.ALL;
-                downstream = upstreamCopy;
-            } else {
-                downstream = upstream.acquire();
-            }
+            final TableUpdate downstream = canReuseModifiedColumnSet
+                    ? upstream.acquire()
+                    : TableUpdateImpl.copy(upstream, ModifiedColumnSet.ALL);
             dependent.notifyListeners(downstream);
         }
 

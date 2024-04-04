@@ -1821,8 +1821,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
-            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            downstream.modifiedColumnSet = dependent.getModifiedColumnSetForUpdates();
+            final TableUpdateImpl downstream =
+                    TableUpdateImpl.copy(upstream, dependent.getModifiedColumnSetForUpdates());
             transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             dependent.notifyListeners(downstream);
         }
@@ -1896,19 +1896,19 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         "dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
                                     @Override
                                     public void onUpdate(final TableUpdate upstream) {
-                                        final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                                        final TableUpdateImpl downstream;
                                         final ModifiedColumnSet resultModifiedColumnSet =
                                                 resultTable.getModifiedColumnSetForUpdates();
                                         mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                                 resultModifiedColumnSet);
                                         if (upstream.modified().isEmpty() || resultModifiedColumnSet.empty()) {
-                                            downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                                            downstream = TableUpdateImpl.copy(upstream, ModifiedColumnSet.EMPTY);
                                             if (downstream.modified().isNonempty()) {
                                                 downstream.modified().close();
                                                 downstream.modified = RowSetFactory.empty();
                                             }
                                         } else {
-                                            downstream.modifiedColumnSet = resultModifiedColumnSet;
+                                            downstream = TableUpdateImpl.copy(upstream, resultModifiedColumnSet);
                                         }
                                         resultTable.notifyListeners(downstream);
                                     }
@@ -2039,13 +2039,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     methodNuggetPrefix + pairsLogString + ')', this, resultTable) {
                                 @Override
                                 public void onUpdate(final TableUpdate upstream) {
-                                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                                    final TableUpdateImpl downstream;
                                     if (upstream.modified().isNonempty()) {
-                                        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+                                        downstream = TableUpdateImpl.copy(upstream,
+                                                resultTable.getModifiedColumnSetForUpdates());
                                         mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                                 downstream.modifiedColumnSet);
                                     } else {
-                                        downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                                        downstream = TableUpdateImpl.copy(upstream, ModifiedColumnSet.EMPTY);
                                     }
                                     resultTable.notifyListeners(downstream);
                                 }
