@@ -7,8 +7,7 @@ wrapper around Deephaven's C++ library.
 
 ## Prerequisites
 
-`pydeephaven-ticking` requires a Linux operating system running on x86_64 architecture. It can be 
-installed via `pip` or built from source.
+`pydeephaven-ticking` requires a Linux operating system running on x86_64 architecture.
 
 ## Installation
 
@@ -36,7 +35,7 @@ First, install the Deephaven C++ client. Follow the instructions in `$DHROOT/cpp
 Note the restrictions on supported platforms mentioned there. The instructions will ask you to
 select a location for the installation of the C++ client library and its dependencies.  For the
 purpose of this document we assume that location is specified in the `${DHCPP}` environment
-variable.  On my computer `${DHCPP}` is `$HOME/dhcpp` (where `$HOME` points to your home directory).
+variable.
 
 ### Install pydeephaven
 
