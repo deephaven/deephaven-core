@@ -42,7 +42,41 @@ class _ParsedParam:
     encoded_types: List[str] = field(default_factory=list)
     none_allowed: bool = False
     has_array: bool = False
-    converter: Callable = None
+    arg_converter: Optional[Callable] = None
+
+    def setup_arg_converter(self, arg_type_str: str) -> None:
+        """ Set up the converter function for the parameter based on the encoded argument type string. """
+        for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
+            if param_type_str == arg_type_str:
+                if arg_type_str.startswith("["):
+                    dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))
+                    self.arg_converter = partial(_j_array_to_numpy_array, dtype, conv_null=False,
+                                                 type_promotion=False)
+                else:
+                    if effective_type in {object, str}:
+                        self.arg_converter = None
+                    elif effective_type == np.datetime64:
+                        self.arg_converter = to_np_datetime64
+                    else:
+                        self.arg_converter = effective_type
+                        if "N" in self.encoded_types:
+                            if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(
+                                    dtypes.from_np_dtype(np.dtype(param_type_str))):
+                                self.arg_converter = partial(lambda nv, x: None if x == nv else effective_type(x),
+                                                             null_value)
+                        if self.arg_converter in {int, float, bool}:  # JPY does the conversion for these types
+                            self.arg_converter = None
+
+                        if isinstance(self.arg_converter, type) and issubclass(self.arg_converter, np.generic):
+                            warnings.warn(
+                                f"numpy scalar type {self.arg_converter} is used to annotate parameter '{self.name}'. Note that conversion of "
+                                f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
+                                f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
+                                f"instead.")
+
+                break
+        else:  # if the loop didn't break, it means that the parameter is either not type hinted or has a generic object type
+            self.arg_converter = None
 
 
 @dataclass
@@ -51,7 +85,7 @@ class _ParsedReturnAnnotation:
     encoded_type: str = None
     none_allowed: bool = False
     has_array: bool = False
-    converter: Callable = None
+    ret_converter: Optional[Callable] = None
 
 
 @dataclass
@@ -73,6 +107,59 @@ class _ParsedSignature:
         # encoded type. We need to remove it.
         return_type_code = re.sub(r"[N]", "", self.ret_annotation.encoded_type)
         return param_str + "->" + return_type_code
+
+    def prepare_auto_arg_conv(self, encoded_arg_types: str) -> bool:
+        """ Determine whether the auto argument conversion should be used and set the converter functions for the
+        parameters."""
+        if not self.params or not encoded_arg_types:
+            return False
+
+        arg_conv_needed = True
+        arg_type_strs = encoded_arg_types.split(",")
+        if all([t == "O" for t in arg_type_strs]):
+            arg_conv_needed = False
+
+        for arg_type_str, param in zip(arg_type_strs, self.params):
+            param.setup_arg_converter(arg_type_str)
+
+        if all([param.arg_converter is None for param in self.params]):
+            arg_conv_needed = False
+
+        return arg_conv_needed
+
+    def setup_return_converter(self) -> None:
+        """ Set the converter function for the return value of UDF based on the return type annotation."""
+        pra = self.ret_annotation
+        t = pra.encoded_type
+        if t == 'H':
+            if pra.none_allowed:
+                pra.ret_converter = lambda x: dtypes.Character(int(x)) if x is not None else None
+            else:
+                pra.ret_converter = lambda x: dtypes.Character(int(x))
+        elif t in _NUMPY_INT_TYPE_CODES:
+            if pra.none_allowed:
+                null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
+                pra.ret_converter = partial(lambda nv, x: nv if x is None else int(x), null_value)
+            else:
+                pra.ret_converter = int
+        elif t in _NUMPY_FLOATING_TYPE_CODES:
+            if pra.none_allowed:
+                null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
+                pra.ret_converter = partial(lambda nv, x: nv if x is None else float(x), null_value)
+            else:
+                pra.ret_converter = float
+        elif t == '?':
+            if pra.none_allowed:
+                pra.ret_converter = lambda x: bool(x) if x is not None else None
+            else:
+                pra.ret_converter = bool
+        elif t == 'U':
+            pra.ret_converter = lambda x: x if x is None else str(x)
+        elif t == 'M':
+            from deephaven.time import to_j_instant
+            pra.ret_converter = to_j_instant
+        else:
+            pra.ret_converter = None
 
 
 def _encode_param_type(t: type) -> str:
@@ -200,11 +287,6 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
     p_param.orig_types.append(t)
-    if isinstance(t, type) and issubclass(t, np.generic):
-         warnings.warn(f"numpy scalar type {t} is used to annotate parameter '{p_param.name}'. Note that conversion of "
-                       f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
-                       f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
-                       f"instead.")
 
     # if the annotation is a DH DType instance, we'll use its numpy type
     if isinstance(t, dtypes.DType):
@@ -253,8 +335,6 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
     else:
         pra.encoded_type = _np_dtype_char(t)
 
-    _setup_return_converter(pra)
-
     return pra
 
 if numba:
@@ -273,7 +353,6 @@ if numba:
             p_sig.params = []
             p_sig.ret_annotation = _ParsedReturnAnnotation()
             p_sig.ret_annotation.encoded_type = rt_char
-            _setup_return_converter(p_sig.ret_annotation)
 
             if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
                 for i, p in enumerate(params):
@@ -321,7 +400,7 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
             p_sig.params.append(pa)
     p_sig.ret_annotation = _ParsedReturnAnnotation()
     p_sig.ret_annotation.encoded_type = "O"
-    _setup_return_converter(p_sig.ret_annotation)
+
     return p_sig
 
 
@@ -330,10 +409,12 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
 
     if numba:
         if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
-            return _parse_numba_signature(fn)
+            p_sig = _parse_numba_signature(fn)
+            p_sig.setup_return_converter()
+            return p_sig
 
     if isinstance(fn, numpy.ufunc):
-        return _parse_np_ufunc_signature(fn)
+        p_sig = _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
         if sys.version_info.major == 3 and sys.version_info.minor >= 10:
@@ -348,81 +429,12 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
             t = eval(p.annotation, fn.__globals__) if isinstance(p.annotation, str) else p.annotation
             p_sig.params.append(_parse_param(n, t))
 
-        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation,
-                                                                      str) else sig.return_annotation
+        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation, str) else sig.return_annotation
         p_sig.ret_annotation = _parse_return_annotation(t)
-        return p_sig
 
+    p_sig.setup_return_converter()
+    return p_sig
 
-def _prepare_auto_arg_conv(p_sig: _ParsedSignature, encoded_arg_types: str) -> bool:
-    """ Determine whether the auto argument conversion should be used and set the converter functions for the
-    parameters."""
-    arg_conv_needed = True
-    arg_type_strs = encoded_arg_types.split(",")
-    if all([t == "O" for t in arg_type_strs]):
-        arg_conv_needed = False
-
-    for arg_type_str, param in zip(arg_type_strs, p_sig.params):
-        for param_type_str, effective_type in zip(param.encoded_types, param.effective_types):
-            if param_type_str == arg_type_str:
-                if arg_type_str.startswith("["):
-                    dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))
-                    param.converter = partial(_j_array_to_numpy_array, dtype, conv_null=False,
-                                                                         type_promotion=False)
-                else:
-                    if effective_type in {object, str} :
-                        param.converter = None
-                    elif effective_type == np.datetime64:
-                        param.converter = to_np_datetime64
-                    else:
-                        param.converter = effective_type
-                        if "N" in param.encoded_types:
-                            if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(param_type_str))):
-                                param.converter = partial(lambda nv, x: None if x == nv else effective_type(x),
-                                                      null_value)
-                        if param.converter in {int, float, bool}: # JPY does the conversion for these types
-                            param.converter = None
-                break
-        else: # if the loop didn't break, it means that the parameter is either not type hinted or has a generic object type
-            param.converter = None
-
-    if all([param.converter is None for param in p_sig.params]):
-        arg_conv_needed = False
-
-    return arg_conv_needed
-
-def _setup_return_converter(pra: _ParsedReturnAnnotation) -> None:
-    """ Set the converter function for the return value of UDF based on the return type annotation."""
-    t = pra.encoded_type
-    if t == 'H':
-        if pra.none_allowed:
-            pra.converter = lambda x: dtypes.Character(int(x)) if x is not None else None
-        else:
-            pra.converter = lambda x: dtypes.Character(int(x))
-    elif t in _NUMPY_INT_TYPE_CODES:
-        if pra.none_allowed:
-            null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
-            pra.converter = partial(lambda nv, x: nv if x is None else int(x), null_value)
-        else:
-            pra.converter = int
-    elif t in _NUMPY_FLOATING_TYPE_CODES:
-        if pra.none_allowed:
-            null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
-            pra.converter = partial(lambda nv, x: nv if x is None else float(x), null_value)
-        else:
-            pra.converter = float
-    elif t == '?':
-        if pra.none_allowed:
-            pra.converter = lambda x: bool(x) if x is not None else None
-        else:
-            pra.converter = bool
-    elif t == 'U':
-        pra.converter = lambda x: x if x is None else str(x)
-    elif t == 'M':
-        from deephaven.time import to_j_instant
-        pra.converter = to_j_instant
-    else:
-        pra.converter = None
 
 def _udf_parser(fn: Callable):
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
@@ -449,7 +461,7 @@ def _udf_parser(fn: Callable):
 
     @wraps(fn)
     def _udf_decorator(encoded_arg_types: str, for_vectorization: bool=False):
-        arg_conv_needed = _prepare_auto_arg_conv(p_sig, encoded_arg_types)
+        arg_conv_needed = p_sig.prepare_auto_arg_conv(encoded_arg_types)
 
         if not for_vectorization:
             if not arg_conv_needed and p_sig.ret_annotation.encoded_type == "O":
@@ -457,9 +469,15 @@ def _udf_parser(fn: Callable):
 
             def _wrapper(*args, **kwargs):
                 if arg_conv_needed:
-                    converted_args = [param.converter(arg) if param.converter else arg
+                    converted_args = [param.arg_converter(arg) if param.arg_converter else arg
                                       for param, arg in zip(p_sig.params, args)]
-                    converted_args.extend(args[len(converted_args):])
+
+                    # if the number of arguments is more than the number of parameters, treat the last parameter as a
+                    # vararg and use its arg_converter to convert the rest of the arguments
+                    if len(args) > len(p_sig.params):
+                        arg_converter = p_sig.params[-1].arg_converter
+                        converted_args.extend([arg_converter(arg) if arg_converter else arg
+                                               for arg in args[len(converted_args):]])
                 else:
                     converted_args = args
                 # kwargs are not converted because they are not used in the UDFs
@@ -467,7 +485,7 @@ def _udf_parser(fn: Callable):
                 if return_array:
                     return dtypes.array(ret_dtype, ret)
                 else:
-                    return p_sig.ret_annotation.converter(ret) if p_sig.ret_annotation.converter else ret
+                    return p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
             return _wrapper
         else: # for vectorization
             def _vectorization_wrapper(*args):
@@ -484,9 +502,15 @@ def _udf_parser(fn: Callable):
                     for i in range(chunk_size):
                         scalar_args = next(vectorized_args)
                         if arg_conv_needed:
-                            converted_args = [param.converter(arg) if param.converter else arg
+                            converted_args = [param.arg_converter(arg) if param.arg_converter else arg
                                               for param, arg in zip(p_sig.params, scalar_args)]
-                            converted_args.extend(scalar_args[len(converted_args):])
+
+                            # if the number of arguments is more than the number of parameters, treat the last parameter
+                            # as a vararg and use its arg_converter to convert the rest of the arguments
+                            if len(args) > len(p_sig.params):
+                                arg_converter = p_sig.params[-1].arg_converter
+                                converted_args.extend([arg_converter(arg) if arg_converter else arg
+                                                       for arg in scalar_args[len(converted_args):]])
                         else:
                             converted_args = scalar_args
 
@@ -494,14 +518,14 @@ def _udf_parser(fn: Callable):
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
                         else:
-                            chunk_result[i] = p_sig.ret_annotation.converter(ret) if p_sig.ret_annotation.converter else ret
+                            chunk_result[i] = p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
                 else:
                     for i in range(chunk_size):
                         ret = fn()
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
                         else:
-                            chunk_result[i] = p_sig.ret_annotation.converter(ret) if p_sig.ret_annotation.converter else ret
+                            chunk_result[i] = p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
                 return chunk_result
 
             if test_vectorization:
