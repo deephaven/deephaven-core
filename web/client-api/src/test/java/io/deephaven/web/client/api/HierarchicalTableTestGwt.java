@@ -52,7 +52,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    public void ignore_testRefreshingTreeTable() {
+    public void testRefreshingTreeTable() {
         connect(tables)
                 .then(treeTable("ticking_tree"))
                 .then(treeTable -> {
@@ -75,10 +75,9 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         // This call effectively asserts that there are 10 rows after expand, so we don't need
                         // to worry about an update from the underlying table racing the expand
                         return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                                (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 1, 20004);
+                                (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 10, 14004);
                     }).then(event -> {
                         treeTable.close();
-
                         assertTrue(treeTable.isClosed());
                         return null;
                     });
