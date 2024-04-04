@@ -114,7 +114,7 @@ def to_pandas(table: Table, cols: List[str] = None,
         DHError
     """
     try:
-        if dtype_backend is not None and not _is_dtype_backend_supported:
+        if dtype_backend == "pyarrow" and not _is_dtype_backend_supported:
             raise DHError(message=f"the dtype_backend ({dtype_backend}) option is only available for pandas 2.0.0 and "
                                   f"above. {pd.__version__} is being used.")
 

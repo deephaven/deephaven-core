@@ -189,8 +189,8 @@ public class SparseSelect {
 
                             @Override
                             public void onUpdate(TableUpdate upstream) {
-                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = modifiedColumnSetForUpdates;
+                                final TableUpdateImpl downstream =
+                                        TableUpdateImpl.copy(upstream, modifiedColumnSetForUpdates);
                                 if (sparseObjectSources.length > 0) {
                                     try (final RowSet removedOnly = upstream.removed().minus(upstream.added())) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
