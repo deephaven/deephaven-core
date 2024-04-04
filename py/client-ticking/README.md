@@ -7,7 +7,9 @@ wrapper around Deephaven's C++ library.
 
 ## Prerequisites
 
-`pydeephaven-ticking` requires a Linux operating system running on x86_64 architecture.
+The Deephaven C++ client (and ticking Python client) are tested regularly on Ubuntu 22.04 x86_64.
+Additionally, successful tests have been run on RHEL 8 and Fedora 38 (both on x86_64).
+Windows support is expected to be made available in the future.
 
 ## Installation
 
@@ -15,6 +17,7 @@ wrapper around Deephaven's C++ library.
 
 ## `pip`
 
+A Linux operating system on x86_64 architecture is required to install via `pip`.
 It's recommended to install this way in a Python virtual environment (venv).
 
 ```sh
