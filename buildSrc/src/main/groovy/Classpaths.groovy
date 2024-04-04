@@ -90,7 +90,7 @@ class Classpaths {
     static final String LOGBACK_VERSION = '1.4.14'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
-    static final String GROOVY_VERSION = '3.0.18'
+    static final String GROOVY_VERSION = '3.0.21'
 
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'

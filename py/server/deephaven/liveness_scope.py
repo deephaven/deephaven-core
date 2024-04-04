@@ -56,7 +56,7 @@ import contextlib
 import jpy
 
 from typing import Union, Iterator
-from warnings import warn
+
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

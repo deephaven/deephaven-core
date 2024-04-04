@@ -2,4 +2,4 @@
 
 set -eu
 
-exec docker-compose run -T mzcli -f /scripts/demo.sql
+exec docker compose run -T mzcli -f /scripts/demo.sql

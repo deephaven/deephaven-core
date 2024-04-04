@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
+
 public class ParquetSchemaReader {
     @FunctionalInterface
     public interface ColumnDefinitionConsumer {
@@ -105,14 +107,14 @@ public class ParquetSchemaReader {
     }
 
     public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {
-        final String tableInfoRaw = keyValueMetadata.get(ParquetTableWriter.METADATA_KEY);
+        final String tableInfoRaw = keyValueMetadata.get(METADATA_KEY);
         if (tableInfoRaw == null) {
             return Optional.empty();
         }
         try {
             return Optional.of(TableInfo.deserializeFromJSON(tableInfoRaw));
         } catch (IOException e) {
-            throw new TableDataException("Failed to parse " + ParquetTableWriter.METADATA_KEY + " metadata", e);
+            throw new TableDataException("Failed to parse " + METADATA_KEY + " metadata", e);
         }
     }
 
