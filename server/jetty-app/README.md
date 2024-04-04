@@ -37,10 +37,12 @@ The following is a list of some "quick" gradle properties that can be set to cha
 
 * `groovy`: use a groovy console (as opposed to python)
 * `anonymous`: use anonymous authentication
+* `psk=<key>`: enable pre-shared authentication with a specific `<key>`
 * `debug`: enable JVM debug port 5005
 * `devCerts`: use development certificates and port 8443
+* `devMTLS`: use mutual TLS (client) certificates + `devCerts`
 * `gcApplication`: enable the GcApplication
-* `psk=<key>`: enable pre-shared authentication with a specific `<key>`
+* `quiet`: disables bootstrap logging
 
 These are typically used ad-hoc as part of a gradlew command:
 
