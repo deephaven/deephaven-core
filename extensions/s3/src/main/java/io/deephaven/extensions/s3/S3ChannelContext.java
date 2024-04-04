@@ -8,6 +8,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
+import io.deephaven.base.verify.Require;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -51,9 +52,12 @@ final class S3ChannelContext implements SeekableChannelContext {
     private S3Uri uri;
 
     /**
-     * Used to cache recently fetched fragments from the {@link #uri} for faster lookup.
+     * Used to cache recently fetched fragments from the {@link #uri} for faster lookup. Note that this cache can be
+     * shared across multiple contexts and be accessed concurrently.
      */
-    private final Request[] requests;
+    private final S3RequestCache sharedCache;
+
+    private final Request[] localCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -65,11 +69,13 @@ final class S3ChannelContext implements SeekableChannelContext {
      */
     private long numFragments;
 
-    S3ChannelContext(S3AsyncClient client, S3Instructions instructions, BufferPool bufferPool) {
+    S3ChannelContext(@NotNull final S3AsyncClient client, @NotNull final S3Instructions instructions,
+            @NotNull final BufferPool bufferPool, @NotNull final S3RequestCache sharedCache) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
         this.bufferPool = Objects.requireNonNull(bufferPool);
-        requests = new Request[instructions.maxCacheSize()];
+        this.localCache = new Request[instructions.maxCacheSize()];
+        this.sharedCache = sharedCache;
         uri = null;
         size = UNINITIALIZED_SIZE;
         numFragments = UNINITIALIZED_NUM_FRAGMENTS;
@@ -113,7 +119,7 @@ final class S3ChannelContext implements SeekableChannelContext {
             final int impliedReadAhead = (int) (lastFragmentIx - firstFragmentIx);
             final int desiredReadAhead = instructions.readAheadCount();
             final long totalRemainingFragments = numFragments - firstFragmentIx - 1;
-            final int maxReadAhead = requests.length - 1;
+            final int maxReadAhead = localCache.length - 1;
             readAhead = Math.min(
                     Math.max(impliedReadAhead, desiredReadAhead),
                     (int) Math.min(maxReadAhead, totalRemainingFragments));
@@ -164,29 +170,30 @@ final class S3ChannelContext implements SeekableChannelContext {
 
     private Request getRequest(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request request = requests[cacheIdx];
-        return request == null || !request.isFragment(fragmentIndex) ? null : request;
-    }
-
-    private Request getOrCreateRequest(final long fragmentIndex) {
-        final int cacheIdx = cacheIndex(fragmentIndex);
-        Request request = requests[cacheIdx];
+        Request request = localCache[cacheIdx];
+        if (request != null && request.isFragment(fragmentIndex)) {
+            return request;
+        }
+        request = sharedCache.getRequest(uri, fragmentIndex);
         if (request != null) {
-            if (!request.isFragment(fragmentIndex)) {
-                request.release();
-                requests[cacheIdx] = (request = new Request(fragmentIndex));
-                request.init();
-            }
-        } else {
-            requests[cacheIdx] = (request = new Request(fragmentIndex));
-            request.init();
+            localCache[cacheIdx] = request;
         }
         return request;
     }
 
+    private Request getOrCreateRequest(final long fragmentIndex) {
+        final int cacheIdx = cacheIndex(fragmentIndex);
+        final Request request = localCache[cacheIdx];
+        if (request != null && request.isFragment(fragmentIndex)) {
+            return request;
+        }
+        localCache[cacheIdx] = Require.neqNull(sharedCache.getOrCreateRequest(uri, fragmentIndex, this), "request");
+        return localCache[cacheIdx];
+    }
+
     private int cacheIndex(final long fragmentIndex) {
         // TODO(deephaven-core#5061): Experiment with LRU caching
-        return (int) (fragmentIndex % requests.length);
+        return (int) (fragmentIndex % localCache.length);
     }
 
     private long fragmentIndex(final long pos) {
@@ -202,10 +209,13 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
     }
 
-    final class Request
+    // TODO Move Request class into a separate file after the initial code review
+    static final class Request
             implements AsyncResponseTransformer<GetObjectResponse, ByteBuffer>, BiConsumer<ByteBuffer, Throwable> {
 
-        // implicitly + URI
+        private final S3Uri uri;
+        private final S3Instructions instructions;
+        private final S3AsyncClient client;
         private final long fragmentIndex;
         private final long from;
         private final long to;
@@ -216,12 +226,19 @@ final class S3ChannelContext implements SeekableChannelContext {
         private int fillCount;
         private long fillBytes;
 
-        private Request(long fragmentIndex) {
+        /**
+         * Create a new request for the given fragment index and provided context object. Do not cache the context
+         * because contexts are short-lived while a request may be cached.
+         */
+        Request(final long fragmentIndex, @NotNull final S3ChannelContext context) {
             createdAt = Instant.now();
             this.fragmentIndex = fragmentIndex;
+            this.uri = context.uri;
+            this.instructions = context.instructions;
+            this.client = context.client;
             from = fragmentIndex * instructions.fragmentSize();
-            to = Math.min(from + instructions.fragmentSize(), size) - 1;
-            bufferReference = bufferPool.take(requestLength());
+            to = Math.min(from + instructions.fragmentSize(), context.size) - 1;
+            bufferReference = context.bufferPool.take(requestLength());
         }
 
         void init() {
@@ -245,7 +262,7 @@ final class S3ChannelContext implements SeekableChannelContext {
             try {
                 final ByteBuffer fullFragment;
                 try {
-                    fullFragment = getFullFragment();
+                    fullFragment = getFullFragment().asReadOnlyBuffer();
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
                     throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()), instructions);
                 }
@@ -335,8 +352,12 @@ final class S3ChannelContext implements SeekableChannelContext {
             return result;
         }
 
-        private boolean isFragment(long fragmentIndex) {
+        private boolean isFragment(final long fragmentIndex) {
             return this.fragmentIndex == fragmentIndex;
+        }
+
+        boolean isFragment(@NotNull final S3Uri uri, final long fragmentIndex) {
+            return this.fragmentIndex == fragmentIndex && this.uri.equals(uri);
         }
 
         private int requestLength() {
@@ -352,8 +373,8 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         private String requestStr() {
-            return String.format("ctx=%d ix=%d [%d, %d]/%d %s/%s", System.identityHashCode(S3ChannelContext.this),
-                    fragmentIndex, from, to, requestLength(), uri.bucket().orElseThrow(), uri.key().orElseThrow());
+            return String.format("ix=%d [%d, %d]/%d %s/%s", fragmentIndex, from, to, requestLength(),
+                    uri.bucket().orElseThrow(), uri.key().orElseThrow());
         }
 
         // --------------------------------------------------------------------------------------------------
