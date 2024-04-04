@@ -158,7 +158,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     private void prepareSignature() {
         boolean isNumbaVectorized = pyCallable.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE);
-        boolean isNumbaGUVectorized = pyCallable.equals(NUMBA_GUVECTORIZED_FUNC_TYPE);
+        boolean isNumbaGUVectorized = pyCallable.getType().equals(NUMBA_GUVECTORIZED_FUNC_TYPE);
         if (isNumbaGUVectorized || isNumbaVectorized) {
             List<PyObject> params = pyCallable.getAttribute("types").asList();
             if (params.isEmpty()) {
@@ -171,6 +171,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         pyCallable
                                 + " has multiple signatures; this is not currently supported for numba vectorized/guvectorized functions");
             }
+            // since vectorization doesn't support array type parameters, don't flag numba guvectorized as vectorized
             numbaVectorized = isNumbaVectorized;
             vectorized = isNumbaVectorized;
         } else {
@@ -321,6 +322,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             argTypesStr.deleteCharAt(argTypesStr.length() - 1);
         }
         this.argTypesStr = argTypesStr.toString();
+        this.pyUdfWrapper = pyUdfDecorator.call("__call__", this.argTypesStr, false);
     }
 
     // In vectorized mode, we want to call the vectorized function directly.
@@ -335,9 +337,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     // In non-vectorized mode, we want to call the udf decorated function or the original function.
     @Override
     public Object call(Object... args) {
-        if (argTypesStr != null && pyUdfWrapper == null) {
-            pyUdfWrapper = pyUdfDecorator.call("__call__", this.argTypesStr, false);
-        }
         PyObject pyCallable = this.pyUdfWrapper != null ? this.pyUdfWrapper : this.pyCallable;
         return PythonScopeJpyImpl.convert(pyCallable.callMethod("__call__", args));
     }
