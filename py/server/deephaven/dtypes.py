@@ -225,23 +225,37 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
 def _instant_array(data: Sequence) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
     or integers in nanoseconds, to a Java array of Instant values. """
+
+    if len(data) == 0:
+        return jpy.array(Instant.j_type, [])
+
+    if isinstance(data, np.ndarray) and data.dtype.kind == 'U':
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
+
+    if all((d == None or isinstance(d, str)) for d in data):
+        jdata = jpy.array('java.lang.String', data)
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(jdata)
+
     # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
     # it to reduce the number of round trips to the JVM
     if not isinstance(data, np.ndarray):
         try:
-            data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
+            # Pandas drops unrecognized time zones, so it may handle time zones incorrectly when parsing strings
+            if not any(isinstance(i, str) for i in data):
+                data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
         except Exception as e:
             ...
 
-    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i', 'U'):
+    # Pandas drops unrecognized time zones, so it may handle time zones incorrectly, so do not handle 'U' dtype
+    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i'):
         if data.dtype.kind == 'M':
             longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
         elif data.dtype.kind == 'i':
             longs = jpy.array('long', data.astype('int64'))
-        else:  # data.dtype.kind == 'U'
-            longs = jpy.array('long', [pd.Timestamp(str(dt)).to_numpy().astype('int64') for dt in data])
-        data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
-        return data
+        else:
+            raise Exception(f"Unexpected dtype: {data.dtype.kind}")
+
+        return _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
     if not isinstance(data, instant_array.j_type):
         from deephaven.time import to_j_instant
