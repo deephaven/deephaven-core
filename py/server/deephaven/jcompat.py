@@ -5,7 +5,7 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Tuple, Literal
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Tuple, Literal, Optional
 
 import jpy
 import numpy as np
@@ -209,7 +209,7 @@ def to_sequence(v: Union[T, Sequence[T]] = None, wrapped: bool = False) -> Seque
 
 
 def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False) -> \
-        np.ndarray:
+        Optional[np.ndarray]:
     """ Produces a numpy array from the DType and given Java array.
 
     Args:
@@ -226,11 +226,14 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
             target type.  Defaults to False.
 
     Returns:
-        np.ndarray: The numpy array
+        np.ndarray: The numpy array or None if the Java array is None
 
     Raises:
         DHError
     """
+    if j_array is None:
+        return None
+
     if dtype.is_primitive:
         np_array = np.frombuffer(j_array, dtype.np_type)
     elif dtype == dtypes.Instant:
