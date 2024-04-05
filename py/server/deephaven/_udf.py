@@ -25,7 +25,7 @@ from deephaven import DHError, dtypes
 from deephaven.dtypes import _NUMPY_INT_TYPE_CODES, _NUMPY_FLOATING_TYPE_CODES, _PRIMITIVE_DTYPE_NULL_MAP, \
     _BUILDABLE_ARRAY_DTYPE_MAP, DType
 from deephaven.jcompat import _j_array_to_numpy_array
-from deephaven.time import to_np_datetime64
+from deephaven.time import to_np_datetime64, to_datetime, to_pd_timestamp
 
 # For unittest vectorization
 test_vectorization = False
@@ -64,23 +64,30 @@ class _ParsedParam:
         """ Set up the converter function for the parameter based on the encoded argument type string. """
         for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
             if _is_lossless_convertible(arg_type_str, param_type_str):
-                if arg_type_str.startswith("["):
+                if arg_type_str.startswith("["): # array type (corresponding to numpy ndarray, Sequence, etc.)
                     dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))
                     self.arg_converter = partial(_j_array_to_numpy_array, dtype, conv_null=False,
                                                  type_promotion=False)
                 else:
                     if effective_type in {object, str}:
                         self.arg_converter = None
-                    elif effective_type == np.datetime64:
-                        self.arg_converter = to_np_datetime64
+                    elif arg_type_str == 'M': # datetime types (datetime, pd.Timestamp, np.datetime64)
+                        self._setup_datetime_converter(effective_type)
                     else:
                         self.arg_converter = effective_type
+
+                        # Optional typehint on primitive types requires checking for DH nulls
                         if "N" in self.encoded_types:
                             if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(
                                     dtypes.from_np_dtype(np.dtype(param_type_str))):
-                                self.arg_converter = partial(lambda nv, x: None if x == nv else effective_type(x),
+                                if effective_type in {int, float, bool}:
+                                    self.arg_converter = partial(lambda nv, x: None if x == nv else x, null_value)
+                                else:
+                                    self.arg_converter = partial(lambda nv, x: None if x == nv else effective_type(x),
                                                              null_value)
-                        if self.arg_converter in {int, float, bool}:  # JPY does the conversion for these types
+
+                        # JPY does the conversion for these types
+                        if self.arg_converter in {int, float, bool}:
                             self.arg_converter = None
 
                         if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(self.arg_converter, np.generic):
@@ -97,6 +104,20 @@ class _ParsedParam:
             f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
             f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
             f"instead.")
+
+    def _setup_datetime_converter(self, effective_type):
+        if effective_type == datetime:
+            self.arg_converter = to_datetime
+        elif effective_type == pd.Timestamp:
+            if "N" in self.encoded_types:
+                self.arg_converter = to_pd_timestamp
+            else:
+                self.arg_converter = lambda x: to_np_datetime64(x) if x is not None else pd.Timestamp('NaT')
+        else:
+            if "N" in self.encoded_types:
+                self.arg_converter = to_np_datetime64
+            else:
+                self.arg_converter = lambda x: to_np_datetime64(x) if x is not None else np.datetime64('NaT')
 
 
 @dataclass

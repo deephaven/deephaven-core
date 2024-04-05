@@ -2,11 +2,12 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import typing
+from datetime import datetime
 from typing import Optional, Union, Any, Sequence
 import unittest
 
 import numpy as np
-import numpy.typing as npt
+import pandas as pd
 
 from deephaven import empty_table, DHError, dtypes, new_table
 from deephaven.column import int_col
@@ -369,20 +370,6 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t2 = t.update(["X1 = f11(Y)"])
             self.assertEqual(5, t2.to_string().count("false"))
 
-        with self.subTest("datetime"):
-            def f2(p1: np.datetime64, p2=None) -> bool:
-                return p1.dtype.type == np.datetime64 if p1 is not None else False
-
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
-            t1 = t.update(["X1 = f2(Y)"])
-            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            self.assertEqual(5, t1.to_string().count("false"))
-
-            def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
-                return p1 is None
-            t2 = t.update(["X1 = f21(Y)"])
-            self.assertEqual(5, t2.to_string().count("false"))
-
         with self.subTest("boolean"):
             def f3(p1: np.bool_, p2=None) -> bool:
                 return p1 == True
@@ -401,6 +388,46 @@ def test_udf(col: Optional[{np_type}]) -> bool:
                 return p1 is None
             t2 = t.update(["X1 = f31(null, Y)"])
             self.assertEqual(10, t2.to_string("X1").count("true"))
+
+    def test_datetime(self):
+        with self.subTest("datetime.datetime"):
+            def f2(p1: datetime, p2=None) -> bool:
+                return p1 is None
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("false"))
+
+        with self.subTest("np.datetime64"):
+            def f2(p1: np.datetime64, p2=None) -> bool:
+                return p1.dtype.type == np.datetime64 and np.isnat(p1)
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("false"))
+
+            def f21(p1: Union[np.datetime64, None], p2=None) -> bool:
+                return p1 is None
+
+            t2 = t.update(["X1 = f21(Y)"])
+            self.assertEqual(5, t2.to_string().count("false"))
+
+        with self.subTest("pd.Timestamp"):
+            def f2(p1: pd.Timestamp, p2=None) -> bool:
+                return pd.isna(p1)
+
+            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
+            t1 = t.update(["X1 = f2(Y)"])
+            self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            self.assertEqual(5, t1.to_string().count("false"))
+
+            def f21(p1: Optional[pd.Timestamp], p2=None) -> bool:
+                return p1 is None
+
+            t2 = t.update(["X1 = f21(Y)"])
+            self.assertEqual(5, t2.to_string().count("false"))
 
     def test_non_np_typehints(self):
         py_types = {"int", "float"}
@@ -536,6 +563,15 @@ def f(x: {p_type}) -> bool:  # note typing
 
         t = empty_table(10).update("X = f1(i)")
         self.assertEqual(10, t.to_string().count("true"))
+
+    def test_narrowing_cases(self):
+        def f(x: np.int16) -> Optional[int]:
+            print(type(x))
+            return None
+
+        with self.assertRaises(DHError) as cm:
+            empty_table(10).update("X = f((char)i)")
+        self.assertRegex(str(cm.exception), "f: Expected argument .* got char")
 
 if __name__ == "__main__":
     unittest.main()
