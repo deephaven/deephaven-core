@@ -231,16 +231,16 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     }
 
-    private Class<?> findSafelyCastable(Set<Class<?>> types, Class<?> type) {
+    private boolean hasSafelyCastable(Set<Class<?>> types, Class<?> type) {
         for (Class<?> t : types) {
             if (t.isAssignableFrom(type)) {
-                return t;
+                return true;
             }
             if (t.isPrimitive() && type.isPrimitive() && isLosslessWideningPrimitiveConversion(type, t)) {
-                return t;
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
     public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
@@ -301,17 +301,14 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                 continue;
             }
 
-            if (!types.contains(argType) && !types.contains(Object.class)) {
-                Class<?> t = findSafelyCastable(types, argType);
-                if (t == null) {
-                    throw new IllegalArgumentException(
-                            callableName + ": " + "Expected argument (" + parameters.get(i).getName()
-                                    + ") to be either one of "
-                                    + parameters.get(i).getPossibleTypes() + " or their compatible ones, got "
-                                    + (argType.equals(NULL_CLASS) ? "null" : argType));
-                }
-                argType = t;
+            if (!types.contains(argType) && !types.contains(Object.class) && !hasSafelyCastable(types, argType)) {
+                throw new IllegalArgumentException(
+                        callableName + ": " + "Expected argument (" + parameters.get(i).getName()
+                                + ") to be either one of "
+                                + parameters.get(i).getPossibleTypes() + " or their compatible ones, got "
+                                + (argType.equals(NULL_CLASS) ? "null" : argType));
             }
+
             if (argType.isArray()) {
                 argTypesStr.append('[');
             }

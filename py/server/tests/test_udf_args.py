@@ -119,6 +119,7 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                     res = tbl.update("Col3 = test_udf(Col1, Col2)")
                     self.assertEqual(10, res.to_string().count("true"))
 
+                    # TODO need to wait for https://github.com/deephaven/deephaven-core/issues/5213 to be resolved
                     # with self.assertRaises(DHError) as cm:
                     #     tbl.update("Col3 = test_udf(Col1, Col2)")
                     # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
@@ -170,6 +171,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 def test_udf(col: {np_type}) -> bool:
     if col is None:
         return True
+    return False
 """
                 exec(func, globals())
                 with self.subTest(data_type):
@@ -335,6 +337,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X")
             t1 = t.update(["X1 = f3(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
+            # TODO need to wait for https://github.com/deephaven/deephaven-core/issues/5213 to be resolved
             # with self.assertRaises(DHError) as cm:
             #     t1 = t.update(["X1 = f3(Y)"])
             # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
@@ -520,6 +523,19 @@ def f(x: {p_type}) -> bool:  # note typing
             t.update(f"X = my_sum_error({','.join(cols)})")
         self.assertRegex(str(cm.exception), "my_sum_error: Expected argument .* got int")
 
+    def test_select_most_performant(self):
+        def f(x: Union[np.int32, int]) -> bool:
+            return type(x) == int
+
+        t = empty_table(10).update("X = f(i)")
+        self.assertEqual(10, t.to_string().count("true"))
+
+        def f1(x: Union[np.int32, float]) -> bool:
+            print(type(x))
+            return type(x) == np.int32
+
+        t = empty_table(10).update("X = f1(i)")
+        self.assertEqual(10, t.to_string().count("true"))
 
 if __name__ == "__main__":
     unittest.main()
