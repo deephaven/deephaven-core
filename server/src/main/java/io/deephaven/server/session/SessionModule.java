@@ -9,6 +9,7 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoSet;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.console.SharedTicketResolver;
 import io.deephaven.server.util.AuthorizationWrappedGrpcBinding;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
@@ -34,6 +35,10 @@ public interface SessionModule {
     @Binds
     @IntoSet
     TicketResolver bindSessionTicketResolverServerSideExports(ExportTicketResolver resolver);
+
+    @Binds
+    @IntoSet
+    TicketResolver bindSharedTicketResolver(SharedTicketResolver resolver);
 
     @Provides
     @ElementsIntoSet

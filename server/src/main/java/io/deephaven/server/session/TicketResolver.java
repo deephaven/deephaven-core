@@ -6,6 +6,8 @@ package io.deephaven.server.session;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -122,6 +124,32 @@ public interface TicketResolver {
      */
     <T> SessionState.ExportBuilder<T> publish(
             SessionState session, Flight.FlightDescriptor descriptor, final String logId, @Nullable Runnable onPublish);
+
+    /**
+     * Publish the result of the source object as the result represented by the destination ticket.
+     *
+     * @param session the user session context
+     * @param ticket the ticket to publish to
+     * @param logId an end-user friendly identification of the ticket should an error occur
+     * @param onPublish an optional callback to invoke when the result is published
+     * @param errorHandler the error handler to invoke if the source object fails to export
+     * @param source the source object to export
+     * @param <T> the type of the result the export will publish
+     */
+    default <T> void publish(
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            @Nullable Runnable onPublish,
+            final SessionState.ExportErrorHandler errorHandler,
+            final SessionState.ExportObject<T> source) {
+        // Note this transfers ownership of the current query performance recorder to the new export object
+        publish(session, ticket, "ticket", onPublish)
+                .queryPerformanceRecorder(QueryPerformanceRecorder.getInstance())
+                .onError(errorHandler)
+                .require(source)
+                .submit(source::get);
+    }
 
     /**
      * Retrieve a FlightInfo for a given FlightDescriptor.

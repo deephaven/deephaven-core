@@ -223,6 +223,34 @@ public class TicketRouter {
     }
 
     /**
+     * Publish a new result as a flight ticket as to-be defined by the supplied source.
+     *
+     * @param session the user session context
+     * @param ticket the ticket to publish to
+     * @param logId an end-user friendly identification of the ticket should an error occur
+     * @param onPublish an optional callback to invoke when the result is published
+     * @param errorHandler an error handler to invoke if the source fails to produce a result
+     * @param source the source object to publish
+     * @param <T> the type of the result the export will publish
+     */
+    public <T> void publish(
+            final SessionState session,
+            final Ticket ticket,
+            final String logId,
+            @Nullable Runnable onPublish,
+            final SessionState.ExportErrorHandler errorHandler,
+            final SessionState.ExportObject<T> source) {
+        final String ticketName = getLogNameFor(ticket, logId);
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "publishTicket:" + ticketName)) {
+            final ByteBuffer ticketBuffer = ticket.getTicket().asReadOnlyByteBuffer();
+            final TicketResolver resolver = getResolver(ticketBuffer.get(ticketBuffer.position()), logId);
+            authorization.authorizePublishRequest(resolver, ticketBuffer);
+            resolver.publish(session, ticketBuffer, logId, onPublish, errorHandler, source);
+        }
+    }
+
+    /**
      * Resolve a flight descriptor and retrieve flight info for the flight.
      *
      * @param session the user session context; ticket resolvers may expose flights that do not require a session (such
