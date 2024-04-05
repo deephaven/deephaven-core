@@ -239,6 +239,11 @@ class DTypesTestCase(BaseTestCase):
         j_array = dtypes.array(Instant, np_array)
         self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
 
+        # Test an empty list
+        data = []
+        j_array = dtypes.array(Instant, data)
+        self.assertEqual(0, len(j_array))
+
         # OLD TESTS
         dt1 = Instant.j_type.ofEpochSecond(0, round(time.time()))
         dt2 = dh_now()

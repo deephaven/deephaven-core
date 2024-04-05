@@ -84,7 +84,7 @@ public class PrimitiveArrayConversionUtility {
     public static Instant[] translateArrayStringToInstant(final String[] array) {
         final Instant[] out = new Instant[array.length];
         for (int ai = 0; ai < array.length; ai++) {
-            out[ai] = DateTimeUtils.parseInstant(array[ai]);
+            out[ai] = array[ai] == null ? null : DateTimeUtils.parseInstant(array[ai]);
         }
         return out;
     }

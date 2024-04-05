@@ -226,11 +226,15 @@ def _instant_array(data: Sequence) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
     or integers in nanoseconds, to a Java array of Instant values. """
 
+    if len(data) == 0:
+        return jpy.array(Instant.j_type, [])
+
     if isinstance(data, np.ndarray) and data.dtype.kind == 'U':
         return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
 
     if all((d == None or isinstance(d, str)) for d in data):
-        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
+        jdata = jpy.array('java.lang.String', data)
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(jdata)
 
     # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
     # it to reduce the number of round trips to the JVM
