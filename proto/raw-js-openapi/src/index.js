@@ -1,16 +1,16 @@
-require("deephaven/proto/session_pb");
-require("deephaven/proto/table_pb");
-require("deephaven/proto/console_pb");
-require("deephaven/proto/ticket_pb");
-require("deephaven/proto/application_pb");
-require("deephaven/proto/inputtable_pb");
-require("deephaven/proto/object_pb");
-require("deephaven/proto/partitionedtable_pb");
-require("deephaven/proto/storage_pb");
-require("deephaven/proto/config_pb");
-require("deephaven/proto/hierarchicaltable_pb");
-require("Flight_pb")
-require("BrowserFlight_pb")
+var session_pb = require("deephaven/proto/session_pb");
+var table_pb = require("deephaven/proto/table_pb");
+var console_pb = require("deephaven/proto/console_pb");
+var ticket_pb = require("deephaven/proto/ticket_pb");
+var application_pb = require("deephaven/proto/application_pb");
+var inputtable_pb = require("deephaven/proto/inputtable_pb");
+var object_pb = require("deephaven/proto/object_pb");
+var partitionedtable_pb = require("deephaven/proto/partitionedtable_pb");
+var storage_pb = require("deephaven/proto/storage_pb");
+var config_pb = require("deephaven/proto/config_pb");
+var hierarchicaltable_pb = require("deephaven/proto/hierarchicaltable_pb");
+var Flight_pb = require("Flight_pb")
+var BrowserFlight_pb = require("BrowserFlight_pb")
 var sessionService = require("deephaven/proto/session_pb_service");
 var tableService = require("deephaven/proto/table_pb_service");
 var consoleService = require("deephaven/proto/console_pb_service");
@@ -36,26 +36,26 @@ var schema = require('./arrow/flight/flatbuf/Schema_generated');
 
 var io = { deephaven: {
     proto: {
-            session_pb: proto.io.deephaven.proto.backplane.grpc,
+            session_pb: session_pb,
             session_pb_service: sessionService,
-            table_pb: proto.io.deephaven.proto.backplane.grpc,
+            table_pb: table_pb,
             table_pb_service: tableService,
-            console_pb: proto.io.deephaven.proto.backplane.script.grpc,
+            console_pb: console_pb,
             console_pb_service: consoleService,
-            ticket_pb: proto.io.deephaven.proto.backplane.grpc,
-            application_pb: proto.io.deephaven.proto.backplane.grpc,
+            ticket_pb: ticket_pb,
+            application_pb: application_pb,
             application_pb_service: applicationService,
-            inputtable_pb: proto.io.deephaven.proto.backplane.grpc,
+            inputtable_pb: inputtable_pb,
             inputtable_pb_service: inputTableService,
-            object_pb: proto.io.deephaven.proto.backplane.grpc,
+            object_pb: object_pb,
             object_pb_service: objectService,
-            partitionedtable_pb: proto.io.deephaven.proto.backplane.grpc,
+            partitionedtable_pb: partitionedtable_pb,
             partitionedtable_pb_service: partitionedTableService,
-            storage_pb: proto.io.deephaven.proto.backplane.grpc,
+            storage_pb: storage_pb,
             storage_pb_service: storageService,
-            config_pb: proto.io.deephaven.proto.backplane.grpc,
+            config_pb: config_pb,
             config_pb_service: configService,
-            hierarchicaltable_pb: proto.io.deephaven.proto.backplane.grpc,
+            hierarchicaltable_pb: hierarchicaltable_pb,
             hierarchicaltable_pb_service: hierarchicalTableService
         },
         barrage: {
@@ -70,9 +70,9 @@ var arrow = { flight: {
         Schema_generated: schema,
     },
     protocol: {
-            Flight_pb: proto.arrow.flight.protocol,
+            Flight_pb: Flight_pb,
             Flight_pb_service: flightService,
-            BrowserFlight_pb: proto.arrow.flight.protocol,
+            BrowserFlight_pb: BrowserFlight_pb,
             BrowserFlight_pb_service: browserFlightService
     }
 }};

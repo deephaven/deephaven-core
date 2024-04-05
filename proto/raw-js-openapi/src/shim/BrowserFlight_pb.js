@@ -1,0 +1,1 @@
+Object.assign(exports, require('real/BrowserFlight_pb').io.deephaven.flightjs.protocol)
