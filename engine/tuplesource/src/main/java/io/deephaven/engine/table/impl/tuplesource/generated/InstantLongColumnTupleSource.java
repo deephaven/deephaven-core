@@ -78,6 +78,11 @@ public class InstantLongColumnTupleSource extends AbstractTupleSource<LongLongTu
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 2;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -104,6 +109,18 @@ public class InstantLongColumnTupleSource extends AbstractTupleSource<LongLongTu
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final LongLongTuple tuple) {
+        dest[0] = DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final LongLongTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final LongLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
@@ -122,6 +139,18 @@ public class InstantLongColumnTupleSource extends AbstractTupleSource<LongLongTu
             destinationObjectChunk.set(ii, new LongLongTuple(DateTimeUtils.epochNanos(chunk1.get(ii)), chunk2.get(ii)));
         }
         destination.setSize(chunkSize);
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final LongLongTuple tuple) {
+        dest[0] = DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final LongLongTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
     }
 
     /** {@link TwoColumnTupleSourceFactory} for instances of {@link InstantLongColumnTupleSource}. **/

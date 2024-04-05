@@ -473,12 +473,14 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
         return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), columnsToMatch);
     }
 
     @Override
     public PartitionedTable.Proxy whereNotIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
         return complexTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch), columnsToMatch);
     }
 

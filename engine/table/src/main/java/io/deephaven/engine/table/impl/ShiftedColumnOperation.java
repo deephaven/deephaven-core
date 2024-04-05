@@ -131,8 +131,7 @@ public class ShiftedColumnOperation {
             final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl("propagateUpdates", source, result) {
                 @Override
                 public void onUpdate(TableUpdate upstream) {
-                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                    downstream.modifiedColumnSet = downstreamColumnSet;
+                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, downstreamColumnSet);
                     mcsTransformer.clearAndTransform(
                             upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 

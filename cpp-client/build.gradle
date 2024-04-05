@@ -22,6 +22,7 @@ spotless {
 // image we will generate here as a base.
 // See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-multi
 evaluationDependsOn Docker.registryProject('cpp-clients-multi-base')
+evaluationDependsOn Docker.registryProject('manylinux2014_x86_64')
 
 configurations {
     cpp {}
@@ -57,6 +58,7 @@ deephavenDocker {
 }
 
 def prefix = '/opt/deephaven'
+def build_type = 'RelWithDebInfo'
 
 def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
     // Only tested on x86-64, and we only build dependencies for x86-64
@@ -91,23 +93,23 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
         copyFile('build-dependencies.sh', "/tmp")
-        runCommand("PREFIX=${prefix}; " +
+        runCommand("PREFIX='${prefix}'; BUILD_TYPE='${build_type}'; " +
                    '''set -eux; \\
-                      cmp /tmp/build-dependencies.sh ${PREFIX}/build-dependencies.sh; \\
+                      cmp /tmp/build-dependencies.sh "${PREFIX}/build-dependencies.sh"; \\
                       rm -f /tmp/build-dependencies.sh; \\
-                      rm -fr ${PREFIX}/src/deephaven/build; \\
-                      mkdir -p ${PREFIX}/src/deephaven/build; \\
-                      cd ${PREFIX}/src/deephaven/build; \\
-                      . ${PREFIX}/env.sh; \\
+                      rm -fr "${PREFIX}/src/deephaven/build"; \\
+                      mkdir -p "${PREFIX}/src/deephaven/build"; \\
+                      cd "${PREFIX}/src/deephaven/build"; \\
+                      . "${PREFIX}/env.sh"; \\
                       cmake \\
-                        -DCMAKE_INSTALL_PREFIX=${PREFIX} \\
-                        -DCMAKE_BUILD_TYPE=Release \\
+                        -DCMAKE_INSTALL_PREFIX="${PREFIX}" \\
+                        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \\
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
-                      VERBOSE=1 make -j${NCPUS} install 2>&1 | gzip > ${PREFIX}/log/make-install.log.gz; \\
-                      cp -f ${PREFIX}/src/deephaven/build/tests/tests ${PREFIX}/bin/dhcpp/tests; \\
+                      VERBOSE=1 make "-j${NCPUS}" install 2>&1 | gzip > "${PREFIX}/log/make-install.log.gz"; \\
+                      cp -f "${PREFIX}/src/deephaven/build/tests/tests" "${PREFIX}/bin/dhcpp/tests"; \\
                       cd ..; \\
-                      rm -fr ${PREFIX}/src/deephaven/build
+                      rm -fr "${PREFIX}/src/deephaven/build"
                    ''')
         // Note environment variables defined here are inherited by other images
         // using this image as a base ("from").
@@ -137,6 +139,55 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     network = deephavenDocker.networkName.get()
     parentContainers = [ project.tasks.getByName('cppClient') ]
     entrypoint = ["${prefix}/bin/dhcpp/cpp-tests-to-junit.sh", '/out/cpp-test.xml', '/out/cpp-test.log']
+}
+
+def buildCppClientPyImage = Docker.registerDockerTask(project, 'cppClientPy') {
+    // Uses a manylinux base image to support cython wheel building for multiple linux distros.
+    platform = 'linux/amd64'
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'build-dependencies.sh'
+            include 'deephaven/CMakeLists.txt'
+            include 'deephaven/dhcore/**'
+        }
+    }
+
+    dockerfile {
+        from('deephaven/manylinux2014_x86_64:local-build')
+        runCommand("""mkdir -p \\
+                        /out \\
+                        ${prefix} \\
+                        ${prefix}/bin/dhcpp \\
+                        ${prefix}/log
+                   """)
+        copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
+        copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
+        copyFile('build-dependencies.sh', "${prefix}")
+        runCommand("PREFIX='${prefix}'; BUILD_TYPE='${build_type}';" +
+                   '''set -eux; \\
+                      cd "${PREFIX}"; \\
+                      PFX="${PREFIX}" BUILD_TYPE="${BUILD_TYPE}" ./build-dependencies.sh \\
+                        --static-pic immer env 2>&1 | gzip >build-dependencies.log.gz; \\
+                      mkdir -p "${PREFIX}/src/deephaven/build"; \\
+                      cd "${PREFIX}/src/deephaven/build"; \\
+                      . "${PREFIX}/env.sh"; \\
+                      cmake \\
+                        -DDHCORE_ONLY=ON \
+                        -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+                        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+                        -DBUILD_SHARED_LIBS=ON \\
+                        .. ; \\
+                      VERBOSE=1 make -j"${NCPUS}" install 2>&1 | gzip >"${PREFIX}/log/make-install.log.gz"; \\
+                      cp dhcore/libdhcore_static.a "${PREFIX}/lib"; \\
+                      cd ..; \\
+                      rm -fr "${PREFIX}/src/deephaven/build"
+                   ''')
+        // Note environment variables defined here are inherited by other images
+        // using this image as a base ("from").
+        environmentVariable 'DH_PREFIX', prefix
+        environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
+    }
+    parentContainers = [ Docker.registryTask(project, 'manylinux2014_x86_64') ]
 }
 
 deephavenDocker.shouldLogIfTaskFails testCppClient

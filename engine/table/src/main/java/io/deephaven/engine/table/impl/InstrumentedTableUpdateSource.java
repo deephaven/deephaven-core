@@ -32,7 +32,7 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
     }
 
     @Override
-    protected final void onRefreshError(@NotNull final Exception error) {
+    protected void onRefreshError(@NotNull final Exception error) {
         final BaseTable<?> table = tableReference.get();
         if (table == null) {
             return;

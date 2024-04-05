@@ -66,7 +66,10 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             res[0] = min(x)
             res[1] = max(x)
 
-        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z=g(Y,dummy)")
+        # convert dummy to a Java array
+        # TODO this is a hack, we might want to add a helper function for QLP to call to get the type of a PyObject arg
+        j_array = dtypes.array(dtypes.int64, dummy)
+        t = empty_table(10).update(["X=i%3", "Y=i"]).group_by("X").update("Z=g(Y,j_array)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
     def test_np_on_java_array(self):
@@ -78,7 +81,11 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
             res[0] = np.min(x)
             res[1] = np.max(x)
 
-        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y,dummy)")
+        # convert dummy to a Java array
+        # TODO this is a hack, we might want to add a helper function for QLP to call to get the type of a PyObject arg
+        j_array = dtypes.array(dtypes.int64, dummy)
+
+        t = empty_table(10).update(["X=i%3", "Y=ii"]).group_by("X").update("Z=g(Y,j_array)")
         self.assertEqual(t.columns[2].data_type, dtypes.long_array)
 
     def test_np_on_java_array2(self):
@@ -99,7 +106,7 @@ class NumbaGuvectorizeTestCase(BaseTestCase):
 
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X=i%3", "Y=(double)ii"]).group_by("X").update("Z=g(Y)")
-        self.assertIn("Argument 1", str(cm.exception))
+        self.assertIn("g: Expected argument (1)", str(cm.exception))
 
 
 if __name__ == '__main__':

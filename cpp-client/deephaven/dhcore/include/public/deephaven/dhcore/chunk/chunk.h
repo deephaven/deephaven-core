@@ -51,6 +51,8 @@ protected:
 template<typename T>
 class GenericChunk final : public Chunk {
 public:
+  using value_type = T;
+
   /**
    * Factory method. Create a Chunk having the specified size, with a privately allocated buffer.
    */

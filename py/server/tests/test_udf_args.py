@@ -2,13 +2,14 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import typing
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, Sequence
 import unittest
 
 import numpy as np
 import numpy.typing as npt
 
-from deephaven import empty_table, DHError, dtypes
+from deephaven import empty_table, DHError, dtypes, new_table
+from deephaven.column import int_col
 from deephaven.dtypes import double_array, int32_array, long_array, int16_array, char_array, int8_array, \
     float32_array
 from tests.testbase import BaseTestCase
@@ -218,7 +219,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f11(i)"])
 
-        def f2(p1: Union[np.int16, np.float64]) -> Union[Optional[bool]]:
+        def f2(p1: Union[np.int32, np.float64]) -> Union[Optional[bool]]:
             return bool(p1)
 
         t = empty_table(10).update(["X1 = f2(i)"])
@@ -231,7 +232,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f21(i)"])
 
-        def f3(p1: Union[np.int16, np.float64], p2=None) -> bool:
+        def f3(p1: Union[np.int32, np.float64], p2=None) -> bool:
             return bool(p1)
 
         t = empty_table(10).update(["X1 = f3(i)"])
@@ -244,7 +245,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         self.assertEqual(t.columns[0].data_type, dtypes.bool_)
         with self.assertRaises(DHError) as cm:
             t = empty_table(10).update(["X1 = f4(now())"])
-        self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
+        self.assertRegex(str(cm.exception), "f4: Expected .* got .*Instant")
 
         def f41(p1: Union[np.int16, np.float64, Union[Any]], p2=None) -> bool:
             return bool(p1)
@@ -266,7 +267,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         t = t.update(["X1 = f5(X, Y)"])
         with self.assertRaises(DHError) as cm:
             t = t.update(["X1 = f5(X, null)"])
-        self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
+        self.assertRegex(str(cm.exception), "f5: Expected .* got null")
 
         def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
             return np.nanmean(col2) == np.mean(col2)
@@ -287,7 +288,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
         with self.assertRaises(DHError) as cm:
             t1 = t.update(["X1 = f6(X, Y=null)"])
-        self.assertIn("not compatible with annotation", str(cm.exception))
+        self.assertIn("f6: Expected argument (col2) to be one of [class [I], got boolean", str(cm.exception))
 
     def test_str_bool_datetime_array(self):
         with self.subTest("str"):
@@ -299,7 +300,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f1(null, Y )"])
-            self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
+            self.assertRegex(str(cm.exception), "f1: Expected .* got null")
 
             def f11(p1: Union[np.ndarray[str], None], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -315,7 +316,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f2(null, Y )"])
-            self.assertRegex(str(cm.exception), "Argument .* is not compatible with annotation*")
+            self.assertRegex(str(cm.exception), "f2: Expected .* got null")
 
             def f21(p1: Union[np.ndarray[np.datetime64], None], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -337,7 +338,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             with self.assertRaises(DHError) as cm:
                 t2 = t.update(["X1 = f3(null, Y )"])
-            self.assertRegex(str(cm.exception), "Argument 'p1': None is not compatible with annotation")
+            self.assertRegex(str(cm.exception), "f3: Expected .* got null")
 
             def f31(p1: Optional[np.ndarray[bool]], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
@@ -405,9 +406,9 @@ def f(x: {p_type}) -> bool:  # note typing
                 t = empty_table(1).update(["X = i", f"Y = f(({p_type})X)"])
                 self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
-
-        np_int_types = {"np.int8", "np.int16", "np.int32", "np.int64"}
-        for p_type in np_int_types:
+    def test_np_typehints(self):
+        widening_np_int_types = {"np.int32", "np.int64"}
+        for p_type in widening_np_int_types:
             with self.subTest(p_type):
                 func_str = f"""
 def f(x: {p_type}) -> bool:  # note typing
@@ -417,8 +418,20 @@ def f(x: {p_type}) -> bool:  # note typing
                 t = empty_table(1).update(["X = i", f"Y = f(X)"])
                 self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
-        np_floating_types = {"np.float32", "np.float64"}
-        for p_type in np_floating_types:
+        narrowing_np_int_types = {"np.int8", "np.int16"}
+        for p_type in narrowing_np_int_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                with self.assertRaises(DHError) as cm:
+                    t = empty_table(1).update(["X = i", f"Y = f(X)"])
+                self.assertRegex(str(cm.exception), "f: Expect")
+
+        widening_np_floating_types = {"np.float32", "np.float64"}
+        for p_type in widening_np_floating_types:
             with self.subTest(p_type):
                 func_str = f"""
 def f(x: {p_type}) -> bool:  # note typing
@@ -427,6 +440,80 @@ def f(x: {p_type}) -> bool:  # note typing
                 exec(func_str, globals())
                 t = empty_table(1).update(["X = i", f"Y = f((float)X)"])
                 self.assertEqual(1, t.to_string(cols="Y").count("true"))
+
+        int_to_floating_types = {"np.float32", "np.float64"}
+        for p_type in int_to_floating_types:
+            with self.subTest(p_type):
+                func_str = f"""
+def f(x: {p_type}) -> bool:  # note typing
+    return type(x) == {p_type}
+"""
+                exec(func_str, globals())
+                with self.assertRaises(DHError) as cm:
+                    t = empty_table(1).update(["X = i", f"Y = f(X)"])
+                self.assertRegex(str(cm.exception), "f: Expect")
+
+    def test_sequence_args(self):
+        with self.subTest("Sequence"):
+            def f(x: Sequence[int]) -> bool:
+                return True
+
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(1).update(["X = i", "Y = f(ii)"])
+            self.assertRegex(str(cm.exception), "f: Expect")
+
+            t = empty_table(1).update(["X = i", "Y = ii"]).group_by("X").update(["Z = f(Y.toArray())"])
+            self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
+        with self.subTest("bytes"):
+            def f(x: bytes) -> bool:
+                return True
+
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(1).update(["X = i", "Y = f(ii)"])
+            self.assertRegex(str(cm.exception), "f: Expect")
+
+            t = empty_table(1).update(["X = i", "Y = (byte)(ii % 128)"]).group_by("X").update(["Z = f(Y.toArray())"])
+            self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
+        with self.subTest("bytearray"):
+            def f(x: bytearray) -> bool:
+                return True
+
+            with self.assertRaises(DHError) as cm:
+                t = empty_table(1).update(["X = i", "Y = f(ii)"])
+            self.assertRegex(str(cm.exception), "f: Expect")
+
+            t = empty_table(1).update(["X = i", "Y = (byte)(ii % 128)"]).group_by("X").update(["Z = f(Y.toArray())"])
+            self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
+    def test_non_common_cases(self):
+        def f1(x: int) -> float:
+            ...
+
+        def f2(x: float) -> int:
+            ...
+
+        t = empty_table(1).update("X = f2(f1(ii))")
+        self.assertEqual(t.columns[0].data_type, dtypes.int_)
+
+    def test_varargs(self):
+        cols = ["A", "B", "C", "D"]
+
+        def my_sum(p1: np.int32, *args: np.int64) -> int:
+            return sum(args)
+
+        t = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
+        result = t.update(f"X = my_sum({','.join(cols)})")
+        self.assertEqual(result.columns[4].data_type, dtypes.int64)
+
+        def my_sum_error(p1: np.int32, *args: np.int16) -> int:
+            return sum(args)
+        with self.assertRaises(DHError) as cm:
+            t.update(f"X = my_sum_error({','.join(cols)})")
+        self.assertRegex(str(cm.exception), "my_sum_error: Expected argument .* got int")
+
+
 
 if __name__ == "__main__":
     unittest.main()

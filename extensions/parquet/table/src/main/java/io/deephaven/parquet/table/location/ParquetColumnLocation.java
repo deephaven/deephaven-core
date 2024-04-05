@@ -5,35 +5,22 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.chunkattributes.UnorderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
-import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation;
 import io.deephaven.engine.table.impl.sources.regioned.*;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ColumnChunkReader;
-import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.RowGroupReader;
-import io.deephaven.util.channel.SeekableChannelContext;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import io.deephaven.parquet.table.*;
+import io.deephaven.parquet.table.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.table.BigIntegerParquetBytesCodec;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
-import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.pagestore.PageCache;
 import io.deephaven.parquet.table.pagestore.topage.*;
@@ -47,35 +34,25 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.parquet.table.ParquetTableWriter.*;
-
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
-    private static final int CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
     private static final int INITIAL_PAGE_CACHE_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "initialPageCacheSize", 128);
     private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
-
-    private static final Logger log = LoggerFactory.getLogger(ParquetColumnLocation.class);
 
     private final String parquetColumnName;
     /**
@@ -83,7 +60,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * ensure visibility of the derived fields.
      */
     private volatile ColumnChunkReader[] columnChunkReaders;
-    private final boolean hasGroupingTable;
 
     // We should consider moving this to column level if needed. Column-location level likely allows more parallelism.
     private volatile PageCache<ATTR> pageCache;
@@ -98,17 +74,15 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @param tableLocation The table location enclosing this column location
      * @param parquetColumnName The Parquet file column name
      * @param columnChunkReaders The {@link ColumnChunkReader column chunk readers} for this location
-     * @param hasGroupingTable Whether this column has an associated grouping table file
      */
-    ParquetColumnLocation(@NotNull final ParquetTableLocation tableLocation,
+    ParquetColumnLocation(
+            @NotNull final ParquetTableLocation tableLocation,
             @NotNull final String columnName,
             @NotNull final String parquetColumnName,
-            @Nullable final ColumnChunkReader[] columnChunkReaders,
-            final boolean hasGroupingTable) {
+            @Nullable final ColumnChunkReader[] columnChunkReaders) {
         super(tableLocation, columnName);
         this.parquetColumnName = parquetColumnName;
         this.columnChunkReaders = columnChunkReaders;
-        this.hasGroupingTable = hasGroupingTable;
     }
 
     private PageCache<ATTR> ensurePageCache() {
@@ -146,113 +120,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         return (ParquetTableLocation) getTableLocation();
     }
 
-    private static final ColumnDefinition<Long> FIRST_KEY_COL_DEF =
-            ColumnDefinition.ofLong("__firstKey__");
-    private static final ColumnDefinition<Long> LAST_KEY_COL_DEF =
-            ColumnDefinition.ofLong("__lastKey__");
-
-    /**
-     * Helper method for logging a warning on failure in reading an index file
-     */
-    private void logWarnFailedToRead(final String indexFilePath) {
-        log.warn().append("Failed to read expected index file ").append(indexFilePath)
-                .append(" for table location ").append(tl()).append(", column ")
-                .append(getName())
-                .endl();
-    }
-
     @Override
     @Nullable
     public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
-        if (!hasGroupingTable) {
-            return null;
-        }
-        final URI parquetFileURI = tl().getParquetKey().getURI();
-        Assert.assertion(FILE_URI_SCHEME.equals(parquetFileURI.getScheme()),
-                "Expected a file uri, got " + parquetFileURI);
-        final File parquetFile = new File(parquetFileURI);
-        try {
-            ParquetFileReader parquetFileReader;
-            final String indexFilePath;
-            final GroupingColumnInfo groupingColumnInfo = tl().getGroupingColumns().get(parquetColumnName);
-            final SeekableChannelsProvider channelsProvider = tl().getChannelProvider();
-            if (groupingColumnInfo != null) {
-                final String indexFileRelativePath = groupingColumnInfo.groupingTablePath();
-                indexFilePath = parquetFile.toPath().getParent().resolve(indexFileRelativePath).toString();
-                try {
-                    parquetFileReader = new ParquetFileReader(indexFilePath, channelsProvider);
-                } catch (final RuntimeException e) {
-                    logWarnFailedToRead(indexFilePath);
-                    return null;
-                }
-            } else {
-                final String relativeIndexFilePath =
-                        ParquetTools.getRelativeIndexFilePath(parquetFile, parquetColumnName);
-                indexFilePath = parquetFile.toPath().getParent().resolve(relativeIndexFilePath).toString();
-                try {
-                    parquetFileReader = new ParquetFileReader(indexFilePath, channelsProvider);
-                } catch (final RuntimeException e1) {
-                    // Retry with legacy grouping file path
-                    final String legacyGroupingFileName =
-                            ParquetTools.legacyGroupingFileName(parquetFile, parquetColumnName);
-                    final File legacyGroupingFile = new File(parquetFile.getParent(), legacyGroupingFileName);
-                    try {
-                        parquetFileReader =
-                                new ParquetFileReader(legacyGroupingFile.getAbsolutePath(), channelsProvider);
-                    } catch (final RuntimeException e2) {
-                        logWarnFailedToRead(indexFilePath);
-                        return null;
-                    }
-                }
-            }
-            final Optional<TableInfo> tableInfo = ParquetSchemaReader.parseMetadata(
-                    new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData)
-                            .getFileMetaData().getKeyValueMetaData());
-            final Map<String, ColumnTypeInfo> columnTypes =
-                    tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
-            final String version = tableInfo.map(TableInfo::version).orElse(null);
-
-            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0, version);
-            final ColumnChunkReader groupingKeyReader, beginPosReader, endPosReader;
-            try (final SeekableChannelContext channelContext = channelsProvider.makeSingleUseContext()) {
-                groupingKeyReader =
-                        rowGroupReader.getColumnChunk(Collections.singletonList(GROUPING_KEY), channelContext);
-                beginPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(BEGIN_POS), channelContext);
-                endPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(END_POS), channelContext);
-            }
-            if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
-                log.warn().append("Index file ").append(indexFilePath)
-                        .append(" is missing one or more expected columns for table location ")
-                        .append(tl()).append(", column ").append(getName()).endl();
-                return null;
-            }
-
-            final PageCache<ATTR> localPageCache = ensurePageCache();
-
-            // noinspection unchecked
-            return (METADATA_TYPE) new MetaDataTableFactory(
-                    ColumnChunkPageStore.<Values>create(
-                            localPageCache.castAttr(), groupingKeyReader,
-                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
-                            makeToPage(columnTypes.get(GROUPING_KEY), ParquetInstructions.EMPTY,
-                                    GROUPING_KEY, groupingKeyReader, columnDefinition),
-                            columnDefinition).pageStore,
-                    ColumnChunkPageStore.<UnorderedRowKeys>create(
-                            localPageCache.castAttr(), beginPosReader,
-                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
-                            makeToPage(columnTypes.get(BEGIN_POS), ParquetInstructions.EMPTY, BEGIN_POS,
-                                    beginPosReader, FIRST_KEY_COL_DEF),
-                            columnDefinition).pageStore,
-                    ColumnChunkPageStore.<UnorderedRowKeys>create(
-                            localPageCache.castAttr(), endPosReader,
-                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
-                            makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
-                                    endPosReader, LAST_KEY_COL_DEF),
-                            columnDefinition).pageStore)
-                    .get();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return null;
     }
 
     private <SOURCE, REGION_TYPE> REGION_TYPE makeColumnRegion(
@@ -456,148 +327,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             }
 
             columnChunkReaders = null;
-        }
-    }
-
-    private static final class MetaDataTableFactory {
-
-        private final ColumnChunkPageStore<Values> keyColumn;
-        private final ColumnChunkPageStore<UnorderedRowKeys> firstColumn;
-        private final ColumnChunkPageStore<UnorderedRowKeys> lastColumn;
-
-        private volatile Object metaData;
-
-        private MetaDataTableFactory(@NotNull final ColumnChunkPageStore<Values> keyColumn,
-                @NotNull final ColumnChunkPageStore<UnorderedRowKeys> firstColumn,
-                @NotNull final ColumnChunkPageStore<UnorderedRowKeys> lastColumn) {
-            this.keyColumn = Require.neqNull(keyColumn, "keyColumn");
-            this.firstColumn = Require.neqNull(firstColumn, "firstColumn");
-            this.lastColumn = Require.neqNull(lastColumn, "lastColumn");
-        }
-
-        public Object get() {
-            if (metaData != null) {
-                return metaData;
-            }
-            synchronized (this) {
-                if (metaData != null) {
-                    return metaData;
-                }
-                final int numRows = (int) keyColumn.numRows();
-
-                try (
-                        final ChunkBoxer.BoxerKernel boxerKernel =
-                                ChunkBoxer.getBoxer(keyColumn.getChunkType(), CHUNK_SIZE);
-                        final BuildGrouping buildGrouping =
-                                BuildGrouping.builder(firstColumn.getChunkType(), numRows);
-                        final ChunkSource.GetContext keyContext = keyColumn.makeGetContext(CHUNK_SIZE);
-                        final ChunkSource.GetContext firstContext =
-                                firstColumn.makeGetContext(CHUNK_SIZE);
-                        final ChunkSource.GetContext lastContext =
-                                lastColumn.makeGetContext(CHUNK_SIZE);
-                        final RowSequence rows = RowSequenceFactory.forRange(0, numRows - 1);
-                        final RowSequence.Iterator rowsIterator = rows.getRowSequenceIterator()) {
-
-                    while (rowsIterator.hasMore()) {
-                        final RowSequence chunkRows =
-                                rowsIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
-
-                        buildGrouping.build(
-                                boxerKernel.box(keyColumn.getChunk(keyContext, chunkRows)),
-                                firstColumn.getChunk(firstContext, chunkRows),
-                                lastColumn.getChunk(lastContext, chunkRows));
-                    }
-
-                    metaData = buildGrouping.getGrouping();
-                }
-            }
-            return metaData;
-        }
-
-        private interface BuildGrouping extends Context {
-            void build(@NotNull ObjectChunk<?, ? extends Values> keyChunk,
-                    @NotNull Chunk<? extends UnorderedRowKeys> firstChunk,
-                    @NotNull Chunk<? extends UnorderedRowKeys> lastChunk);
-
-            Object getGrouping();
-
-            static BuildGrouping builder(@NotNull final ChunkType chunkType, final int numRows) {
-                switch (chunkType) {
-                    case Int:
-                        return new IntBuildGrouping(numRows);
-                    case Long:
-                        return new LongBuildGrouping(numRows);
-                    default:
-                        throw new IllegalArgumentException(
-                                "Unknown type for a rowSet: " + chunkType);
-                }
-            }
-
-            final class IntBuildGrouping implements BuildGrouping {
-
-                private final Map<Object, int[]> grouping;
-
-                IntBuildGrouping(final int numRows) {
-                    grouping = new LinkedHashMap<>(numRows);
-                }
-
-                @Override
-                public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
-                        @NotNull final Chunk<? extends UnorderedRowKeys> firstChunk,
-                        @NotNull final Chunk<? extends UnorderedRowKeys> lastChunk) {
-                    final IntChunk<? extends UnorderedRowKeys> firstIntChunk =
-                            firstChunk.asIntChunk();
-                    final IntChunk<? extends UnorderedRowKeys> lastIntChunk =
-                            lastChunk.asIntChunk();
-
-                    for (int ki = 0; ki < keyChunk.size(); ++ki) {
-                        final int[] range = new int[2];
-
-                        range[0] = firstIntChunk.get(ki);
-                        range[1] = lastIntChunk.get(ki);
-
-                        grouping.put(keyChunk.get(ki), range);
-                    }
-                }
-
-                @Override
-                public Object getGrouping() {
-                    return grouping;
-                }
-            }
-
-            final class LongBuildGrouping implements BuildGrouping {
-
-                private final Map<Object, long[]> grouping;
-
-                LongBuildGrouping(final int numRows) {
-                    grouping = new LinkedHashMap<>(numRows);
-                }
-
-                @Override
-                public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
-                        @NotNull final Chunk<? extends UnorderedRowKeys> firstChunk,
-                        @NotNull final Chunk<? extends UnorderedRowKeys> lastChunk) {
-                    final LongChunk<? extends UnorderedRowKeys> firstLongChunk =
-                            firstChunk.asLongChunk();
-                    final LongChunk<? extends UnorderedRowKeys> lastLongChunk =
-                            lastChunk.asLongChunk();
-
-                    for (int ki = 0; ki < keyChunk.size(); ++ki) {
-                        final long[] range = new long[2];
-
-                        range[0] = firstLongChunk.get(ki);
-                        range[1] = lastLongChunk.get(ki);
-
-                        grouping.put(keyChunk.get(ki), range);
-                    }
-                }
-
-                @Override
-                public Object getGrouping() {
-                    return grouping;
-                }
-            }
         }
     }
 

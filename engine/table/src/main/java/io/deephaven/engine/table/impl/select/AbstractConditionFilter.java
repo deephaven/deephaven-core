@@ -267,7 +267,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         final PyCallableWrapperJpyImpl pyCallableWrapper = cws[0];
 
         if (pyCallableWrapper.isVectorizable()) {
-            checkReturnType(result, pyCallableWrapper.getReturnType());
+            checkReturnType(result, pyCallableWrapper.getSignature().getReturnType());
 
             for (String variable : result.getVariablesUsed()) {
                 if (variable.equals("i")) {
@@ -284,7 +284,8 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             ArgumentsChunked argumentsChunked = pyCallableWrapper.buildArgumentsChunked(usedColumns);
             PyObject vectorized = pyCallableWrapper.vectorizedCallable();
             DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(vectorized,
-                    pyCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]), argumentsChunked, true);
+                    pyCallableWrapper.getSignature().getReturnType(), usedColumns.toArray(new String[0]),
+                    argumentsChunked, true);
             setFilter(new ConditionFilter.ChunkFilter(
                     dcf.toFilterKernel(),
                     dcf.getColumnNames().toArray(new String[0]),

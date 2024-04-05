@@ -10,6 +10,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -99,9 +100,21 @@ public class QueryTableAjTest {
     }
 
     @Test
-    public void testAjStaticGrouped() {
+    public void testAjStaticGroupedBoth() {
         // noinspection unchecked
-        testAjStatic(TstUtils::colGrouped, TstUtils::colGrouped);
+        testAjStatic(TstUtils::colIndexed, TstUtils::colIndexed);
+    }
+
+    @Test
+    public void testAjStaticGroupedLeftOnly() {
+        // noinspection unchecked
+        testAjStatic(TstUtils::colIndexed, TableTools::col);
+    }
+
+    @Test
+    public void testAjStaticGroupedRightOnly() {
+        // noinspection unchecked
+        testAjStatic(TableTools::col, TstUtils::colIndexed);
     }
 
     public void testAjStatic(MakeColumn leftMaker, MakeColumn rightMaker) {
@@ -148,6 +161,83 @@ public class QueryTableAjTest {
         System.out.println("Reverse Result GT");
         TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResultGt.getDefinition().getColumnNames());
+
+        BaseArrayTestCase.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
+                intColumn(reverseResultGt, "Sentinel"));
+    }
+
+    @Test
+    public void testAjStaticIndexedBoth() {
+        // noinspection unchecked
+        testAjStaticIndexed(true, true);
+    }
+
+    @Test
+    public void testAjStaticIndexedLeftOnly() {
+        // noinspection unchecked
+        testAjStaticIndexed(true, false);
+    }
+
+    @Test
+    public void testAjStaticIndexedRightOnly() {
+        // noinspection unchecked
+        testAjStaticIndexed(false, true);
+    }
+
+    public void testAjStaticIndexed(boolean leftIndexed, boolean rightIndexed) {
+        final Table left = TstUtils.testTable(
+                col("BucketA", "A", "B", "A", "C", "D", "A"),
+                col("BucketB", "A", "A", "A", "A", "A", "A"),
+                longCol("LeftStamp", 1L, 10L, 50L, 3L, 4L, 60L));
+        final Table right = TstUtils.testTable(
+                col("BucketA", "A", "B", "A", "B", "A", "D", "E"),
+                col("BucketB", "A", "A", "A", "A", "A", "A", "A"),
+                longCol("RightStamp", 1L, 5L, 10L, 25L, 50L, 5L, 3L),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
+
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(left, "BucketA", "BucketB");
+        }
+        if (rightIndexed) {
+            DataIndexer.getOrCreateDataIndex(right, "BucketA", "BucketB");
+        }
+
+        System.out.println("Left");
+        TableTools.show(left);
+        System.out.println("Right");
+        TableTools.show(right);
+
+        final Table result = left.aj(right, "BucketA,BucketB,LeftStamp>=RightStamp", "Sentinel");
+        System.out.println("Result");
+        TableTools.showWithRowSet(result);
+        assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
+
+        BaseArrayTestCase.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
+
+        final Table ltResult = left.aj(right, "BucketA,BucketB,LeftStamp>RightStamp", "Sentinel");
+        System.out.println("LT Result");
+        TableTools.showWithRowSet(ltResult);
+        assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
+                ltResult.getDefinition().getColumnNames());
+
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
+                intColumn(ltResult, "Sentinel"));
+
+        final Table reverseResult = left.raj(right, "BucketA,BucketB,LeftStamp<=RightStamp", "Sentinel");
+        System.out.println("Reverse Result");
+        TableTools.showWithRowSet(reverseResult);
+        assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResult.getDefinition().getColumnNames());
+
+        BaseArrayTestCase.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
+                intColumn(reverseResult, "Sentinel"));
+
+        final Table reverseResultGt = left.raj(right, "BucketA,BucketB,LeftStamp<RightStamp", "Sentinel");
+        System.out.println("Reverse Result GT");
+        TableTools.showWithRowSet(reverseResultGt);
+        assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
         BaseArrayTestCase.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
@@ -469,11 +559,11 @@ public class QueryTableAjTest {
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
                                     ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.None);
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
-                                    ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.None);
+                                    ColumnInfo.ColAttributes.Indexed, ColumnInfo.ColAttributes.None);
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
-                                    ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.Grouped);
+                                    ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.Indexed);
                             testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
-                                    ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.Grouped);
+                                    ColumnInfo.ColAttributes.Indexed, ColumnInfo.ColAttributes.Indexed);
                         }
                     }
                 }
@@ -571,10 +661,31 @@ public class QueryTableAjTest {
                 for (int rightSize = 10; rightSize <= maxRightSize; rightSize *= rightFactor) {
                     System.out.println("Seed=" + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
                     try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                        testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false);
+                        testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, false, false);
                     }
                     try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                        testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false);
+                        testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, true, false);
+                    }
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, false, true);
+                    }
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, true, true);
+                    }
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, false,
+                                false);
+                    }
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, true,
+                                false);
+                    }
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, false,
+                                true);
+                    }
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, true, true);
                     }
                 }
             }
@@ -602,7 +713,16 @@ public class QueryTableAjTest {
                         System.out.println("Seed=" + seed + ", nodeSize=" + nodeSize + ", leftSize=" + leftSize
                                 + ", rightSize=" + rightSize);
                         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                            testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize);
+                            testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, false, false);
+                        }
+                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                            testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, true, false);
+                        }
+                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                            testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, false, true);
+                        }
+                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                            testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, true, true);
                         }
                     }
                 }
@@ -759,23 +879,13 @@ public class QueryTableAjTest {
                                             rightSize, joinIncrement, true, true, false, false, true, false,
                                             new JoinControl() {
                                                 @Override
-                                                int tableSizeForRightBuild(Table rightTable) {
-                                                    return 1 << 2;
-                                                }
-
-                                                @Override
-                                                int tableSizeForLeftBuild(Table leftTable) {
+                                                int initialBuildSize() {
                                                     return 1 << 2;
                                                 }
 
                                                 @Override
                                                 double getMaximumLoadFactor() {
                                                     return 0.75;
-                                                }
-
-                                                @Override
-                                                int initialBuildSize() {
-                                                    return 1 << 3;
                                                 }
 
                                                 @Override
@@ -806,10 +916,11 @@ public class QueryTableAjTest {
                 "Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
-
-    private void testAjRandomLeftStaticRightIncremental(int seed, int nodeSize, int leftSize, int rightSize) {
+    private void testAjRandomLeftStaticRightIncremental(int seed, int nodeSize, int leftSize, int rightSize,
+            boolean leftIndexed, boolean rightIndexed) {
         testAjRandomIncrementalWithInitial(seed, -1, nodeSize, leftSize, rightSize, base.rightStepShift, false, true,
-                false, true, true, true, int.class);
+                false, true, true, true, leftIndexed, rightIndexed, getJoinControlWithNodeSize(-1, nodeSize),
+                int.class);
     }
 
     private void testAjRandomBothIncremental(int seed, int leftNodeSize, int rightNodeSize, int leftSize, int rightSize,
@@ -831,10 +942,101 @@ public class QueryTableAjTest {
                 getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
     }
 
+    private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
+            int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing,
+            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse,
+            JoinControl control, Class<?> stampType) {
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement,
+                leftRefreshing, rightRefreshing, initialOnly, withZeroKeys, withBuckets, withReverse, false, false,
+                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+    }
+
+    @Test
+    public void testAjBothIncrementalIndexed() {
+        final int tableMultiplier = 10;
+        final int initialTableSize = 10;
+        final int maximumTableSize = 100;
+        final int nodeMultiplier = 8;
+        final int initialNodeSize = 4;
+        final int maximumNodeSize = 256;
+        final int seedCount = 1;
+
+        final long startTime = System.currentTimeMillis();
+        int configurations = 0;
+
+        for (int leftSize = initialTableSize; leftSize <= maximumTableSize; leftSize *= tableMultiplier) {
+            for (int rightSize = initialTableSize; rightSize <= maximumTableSize; rightSize *= tableMultiplier) {
+                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *=
+                        nodeMultiplier) {
+                    if (leftNodeSize / nodeMultiplier > leftSize) {
+                        continue;
+                    }
+
+                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *=
+                            nodeMultiplier) {
+                        if (rightNodeSize / nodeMultiplier > rightSize) {
+                            continue;
+                        }
+
+                        for (int seed = 0; seed < seedCount; ++seed) {
+                            for (final JoinIncrement joinIncrement : new JoinIncrement[] {base.leftRightStepShift,
+                                    base.leftRightConcurrentStepShift}) {
+                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed
+                                        + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
+                                        + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
+                                        + joinIncrement);
+                                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                                    testAjRandomBothIncrementalIndexed(seed, leftNodeSize, rightNodeSize, leftSize,
+                                            rightSize,
+                                            joinIncrement, int.class);
+                                    testAjRandomBothIncrementalLeftIndexed(seed, leftNodeSize, rightNodeSize, leftSize,
+                                            rightSize,
+                                            joinIncrement, int.class);
+                                    testAjRandomBothIncrementalRightIndexed(seed, leftNodeSize, rightNodeSize, leftSize,
+                                            rightSize,
+                                            joinIncrement, int.class);
+                                }
+                            }
+                            configurations++;
+                        }
+                    }
+                }
+            }
+        }
+
+        System.out.println(
+                "Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
+    }
+
+    private void testAjRandomBothIncrementalIndexed(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
+            int rightSize,
+            JoinIncrement joinIncrement, Class<?> stampType) {
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true,
+                true, false, false, true, false, true, true,
+                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+    }
+
+    private void testAjRandomBothIncrementalLeftIndexed(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
+            int rightSize,
+            JoinIncrement joinIncrement, Class<?> stampType) {
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true,
+                true, false, false, true, false, true, false,
+                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+    }
+
+    private void testAjRandomBothIncrementalRightIndexed(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
+            int rightSize,
+            JoinIncrement joinIncrement, Class<?> stampType) {
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true,
+                true, false, false, true, false, false, true,
+                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+    }
+
     @SuppressWarnings("SameParameterValue")
     private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
             int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing,
-            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, JoinControl control,
+            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, boolean leftIndexing,
+            boolean rightIndexing, JoinControl control,
             Class<?> stampType) {
         final Random random = new Random(seed);
         final int maxSteps = 10;
@@ -876,6 +1078,9 @@ public class QueryTableAjTest {
                         new SetGenerator<>(String.class, set1),
                         leftStampGenerator,
                         new IntGenerator(10_000_000, 10_010_000)));
+        if (leftIndexing) {
+            DataIndexer.getOrCreateDataIndex(leftTable, "Bucket");
+        }
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Truthiness", "Bucket", "RightStamp", "RightSentinel"},
@@ -885,7 +1090,10 @@ public class QueryTableAjTest {
                         new IntGenerator(20_000_000, 20_010_000)));
 
         final QueryTable rightSorted = sortRight ? (QueryTable) rightTable.sort("RightStamp") : rightTable;
-
+        if (rightIndexing) {
+            // Indexing doesn't currently survive sorting.
+            DataIndexer.getOrCreateDataIndex(rightSorted, "Bucket");
+        }
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left: ");
             TableTools.showWithRowSet(leftTable);
@@ -917,6 +1125,10 @@ public class QueryTableAjTest {
         }
 
         final QueryTable rightReversed = (QueryTable) rightSorted.reverse();
+        if (rightIndexing) {
+            // Indexing doesn't currently survive reversal.
+            DataIndexer.getOrCreateDataIndex(rightReversed, "Bucket");
+        }
 
         final EvalNuggetInterface[] en = Stream.concat(Stream.concat(!withZeroKeys ? Stream.empty()
                 : Stream.concat(
@@ -1069,7 +1281,7 @@ public class QueryTableAjTest {
 
 
     private void testAjRandomIncremental(JoinIncrement joinIncrement, int seed, int leftSize, int rightSize,
-            boolean leftRefreshing, boolean rightRefreshing) {
+            boolean leftRefreshing, boolean rightRefreshing, boolean leftIndexed, boolean rightIndexed) {
         final Random random = new Random(seed);
         final int maxSteps = 10;
 

@@ -7,15 +7,11 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.tuple.EmptyTuple;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * <p>
@@ -24,11 +20,6 @@ import java.util.List;
 enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.WithPrev<Values> {
 
     INSTANCE;
-
-    @Override
-    public List<ColumnSource<?>> getColumnSources() {
-        return Collections.emptyList();
-    }
 
     @Override
     public EmptyTuple createTuple(final long rowKey) {
@@ -52,7 +43,22 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public Object exportElement(EmptyTuple tuple, int elementIndex) {
+    public int tupleLength() {
+        return 1;
+    }
+
+    @Override
+    public Object exportElement(@NotNull EmptyTuple tuple, int elementIndex) {
+        throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
+    }
+
+    @Override
+    public void exportAllTo(Object @NotNull [] dest, @NotNull EmptyTuple tuple) {
+        throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
+    }
+
+    @Override
+    public void exportAllTo(Object @NotNull [] dest, @NotNull EmptyTuple tuple, int @NotNull [] map) {
         throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
     }
 

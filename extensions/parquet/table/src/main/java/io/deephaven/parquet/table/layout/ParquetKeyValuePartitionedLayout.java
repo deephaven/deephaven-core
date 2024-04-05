@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.base.ParquetUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -27,7 +28,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
             @NotNull final TableDefinition tableDefinition,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableRootDirectory,
-                ParquetFileHelper::fileNameMatches,
+                ParquetUtils::fileNameMatches,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions, readInstructions),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
@@ -38,7 +39,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
             final int maxPartitioningLevels,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableRootDirectory,
-                ParquetFileHelper::fileNameMatches,
+                ParquetUtils::fileNameMatches,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions, readInstructions),
                 maxPartitioningLevels);

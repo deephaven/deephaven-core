@@ -54,14 +54,17 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
 
     ext_modules = cythonize(
         [Extension("pydeephaven_ticking._core",
                    sources=["src/pydeephaven_ticking/*.pyx"],
+                   language="c++",
                    extra_compile_args=["-std=c++17"],
                    libraries=["dhcore_static"]
         )]),
     python_requires='>=3.8',
-    install_requires=[f"pydeephaven=={_version}"]
+    install_requires=[f"pydeephaven=={_version}"],
+    package_data={'pydeephaven_ticking': ['py.typed']}
 )

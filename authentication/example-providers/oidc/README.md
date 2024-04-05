@@ -11,9 +11,9 @@ server component is designed using [Pac4j](https://www.pac4j.org/), making it fl
 general OpenID Connect services, but also other kinds of single-sign on services like SAML, OAuth, etc.
 
 ## Example Keycloak setup
-In this directory, run `docker-compose up` to start Keycloak and database for it. When the container first starts up, a
+In this directory, run `docker compose up` to start Keycloak and database for it. When the container first starts up, a
 [JSON file](deephaven_realm.json) configures a realm and a client that can access it, and two users: `admin`/`admin` and
-`user`/`user`. This docker-compose configuration is designed to be fast to start and ephemeral, and is not meant for
+`user`/`user`. This docker compose configuration is designed to be fast to start and ephemeral, and is not meant for
 production use.
 
 After that has run, there will be a docker container running with port 6060 exposed on localhost. The account to

@@ -19,13 +19,13 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.qst.column.Column;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -50,8 +51,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private static final ColumnDefinition<String> PARTITIONING_COLUMN_DEFINITION =
             ColumnDefinition.ofString("Date").withPartitioning();
     private static final ColumnDefinition<Boolean> BOOLEAN_COLUMN_DEFINITION = ColumnDefinition.ofBoolean("Active");
-    private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION =
-            ColumnDefinition.ofChar("Type").withGrouping();
+    private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION = ColumnDefinition.ofChar("Type");
     private static final ColumnDefinition<Integer> INTEGER_COLUMN_DEFINITION = ColumnDefinition.ofInt("Size");
     private static final ColumnDefinition<Double> DOUBLE_COLUMN_DEFINITION = ColumnDefinition.ofDouble("Price");
 
@@ -70,7 +70,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private SourceTableComponentFactory componentFactory;
     private ColumnSourceManager columnSourceManager;
 
-    private DeferredGroupingColumnSource<?>[] columnSources;
+    private ColumnSource<?>[] columnSources;
 
     private TableLocationProvider locationProvider;
     private ImmutableTableLocationKey[] tableLocationKeys;
@@ -94,7 +94,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final DeferredGroupingColumnSource<?> mocked = mock(DeferredGroupingColumnSource.class, cd.getName());
+            final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -106,7 +106,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 }
             });
             return mocked;
-        }).toArray(DeferredGroupingColumnSource[]::new);
+        }).toArray(ColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
         tableLocationKeys = IntStream.range(0, 6).mapToObj(tlki -> {
             final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
@@ -144,7 +144,11 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
+                allowing(columnSourceManager).tryRetainReference();
+                will(returnValue(true));
+                allowing(columnSourceManager).getWeakReference();
+                will(returnValue(new WeakReference<>(columnSourceManager)));
+                allowing(columnSourceManager).dropReference();
             }
         });
 
@@ -168,7 +172,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         }
     }
 
-    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
+    private Map<String, ? extends ColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
                 .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns().get(ci).getName(), columnSources[ci]))
                 .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
@@ -235,7 +239,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final TableDataException exception = new TableDataException("test");
         final RowSet toAdd =
                 RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
-                        expectedRowSet.lastRowKey() + INDEX_INCREMENT);
+                        expectedRowSet.lastRowKey() + INDEX_INCREMENT).toTracking();
 
         checking(new Expectations() {
             {
@@ -248,7 +252,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                         return null;
                     }
                 });
-                oneOf(columnSourceManager).refresh();
+                oneOf(columnSourceManager).initialize();
                 if (throwException) {
                     will(throwException(exception));
                 } else {
@@ -378,10 +382,12 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 will(new CustomAction("check exception") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        assertEquals(exception, ((Exception) invocation.getParameter(0)).getCause());
+                        assertEquals(exception, invocation.getParameter(0));
                         return errorNotification;
                     }
                 });
+                oneOf(columnSourceManager).deliverError(with(any(TableDataException.class)),
+                        with(any(PerformanceEntry.class)));
             }
         });
 
@@ -448,7 +454,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns1)));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         final Table dropColumnsResult1 = SUT.dropColumns(BOOLEAN_COLUMN_DEFINITION.getName());
@@ -464,8 +469,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                         return null;
                     }
                 });
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(includedColumns1.stream()
                         .collect(Collectors.toMap(ColumnDefinition::getName,
@@ -490,7 +495,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns2)));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         final Table dropColumnsResult2 = dropColumnsResult1.dropColumns(CHARACTER_COLUMN_DEFINITION.getName());
@@ -506,8 +510,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                         return null;
                     }
                 });
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(includedColumns2.stream()
                         .collect(Collectors.toMap(ColumnDefinition::getName,
@@ -541,7 +545,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
                         with(equal(includedColumns3)));
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         final Table viewResult1 = dropColumnsResult2.view(INTEGER_COLUMN_DEFINITION.getName());
@@ -557,8 +560,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                         return null;
                     }
                 });
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(includedColumns3.stream()
                         .collect(Collectors.toMap(ColumnDefinition::getName,
@@ -599,22 +602,16 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final String[] expectedDistinctDates =
                 IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).distinct().toArray(String[]::new);
         doInitializeCheck(locationKeysSlice(1, 3, 5), passedLocations, false, true);
-        passedLocations.forEach(tl -> checking(new Expectations() {
-            {
-                oneOf(tl).refresh();
-                oneOf(tl).getSize();
-                will(returnValue(1L));
-            }
-        }));
         checking(new Expectations() {
             {
-                oneOf(columnSourceManager).allLocations();
-                will(returnValue(passedLocations));
+                oneOf(columnSourceManager).locationTable();
+                will(returnValue(TableFactory.newTable(
+                        Column.of(PARTITIONING_COLUMN_DEFINITION.getName(),
+                                IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).toArray(String[]::new)))));
             }
         });
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
-        // noinspection unchecked
         final DataColumn<String> distinctDateColumn =
                 DataAccessHelpers.getColumn(result, PARTITIONING_COLUMN_DEFINITION.getName());
         assertEquals(expectedDistinctDates.length, distinctDateColumn.size());
@@ -630,8 +627,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationSubscriptionBuffer.class)));
                 // noinspection resource
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 allowing(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(0, 1, 2, 3, 4)));
             }
@@ -649,7 +646,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
             }
         });
         assertRowSetEquals(expectedRowSet, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getRowSet());
@@ -711,7 +707,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
-                oneOf(columnSourceManager).disableGrouping();
                 allowing(columnSources[3]).getInt(with(any(long.class)));
                 will(returnValue(1));
                 allowing(columnSources[3]).makeGetContext(with(any(Integer.class)));

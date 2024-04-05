@@ -5,7 +5,7 @@
 """ This module defines functions for handling Deephaven date/time data. """
 
 import datetime
-import zoneinfo
+import sys
 import pytz
 from typing import Union, Optional, Literal
 
@@ -185,9 +185,11 @@ def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
         return _JDateTimeUtils.parseTimeZone(tzi.zone)
 
     # Handle zoneinfo time zones
-
-    if isinstance(tzi, zoneinfo.ZoneInfo):
-        return _JDateTimeUtils.parseTimeZone(tzi.key)
+    if sys.version_info >= (3, 9):
+        # novermin
+        import zoneinfo
+        if isinstance(tzi, zoneinfo.ZoneInfo):
+            return _JDateTimeUtils.parseTimeZone(tzi.key)
 
     # Handle constant UTC offset time zones (datetime.timezone)
 

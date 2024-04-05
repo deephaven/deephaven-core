@@ -17,7 +17,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
@@ -39,7 +39,6 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -165,7 +164,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final int sz = 5;
         final int maxSteps = 10;
         for (JoinIncrement joinIncrement : joinIncrementorsShift) {
-            testNaturalJoinIncremental(false, false, sz, sz, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, false, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, true, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, false, true, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, true, true, joinIncrement, 0, maxSteps);
         }
 
         final int[] leftSizes = new int[] {10, 50, 100};
@@ -175,7 +177,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 for (long seed = 0; seed < 5; seed++) {
                     System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
                     for (JoinIncrement joinIncrement : joinIncrementorsShift) {
-                        testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, false, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, true, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, false, true, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, true, true, joinIncrement, seed,
+                                maxSteps);
                     }
                 }
             }
@@ -186,14 +195,24 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
             final int maxSteps = 20;
-            testNaturalJoinIncremental(false, true, sz, sz, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, false, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, true, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, false, true, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, true, true, joinIncrement, 0, maxSteps);
 
             final int[] leftSizes = new int[] {50, 100};
             final int[] rightSizes = new int[] {50, 100};
             for (long seed = 0; seed < 1; seed++) {
                 for (int leftSize : leftSizes) {
                     for (int rightSize : rightSizes) {
-                        testNaturalJoinIncremental(false, true, leftSize, rightSize, joinIncrement, seed, maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, false, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, true, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, false, true, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, true, true, joinIncrement, seed,
+                                maxSteps);
                     }
                 }
             }
@@ -204,14 +223,24 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {rightStepShift, rightStep}) {
             final int sz = 5;
             final int maxSteps = 20;
-            testNaturalJoinIncremental(true, false, sz, sz, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, false, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, true, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, false, true, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, true, true, joinIncrement, 0, maxSteps);
 
             final int[] leftSizes = new int[] {50, 100};
             final int[] rightSizes = new int[] {50, 100};
             for (long seed = 0; seed < 5; seed++) {
                 for (int leftSize : leftSizes) {
                     for (int rightSize : rightSizes) {
-                        testNaturalJoinIncremental(true, false, leftSize, rightSize, joinIncrement, seed, maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, false, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, true, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, false, true, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, true, true, joinIncrement, seed,
+                                maxSteps);
                     }
                 }
             }
@@ -219,25 +248,32 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            boolean leftIndexed, boolean rightIndexed,
             JoinIncrement joinIncrement, long seed, long maxSteps) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed,
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
+                joinIncrement, seed,
                 new MutableInt((int) maxSteps));
     }
 
     private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            boolean leftIndexed, boolean rightIndexed,
             JoinIncrement joinIncrement, long seed, MutableInt numSteps) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed, numSteps,
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
+                joinIncrement, seed, numSteps,
                 new JoinControl());
     }
 
     private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
-            JoinIncrement joinIncrement, long seed, long maxSteps, JoinControl control) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed,
+            boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, long maxSteps,
+            JoinControl control) {
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
+                joinIncrement, seed,
                 new MutableInt((int) maxSteps), control);
     }
 
     private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
-            JoinIncrement joinIncrement, long seed, MutableInt numSteps, JoinControl control) {
+            boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, MutableInt numSteps,
+            JoinControl control) {
         final Random random = new Random(seed);
         final int maxSteps = numSteps.intValue();
 
@@ -259,6 +295,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         compositeGenerator,
                         new SetGenerator<>("a", "b"),
                         rightInt2Generator));
+        if (rightIndexed) {
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1", "C2");
+        }
 
         final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(!leftStatic, leftSize, random,
@@ -266,19 +307,24 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         new FromUniqueIntGenerator(rightIntGenerator, new IntGenerator(20, 10000), 0.75),
                         new SetGenerator<>("a", "b", "c"),
                         new FromUniqueIntGenerator(rightInt2Generator, new IntGenerator(20, 10000), 0.75)));
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1", "C2");
+        }
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
                                 MatchPairFactory.getExpressions("I1"),
-                                MatchPairFactory.getExpressions("LI1=I1", "LC1=C1", "LC2=C2"), false, control);
+                                MatchPairFactory.getExpressions("RI1=I1", "RC1=C1", "RC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
-                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("LC2=C2"),
+                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("RC2=C2"),
                                 false, control);
                     }
                 },
@@ -324,7 +370,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[] {"I1", "C1", "C2"},
-                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Grouped},
+                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Indexed},
                 new IntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e", "f"),
                 new IntGenerator(1, 10)));
@@ -362,11 +408,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(noGroupingResult, result);
 
         final Table leftFlat = leftTable.flatten();
-        final ColumnSource<?> flatGrouped = leftFlat.getColumnSource("I1");
-        final TrackingRowSet flatRowSet = leftFlat.getRowSet();
-        final Map<Object, RowSet> grouping = RowSetIndexer.of(flatRowSet).getGrouping(flatGrouped);
-        // noinspection unchecked
-        ((AbstractColumnSource<Object>) flatGrouped).setGroupToRange(grouping);
+
+        // Create the data index for this table and column.
+        DataIndexer.getOrCreateDataIndex(leftFlat, "I1");
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);
@@ -401,7 +445,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinGroupedStatic() {
         // noinspection unchecked
-        testNaturalJoinSimpleStatic(TstUtils::colGrouped);
+        testNaturalJoinSimpleStatic(TstUtils::colIndexed);
     }
 
     private interface MakeLeftColumn {

@@ -3,11 +3,11 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Rule;
@@ -15,8 +15,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.show;
@@ -76,7 +74,7 @@ public class QueryTableHugeSortTest {
     }
 
     @Test
-    public void testHugeGroupedSort() {
+    public void testHugeIndexedSort() {
         final String[] captains = new String[] {"Hornigold", "Jennings", "Vane", "Bellamy"};
 
         final long tableSize = 1L << 24; // 16 MM (note we msut be a multiple of captains.length)
@@ -84,21 +82,20 @@ public class QueryTableHugeSortTest {
 
         QueryScope.addParam("captains", captains);
         QueryScope.addParam("segSize", segSize);
-        final Table grouped =
+        final Table indexed =
                 TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
-        final Map<String, RowSet> gtr = new LinkedHashMap<>();
-        for (int ii = 0; ii < captains.length; ++ii) {
-            gtr.put(captains[ii], RowSetFactory.fromRange(ii * segSize, (ii + 1) * segSize - 1));
-        }
-        System.out.println(gtr);
-        ((AbstractColumnSource) (grouped.getColumnSource("Captain"))).setGroupToRange(gtr);
+
+        final ColumnSource<Object> captainSource = (ColumnSource<Object>) indexed.getColumnSource("Captain");
+
+        // Create the index for this table and column.
+        DataIndexer.getOrCreateDataIndex(indexed, "Captain");
 
         final long sortStart = System.currentTimeMillis();
-        final Table sortedGrouped = grouped.sortDescending("Captain");
+        final Table sortedIndexed = indexed.sortDescending("Captain");
         final long sortDuration = System.currentTimeMillis() - sortStart;
         System.out.println("Sort Duration: " + sortDuration + "ms");
 
-        show(sortedGrouped);
+        show(sortedIndexed);
 
         final String[] sortedCaptains = Arrays.copyOf(captains, captains.length);
         Arrays.sort(sortedCaptains, Comparator.reverseOrder());
@@ -108,7 +105,7 @@ public class QueryTableHugeSortTest {
 
         System.out.println("Comparing tables:");
         final long compareStart = System.currentTimeMillis();
-        assertTableEquals(sortedValues.view("Captain"), sortedGrouped.view("Captain"));
+        assertTableEquals(sortedValues.view("Captain"), sortedIndexed.view("Captain"));
         final long compareDuration = System.currentTimeMillis() - compareStart;
         System.out.println("Compare Duration: " + compareDuration + "ms");
     }

@@ -21,14 +21,12 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -52,7 +50,6 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -929,6 +926,40 @@ public class QueryTableTest extends QueryTableTestBase {
                 new TableComparator(
                         table.where(filter.apply("S2.contains(`mA`)")),
                         table.where(stringContainsFilter("S2", "mA"))),
+        };
+
+        for (int i = 0; i < 500; i++) {
+            simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
+    }
+
+    public void testStringMatchFilterIndexed() {
+        // MatchFilters (currently) only use indexes on initial creation but this incremental test will recreate
+        // index-enabled match filtered tables and compare them against incremental non-indexed filtered tables.
+
+        Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
+        final Random random = new Random(0);
+
+        final int size = 500;
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"S1", "S2"},
+                new SetGenerator<>("aa", "bb", "cc", "dd", "AA", "BB", "CC", "DD"),
+                new SetGenerator<>("aaa", "bbb", "ccc", "ddd", "AAA", "BBB", "CCC", "DDD")));
+
+        DataIndexer.getOrCreateDataIndex(table, "S1");
+        DataIndexer.getOrCreateDataIndex(table, "S2");
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> table.where("S1 in 'aa'")),
+                EvalNugget.from(() -> table.where("S2 in 'bbb'")),
+                EvalNugget.from(() -> table.where("S2 not in 'ccc', 'dddd'")),
+                EvalNugget.from(() -> table.where("S1 not in 'aa', 'bb'")),
+
+                EvalNugget.from(() -> table.where("S1 icase in 'aa'")),
+                EvalNugget.from(() -> table.where("S2 icase in 'bbb'")),
+                EvalNugget.from(() -> table.where("S2 icase not in 'ccc', 'dddd'")),
+                EvalNugget.from(() -> table.where("S1 icase not in 'aa', 'bb'")),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -3234,12 +3265,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {
-            final ColumnSource<String> symbol = t.getColumnSource("Symbol");
-            // noinspection unchecked,rawtypes
-            final Map<String, RowSet> gtr = (Map) RowSetIndexer.of(t.getRowSet()).getGrouping(symbol);
-            ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
-            final Table result =
-                    t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
+            // Create the data index by asking for it.
+            DataIndexer.getOrCreateDataIndex(t, "Symbol");
+
+            final Table result = t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithRowSet(result);
         });
     }
@@ -3249,7 +3278,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("Sentinel"),
-                ColumnDefinition.ofString("Symbol").withGrouping(),
+                ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofTime("Timestamp"),
                 ColumnDefinition.ofBoolean("Truthiness"));
 
@@ -3266,6 +3295,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 .updateView("Sentinel=i", "Symbol=syms[i % syms.length]",
                         "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]")
                 .groupBy("Symbol").ungroup();
+
+        // Create the index for "Symbol" column.
+        DataIndexer.getOrCreateDataIndex(source, "Symbol");
+
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
@@ -3489,34 +3522,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     private static class TestInstantGroupingSource
             extends LongAsInstantColumnSource
-            implements DeferredGroupingColumnSource<Instant> {
-
-        final GroupingProvider<Object> groupingProvider = new GroupingProvider<>() {
-            @Override
-            public Map<Object, RowSet> getGroupToRange() {
-                return null;
-            }
-
-            @Override
-            public Pair<Map<Object, RowSet>, Boolean> getGroupToRange(RowSet hint) {
-                return null;
-            }
-        };
+            implements ColumnSource<Instant> {
 
         TestInstantGroupingSource(ColumnSource<Long> realSource) {
             super(realSource);
-            // noinspection unchecked,rawtypes
-            ((DeferredGroupingColumnSource) realSource).setGroupingProvider(groupingProvider);
-        }
-
-        @Override
-        public GroupingProvider<Instant> getGroupingProvider() {
-            return null;
-        }
-
-        @Override
-        public void setGroupingProvider(@Nullable GroupingProvider<Instant> groupingProvider) {
-            throw new UnsupportedOperationException();
         }
     }
 
@@ -3532,12 +3541,20 @@ public class QueryTableTest extends QueryTableTestBase {
         final TestInstantGroupingSource cs = new TestInstantGroupingSource(colSource(0L, 1, 2, 3));
         final Map<String, ? extends ColumnSource<?>> columns = Maps.of("T", cs);
         final QueryTable t1 = new QueryTable(rowSet, columns);
+
+        // Create an index for "T"
+        DataIndexer.getOrCreateDataIndex(t1, "T");
+
         final Table t2 = t1.select("T");
 
         // noinspection rawtypes
-        final DeferredGroupingColumnSource result =
-                (DeferredGroupingColumnSource) t2.getColumnSource("T").reinterpret(long.class);
-        assertSame(cs.groupingProvider, result.getGroupingProvider());
+        final ColumnSource result = t2.getColumnSource("T");
+        final ColumnSource reinterpreted = result.reinterpret(long.class);
+
+        assertTrue(DataIndexer.of(t1.getRowSet()).hasDataIndex(cs));
+        assertTrue(DataIndexer.of(t2.getRowSet()).hasDataIndex(result));
+
+        assertFalse(DataIndexer.of(t2.getRowSet()).hasDataIndex(reinterpreted));
     }
 
     private static void validateUpdates(final Table table) {

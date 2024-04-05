@@ -4,9 +4,9 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @VisibleForTesting // This could be package-private, but for mock-based unit testing purposes it must be public
 public interface RegionedColumnSource<DATA_TYPE>
-        extends DeferredGroupingColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+        extends ColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
 
     /**
      * Address bits allocated to the region index.

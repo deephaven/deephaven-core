@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sort;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Indices;
-import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.megamerge.*;
@@ -18,7 +17,7 @@ import io.deephaven.chunk.*;
  * The intention is that you will use a Timsort kernel to sort maximally sized chunks, then merge the result into a
  * ColumnSource using the MegaMergeKernel only if necessary.
  */
-public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Indices> extends Context {
+public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Indices> {
     /**
      * Creates a SortKernel for the given chunkType.
      *

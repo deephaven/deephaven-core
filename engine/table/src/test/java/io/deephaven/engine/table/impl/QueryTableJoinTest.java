@@ -29,6 +29,8 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -770,61 +772,21 @@ public class QueryTableJoinTest {
 
     static final JoinControl SMALL_LEFT_CONTROL = new JoinControl() {
         @Override
-        boolean buildLeft(QueryTable leftTable, Table rightTable) {
-            return true;
-        }
-
-        @Override
-        int tableSizeForRightBuild(Table rightTable) {
-            return 1 << 8;
-        }
-
-        @Override
-        int tableSizeForLeftBuild(Table rightTable) {
-            return 1 << 8;
+        BuildParameters buildParameters(
+                @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
+                @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+            return new BuildParameters(BuildParameters.From.LeftInput, 1 << 8);
         }
     };
 
     static final JoinControl SMALL_RIGHT_CONTROL = new JoinControl() {
         @Override
-        boolean buildLeft(QueryTable leftTable, Table rightTable) {
-            return false;
-        }
-
-
-        @Override
-        int tableSizeForRightBuild(Table rightTable) {
-            return 1 << 8;
-        }
-
-        @Override
-        int tableSizeForLeftBuild(Table rightTable) {
-            return 1 << 8;
+        BuildParameters buildParameters(
+                @NotNull final Table leftTable, @Nullable Table leftDataIndexTable,
+                @NotNull final Table rightTable, @Nullable Table rightDataIndexTable) {
+            return new BuildParameters(BuildParameters.From.RightInput, 1 << 8);
         }
     };
-
-    static final JoinControl HIGH_LOAD_FACTOR_CONTROL = new JoinControl() {
-        @Override
-        int tableSizeForRightBuild(Table rightTable) {
-            return 1 << 8;
-        }
-
-        @Override
-        int tableSizeForLeftBuild(Table leftTable) {
-            return 1 << 8;
-        }
-
-        @Override
-        double getMaximumLoadFactor() {
-            return 20.0;
-        }
-
-        @Override
-        double getTargetLoadFactor() {
-            return 19.0;
-        }
-    };
-
 
     @Test
     public void testAjRegression0() {

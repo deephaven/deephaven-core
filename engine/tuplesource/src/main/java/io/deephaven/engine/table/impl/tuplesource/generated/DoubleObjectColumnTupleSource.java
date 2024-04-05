@@ -76,6 +76,11 @@ public class DoubleObjectColumnTupleSource extends AbstractTupleSource<DoubleObj
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 2;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final DoubleObjectTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -102,6 +107,18 @@ public class DoubleObjectColumnTupleSource extends AbstractTupleSource<DoubleObj
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final DoubleObjectTuple tuple) {
+        dest[0] = TypeUtils.box(tuple.getFirstElement());
+        dest[1] = tuple.getSecondElement();
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final DoubleObjectTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = TypeUtils.box(tuple.getFirstElement());
+        dest[map[1]] = tuple.getSecondElement();
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final DoubleObjectTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return TypeUtils.box(tuple.getFirstElement());
@@ -120,6 +137,18 @@ public class DoubleObjectColumnTupleSource extends AbstractTupleSource<DoubleObj
             destinationObjectChunk.set(ii, new DoubleObjectTuple(chunk1.get(ii), chunk2.get(ii)));
         }
         destination.setSize(chunkSize);
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final DoubleObjectTuple tuple) {
+        dest[0] = TypeUtils.box(tuple.getFirstElement());
+        dest[1] = tuple.getSecondElement();
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final DoubleObjectTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = TypeUtils.box(tuple.getFirstElement());
+        dest[map[1]] = tuple.getSecondElement();
     }
 
     /** {@link TwoColumnTupleSourceFactory} for instances of {@link DoubleObjectColumnTupleSource}. **/

@@ -134,7 +134,7 @@ Building and running Deephaven requires a few software packages.
 | Package        | Version                       | OS           | Required/Recommended |
 | -------------- | ----------------------------- | ------------ | -------------------- |
 | git            | ^2.25.0                       | All          | Required             |
-| java           | >=11, <20                     | All          | Required             |
+| java           | >=11, <=22                    | All          | Required             |
 | docker         | ^20.10.8                      | All          | Required             |
 | docker compose | ^2                            | All          | Recommended          |
 | Windows        | 10 (OS build 20262 or higher) | Only Windows | Required             |

@@ -15,12 +15,13 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.*;
 
-public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
+public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<TIME_TYPE>,
         InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertibleTimeSource {
 
