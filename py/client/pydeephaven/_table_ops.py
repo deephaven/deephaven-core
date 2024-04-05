@@ -607,6 +607,9 @@ class AggregateAllOp(TableOp):
 
 class CreateInputTableOp(TableOp):
     def __init__(self, schema: pa.schema, init_table: Any, key_cols: List[str] = None, blink: bool = False):
+        if blink and key_cols:
+            raise ValueError("key columns are not supported for blink input tables.")
+
         self.schema = schema
         self.init_table = init_table
         self.key_cols = key_cols
