@@ -11,18 +11,18 @@ var config_pb = require("deephaven/proto/config_pb");
 var hierarchicaltable_pb = require("deephaven/proto/hierarchicaltable_pb");
 var Flight_pb = require("Flight_pb")
 var BrowserFlight_pb = require("BrowserFlight_pb")
-var sessionService = require("deephaven/proto/session_pb_service");
-var tableService = require("deephaven/proto/table_pb_service");
-var consoleService = require("deephaven/proto/console_pb_service");
-var applicationService = require("deephaven/proto/application_pb_service");
-var inputTableService = require("deephaven/proto/inputtable_pb_service");
-var objectService = require("deephaven/proto/object_pb_service");
-var partitionedTableService = require("deephaven/proto/partitionedtable_pb_service");
-var storageService = require("deephaven/proto/storage_pb_service");
-var configService = require("deephaven/proto/config_pb_service");
-var hierarchicalTableService = require("deephaven/proto/hierarchicaltable_pb_service");
-var browserFlightService = require("BrowserFlight_pb_service");
-var flightService = require("Flight_pb_service");
+var session_pb_service = require("deephaven/proto/session_pb_service");
+var table_pb_service = require("deephaven/proto/table_pb_service");
+var console_pb_service = require("deephaven/proto/console_pb_service");
+var application_pb_service = require("deephaven/proto/application_pb_service");
+var inputtable_pb_service = require("deephaven/proto/inputtable_pb_service");
+var object_pb_service = require("deephaven/proto/object_pb_service");
+var partitionedtable_pb_service = require("deephaven/proto/partitionedtable_pb_service");
+var storage_pb_service = require("deephaven/proto/storage_pb_service");
+var config_pb_service = require("deephaven/proto/config_pb_service");
+var hierarchicaltable_pb_service = require("deephaven/proto/hierarchicaltable_pb_service");
+var BrowserFlight_pb_service = require("BrowserFlight_pb_service");
+var Flight_pb_service = require("Flight_pb_service");
 
 var browserHeaders = require("browser-headers");
 
@@ -36,27 +36,27 @@ var schema = require('./arrow/flight/flatbuf/Schema_generated');
 
 var io = { deephaven: {
     proto: {
-            session_pb: session_pb,
-            session_pb_service: sessionService,
-            table_pb: table_pb,
-            table_pb_service: tableService,
-            console_pb: console_pb,
-            console_pb_service: consoleService,
-            ticket_pb: ticket_pb,
-            application_pb: application_pb,
-            application_pb_service: applicationService,
-            inputtable_pb: inputtable_pb,
-            inputtable_pb_service: inputTableService,
-            object_pb: object_pb,
-            object_pb_service: objectService,
-            partitionedtable_pb: partitionedtable_pb,
-            partitionedtable_pb_service: partitionedTableService,
-            storage_pb: storage_pb,
-            storage_pb_service: storageService,
-            config_pb: config_pb,
-            config_pb_service: configService,
-            hierarchicaltable_pb: hierarchicaltable_pb,
-            hierarchicaltable_pb_service: hierarchicalTableService
+            session_pb,
+            session_pb_service,
+            table_pb,
+            table_pb_service,
+            console_pb,
+            console_pb_service,
+            ticket_pb,
+            application_pb,
+            application_pb_service,
+            inputtable_pb,
+            inputtable_pb_service,
+            object_pb,
+            object_pb_service,
+            partitionedtable_pb,
+            partitionedtable_pb_service,
+            storage_pb,
+            storage_pb_service,
+            config_pb,
+            config_pb_service,
+            hierarchicaltable_pb,
+            hierarchicaltable_pb_service
         },
         barrage: {
             "flatbuf": {
@@ -70,10 +70,10 @@ var arrow = { flight: {
         Schema_generated: schema,
     },
     protocol: {
-            Flight_pb: Flight_pb,
-            Flight_pb_service: flightService,
-            BrowserFlight_pb: BrowserFlight_pb,
-            BrowserFlight_pb_service: browserFlightService
+        Flight_pb,
+        Flight_pb_service,
+        BrowserFlight_pb,
+        BrowserFlight_pb_service
     }
 }};
 var dhinternal = {
