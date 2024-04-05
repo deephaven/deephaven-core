@@ -14,122 +14,126 @@ from deephaven.column import int_col
 from deephaven.dtypes import double_array, int32_array, long_array, int16_array, char_array, int8_array, \
     float32_array
 from tests.testbase import BaseTestCase
+from .test_udf_scalar_args import _J_TYPE_NP_DTYPE_MAP, _J_TYPE_NULL_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
 
-_J_TYPE_NULL_MAP = {
-    "byte": "NULL_BYTE",
-    "short": "NULL_SHORT",
-    "char": "NULL_CHAR",
-    "int": "NULL_INT",
-    "long": "NULL_LONG",
-    "float": "NULL_FLOAT",
-    "double": "NULL_DOUBLE",
-}
+class UdfArrayArgsTest(BaseTestCase):
+    def test_no_typehints(self):
+        with self.subTest("no null cells"):
+            x_formula = "X = i % 10"
+            for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
+                y_formula = f"Y = ({j_dtype})i"
+                with self.subTest(j_dtype):
+                    tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
-_J_TYPE_NP_DTYPE_MAP = {
-    "byte": "np.int8",
-    "short": "np.int16",
-    "char": "np.uint16",
-    "int": "np.int32",
-    "long": "np.int64",
-    "float": "np.float32",
-    "double": "np.float64",
-}
-
-_J_TYPE_J_ARRAY_TYPE_MAP = {
-    "byte": int8_array,
-    "short": int16_array,
-    "char": char_array,
-    "int": int32_array,
-    "long": long_array,
-    "float": float32_array,
-    "double": double_array,
-}
-
-
-class UdfArgsTest(BaseTestCase):
-    def test_j_to_py_no_annotation_no_null(self):
-        col1_formula = "Col1 = i % 10"
-        for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
-            col2_formula = f"Col2 = ({j_dtype})i"
-            with self.subTest(j_dtype):
-                tbl = empty_table(100).update([col1_formula, col2_formula]).group_by("Col1")
-
-                func_str = f"""
-def test_udf(col1, col2) -> bool:
+                    func_str = f"""
+def test_udf(x, y) -> bool:
     j_array_type = _J_TYPE_J_ARRAY_TYPE_MAP[{j_dtype!r}].j_type
-    return isinstance(col1, int) and isinstance(col2, j_array_type)
+    return isinstance(x, int) and isinstance(y, j_array_type)
                         """
-                exec(func_str, globals())
-                res = tbl.update("Col3 = test_udf(Col1, Col2)")
-                self.assertEqual(10, res.to_string().count("true"))
+                    exec(func_str, globals())
+                    res = tbl.update("Z = test_udf(X, Y)")
+                    self.assertEqual(10, res.to_string().count("true"))
 
-    def test_j_to_py_no_annotation_null(self):
-        col1_formula = "Col1 = i % 10"
-        for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
-            col2_formula = f"Col2 = i % 3 == 0? {null_name} : ({j_dtype})i"
-            with self.subTest(j_dtype):
-                tbl = empty_table(100).update([col1_formula, col2_formula]).group_by("Col1")
+        with self.subTest("with null cells"):
+            x_formula = "X = i % 10"
+            for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
+                y_formula = f"Y = i % 3 == 0? {null_name} : ({j_dtype})i"
+                with self.subTest(j_dtype):
+                    tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
-                func_str = f"""
-def test_udf(col1, col2) -> bool:
+                    func_str = f"""
+def test_udf(x, y) -> bool:
     j_array_type = _J_TYPE_J_ARRAY_TYPE_MAP[{j_dtype!r}].j_type
-    return (isinstance(col1, int) and isinstance(col2, j_array_type) and np.any(np.array(col2) == {null_name}))
+    return (isinstance(x, int) and isinstance(y, j_array_type) and np.any(np.array(y) == {null_name}))
                         """
-                exec(f"from deephaven.constants import {null_name}", globals())
-                exec(func_str, globals())
-                res = tbl.update("Col3 = test_udf(Col1, Col2)")
-                self.assertEqual(10, res.to_string().count("true"))
-                exec(f"del {null_name}", globals())
+                    exec(f"from deephaven.constants import {null_name}", globals())
+                    exec(func_str, globals())
+                    res = tbl.update("Z = test_udf(X, Y)")
+                    self.assertEqual(10, res.to_string().count("true"))
+                    exec(f"del {null_name}", globals())
+        
+        with self.subTest("null arrays"):
+            x_formula = "X = i % 10"
+            for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
+                y_formula = f"Y = i % 3 == 0? {null_name} : ({j_dtype})i"
+                with self.subTest(j_dtype):
+                    tbl = empty_table(100).update([x_formula, y_formula]).group_by("X").update("Y = X % 2 == 0? null : Y")
+
+                    func_str = f"""
+def test_udf(x, y) -> bool:
+    j_array_type = _J_TYPE_J_ARRAY_TYPE_MAP[{j_dtype!r}].j_type
+    return y is None
+                        """
+                    exec(func_str, globals())
+                    res = tbl.update("Z = test_udf(X, Y)")
+                    self.assertEqual(5, res.to_string().count("true"))
+
+    def test_py_typehints(self):
+        typehints = {"Sequence, List, Tuple, bytes, bytearray"}
+
+        error_hints= {"Dict", "Set"}
+
+    def test_np_typehints(self):
+        ...
+
+    def test_datetime_typehints(self):
+        ...
+
+    def test_str_bool(self):
+        ...
+
+    def test_weird_cases(self):
+        ...
 
     def test_jarray_to_np_array_no_null(self):
-        col1_formula = "Col1 = i % 10"
+        x_formula = "X = i % 10"
         for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
-            col2_formula = f"Col2 = ({j_dtype})i"
+            y_formula = f"Y = ({j_dtype})i"
             with self.subTest(j_dtype):
-                tbl = empty_table(100).update([col1_formula, col2_formula]).group_by("Col1")
+                tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
                 func_str = f"""
-def test_udf(col1, col2: np.ndarray[{np_dtype}]) -> bool:
-    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and col2.dtype.type == {np_dtype} and np.nanmean(
-    col2) == np.mean( col2))
+def test_udf(x, y: np.ndarray[{np_dtype}]) -> bool:
+    return (isinstance(x, int) and isinstance(y, np.ndarray) and y.dtype.type == {np_dtype} and np.nanmean(
+    y) == np.mean( y))
                 """
                 exec(func_str, globals())
-                res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                res = tbl.update("Z = test_udf(X, Y)")
                 self.assertEqual(10, res.to_string().count("true"))
 
     def test_jarray_to_np_array_null(self):
-        col1_formula = "Col1 = i % 10"
+        x_formula = "X = i % 10"
         for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
-            col2_formula = f"Col2 = i % 3 == 0? {null_name} : ({j_dtype})i"
+            y_formula = f"Y = i % 3 == 0? {null_name} : ({j_dtype})i"
             with self.subTest(j_dtype):
-                tbl = empty_table(100).update([col1_formula, col2_formula]).group_by("Col1")
+                tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
                 func_str = f"""
-def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
-    return (isinstance(col1, int) and isinstance(col2, np.ndarray) and col2.dtype.type == 
-    {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(col2) == np.mean( col2))
+def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
+    return (isinstance(x, int) and isinstance(y, np.ndarray) and y.dtype.type == 
+    {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(y) == np.mean( y))
                 """
                 exec(func_str, globals())
 
                 # for floating point types, DH nulls are auto converted to np.nan
                 # for integer types, DH nulls in the array raise exceptions
                 if j_dtype in ("float", "double"):
-                    res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                    res = tbl.update("Z = test_udf(X, Y)")
                     self.assertEqual(10, res.to_string().count("true"))
                 else:
-                    res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                    res = tbl.update("Z = test_udf(X, Y)")
                     self.assertEqual(10, res.to_string().count("true"))
 
                     # TODO need to wait for https://github.com/deephaven/deephaven-core/issues/5213 to be resolved
                     # with self.assertRaises(DHError) as cm:
-                    #     tbl.update("Col3 = test_udf(Col1, Col2)")
+                    #     tbl.update("Z = test_udf(X, Y)")
                     # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
                     #                                     "array does not support ")
 
     def test_j_scalar_to_py_no_null(self):
-        col1_formula = "Col1 = i % 10"
+        x_formula = "X = i % 10"
         for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
-            col2_formula = f"Col2 = ({j_dtype})i"
+            y_formula = f"Y = ({j_dtype})i"
             with self.subTest(j_dtype):
                 np_type = _J_TYPE_NP_DTYPE_MAP[j_dtype]
                 func = f"""
@@ -143,8 +147,8 @@ def test_udf(col: {np_type}) -> bool:
         """
                 exec(func, globals())
                 with self.subTest(j_dtype):
-                    tbl = empty_table(100).update([col1_formula, col2_formula])
-                    res = tbl.update("Col3 = test_udf(Col2)")
+                    tbl = empty_table(100).update([x_formula, y_formula])
+                    res = tbl.update("Z = test_udf(Y)")
                     self.assertEqual(10, res.to_string().count("true"))
 
                 func = f"""
@@ -158,14 +162,14 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         """
                 exec(func, globals())
                 with self.subTest(j_dtype):
-                    tbl = empty_table(100).update([col1_formula, col2_formula])
-                    res = tbl.update("Col3 = test_udf(Col2)")
+                    tbl = empty_table(100).update([x_formula, y_formula])
+                    res = tbl.update("Z = test_udf(Y)")
                     self.assertEqual(10, res.to_string().count("true"))
 
     def test_j_scalar_to_py_null(self):
-        col1_formula = "Col1 = i % 10"
+        x_formula = "X = i % 10"
         for data_type, null_name in _J_TYPE_NULL_MAP.items():
-            col2_formula = f"Col2 = i % 2 == 0? {null_name} : ({data_type})i"
+            y_formula = f"Y = i % 2 == 0? {null_name} : ({data_type})i"
             with self.subTest(data_type):
                 np_type = _J_TYPE_NP_DTYPE_MAP[data_type]
                 func = f"""
@@ -176,9 +180,9 @@ def test_udf(col: {np_type}) -> bool:
 """
                 exec(func, globals())
                 with self.subTest(data_type):
-                    tbl = empty_table(100).update([col1_formula, col2_formula])
-                    res = tbl.update("Col3 = test_udf(Col2)")
-                    self.assertEqual(0, res.to_string(num_rows=10, cols="Col3").count("true"))
+                    tbl = empty_table(100).update([x_formula, y_formula])
+                    res = tbl.update("Z = test_udf(Y)")
+                    self.assertEqual(0, res.to_string(num_rows=10, cols="Z").count("true"))
 
                 func = f"""
 def test_udf(col: Optional[{np_type}]) -> bool:
@@ -191,9 +195,9 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 """
                 exec(func, globals())
                 with self.subTest(data_type):
-                    tbl = empty_table(100).update([col1_formula, col2_formula])
-                    res = tbl.update("Col3 = test_udf(Col2)")
-                    self.assertEqual(5, res.to_string(num_rows=10, cols="Col3").count("true"))
+                    tbl = empty_table(100).update([x_formula, y_formula])
+                    res = tbl.update("Z = test_udf(Y)")
+                    self.assertEqual(5, res.to_string(num_rows=10, cols="Z").count("true"))
 
     def test_weird_cases(self):
         with self.subTest("f"):
@@ -265,8 +269,8 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("f5"):
-            def f5(col1, col2: np.ndarray[np.int32]) -> bool:
-                return np.nanmean(col2) == np.mean(col2)
+            def f5(x, y: np.ndarray[np.int32]) -> bool:
+                return np.nanmean(y) == np.mean(y)
 
             t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
             t = t.update(["X1 = f5(X, Y)"])
@@ -275,8 +279,8 @@ def test_udf(col: Optional[{np_type}]) -> bool:
             self.assertRegex(str(cm.exception), "f5: Expected .* got null")
 
         with self.subTest("f51"):
-            def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
-                return np.nanmean(col2) == np.mean(col2)
+            def f51(x, y: Optional[np.ndarray[np.int32]]) -> bool:
+                return np.nanmean(y) == np.mean(y)
 
             t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
             t = t.update(["X1 = f51(X, Y)"])
@@ -287,8 +291,8 @@ def test_udf(col: Optional[{np_type}]) -> bool:
         t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
 
         with self.subTest("f6"):
-            def f6(*args: np.int32, col2: np.ndarray[np.int32]) -> bool:
-                return np.nanmean(col2) == np.mean(col2)
+            def f6(*args: np.int32, y: np.ndarray[np.int32]) -> bool:
+                return np.nanmean(y) == np.mean(y)
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f6(X, Y)"])
@@ -296,7 +300,7 @@ def test_udf(col: Optional[{np_type}]) -> bool:
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f6(X, Y=null)"])
-            self.assertRegex(str(cm.exception), "f6: Expected argument \(col2\) to be either .* got boolean")
+            self.assertRegex(str(cm.exception), "f6: Expected argument \(y\) to be either .* got boolean")
 
     def test_str_bool_datetime_array(self):
         with self.subTest("str"):
