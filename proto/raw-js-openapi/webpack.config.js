@@ -1,9 +1,9 @@
 const path = require('path');
 const aliases = {};
 for (var proto of ['application', 'config', 'console', 'hierarchicaltable', 'inputtable', 'object', 'partitionedtable', 'session', 'storage', 'table', 'ticket']) {
-    aliases[`../../deephaven/proto/${proto}_pb`] = `${__dirname}/src/shim/deephaven/proto/${proto}_pb`;
-    aliases[`../../deephaven/proto/${proto}_pb.js`] = `${__dirname}/src/shim/deephaven/proto/${proto}_pb`;
-    aliases[`deephaven/proto/${proto}_pb`] = `${__dirname}/src/shim/deephaven/proto/${proto}_pb`;
+    aliases[`../../deephaven/proto/${proto}_pb`] = `${__dirname}/src/shim/${proto}_pb`;
+    aliases[`../../deephaven/proto/${proto}_pb.js`] = `${__dirname}/src/shim/${proto}_pb`;
+    aliases[`deephaven/proto/${proto}_pb`] = `${__dirname}/src/shim/${proto}_pb`;
     aliases[`real/${proto}_pb`] =  `${__dirname}/build/js-src/deephaven/proto/${proto}_pb`;
 }
 for (var proto of ['Flight', 'BrowserFlight']) {
