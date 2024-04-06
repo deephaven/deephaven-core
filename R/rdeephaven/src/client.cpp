@@ -709,7 +709,7 @@ public:
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
 
         auto ticket = internal_tbl_hdl_mngr.NewTicket();
-        auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
+        auto fd = deephaven::client::utility::ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
 
         deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
