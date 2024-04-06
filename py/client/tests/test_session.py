@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-
 import unittest
 from time import sleep
 
@@ -54,7 +53,8 @@ class SessionTestCase(BaseTestCase):
             t = session.time_table(period=100000)
             self.assertFalse(t.is_static)
             session.bind_table("t", t)
-            session.run_script("""
+
+            console_script = ("""
 from deephaven import empty_table
 try:
     del t1
@@ -62,18 +62,12 @@ except NameError:
     pass
 t1 = empty_table(0) if t.is_blink else None
 """)
+            session.run_script(console_script)
             self.assertNotIn("t1", session.tables)
 
             t = session.time_table(period=100000, blink_table=True)
             session.bind_table("t", t)
-            session.run_script("""
-from deephaven import empty_table
-try:
-    del t1
-except NameError:
-    pass
-t1 = empty_table(0) if t.is_blink else None
-""")
+            session.run_script(console_script)
             self.assertIn("t1", session.tables)
 
     def test_merge_tables(self):
@@ -272,6 +266,78 @@ t1 = empty_table(0) if t.is_blink else None
         # this should trigger __del__
         session = None
         self.assertIsNone(session)
+
+    def test_blink_input_table(self):
+        pa_types = [
+            pa.bool_(),
+            pa.int8(),
+            pa.int16(),
+            pa.int32(),
+            pa.int64(),
+            pa.timestamp('ns', tz='UTC'),
+            pa.float32(),
+            pa.float64(),
+            pa.string(),
+        ]
+        pa_data = [
+            pa.array([True, False]),
+            pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
+            pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
+            pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
+            pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
+            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
+                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+            pa.array([1.1, 2.2], pa.float32()),
+            pa.array([1.1, 2.2], pa.float64()),
+            pa.array(["foo", "bar"]),
+        ]
+        fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
+        schema = pa.schema(fields)
+        pa_table = pa.table(pa_data, schema=schema)
+        with Session() as session:
+            dh_table = session.import_table(pa_table)
+
+            with self.subTest("Create blink Input Table"):
+                with self.assertRaises(ValueError):
+                    session.input_table(schema=schema, key_cols="f1", blink_table=True)
+                blink_input_table = session.input_table(schema=schema, blink_table=True)
+                pa_table = blink_input_table.to_arrow()
+                self.assertEqual(schema, pa_table.schema)
+                session.bind_table("t", blink_input_table)
+                console_script = ("""
+from deephaven import empty_table
+try:
+    del t1
+except NameError:
+    pass
+t1 = empty_table(0) if t.is_blink else None
+        """)
+                session.run_script(console_script)
+                self.assertIn("t1", session.tables)
+
+                with self.assertRaises(ValueError):
+                    session.input_table(schema=schema, init_table=blink_input_table, blink_table=True)
+                with self.assertRaises(ValueError):
+                    session.input_table(key_cols="f0", blink_table=True)
+
+            with self.subTest("blink InputTable ops"):
+                session.bind_table("dh_table", dh_table)
+                console_script = ("""
+from deephaven import empty_table
+try:
+    del t1
+except NameError:
+    pass
+t.add(dh_table)
+t.await_update()
+t1 = empty_table(0) if t.size == 2 else None
+        """)
+                session.run_script(console_script)
+                self.assertIn("t1", session.tables)
+
+                with self.assertRaises(PermissionError):
+                    blink_input_table.delete(dh_table.select(["f1"]))
+
 
 
 if __name__ == '__main__':
