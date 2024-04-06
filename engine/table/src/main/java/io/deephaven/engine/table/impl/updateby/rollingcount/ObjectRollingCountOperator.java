@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
@@ -94,6 +97,7 @@ public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
 
     @Override
     public UpdateByOperator copy() {
-        return new ObjectRollingCountOperator(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits);
+        return new ObjectRollingCountOperator(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits,
+                forwardWindowScaleUnits);
     }
 }

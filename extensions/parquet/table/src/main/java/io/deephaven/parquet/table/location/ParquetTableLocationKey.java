@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
@@ -8,8 +8,8 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.base.ParquetFileReader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -22,6 +22,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.
@@ -70,12 +73,12 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     private static URI validateParquetFile(@NotNull final File file) {
-        return validateParquetFile(file.toURI());
+        return validateParquetFile(convertToURI(file, false));
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
-        if (!parquetFileUri.getRawPath().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
-            throw new IllegalArgumentException("Parquet file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+        if (!parquetFileUri.getRawPath().endsWith(PARQUET_FILE_EXTENSION)) {
+            throw new IllegalArgumentException("Parquet file must end in " + PARQUET_FILE_EXTENSION);
         }
         return parquetFileUri;
     }
@@ -188,8 +191,9 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // While it seems that row group *could* have column chunks splayed out into multiple files,
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
-            final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null || new File(filePath).getAbsoluteFile().toURI().equals(uri);
+            final String filePath =
+                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
+            return filePath == null || convertToURI(filePath, false).equals(uri);
         }).toArray();
     }
 

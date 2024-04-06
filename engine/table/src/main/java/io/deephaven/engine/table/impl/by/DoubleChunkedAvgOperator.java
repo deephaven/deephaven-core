@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatChunkedAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatChunkedAvgOperator and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -37,7 +36,10 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final DoubleChunk<? extends Values> asDoubleChunk = values.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -47,7 +49,10 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final DoubleChunk<? extends Values> asDoubleChunk = values.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -57,12 +62,14 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asDoubleChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asDoubleChunk(), destination, 0, values.size());
     }
 
@@ -72,19 +79,23 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
         final MutableInt chunkInfinityCount = new MutableInt(0);
         final MutableInt chunkMinusInfinityCount = new MutableInt(0);
 
-        final double sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount, chunkMinusInfinityCount);
+        final double sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
+                chunkInfinityCount, chunkMinusInfinityCount);
 
         final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.intValue());
         final long totalNanCount = updateNanCount(destination, chunkNanCount.intValue());
         final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.intValue());
-        final long totalNegativeInfinityCount = updateNegativeInfinityCount(destination, chunkMinusInfinityCount.intValue());
+        final long totalNegativeInfinityCount =
+                updateNegativeInfinityCount(destination, chunkMinusInfinityCount.intValue());
 
         if (chunkNormalCount.intValue() > 0) {
             final double newSum = plusDouble(runningSum.getUnsafe(destination), sum);
             runningSum.set(destination, newSum);
-            updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount, newSum);
+            updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
+                    totalNegativeInfinityCount, newSum);
         } else {
-            updateResultSumUnchanged(destination, totalNormal, totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount);
+            updateResultSumUnchanged(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
+                    totalNegativeInfinityCount);
         }
         return true;
     }
@@ -95,28 +106,35 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
         final MutableInt chunkInfinityCount = new MutableInt(0);
         final MutableInt chunkMinusInfinityCount = new MutableInt(0);
 
-        final double sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount, chunkInfinityCount, chunkMinusInfinityCount);
-        if (chunkNormalCount.intValue() == 0 && chunkNanCount.intValue() == 0 && chunkInfinityCount.intValue() == 0 && chunkMinusInfinityCount.intValue() == 0) {
+        final double sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
+                chunkInfinityCount, chunkMinusInfinityCount);
+        if (chunkNormalCount.intValue() == 0 && chunkNanCount.intValue() == 0 && chunkInfinityCount.intValue() == 0
+                && chunkMinusInfinityCount.intValue() == 0) {
             return false;
         }
 
         final long totalNormal = nonNullCounter.addNonNull(destination, -chunkNormalCount.intValue());
         final long totalNanCount = updateNanCount(destination, -chunkNanCount.intValue());
-        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
-        final long totalNegativeInfinityCount = updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.intValue());
+        final long totalPositiveInfinityCount =
+                updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
+        final long totalNegativeInfinityCount =
+                updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.intValue());
 
         final double newSum;
         if (chunkNormalCount.intValue() > 0) {
             newSum = plusDouble(runningSum.getUnsafe(destination), -sum);
             runningSum.set(destination, newSum);
-            updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount, newSum);
+            updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
+                    totalNegativeInfinityCount, newSum);
         } else {
-            updateResultSumUnchanged(destination, totalNormal, totalNanCount, totalPositiveInfinityCount, totalNegativeInfinityCount);
+            updateResultSumUnchanged(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
+                    totalNegativeInfinityCount);
         }
         return true;
     }
 
-    private void updateResultWithNewSum(long destination, long totalNormal, long totalNanCount, long totalInfinityCount, long totalNegativeInfinityCount, double newSum) {
+    private void updateResultWithNewSum(long destination, long totalNormal, long totalNanCount, long totalInfinityCount,
+            long totalNegativeInfinityCount, double newSum) {
         if (totalNanCount > 0 || (totalInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
             resultColumn.set(destination, Double.NaN);
         } else if (totalInfinityCount > 0) {
@@ -128,7 +146,8 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
         }
     }
 
-    private void updateResultSumUnchanged(long destination, long totalNormal, long totalNanCount, long totalInfinityCount, long totalNegativeInfinityCount) {
+    private void updateResultSumUnchanged(long destination, long totalNormal, long totalNanCount,
+            long totalInfinityCount, long totalNegativeInfinityCount) {
         if (totalNanCount > 0 || totalNormal == 0 || (totalInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
             resultColumn.set(destination, Double.NaN);
         } else if (totalInfinityCount > 0) {

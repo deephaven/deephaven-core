@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
 import io.deephaven.chunk.*;
@@ -10,13 +10,15 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import static io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
 public class CharAlternatingColumnSourceUnorderedMergeKernel implements AlternatingColumnSourceUnorderedMergeKernel {
-    public static CharAlternatingColumnSourceUnorderedMergeKernel INSTANCE = new CharAlternatingColumnSourceUnorderedMergeKernel();
+    public static CharAlternatingColumnSourceUnorderedMergeKernel INSTANCE =
+            new CharAlternatingColumnSourceUnorderedMergeKernel();
 
     // static use only
     private CharAlternatingColumnSourceUnorderedMergeKernel() {}
 
     @Override
-    public void mergeContext(WritableChunk<? super Values> dest, LongChunk<? extends RowKeys> outerKeys, Chunk<? super Values> src, int alternatePosition) {
+    public void mergeContext(WritableChunk<? super Values> dest, LongChunk<? extends RowKeys> outerKeys,
+            Chunk<? super Values> src, int alternatePosition) {
         final WritableCharChunk<? super Values> destAsChar = dest.asWritableCharChunk();
         final CharChunk<? super Values> srcAsChar = src.asCharChunk();
 

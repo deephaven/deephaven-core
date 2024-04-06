@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseCharUpdateByOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit BaseCharUpdateByOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.chunk.Chunk;
@@ -48,9 +50,9 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
 
         @Override
         public void accumulateCumulative(@NotNull final RowSequence inputKeys,
-                                         @NotNull final Chunk<? extends Values>[] valueChunkArr,
-                                         @Nullable final LongChunk<? extends Values> tsChunk,
-                                         final int len) {
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                @Nullable final LongChunk<? extends Values> tsChunk,
+                final int len) {
 
             setValueChunks(valueChunkArr);
 
@@ -66,12 +68,12 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
 
         @Override
         public void accumulateRolling(@NotNull final RowSequence inputKeys,
-                                      @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
-                                      @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
-                                      @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
-                                      @NotNull final IntChunk<? extends Values> pushChunk,
-                                      @NotNull final IntChunk<? extends Values> popChunk,
-                                      final int len) {
+                @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
+                @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
+                @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
+                @NotNull final IntChunk<? extends Values> pushChunk,
+                @NotNull final IntChunk<? extends Values> popChunk,
+                final int len) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -140,31 +142,31 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     /**
      * Construct a base operator for operations that produce float outputs.
      *
-     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
-     *                         of this operator.
+     *        of this operator.
      */
     public BaseFloatUpdateByOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns
-            // region extra-constructor-args
-            // endregion extra-constructor-args
-            ) {
+    // region extra-constructor-args
+    // endregion extra-constructor-args
+    ) {
         this(pair, affectingColumns, null, 0, 0, false);
     }
 
     /**
      * Construct a base operator for operations that produce float outputs.
      *
-     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
-     *                         of this operator.
+     *        of this operator.
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
-     *                       is measured in ticks, otherwise it is measured in nanoseconds.
-     * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
-     *                       is measured in ticks, otherwise it is measured in nanoseconds.
+     * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is
+     *        provided, this is measured in ticks, otherwise it is measured in nanoseconds.
+     * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is
+     *        provided, this is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BaseFloatUpdateByOperator(
             @NotNull final MatchPair pair,
@@ -173,10 +175,11 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isWindowed
-            // region extra-constructor-args
-            // endregion extra-constructor-args
-            ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
+    // region extra-constructor-args
+    // endregion extra-constructor-args
+    ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits,
+                isWindowed);
         // region constructor
         // endregion constructor
     }
@@ -185,7 +188,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     @OverridingMethodsMustInvokeSuper
     public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
         this.rowRedirection = rowRedirection;
-        if(rowRedirection != null) {
+        if (rowRedirection != null) {
             // region create-dense
             maybeInnerSource = new FloatArraySource();
             // endregion create-dense
@@ -204,9 +207,9 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
 
     @Override
     public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
-                                     final long firstUnmodifiedKey,
-                                     final long firstUnmodifiedTimestamp,
-                                     @NotNull final RowSet bucketRowSet) {
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         Context ctx = (Context) context;
         ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
@@ -226,7 +229,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((FloatSparseArraySource)outputSource).shift(subRowSetToShift, delta);
+        ((FloatSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 
@@ -234,7 +237,8 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     public void prepareForParallelPopulation(final RowSet changedRows) {
         if (rowRedirection != null) {
             assert maybeInnerSource != null;
-            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource)
+                    .prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }

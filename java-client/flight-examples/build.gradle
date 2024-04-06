@@ -35,7 +35,7 @@ def createApplication = { String name, String mainClass ->
     }
 }
 
-applicationDistribution.into('bin') {
+application.applicationDistribution.into('bin') {
     from(createApplication('get-tsv', 'io.deephaven.client.examples.GetTsv'))
     from(createApplication('poll-tsv', 'io.deephaven.client.examples.PollTsv'))
     from(createApplication('list-tables', 'io.deephaven.client.examples.ListTables'))

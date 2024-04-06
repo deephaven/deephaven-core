@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.FileUtils;
@@ -239,7 +239,7 @@ public class TestChunkedRegionedOperations {
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputDestinations,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY);
 
         final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
         final File[] partitionedInputMissingDestinations;
@@ -255,7 +255,7 @@ public class TestChunkedRegionedOperations {
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 partitionedInputMissingDestinations,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY);
 
         expected = TableTools
                 .merge(

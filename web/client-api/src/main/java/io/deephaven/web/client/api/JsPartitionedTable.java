@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
@@ -24,6 +27,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
@@ -79,6 +83,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         return widget.refetch().then(w -> {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
+            return w.getExportedObjects()[0].fetch();
+        }).then(result -> {
+            keys = (JsTable) result;
+
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
@@ -93,15 +101,13 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
             for (int i = 0; i < keyColumnNames.length; i++) {
                 String name = keyColumnNames.getAt(i);
-                ColumnDefinition columnDefinition = tableDefinition.getColumnsByName().get(false).get(name);
-                keyColumnTypes.add(columnDefinition.getType());
-                keyColumns[keyColumns.length] = columns[columnDefinition.getColumnIndex()];
+                Column keyColumn = keys.findColumn(name);
+                keyColumnTypes.add(keyColumn.getType());
+                keyColumns[keyColumns.length] = keyColumn;
             }
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
-            return w.getExportedObjects()[0].fetch();
-        }).then(result -> {
-            keys = (JsTable) result;
+
             // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
             keys.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
             keys.addEventListener(JsTable.EVENT_RECONNECT, event -> {
@@ -157,12 +163,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * Fetch the table with the given key.
+     * Fetch the table with the given key. If the key does not exist, returns `null`.
      *
      * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
-     * @return Promise of dh.Table
+     * @return Promise of dh.Table, or `null` if the key does not exist.
      */
-    public Promise<JsTable> getTable(Object key) {
+    public Promise<@JsNullable JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
         if (!JsArray.isArray(key)) {
             key = JsArray.of(key);

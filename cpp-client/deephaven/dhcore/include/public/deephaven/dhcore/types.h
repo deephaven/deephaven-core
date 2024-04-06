@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -390,6 +390,14 @@ private:
   int64_t nanos_ = 0;
 
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
+
+  friend bool operator==(const DateTime &lhs, const DateTime &rhs) {
+    return lhs.nanos_ == rhs.nanos_;
+  }
+
+  friend bool operator!=(const DateTime &lhs, const DateTime &rhs) {
+    return !(lhs == rhs);
+  }
 };
 }  // namespace deephaven::dhcore
 

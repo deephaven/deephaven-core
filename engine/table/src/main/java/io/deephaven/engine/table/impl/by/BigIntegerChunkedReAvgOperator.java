@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -36,38 +36,51 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
-    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationSeq, stateModified);
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return updateResult(destination);
     }
 
@@ -78,20 +91,25 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         return updateResult(destination, sumSumValue, nncValue);
     }
 
-    private void updateResult(ReAvgContext reAvgContext, RowSequence destinationOk, WritableBooleanChunk<Values> stateModified) {
-        final ObjectChunk<BigInteger, ? extends Values> sumSumChunk = sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asObjectChunk();
-        final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
+    private void updateResult(ReAvgContext reAvgContext, RowSequence destinationOk,
+            WritableBooleanChunk<Values> stateModified) {
+        final ObjectChunk<BigInteger, ? extends Values> sumSumChunk =
+                sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asObjectChunk();
+        final LongChunk<? extends Values> nncSumChunk =
+                nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reAvgContext.keyIndices.size();
         final boolean ordered = reAvgContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
-            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii));
+            final boolean changed =
+                    updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii));
             stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
     }
 
     private boolean updateResult(long destination, BigInteger sumSumValue, long nncValue) {
         if (nncValue > 0) {
-            final BigDecimal newValue = new BigDecimal(sumSumValue).divide(BigDecimal.valueOf(nncValue), RoundingMode.HALF_UP);
+            final BigDecimal newValue =
+                    new BigDecimal(sumSumValue).divide(BigDecimal.valueOf(nncValue), RoundingMode.HALF_UP);
             return !newValue.equals(resultColumn.getAndSetUnsafe(destination, newValue));
         } else {
             return null != resultColumn.getAndSetUnsafe(destination, null);

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -131,8 +131,7 @@ public class ShiftedColumnOperation {
             final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl("propagateUpdates", source, result) {
                 @Override
                 public void onUpdate(TableUpdate upstream) {
-                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                    downstream.modifiedColumnSet = downstreamColumnSet;
+                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, downstreamColumnSet);
                     mcsTransformer.clearAndTransform(
                             upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 

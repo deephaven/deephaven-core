@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.google.gwt.core.client.JavaScriptException;
@@ -186,6 +189,10 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTreeTable> treeTable(String tableName) {
         return session -> session.getTreeTable(tableName);
+    }
+
+    public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsPartitionedTable> partitionedTable(String tableName) {
+        return session -> session.getPartitionedTable(tableName);
     }
 
     /**

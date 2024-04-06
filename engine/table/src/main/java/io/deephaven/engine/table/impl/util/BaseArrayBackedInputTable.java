@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
@@ -198,7 +198,9 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         public void add(@NotNull final Table newData) throws IOException {
             checkBlockingEditSafety();
             PendingChange pendingChange = enqueueAddition(newData);
-            blockingContinuation(pendingChange);
+            if (pendingChange != null) {
+                blockingContinuation(pendingChange);
+            }
         }
 
         @Override
@@ -207,7 +209,11 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(newData);
             final PendingChange pendingChange = enqueueAddition(newData);
-            asynchronousContinuation(pendingChange, listener);
+            if (pendingChange != null) {
+                asynchronousContinuation(pendingChange, listener);
+            } else {
+                listener.onSuccess();
+            }
         }
 
         private PendingChange enqueueAddition(@NotNull final Table newData) {
@@ -215,6 +221,9 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
             // during our UGP run
             final Table newDataSnapshot = snapshotData(newData);
+            if (newDataSnapshot.size() == 0) {
+                return null;
+            }
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
                 pendingChange = new PendingChange(newDataSnapshot, false);
@@ -228,7 +237,9 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         public void delete(@NotNull final Table table) throws IOException {
             checkBlockingEditSafety();
             final PendingChange pendingChange = enqueueDeletion(table);
-            blockingContinuation(pendingChange);
+            if (pendingChange != null) {
+                blockingContinuation(pendingChange);
+            }
         }
 
         @Override
@@ -237,12 +248,19 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(table);
             final PendingChange pendingChange = enqueueDeletion(table);
-            asynchronousContinuation(pendingChange, listener);
+            if (pendingChange != null) {
+                asynchronousContinuation(pendingChange, listener);
+            } else {
+                listener.onSuccess();
+            }
         }
 
         private PendingChange enqueueDeletion(@NotNull final Table table) {
             validateDelete(table);
             final Table oldDataSnapshot = snapshotData(table);
+            if (oldDataSnapshot.size() == 0) {
+                return null;
+            }
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
                 pendingChange = new PendingChange(oldDataSnapshot, true);

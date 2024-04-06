@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -141,8 +141,8 @@ public class SelectOverheadLimiter {
                     rowSet.remove(upstream.removed());
                     upstream.shifted().apply(rowSet);
                     rowSet.insert(upstream.added());
-                    final TableUpdateImpl copy = TableUpdateImpl.copy(upstream);
-                    copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                    final TableUpdateImpl copy =
+                            TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                     flatTransformer.clearAndTransform(upstream.modifiedColumnSet(), copy.modifiedColumnSet());
                     result.notifyListeners(copy);
                     return;
@@ -157,8 +157,8 @@ public class SelectOverheadLimiter {
                 rowSet.insert(upstream.added());
 
                 if (overheadTracker.overhead() <= permittedOverhead) {
-                    final TableUpdateImpl copy = TableUpdateImpl.copy(upstream);
-                    copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                    final TableUpdateImpl copy =
+                            TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                     inputTransformer.clearAndTransform(upstream.modifiedColumnSet(), copy.modifiedColumnSet());
                     result.notifyListeners(copy);
                     return;

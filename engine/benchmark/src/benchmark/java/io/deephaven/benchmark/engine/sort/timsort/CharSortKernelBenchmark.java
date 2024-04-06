@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.benchmark.engine.sort.timsort;
 
 import io.deephaven.engine.table.impl.sort.timsort.BaseTestCharTimSortKernel;
@@ -30,8 +30,7 @@ public class CharSortKernelBenchmark {
     private Runnable doSort;
 
     @TearDown(Level.Trial)
-    public void finishTrial() {
-    }
+    public void finishTrial() {}
 
     @Setup(Level.Iteration)
     public void setupIteration() {
@@ -65,19 +64,20 @@ public class CharSortKernelBenchmark {
                 doSort = () -> stuffToSort.sort(javaComparator);
                 break;
             case "javaarray":
-                final char [] javaArray = new char[stuffToSort.size()];
+                final char[] javaArray = new char[stuffToSort.size()];
                 for (int ii = 0; ii < javaArray.length; ++ii) {
                     javaArray[ii] = stuffToSort.get(ii).getFirstElement();
                 }
                 doSort = () -> Arrays.sort(javaArray);
                 break;
             case "timsort":
-                final BaseTestCharTimSortKernel.CharLongSortKernelStuff sortStuff
-                        = new BaseTestCharTimSortKernel.CharLongSortKernelStuff(stuffToSort);
+                final BaseTestCharTimSortKernel.CharLongSortKernelStuff sortStuff =
+                        new BaseTestCharTimSortKernel.CharLongSortKernelStuff(stuffToSort);
                 doSort = sortStuff::run;
                 break;
             case "mergesort":
-                final BaseTestCharTimSortKernel.CharMergeStuff mergeStuff = new BaseTestCharTimSortKernel.CharMergeStuff(stuffToSort);
+                final BaseTestCharTimSortKernel.CharMergeStuff mergeStuff =
+                        new BaseTestCharTimSortKernel.CharMergeStuff(stuffToSort);
                 doSort = mergeStuff::run;
                 break;
         }

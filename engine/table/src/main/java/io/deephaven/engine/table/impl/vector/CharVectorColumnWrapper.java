@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.base.ClampUtil;
@@ -152,7 +152,8 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
-                return new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+                return new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
+                        rowSet.firstRowKey(), rowSetSize);
             } else {
                 return new SerialCharacterColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
             }
@@ -187,10 +188,11 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
                 ? repeat(NULL_CHAR, includedInitialNulls)
                 : null;
         final CloseablePrimitiveIteratorOfChar rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
-                ? new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                ? new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+                        includedRows)
                 : includedRows > 0
-                ? new SerialCharacterColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
-                : null;
+                        ? new SerialCharacterColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
+                        : null;
         final CloseablePrimitiveIteratorOfChar finalNullsIterator = remaining > 0
                 ? repeat(NULL_CHAR, remaining)
                 : null;

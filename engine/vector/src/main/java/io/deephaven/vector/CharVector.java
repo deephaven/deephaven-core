@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
@@ -149,10 +149,8 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
         if (size == 0) {
             return true;
         }
-        // @formatter:off
         try (final CloseablePrimitiveIteratorOfChar aIterator = aVector.iterator();
-             final CloseablePrimitiveIteratorOfChar bIterator = bVector.iterator()) {
-            // @formatter:on
+                final CloseablePrimitiveIteratorOfChar bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
                 if (aIterator.nextChar() != bIterator.nextChar()) {

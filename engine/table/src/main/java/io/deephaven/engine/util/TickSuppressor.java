@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import io.deephaven.chunk.attributes.Values;
@@ -55,10 +55,11 @@ public class TickSuppressor {
                 "convertModificationsToAddsAndRemoves", input, resultTable) {
             @Override
             public void onUpdate(TableUpdate upstream) {
-                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                final TableUpdateImpl downstream = new TableUpdateImpl();
                 downstream.added = upstream.added().union(upstream.modified());
                 downstream.removed = upstream.removed().union(upstream.getModifiedPreShift());
                 downstream.modified = RowSetFactory.empty();
+                downstream.shifted = upstream.shifted();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 resultTable.notifyListeners(downstream);
             }
@@ -121,9 +122,8 @@ public class TickSuppressor {
 
                     @Override
                     public void onUpdate(TableUpdate upstream) {
-                        final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                        downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-
+                        final TableUpdateImpl downstream =
+                                TableUpdateImpl.copy(upstream, resultTable.getModifiedColumnSetForUpdates());
                         if (downstream.modified().isEmpty()) {
                             identityTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                     downstream.modifiedColumnSet());

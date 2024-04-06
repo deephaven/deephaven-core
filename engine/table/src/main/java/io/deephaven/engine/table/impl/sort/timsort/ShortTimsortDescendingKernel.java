@@ -1,11 +1,11 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTimsortDescendingKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ShortTimsortDescendingKernel and run "./gradlew replicateSortKernel" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.chunk.ShortChunk;
@@ -18,8 +18,8 @@ import io.deephaven.util.annotations.VisibleForTesting;
 /**
  * This implements a timsort kernel for Shorts.
  * <p>
- * <a href="https://bugs.python.org/file4451/timsort.txt">Python</a> and <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing
- * the algorithm.
+ * <a href="https://bugs.python.org/file4451/timsort.txt">Python</a> and
+ * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
 public class ShortTimsortDescendingKernel {
     private ShortTimsortDescendingKernel() {
@@ -30,8 +30,8 @@ public class ShortTimsortDescendingKernel {
     public static class ShortSortKernelContext<ATTR extends Any> implements Context {
         int minGallop;
         int runCount = 0;
-        private final int [] runStarts;
-        private final int [] runLengths;
+        private final int[] runStarts;
+        private final int[] runLengths;
         private final WritableShortChunk<ATTR> temporaryValues;
 
         private ShortSortKernelContext(int size) {
@@ -58,9 +58,9 @@ public class ShortTimsortDescendingKernel {
     /**
      * Sort the values in valuesToSort permuting the indexKeys chunk in the same way.
      * <p>
-     * The offsetsIn chunk is contains the offset of runs to sort in indexKeys; and the lengthsIn contains the length
-     * of the runs.  This allows the kernel to be used for a secondary column sort, chaining it together with fewer
-     * runs sorted on each pass.
+     * The offsetsIn chunk is contains the offset of runs to sort in indexKeys; and the lengthsIn contains the length of
+     * the runs. This allows the kernel to be used for a secondary column sort, chaining it together with fewer runs
+     * sorted on each pass.
      */
     public static <ATTR extends Any> void sort(
             final ShortSortKernelContext<ATTR> context,
@@ -109,7 +109,8 @@ public class ShortTimsortDescendingKernel {
                         endRun++;
                     }
                 } else {
-                    // search for a strictly descending run; we can not have any equal values, or we will break the sort's stability guarantee
+                    // search for a strictly descending run; we can not have any equal values, or we will break the
+                    // sort's stability guarantee
                     current = next;
                     while (endRun < length && lt(next = valuesToSort.get(endRun), current)) {
                         current = next;
@@ -183,22 +184,45 @@ public class ShortTimsortDescendingKernel {
     }
 
     /**
-     * <p>There are two merge invariants that we must preserve, quoting from Wikipedia:</p>
+     * <p>
+     * There are two merge invariants that we must preserve, quoting from Wikipedia:
+     * </p>
      *
-     * <p>Concurrently with the search for runs, the runs are merged with mergesort. Except where Timsort tries to optimise for merging disjoint runs in galloping mode, runs are repeatedly merged two at a time, with the only concerns being to maintain stability and merge balance.</p>
+     * <p>
+     * Concurrently with the search for runs, the runs are merged with mergesort. Except where Timsort tries to optimise
+     * for merging disjoint runs in galloping mode, runs are repeatedly merged two at a time, with the only concerns
+     * being to maintain stability and merge balance.
+     * </p>
      *
-     * <p>Stability requires non-consecutive runs are not merged, as elements could be transferred across equal elements in the intervening run, violating stability. Further, it would be impossible to recover the order of the equal elements at a later point.</p>
+     * <p>
+     * Stability requires non-consecutive runs are not merged, as elements could be transferred across equal elements in
+     * the intervening run, violating stability. Further, it would be impossible to recover the order of the equal
+     * elements at a later point.
+     * </p>
      *
-     * <p>In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the invariants:
+     * <p>
+     * In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the
+     * invariants:
      *
-     * <ul><li>|Z| > |Y| + |X|</li>
-     * <li>|Y| > |X|</li></ul>
+     * <ul>
+     * <li>|Z| > |Y| + |X|</li>
+     * <li>|Y| > |X|</li>
+     * </ul>
      *
-     * If the invariants are violated, Y is merged with the smaller of X or Z and the invariants are checked again. Once the invariants hold, the next run is formed.</p>
+     * If the invariants are violated, Y is merged with the smaller of X or Z and the invariants are checked again. Once
+     * the invariants hold, the next run is formed.
+     * </p>
      *
-     * <p>Somewhat inappreciably, the invariants maintain merges as being approximately balanced while maintaining a compromise between delaying merging for balance, and exploiting fresh occurrence of runs in cache memory, and also making merge decisions relatively simple.</p>
+     * <p>
+     * Somewhat inappreciably, the invariants maintain merges as being approximately balanced while maintaining a
+     * compromise between delaying merging for balance, and exploiting fresh occurrence of runs in cache memory, and
+     * also making merge decisions relatively simple.
+     * </p>
      *
-     * <p>On reaching the end of the data, Timsort repeatedly merges the two runs on the top of the stack, until only one run of the entire data remains.</p>
+     * <p>
+     * On reaching the end of the data, Timsort repeatedly merges the two runs on the top of the stack, until only one
+     * run of the entire data remains.
+     * </p>
      */
     private static <ATTR extends Any> void ensureMergeInvariants(
             final ShortSortKernelContext<ATTR> context,
@@ -254,8 +278,8 @@ public class ShortTimsortDescendingKernel {
             final int length1,
             final int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
-        // end of an input, we won't create a zero-length run.  When we merge runs, they only become bigger, thus
-        // they'll never be empty.  I'm being cheap about function calls and control flow here.
+        // end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus
+        // they'll never be empty. I'm being cheap about function calls and control flow here.
         // Assert.gtZero(length1, "length1");
         // Assert.gtZero(length2, "length2");
 
@@ -279,11 +303,13 @@ public class ShortTimsortDescendingKernel {
 
         if (remaining1 < remaining2) {
             copyToTemporary(context, valuesToSort, mergeStartPosition, remaining1);
-            // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front, because we've preserved all the values of run1
+            // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front, because
+            // we've preserved all the values of run1
             frontMerge(context, valuesToSort, mergeStartPosition, start2, remaining2);
         } else {
             copyToTemporary(context, valuesToSort, start2, remaining2);
-            // now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the back, because we've preserved all the values of run2)
+            // now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the
+            // back, because we've preserved all the values of run2)
             backMerge(context, valuesToSort, mergeStartPosition, remaining1);
         }
     }
@@ -312,8 +338,7 @@ public class ShortTimsortDescendingKernel {
 
         ii = mergeStartPosition;
 
-        nodataleft:
-        while (ii < mergeEndExclusive) {
+        nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
 
@@ -345,7 +370,8 @@ public class ShortTimsortDescendingKernel {
                 }
             }
 
-            // we are in galloping mode now, if we had run out of data then we should have already bailed out to nodataleft
+            // we are in galloping mode now, if we had run out of data then we should have already bailed out to
+            // nodataleft
             while (ii < mergeEndExclusive) {
                 // if we had a lot of things from run1, we take the next thing from run2 then find it in run1
                 final int copyUntil1 = upperBound(context.temporaryValues, tempCursor, run1size, val2);
@@ -417,8 +443,7 @@ public class ShortTimsortDescendingKernel {
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
 
-        nodataleft:
-        while (ii >= mergeStartPosition) {
+        nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
 
@@ -450,14 +475,16 @@ public class ShortTimsortDescendingKernel {
                 }
             }
 
-            // we are in galloping mode now, if we had run out of data then we should have already bailed out to nodataleft
+            // we are in galloping mode now, if we had run out of data then we should have already bailed out to
+            // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
                 final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;
 
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
-                    copyToChunk(context.temporaryValues, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
+                    copyToChunk(context.temporaryValues, valuesToSort, copyUntil2, ii - gallopLength2 + 1,
+                            gallopLength2);
                     tempCursor -= gallopLength2;
                     ii -= gallopLength2;
 
@@ -548,7 +575,7 @@ public class ShortTimsortDescendingKernel {
             int hi,
             final short searchValue,
             final boolean lower) {
-        final int compareLimit = lower ? -1 : 0;  // lt or leq
+        final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
@@ -569,9 +596,10 @@ public class ShortTimsortDescendingKernel {
             final WritableShortChunk<?> valuesToSort,
             final int offset,
             final int length) {
-        // this could eventually be done with intrinsics (AVX 512/64 bits for byte keys == 16 elements, and can be combined up to 256)
+        // this could eventually be done with intrinsics (AVX 512/64 bits for byte keys == 16 elements, and can be
+        // combined up to 256)
         for (int ii = offset + 1; ii < offset + length; ++ii) {
-            for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj));  jj--) {
+            for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj)); jj--) {
                 swap(valuesToSort, jj, jj - 1);
             }
         }

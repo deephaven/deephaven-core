@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.ide;
 
 import com.google.gwt.user.client.Timer;
@@ -136,6 +136,11 @@ public class IdeSession extends HasEventHandling {
     public Promise<JsTreeTable> getHierarchicalTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getHierarchicalTable);
+    }
+
+    public Promise<JsPartitionedTable> getPartitionedTable(String name) {
+        return connection.getVariableDefinition(name, JsVariableType.PARTITIONEDTABLE)
+                .then(connection::getPartitionedTable);
     }
 
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {

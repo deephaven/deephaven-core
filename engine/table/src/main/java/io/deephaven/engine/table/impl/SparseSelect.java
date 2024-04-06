@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.configuration.Configuration;
@@ -189,8 +189,8 @@ public class SparseSelect {
 
                             @Override
                             public void onUpdate(TableUpdate upstream) {
-                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                                downstream.modifiedColumnSet = modifiedColumnSetForUpdates;
+                                final TableUpdateImpl downstream =
+                                        TableUpdateImpl.copy(upstream, modifiedColumnSetForUpdates);
                                 if (sparseObjectSources.length > 0) {
                                     try (final RowSet removedOnly = upstream.removed().minus(upstream.added())) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {

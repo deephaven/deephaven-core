@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.FloatComparisons;
@@ -20,7 +20,8 @@ public class FloatRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
+        abstract public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class FloatDoubleInclusiveInclusiveFilter extends FloatFloatFilter {
@@ -28,7 +29,8 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
@@ -44,7 +46,8 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
@@ -60,7 +63,8 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
@@ -76,7 +80,8 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
@@ -87,7 +92,8 @@ public class FloatRangeComparator {
         }
     }
 
-    public static ChunkFilter.FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive, boolean upperInclusive) {
+    public static ChunkFilter.FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive,
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new FloatDoubleInclusiveInclusiveFilter(lower, upper);

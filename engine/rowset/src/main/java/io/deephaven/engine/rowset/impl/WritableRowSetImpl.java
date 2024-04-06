@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset.impl;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -57,7 +57,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public TrackingWritableRowSet toTracking() {
         final TrackingWritableRowSet result = new TrackingWritableRowSetImpl(innerSet);
         innerSet = null; // Force NPE on use after tracking
-        closeRowSequenceAsChunkImpl();
+        super.close();
         return result;
     }
 
@@ -66,7 +66,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public void close() {
         innerSet.ixRelease();
         innerSet = null; // Force NPE on use after close
-        closeRowSequenceAsChunkImpl();
+        super.close();
     }
 
     @VisibleForTesting

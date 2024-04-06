@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharDupExpandKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharDupExpandKernel and run "./gradlew replicateDupExpandKernel" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.join.dupexpand;
 
 import java.util.Objects;
@@ -20,11 +19,13 @@ public class ObjectDupExpandKernel implements DupExpandKernel {
     private ObjectDupExpandKernel() {} // use through the instance
 
     @Override
-    public void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand, IntChunk<ChunkLengths> keyRunLengths) {
+    public void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand,
+            IntChunk<ChunkLengths> keyRunLengths) {
         expandDuplicates(expandedSize, chunkToExpand.asWritableObjectChunk(), keyRunLengths);
     }
 
-    public static void expandDuplicates(int expandedSize, WritableObjectChunk<Object, ? extends Any> chunkToExpand, IntChunk<ChunkLengths> keyRunLengths) {
+    public static void expandDuplicates(int expandedSize, WritableObjectChunk<Object, ? extends Any> chunkToExpand,
+            IntChunk<ChunkLengths> keyRunLengths) {
         if (expandedSize == 0) {
             return;
         }

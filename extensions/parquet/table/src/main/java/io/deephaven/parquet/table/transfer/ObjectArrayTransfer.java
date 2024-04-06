@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -16,13 +16,14 @@ abstract class ObjectArrayTransfer<VALUE_TYPE> extends ObjectArrayAndVectorTrans
     private final ArrayDataSupplier<VALUE_TYPE> supplier;
 
     ObjectArrayTransfer(final @NotNull ColumnSource<?> columnSource, final @NotNull RowSequence tableRowSet,
-                        final int targetPageSizeInBytes) {
+            final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes);
         supplier = new ArrayDataSupplier<>();
     }
 
     @Override
-    final void encodeDataForBuffering(final VALUE_TYPE @NotNull [] data, @NotNull final EncodedData<Binary[]> encodedData) {
+    final void encodeDataForBuffering(final VALUE_TYPE @NotNull [] data,
+            @NotNull final EncodedData<Binary[]> encodedData) {
         supplier.fill(data);
         encodeDataForBufferingHelper(supplier, data.length, encodedData);
     }

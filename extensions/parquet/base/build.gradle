@@ -18,11 +18,3 @@ dependencies {
     compileOnly depAnnotations
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/*ChunkedWriter.java',
-        )
-    }
-}

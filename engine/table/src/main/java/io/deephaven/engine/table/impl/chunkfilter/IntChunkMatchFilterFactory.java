@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkMatchFilterFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
@@ -16,15 +15,15 @@ import gnu.trove.set.hash.TIntHashSet;
 /**
  * Creates chunk filters for int values.
  *
- * The strategy is that for one, two, or three values we have specialized
- * classes that will do the appropriate simple equality check.
+ * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
+ * equality check.
  *
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class IntChunkMatchFilterFactory {
     private IntChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.IntChunkFilter makeFilter(boolean invertMatch, int ... values) {
+    public static ChunkFilter.IntChunkFilter makeFilter(boolean invertMatch, int... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueIntChunkFilter(values[0]);
@@ -58,7 +57,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -76,7 +76,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -96,7 +97,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int checkValue = values.get(ii);
@@ -117,7 +119,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int checkValue = values.get(ii);
@@ -140,7 +143,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int checkValue = values.get(ii);
@@ -163,7 +167,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int checkValue = values.get(ii);
@@ -177,12 +182,13 @@ public class IntChunkMatchFilterFactory {
     private static class MultiValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
         private final TIntHashSet values;
 
-        private MultiValueIntChunkFilter(int ... values) {
+        private MultiValueIntChunkFilter(int... values) {
             this.values = new TIntHashSet(values);
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int checkValue = values.get(ii);
@@ -196,12 +202,13 @@ public class IntChunkMatchFilterFactory {
     private static class InverseMultiValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
         private final TIntHashSet values;
 
-        private InverseMultiValueIntChunkFilter(int ... values) {
+        private InverseMultiValueIntChunkFilter(int... values) {
             this.values = new TIntHashSet(values);
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int checkValue = values.get(ii);

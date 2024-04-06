@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ColumnRegionChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ColumnRegionChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
@@ -32,8 +31,8 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
     /**
      * Get a single double from this region.
      *
-     * @param context      A {@link PagingContextHolder} to enable resource caching where suitable, with current
-     *                     region index pointing to this region
+     * @param context A {@link PagingContextHolder} to enable resource caching where suitable, with current region index
+     *        pointing to this region
      * @param elementIndex Element row key in the table's address space
      * @return The double value at the specified element row key
      */
@@ -48,13 +47,14 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
     }
 
     static <ATTR extends Any> ColumnRegionDouble<ATTR> createNull(final long pageMask) {
-        //noinspection unchecked
+        // noinspection unchecked
         return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionDouble<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionDouble DEFAULT_INSTANCE = new ColumnRegionDouble.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
+        private static final ColumnRegionDouble DEFAULT_INSTANCE =
+                new ColumnRegionDouble.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
         private Null(final long pageMask) {
             super(pageMask);
@@ -83,7 +83,8 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         }
 
         @Override
-        public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, final int length) {
+        public void fillChunkAppend(@NotNull final FillContext context,
+                @NotNull final WritableChunk<? super ATTR> destination, final int length) {
             final int offset = destination.size();
             destination.asWritableDoubleChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
@@ -100,7 +101,7 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
 
         @Override
         public void invalidate() {
-            for(int ii = 0; ii < getRegionCount(); ii++) {
+            for (int ii = 0; ii < getRegionCount(); ii++) {
                 getRegion(ii).invalidate();
             }
         }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -58,7 +58,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             super(chunk, options, subset);
         }
 
-        private int cachedNullCount = - 1;
+        private int cachedNullCount = -1;
 
         @Override
         public int nullCount() {
@@ -113,7 +113,8 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
                 try {
                     dos.writeLong(context.accumulator);
                 } catch (final IOException e) {
-                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ",
+                            e);
                 }
                 context.accumulator = 0;
                 context.count = 0;
@@ -156,6 +157,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
     @FunctionalInterface
     public interface ByteConversion {
         byte apply(byte in);
+
         ByteConversion IDENTITY = (byte a) -> a;
     }
 
@@ -214,7 +216,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             }
             // consumed entire validity buffer by here
 
-            final int numPayloadBytesNeeded = (int)((nodeInfo.numElements + 7L) / 8L);
+            final int numPayloadBytesNeeded = (int) ((nodeInfo.numElements + 7L) / 8L);
             if (payloadBuffer < numPayloadBytesNeeded) {
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }

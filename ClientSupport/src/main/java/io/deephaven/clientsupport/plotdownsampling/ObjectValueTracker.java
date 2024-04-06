@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
@@ -18,7 +18,8 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     private final ObjectArraySource<T> source;
 
     public ObjectValueTracker(ColumnSource<?> columnSource) {
-        Require.eqTrue(Comparable.class.isAssignableFrom(columnSource.getType()), "Comparable.class.isAssignableFrom(columnSource.getType())");
+        Require.eqTrue(Comparable.class.isAssignableFrom(columnSource.getType()),
+                "Comparable.class.isAssignableFrom(columnSource.getType())");
         source = new ObjectArraySource(columnSource.getType(), columnSource.getComponentType());
     }
 
@@ -31,6 +32,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     private T minValue(int offset) {
         return source.getUnsafe(minValuePosition(offset));
     }
+
     private T maxValue(int offset) {
         return source.getUnsafe(maxValuePosition(offset));
     }
@@ -38,12 +40,14 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     private void setMinValue(int offset, T value) {
         source.set(minValuePosition(offset), value);
     }
+
     private void setMaxValue(int offset, T value) {
         source.set(maxValuePosition(offset), value);
     }
 
     @Override
-    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable WritableRowSet nulls) {
         final T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
@@ -54,7 +58,8 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
 
         // if max and min indexes are null, then this is the first non-null value, so we always want it
         final boolean first = maxIndex(offset) == QueryConstants.NULL_LONG;
-        Assert.eq(first, "first", minIndex(offset) == QueryConstants.NULL_LONG, "minIndex(" + offset +") == QueryConstants.NULL_LONG");
+        Assert.eq(first, "first", minIndex(offset) == QueryConstants.NULL_LONG,
+                "minIndex(" + offset + ") == QueryConstants.NULL_LONG");
 
         if (first || val.compareTo(maxValue(offset)) > 0) {
             setMaxValue(offset, val);
@@ -69,7 +74,8 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable WritableRowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
@@ -96,7 +102,8 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
                     // This is still the max, but update the value
                     setMaxValue(offset, val);
                 } else {
-                    // May no longer be the max, rescan to check - leave old value in place for another update to compare
+                    // May no longer be the max, rescan to check - leave old value in place for another update to
+                    // compare
                     // against it or replace in rescan
                     maxValueValid(offset, false);
                 }
@@ -125,10 +132,12 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk,
+            @Nullable RowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
-            // can't check if our min/max is valid, or anything about positions, only can confirm that this row key is in
+            // can't check if our min/max is valid, or anything about positions, only can confirm that this row key is
+            // in
             // nulls
             if (nulls != null) {
                 Assert.eqTrue(nulls.containsRange(rowKey, rowKey), "nulls.containsRange(rowIndex, rowIndex)");
@@ -154,6 +163,6 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
 
     @Override
     public String toString(int offset) {
-        return "ObjectValueTracker("+offset+") { max=" + maxValue(offset) + ", min=" + minValue(offset) + " }";
+        return "ObjectValueTracker(" + offset + ") { max=" + maxValue(offset) + ", min=" + minValue(offset) + " }";
     }
 }

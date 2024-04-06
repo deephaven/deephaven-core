@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.delta;
 
 import io.deephaven.api.updateby.DeltaControl;
@@ -52,8 +55,8 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
                 curVal = control.nullBehavior() == NullBehavior.NullDominates
                         ? null
                         : (control.nullBehavior() == NullBehavior.ZeroDominates
-                            ? BigInteger.ZERO
-                            : currentVal);
+                                ? BigInteger.ZERO
+                                : currentVal);
             } else {
                 curVal = currentVal.subtract(lastVal);
             }
@@ -63,7 +66,7 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
     }
 
     public BigIntegerDeltaOperator(@NotNull final MatchPair pair, @NotNull final DeltaControl control) {
-        super(pair, new String[] { pair.rightColumn }, BigInteger.class);
+        super(pair, new String[] {pair.rightColumn}, BigInteger.class);
         this.control = control;
     }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.join.dupexpand;
 
 import io.deephaven.chunk.*;
@@ -13,11 +13,13 @@ public class CharDupExpandKernel implements DupExpandKernel {
     private CharDupExpandKernel() {} // use through the instance
 
     @Override
-    public void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand, IntChunk<ChunkLengths> keyRunLengths) {
+    public void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand,
+            IntChunk<ChunkLengths> keyRunLengths) {
         expandDuplicates(expandedSize, chunkToExpand.asWritableCharChunk(), keyRunLengths);
     }
 
-    public static void expandDuplicates(int expandedSize, WritableCharChunk<? extends Any> chunkToExpand, IntChunk<ChunkLengths> keyRunLengths) {
+    public static void expandDuplicates(int expandedSize, WritableCharChunk<? extends Any> chunkToExpand,
+            IntChunk<ChunkLengths> keyRunLengths) {
         if (expandedSize == 0) {
             return;
         }

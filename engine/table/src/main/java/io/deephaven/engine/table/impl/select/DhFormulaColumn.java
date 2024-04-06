@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
@@ -238,7 +238,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             PyObject vectorized = pyCallableWrapper.vectorizedCallable();
             formulaColumnPython = FormulaColumnPython.create(this.columnName,
                     DeephavenCompatibleFunction.create(vectorized,
-                            pyCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
+                            pyCallableWrapper.getSignature().getReturnType(),
+                            this.analyzedFormula.sourceDescriptor.sources,
                             argumentsChunked,
                             true));
             formulaColumnPython.initDef(columnDefinitionMap);

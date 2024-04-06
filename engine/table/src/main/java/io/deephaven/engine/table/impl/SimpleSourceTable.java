@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
@@ -47,7 +47,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     }
 
     @Override
-    protected final SourceTable redefine(TableDefinition newDefinition) {
+    protected final SourceTable<?> redefine(TableDefinition newDefinition) {
         if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
             // Nothing changed - we have the same columns in the same order.
             return this;

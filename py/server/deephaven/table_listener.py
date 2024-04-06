@@ -1,9 +1,7 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-
 """ This module provides utilities for listening to table changes. """
-from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import wraps
@@ -18,7 +16,7 @@ from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.jcompat import to_sequence
-from deephaven.numpy import column_to_numpy_array
+from deephaven.numpy import _column_to_numpy_array
 from deephaven.table import Table
 from deephaven.update_graph import UpdateGraph
 
@@ -53,7 +51,7 @@ def _changes_to_numpy(table: Table, cols: Union[str, List[str]], row_set, chunk_
 
             col_dict = {}
             for i, col_def in enumerate(col_defs):
-                np_array = column_to_numpy_array(col_def, j_array[i])
+                np_array = _column_to_numpy_array(col_def, j_array[i])
                 col_dict[col_def.name] = np_array
 
             yield col_dict

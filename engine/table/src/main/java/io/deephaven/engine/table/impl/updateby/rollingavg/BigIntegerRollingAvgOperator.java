@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.RingBuffer;
@@ -112,7 +115,8 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigDecimal.class);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                BigDecimal.class);
         this.mathContext = mathContext;
     }
 

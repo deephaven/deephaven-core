@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkMatchFilterFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
@@ -16,15 +15,15 @@ import gnu.trove.set.hash.TByteHashSet;
 /**
  * Creates chunk filters for byte values.
  *
- * The strategy is that for one, two, or three values we have specialized
- * classes that will do the appropriate simple equality check.
+ * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
+ * equality check.
  *
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class ByteChunkMatchFilterFactory {
     private ByteChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ByteChunkFilter makeFilter(boolean invertMatch, byte ... values) {
+    public static ChunkFilter.ByteChunkFilter makeFilter(boolean invertMatch, byte... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueByteChunkFilter(values[0]);
@@ -58,7 +57,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -76,7 +76,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -96,7 +97,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte checkValue = values.get(ii);
@@ -117,7 +119,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte checkValue = values.get(ii);
@@ -140,7 +143,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte checkValue = values.get(ii);
@@ -163,7 +167,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte checkValue = values.get(ii);
@@ -177,12 +182,13 @@ public class ByteChunkMatchFilterFactory {
     private static class MultiValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
         private final TByteHashSet values;
 
-        private MultiValueByteChunkFilter(byte ... values) {
+        private MultiValueByteChunkFilter(byte... values) {
             this.values = new TByteHashSet(values);
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte checkValue = values.get(ii);
@@ -196,12 +202,13 @@ public class ByteChunkMatchFilterFactory {
     private static class InverseMultiValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
         private final TByteHashSet values;
 
-        private InverseMultiValueByteChunkFilter(byte ... values) {
+        private InverseMultiValueByteChunkFilter(byte... values) {
             this.values = new TByteHashSet(values);
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte checkValue = values.get(ii);

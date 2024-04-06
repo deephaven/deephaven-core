@@ -1,3 +1,5 @@
+import com.diffplug.spotless.generic.LicenseHeaderStep
+
 plugins {
     id 'com.diffplug.spotless'
 }
@@ -5,6 +7,10 @@ plugins {
 spotless {
     java {
         eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+
+        licenseHeader '''//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//''', '(' + LicenseHeaderStep.DEFAULT_JAVA_HEADER_DELIMITER + '|// (\\*\\*\\*\\*\\*|@formatter:off))'
     }
 }
 

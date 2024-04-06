@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
@@ -18,15 +18,15 @@ public class ToBooleanAsBytePage<ATTR extends Any> implements ToPage<ATTR, byte[
 
     public static <ATTR extends Any> ToBooleanAsBytePage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || Boolean.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return INSTANCE;
         }
 
-        throw new IllegalArgumentException("The native type for a BooleanAsByte column is " + nativeType.getCanonicalName());
+        throw new IllegalArgumentException(
+                "The native type for a BooleanAsByte column is " + nativeType.getCanonicalName());
     }
 
-    private ToBooleanAsBytePage()
-    {}
+    private ToBooleanAsBytePage() {}
 
     @Override
     @NotNull

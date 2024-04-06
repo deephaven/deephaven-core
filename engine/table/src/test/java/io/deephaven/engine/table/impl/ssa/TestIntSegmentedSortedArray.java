@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharSegmentedSortedArray and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit TestCharSegmentedSortedArray and run "./gradlew replicateSegmentedSortedArrayTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;
@@ -77,10 +76,10 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
         final int[] tableSizes;
         if (SHORT_TESTS) {
             nSeeds = 5;
-            tableSizes = new int[]{ 100, 1_000 };
+            tableSizes = new int[] {100, 1_000};
         } else {
             nSeeds = 20;
-            tableSizes = new int[]{ 10, 100, 1_000, 10_000 };
+            tableSizes = new int[] {10, 100, 1_000, 10_000};
         }
         for (int seed = 0; seed < nSeeds; ++seed) {
             for (final int tableSize : tableSizes) {
@@ -94,7 +93,7 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
     private void testShifts(@NotNull final SsaTestHelpers.TestDescriptor desc) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
-        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
+        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[] {"Value"},
                 SsaTestHelpers.getGeneratorForInt()));
 
         final Table asInteger = SsaTestHelpers.prepareTestTableForInt(table);
@@ -106,93 +105,112 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final TableUpdateListener asIntegerListener = new InstrumentedTableUpdateListenerAdapter(asInteger, false) {
-                @Override
-                public void onUpdate(TableUpdate upstream) {
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.getRowSet().intSizePrev());
-                         final RowSet relevantIndices = asInteger.getRowSet().copyPrev()) {
-                        checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
-                    }
+            final TableUpdateListener asIntegerListener =
+                    new InstrumentedTableUpdateListenerAdapter(asInteger, false) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            try (final ColumnSource.GetContext checkContext =
+                                    valueSource.makeGetContext(asInteger.getRowSet().intSizePrev());
+                                    final RowSet relevantIndices = asInteger.getRowSet().copyPrev()) {
+                                checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(),
+                                        relevantIndices.asRowKeyChunk(), desc);
+                            }
 
-                    final int size = Math.max(upstream.modified().intSize() + Math.max(upstream.added().intSize(), upstream.removed().intSize()), (int) upstream.shifted().getEffectiveSize());
-                    try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size);
-                         final RowSet takeout = upstream.removed().union(upstream.getModifiedPreShift())) {
-                        ssa.validate();
+                            final int size = Math.max(
+                                    upstream.modified().intSize()
+                                            + Math.max(upstream.added().intSize(), upstream.removed().intSize()),
+                                    (int) upstream.shifted().getEffectiveSize());
+                            try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size);
+                                    final RowSet takeout = upstream.removed().union(upstream.getModifiedPreShift())) {
+                                ssa.validate();
 
-                        if (takeout.isNonempty()) {
-                            final IntChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asIntChunk();
-                            ssa.remove(valuesToRemove, takeout.asRowKeyChunk());
-                        }
+                                if (takeout.isNonempty()) {
+                                    final IntChunk<? extends Values> valuesToRemove =
+                                            valueSource.getPrevChunk(getContext, takeout).asIntChunk();
+                                    ssa.remove(valuesToRemove, takeout.asRowKeyChunk());
+                                }
 
-                        ssa.validate();
+                                ssa.validate();
 
-                        try (final RowSet prevRowSet = asInteger.getRowSet().copyPrev();
-                             final ColumnSource.GetContext checkContext = valueSource.makeGetContext(prevRowSet.intSize());
-                             final RowSet relevantIndices = prevRowSet.minus(takeout)) {
-                            checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
-                        }
+                                try (final RowSet prevRowSet = asInteger.getRowSet().copyPrev();
+                                        final ColumnSource.GetContext checkContext =
+                                                valueSource.makeGetContext(prevRowSet.intSize());
+                                        final RowSet relevantIndices = prevRowSet.minus(takeout)) {
+                                    checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(),
+                                            relevantIndices.asRowKeyChunk(), desc);
+                                }
 
-                        if (upstream.shifted().nonempty()) {
-                            final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
-                            while (sit.hasNext()) {
-                                sit.next();
-                                try (final RowSet prevRowSet = table.getRowSet().copyPrev();
-                                     final RowSet subRowSet = prevRowSet.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                                     final RowSet withoutMods = subRowSet.minus(upstream.getModifiedPreShift());
-                                     final RowSet rowSetToShift = withoutMods.minus(upstream.removed())) {
-                                    if (rowSetToShift.isEmpty()) {
-                                        continue;
-                                    }
+                                if (upstream.shifted().nonempty()) {
+                                    final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
+                                    while (sit.hasNext()) {
+                                        sit.next();
+                                        try (final RowSet prevRowSet = table.getRowSet().copyPrev();
+                                                final RowSet subRowSet =
+                                                        prevRowSet.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                                                final RowSet withoutMods =
+                                                        subRowSet.minus(upstream.getModifiedPreShift());
+                                                final RowSet rowSetToShift = withoutMods.minus(upstream.removed())) {
+                                            if (rowSetToShift.isEmpty()) {
+                                                continue;
+                                            }
 
-                                    final IntChunk<? extends Values> shiftValues = valueSource.getPrevChunk(getContext, rowSetToShift).asIntChunk();
+                                            final IntChunk<? extends Values> shiftValues =
+                                                    valueSource.getPrevChunk(getContext, rowSetToShift).asIntChunk();
 
-                                    if (sit.polarityReversed()) {
-                                        ssa.applyShiftReverse(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
-                                    } else {
-                                        ssa.applyShift(shiftValues, rowSetToShift.asRowKeyChunk(), sit.shiftDelta());
+                                            if (sit.polarityReversed()) {
+                                                ssa.applyShiftReverse(shiftValues, rowSetToShift.asRowKeyChunk(),
+                                                        sit.shiftDelta());
+                                            } else {
+                                                ssa.applyShift(shiftValues, rowSetToShift.asRowKeyChunk(),
+                                                        sit.shiftDelta());
+                                            }
+                                        }
                                     }
                                 }
+
+                                ssa.validate();
+
+                                try (final RowSet putin = upstream.added().union(upstream.modified())) {
+
+                                    try (final ColumnSource.GetContext checkContext =
+                                            valueSource.makeGetContext(asInteger.intSize());
+                                            final RowSet relevantIndices = asInteger.getRowSet().minus(putin)) {
+                                        checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asIntChunk(),
+                                                relevantIndices.asRowKeyChunk(), desc);
+                                    }
+
+                                    if (putin.isNonempty()) {
+                                        final IntChunk<? extends Values> valuesToInsert =
+                                                valueSource.getChunk(getContext, putin).asIntChunk();
+                                        ssa.insert(valuesToInsert, putin.asRowKeyChunk());
+                                    }
+                                }
+
+                                ssa.validate();
                             }
                         }
-
-                        ssa.validate();
-
-                        try (final RowSet putin = upstream.added().union(upstream.modified())) {
-
-                            try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.intSize());
-                                 final RowSet relevantIndices = asInteger.getRowSet().minus(putin)) {
-                                checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
-                            }
-
-                            if (putin.isNonempty()) {
-                                final IntChunk<? extends Values> valuesToInsert = valueSource.getChunk(getContext, putin).asIntChunk();
-                                ssa.insert(valuesToInsert, putin.asRowKeyChunk());
-                            }
-                        }
-
-                        ssa.validate();
-                    }
-                }
-            };
+                    };
             asInteger.addUpdateListener(asIntegerListener);
 
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                updateGraph.runWithinUnitTestCycle(() ->
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
+                updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                        GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize());
                         final RowSet asIntRowSetCopy = asInteger.getRowSet().copy()) {
-                    checkSsa(ssa, valueSource.getChunk(getContext, asIntRowSetCopy).asIntChunk(), asIntRowSetCopy.asRowKeyChunk(), desc);
+                    checkSsa(ssa, valueSource.getChunk(getContext, asIntRowSetCopy).asIntChunk(),
+                            asIntRowSetCopy.asRowKeyChunk(), desc);
                 }
             }
         }
     }
 
-    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval) {
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition,
+            boolean allowRemoval) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
-        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
+        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[] {"Value"},
                 SsaTestHelpers.getGeneratorForInt()));
 
         final Table asInteger = SsaTestHelpers.prepareTestTableForInt(table);
@@ -204,33 +222,39 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asIntegerListener = new ShiftObliviousInstrumentedListenerAdapter(asInteger, false) {
-                @Override
-                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-                    try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
-                        if (removed.isNonempty()) {
-                            final IntChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asIntChunk();
-                            ssa.remove(valuesToRemove, removed.asRowKeyChunk());
+            final ShiftObliviousListener asIntegerListener =
+                    new ShiftObliviousInstrumentedListenerAdapter(asInteger, false) {
+                        @Override
+                        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
+                            try (final ColumnSource.GetContext getContext =
+                                    valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
+                                if (removed.isNonempty()) {
+                                    final IntChunk<? extends Values> valuesToRemove =
+                                            valueSource.getPrevChunk(getContext, removed).asIntChunk();
+                                    ssa.remove(valuesToRemove, removed.asRowKeyChunk());
+                                }
+                                if (added.isNonempty()) {
+                                    ssa.insert(valueSource.getChunk(getContext, added).asIntChunk(),
+                                            added.asRowKeyChunk());
+                                }
+                            }
                         }
-                        if (added.isNonempty()) {
-                            ssa.insert(valueSource.getChunk(getContext, added).asIntChunk(), added.asRowKeyChunk());
-                        }
-                    }
-                }
-            };
+                    };
             asInteger.addUpdateListener(asIntegerListener);
 
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
                 updateGraph.runWithinUnitTestCycle(() -> {
-                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table,
+                            columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize());
-                     final RowSet asIntRowSetCopy = asInteger.getRowSet().copy()) {
-                    checkSsa(ssa, valueSource.getChunk(getContext, asIntRowSetCopy).asIntChunk(), asIntRowSetCopy.asRowKeyChunk(), desc);
+                        final RowSet asIntRowSetCopy = asInteger.getRowSet().copy()) {
+                    checkSsa(ssa, valueSource.getChunk(getContext, asIntRowSetCopy).asIntChunk(),
+                            asIntRowSetCopy.asRowKeyChunk(), desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -240,10 +264,12 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
         }
     }
 
-    private void checkSsaInitial(Table asInteger, IntSegmentedSortedArray ssa, ColumnSource<?> valueSource, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsaInitial(Table asInteger, IntSegmentedSortedArray ssa, ColumnSource<?> valueSource,
+            @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize());
-             final RowSet asIntRowSetCopy = asInteger.getRowSet().copy()) {
-            final IntChunk<? extends Values> valueChunk = valueSource.getChunk(getContext, asIntRowSetCopy).asIntChunk();
+                final RowSet asIntRowSetCopy = asInteger.getRowSet().copy()) {
+            final IntChunk<? extends Values> valueChunk =
+                    valueSource.getChunk(getContext, asIntRowSetCopy).asIntChunk();
             final LongChunk<OrderedRowKeys> tableIndexChunk = asIntRowSetCopy.asRowKeyChunk();
 
             ssa.insert(valueChunk, tableIndexChunk);
@@ -252,7 +278,8 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
         }
     }
 
-    private void checkSsa(IntSegmentedSortedArray ssa, IntChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsa(IntSegmentedSortedArray ssa, IntChunk<? extends Values> valueChunk,
+            LongChunk<? extends RowKeys> tableIndexChunk, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try {
             ssa.validate();
             IntSsaChecker.checkSsa(ssa, valueChunk, tableIndexChunk);

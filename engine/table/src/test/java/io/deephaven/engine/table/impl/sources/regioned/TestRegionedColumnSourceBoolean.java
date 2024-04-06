@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
@@ -13,7 +13,8 @@ import org.junit.Test;
  * Test class for {@link RegionedColumnSourceBoolean}.
  */
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
-public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceReferencing<Boolean, Values, ColumnRegionByte<Values>> {
+public class TestRegionedColumnSourceBoolean
+        extends TstRegionedColumnSourceReferencing<Boolean, Values, ColumnRegionByte<Values>> {
 
     private ColumnSource<Byte> SUT_AS_BYTE;
 
@@ -22,28 +23,32 @@ public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceRefe
     }
 
     private void assertLookup(final long elementIndex,
-                              final int expectedRegionIndex,
-                              final Boolean output,
-                              final boolean prev,
-                              final boolean boxed) {
+            final int expectedRegionIndex,
+            final Boolean output,
+            final boolean prev,
+            final boolean boxed) {
         assertLookup(elementIndex, expectedRegionIndex, output, prev, boxed, false);
     }
 
     private void assertLookup(final long elementIndex,
-                              final int expectedRegionIndex,
-                              final Boolean output,
-                              final boolean prev,
-                              final boolean boxed,
-                              final boolean reinterpreted) {
-        checking(new Expectations() {{
-            oneOf(cr[expectedRegionIndex]).getByte(elementIndex);
-            will(returnValue(BooleanUtils.booleanAsByte(output)));
-        }});
+            final int expectedRegionIndex,
+            final Boolean output,
+            final boolean prev,
+            final boolean boxed,
+            final boolean reinterpreted) {
+        checking(new Expectations() {
+            {
+                oneOf(cr[expectedRegionIndex]).getByte(elementIndex);
+                will(returnValue(BooleanUtils.booleanAsByte(output)));
+            }
+        });
         if (reinterpreted) {
             if (boxed) {
-                assertEquals(TypeUtils.box(BooleanUtils.booleanAsByte(output)), prev ? SUT_AS_BYTE.getPrev(elementIndex) : SUT_AS_BYTE.get(elementIndex));
+                assertEquals(TypeUtils.box(BooleanUtils.booleanAsByte(output)),
+                        prev ? SUT_AS_BYTE.getPrev(elementIndex) : SUT_AS_BYTE.get(elementIndex));
             } else {
-                assertEquals(BooleanUtils.booleanAsByte(output), prev ? SUT_AS_BYTE.getPrevByte(elementIndex) : SUT_AS_BYTE.getByte(elementIndex));
+                assertEquals(BooleanUtils.booleanAsByte(output),
+                        prev ? SUT_AS_BYTE.getPrevByte(elementIndex) : SUT_AS_BYTE.getByte(elementIndex));
             }
         } else {
             if (boxed) {

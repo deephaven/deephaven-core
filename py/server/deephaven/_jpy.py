@@ -1,10 +1,9 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 """ This module is an internal module to simplify usage patterns around jpy.
 """
-from __future__ import annotations
 
 import jpy
 

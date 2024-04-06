@@ -191,8 +191,9 @@ tasks.withType(GroovyCompile).configureEach {
   javaLauncher.set groovyCompilerLauncher
 }
 
-plugins.withType(ApplicationPlugin) {
-  applicationDistribution.into('etc') {
+JavaApplication application = extensions.findByType(JavaApplication)
+if (application) {
+  application.applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
     from(createVmOptions.get().outputs.files)
   }

@@ -1,8 +1,12 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web;
 
 import com.google.gwt.junit.tools.GWTTestSuite;
 import io.deephaven.web.client.api.HierarchicalTableTestGwt;
 import io.deephaven.web.client.api.NullValueTestGwt;
+import io.deephaven.web.client.api.PartitionedTableTestGwt;
 import io.deephaven.web.client.api.subscription.ConcurrentTableTestGwt;
 import io.deephaven.web.client.api.TableManipulationTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
@@ -23,6 +27,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(ConcurrentTableTestGwt.class);
         suite.addTestSuite(NullValueTestGwt.class);
         suite.addTestSuite(HierarchicalTableTestGwt.class);
+        suite.addTestSuite(PartitionedTableTestGwt.class);
 
         // Unfinished:
         // suite.addTestSuite(TotalsTableTestGwt.class);

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.delta;
 
 import io.deephaven.api.updateby.DeltaControl;
@@ -53,10 +56,10 @@ public class CharDeltaOperator extends BaseCharUpdateByOperator {
                 curVal = control.nullBehavior() == NullBehavior.NullDominates
                         ? NULL_CHAR
                         : (control.nullBehavior() == NullBehavior.ZeroDominates
-                            ? (char)0
-                            : currentVal);
+                                ? (char) 0
+                                : currentVal);
             } else {
-                curVal = (char)(currentVal - lastVal);
+                curVal = (char) (currentVal - lastVal);
             }
 
             lastVal = currentVal;
@@ -66,10 +69,10 @@ public class CharDeltaOperator extends BaseCharUpdateByOperator {
     public CharDeltaOperator(
             @NotNull final MatchPair pair,
             @NotNull final DeltaControl control
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         this.control = control;
         // region constructor
         // endregion constructor

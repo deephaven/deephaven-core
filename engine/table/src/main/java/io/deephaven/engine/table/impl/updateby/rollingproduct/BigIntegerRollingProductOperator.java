@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingproduct;
 
 import io.deephaven.base.ringbuffer.AggregatingObjectRingBuffer;
@@ -35,7 +38,7 @@ public final class BigIntegerRollingProductOperator extends BaseObjectUpdateByOp
                         } else if (a == null) {
                             return b;
                         } else if (b == null) {
-                            return  a;
+                            return a;
                         }
                         return a.multiply(b);
                     },
@@ -115,7 +118,8 @@ public final class BigIntegerRollingProductOperator extends BaseObjectUpdateByOp
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigInteger.class);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                BigInteger.class);
     }
 
     @Override

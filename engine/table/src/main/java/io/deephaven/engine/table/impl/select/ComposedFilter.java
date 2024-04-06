@@ -1,13 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.TestUseOnly;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -59,6 +64,20 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     public void init(TableDefinition tableDefinition) {
         for (WhereFilter filter : componentFilters) {
             filter.init(tableDefinition);
+        }
+    }
+
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        return Arrays.stream(componentFilters)
+                .map((final WhereFilter whereFilter) -> whereFilter.beginOperation(sourceTable))
+                .collect(SafeCloseableList.COLLECTOR);
+    }
+
+    @Override
+    public void validateSafeForRefresh(@NotNull final BaseTable<?> sourceTable) {
+        for (WhereFilter filter : componentFilters) {
+            filter.validateSafeForRefresh(sourceTable);
         }
     }
 

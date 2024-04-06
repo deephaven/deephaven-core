@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.vector.ObjectVector;
@@ -22,8 +22,8 @@ public final class ObjectAggregateColumnSource<COMPONENT_TYPE>
 
     ObjectAggregateColumnSource(@NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
-        //noinspection unchecked,rawtypes
-        super((Class<ObjectVector<COMPONENT_TYPE>>)(Class)ObjectVector.class, aggregatedSource, groupRowSetSource);
+        // noinspection unchecked,rawtypes
+        super((Class<ObjectVector<COMPONENT_TYPE>>) (Class) ObjectVector.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override

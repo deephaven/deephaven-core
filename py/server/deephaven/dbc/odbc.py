@@ -1,5 +1,5 @@
 #
-#     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 """This module supports ingesting data from external relational databases into Deephaven via the Python DB-API 2.0
 (PEP 249) and the Open Database Connectivity (ODBC) interfaces by using the Turbodbc module.

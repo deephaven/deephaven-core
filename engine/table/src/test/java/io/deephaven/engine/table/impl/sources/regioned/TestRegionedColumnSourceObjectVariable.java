@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.string.EncodingInfo;
@@ -57,10 +57,13 @@ public class TestRegionedColumnSourceObjectVariable extends TstRegionedColumnSou
     private static final Value<String>[] REUSABLE_VALUES;
     static {
         final MutableLong length = new MutableLong(0);
-        //noinspection unchecked
-        REUSABLE_VALUES = Stream.of("12345", "000", "abcdefg", "ABC", "love", "hate", "nineteen", "ninety", "tuvwxyz", "Z").map(
-                s -> { length.add(s.length()); return new Value<>(s, objectToBytes(s), length.longValue()); }
-        ).toArray(Value[]::new);
+        // noinspection unchecked
+        REUSABLE_VALUES =
+                Stream.of("12345", "000", "abcdefg", "ABC", "love", "hate", "nineteen", "ninety", "tuvwxyz", "Z").map(
+                        s -> {
+                            length.add(s.length());
+                            return new Value<>(s, objectToBytes(s), length.longValue());
+                        }).toArray(Value[]::new);
     }
 
     public TestRegionedColumnSourceObjectVariable() {
@@ -77,12 +80,12 @@ public class TestRegionedColumnSourceObjectVariable extends TstRegionedColumnSou
     private static byte[] objectToBytes(String inObject) {
         try {
             ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
-            for(int ci = 0; ci < inObject.length(); ++ci) {
-                byteOutStream.write((byte)inObject.charAt(ci));
+            for (int ci = 0; ci < inObject.length(); ++ci) {
+                byteOutStream.write((byte) inObject.charAt(ci));
             }
             byteOutStream.flush();
             return byteOutStream.toByteArray();
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

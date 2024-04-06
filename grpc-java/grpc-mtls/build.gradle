@@ -8,3 +8,9 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-core'
 }
+
+spotless {
+    java {
+        targetExclude '**/*'
+    }
+}

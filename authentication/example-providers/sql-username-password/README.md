@@ -6,8 +6,8 @@ to follow best practices in storing secure information like the password itself,
 rudimentary.
 
 ## Example database setup
-In this directory, run `docker-compose up` to start a SQL database. The `init-users.sql` file will be used to initialize
-this database, which has one user, named `admin`, with a password of `p@ssw0rd`. This docker-compose configuration is
+In this directory, run `docker compose up` to start a SQL database. The `init-users.sql` file will be used to initialize
+this database, which has one user, named `admin`, with a password of `p@ssw0rd`. This docker compose configuration is
 designed to be fast to start and ephemeral, and is not meant for production use.
 
 After that has run, there will be a docker container running with port 5432 exposed on localhost. The password for the

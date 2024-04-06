@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollinggroup;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;

@@ -1,12 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util.channel;
 
 import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 public final class Channels {
 

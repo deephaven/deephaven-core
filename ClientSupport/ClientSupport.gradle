@@ -13,11 +13,3 @@ dependencies {
     implementation project(':Configuration')
     implementation depCommonsLang3
 }
-
-spotless {
-    java {
-        targetExclude(
-                '**/**ValueTracker.java',
-        )
-    }
-}

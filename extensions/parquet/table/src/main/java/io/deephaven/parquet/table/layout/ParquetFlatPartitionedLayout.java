@@ -1,12 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.base.ParquetUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -49,7 +50,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     @Override
     public synchronized void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         try (final DirectoryStream<Path> parquetFileStream =
-                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
+                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetUtils::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {

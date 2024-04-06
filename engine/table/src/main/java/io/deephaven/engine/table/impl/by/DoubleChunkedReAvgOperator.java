@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatChunkedReAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatChunkedReAvgOperator and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -34,7 +33,8 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
     private final LongChunkedSumOperator picSum;
     private final LongChunkedSumOperator nicSum;
 
-    DoubleChunkedReAvgOperator(String name, DoubleChunkedSumOperator sumSum, LongChunkedSumOperator nncSum, LongChunkedSumOperator nanSum, LongChunkedSumOperator picSum, LongChunkedSumOperator nicSum) {
+    DoubleChunkedReAvgOperator(String name, DoubleChunkedSumOperator sumSum, LongChunkedSumOperator nncSum,
+            LongChunkedSumOperator nanSum, LongChunkedSumOperator picSum, LongChunkedSumOperator nicSum) {
         this.name = name;
         this.sumSum = sumSum;
         this.nncSum = nncSum;
@@ -45,54 +45,73 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
 
-    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationSeq, stateModified);
         }
     }
 
-    private void updateResult(ReAvgContext reAvgContext, RowSequence destinationOk, WritableBooleanChunk<Values> stateModified) {
+    private void updateResult(ReAvgContext reAvgContext, RowSequence destinationOk,
+            WritableBooleanChunk<Values> stateModified) {
         final DoubleChunk<Values> sumSumChunk = sumSum.getChunk(reAvgContext.sumContext, destinationOk).asDoubleChunk();
-        final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reAvgContext.nncContext, destinationOk).asLongChunk();
-        final LongChunk<? extends Values> nanSumChunk = nanSum.getChunk(reAvgContext.nanContext, destinationOk).asLongChunk();
-        final LongChunk<? extends Values> picSumChunk = picSum.getChunk(reAvgContext.picContext, destinationOk).asLongChunk();
-        final LongChunk<? extends Values> nicSumChunk = nicSum.getChunk(reAvgContext.nicContext, destinationOk).asLongChunk();
+        final LongChunk<? extends Values> nncSumChunk =
+                nncSum.getChunk(reAvgContext.nncContext, destinationOk).asLongChunk();
+        final LongChunk<? extends Values> nanSumChunk =
+                nanSum.getChunk(reAvgContext.nanContext, destinationOk).asLongChunk();
+        final LongChunk<? extends Values> picSumChunk =
+                picSum.getChunk(reAvgContext.picContext, destinationOk).asLongChunk();
+        final LongChunk<? extends Values> nicSumChunk =
+                nicSum.getChunk(reAvgContext.nicContext, destinationOk).asLongChunk();
 
         final int size = reAvgContext.keyIndices.size();
         final boolean ordered = reAvgContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
-            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii));
+            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), nncSumChunk.get(ii),
+                    nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii));
             stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return updateResult(destination);
     }
 
@@ -106,7 +125,8 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
         return updateResult(destination, nncValue, nanValue, picValue, nicValue, sumSumValue);
     }
 
-    private boolean updateResult(long destination, long nncValue, long nanValue, long picValue, long nicValue, double sumSumValue) {
+    private boolean updateResult(long destination, long nncValue, long nanValue, long picValue, long nicValue,
+            double sumSumValue) {
         if (nanValue > 0 || (picValue > 0 && nicValue > 0) || nncValue == 0) {
             return !Double.isNaN(resultColumn.getAndSetUnsafe(destination, Double.NaN));
         } else if (picValue > 0) {
@@ -114,7 +134,7 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
         } else if (nicValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Double.NEGATIVE_INFINITY) != Double.NEGATIVE_INFINITY;
         } else {
-            final double newValue = (double)(sumSumValue / nncValue);
+            final double newValue = (double) (sumSumValue / nncValue);
             return resultColumn.getAndSetUnsafe(destination, newValue) != newValue;
         }
     }
