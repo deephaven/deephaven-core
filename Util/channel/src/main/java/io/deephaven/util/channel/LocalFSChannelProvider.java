@@ -16,7 +16,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class LocalFSChannelProvider implements SeekableChannelsProvider {

@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -64,8 +63,7 @@ public class ParquetKeyValuePartitionedLayout
         super(tableRootDirectory,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
-                Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()),
-                FILE_URI_SCHEME.equals(tableRootDirectory.getScheme()) ? File.separator : "/");
+                Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
         this.readInstructions = readInstructions;
     }
 
@@ -83,8 +81,7 @@ public class ParquetKeyValuePartitionedLayout
         super(tableRootDirectory,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
-                maxPartitioningLevels,
-                FILE_URI_SCHEME.equals(tableRootDirectory.getScheme()) ? File.separator : "/");
+                maxPartitioningLevels);
         this.readInstructions = readInstructions;
     }
 

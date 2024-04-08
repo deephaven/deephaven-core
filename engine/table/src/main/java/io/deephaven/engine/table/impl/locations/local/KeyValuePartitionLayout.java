@@ -16,8 +16,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- * Base class for {@link TableLocationKeyFinder location finders} that perform file system traversal to infer
- * partitions.
+ * Base class for {@link TableLocationKeyFinder location finders} that traverse file hierarchy to infer partitions.
  *
  * @param <TLK> The type of {@link TableLocationKey} to be generated
  * @param <TARGET_FILE_TYPE> The type of files used to generate location keys, like a {@link URI} or a {@link Path}
@@ -71,8 +70,9 @@ public abstract class KeyValuePartitionLayout<TLK extends TableLocationKey, TARG
         this.keyFactory = keyFactory;
     }
 
+    @Override
     public String toString() {
-        return KeyValuePartitionLayout.class.getSimpleName();
+        return getClass().getSimpleName();
     }
 
     /**
@@ -84,7 +84,7 @@ public abstract class KeyValuePartitionLayout<TLK extends TableLocationKey, TARG
      */
     final void buildLocationKeys(
             @NotNull final Table locationTable,
-            @NotNull final Deque<TARGET_FILE_TYPE> targetFiles,
+            @NotNull final Queue<TARGET_FILE_TYPE> targetFiles,
             @NotNull final Consumer<TLK> locationKeyObserver) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
         // Note that we allow the location table to define partition priority order.

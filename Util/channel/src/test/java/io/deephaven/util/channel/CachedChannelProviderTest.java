@@ -221,12 +221,12 @@ public class CachedChannelProviderTest {
 
         @Override
         public final Stream<URI> list(@NotNull final URI directory) {
-            return Stream.empty();
+            throw new UnsupportedOperationException("list");
         }
 
         @Override
         public final Stream<URI> walk(@NotNull final URI directory) {
-            return Stream.empty();
+            throw new UnsupportedOperationException("walk");
         }
 
         @Override
