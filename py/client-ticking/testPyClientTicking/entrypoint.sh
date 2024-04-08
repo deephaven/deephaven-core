@@ -4,15 +4,23 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-for spec in ${WHEELS_SET}; do
-  pyver=$(echo "$spec" | cut -d: -f 1)
-  tag=$(echo "$spec" | cut -d: -f 2)
-  [ -f /project/pyt-wheels/pydeephaven_ticking*"${tag}"*.whl ]
-  source "/project/$pyver/bin/activate"
-  pip install unittest-xml-reporting
-  pip install /project/dep-wheels/*.whl
-  pip install /project/pyt-wheels/pydeephaven_ticking*"${tag}"*.whl
-  python -m xmlrunner discover tests -v -o "/out/report/$pyver"
-  deactivate
-  rm -r "/project/$pyver"
-done
+source "/project/${PYTHON_VERSION}/bin/activate"
+
+# Ensure that pydeephaven and pydeephaven-ticking are resolved from our built wheels and _not_ PyPi.
+pip install \
+  --only-binary=":all:" \
+  --find-links=/project/dep-wheels \
+  --find-links=/project/pyt-wheels \
+  --no-index \
+  --no-deps \
+  pydeephaven pydeephaven-ticking
+
+# Resolve transitive dependencies from PyPi
+pip install \
+  --only-binary=":all:" \
+  --find-links=/project/dep-wheels \
+  --find-links=/project/pyt-wheels \
+  pydeephaven pydeephaven-ticking
+
+python -m xmlrunner discover tests -v -o /out/report/
+
