@@ -3,87 +3,73 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.hash.KeyedLongObjectHashMap;
+import io.deephaven.hash.KeyedLongObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Uri;
-
-import java.lang.ref.SoftReference;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import io.deephaven.extensions.s3.S3ChannelContext.Request;
 
 import static java.lang.Math.abs;
 
 /**
- * This class uses a modulo-based mapping function with a {@link ConcurrentHashMap} to cache {@link SoftReference} to
- * requests.
+ * This class uses a modulo-based mapping function with a {@link KeyedLongObjectHashMap} to cache {@link Request}
+ * objects.
  */
 final class ModuloBasedRequestCache implements S3RequestCache {
 
+    private final class RequestIdKey extends KeyedLongObjectKey.BasicStrict<Request> {
+        @Override
+        public long getLongKey(@NotNull final Request request) {
+            return cacheIndex(request.getUri(), request.getFragmentIndex());
+        }
+    }
+
     private final int maxSize;
-    private final Map<Integer, SoftReference<S3ChannelContext.Request>> requests;
+    private final KeyedLongObjectHashMap<Request> requests;
 
     ModuloBasedRequestCache(final int maxSize) {
         this.maxSize = maxSize;
-        this.requests = new ConcurrentHashMap<>(maxSize);
+        this.requests = new KeyedLongObjectHashMap<>(new RequestIdKey());
     }
 
     @Override
     @Nullable
-    public S3ChannelContext.Request getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
-        final int cacheIdx = cacheIndex(uri, fragmentIndex);
-        final SoftReference<S3ChannelContext.Request> requestRef = requests.get(cacheIdx);
-        if (requestRef == null) {
-            return null;
-        }
-        final S3ChannelContext.Request request = requestRef.get();
-        return request == null || !request.isFragment(uri, fragmentIndex) ? null : request;
+    public Request getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
+        final long cacheIdx = cacheIndex(uri, fragmentIndex);
+        final Request request = requests.get(cacheIdx);
+        return request == null || !request.isFragment(uri, fragmentIndex) ? null : request.acquire();
     }
 
     @Override
     @NotNull
-    public S3ChannelContext.Request getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
+    public Request getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
             @NotNull final S3ChannelContext context) {
-        final int cacheIdx = cacheIndex(uri, fragmentIndex);
-        S3ChannelContext.Request ret;
-        do {
-            final SoftReference<S3ChannelContext.Request> requestRef =
-                    requests.compute(cacheIdx, (key, existingRequestRef) -> {
-                        if (existingRequestRef != null) {
-                            final S3ChannelContext.Request existingRequest = existingRequestRef.get();
-                            if (existingRequest != null && existingRequest.isFragment(uri, fragmentIndex)) {
-                                return existingRequestRef;
-                            }
-                        }
-                        // TODO Discuss with Ryan and Devin where we should release
-                        final S3ChannelContext.Request newRequest =
-                                new S3ChannelContext.Request(fragmentIndex, context);
-                        newRequest.init();
-                        return new SoftReference<>(newRequest);
-                    });
-            ret = requestRef.get();
-        } while (ret == null);
-        return ret;
-    }
-
-    public int maxSize() {
-        return maxSize;
+        // TODO Do you think the acquiring part should be done by the caller or here?
+        final long cacheIdx = cacheIndex(uri, fragmentIndex);
+        return requests.compute(cacheIdx, (key, existingRequest) -> {
+            if (existingRequest != null && existingRequest.isFragment(uri, fragmentIndex)) {
+                final Request acquired = existingRequest.acquire();
+                if (acquired != null) {
+                    return acquired;
+                }
+            }
+            final Request newRequest = Request.createAndAcquire(fragmentIndex, context);
+            // TODO Do you think the init part should be done by the context, inside createAndAcquire or here?
+            // Kept it here for now because caller doesn't know whether request is new or not. So should call init or
+            // not. Maybe we can make init more idempotent and the context would call it always.
+            newRequest.init();
+            return newRequest;
+        });
     }
 
     @Override
-    public void cancelAllAndRelease() {
-        requests.values().forEach(requestRef -> {
-            if (requestRef != null) {
-                final S3ChannelContext.Request request = requestRef.get();
-                if (request != null) {
-                    request.release();
-                }
-            }
-        });
-        requests.clear();
+    public void remove(@NotNull final Request request) {
+        requests.remove(cacheIndex(request.getUri(), request.getFragmentIndex()), request);
     }
 
-    private int cacheIndex(final S3Uri uri, final long fragmentIndex) {
+    private long cacheIndex(final S3Uri uri, final long fragmentIndex) {
         // TODO(deephaven-core#5061): Experiment with LRU caching
-        return (int) ((abs(uri.hashCode()) + fragmentIndex) % maxSize);
+        return (abs(uri.hashCode()) + fragmentIndex) % maxSize;
     }
 }

@@ -54,21 +54,15 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
     /**
-     * We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
-     * There can be a performance penalty though if the fragment size is much smaller than the maximum size.
-     */
-    private static final BufferPool BUFFER_POOL = new BufferPool(S3Instructions.MAX_FRAGMENT_SIZE);
-
-    /**
      * Cache of shared {@link S3AsyncClient} objects and request caches, keyed by the S3 instructions.
      */
-    private static final Map<S3Instructions, SharedClientData> SHARED_CLIENT_CACHE = new ConcurrentHashMap<>();
+    private static final Map<S3Instructions, ClientData> SHARED_CLIENT_DATA = new ConcurrentHashMap<>();
 
-    private static class SharedClientData { // TODO better name
+    private static class ClientData { // TODO better name
         private final S3AsyncClient client;
         private final S3RequestCache requestCache;
 
-        SharedClientData(final S3AsyncClient client, final S3RequestCache requestCache) {
+        ClientData(final S3AsyncClient client, final S3RequestCache requestCache) {
             this.client = client;
             this.requestCache = requestCache;
         }
@@ -81,19 +75,19 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private final S3Instructions instructions;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions instructions) {
-        final SharedClientData clientData = SHARED_CLIENT_CACHE.compute(instructions, (key, sharedClientData) -> {
-            if (sharedClientData == null) {
+        final ClientData clientData = SHARED_CLIENT_DATA.compute(instructions, (key, existingClientData) -> {
+            if (existingClientData == null) {
                 // No existing client, create a new one
                 final S3AsyncClient newClient = buildClient(instructions);
                 final S3RequestCache newCache = new ModuloBasedRequestCache(instructions.maxCacheSize());
-                return new SharedClientData(newClient, newCache);
+                return new ClientData(newClient, newCache);
             } else {
-                // Existing client, reconnect if necessary
-                if (isConnectionOpen(sharedClientData.client)) {
-                    return sharedClientData;
+                // Client exists, reconnect if necessary
+                if (isConnectionOpen(existingClientData.client)) {
+                    return existingClientData;
                 }
                 final S3AsyncClient newClient = buildClient(instructions);
-                return new SharedClientData(newClient, sharedClientData.requestCache);
+                return new ClientData(newClient, existingClientData.requestCache);
             }
         });
         this.instructions = instructions;
@@ -154,12 +148,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(sharedAsyncClient, instructions, BUFFER_POOL, sharedCache);
+        return new S3ChannelContext(sharedAsyncClient, instructions, sharedCache);
     }
 
     @Override
     public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(sharedAsyncClient, instructions.singleUse(), BUFFER_POOL, sharedCache);
+        return new S3ChannelContext(sharedAsyncClient, instructions.singleUse(), sharedCache);
     }
 
     @Override

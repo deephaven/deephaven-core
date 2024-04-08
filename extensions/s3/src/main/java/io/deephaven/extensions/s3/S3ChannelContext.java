@@ -3,12 +3,13 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.base.reference.PooledObjectReference;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.base.reference.CleanupReference;
+import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
-import io.deephaven.base.verify.Require;
+import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,6 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 /**
@@ -43,7 +47,6 @@ final class S3ChannelContext implements SeekableChannelContext {
 
     private final S3AsyncClient client;
     private final S3Instructions instructions;
-    private final BufferPool bufferPool;
 
     /**
      * The URI associated with this context. A single context object can only be associated with a single URI at a time.
@@ -70,10 +73,9 @@ final class S3ChannelContext implements SeekableChannelContext {
     private long numFragments;
 
     S3ChannelContext(@NotNull final S3AsyncClient client, @NotNull final S3Instructions instructions,
-            @NotNull final BufferPool bufferPool, @NotNull final S3RequestCache sharedCache) {
+            @NotNull final S3RequestCache sharedCache) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.bufferPool = Objects.requireNonNull(bufferPool);
         this.localCache = new Request[instructions.maxCacheSize()];
         this.sharedCache = sharedCache;
         uri = null;
@@ -158,10 +160,10 @@ final class S3ChannelContext implements SeekableChannelContext {
         if (log.isDebugEnabled()) {
             log.debug().append("Closing context: ").append(ctxStr()).endl();
         }
-        for (int i = 0; i < requests.length; i++) {
-            if (requests[i] != null) {
-                requests[i].release();
-                requests[i] = null;
+        for (int i = 0; i < localCache.length; ++i) {
+            if (localCache[i] != null) {
+                localCache[i].release();
+                localCache[i] = null;
             }
         }
     }
@@ -176,6 +178,9 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
         request = sharedCache.getRequest(uri, fragmentIndex);
         if (request != null) {
+            if (localCache[cacheIdx] != null) {
+                localCache[cacheIdx].release();
+            }
             localCache[cacheIdx] = request;
         }
         return request;
@@ -187,7 +192,10 @@ final class S3ChannelContext implements SeekableChannelContext {
         if (request != null && request.isFragment(fragmentIndex)) {
             return request;
         }
-        localCache[cacheIdx] = Require.neqNull(sharedCache.getOrCreateRequest(uri, fragmentIndex, this), "request");
+        if (localCache[cacheIdx] != null) {
+            localCache[cacheIdx].release();
+        }
+        localCache[cacheIdx] = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
         return localCache[cacheIdx];
     }
 
@@ -210,8 +218,28 @@ final class S3ChannelContext implements SeekableChannelContext {
     }
 
     // TODO Move Request class into a separate file after the initial code review
-    static final class Request
-            implements AsyncResponseTransformer<GetObjectResponse, ByteBuffer>, BiConsumer<ByteBuffer, Throwable> {
+    /**
+     * A request for a single fragment of an S3 object, which can be used concurrently. The request object must be
+     * {@link Request#acquire() acquired} before use and {@link Request#release() released} after use.
+     *
+     * @implNote This class extends from a {@link SoftReference<ByteBuffer>}, maintains a reference count and keeps a
+     *           hard reference to the buffer when reference count is non-zero. This prevents the buffer from being
+     *           garbage collected. This class also implements {@link CleanupReference} to allow for cancelling the
+     *           request once all references have been {@link Request#release() released}.
+     */
+    static final class Request extends SoftReference<ByteBuffer>
+            implements AsyncResponseTransformer<GetObjectResponse, ByteBuffer>, BiConsumer<ByteBuffer, Throwable>,
+            CleanupReference<ByteBuffer> {
+
+        /**
+         * Field updater for refCount, so we can avoid creating an {@link AtomicInteger} for each instance.
+         */
+        private static final AtomicIntegerFieldUpdater<Request> REFCOUNT_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(Request.class, "refCount");
+        private volatile int refCount;
+
+        @SuppressWarnings("unused")
+        private ByteBuffer bufferReference;
 
         private final S3Uri uri;
         private final S3Instructions instructions;
@@ -220,28 +248,79 @@ final class S3ChannelContext implements SeekableChannelContext {
         private final long from;
         private final long to;
         private final Instant createdAt;
-        private final PooledObjectReference<ByteBuffer> bufferReference;
         private CompletableFuture<ByteBuffer> consumerFuture;
         private volatile CompletableFuture<ByteBuffer> producerFuture;
         private int fillCount;
         private long fillBytes;
+        private final S3RequestCache sharedCache;
 
         /**
-         * Create a new request for the given fragment index and provided context object. Do not cache the context
-         * because contexts are short-lived while a request may be cached.
+         * Create and {@link #acquire() acquire} a new request for the given fragment index and using the provided
+         * context object.
+         *
+         * @implNote This method does not cache the context because contexts are short-lived while a request may be
+         *           cached.
          */
-        Request(final long fragmentIndex, @NotNull final S3ChannelContext context) {
-            createdAt = Instant.now();
+        static Request createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
+            final long from = fragmentIndex * context.instructions.fragmentSize();
+            final long to = Math.min(from + context.instructions.fragmentSize(), context.size) - 1;
+            final long requestLength = to - from + 1;
+            final ByteBuffer buffer = ByteBuffer.allocate((int) requestLength);
+            final Request request = new Request(fragmentIndex, context, buffer, from, to);
+            return request.acquire();
+        }
+
+        private Request(final long fragmentIndex, @NotNull final S3ChannelContext context,
+                @NotNull final ByteBuffer buffer, final long from, final long to) {
+            super(buffer, CleanupReferenceProcessorInstance.DEFAULT.getReferenceQueue());
+            REFCOUNT_UPDATER.set(this, 0);
+            bufferReference = null;
             this.fragmentIndex = fragmentIndex;
             this.uri = context.uri;
             this.instructions = context.instructions;
             this.client = context.client;
-            from = fragmentIndex * instructions.fragmentSize();
-            to = Math.min(from + instructions.fragmentSize(), context.size) - 1;
-            bufferReference = context.bufferPool.take(requestLength());
+            this.from = from;
+            this.to = to;
+            sharedCache = context.sharedCache;
+            createdAt = Instant.now();
+        }
+
+        /**
+         * Acquire a reference to this request, incrementing the reference count. Returns {@code null} if the request
+         * has already been released.
+         */
+        @Nullable
+        Request acquire() {
+            final ByteBuffer buffer = super.get();
+            if (buffer == null) {
+                // The buffer has been garbage collected, so we can't acquire this request
+                return null;
+            }
+            synchronized (this) {
+                if (REFCOUNT_UPDATER.incrementAndGet(this) == 1) {
+                    bufferReference = buffer;
+                }
+            }
+            return this;
+        }
+
+        /**
+         * Release a reference to this request, decrementing the reference count. The request will be eligible for
+         * {@link #cleanup() cleanup} once the reference count reaches zero.
+         */
+        // TODO Move the release method lower in file after the fill method. Kept it here for ease of review.
+        void release() {
+            synchronized (this) {
+                if (REFCOUNT_UPDATER.decrementAndGet(this) == 0) {
+                    bufferReference = null;
+                }
+            }
         }
 
         void init() {
+            if (refCount == 0) {
+                throw new IllegalStateException(String.format("Request not acquired, %s", requestStr()));
+            }
             if (log.isDebugEnabled()) {
                 log.debug().append("Sending: ").append(requestStr()).endl();
             }
@@ -253,39 +332,58 @@ final class S3ChannelContext implements SeekableChannelContext {
             return consumerFuture.isDone();
         }
 
+        public S3Uri getUri() {
+            return uri;
+        }
+
+        public long getFragmentIndex() {
+            return fragmentIndex;
+        }
+
+        @Override
+        public ByteBuffer get() {
+            throw new UnsupportedOperationException("Use acquire() and release() to manage the request");
+        }
+
+        /**
+         * Fill the provided buffer with data from this request, starting at the given local position. Returns the
+         * number of bytes filled. Note that the request must be acquired before calling this method.
+         */
         int fill(long localPosition, ByteBuffer dest) throws IOException {
+            // TODO Should I keep both checks? I think the first one is enough and more exhaustive.
+            if (refCount == 0) {
+                throw new IllegalStateException(
+                        String.format("Trying to fill data before acquiring, %s", requestStr()));
+            }
+            if (super.get() == null) {
+                throw new IllegalStateException(String.format("Trying to fill data after release, %s", requestStr()));
+            }
             final int resultOffset = (int) (localPosition - from);
             final int resultLength = Math.min((int) (to - localPosition + 1), dest.remaining());
-            if (!bufferReference.acquireIfAvailable()) {
-                throw new IllegalStateException(String.format("Trying to get data after release, %s", requestStr()));
-            }
+            final ByteBuffer fullFragment;
             try {
-                final ByteBuffer fullFragment;
-                try {
-                    fullFragment = getFullFragment().asReadOnlyBuffer();
-                } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-                    throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()), instructions);
-                }
-                // fullFragment has limit == capacity. This lets us have safety around math and ability to simply
-                // clear to reset.
-                fullFragment.limit(resultOffset + resultLength);
-                fullFragment.position(resultOffset);
-                try {
-                    dest.put(fullFragment);
-                } finally {
-                    fullFragment.clear();
-                }
-                ++fillCount;
-                fillBytes += resultLength;
-            } finally {
-                bufferReference.release();
+                fullFragment = getFullFragment().asReadOnlyBuffer();
+            } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+                throw handleS3Exception(e, String.format("fetching fragment %s", requestStr()), instructions);
             }
+            // fullFragment has limit == capacity. This lets us have safety around math and the ability to simply
+            // clear to reset.
+            fullFragment.limit(resultOffset + resultLength);
+            fullFragment.position(resultOffset);
+            try {
+                dest.put(fullFragment);
+            } finally {
+                fullFragment.clear();
+            }
+            ++fillCount;
+            fillBytes += resultLength;
             return resultLength;
         }
 
-        private void release() {
+        @Override
+        public void cleanup() {
             final boolean didCancel = consumerFuture.cancel(true);
-            bufferReference.clear();
+            sharedCache.remove(this);
             if (log.isDebugEnabled()) {
                 final String cancelType = didCancel ? "fast" : (fillCount == 0 ? "unused" : "normal");
                 log.debug()
@@ -381,23 +479,19 @@ final class S3ChannelContext implements SeekableChannelContext {
 
         private final class Sub implements Subscriber<ByteBuffer> {
             private final CompletableFuture<ByteBuffer> localProducer;
-            // Access to this view must be guarded by bufferReference.acquire
+            // Access to this view must be guarded by get() != null to ensure the buffer has not been GC'd
             private ByteBuffer bufferView;
             private Subscription subscription;
 
             Sub() {
                 localProducer = producerFuture;
-                if (!bufferReference.acquireIfAvailable()) {
+                if (Request.super.get() == null) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for new subscriber, %s", requestStr())));
                     return;
                 }
-                try {
-                    bufferView = bufferReference.get().duplicate();
-                } finally {
-                    bufferReference.release();
-                }
+                bufferView = Request.super.get().duplicate();
             }
 
             // ---------------------------------------------------- -------------------------
@@ -418,17 +512,13 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             @Override
             public void onNext(ByteBuffer byteBuffer) {
-                if (!bufferReference.acquireIfAvailable()) {
+                if (Request.super.get() == null) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for data, %s", requestStr())));
                     return;
                 }
-                try {
-                    bufferView.put(byteBuffer);
-                } finally {
-                    bufferReference.release();
-                }
+                bufferView.put(byteBuffer);
                 subscription.request(1);
             }
 
@@ -440,29 +530,25 @@ final class S3ChannelContext implements SeekableChannelContext {
 
             @Override
             public void onComplete() {
-                if (!bufferReference.acquireIfAvailable()) {
+                if (Request.super.get() == null) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for completion, %s", requestStr())));
                     return;
                 }
-                try {
-                    if (bufferView.position() != requestLength()) {
-                        localProducer.completeExceptionally(new IllegalStateException(String.format(
-                                "Expected %d bytes, received %d, %s", requestLength(), bufferView.position(),
-                                requestStr())));
-                        return;
-                    }
-                    ByteBuffer toComplete = bufferView.asReadOnlyBuffer();
-                    toComplete.flip();
-                    if (toComplete.capacity() != toComplete.limit()) {
-                        toComplete = toComplete.slice();
-                    }
-                    localProducer.complete(toComplete);
-                    bufferView = null;
-                } finally {
-                    bufferReference.release();
+                if (bufferView.position() != requestLength()) {
+                    localProducer.completeExceptionally(new IllegalStateException(String.format(
+                            "Expected %d bytes, received %d, %s", requestLength(), bufferView.position(),
+                            requestStr())));
+                    return;
                 }
+                ByteBuffer toComplete = bufferView.asReadOnlyBuffer();
+                toComplete.flip();
+                if (toComplete.capacity() != toComplete.limit()) {
+                    toComplete = toComplete.slice();
+                }
+                localProducer.complete(toComplete);
+                bufferView = null;
             }
         }
     }

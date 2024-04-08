@@ -101,28 +101,6 @@ public class S3InstructionsTest {
     }
 
     @Test
-    void maxFragmentSize() {
-        assertThat(S3Instructions.builder()
-                .regionName("some-region")
-                .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE)
-                .build()
-                .fragmentSize())
-                .isEqualTo(S3Instructions.MAX_FRAGMENT_SIZE);
-    }
-
-    @Test
-    void tooBigFragmentSize() {
-        try {
-            S3Instructions.builder()
-                    .regionName("some-region")
-                    .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE + 1)
-                    .build();
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("fragmentSize");
-        }
-    }
-
-    @Test
     void minMaxCacheSize() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
