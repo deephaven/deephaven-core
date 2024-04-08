@@ -21,6 +21,8 @@ configurations {
   python {}
   go {}
   cpp {}
+
+  authzPlugin {}
 }
 
 dependencies {
@@ -31,6 +33,8 @@ dependencies {
   api 'io.grpc:grpc-protobuf'
   api 'io.grpc:grpc-api'
   api 'io.grpc:grpc-stub'
+
+  api project(':engine-api')
 
   Classpaths.inheritBoringSsl(project)
 
@@ -46,6 +50,8 @@ dependencies {
   //  compile 'io.deephaven.barrage:barrage-core:0.5.0'
   download 'io.deephaven.barrage:barrage-core:0.6.0'
   Classpaths.inheritArrow(project, 'flight-core', 'download')
+
+  authzPlugin project(path: ':authorization-codegen', configuration: 'shadow')
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
@@ -59,6 +65,12 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
         include('BrowserFlight.proto').into('dependencies')
         include('Flight.proto').into('dependencies')
       }
+    }
+    from(configurations.authzPlugin) {
+      into '/authzPlugin'
+    }
+    from('src/main/sh/') {
+      into '/authzPlugin'
     }
   }
 

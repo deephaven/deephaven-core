@@ -1,8 +1,16 @@
 FROM deephaven/protoc-base:local-build
 
+RUN set -eux; \
+    apt-get -qq update; \
+    apt-get install -qq -y --no-install-recommends openjdk-17-jdk
+
 COPY src/main/proto /includes
 
 COPY dependencies /dependencies
+
+COPY authzPlugin /authzPlugin
+
+RUN chmod +x /authzPlugin/protoc-gen-contextual-auth-wiring
 
 RUN set -eux; \
   mkdir -p /generated/java; \
@@ -13,12 +21,15 @@ RUN set -eux; \
   mkdir -p /generated/cpp; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
+    --plugin=protoc-gen-contextual-auth=/authzPlugin/protoc-gen-contextual-auth-wiring \
     --java_out=/generated/java \
     --grpc_out=/generated/grpc \
+    --contextual-auth_out=/generated/java \
     -I/dependencies \
     -I/includes \
     /dependencies/BrowserFlight.proto \
     /includes/deephaven/proto/ticket.proto \
+    /includes/deephaven/proto/contextual-auth.proto \
     /includes/deephaven/proto/console.proto \
     /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \
@@ -38,6 +49,7 @@ RUN set -eux; \
     /dependencies/BrowserFlight.proto \
     /dependencies/Flight.proto \
     /includes/deephaven/proto/ticket.proto \
+    /includes/deephaven/proto/contextual-auth.proto \
     /includes/deephaven/proto/console.proto \
     /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \
@@ -53,6 +65,7 @@ RUN set -eux; \
     --python_out=/generated/python \
     -I/includes \
     /includes/deephaven/proto/ticket.proto \
+    /includes/deephaven/proto/contextual-auth.proto \
     /includes/deephaven/proto/console.proto \
     /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \
@@ -75,6 +88,7 @@ RUN set -eux; \
     --cpp_grpc_out=generated/cpp \
     -I/includes \
     /includes/deephaven/proto/ticket.proto \
+    /includes/deephaven/proto/contextual-auth.proto \
     /includes/deephaven/proto/console.proto \
     /includes/deephaven/proto/object.proto \
     /includes/deephaven/proto/session.proto \

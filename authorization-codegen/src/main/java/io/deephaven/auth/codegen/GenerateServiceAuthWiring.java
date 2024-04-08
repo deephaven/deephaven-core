@@ -3,7 +3,6 @@
 //
 package io.deephaven.auth.codegen;
 
-import com.google.common.base.Strings;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos;
 import com.squareup.javapoet.ClassName;
@@ -12,14 +11,15 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
-import io.deephaven.auth.AuthContext;
 import io.grpc.ServerServiceDefinition;
 
 import javax.lang.model.element.Modifier;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
+import static io.deephaven.auth.codegen.CombinedAuthWiring.generateTypeMap;
+import static io.deephaven.auth.codegen.CombinedAuthWiring.getRealPackage;
 
 public class GenerateServiceAuthWiring {
     private static final String ON_CALL_STARTED = "onCallStarted";
@@ -53,18 +53,7 @@ public class GenerateServiceAuthWiring {
         response.build().toByteString().writeTo(System.out);
     }
 
-    public static Map<String, String> generateTypeMap(PluginProtos.CodeGeneratorRequest request) {
-        final Map<String, String> typeMap = new HashMap<>();
-        for (final DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
-            String realPackage = getRealPackage(file);
-            for (final DescriptorProtos.DescriptorProto message : file.getMessageTypeList()) {
-                typeMap.put("." + file.getPackage() + "." + message.getName(), realPackage + "." + message.getName());
-            }
-        }
-        return typeMap;
-    }
-
-    private static void generateForService(
+    public static void generateForService(
             final String originalServicePackage,
             final PluginProtos.CodeGeneratorResponse.Builder response,
             final DescriptorProtos.ServiceDescriptorProto service,
@@ -202,33 +191,17 @@ public class GenerateServiceAuthWiring {
                 final String methodName = ON_CALL_STARTED + method.getName();
                 final MethodSpec.Builder methodSpec = MethodSpec.methodBuilder(methodName)
                         .addModifiers(Modifier.PUBLIC)
-                        .addParameter(AuthContext.class, "authContext");
+                        .addParameter(ClassName.get("io.deephaven.auth", "AuthContext"), "authContext");
                 visitor.accept(methodName, methodSpec);
                 typeSpec.addMethod(methodSpec.build());
             }
             final String methodName = ON_MESSAGE_RECEIVED + method.getName();
             final MethodSpec.Builder methodSpec = MethodSpec.methodBuilder(methodName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(AuthContext.class, "authContext")
+                    .addParameter(ClassName.get("io.deephaven.auth", "AuthContext"), "authContext")
                     .addParameter(ClassName.bestGuess(realType), "request");
             visitor.accept(methodName, methodSpec);
             typeSpec.addMethod(methodSpec.build());
         }
-    }
-
-    private static String getRealPackage(final DescriptorProtos.FileDescriptorProto file) {
-        String realPackage = null;
-        if (file.hasOptions()) {
-            realPackage = file.getOptions().getJavaPackage();
-        }
-        if (Strings.isNullOrEmpty(realPackage)) {
-            realPackage = file.getPackage();
-        }
-        // Unsure of where this is specified in Flight.proto, but in addition to the package the messages are
-        // put into a "Flight" namespace.
-        if (realPackage.equals("org.apache.arrow.flight.impl")) {
-            realPackage += ".Flight";
-        }
-        return realPackage;
     }
 }

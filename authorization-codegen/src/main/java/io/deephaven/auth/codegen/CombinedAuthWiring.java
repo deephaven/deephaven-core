@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.auth.codegen;
 
 import com.google.common.base.Strings;
@@ -21,7 +24,6 @@ public class CombinedAuthWiring {
         // create a mapping from message type to java type name
         final Map<String, String> typeMap = generateTypeMap(request);
 
-
         // Next, for each service, generate the auth wiring
         for (final DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
             final String realPackage = getRealPackage(file);
@@ -37,7 +39,6 @@ public class CombinedAuthWiring {
             }
         }
 
-
         // Then, for each service that needs contextual auth, create that interface too
         for (final DescriptorProtos.FileDescriptorProto file : request.getProtoFileList()) {
             for (final DescriptorProtos.ServiceDescriptorProto service : file.getServiceList()) {
@@ -45,7 +46,8 @@ public class CombinedAuthWiring {
                 // In other circumstances we would generate from .proto first, then compile this plugin, then
                 // run the plugin on the remaining .proto files, but we aren't generalizing the plugin that far
                 // at this time.
-                List<Long> contextualAuthValue = service.getOptions().getUnknownFields().getField(0x6E68).getVarintList();
+                List<Long> contextualAuthValue =
+                        service.getOptions().getUnknownFields().getField(0x6E68).getVarintList();
                 boolean hasContextualAuth = !contextualAuthValue.isEmpty() && contextualAuthValue.get(0) == 1;
                 if (!hasContextualAuth) {
                     continue;
