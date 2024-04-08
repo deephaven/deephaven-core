@@ -103,7 +103,7 @@ public class SharedTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': no session to handoff to");
         }
 
-        //noinspection unchecked
+        // noinspection unchecked
         final SessionState.ExportObject<T> sharedVar = (SessionState.ExportObject<T>) sharedVariables.get(sharedId);
         if (sharedVar == null) {
             return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.NOT_FOUND,
