@@ -25,7 +25,7 @@ import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 import static io.deephaven.proto.util.SharedTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
@@ -34,7 +34,7 @@ import static io.deephaven.proto.util.SharedTicketHelper.TICKET_PREFIX;
 @Singleton
 public class SharedTicketResolver extends TicketResolverBase {
 
-    final Map<String, SessionState.ExportObject<?>> sharedVariables = new MapMaker()
+    private final ConcurrentMap<String, SessionState.ExportObject<?>> sharedVariables = new MapMaker()
             .weakValues()
             .makeMap();
 
@@ -68,14 +68,15 @@ public class SharedTicketResolver extends TicketResolverBase {
         return session.<Flight.FlightInfo>nonExport()
                 .require(export)
                 .submit(() -> {
-                    if (export.get() instanceof Table) {
-                        final Table table = (Table) authorization.transform(export.get());
+                    final Object result = export.get();
+                    if (result instanceof Table) {
+                        final Table table = (Table) authorization.transform(result);
                         return TicketRouter.getFlightInfo(table, descriptor,
                                 FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
                     throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor + " does not exist");
+                            "Could not resolve '" + logId + "': flight '" + descriptor + "' is not a table");
                 });
     }
 
@@ -142,16 +143,17 @@ public class SharedTicketResolver extends TicketResolverBase {
             final String sharedId,
             final String logId,
             @Nullable final Runnable onPublish) {
-        // We publish to the query scope after the client finishes publishing their result. We accomplish this by
-        // directly depending on the result of this export builder.
         final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
         final SessionState.ExportObject<T> resultExport = resultBuilder.getExport();
-        final SessionState.ExportBuilder<T> publishTask = session.nonExport();
 
-        sharedVariables.put(sharedId, resultExport);
+        final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(sharedId, resultExport);
+        if (existing != null) {
+            throw Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
+                    "Could not publish '" + logId + "': destination already exists");
+        }
 
         if (onPublish != null) {
-            publishTask
+            session.nonExport()
                     .requiresSerialQueue()
                     .require(resultExport)
                     .submit(onPublish);
@@ -168,7 +170,11 @@ public class SharedTicketResolver extends TicketResolverBase {
             @Nullable Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
-        sharedVariables.put(idForTicket(ticket, logId), source);
+        final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(idForTicket(ticket, logId), source);
+        if (existing != null) {
+            throw Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
+                    "Could not publish '" + logId + "': destination already exists");
+        }
         if (onPublish != null) {
             onPublish.run();
         }
