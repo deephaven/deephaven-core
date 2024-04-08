@@ -134,7 +134,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public Stream<URI> walk(@NotNull final URI directory) {
         if (log.isDebugEnabled()) {
-            log.debug("requesting list of child URIs for directory: {}", directory);
+            log.debug("requesting walking the tree rooted at directory: {}", directory);
         }
         return createStream(directory, true);
     }

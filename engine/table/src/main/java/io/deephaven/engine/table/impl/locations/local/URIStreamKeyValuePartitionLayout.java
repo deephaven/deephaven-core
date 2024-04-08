@@ -78,7 +78,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             getPartitions(relativePath, partitionKeys, partitionValues, registered.booleanValue());
             if (registered.isFalse()) {
                 // Use the first path to find the partition keys and use the same for the rest
-                if (partitionKeys.size() >= maxPartitioningLevels) {
+                if (partitionKeys.size() > maxPartitioningLevels) {
                     throw new TableDataException("Too many partitioning levels at " + uri + ", count = " +
                             partitionKeys.size() + ", maximum expected are " + maxPartitioningLevels);
                 }
