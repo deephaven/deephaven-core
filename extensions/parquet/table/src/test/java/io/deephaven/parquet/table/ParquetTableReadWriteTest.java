@@ -2123,7 +2123,7 @@ public final class ParquetTableReadWriteTest {
 
         // Read back fromDisk. Since the underlying file has changed, we expect this to fail.
         try {
-            fromDisk.select();
+            fromDisk.where("A % 2 == 0");
             TestCase.fail("Expected exception");
         } catch (RuntimeException ignored) {
             // expected
