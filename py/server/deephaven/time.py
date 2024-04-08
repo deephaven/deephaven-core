@@ -884,6 +884,11 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
 def simple_date_format(pattern: str) -> jpy.JType:
     """ Creates a Java SimpleDateFormat from a date-time format pattern.
 
+    This method is intended for use in Python code when a SimpleDateFormat is needed.
+    It should not be used directly in query strings.
+    The most common use case will use this function to construct a SimpleDateFormat
+    in Python and then use the result in query strings.
+
     Args:
         pattern (str): A date-time format pattern string.
 
