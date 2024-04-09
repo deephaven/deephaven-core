@@ -66,12 +66,9 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
                 PYTHON_TAG: pythonTag,
                 DEEPHAVEN_VERSION: project.version.toString()
         ])
-        entrypoint = ['/entrypoint.sh']
     }
     parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
-    // Note: showLogsOnSuccess only works when entrypoint is set on this outer DockerTaskConfig
-    // entrypoint = ['/entrypoint.sh']
-    // showLogsOnSuccess = true
+    entrypoint = ['/entrypoint.sh']
 }}
 
 def getCPythonTag = { String pythonVersion ->
@@ -136,7 +133,6 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
                 DH_PORT: '10000',
                 PYTHON_VERSION: pythonVersion
         ])
-        entrypoint = ['/entrypoint.sh']
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -145,9 +141,7 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
     copyOut {
         into layout.buildDirectory.dir("testCPythonClientTicking/${image}/${pythonVersion}")
     }
-    // Note: showLogsOnSuccess only works when entrypoint is set on this outer DockerTaskConfig
-    // entrypoint = ['/entrypoint.sh']
-    // showLogsOnSuccess = true
+    entrypoint = ['/entrypoint.sh']
 }}
 
 Map<String, TaskProvider<? extends Task>> fedoraCPythonTests = pythonVersions.collectEntries { pythonVersion ->
