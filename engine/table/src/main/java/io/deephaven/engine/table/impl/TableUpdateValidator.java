@@ -218,8 +218,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 return;
             }
 
-            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            resultTable.notifyListeners(downstream);
+            resultTable.notifyListeners(upstream.acquire());
         }
     }
 

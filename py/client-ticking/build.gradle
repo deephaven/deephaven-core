@@ -13,6 +13,8 @@ dependencies {
 }
 
 evaluationDependsOn(':cpp-client')
+evaluationDependsOn Docker.registryProject('fedora')
+evaluationDependsOn Docker.registryProject('ubi-minimal')
 
 def prefix = '/opt/deephaven'
 
@@ -26,7 +28,7 @@ deephavenDocker {
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
 
-def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking') {
+def buildPyClientTickingManyLinux = { wheelsSet, taskName -> Docker.registerDockerTask(project, taskName) {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
 
@@ -34,7 +36,10 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         from(layout.projectDirectory) {
             include 'setup.py'
             include 'README.md'
-            include 'src/**'
+            include 'src/**/py.typed'
+            include 'src/**/*.py'
+            include 'src/**/*.pyx'
+            include 'src/**/*.pxd'
         }
         from(configurations.pythonWheel) {
             into 'wheels'
@@ -44,59 +49,109 @@ def buildPyClientTicking = Docker.registerDockerTask(project, 'pyClientTicking')
         into layout.buildDirectory.dir('wheel')
     }
     dockerfile {
-        from('deephaven/cpp-client:local-build')
+        from('deephaven/cpp-client-py:local-build')
         runCommand("""mkdir -p \\
                         /out \\
-                        ${prefix}/log \\
-                        ${prefix}/src/py-client-ticking/src \\
-                        ${prefix}/src/py-client-ticking/in-wheels
+                        '${prefix}/log' \\
+                        '${prefix}/src/py-client-ticking/src' \\
+                        '${prefix}/src/py-client-ticking/in-wheels'
 
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('wheels/', "${prefix}/src/py-client-ticking/in-wheels")
-        runCommand("PREFIX=${prefix}; DEEPHAVEN_VERSION=${project.version};" +
+        runCommand("PREFIX='${prefix}'; WHEELS_SET='${wheelsSet}'; DEEPHAVEN_VERSION='${project.version}';" +
                    '''set -eux ; \
-                     cd "${PREFIX}/src/py-client-ticking"; \
-                     . "${PREFIX}/env.sh"; \
-                     MAKEFLAGS="-j${NCPUS}" \
-                       CFLAGS="-I${DHCPP}/include" \
-                       LDFLAGS="-L${DHCPP}/lib" \
-                       DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
-                       python3 setup.py build_ext -i; \
-                     DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
-                     pip3 install in-wheels/*.whl; \
-                     pip3 install --force --no-deps dist/*.whl; \
-                     ln dist/*.whl /out; \
-                     cd /; \
-                     rm -fr "${PREFIX}/src/py-client-ticking"
+                      cd "${PREFIX}/src/py-client-ticking"; \
+                      . "${PREFIX}/env.sh"; \
+                      ORIG_PATH="$PATH"; \
+                      for spec in ${WHEELS_SET}; do \
+                        tag=`echo "$spec" | cut -d: -f 2`; \
+                        rm -f *.cpp *.so; \
+                        PATH="/opt/python/${tag}/bin:$ORIG_PATH"; \
+                        pip3 install cython; \
+                        MAKEFLAGS="-j${NCPUS}" \
+                          CFLAGS="-I${DHCPP}/include" \
+                          LDFLAGS="-L${DHCPP}/lib" \
+                          DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
+                          python3 setup.py build_ext -i; \
+                        DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" python3 setup.py bdist_wheel; \
+                        auditwheel repair dist/pydeephaven_ticking*"${tag}"*.whl; \
+                        rm -f dist/pydeephaven_ticking*"${tag}"*.whl; \
+                        mv -f wheelhouse/*.whl dist; \
+                        pip3 install in-wheels/*.whl; \
+                        pip3 install --no-deps dist/pydeephaven_ticking*"${tag}"*.whl; \
+                      done; \
+                      ln dist/*.whl /out; \
+                      cd /; \
+                      rm -fr "${PREFIX}/src/py-client-ticking"
                    ''')
 
         environmentVariable 'LD_LIBRARY_PATH', ""  // avoid conflict with libarrow.13.0.0.so
     }
-    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClient') ]
-}
+    parentContainers = [ project.tasks.getByPath(':cpp-client:cppClientPy') ]
+}}
 
-def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTicking') {
+def checksWheelSet = '3.9:cp39-cp39'
+def buildPyClientTicking = buildPyClientTickingManyLinux(checksWheelSet, 'pyClientTicking')
+
+def testPyClientTickingManyLinux = { wheelsSet, taskName, parentContainer, image -> Docker.registerDockerTask(project, taskName ) {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
     copyIn {
+        from(configurations.pythonWheel) {
+            into 'dep-wheels'
+        }
         from(layout.projectDirectory) {
             include 'tests/**'
         }
+        from(layout.buildDirectory.dir('wheel')) {
+            into 'pyt-wheels'
+        }
     }
     dockerfile {
-        from('deephaven/py-client-ticking:local-build')
-        runCommand("PREFIX=${prefix}; " +
+        from("deephaven/${image}:local-build")
+        runCommand("WHEELS_SET='${wheelsSet}'; PREFIX='${prefix}'; " +
                    '''set -eux ; \
+                      DNF=`type microdnf >/dev/null 2>&1 && echo 'microdnf --disableplugin=subscription-manager' || echo 'dnf -q'`; \
+                      $DNF -y update; \
+                      $DNF -y install python3; \
+                      $DNF -y install python3-pip; \
+                      $DNF -y install python3-virtualenv; \
+                      for spec in ${WHEELS_SET}; do \
+                        pyver=`echo "$spec" | cut -d: -f 1`; \
+                        $DNF -y install "python${pyver}"; \
+                        "python$pyver" -m venv "/project/$pyver"; \
+                        source "/project/$pyver/bin/activate"; \
+                        pip install --upgrade pip; \
+                        pip install unittest-xml-reporting; \
+                        deactivate; \
+                      done; \
+                      $DNF clean all; \
                       rm -fr /out; \
                       mkdir -p \
                         /out/report \
                         /project/tests                      
                    ''')
         copyFile('tests/', "/project/tests/")
+        copyFile('dep-wheels/', "/project/dep-wheels")
+        copyFile('pyt-wheels/', "/project/pyt-wheels")
         workingDir('/project')
+        runCommand("WHEELS_SET='${wheelsSet}'; " +
+                   '''set -eux ; \
+                      for spec in ${WHEELS_SET}; do \
+                        pyver=`echo "$spec" | cut -d: -f 1`; \
+                        tag=`echo "$spec" | cut -d: -f 2`; \
+                        [ -f /project/pyt-wheels/pydeephaven_ticking*"${tag}"*.whl ]; \
+                        source "/project/$pyver/bin/activate"; \
+                        pip install unittest-xml-reporting; \
+                        pip install /project/dep-wheels/*.whl; \
+                        pip install /project/pyt-wheels/pydeephaven_ticking*"${tag}"*.whl; \
+                        deactivate; \
+                     done
+                   ''')
+
         //
         // Setup for test run.
         //
@@ -106,12 +161,39 @@ def testPyClientTicking = Docker.registerDockerTask(project, 'testPyClientTickin
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
-    parentContainers = [ project.tasks.getByName('pyClientTicking') ]
-    entrypoint = ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    parentContainers = [ project.tasks.getByName(parentContainer),
+                         Docker.registryTask(project, "${image}") ]
+    entrypoint = ['bash', '-c',
+                  "WHEELS_SET='${wheelsSet}'; " +
+                  '''
+                  for spec in ${WHEELS_SET}; do \
+                    pyver=`echo "$spec" | cut -d: -f 1`; \
+                    source "/project/$pyver/bin/activate"; \
+                    "python$pyver" -m xmlrunner discover tests -v -o "/out/report/$pyver"; \
+                    deactivate
+                  done
+                  ''']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-}
+}}
+
+def testPyClientTicking = testPyClientTickingManyLinux(
+    checksWheelSet,
+    'testPyClientTicking',
+    'pyClientTicking',
+    'ubi-minimal')
+
+def wheelsSet = [ '3.8:cp38-cp38', '3.9:cp39-cp39', '3.10:cp310-cp310', '3.11:cp311-cp311', '3.12:cp312-cp312' ]
+def pyClientTickingAllWheels = buildPyClientTickingManyLinux(String.join(' ', wheelsSet), 'pyClientTickingAllWheels')
+
+def testPyClientTickingAllWheels = testPyClientTickingManyLinux(
+    String.join(' ', wheelsSet),
+    'testPyClientTickingAllWheels',
+    'pyClientTickingAllWheels',
+    'fedora')
 
 tasks.getByName('check').dependsOn(testPyClientTicking)
+tasks.getByName('testPyClientTickingPrepareDocker').dependsOn(pyClientTicking)
+tasks.getByName('testPyClientTickingAllWheelsPrepareDocker').dependsOn(pyClientTickingAllWheels)
 deephavenDocker.shouldLogIfTaskFails testPyClientTicking

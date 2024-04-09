@@ -7,6 +7,7 @@
 #include <string_view>
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/misc_types.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 
@@ -29,6 +30,13 @@ class ClientImpl;
 class TableHandleImpl;
 class TableHandleManagerImpl;
 }  // namespace deephaven::client::impl
+
+/**
+ * Forward reference to arrow's Table
+ */
+namespace arrow {
+class Table;
+}  // namespace arrow
 
 /**
  * Forward reference to arrow's FlightStreamReader
@@ -866,6 +874,7 @@ inline AggregateCombo aggCombo(std::initializer_list<Aggregate> args) {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  using ClientTable = deephaven::dhcore::clienttable::ClientTable;
   using SchemaType = deephaven::dhcore::clienttable::Schema;
   using TickingCallback = deephaven::dhcore::ticking::TickingCallback;
   using TickingUpdate = deephaven::dhcore::ticking::TickingUpdate;
@@ -1835,6 +1844,20 @@ public:
    */
   [[nodiscard]]
   std::shared_ptr<arrow::flight::FlightStreamReader> GetFlightStreamReader() const;
+
+  /**
+   * Read in the entire table as an Arrow table.
+   * @return the Arrow table
+   */
+  [[nodiscard]]
+  std::shared_ptr<arrow::Table> ToArrowTable() const;
+
+  /**
+   * Read in the entire table as a ClientTable.
+   * @return the ClientTable
+  */
+  [[nodiscard]]
+  std::shared_ptr<ClientTable> ToClientTable() const;
 
   /**
    * Subscribe to a ticking table.

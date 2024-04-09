@@ -132,67 +132,88 @@ struct TypeConverterTraits {
   static_assert(!std::is_same<T, T>::value, "TableMaker doesn't know how to work with this type");
 };
 
+// Implementation note: GetDeephavenTypeName() is better as a function rather than a constant,
+// because it helps us avoid the dllimport problem for using constants across libraries in Windows.
+
 template<>
 struct TypeConverterTraits<char16_t> {
   using arrowType_t = arrow::UInt16Type;
   using arrowBuilder_t = arrow::UInt16Builder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "char";
+  }
 };
 
 template<>
 struct TypeConverterTraits<bool> {
   using arrowType_t = arrow::BooleanType;
   using arrowBuilder_t = arrow::BooleanBuilder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "java.lang.Boolean";
+  }
 };
 
 template<>
 struct TypeConverterTraits<int8_t> {
   using arrowType_t = arrow::Int8Type;
   using arrowBuilder_t = arrow::Int8Builder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "byte";
+  }
 };
 
 template<>
 struct TypeConverterTraits<int16_t> {
   using arrowType_t = arrow::Int16Type;
   using arrowBuilder_t = arrow::Int16Builder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "short";
+  }
 };
 
 template<>
 struct TypeConverterTraits<int32_t> {
   using arrowType_t = arrow::Int32Type;
   using arrowBuilder_t = arrow::Int32Builder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "int";
+  }
 };
 
 template<>
 struct TypeConverterTraits<int64_t> {
   using arrowType_t = arrow::Int64Type;
   using arrowBuilder_t = arrow::Int64Builder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "long";
+  }
 };
 
 template<>
 struct TypeConverterTraits<float> {
   using arrowType_t = arrow::FloatType;
   using arrowBuilder_t = arrow::FloatBuilder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "float";
+  }
 };
 
 template<>
 struct TypeConverterTraits<double> {
   using arrowType_t = arrow::DoubleType;
   using arrowBuilder_t = arrow::DoubleBuilder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "double";
+  }
 };
 
 template<>
 struct TypeConverterTraits<std::string> {
   using arrowType_t = arrow::StringType;
   using arrowBuilder_t = arrow::StringBuilder;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return "java.lang.String";
+  }
 };
 
 template<typename T>
@@ -200,12 +221,10 @@ struct TypeConverterTraits<std::optional<T>> {
   using inner_t = TypeConverterTraits<T>;
   using arrowType_t = typename inner_t::arrowType_t;
   using arrowBuilder_t = typename inner_t::arrowBuilder_t;
-  static const char * const kDeephavenTypeName;
+  static std::string_view GetDeephavenTypeName() {
+    return TypeConverterTraits<T>::GetDeephavenTypeName();
+  }
 };
-
-template<typename T>
-const char * const TypeConverterTraits<std::optional<T>>::kDeephavenTypeName =
-    TypeConverterTraits<T>::kDeephavenTypeName;
 
 template<typename T>
 TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
@@ -227,11 +246,12 @@ TypeConverter TypeConverter::CreateNew(const std::vector<T> &values) {
   }
   auto builder_res = builder.Finish();
   if (!builder_res.ok()) {
-    auto message = fmt::format("Error building array of type {}: {}", traits_t::kDeephavenTypeName,
-        builder_res.status().ToString());
+    auto message = fmt::format("Error building array of type {}: {}",
+        traits_t::GetDeephavenTypeName(), builder_res.status().ToString());
   }
   auto array = builder_res.ValueUnsafe();
-  return TypeConverter(std::move(data_type), traits_t::kDeephavenTypeName, std::move(array));
+  return TypeConverter(std::move(data_type), std::string(traits_t::GetDeephavenTypeName()),
+      std::move(array));
 }
 
 template<>

@@ -16,7 +16,7 @@
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::Client;
-using deephaven::client::utility::ConvertTicketToFlightDescriptor;
+using deephaven::client::utility::ArrowUtil;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::ValueOrThrow;
 
@@ -73,7 +73,7 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
   arrow::flight::FlightCallOptions options;
   wrapper.AddHeaders(&options);
 
-  auto fd = ConvertTicketToFlightDescriptor(ticket);
+  auto fd = ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
   auto res = wrapper.FlightClient()->DoPut(options, fd, arrow_table->schema());
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res));
 

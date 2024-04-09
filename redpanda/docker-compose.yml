@@ -1,8 +1,6 @@
 # Developer-oriented local docker compose file to run together
 # Deephaven Core and Redpanda (Kafka compatible event streaming)
 
-version: "3.4"
-
 services:
   server:
     extends:
