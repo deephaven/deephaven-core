@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -78,10 +77,6 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             getPartitions(relativePath, partitionKeys, partitionValues, registered.booleanValue());
             if (registered.isFalse()) {
                 // Use the first path to find the partition keys and use the same for the rest
-                if (partitionKeys.size() > maxPartitioningLevels) {
-                    throw new TableDataException("Too many partitioning levels at " + uri + ", count = " +
-                            partitionKeys.size() + ", maximum expected are " + maxPartitioningLevels);
-                }
                 locationTableBuilder.registerPartitionKeys(partitionKeys);
                 registered.setTrue();
             }
@@ -99,33 +94,33 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             final boolean registered) {
         final Set<String> takenNames = new HashSet<>();
         final String relativePathString = relativePath.getPath();
-        int partitioningColumnIndex = 0;
-        // Split the path to get the subdirectory names
         final String[] subDirs = relativePathString.split(URI_SEPARATOR);
-        for (int sdi = 0; sdi < subDirs.length - 1; sdi++) {
-            final String dirName = subDirs[sdi];
-            if (dirName.isEmpty()) {
-                // Ignore empty directory names
-                continue;
+        final int numPartitioningCol = subDirs.length - 1;
+        if (!registered) {
+            if (numPartitioningCol > maxPartitioningLevels) {
+                throw new TableDataException("Too many partitioning levels at " + relativePathString + ", count = " +
+                        numPartitioningCol + ", maximum expected are " + maxPartitioningLevels);
             }
+        } else {
+            if (numPartitioningCol > partitionKeys.size()) {
+                throw new TableDataException("Too many partitioning levels at " + relativePathString + " (expected "
+                        + partitionKeys.size() + ") based on earlier leaf nodes in the tree.");
+            }
+        }
+        for (int partitioningColIndex = 0; partitioningColIndex < numPartitioningCol; partitioningColIndex++) {
+            final String dirName = subDirs[partitioningColIndex];
             final String[] components = dirName.split("=", 2);
             if (components.length != 2) {
                 throw new TableDataException("Unexpected directory name format (not key=value) at "
-                        + new File(tableRootDirectory.getPath(), relativePathString));
+                        + relativePathString);
             }
             final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
             takenNames.add(columnKey);
             if (registered) {
-                // We have already seen another leaf node in the tree, so compare the partitioning levels against the
-                // previous ones
-                if (partitioningColumnIndex >= partitionKeys.size()) {
-                    throw new TableDataException("Too many partitioning levels at " + relativePathString + " (expected "
-                            + partitionKeys.size() + ") based on earlier leaf nodes in the tree.");
-                }
-                if (!partitionKeys.get(partitioningColumnIndex).equals(columnKey)) {
+                if (!partitionKeys.get(partitioningColIndex).equals(columnKey)) {
                     throw new TableDataException(String.format(
                             "Column name mismatch at column index %d: expected %s found %s at %s",
-                            partitioningColumnIndex, partitionKeys.get(partitioningColumnIndex), columnKey,
+                            partitioningColIndex, partitionKeys.get(partitioningColIndex), columnKey,
                             relativePathString));
                 }
             } else {
@@ -134,7 +129,6 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             }
             final String columnValue = components[1];
             partitionValues.add(columnValue);
-            partitioningColumnIndex++;
         }
     }
 }

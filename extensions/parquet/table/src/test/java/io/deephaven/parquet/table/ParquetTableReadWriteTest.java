@@ -1792,7 +1792,7 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(tableToSave, fromDisk3);
 
         // Read from relative path
-        final String relativePath = rootFile.getName() + "/////" + filename;
+        final String relativePath = rootFile.getName() + "/" + filename;
         final Table fromDisk4 = ParquetTools.readTable(relativePath);
         assertTableEquals(tableToSave, fromDisk4);
 
