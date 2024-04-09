@@ -64,7 +64,7 @@ tasks.register('nightly') {
 
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
-    it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
+    it.description 'A lifecycle task that prepares prerequisites for local docker compose builds'
     it.dependsOn project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')
 }
 

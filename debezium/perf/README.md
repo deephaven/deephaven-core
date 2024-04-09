@@ -159,7 +159,7 @@ can make them execute their respective demo scripts.
   see the tables refreshing.
 * To load the Materialize script, run the
   materialized command line interface (cli) via:
-  `docker-compose run mzcli`
+  `docker compose run mzcli`
   (this command needs to be executed from the `perf`
    directory to work).
   Once in the materialize cli, run:

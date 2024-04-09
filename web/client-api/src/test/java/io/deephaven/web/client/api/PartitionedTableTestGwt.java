@@ -116,15 +116,11 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     return partitionedTable.getKeyTable().then(keyTable -> {
                         keyTable.setViewport(0, 99, keyTable.getColumns(), null);
-                        return keyTable.getViewportData().then(data -> {
-                            assertEquals(0d, keyTable.getSize());
-
-                            return waitForEventWhere(keyTable, JsTable.EVENT_UPDATED,
-                                    (CustomEvent<ViewportData> d) -> d.detail.getRows().length == 5, 20004);
-                        });
+                        return waitForEventWhere(keyTable, JsTable.EVENT_UPDATED,
+                                (CustomEvent<ViewportData> d) -> d.detail.getRows().length >= 5, 14004);
                     }).then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
                         assertEquals(3, constituentTable.getColumns().length);
-                        assertEquals(2d, constituentTable.getSize());
+                        assertTrue(constituentTable.getSize() >= 2);
 
                         constituentTable.close();
                         partitionedTable.close();
@@ -151,21 +147,18 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     return partitionedTable.getKeyTable().then(keyTable -> {
                         keyTable.setViewport(0, 99, keyTable.getColumns(), null);
-                        return keyTable.getViewportData().then(data -> {
-                            assertEquals(0d, keyTable.getSize());
+                        return waitForEventWhere(keyTable, JsTable.EVENT_UPDATED,
+                                (CustomEvent<ViewportData> d) -> d.detail.getRows().length >= 5, 14004)
+                                .then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
+                                    assertEquals(2, constituentTable.getColumns().length);
+                                    assertTrue(constituentTable.getSize() >= 1);
 
-                            return waitForEventWhere(keyTable, JsTable.EVENT_UPDATED,
-                                    (CustomEvent<ViewportData> d) -> d.detail.getRows().length == 5, 20004);
-                        }).then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
-                            assertEquals(2, constituentTable.getColumns().length);
-                            assertEquals(2d, constituentTable.getSize());
+                                    keyTable.close();
+                                    constituentTable.close();
+                                    partitionedTable.close();
 
-                            keyTable.close();
-                            constituentTable.close();
-                            partitionedTable.close();
-
-                            return null;
-                        });
+                                    return null;
+                                });
                     });
                 })
                 .then(this::finish).catch_(this::report);

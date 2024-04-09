@@ -24,6 +24,7 @@ add_executable(tests
     select_test.cc
     sort_test.cc
     string_filter_test.cc
+    table_test.cc
     test_util.cc
     test_util.h
     ticking_test.cc
