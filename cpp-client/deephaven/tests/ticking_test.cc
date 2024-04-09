@@ -77,7 +77,7 @@ private:
   size_t target_rows_ = 0;
 };
 
-TEST_CASE("Ticking Table eventually reaches 10 rows", "[ticking]") {
+TEST_CASE("Ticking Table: eventually reaches 10 rows", "[ticking]") {
   const auto max_rows = 10;
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
@@ -132,7 +132,7 @@ private:
   int64_t target_ = 0;
 };
 
-TEST_CASE("Ticking Table modified rows are eventually all greater than 10", "[ticking]") {
+TEST_CASE("Ticking Table: modified rows are eventually all greater than 10", "[ticking]") {
   const int64_t target = 10;
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
@@ -178,89 +178,84 @@ public:
       throw std::runtime_error(message);
     }
 
-    auto int8s = MakeReservedVector<int8_t>(target_);
-    auto int16s = MakeReservedVector<int16_t>(target_);
-    auto int32s = MakeReservedVector<int32_t>(target_);
-    auto int64s = MakeReservedVector<int64_t>(target_);
-    auto floats = MakeReservedVector<float>(target_);
-    auto doubles = MakeReservedVector<double>(target_);
-    auto bools = MakeReservedVector<bool>(target_);
-    auto strings = MakeReservedVector<std::string>(target_);
-    auto date_times = MakeReservedVector<DateTime>(target_);
+    auto chars = MakeReservedVector<std::optional<char16_t>>(target_);
+    auto int8s = MakeReservedVector<std::optional<int8_t>>(target_);
+    auto int16s = MakeReservedVector<std::optional<int16_t>>(target_);
+    auto int32s = MakeReservedVector<std::optional<int32_t>>(target_);
+    auto int64s = MakeReservedVector<std::optional<int64_t>>(target_);
+    auto floats = MakeReservedVector<std::optional<float>>(target_);
+    auto doubles = MakeReservedVector<std::optional<double>>(target_);
+    auto bools = MakeReservedVector<std::optional<bool>>(target_);
+    auto strings = MakeReservedVector<std::optional<std::string>>(target_);
+    auto date_times = MakeReservedVector<std::optional<DateTime>>(target_);
 
     auto date_time_start = DateTime::Parse("2001-03-01T12:34:56Z");
 
     for (int64_t i = 0; i != target_; ++i) {
-      int8s.push_back(i);
-      int16s.push_back(i);
-      int32s.push_back(i);
-      int64s.push_back(i);
-      floats.push_back(i);
-      doubles.push_back(i);
-      bools.push_back((i % 2) == 0);
-      strings.push_back(fmt::format("hello {}", i));
-      date_times.push_back(DateTime::FromNanos(date_time_start.Nanos() + i));
+      chars.emplace_back('a' + i);
+      int8s.emplace_back(i);
+      int16s.emplace_back(i);
+      int32s.emplace_back(i);
+      int64s.emplace_back(i);
+      floats.emplace_back(i);
+      doubles.emplace_back(i);
+      bools.emplace_back((i % 2) == 0);
+      strings.emplace_back(fmt::format("hello {}", i));
+      date_times.emplace_back(DateTime::FromNanos(date_time_start.Nanos() + i));
     }
 
-    CompareColumn<Int8Chunk>(*current, "Bytes", int8s);
-    CompareColumn<Int16Chunk>(*current, "Shorts", int16s);
-    CompareColumn<Int32Chunk>(*current, "Ints", int32s);
-    CompareColumn<Int64Chunk>(*current, "Longs", int64s);
-    CompareColumn<FloatChunk>(*current, "Floats", floats);
-    CompareColumn<DoubleChunk>(*current, "Doubles", doubles);
-    CompareColumn<StringChunk>(*current, "Strings", strings);
-    CompareColumn<BooleanChunk>(*current, "Bools", bools);
-    CompareColumn<DateTimeChunk>(*current, "DateTimes", date_times);
+    if (target_ == 0) {
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR("Target should not be 0"));
+    }
+    auto t2 = target_ / 2;
+    // Set the middle element to the unset optional, which for the purposes of this test is
+    // our representation of null.
+    chars[t2] = {};
+    int8s[t2] = {};
+    int16s[t2] = {};
+    int32s[t2] = {};
+    int64s[t2] = {};
+    floats[t2] = {};
+    doubles[t2] = {};
+    bools[t2] = {};
+    strings[t2] = {};
+    date_times[t2] = {};
+
+    CompareColumn(*current, "Chars", chars);
+    CompareColumn(*current, "Bytes", int8s);
+    CompareColumn(*current, "Shorts", int16s);
+    CompareColumn(*current, "Ints", int32s);
+    CompareColumn(*current, "Longs", int64s);
+    CompareColumn(*current, "Floats", floats);
+    CompareColumn(*current, "Doubles", doubles);
+    CompareColumn(*current, "Bools", bools);
+    CompareColumn(*current, "Strings", strings);
+    CompareColumn(*current, "DateTimes", date_times);
 
     NotifyDone();
-  }
-
-  template<typename ChunkType, typename T>
-  void CompareColumn(const ClientTable &table, std::string_view column_name,
-      const std::vector<T> &expected) {
-    static_assert(std::is_same_v<typename ChunkType::value_type, T>);
-    if (expected.size() != table.NumRows()) {
-      auto message = fmt::format("Expected 'expected' to have size {}, have {}",
-          table.NumRows(), expected.size());
-      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-    }
-    auto cs = table.GetColumn(column_name, true);
-    auto rs = RowSequence::CreateSequential(0, table.NumRows());
-    auto chunk = ChunkType::Create(table.NumRows());
-    cs->FillChunk(*rs, &chunk, nullptr);
-
-    for (size_t row_num = 0; row_num != expected.size(); ++row_num) {
-      const auto &expected_elt = expected[row_num];
-      const auto &actual_elt = chunk.data()[row_num];
-      if (expected_elt != actual_elt) {
-        auto message = fmt::format(R"(In column "{}", row {}, expected={}, actual={})",
-            column_name, row_num, expected_elt, actual_elt);
-        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-      }
-    }
   }
 
 private:
   int64_t target_ = 0;
 };
 
-TEST_CASE("Ticking Table all the data is eventually present", "[ticking]") {
+TEST_CASE("Ticking Table: all the data is eventually present", "[ticking]") {
   const int64_t target = 10;
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
 
   auto table = tm.TimeTable("PT0:00:0.5")
       .Update({"II = (int)((ii * 7) % 10)",
-          "Bytes = (byte)II",
-          "Chars = (char)(II + 'a')",
-          "Shorts = (short)II",
-          "Ints = (int)II",
-          "Longs = (long)II",
-          "Floats = (float)II",
-          "Doubles = (double)II",
-          "Strings = `hello ` + II",
-          "Bools = (II % 2) == 0",
-          "DateTimes = '2001-03-01T12:34:56Z' + II"
+          "Chars = II == 5 ? null : (char)(II + 'a')",
+          "Bytes = II == 5 ? null : (byte)II",
+          "Shorts = II == 5 ? null : (short)II",
+          "Ints = II == 5 ? null : (int)II",
+          "Longs = II == 5 ? null : (long)II",
+          "Floats = II == 5 ? null : (float)II",
+          "Doubles = II == 5 ? null : (double)II",
+          "Bools = II == 5 ? null : ((II % 2) == 0)",
+          "Strings = II == 5 ? null : (`hello ` + II)",
+          "DateTimes = II == 5 ? null : ('2001-03-01T12:34:56Z' + II)"
       })
       .LastBy("II")
       .Sort(SortPair::Ascending("II"));

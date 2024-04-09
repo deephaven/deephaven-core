@@ -59,8 +59,7 @@ class ArrowFlightService:
         """
         try:
             desc = pa.flight.FlightDescriptor.for_command(b"dphn")
-            options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
-            writer, reader = self._flight_client.do_exchange(desc, options)
+            writer, reader = self._flight_client.do_exchange(desc)
             return writer, reader
 
         except Exception as e:
