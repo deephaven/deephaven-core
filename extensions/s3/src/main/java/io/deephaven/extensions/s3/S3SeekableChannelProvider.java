@@ -5,12 +5,12 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -37,7 +38,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static io.deephaven.base.FileUtils.DUPLICATE_SLASH_PATTERN;
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
+import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_SCHEME;
 
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
@@ -83,9 +86,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .region(Region.of(s3Instructions.regionName()))
                 .credentialsProvider(s3Instructions.awsV2CredentialsProvider());
         s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        if (log.isDebugEnabled()) {
-            log.debug("building client with instructions: {}", s3Instructions);
-        }
+        log.debug().append("Building client with instructions: ").append(s3Instructions.toString()).endl();
         return builder.build();
     }
 
@@ -125,25 +126,30 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public Stream<URI> list(@NotNull final URI directory) {
-        if (log.isDebugEnabled()) {
-            log.debug("requesting list of child URIs for directory: {}", directory);
-        }
+        log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
         return createStream(directory, false);
     }
 
     @Override
     public Stream<URI> walk(@NotNull final URI directory) {
-        if (log.isDebugEnabled()) {
-            log.debug("requesting walking the tree rooted at directory: {}", directory);
-        }
+        log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
         return createStream(directory, true);
     }
 
     private Stream<URI> createStream(@NotNull final URI directory, final boolean isRecursive) {
         // The following iterator fetches URIs from S3 in batches and creates a stream
         final Iterator<URI> iterator = new Iterator<>() {
+            private final String bucketName;
+            private final String directoryKey;
+
             private Iterator<URI> currentBatchIt;
             private String continuationToken;
+
+            {
+                final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
+                bucketName = s3DirectoryURI.bucket().orElseThrow();
+                directoryKey = s3DirectoryURI.key().orElseThrow();
+            }
 
             @Override
             public boolean hasNext() {
@@ -175,20 +181,17 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             }
 
             private void fetchNextBatch() throws IOException {
-                final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
-                final String bucketName = s3DirectoryURI.bucket().orElseThrow();
-                final String directoryKey = s3DirectoryURI.key().orElseThrow();
                 final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                         .bucket(bucketName)
-                        .prefix(s3DirectoryURI.key().orElseThrow())
+                        .prefix(directoryKey)
                         .maxKeys(MAX_KEYS_PER_BATCH);
                 if (!isRecursive) {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
                 }
                 final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
-                final ListObjectsV2Response response;
                 final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
+                final ListObjectsV2Response response;
                 try {
                     response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
@@ -197,8 +200,20 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 }
                 currentBatchIt = response.contents().stream()
                         .filter(s3Object -> !s3Object.key().equals(directoryKey))
-                        .map(s3Object -> URI.create("s3://" + bucketName + "/" + s3Object.key()))
-                        .iterator();
+                        .map(s3Object -> {
+                            String path = "/" + s3Object.key();
+                            if (path.contains("//")) {
+                                path = DUPLICATE_SLASH_PATTERN.matcher(path).replaceAll("/");
+                            }
+                            try {
+                                return new URI(S3_URI_SCHEME, directory.getUserInfo(), directory.getHost(),
+                                        directory.getPort(), path, null, null);
+                            } catch (final URISyntaxException e) {
+                                throw new UncheckedDeephavenException("Failed to create URI for S3 object with key: "
+                                        + s3Object.key() + " and bucket " + bucketName + " inside directory "
+                                        + directory, e);
+                            }
+                        }).iterator();
                 // The following token is null when the last batch is fetched.
                 continuationToken = response.nextContinuationToken();
             }

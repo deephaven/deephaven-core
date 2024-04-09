@@ -3,7 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.local;
 
-import io.deephaven.api.util.NameValidator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -15,8 +16,7 @@ import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -63,18 +63,20 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
     }
 
     /**
-     * Find the keys in the given URI stream and notify the observer.
+     * Find the keys in the given URI stream and notify the observer. Note that the URIs are not expected to have any
+     * extra slashes or other path separators. For example, "/a//b/c" in the path is not expected.
      */
     protected final void findKeys(@NotNull final Stream<URI> uriStream,
             @NotNull final Consumer<TLK> locationKeyObserver) {
         final LocationTableBuilder locationTableBuilder = locationTableBuilderFactory.get();
         final Queue<URI> targetURIs = new ArrayDeque<>();
-        final List<String> partitionKeys = new ArrayList<>();
+        final Set<String> partitionKeys = new LinkedHashSet<>(); // Preserve order of insertion
+        final TIntObjectMap<ColumnNameInfo> partitionColInfo = new TIntObjectHashMap<>();
         final MutableBoolean registered = new MutableBoolean(false);
         uriStream.forEachOrdered(uri -> {
             final Collection<String> partitionValues = new ArrayList<>();
             final URI relativePath = tableRootDirectory.relativize(uri);
-            getPartitions(relativePath, partitionKeys, partitionValues, registered.booleanValue());
+            getPartitions(relativePath, partitionKeys, partitionValues, partitionColInfo, registered.booleanValue());
             if (registered.isFalse()) {
                 // Use the first path to find the partition keys and use the same for the rest
                 locationTableBuilder.registerPartitionKeys(partitionKeys);
@@ -89,46 +91,28 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
     }
 
     private void getPartitions(@NotNull final URI relativePath,
-            @NotNull final List<String> partitionKeys,
+            @NotNull final Set<String> partitionKeys,
             @NotNull final Collection<String> partitionValues,
+            @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo,
             final boolean registered) {
-        final Set<String> takenNames = new HashSet<>();
         final String relativePathString = relativePath.getPath();
+        // The following assumes that there is exactly one URI_SEPARATOR between each subdirectory in the path
         final String[] subDirs = relativePathString.split(URI_SEPARATOR);
         final int numPartitioningCol = subDirs.length - 1;
-        if (!registered) {
-            if (numPartitioningCol > maxPartitioningLevels) {
-                throw new TableDataException("Too many partitioning levels at " + relativePathString + ", count = " +
-                        numPartitioningCol + ", maximum expected are " + maxPartitioningLevels);
-            }
-        } else {
+        if (registered) {
             if (numPartitioningCol > partitionKeys.size()) {
                 throw new TableDataException("Too many partitioning levels at " + relativePathString + " (expected "
                         + partitionKeys.size() + ") based on earlier leaf nodes in the tree.");
             }
+        } else {
+            if (numPartitioningCol > maxPartitioningLevels) {
+                throw new TableDataException("Too many partitioning levels at " + relativePathString + ", count = " +
+                        numPartitioningCol + ", maximum expected are " + maxPartitioningLevels);
+            }
         }
         for (int partitioningColIndex = 0; partitioningColIndex < numPartitioningCol; partitioningColIndex++) {
-            final String dirName = subDirs[partitioningColIndex];
-            final String[] components = dirName.split("=", 2);
-            if (components.length != 2) {
-                throw new TableDataException("Unexpected directory name format (not key=value) at "
-                        + relativePathString);
-            }
-            final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
-            takenNames.add(columnKey);
-            if (registered) {
-                if (!partitionKeys.get(partitioningColIndex).equals(columnKey)) {
-                    throw new TableDataException(String.format(
-                            "Column name mismatch at column index %d: expected %s found %s at %s",
-                            partitioningColIndex, partitionKeys.get(partitioningColIndex), columnKey,
-                            relativePathString));
-                }
-            } else {
-                // This is the first leaf node in the tree, so accumulate the partitioning levels
-                partitionKeys.add(columnKey);
-            }
-            final String columnValue = components[1];
-            partitionValues.add(columnValue);
+            processSubdirectoryImpl(subDirs[partitioningColIndex], relativePathString, partitioningColIndex,
+                    partitionKeys, partitionValues, partitionColInfo);
         }
     }
 }

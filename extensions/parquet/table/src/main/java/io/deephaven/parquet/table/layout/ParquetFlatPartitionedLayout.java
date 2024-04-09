@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -54,7 +55,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     public ParquetFlatPartitionedLayout(@NotNull final URI tableRootDirectoryURI,
             @NotNull final ParquetInstructions readInstructions) {
         this.tableRootDirectory = tableRootDirectoryURI;
-        this.cache = new HashMap<>();
+        this.cache = Collections.synchronizedMap(new HashMap<>());
         this.readInstructions = readInstructions;
     }
 
@@ -77,17 +78,18 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
                 tableRootDirectory, readInstructions.getSpecialInstructions());
                 final Stream<URI> stream = provider.list(tableRootDirectory)) {
             stream.filter(uriFilter).forEach(uri -> {
-                synchronized (ParquetFlatPartitionedLayout.this) {
-                    ParquetTableLocationKey locationKey = cache.get(uri);
-                    if (locationKey == null) {
-                        locationKey = locationKey(uri, readInstructions);
-                        if (!locationKey.verifyFileReader()) {
-                            return;
-                        }
-                        cache.put(uri, locationKey);
+                cache.compute(uri, (key, existingLocationKey) -> {
+                    if (existingLocationKey != null) {
+                        locationKeyObserver.accept(existingLocationKey);
+                        return existingLocationKey;
                     }
-                    locationKeyObserver.accept(locationKey);
-                }
+                    final ParquetTableLocationKey newLocationKey = locationKey(uri, readInstructions);
+                    if (!newLocationKey.verifyFileReader()) {
+                        return null;
+                    }
+                    locationKeyObserver.accept(newLocationKey);
+                    return newLocationKey;
+                });
             });
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);

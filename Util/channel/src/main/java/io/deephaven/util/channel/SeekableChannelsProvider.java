@@ -89,10 +89,10 @@ public interface SeekableChannelsProvider extends SafeCloseable {
 
     /**
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.
-     * Note that the URIs supplied by the stream will be file URIs (not ending with "/") irrespective of whether the URI
-     * corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
-     * Also, the caller is responsible for closing the stream, preferably using a try-with-resources block.
-     *
+     * The URIs supplied by the stream will not have any unnecessary slashes or path separators. Also, the URIs will be
+     * file URIs (not ending with "/") irrespective of whether the URI corresponds to a file or a directory. The caller
+     * should manage file vs. directory handling in the processor. The caller is also responsible for closing the
+     * stream, preferably using a try-with-resources block.
      *
      * @param directory the URI of the directory to list
      * @return The {@link Stream} of {@link URI}s
@@ -101,9 +101,10 @@ public interface SeekableChannelsProvider extends SafeCloseable {
 
     /**
      * Returns a stream of URIs, the elements of which are all the files in the file tree rooted at the given starting
-     * directory. Note that the URIs supplied by the stream will be file URIs (not ending with "/") irrespective of
-     * whether the URI corresponds to a file or a directory. The caller should manage file vs. directory handling in the
-     * processor. Also, the caller is responsible for closing the stream, preferably using a try-with-resources block.
+     * directory. The URIs supplied by the stream will not have any unnecessary slashes or path separators. Also, the
+     * URIs will be file URIs (not ending with "/") irrespective of whether the URI corresponds to a file or a
+     * directory. The caller should manage file vs. directory handling in the processor. The caller is also responsible
+     * for closing the stream, preferably using a try-with-resources block.
      *
      * @param directory the URI of the directory to walk
      * @return The {@link Stream} of {@link URI}s

@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public class FileUtils {
     private final static FileFilter DIRECTORY_FILE_FILTER = new FileFilter() {
@@ -28,6 +29,8 @@ public class FileUtils {
         }
     };
     private final static String[] EMPTY_STRING_ARRAY = new String[0];
+
+    public static final Pattern DUPLICATE_SLASH_PATTERN = Pattern.compile("//+");
 
     /**
      * Cleans the specified path. All files and subdirectories in the path will be deleted. (ie you'll be left with an
@@ -254,7 +257,8 @@ public class FileUtils {
     }
 
     /**
-     * Take the file source path or URI string and convert it to a URI object.
+     * Take the file source path or URI string and convert it to a URI object. Any unnecessary path separators will be
+     * removed.
      *
      * @param source The file source path or URI
      * @param isDirectory Whether the source is a directory
@@ -270,7 +274,7 @@ public class FileUtils {
             // Replace two or more consecutive slashes in the path with a single slash
             final String path = uri.getPath();
             if (path.contains("//")) {
-                final String canonicalizedPath = uri.getPath().replaceAll("//+", "/");
+                final String canonicalizedPath = DUPLICATE_SLASH_PATTERN.matcher(path).replaceAll("/");
                 uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), canonicalizedPath,
                         uri.getQuery(), uri.getFragment());
             }

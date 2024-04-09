@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.local;
 
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.NameValidator;
@@ -80,9 +82,9 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
         try {
             Files.walkFileTree(tableRootDirectory.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS),
                     maxPartitioningLevels + 1, new SimpleFileVisitor<>() {
-                        final Set<String> takenNames = new HashSet<>();
-                        final List<String> partitionKeys = new ArrayList<>();
+                        final Set<String> partitionKeys = new LinkedHashSet<>(); // Preserve order of insertion
                         final List<String> partitionValues = new ArrayList<>();
+                        final TIntObjectMap<ColumnNameInfo> partitionColInfo = new TIntObjectHashMap<>();
                         boolean registered;
                         int columnCount = -1;
 
@@ -97,23 +99,9 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
                             }
                             if (++columnCount > 0) {
                                 // We're descending and past the root
-                                final String[] components = dirName.split("=", 2);
-                                if (components.length != 2) {
-                                    throw new TableDataException(
-                                            "Unexpected directory name format (not key=value) at " + dir);
-                                }
-                                final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
-                                takenNames.add(columnKey);
                                 final int columnIndex = columnCount - 1;
-                                if (columnCount > partitionKeys.size()) {
-                                    partitionKeys.add(columnKey);
-                                } else if (!partitionKeys.get(columnIndex).equals(columnKey)) {
-                                    throw new TableDataException(String.format(
-                                            "Column name mismatch at column index %d: expected %s found %s at %s",
-                                            columnIndex, partitionKeys.get(columnIndex), columnKey, dir));
-                                }
-                                final String columnValue = components[1];
-                                partitionValues.add(columnValue);
+                                processSubdirectoryImpl(dirName, dir.toString(), columnIndex, partitionKeys,
+                                        partitionValues, partitionColInfo);
                             }
                             return FileVisitResult.CONTINUE;
                         }
@@ -130,7 +118,6 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
                                 locationTableBuilder.acceptLocation(partitionValues);
                                 targetFiles.add(file);
                             }
-                            takenNames.clear();
                             return FileVisitResult.CONTINUE;
                         }
 

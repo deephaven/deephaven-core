@@ -4,12 +4,12 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -46,7 +46,7 @@ final class S3ChannelContext implements SeekableChannelContext {
 
     /**
      * The URI associated with this context. A single context object can only be associated with a single URI at a time.
-     * But it can be re-associated with a different URI after closing.
+     * But it can be re-associated with a different URI after {@link #reset() resetting}.
      */
     private S3Uri uri;
 
@@ -73,22 +73,14 @@ final class S3ChannelContext implements SeekableChannelContext {
         uri = null;
         size = UNINITIALIZED_SIZE;
         numFragments = UNINITIALIZED_NUM_FRAGMENTS;
-        if (log.isDebugEnabled()) {
-            log.debug("creating context: {}", ctxStr());
-        }
+        log.debug().append("Creating context: ").append(ctxStr()).endl();
     }
 
-    S3Uri getUri() {
-        return uri;
-    }
-
-    void verifyOrSetUri(@Nullable final S3Uri uri) {
-        if (this.uri == null) {
-            this.uri = Objects.requireNonNull(uri);
-        } else if (!this.uri.equals(uri)) {
-            throw new IllegalStateException(
-                    String.format("Inconsistent URIs. expected=%s, actual=%s, ctx=%s", this.uri, uri, ctxStr()));
+    void setURI(@NotNull final S3Uri uri) {
+        if (!uri.equals(this.uri)) {
+            this.reset();
         }
+        this.uri = uri;
     }
 
     void verifyOrSetSize(long size) {
@@ -141,25 +133,27 @@ final class S3ChannelContext implements SeekableChannelContext {
         return filled;
     }
 
+    private void reset() {
+        // Cancel all outstanding requests
+        close();
+        // Reset the internal state
+        uri = null;
+        size = UNINITIALIZED_SIZE;
+        numFragments = UNINITIALIZED_NUM_FRAGMENTS;
+    }
+
     /**
      * Close the context, cancelling all outstanding requests and releasing all resources associated with it.
      */
     @Override
     public void close() {
-        if (log.isDebugEnabled()) {
-            log.debug("closing context: {}", ctxStr());
-        }
-        // Cancel all outstanding requests
+        log.debug().append("Closing context: ").append(ctxStr()).endl();
         for (int i = 0; i < requests.length; i++) {
             if (requests[i] != null) {
                 requests[i].release();
                 requests[i] = null;
             }
         }
-        // Reset the internal state
-        uri = null;
-        size = UNINITIALIZED_SIZE;
-        numFragments = UNINITIALIZED_NUM_FRAGMENTS;
     }
 
     // --------------------------------------------------------------------------------------------------
@@ -227,18 +221,16 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         void init() {
-            if (log.isDebugEnabled()) {
-                log.debug("send: {}", requestStr());
-            }
+            log.debug().append("Sending: ").append(requestStr()).endl();
             consumerFuture = client.getObject(getObjectRequest(), this);
             consumerFuture.whenComplete(this);
         }
 
-        public boolean isDone() {
+        boolean isDone() {
             return consumerFuture.isDone();
         }
 
-        public int fill(long localPosition, ByteBuffer dest) throws IOException {
+        int fill(long localPosition, ByteBuffer dest) throws IOException {
             final int resultOffset = (int) (localPosition - from);
             final int resultLength = Math.min((int) (to - localPosition + 1), dest.remaining());
             if (!bufferReference.acquireIfAvailable()) {
@@ -268,12 +260,13 @@ final class S3ChannelContext implements SeekableChannelContext {
             return resultLength;
         }
 
-        public void release() {
+        void release() {
             final boolean didCancel = consumerFuture.cancel(true);
             bufferReference.clear();
             if (log.isDebugEnabled()) {
                 final String cancelType = didCancel ? "fast" : (fillCount == 0 ? "unused" : "normal");
-                log.debug("cancel {}: {} fillCount={}, fillBytes={}", cancelType, requestStr(), fillCount, fillBytes);
+                log.debug().append("cancel ").append(cancelType).append(": ").append(requestStr()).append(" fillCount=")
+                        .append(fillCount).append(" fillBytes=").append(fillBytes).endl();
             }
         }
 
@@ -284,9 +277,11 @@ final class S3ChannelContext implements SeekableChannelContext {
             if (log.isDebugEnabled()) {
                 final Instant completedAt = Instant.now();
                 if (byteBuffer != null) {
-                    log.debug("send complete: {} {}", requestStr(), Duration.between(createdAt, completedAt));
+                    log.debug().append("Send complete: ").append(requestStr()).append(" ")
+                            .append(Duration.between(createdAt, completedAt).toString()).endl();
                 } else {
-                    log.debug("send error: {} {}", requestStr(), Duration.between(createdAt, completedAt));
+                    log.debug().append("Send error: ").append(requestStr()).append(" ")
+                            .append(Duration.between(createdAt, completedAt).toString()).endl();
                 }
             }
         }
@@ -465,9 +460,7 @@ final class S3ChannelContext implements SeekableChannelContext {
         if (size != UNINITIALIZED_SIZE) {
             return;
         }
-        if (log.isDebugEnabled()) {
-            log.debug("head: {}", ctxStr());
-        }
+        log.debug().append("Head: ").append(ctxStr()).endl();
         // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
         // for future use
         final HeadObjectResponse headObjectResponse;

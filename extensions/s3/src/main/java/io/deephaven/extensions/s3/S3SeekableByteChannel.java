@@ -40,7 +40,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
     private long position;
     private long size;
 
-    S3SeekableByteChannel(S3Uri uri) {
+    S3SeekableByteChannel(final S3Uri uri) {
         this.uri = Objects.requireNonNull(uri);
         this.size = UNINITIALIZED_SIZE;
         this.position = INIT_POSITION;
@@ -59,12 +59,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         }
         this.context = (S3ChannelContext) channelContext;
         if (this.context != null) {
-            if (this.context.getUri() == null) {
-                this.context.verifyOrSetUri(uri);
-            } else if (!this.context.getUri().equals(uri)) {
-                this.context.close();
-                this.context.verifyOrSetUri(uri);
-            }
+            this.context.setURI(uri);
             if (size != UNINITIALIZED_SIZE) {
                 context.verifyOrSetSize(size);
             }

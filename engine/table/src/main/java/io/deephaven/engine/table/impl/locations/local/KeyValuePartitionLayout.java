@@ -3,7 +3,10 @@
 //
 package io.deephaven.engine.table.impl.locations.local;
 
+import gnu.trove.map.TIntObjectMap;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.ColumnSource;
@@ -65,14 +68,63 @@ public abstract class KeyValuePartitionLayout<TLK extends TableLocationKey, TARG
     /**
      * @param keyFactory Factory function used to generate table location keys from target files and partition values
      */
-    public KeyValuePartitionLayout(
-            @NotNull final BiFunction<TARGET_FILE_TYPE, Map<String, Comparable<?>>, TLK> keyFactory) {
+    KeyValuePartitionLayout(@NotNull final BiFunction<TARGET_FILE_TYPE, Map<String, Comparable<?>>, TLK> keyFactory) {
         this.keyFactory = keyFactory;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName();
+    }
+
+    static class ColumnNameInfo {
+        final String columnName; // Name extracted from directory
+        final String legalizedColumnName;
+
+        ColumnNameInfo(@NotNull final String columnName, @NotNull final String legalizedColumnName) {
+            this.columnName = columnName;
+            this.legalizedColumnName = legalizedColumnName;
+        }
+    }
+
+    /**
+     * Process a subdirectory, extracting a column name and value and updating the partition keys and values.
+     *
+     * @param dirName The name of the directory
+     * @param path The path of the directory
+     * @param colIndex The index of the column
+     * @param partitionKeys The partition keys, to be updated with the
+     *        {@link NameValidator#legalizeColumnName(String, Set) legalized} column names as new columns are
+     *        encountered
+     * @param partitionValues The partition values, to be updated with the value extracted from the directory name
+     * @param partitionColInfo The map of column index to column name info, to be updated with the column name info as
+     *        new columns are encountered
+     */
+    static void processSubdirectoryImpl(
+            @NotNull final String dirName, @NotNull final String path, final int colIndex,
+
+            @NotNull final Set<String> partitionKeys, @NotNull final Collection<String> partitionValues,
+            @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo) {
+        final String[] components = dirName.split("=", 2);
+        if (components.length != 2) {
+            throw new TableDataException("Unexpected directory name format (not key=value) at " + path);
+        }
+        final String columnName = components[0];
+        final String legalizedColumnName;
+        if (partitionColInfo.containsKey(colIndex)) {
+            final ColumnNameInfo existing = partitionColInfo.get(colIndex);
+            if (!existing.columnName.equals(columnName)) {
+                throw new TableDataException(String.format(
+                        "Column name mismatch at column index %d: expected %s found %s at %s",
+                        colIndex, existing.columnName, columnName, path));
+            }
+        } else {
+            legalizedColumnName = NameValidator.legalizeColumnName(columnName, partitionKeys);
+            partitionKeys.add(legalizedColumnName);
+            partitionColInfo.put(colIndex, new ColumnNameInfo(columnName, legalizedColumnName));
+        }
+        final String columnValue = components[1];
+        partitionValues.add(columnValue);
     }
 
     /**
