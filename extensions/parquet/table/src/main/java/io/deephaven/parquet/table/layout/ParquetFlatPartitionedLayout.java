@@ -64,19 +64,18 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
 
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+        final Predicate<URI> uriFilter;
+        if (FILE_URI_SCHEME.equals(tableRootDirectory.getScheme())) {
+            uriFilter = uri -> {
+                final String filename = new File(uri).getName();
+                return filename.endsWith(ParquetUtils.PARQUET_FILE_EXTENSION) && filename.charAt(0) != '.';
+            };
+        } else {
+            uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+        }
+        try (final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
-        final boolean isFileURI = FILE_URI_SCHEME.equals(tableRootDirectory.getScheme());
-        try (final Stream<URI> stream = provider.list(tableRootDirectory)) {
-            final Predicate<URI> uriFilter;
-            if (isFileURI) {
-                uriFilter = uri -> {
-                    final String filename = new File(uri).getName();
-                    return filename.endsWith(ParquetUtils.PARQUET_FILE_EXTENSION) && filename.charAt(0) != '.';
-                };
-            } else {
-                uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
-            }
+                final Stream<URI> stream = provider.list(tableRootDirectory)) {
             stream.filter(uriFilter).forEach(uri -> {
                 synchronized (ParquetFlatPartitionedLayout.this) {
                     ParquetTableLocationKey locationKey = cache.get(uri);

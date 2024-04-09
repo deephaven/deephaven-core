@@ -1244,7 +1244,7 @@ public class ParquetTools {
         }
         if (source.endsWith(METADATA_FILE_NAME) || source.endsWith(COMMON_METADATA_FILE_NAME)) {
             throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
-                    "from non local file systems");
+                    "from non local storage");
         }
         // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
         return readPartitionedTable(new ParquetKeyValuePartitionedLayout(sourceURI, MAX_PARTITIONING_LEVELS_INFERENCE,

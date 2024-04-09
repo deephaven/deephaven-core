@@ -91,9 +91,8 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.
      * Note that the URIs supplied by the stream will be file URIs (not ending with "/") irrespective of whether the URI
      * corresponds to a file or a directory. The caller should manage file vs. directory handling in the processor.
+     * Also, the caller is responsible for closing the stream, preferably using a try-with-resources block.
      *
-     * @apiNote This method must be used within a try-with-resources statement or similar control structure to ensure
-     *          that the stream's open resources are closed promptly after the stream's operations have completed.
      *
      * @param directory the URI of the directory to list
      * @return The {@link Stream} of {@link URI}s
@@ -104,10 +103,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * Returns a stream of URIs, the elements of which are all the files in the file tree rooted at the given starting
      * directory. Note that the URIs supplied by the stream will be file URIs (not ending with "/") irrespective of
      * whether the URI corresponds to a file or a directory. The caller should manage file vs. directory handling in the
-     * processor.
-     *
-     * @apiNote This method must be used within a try-with-resources statement or similar control structure to ensure
-     *          that the stream's open resources are closed promptly after the stream's operations have completed.
+     * processor. Also, the caller is responsible for closing the stream, preferably using a try-with-resources block.
      *
      * @param directory the URI of the directory to walk
      * @return The {@link Stream} of {@link URI}s

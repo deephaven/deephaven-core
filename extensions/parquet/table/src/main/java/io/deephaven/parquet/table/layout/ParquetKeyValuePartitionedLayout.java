@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.table.impl.locations.local.URIStreamKeyValuePartitionLayout;
+import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -32,11 +33,11 @@ import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetUtils.isVisibleParquetFile;
 
 /**
- * Key-Value partitioned layout for Parquet data.
+ * {@link KeyValuePartitionLayout} for Parquet data.
  * 
  * @implNote
  *           <ul>
- *           <li>Unless table definition is provided, type inference for partitioning column uses
+ *           <li>Unless a {@link TableDefinition} is provided, type inference for partitioning column uses
  *           {@link CsvTools#readCsv(java.io.InputStream) CsvTools.readCsv} as a conversion tool, and hence follows the
  *           same rules.</li>
  *           <li>Column names will be legalized via {@link NameValidator#legalizeColumnName(String, Set)
@@ -87,17 +88,16 @@ public class ParquetKeyValuePartitionedLayout
 
     @Override
     public final void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+        final Predicate<URI> uriFilter;
+        if (FILE_URI_SCHEME.equals(tableRootDirectory.getScheme())) {
+            final Path rootDir = Path.of(tableRootDirectory);
+            uriFilter = uri -> isVisibleParquetFile(rootDir, Path.of(uri));
+        } else {
+            uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+        }
+        try (final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
                 tableRootDirectory, readInstructions.getSpecialInstructions());
-        final boolean isFileURI = FILE_URI_SCHEME.equals(tableRootDirectory.getScheme());
-        try (final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
-            final Predicate<URI> uriFilter;
-            if (isFileURI) {
-                final Path rootDir = Path.of(tableRootDirectory);
-                uriFilter = uri -> isVisibleParquetFile(rootDir, Path.of(uri));
-            } else {
-                uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
-            }
+                final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
             final Stream<URI> filteredStream = uriStream.filter(uriFilter);
             findKeys(filteredStream, locationKeyObserver);
         } catch (final IOException e) {

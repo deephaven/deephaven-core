@@ -1792,7 +1792,7 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(tableToSave, fromDisk3);
 
         // Read from relative path
-        final String relativePath = rootFile.getName() + "/" + filename;
+        final String relativePath = rootFile.getName() + "/////" + filename;
         final Table fromDisk4 = ParquetTools.readTable(relativePath);
         assertTableEquals(tableToSave, fromDisk4);
 
@@ -1803,6 +1803,16 @@ public final class ParquetTableReadWriteTest {
         } catch (final RuntimeException e) {
             assertTrue(e instanceof UnsupportedOperationException);
         }
+
+        // Read from absolute path with additional "/" in the path
+        final String additionalSlashPath = rootFile.getAbsolutePath() + "/////" + filename;
+        final Table fromDisk5 = ParquetTools.readTable(additionalSlashPath);
+        assertTableEquals(tableToSave, fromDisk5);
+
+        // Read from URI with additional "/" in the path
+        final String additionalSlashURI = "file:////" + additionalSlashPath;
+        final Table fromDisk6 = ParquetTools.readTable(additionalSlashURI);
+        assertTableEquals(tableToSave, fromDisk6);
     }
 
     /**

@@ -264,9 +264,16 @@ public class FileUtils {
         if (source.isEmpty()) {
             throw new IllegalArgumentException("Cannot convert empty source to URI");
         }
-        final URI uri;
+        URI uri;
         try {
             uri = new URI(source);
+            // Replace two or more consecutive slashes in the path with a single slash
+            final String path = uri.getPath();
+            if (path.contains("//")) {
+                final String canonicalizedPath = uri.getPath().replaceAll("//+", "/");
+                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), canonicalizedPath,
+                        uri.getQuery(), uri.getFragment());
+            }
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
             return convertToURI(new File(source), isDirectory);

@@ -35,7 +35,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
     private static final String URI_SEPARATOR = "/";
 
     protected final URI tableRootDirectory;
-    private final Supplier<KeyValuePartitionLayout.LocationTableBuilder> locationTableBuilderFactory;
+    private final Supplier<LocationTableBuilder> locationTableBuilderFactory;
     private final int maxPartitioningLevels;
 
     /**
@@ -47,7 +47,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
      * @param maxPartitioningLevels Maximum partitioning levels to traverse. Must be {@code >= 0}. {@code 0} means only
      *        look at files in {@code tableRootDirectory} and find no partitions.
      */
-    public URIStreamKeyValuePartitionLayout(
+    protected URIStreamKeyValuePartitionLayout(
             @NotNull final URI tableRootDirectory,
             @NotNull final Supplier<LocationTableBuilder> locationTableBuilderFactory,
             @NotNull final BiFunction<URI, Map<String, Comparable<?>>, TLK> keyFactory,
@@ -113,7 +113,6 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
                 throw new TableDataException("Unexpected directory name format (not key=value) at "
                         + new File(tableRootDirectory.getPath(), relativePathString));
             }
-            // We use an empty set to allow duplicate partition keys across files
             final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
             takenNames.add(columnKey);
             if (registered) {
