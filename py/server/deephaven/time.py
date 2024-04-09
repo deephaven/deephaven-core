@@ -899,6 +899,7 @@ def simple_date_format(pattern: str) -> jpy.JType:
         DHError
     """
     try:
+        # Returning a Java object directly to avoid Python/Java boundary crossings in query strings
         return _JSimpleDateFormat(pattern)
     except Exception as e:
         raise DHError(e) from e
