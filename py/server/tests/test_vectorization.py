@@ -14,7 +14,7 @@ from deephaven.filters import Filter, and_
 import deephaven._udf as _udf
 from tests.testbase import BaseTestCase
 
-from tests.test_udf_args import _J_TYPE_NULL_MAP, _J_TYPE_NP_DTYPE_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
+from tests.test_udf_scalar_args import _J_TYPE_NULL_MAP, _J_TYPE_NP_DTYPE_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
 
 
 class VectorizationTestCase(BaseTestCase):

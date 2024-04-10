@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -31,6 +32,9 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     private static final Map<Class<?>, Character> javaClass2NumpyType = new HashMap<>();
 
+    private static class UnsupportedPythonTypeHint {
+    }
+
     static {
         numpyType2JavaClass.put('b', byte.class);
         numpyType2JavaClass.put('h', short.class);
@@ -43,6 +47,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         numpyType2JavaClass.put('U', String.class);
         numpyType2JavaClass.put('M', Instant.class);
         numpyType2JavaClass.put('O', Object.class);
+        numpyType2JavaClass.put('N', NULL_CLASS);
+        numpyType2JavaClass.put('X', UnsupportedPythonTypeHint.class);
 
         numpyType2JavaArrayClass.put('b', byte[].class);
         numpyType2JavaArrayClass.put('h', short[].class);
@@ -212,8 +218,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                         // skip the array type code
                         ti++;
                         possibleTypes.add(numpyType2JavaArrayClass.get(paramTypeCodes.charAt(ti)));
-                    } else if (typeCode == 'N') {
-                        possibleTypes.add(NULL_CLASS);
                     } else {
                         possibleTypes.add(numpyType2JavaClass.get(typeCode));
                     }
@@ -231,8 +235,11 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     }
 
-    private boolean hasSafelyCastable(Set<Class<?>> types, Class<?> type) {
+    private boolean hasSafelyCastable(Set<Class<?>> types, @NotNull Class<?> type) {
         for (Class<?> t : types) {
+            if (t == null) {
+                continue;
+            }
             if (t.isAssignableFrom(type)) {
                 return true;
             }
@@ -243,7 +250,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         return false;
     }
 
-    public static boolean isLosslessWideningPrimitiveConversion(Class<?> original, Class<?> target) {
+    public static boolean isLosslessWideningPrimitiveConversion(@NotNull Class<?> original, @NotNull Class<?> target) {
         if (original == null || !original.isPrimitive() || target == null || !target.isPrimitive()
                 || original.equals(void.class) || target.equals(void.class)) {
             throw new IllegalArgumentException("Arguments must be a primitive type (excluding void)!");
@@ -271,6 +278,11 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         String callableName = pyCallable.getAttribute("__name__").toString();
         List<Parameter> parameters = signature.getParameters();
 
+        if (parameters.size() == 0 && argTypes.length > 0) {
+            throw new IllegalArgumentException(
+                    callableName + ": " + "Expected no arguments, got " + argTypes.length);
+        }
+
         StringBuilder argTypesStr = new StringBuilder();
         for (int i = 0; i < argTypes.length; i++) {
             Class<?> argType = argTypes[i];
@@ -278,13 +290,14 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
             // parameter. This is not ideal. We should look for a better way to handle this, i.e. a way to convey that
             // the function is variadic.
-            if (parameters.size() == 0) {
-                throw new IllegalArgumentException(
-                        callableName + ": " + "Expected no arguments, got " + argTypes.length);
-            }
             Set<Class<?>> types =
                     parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
 
+            if (types.size() == 1 && types.contains(UnsupportedPythonTypeHint.class)) {
+                throw new IllegalArgumentException(
+                        callableName + ": " + "Unsupported type hint in signature for argument " + i);
+            }
+            types.remove(UnsupportedPythonTypeHint.class);
 
             // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
             // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the

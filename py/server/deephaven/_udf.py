@@ -50,6 +50,7 @@ def _is_lossless_convertible(from_type: str, to_type: str) -> bool:
 
     return False
 
+
 @dataclass
 class _ParsedParam:
     name: Union[str, int] = field(init=True)
@@ -64,14 +65,16 @@ class _ParsedParam:
         """ Set up the converter function for the parameter based on the encoded argument type string. """
         for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
             if _is_lossless_convertible(arg_type_str, param_type_str):
-                if arg_type_str.startswith("["): # array type (corresponding to numpy ndarray, Sequence, etc.)
+                if arg_type_str.startswith("["):  # array type (corresponding to numpy ndarray, Sequence, etc.)
                     dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))
                     self.arg_converter = partial(_j_array_to_numpy_array, dtype, conv_null=False,
                                                  type_promotion=False)
+                elif arg_type_str == 'N':
+                    self.arg_converter = None
                 else:
                     if effective_type in {object, str}:
                         self.arg_converter = None
-                    elif arg_type_str == 'M': # datetime types (datetime, pd.Timestamp, np.datetime64)
+                    elif arg_type_str == 'M':  # datetime types (datetime, pd.Timestamp, np.datetime64)
                         self._setup_datetime_converter(effective_type)
                     else:
                         self.arg_converter = effective_type
@@ -79,18 +82,19 @@ class _ParsedParam:
                         # Optional typehint on primitive types requires checking for DH nulls
                         if "N" in self.encoded_types:
                             if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(
-                                    dtypes.from_np_dtype(np.dtype(param_type_str))):
+                                    dtypes.from_np_dtype(np.dtype(arg_type_str))):
                                 if effective_type in {int, float, bool}:
                                     self.arg_converter = partial(lambda nv, x: None if x == nv else x, null_value)
                                 else:
                                     self.arg_converter = partial(lambda nv, x: None if x == nv else effective_type(x),
-                                                             null_value)
+                                                                 null_value)
 
                         # JPY does the conversion for these types
                         if self.arg_converter in {int, float, bool}:
                             self.arg_converter = None
 
-                        if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(self.arg_converter, np.generic):
+                        if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(
+                                self.arg_converter, np.generic):
                             # because numpy scalar types are significantly slower than Python built-in scalar types,
                             # we'll continue to find a Python scalar type that can be used to convert the argument
                             continue
@@ -100,10 +104,11 @@ class _ParsedParam:
         # we have found the most suitable converter function, but if is a numpy scalar type, we'll warn the user
         if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(self.arg_converter, np.generic):
             warnings.warn(
-            f"numpy scalar type {self.arg_converter} is used to annotate parameter '{self.name}'. Note that conversion of "
-            f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
-            f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
-            f"instead.")
+                f"numpy scalar type {self.arg_converter} is used to annotate parameter '{self.name}'. Note that "
+                f"conversion of "
+                f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
+                f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
+                f"instead.")
 
     def _setup_datetime_converter(self, effective_type):
         if effective_type == datetime:
@@ -200,61 +205,56 @@ class _ParsedSignature:
         return arg_conv_needed
 
 
-
 def _encode_param_type(t: type) -> str:
     """Returns the numpy based char codes for the given type.
     If the type is a numpy ndarray, prefix the numpy dtype char with '[' using Java convention
     If the type is a NoneType (as in Optional or as None in Union), return 'N'
+    If the type is not a supported numpy type, return 'X' (stands for unsupported)
     """
     if t is type(None):
         return "N"
 
+    if t == typing.Any:
+        return "O"
+
     # find the component type if it is numpy ndarray
-    component_type = _component_np_dtype_char(t)
+    component_type = _np_ndarray_component_type(t)
     if component_type:
         t = component_type
 
     tc = _np_dtype_char(t)
-    tc = tc if tc in _SUPPORTED_NP_TYPE_CODES else "O"
+    tc = tc if tc in _SUPPORTED_NP_TYPE_CODES else "X"
 
-    if component_type:
+    if component_type and tc != "X":
         tc = "[" + tc
     return tc
 
 
 def _np_dtype_char(t: Union[type, str]) -> str:
     """Returns the numpy dtype character code for the given type."""
-    try:
-        np_dtype = np.dtype(t if t else "object")
-        if np_dtype.kind == "O":
-            if t in (datetime, pd.Timestamp):
-                return "M"
-    except TypeError:
-        np_dtype = np.dtype("object")
+    if t is None:
+        return "O"
 
-    return np_dtype.char
+    if t in (datetime, pd.Timestamp):
+        return "M"
+
+    try:
+        np_dtype = np.dtype(t)
+        if np_dtype.char == "O" and t != object: # np.dtype() returns np.dtype('O') for unrecognized types
+            return "X"
+        return np_dtype.char
+    except TypeError:
+        return 'X'
 
 
 def _component_np_dtype_char(t: type) -> Optional[str]:
     """Returns the numpy dtype character code for the given type's component type if the type is a Sequence type or
     numpy ndarray, otherwise return None. """
-    component_type = None
-
-    if sys.version_info > (3, 8):
-        import types
-        if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence): # novermin
-            component_type = t.__args__[0]
-
-    if not component_type:
-        if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
-            component_type = t.__args__[0]
-            # if the component type is a DType, get its numpy type
-            if isinstance(component_type, DType):
-                component_type = component_type.np_type
+    component_type = _py_sequence_component_type(t)
 
     if not component_type:
         if t == bytes or t == bytearray:
-                return "b"
+            return "b"
 
     if not component_type:
         component_type = _np_ndarray_component_type(t)
@@ -263,6 +263,25 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
         return _np_dtype_char(component_type)
     else:
         return None
+
+
+def _py_sequence_component_type(t: type) -> Optional[type]:
+    """Returns the component type of Python subscribed sequence type, otherwise return None."""
+    component_type = None
+    if sys.version_info > (3, 8):
+        import types
+        if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence):  # novermin
+            component_type = t.__args__[0]
+
+    if not component_type:
+        if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
+            component_type = t.__args__[0]
+
+    # if the component type is a DType, get its numpy type
+    if isinstance(component_type, DType):
+        component_type = component_type.np_type
+
+    return component_type
 
 
 def _np_ndarray_component_type(t: type) -> Optional[type]:
@@ -283,23 +302,23 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     # when np.ndarray is used, the 1st argument is the component type
     if not component_type and sys.version_info >= (3, 9):
         import types
-        if isinstance(t, types.GenericAlias) and t.__origin__ == np.ndarray: # novermin
+        if isinstance(t, types.GenericAlias) and t.__origin__ == np.ndarray:  # novermin
             nargs = len(t.__args__)
             if nargs == 1:
                 component_type = t.__args__[0]
             elif nargs == 2:  # for npt.NDArray[np.int64], etc.
                 a0 = t.__args__[0]
                 a1 = t.__args__[1]
-                if a0 == typing.Any and isinstance(a1, types.GenericAlias): # novermin
+                if a0 == typing.Any and isinstance(a1, types.GenericAlias):  # novermin
                     component_type = a1.__args__[0]
     return component_type
 
 
 def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
-    if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+    if sys.version_info >= (3, 10):
         import types
-        if isinstance(t, types.UnionType): # novermin
+        if isinstance(t, types.UnionType):  # novermin
             return True
 
     return isinstance(t, _GenericAlias) and t.__origin__ == Union
@@ -376,6 +395,7 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 
     return pra
 
+
 if numba:
     def _parse_numba_signature(
             fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
@@ -384,7 +404,8 @@ if numba:
         if sigs:
             p_sig = _ParsedSignature(fn)
 
-            # for now, we only support one signature for a numba function because the query engine is not ready to handle
+            # for now, we only support one signature for a numba function because the query engine is not ready to
+            # handle
             # multiple signatures for vectorization https://github.com/deephaven/deephaven-core/issues/4762
             sig = sigs[0]
             params, rt_char = sig.split("->")
@@ -455,18 +476,20 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
     else:
         p_sig = _ParsedSignature(fn=fn)
         if sys.version_info.major == 3 and sys.version_info.minor >= 10:
-            sig = inspect.signature(fn, eval_str=True) # novermin
+            sig = inspect.signature(fn, eval_str=True)  # novermin
         else:
             sig = inspect.signature(fn)
 
         for n, p in sig.parameters.items():
-            # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get the type
+            # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get
+            # the type
             # when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature, so that
             # annotation is already a type, and we can skip this step.
             t = eval(p.annotation, fn.__globals__) if isinstance(p.annotation, str) else p.annotation
             p_sig.params.append(_parse_param(n, t))
 
-        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation, str) else sig.return_annotation
+        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation,
+                                                                      str) else sig.return_annotation
         p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
@@ -490,13 +513,15 @@ def _udf_parser(fn: Callable):
 
     p_sig = _parse_signature(fn)
     return_array = p_sig.ret_annotation.has_array
-    ret_dtype = dtypes.from_np_dtype(np.dtype(p_sig.ret_annotation.encoded_type[-1]))
+    ret_np_char = p_sig.ret_annotation.encoded_type[-1]
+    ret_dtype = dtypes.from_np_dtype(np.dtype(ret_np_char if ret_np_char != "X" else "O"))
 
     @wraps(fn)
     def _udf_decorator(encoded_arg_types: str, for_vectorization: bool):
         """The actual decorator that wraps the Python UDF and converts the arguments and return values.
         It is called by the query engine with the runtime argument types to create a wrapper that can efficiently
-        convert the arguments and return values based on the provided argument types and the parsed parameters of the UDF.
+        convert the arguments and return values based on the provided argument types and the parsed parameters of the
+        UDF.
         """
         arg_conv_needed = p_sig.prepare_auto_arg_conv(encoded_arg_types)
         p_sig.ret_annotation.setup_return_converter()
@@ -524,14 +549,18 @@ def _udf_parser(fn: Callable):
                     return dtypes.array(ret_dtype, ret)
                 else:
                     return p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
+
             return _wrapper
-        else: # for vectorization
+        else:  # for vectorization
             def _vectorization_wrapper(*args):
                 if len(args) != len(p_sig.params) + 2:
                     raise ValueError(
-                        f"The number of arguments doesn't match the function ({p_sig.fn.__name__}) signature. {len(args) - 2}, {p_sig.encoded}")
+                        f"The number of arguments doesn't match the function ({p_sig.fn.__name__}) signature. "
+                        f"{len(args) - 2}, {p_sig.encoded}")
                 if args[0] <= 0:
-                    raise ValueError(f"The chunk size argument must be a positive integer for vectorized function ({p_sig.fn.__name__}). {args[0]}")
+                    raise ValueError(
+                        f"The chunk size argument must be a positive integer for vectorized function ("
+                        f"{p_sig.fn.__name__}). {args[0]}")
 
                 chunk_size = args[0]
                 chunk_result = args[1]
@@ -556,21 +585,22 @@ def _udf_parser(fn: Callable):
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
                         else:
-                            chunk_result[i] = p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
+                            chunk_result[i] = p_sig.ret_annotation.ret_converter(
+                                ret) if p_sig.ret_annotation.ret_converter else ret
                 else:
                     for i in range(chunk_size):
                         ret = fn()
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
                         else:
-                            chunk_result[i] = p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
+                            chunk_result[i] = p_sig.ret_annotation.ret_converter(
+                                ret) if p_sig.ret_annotation.ret_converter else ret
                 return chunk_result
 
             if test_vectorization:
                 global vectorized_count
                 vectorized_count += 1
             return _vectorization_wrapper
-
 
     _udf_decorator.j_name = ret_dtype.j_name
     real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
