@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
+import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
@@ -127,13 +128,16 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         // TODO if this was a snapshot (or subscriptionReady was false for some interval), we probably need to
         // notify of the entire table as a single big change
-
         notifyUpdate(rowsAdded, rowsRemoved, totalMods, shifted);
     }
 
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
-        // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
-        UpdateEventData detail = new UpdateEventData(rowsAdded, rowsRemoved, totalMods, shifted);
+        UpdateEventData detail = new UpdateEventData(
+                transformRowsetForConsumer(rowsAdded),
+                transformRowsetForConsumer(rowsRemoved),
+                transformRowsetForConsumer(totalMods),
+                barrageSubscription.getServerViewport() != null ? null : shifted
+        );
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
         fireEvent(TableSubscription.EVENT_UPDATED, event);
@@ -171,7 +175,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             if (column.getStyleColumnIndex() != null) {
                 cellColors = barrageSubscription.getData(index, column.getStyleColumnIndex());
             }
-            if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
+            if (rowStyleColumn != TableData.NO_ROW_FORMAT_COLUMN) {
                 rowColors = barrageSubscription.getData(index, rowStyleColumn);
             }
             if (column.getFormatStringColumnIndex() != null) {
@@ -195,7 +199,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         // cached copy in case it was requested, could be requested again
         private JsArray<SubscriptionRow> allRows;
 
-        // TODO not this
+        // TODO expose this property only if this is a viewport
         public double offset;
 
         public UpdateEventData(RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
@@ -210,7 +214,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          * @return double
          */
         @JsProperty
-        public double getOffset() {
+        public Double getOffset() {
             return offset;
         }
 
@@ -223,8 +227,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         public JsArray<SubscriptionRow> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
-                RangeSet positions = barrageSubscription.getCurrentRowSet()
-                        .subsetForPositions(barrageSubscription.getServerViewport(), false);
+                RangeSet rowSet = barrageSubscription.getCurrentRowSet();
+                RangeSet positions = transformRowsetForConsumer(rowSet);
+                DomGlobal.console.log(rowSet, positions);
                 positions.indexIterator().forEachRemaining((long index) -> {
                     allRows.push(new SubscriptionRow(index));
                 });
@@ -311,7 +316,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          *
          * @return dh.RangeSet
          */
-        @JsProperty
+        @Override
         public JsRangeSet getAdded() {
             return added;
         }
@@ -321,7 +326,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          *
          * @return dh.RangeSet
          */
-        @JsProperty
+        @Override
         public JsRangeSet getRemoved() {
             return removed;
         }
@@ -331,15 +336,28 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          *
          * @return dh.RangeSet
          */
-        @JsProperty
+        @Override
         public JsRangeSet getModified() {
             return modified;
         }
 
-        @JsProperty
+        @Override
         public JsRangeSet getFullIndex() {
             return new JsRangeSet(barrageSubscription.getCurrentRowSet());
         }
+    }
+
+    /**
+     * If a viewport is in use, transforms the given rowset to position space based on
+     * that viewport.
+     * @param rowSet the rowset to possibly transform
+     * @return a transformed rowset
+     */
+    private RangeSet transformRowsetForConsumer(RangeSet rowSet) {
+        if (barrageSubscription.getServerViewport() != null) {
+            return rowSet.subsetForPositions(barrageSubscription.getServerViewport(), false);//TODO reverse
+        }
+        return rowSet;
     }
 
     protected void onViewportChange(RangeSet serverViewport, BitSet serverColumns, boolean serverReverseViewport) {

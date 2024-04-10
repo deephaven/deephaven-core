@@ -32,6 +32,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Tic
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -232,6 +233,35 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
 
         @Override
+        public JsRangeSet getFullIndex() {
+            return new JsRangeSet(RangeSet.ofRange((long) offset, (long) (offset + rows.length - 1)));
+        }
+
+        /**
+         * Always returns empty for TreeTable.
+         */
+        @Override
+        public JsRangeSet getAdded() {
+            return new JsRangeSet(RangeSet.empty());
+        }
+
+        /**
+         * Always returns empty for TreeTable.
+         */
+        @Override
+        public JsRangeSet getRemoved() {
+            return new JsRangeSet(RangeSet.empty());
+        }
+
+        /**
+         * Always returns empty for TreeTable.
+         */
+        @Override
+        public JsRangeSet getModified() {
+            return new JsRangeSet(RangeSet.empty());
+        }
+
+        @Override
         public Row get(long index) {
             return getRows().getAt((int) index);
         }
@@ -262,7 +292,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
 
         @JsProperty
-        public double getOffset() {
+        public Double getOffset() {
             return offset;
         }
 

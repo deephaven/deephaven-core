@@ -279,6 +279,7 @@ public abstract class WebBarrageSubscription {
             if (message.isSnapshot) {
                 viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
             }
+            state.setSize(message.rowsAdded.size());
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, RangeSet.empty(), message.shifted,
                     new BitSet(0));
         }
@@ -449,6 +450,7 @@ public abstract class WebBarrageSubscription {
             if (message.isSnapshot) {
                 viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
             }
+            state.setSize(currentRowSet.size());
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, totalMods, message.shifted,
                     modifiedColumnSet);
         }

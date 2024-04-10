@@ -665,5 +665,10 @@ public class SubscriptionTableData {
         public JsRangeSet getFullIndex() {
             return new JsRangeSet(index);
         }
+
+        @Override
+        public Double getOffset() {
+            return null;
+        }
     }
 }

@@ -17,13 +17,24 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 /**
- * Common interface for various ways of accessing table data and formatting.
- *
+ * Common interface for various ways of accessing table data and formatting for viewport or non-viewport subscriptions on tables,
+ * data in trees, and snapshots.
+ * <p>
+ * Generally speaking, it is more efficient to access data in column-major order, rather than iterating through
+ * each Row and accessing all columns that it holds. The {@link #getRows()} accessor can be useful to read row data,
+ * but may incur other costs - it is likely faster to access data by columns using {@link #getData(RowPositionUnion, Column)}.
+ */
+/*
  * Java note: this interface contains some extra overloads that aren't available in JS. Implementations are expected to
  * implement only abstract methods, and default methods present in this interface will dispatch accordingly.
  */
 @TsName(namespace = "dh")
 public interface TableData {
+    public static final int NO_ROW_FORMAT_COLUMN = -1;
+
+    /**
+     * TS type union to allow either "int" or "LongWrapper" to be passed as an argument for various methods.
+     */
     @TsUnion
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     interface RowPositionUnion {
@@ -49,6 +60,21 @@ public interface TableData {
             return Js.asInt(this);
         }
     }
+
+    @JsProperty
+    JsRangeSet getFullIndex();
+
+    @JsProperty
+    JsRangeSet getAdded();
+
+    @JsProperty
+    JsRangeSet getRemoved();
+
+    @JsProperty
+    JsRangeSet getModified();
+
+//    @JsProperty
+//    JsShiftData getShifts();
 
     @JsProperty
     JsArray<Column> getColumns();
@@ -92,8 +118,14 @@ public interface TableData {
 
     Format getFormat(long index, Column column);
 
+    /**
+     * The position of the first returned row, null if this data is not for a viewport.
+     */
+    @JsProperty
+    Double getOffset();
+
     @TsName(namespace = "dh")
-    public interface Row {
+    interface Row {
         @JsProperty
         LongWrapper getIndex();
 

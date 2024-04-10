@@ -23,98 +23,37 @@ import java.util.PrimitiveIterator.OfLong;
 import java.util.Set;
 
 /**
- * Contains data in the current viewport. Also contains the offset to this data, so that the actual row number may be
- * determined. Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided
+ * Extends {@link TableData}, but only contains data in the current viewport. The only API change from TableData is that
+ * ViewportData also contains the offset to this data, so that the actual row number may be
+ * determined.
+ * <p>Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided
  * for easier scrolling without going to the server.
  */
 @TsInterface
 @TsName(namespace = "dh")
-public class ViewportData implements TableData {
-    private static final Any NULL_SENTINEL = Js.asAny(new JsObject());
+public interface ViewportData extends TableData {
+
+    /**
+     * The position of the first returned row, null if this data is not for a viewport.
+     */
+    @JsProperty
+    Double getOffset();
 
     /**
      * Clean the data at the provided index
      */
     @JsFunction
-    private interface DataCleaner {
+    interface DataCleaner {
         void clean(JsArray<Any> data, int index);
     }
 
+    @Deprecated
     public static final int NO_ROW_FORMAT_COLUMN = -1;
 
     public class MergeResults {
         public Set<Integer> added = new HashSet<>();
         public Set<Integer> modified = new HashSet<>();
         public Set<Integer> removed = new HashSet<>();
-    }
-
-    private long offset;
-    private int length;
-    private final int maxLength;
-    private JsArray<ViewportRow> rows;
-    private final JsArray<Column> columns;
-
-    private final Object[] data;
-
-    private final int rowFormatColumn;
-
-    public ViewportData(RangeSet includedRows, Object[] dataColumns, JsArray<Column> columns, int rowFormatColumn,
-            long maxLength) {
-        assert maxLength <= Integer.MAX_VALUE;
-        this.maxLength = (int) maxLength;
-
-        Iterator<Range> rangeIterator = includedRows.rangeIterator();
-        data = new Object[dataColumns.length];
-        if (rangeIterator.hasNext()) {
-            Range range = rangeIterator.next();
-            assert !rangeIterator.hasNext() : "Snapshot only supports one range";
-
-            offset = range.getFirst();
-            length = (int) (range.getLast() - range.getFirst() + 1);
-            assert length == range.size();
-        } else {
-            offset = -1;
-        }
-
-        // Clean data for requested columns, and provide format column data as well, if any
-        for (int i = 0; i < columns.length; i++) {
-            Column c = columns.getAt(i);
-            int index = c.getIndex();
-            if (dataColumns[index] == null) {
-                // no data for this column, not requested in viewport
-                continue;
-            }
-            data[index] = cleanData(dataColumns[index], c);
-            if (c.getStyleColumnIndex() != null) {
-                data[c.getStyleColumnIndex()] = dataColumns[c.getStyleColumnIndex()];
-            }
-            if (c.getFormatStringColumnIndex() != null) {
-                data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()];
-            }
-        }
-
-        // Handle row format column, if any
-        this.rowFormatColumn = rowFormatColumn;
-        if (rowFormatColumn != NO_ROW_FORMAT_COLUMN) {
-            data[rowFormatColumn] = dataColumns[rowFormatColumn];
-        }
-
-        // Grow all columns to match the size of the viewport, if necessary
-        if (length < maxLength) {
-            for (int i = 0; i < data.length; i++) {
-                if (data[i] != null) {
-                    JsArray<Any> existingColumnData = Js.uncheckedCast(data[i]);
-                    existingColumnData.length = this.maxLength;
-                    existingColumnData.fill(NULL_SENTINEL, length, this.maxLength);
-                }
-            }
-        }
-
-        rows = new JsArray<>();
-        for (int i = 0; i < length; i++) {
-            rows.push(new ViewportRow(i, data, data[rowFormatColumn]));
-        }
-        this.columns = JsObject.freeze(Js.uncheckedCast(columns.slice()));
     }
 
     private static DataCleaner getDataCleanerForColumnType(String columnType) {
@@ -269,291 +208,5 @@ public class ViewportData implements TableData {
                     return dataColumn;
                 }
         }
-    }
-
-    /**
-     * The index of the first returned row
-     * 
-     * @return double
-     */
-    @JsProperty
-    public double getOffset() {
-        return offset;
-    }
-
-    @Override
-    public Row get(long index) {
-        return getRows().getAt((int) index);
-    }
-
-    @Override
-    public Row get(int index) {
-        return getRows().getAt(index);
-    }
-
-    @Override
-    public Any getData(int index, Column column) {
-        return getRows().getAt(index).get(column);
-    }
-
-    @Override
-    public Any getData(long index, Column column) {
-        return getRows().getAt((int) index).get(column);
-    }
-
-    @Override
-    public Format getFormat(int index, Column column) {
-        return getRows().getAt(index).getFormat(column);
-    }
-
-    @Override
-    public Format getFormat(long index, Column column) {
-        return getRows().getAt((int) index).getFormat(column);
-    }
-
-    /**
-     * An array of rows of data
-     * 
-     * @return {@link ViewportRow} array.
-     */
-    @Override
-    @JsProperty
-    public JsArray<ViewportRow> getRows() {
-        if (rows.length != length) {
-            rows = new JsArray<>();
-            for (int i = 0; i < length; i++) {
-                rows.push(new ViewportRow(i, data, data[rowFormatColumn]));
-            }
-            JsObject.freeze(rows);
-        }
-        return rows;
-    }
-
-    /**
-     * A list of columns describing the data types in each row
-     * 
-     * @return {@link Column} array.
-     */
-    @Override
-    @JsProperty
-    public JsArray<Column> getColumns() {
-        return columns;
-    }
-
-    // public MergeResults merge(DeltaUpdates updates) {
-    // if (offset == -1 && updates.getIncludedAdditions().size() > 0) {
-    // offset = updates.getIncludedAdditions().getFirstRow();
-    // }
-    // final MergeResults updated = new MergeResults();
-    //
-    // // First we remove rows by nulling them out.
-    // updates.getRemoved().indexIterator().forEachRemaining((long removedIndex) -> {
-    // int internalOffset = (int) (removedIndex - offset);
-    // if (internalOffset < 0 || internalOffset >= length) {
-    // return;
-    // }
-    // for (int i = 0; i < data.length; i++) {
-    // JsArray<Any> existingColumnData = Js.uncheckedCast(data[i]);
-    // if (existingColumnData == null) {
-    // continue;
-    // }
-    // existingColumnData.setAt(internalOffset, NULL_SENTINEL);
-    // }
-    // updated.removed.add(internalOffset);
-    // });
-    //
-    // // Now we shift data around.
-    // boolean hasReverseShift = false;
-    // final ShiftedRange[] shiftedRanges = updates.getShiftedRanges();
-    //
-    // // must apply shifts in mem-move semantics; so we shift forward from right to left first
-    // for (int si = shiftedRanges.length - 1; si >= 0; --si) {
-    // final ShiftedRange shiftedRange = shiftedRanges[si];
-    // final long shiftDelta = shiftedRange.getDelta();
-    // if (shiftDelta < 0) {
-    // hasReverseShift = true;
-    // continue;
-    // }
-    //
-    // final long beginAsLong = Math.max(shiftedRange.getRange().getFirst() - offset, 0);
-    // final int end = (int) Math.min(shiftedRange.getRange().getLast() - offset, length - 1);
-    // if (end < beginAsLong) {
-    // // this range is out of our viewport
-    // continue;
-    // }
-    //
-    // // long math is expensive; so convert to int early/once
-    // final int begin = (int) beginAsLong;
-    //
-    // // iterate backward and move them forward
-    // for (int j = end; j >= begin; --j) {
-    // for (int i = 0; i < data.length; ++i) {
-    // final JsArray<Any> existingColumnData = Js.uncheckedCast(data[i]);
-    // if (existingColumnData == null) {
-    // continue;
-    // }
-    //
-    // final long internalOffsetAsLong = (j + shiftDelta);
-    // if (internalOffsetAsLong >= 0 && internalOffsetAsLong < maxLength) {
-    // // because internalOffsetAsLong is less than maxLen; we know it must be fit in an int
-    // final int internalOffset = (int) internalOffsetAsLong;
-    // updated.added.add(internalOffset);
-    // Any toMove = existingColumnData.getAt(j);
-    // existingColumnData.setAt(internalOffset, toMove);
-    // }
-    //
-    // updated.removed.add(j);
-    // existingColumnData.setAt(j, NULL_SENTINEL);
-    // }
-    // }
-    // }
-    // if (hasReverseShift) {
-    // // then we shift in reverse from left to right
-    // for (int si = 0; si < shiftedRanges.length; ++si) {
-    // final ShiftedRange shiftedRange = shiftedRanges[si];
-    // final long shiftDelta = shiftedRange.getDelta();
-    // if (shiftDelta > 0) {
-    // continue;
-    // }
-    //
-    // final long begin = Math.max(shiftedRange.getRange().getFirst() - offset, 0);
-    // final int end = (int) Math.min(shiftedRange.getRange().getLast() - offset, length - 1);
-    // if (end < begin) {
-    // // this range is out of our viewport
-    // continue;
-    // }
-    //
-    // // iterate forward and move them backward (note: since begin is <= end, we now know it fits in an int)
-    // for (int j = (int) begin; j <= end; ++j) {
-    // for (int i = 0; i < data.length; ++i) {
-    // final JsArray<Any> existingColumnData = Js.uncheckedCast(data[i]);
-    // if (existingColumnData == null) {
-    // continue;
-    // }
-    //
-    // final long internalOffsetAsLong = j + shiftDelta;
-    // if (internalOffsetAsLong >= 0 && internalOffsetAsLong < maxLength) {
-    // // because internalOffsetAsLong is less than maxLen; we know it must be fit in an int
-    // final int internalOffset = (int) internalOffsetAsLong;
-    // updated.added.add(internalOffset);
-    // existingColumnData.setAt(internalOffset, existingColumnData.getAt(j));
-    // }
-    //
-    // updated.removed.add(j);
-    // existingColumnData.setAt(j, NULL_SENTINEL);
-    // }
-    // }
-    // }
-    // }
-    //
-    // DeltaUpdates.ColumnModifications[] serializedModifications = updates.getSerializedModifications();
-    // for (int modifiedColIndex = 0; modifiedColIndex < serializedModifications.length; modifiedColIndex++) {
-    // final DeltaUpdates.ColumnModifications modifiedColumn = serializedModifications[modifiedColIndex];
-    // final OfLong it = modifiedColumn == null ? null : modifiedColumn.getRowsIncluded().indexIterator();
-    //
-    // if (it == null || !it.hasNext()) {
-    // continue;
-    // }
-    //
-    // // look for a local Column which matches this index so we know how to clean it
-    // final Column column = columns.find((c, i1, i2) -> c.getIndex() == modifiedColumn.getColumnIndex());
-    // final JsArray<Any> updatedColumnData =
-    // Js.uncheckedCast(cleanData(modifiedColumn.getValues().getData(), column));
-    // final JsArray<Any> existingColumnData = Js.uncheckedCast(data[modifiedColumn.getColumnIndex()]);
-    // if (updatedColumnData.length == 0) {
-    // continue;
-    // }
-    //
-    // // for each change provided for this column, replace the values in our store
-    // int i = 0;
-    // while (it.hasNext()) {
-    // long modifiedOffset = it.nextLong();
-    // int internalOffset = (int) (modifiedOffset - offset);
-    // if (internalOffset < 0 || internalOffset >= maxLength) {
-    // i++;
-    // continue;// data we don't need to see, either meant for another table, or we just sent a viewport
-    // // update
-    // }
-    // existingColumnData.setAt(internalOffset, updatedColumnData.getAtAsAny(i));
-    // updated.modified.add(internalOffset);
-    // i++;
-    // }
-    // }
-    //
-    // if (!updates.getIncludedAdditions().isEmpty()) {
-    // DeltaUpdates.ColumnAdditions[] serializedAdditions = updates.getSerializedAdditions();
-    // for (int addedColIndex = 0; addedColIndex < serializedAdditions.length; addedColIndex++) {
-    // DeltaUpdates.ColumnAdditions addedColumn = serializedAdditions[addedColIndex];
-    //
-    // Column column = columns.find((c, i1, i2) -> c.getIndex() == addedColumn.getColumnIndex());
-    // final JsArray<Any> addedColumnData =
-    // Js.uncheckedCast(cleanData(addedColumn.getValues().getData(), column));
-    // final JsArray<Any> existingColumnData = Js.uncheckedCast(data[addedColumn.getColumnIndex()]);
-    // if (addedColumnData.length == 0) {
-    // continue;
-    // }
-    //
-    // int i = 0;
-    // OfLong it = updates.getIncludedAdditions().indexIterator();
-    // while (it.hasNext()) {
-    // long addedOffset = it.nextLong();
-    // int internalOffset = (int) (addedOffset - offset);
-    // if (internalOffset < 0 || internalOffset >= maxLength) {
-    // i++;
-    // continue;// data we don't need to see, either meant for another table, or we just sent a
-    // // viewport update
-    // }
-    // assert internalOffset < existingColumnData.length;
-    //
-    // Any existing = existingColumnData.getAt(internalOffset);
-    // if (existing == NULL_SENTINEL || internalOffset >= length) {
-    // // space was set aside or was left at the end of the array for this value, it is a new addition
-    // updated.added.add(internalOffset);
-    // } else {
-    // // we're overwriting some existing value
-    // updated.modified.add(internalOffset);
-    // }
-    // existingColumnData.setAt(internalOffset, addedColumnData.getAtAsAny(i));
-    // i++;
-    // }
-    // }
-    // }
-    //
-    // // exclude added items from being marked as modified, since we're hiding shifts from api consumers
-    // updated.modified.removeAll(updated.added);
-    //
-    // // Any position which was both added and removed should instead be marked as modified, this cleans
-    // // up anything excluded above that didn't otherwise make sense
-    // for (Iterator<Integer> it = updated.removed.iterator(); it.hasNext();) {
-    // int ii = it.next();
-    // if (updated.added.remove(ii)) {
-    // it.remove();
-    // updated.modified.add(ii);
-    // }
-    // }
-    //
-    // length = length + updated.added.size() - updated.removed.size();
-    // assert 0 <= length && length <= maxLength;
-    //
-    // // Viewport footprint should be small enough that we can afford to see if this update corrupted our view of the
-    // // world:
-    // assert !dataContainsNullSentinels();
-    //
-    // return updated;
-    // }
-
-    private boolean dataContainsNullSentinels() {
-        for (int i = 0; i < data.length; i++) {
-            JsArray<Any> existingColumnData = Js.uncheckedCast(data[i]);
-            if (existingColumnData == null) {
-                continue;
-            }
-            for (int j = 0; j < length; ++j) {
-                if (existingColumnData.getAt(j) == NULL_SENTINEL) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

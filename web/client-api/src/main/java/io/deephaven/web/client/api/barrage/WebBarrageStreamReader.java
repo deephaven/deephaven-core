@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.common.io.LittleEndianDataInputStream;
-import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
@@ -39,7 +38,6 @@ import java.util.PrimitiveIterator;
  */
 public class WebBarrageStreamReader {
     private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
-
 
     // record progress in reading
     private long numAddRowsRead = 0;
@@ -151,20 +149,6 @@ public class WebBarrageStreamReader {
             throw new IllegalStateException("Only know how to decode Schema/RecordBatch messages");
         }
 
-        ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
-        // final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
-        // DomGlobal.console.log(headerType, MessageHeader.names[headerType]);
-        // DomGlobal.console.log("body.limit()", body.limit());
-        // DomGlobal.console.log("batch.length()", batch.length());
-        // DomGlobal.console.log("batch.buffersLength()", batch.buffersLength());
-        // for (int i = 0; i < batch.buffersLength(); i++) {
-        // DomGlobal.console.log("batch.buffers("+i+").offset()", batch.buffers(i).offset());
-        // DomGlobal.console.log("batch.buffers("+i+").length()", batch.buffers(i).length());
-        // }
-
-        // if (!body.hasRemaining()) {
-        // throw new IllegalStateException("Missing body tag");
-        // }
 
         // throw an error when no app metadata (snapshots now provide by default)
         if (msg == null) {
@@ -174,6 +158,7 @@ public class WebBarrageStreamReader {
 
         final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
         msg.length = batch.length();
+        ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
         final LittleEndianDataInputStream ois =
                 new LittleEndianDataInputStream(new ByteBufferInputStream(body));
         final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
