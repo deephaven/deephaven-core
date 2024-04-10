@@ -100,7 +100,7 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
                             if (++columnCount > 0) {
                                 // We're descending and past the root
                                 final int columnIndex = columnCount - 1;
-                                processSubdirectoryImpl(dirName, dir.toString(), columnIndex, partitionKeys,
+                                processSubdirectoryInternal(dirName, dir.toString(), columnIndex, partitionKeys,
                                         partitionValues, partitionColInfo);
                             }
                             return FileVisitResult.CONTINUE;

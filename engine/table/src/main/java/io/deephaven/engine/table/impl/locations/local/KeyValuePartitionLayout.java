@@ -100,10 +100,12 @@ public abstract class KeyValuePartitionLayout<TLK extends TableLocationKey, TARG
      * @param partitionColInfo The map of column index to column name info, to be updated with the column name info as
      *        new columns are encountered
      */
-    static void processSubdirectoryImpl(
-            @NotNull final String dirName, @NotNull final String path, final int colIndex,
-
-            @NotNull final Set<String> partitionKeys, @NotNull final Collection<String> partitionValues,
+    static void processSubdirectoryInternal(
+            @NotNull final String dirName,
+            @NotNull final String path,
+            final int colIndex,
+            @NotNull final Set<String> partitionKeys,
+            @NotNull final Collection<String> partitionValues,
             @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo) {
         final String[] components = dirName.split("=", 2);
         if (components.length != 2) {

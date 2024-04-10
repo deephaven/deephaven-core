@@ -86,7 +86,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .region(Region.of(s3Instructions.regionName()))
                 .credentialsProvider(s3Instructions.awsV2CredentialsProvider());
         s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        log.debug().append("Building client with instructions: ").append(s3Instructions.toString()).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Building client with instructions: ").append(s3Instructions).endl();
+        }
         return builder.build();
     }
 
@@ -126,13 +128,17 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public Stream<URI> list(@NotNull final URI directory) {
-        log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
+        }
         return createStream(directory, false);
     }
 
     @Override
     public Stream<URI> walk(@NotNull final URI directory) {
-        log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
+        }
         return createStream(directory, true);
     }
 

@@ -111,7 +111,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             }
         }
         for (int partitioningColIndex = 0; partitioningColIndex < numPartitioningCol; partitioningColIndex++) {
-            processSubdirectoryImpl(subDirs[partitioningColIndex], relativePathString, partitioningColIndex,
+            processSubdirectoryInternal(subDirs[partitioningColIndex], relativePathString, partitioningColIndex,
                     partitionKeys, partitionValues, partitionColInfo);
         }
     }

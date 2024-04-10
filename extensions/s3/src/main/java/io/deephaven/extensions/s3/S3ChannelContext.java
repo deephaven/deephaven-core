@@ -73,12 +73,14 @@ final class S3ChannelContext implements SeekableChannelContext {
         uri = null;
         size = UNINITIALIZED_SIZE;
         numFragments = UNINITIALIZED_NUM_FRAGMENTS;
-        log.debug().append("Creating context: ").append(ctxStr()).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Creating context: ").append(ctxStr()).endl();
+        }
     }
 
     void setURI(@NotNull final S3Uri uri) {
         if (!uri.equals(this.uri)) {
-            this.reset();
+            reset();
         }
         this.uri = uri;
     }
@@ -147,7 +149,9 @@ final class S3ChannelContext implements SeekableChannelContext {
      */
     @Override
     public void close() {
-        log.debug().append("Closing context: ").append(ctxStr()).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Closing context: ").append(ctxStr()).endl();
+        }
         for (int i = 0; i < requests.length; i++) {
             if (requests[i] != null) {
                 requests[i].release();
@@ -221,7 +225,9 @@ final class S3ChannelContext implements SeekableChannelContext {
         }
 
         void init() {
-            log.debug().append("Sending: ").append(requestStr()).endl();
+            if (log.isDebugEnabled()) {
+                log.debug().append("Sending: ").append(requestStr()).endl();
+            }
             consumerFuture = client.getObject(getObjectRequest(), this);
             consumerFuture.whenComplete(this);
         }
@@ -260,13 +266,17 @@ final class S3ChannelContext implements SeekableChannelContext {
             return resultLength;
         }
 
-        void release() {
+        private void release() {
             final boolean didCancel = consumerFuture.cancel(true);
             bufferReference.clear();
             if (log.isDebugEnabled()) {
                 final String cancelType = didCancel ? "fast" : (fillCount == 0 ? "unused" : "normal");
-                log.debug().append("cancel ").append(cancelType).append(": ").append(requestStr()).append(" fillCount=")
-                        .append(fillCount).append(" fillBytes=").append(fillBytes).endl();
+                log.debug()
+                        .append("cancel ").append(cancelType)
+                        .append(": ")
+                        .append(requestStr())
+                        .append(" fillCount=").append(fillCount)
+                        .append(" fillBytes=").append(fillBytes).endl();
             }
         }
 
@@ -277,10 +287,10 @@ final class S3ChannelContext implements SeekableChannelContext {
             if (log.isDebugEnabled()) {
                 final Instant completedAt = Instant.now();
                 if (byteBuffer != null) {
-                    log.debug().append("Send complete: ").append(requestStr()).append(" ")
+                    log.debug().append("Send complete: ").append(requestStr()).append(' ')
                             .append(Duration.between(createdAt, completedAt).toString()).endl();
                 } else {
-                    log.debug().append("Send error: ").append(requestStr()).append(" ")
+                    log.debug().append("Send error: ").append(requestStr()).append(' ')
                             .append(Duration.between(createdAt, completedAt).toString()).endl();
                 }
             }
@@ -348,7 +358,7 @@ final class S3ChannelContext implements SeekableChannelContext {
 
         // --------------------------------------------------------------------------------------------------
 
-        final class Sub implements Subscriber<ByteBuffer> {
+        private final class Sub implements Subscriber<ByteBuffer> {
             private final CompletableFuture<ByteBuffer> localProducer;
             // Access to this view must be guarded by bufferReference.acquire
             private ByteBuffer bufferView;
@@ -460,7 +470,9 @@ final class S3ChannelContext implements SeekableChannelContext {
         if (size != UNINITIALIZED_SIZE) {
             return;
         }
-        log.debug().append("Head: ").append(ctxStr()).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Head: ").append(ctxStr()).endl();
+        }
         // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
         // for future use
         final HeadObjectResponse headObjectResponse;
