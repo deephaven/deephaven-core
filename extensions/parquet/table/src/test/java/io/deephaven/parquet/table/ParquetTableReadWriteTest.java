@@ -891,7 +891,7 @@ public final class ParquetTableReadWriteTest {
                         "I = i"))
                 .withDefinitionUnsafe(definition);
 
-        // We skip one partitioning and one non partitioing column in the definition, and add some more partitioning
+        // We skip one partitioning and one non-partitioning column in the definition, and add some more partitioning
         // and non-partitioning columns
         final TableDefinition tableDefinitionToWrite = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
@@ -1346,9 +1346,6 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.anonymous())
                 .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("hash"),
                 ColumnDefinition.ofLong("version"),
@@ -1364,14 +1361,17 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofDouble("output_value"),
                 ColumnDefinition.ofTime("last_modified"),
                 ColumnDefinition.ofDouble("input_value"));
-
-        ParquetTools.readSingleFileTable(
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .setTableDefinition(tableDefinition)
+                .build();
+        ParquetTools.readTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                readInstructions, tableDefinition).head(10).select();
+                readInstructions).head(10).select();
 
-        ParquetTools.readSingleFileTable(
+        ParquetTools.readTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions, tableDefinition).head(10).select();
+                readInstructions).head(10).select();
     }
 
     @Test
@@ -1388,8 +1388,9 @@ public final class ParquetTableReadWriteTest {
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED)
                 .build();
-        final Table table = ParquetTools.readFlatPartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
+        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
                 readInstructions);
         final Table expected = emptyTable(30).update("A = (int)i % 10");
         assertTableEquals(expected, table);
@@ -1409,10 +1410,10 @@ public final class ParquetTableReadWriteTest {
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
                 .build();
-        final Table table =
-                ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
-                        readInstructions);
+        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
+                readInstructions);
         final Table expected = emptyTable(30).update("A = (int)i % 10");
         assertTableEquals(expected, table);
     }
@@ -1431,10 +1432,10 @@ public final class ParquetTableReadWriteTest {
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
                 .build();
-        final Table table =
-                ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
-                        readInstructions);
+        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
+                readInstructions);
         final List<ColumnDefinition<?>> partitioningColumns = table.getDefinition().getPartitioningColumns();
         assertEquals(3, partitioningColumns.size());
         assertEquals("PC1", partitioningColumns.get(0).getName());
@@ -1460,14 +1461,16 @@ public final class ParquetTableReadWriteTest {
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.anonymous())
                 .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
         final TableDefinition ookla_table_definition = TableDefinition.of(
                 ColumnDefinition.ofInt("quarter").withPartitioning(),
                 ColumnDefinition.ofString("quadkey"));
-        ParquetTools.readKeyValuePartitionedTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
-                readInstructions, ookla_table_definition).head(10).select();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .setTableDefinition(ookla_table_definition)
+                .build();
+        final Table table = ParquetTools.readTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
+                readInstructions).head(10).select();
+        assertEquals(2, table.numColumns());
     }
 
     @Test
