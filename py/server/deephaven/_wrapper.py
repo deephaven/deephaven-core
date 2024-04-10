@@ -109,10 +109,11 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> List[JObjectWrapper]:
     # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
     # the Java objects returned by calling resolve()
     global _has_all_wrappers_imported
-    with _recursive_import_lock:
-        if not _has_all_wrappers_imported:
-            _recursive_import(__package__.partition(".")[0])
-            _has_all_wrappers_imported = True
+    if not _has_all_wrappers_imported:
+        with _recursive_import_lock:
+            if not _has_all_wrappers_imported:
+                _recursive_import(__package__.partition(".")[0])
+                _has_all_wrappers_imported = True
 
     return [wc for wc in _di_wrapper_classes if wc.j_object_type.jclass.isInstance(j_obj)]
 
