@@ -17,6 +17,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
@@ -65,7 +66,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
 
     public void refreshViewport() {
         if (firstRow != null && lastRow != null) {
-            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs);
+            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);
         }
     }
 
@@ -108,12 +109,12 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs) {
+            @JsOptional Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         this.updateIntervalMs = updateIntervalMs;
-        wrappedTable.setViewport(firstRow, lastRow, columns, updateIntervalMs);
+        wrappedTable.setViewport(firstRow, lastRow, columns, updateIntervalMs, isReverseViewport);
     }
 
     /**

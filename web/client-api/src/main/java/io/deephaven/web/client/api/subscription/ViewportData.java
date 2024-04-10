@@ -279,7 +279,6 @@ public class ViewportData implements TableData {
     @JsProperty
     public double getOffset() {
         return offset;
-
     }
 
     @Override

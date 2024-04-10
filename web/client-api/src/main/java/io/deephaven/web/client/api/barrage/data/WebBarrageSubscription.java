@@ -4,16 +4,25 @@
 package io.deephaven.web.client.api.barrage.data;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import elemental2.core.JsArray;
+import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.fu.JsData;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
+import jsinterop.base.Any;
+import jsinterop.base.Js;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -38,14 +47,99 @@ public abstract class WebBarrageSubscription {
     public static WebBarrageSubscription subscribe(ClientTableState cts, ViewportChangedHandler viewportChangedHandler,
             DataChangedHandler dataChangedHandler) {
 
-        if (cts.getTableDef().getAttributes().isBlinkTable()) {
-            return new BlinkImpl(cts, viewportChangedHandler, dataChangedHandler);
+        WebDataSink[] dataSinks = new WebDataSink[cts.columnTypes().length];
+        for (int i = 0; i < dataSinks.length; i++) {
+            JsArray<Any> arr = JsData.newArray(cts.columnTypes()[i].getCanonicalName());
+            switch (cts.chunkTypes()[i]) {
+                case Boolean:
+                    break;
+                case Char:
+                    break;
+                case Byte:
+                    break;
+                case Short:
+                    break;
+                case Int:
+                    dataSinks[i] = new WebDataSink() {
+                        @Override
+                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
+                            IntChunk<?> intChunk = data.asIntChunk();
+                            int i = 0;
+                            while (destIterator.hasNext()) {
+                                arr.setAt((int) destIterator.nextLong(), Js.asAny(intChunk.get(i++)));
+                            }
+                        }
+
+                        @Override
+                        public <T> T get(long position) {
+                            return (T) arr.getAt((int) position);
+                        }
+                    };
+                    break;
+                case Long:
+                    dataSinks[i] = new WebDataSink() {
+                        @Override
+                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
+                            LongChunk<?> longChunk = data.asLongChunk();
+                            int i = 0;
+                            while (destIterator.hasNext()) {
+                                arr.setAt((int) destIterator.nextLong(), Js.asAny(longChunk.get(i++)));
+                            }
+                        }
+
+                        @Override
+                        public <T> T get(long position) {
+                            return (T) arr.getAt((int) position);
+                        }
+                    };
+                    break;
+                case Float:
+                    break;
+                case Double:
+                    dataSinks[i] = new WebDataSink() {
+                        @Override
+                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
+                            DoubleChunk<?> doubleChunk = data.asDoubleChunk();
+                            int i = 0;
+                            while (destIterator.hasNext()) {
+                                arr.setAt((int) destIterator.nextLong(), Js.asAny(doubleChunk.get(i++)));
+                            }
+                        }
+
+                        @Override
+                        public <T> T get(long position) {
+                            return (T) arr.getAt((int) position);
+                        }
+                    };
+                    break;
+                case Object:
+                    dataSinks[i] = new WebDataSink() {
+                        @Override
+                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
+                            ObjectChunk<?, ?> objectChunk = data.asObjectChunk();
+                            int i = 0;
+                            while (destIterator.hasNext()) {
+                                arr.setAt((int) destIterator.nextLong(), Js.asAny(objectChunk.get(i++)));
+                            }
+                        }
+
+                        @Override
+                        public <T> T get(long position) {
+                            return (T) arr.getAt((int) position);
+                        }
+                    };
+                    break;
+            }
         }
-        return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler);
+
+        if (cts.getTableDef().getAttributes().isBlinkTable()) {
+            return new BlinkImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
+        }
+        return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
     }
 
     public static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns, @Nullable RangeSet viewport,
-            io.deephaven.extensions.barrage.BarrageSubscriptionOptions options) {
+            io.deephaven.extensions.barrage.BarrageSubscriptionOptions options, boolean isReverseViewport) {
         FlatBufferBuilder sub = new FlatBufferBuilder(1024);
         int colOffset = BarrageSubscriptionRequest.createColumnsVector(sub, columns.toByteArray());
         int viewportOffset = 0;
@@ -55,10 +149,12 @@ public abstract class WebBarrageSubscription {
         }
         int optionsOffset = options.appendTo(sub);
         int tableTicketOffset = BarrageSubscriptionRequest.createTicketVector(sub, tableTicket);
+        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(sub);
         BarrageSubscriptionRequest.addColumns(sub, colOffset);
         BarrageSubscriptionRequest.addViewport(sub, viewportOffset);
         BarrageSubscriptionRequest.addSubscriptionOptions(sub, optionsOffset);
         BarrageSubscriptionRequest.addTicket(sub, tableTicketOffset);
+        BarrageSubscriptionRequest.addReverseViewport(sub, isReverseViewport);
         sub.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(sub));
 
         return sub;
@@ -76,6 +172,8 @@ public abstract class WebBarrageSubscription {
         void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator);
 
         default void ensureCapacity(long size) {}
+
+        <T> T get(long position);
     }
 
     protected final ClientTableState state;
@@ -91,9 +189,9 @@ public abstract class WebBarrageSubscription {
     protected boolean serverReverseViewport;
 
     public WebBarrageSubscription(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
-            DataChangedHandler dataChangedHandler) {
+            DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
         this.state = state;
-        destSources = new WebDataSink[state.getTableDef().getColumns().length];
+        destSources = dataSinks;
         this.viewportChangedHandler = viewportChangedHandler;
         this.dataChangedHandler = dataChangedHandler;
     }
@@ -118,6 +216,10 @@ public abstract class WebBarrageSubscription {
         return currentRowSet;
     }
 
+    public RangeSet getServerViewport() {
+        return serverViewport;
+    }
+
     public abstract <T> T getData(long key, int col);
 
     protected boolean isSubscribedColumn(int ii) {
@@ -132,8 +234,8 @@ public abstract class WebBarrageSubscription {
         private final Mode mode;
 
         public BlinkImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
-                DataChangedHandler dataChangedHandler) {
-            super(state, viewportChangedHandler, dataChangedHandler);
+                DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
+            super(state, viewportChangedHandler, dataChangedHandler, dataSinks);
             mode = Mode.BLINK;
         }
 
@@ -180,6 +282,11 @@ public abstract class WebBarrageSubscription {
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, RangeSet.empty(), message.shifted,
                     new BitSet(0));
         }
+
+        @Override
+        public <T> T getData(long key, int col) {
+            return destSources[col].get(key);
+        }
     }
 
     public static class RedirectedImpl extends WebBarrageSubscription {
@@ -187,8 +294,8 @@ public abstract class WebBarrageSubscription {
         private final TreeMap<Long, Long> redirectedIndexes = new TreeMap<>();
 
         public RedirectedImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
-                DataChangedHandler dataChangedHandler) {
-            super(state, viewportChangedHandler, dataChangedHandler);
+                DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
+            super(state, viewportChangedHandler, dataChangedHandler, dataSinks);
         }
 
         @Override
@@ -288,6 +395,7 @@ public abstract class WebBarrageSubscription {
                 }
 
                 RangeSet destinationRowSet = getFreeRows(message.rowsIncluded.size());
+                DomGlobal.console.log("freeRows", destinationRowSet.toString());
                 // RangeSet destinationRowSet = new RangeSet();
                 // message.rowsIncluded.indexIterator().forEachRemaining((long row) -> {
                 // destinationRowSet.addRange(new Range(row, row));
@@ -297,6 +405,7 @@ public abstract class WebBarrageSubscription {
                     if (isSubscribedColumn(ii)) {
                         WebBarrageMessage.AddColumnData column = message.addColumnData[ii];
                         PrimitiveIterator.OfLong destIterator = destinationRowSet.indexIterator();
+
                         for (int j = 0; j < column.data.size(); j++) {
                             Chunk<Values> chunk = column.data.get(j);
                             destSources[ii].fillChunk(chunk, destIterator);
@@ -304,6 +413,14 @@ public abstract class WebBarrageSubscription {
                         assert !destIterator.hasNext();
                     }
                 }
+                // Add redirection mappings
+                PrimitiveIterator.OfLong srcIter = message.rowsIncluded.indexIterator();
+                PrimitiveIterator.OfLong destIter = destinationRowSet.indexIterator();
+                while (srcIter.hasNext()) {
+                    assert destIter.hasNext();
+                    redirectedIndexes.put(srcIter.next(), destIter.next());
+                }
+                assert !destIter.hasNext();
             }
 
             BitSet modifiedColumnSet = new BitSet(numColumns());
@@ -325,7 +442,7 @@ public abstract class WebBarrageSubscription {
             if (serverViewport != null) {
                 assert populatedRows != null;
                 RangeSet newPopulated = currentRowSet.subsetForPositions(serverViewport, serverReverseViewport);
-                newPopulated.rangeIterator().forEachRemaining(newPopulated::removeRange);
+                newPopulated.rangeIterator().forEachRemaining(populatedRows::removeRange);
                 freeRows(populatedRows);
             }
 
@@ -334,6 +451,11 @@ public abstract class WebBarrageSubscription {
             }
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, totalMods, message.shifted,
                     modifiedColumnSet);
+        }
+
+        @Override
+        public <T> T getData(long key, int col) {
+            return this.destSources[col].get(redirectedIndexes.get(key));
         }
 
         private RangeSet getFreeRows(long size) {
@@ -351,28 +473,33 @@ public abstract class WebBarrageSubscription {
             } else {
                 result = new RangeSet();
                 Iterator<Range> iterator = freeset.rangeIterator();
-                int required = (int) Math.min(size, freeset.size());
-                while (required > 0) {
+                int required = (int) size;
+                while (required > 0 && iterator.hasNext()) {
                     assert iterator.hasNext();
                     Range next = iterator.next();
-                    result.addRange(
-                            next.size() < required ? next : new Range(next.getFirst(), next.getFirst() + required - 1));
+                    Range range =
+                            next.size() < required ? next : new Range(next.getFirst(), next.getFirst() + required - 1);
+                    result.addRange(range);
+                    freeset.removeRange(range);
                     required -= (int) next.size();
                 }
 
-                if (freeset.size() < size) {
+                if (required > 0) {
                     // we need more, allocate extra, return some, grow the freeset for next time
                     long usedSlots = capacity - freeset.size();
                     long prevCapacity = capacity;
 
                     do {
                         capacity *= 2;
-                    } while ((capacity - usedSlots) < size);
+                    } while ((capacity - usedSlots) < required);
 
-                    result.addRange(new Range(prevCapacity, size - 1));
+                    result.addRange(new Range(prevCapacity, prevCapacity + required - 1));
 
                     freeset = new RangeSet();
-                    freeset.addRange(new Range(size, capacity - 1));
+                    if (capacity - prevCapacity > required) {
+                        // extra was allocated for next time
+                        freeset.addRange(new Range(prevCapacity + required, capacity - 1));
+                    }
                     needsResizing = true;
                 }
             }
@@ -380,6 +507,8 @@ public abstract class WebBarrageSubscription {
             if (needsResizing) {
                 Arrays.stream(destSources).forEach(s -> s.ensureCapacity(capacity));
             }
+
+            assert result.size() == size;
 
             return result;
         }

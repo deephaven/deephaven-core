@@ -21,7 +21,6 @@ import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
@@ -30,7 +29,9 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.client.state.ClientTableState;
+import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.shared.data.RangeSet;
+import io.deephaven.web.shared.data.ShiftedRange;
 import io.deephaven.web.shared.data.TableSnapshot;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -78,7 +79,11 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  */
 @TsInterface
 @TsName(namespace = "dh")
-public class TableViewportSubscription extends HasEventHandling {
+public class TableViewportSubscription extends AbstractTableSubscription {
+
+    // TODO move to superclass and check on viewport change
+    private RangeSet serverViewport;
+
     /**
      * Describes the possible lifecycle of the viewport as far as anything external cares about it
      */
@@ -103,82 +108,99 @@ public class TableViewportSubscription extends HasEventHandling {
     private final double refresh;
 
     private final JsTable original;
-    private final ClientTableState originalState;
-    private final Promise<JsTable> copy;
-    private JsTable realized;
 
-    private boolean retained;// if the sub is set up to not close the underlying table once the original table is done
-                             // with it
+    /**
+     * true if the sub is set up to not close the underlying table once the original table is done with it, otherwise
+     * false.
+     */
     private boolean originalActive = true;
+    /**
+     * true if the developer has called methods directly on the subscription, otherwise false.
+     */
+    private boolean retained;
 
     private Status status = Status.STARTING;
 
+    private UpdateEventData viewportData;
+
     public TableViewportSubscription(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
             JsTable existingTable) {
+        super(existingTable.state(), existingTable.getConnection());
+
+        setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, null);
+
         refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
-        // first off, copy the table, and flatten/pUT it, then apply the new viewport to that
         this.original = existingTable;
-        this.originalState = original.state();
-        copy = existingTable.copy(false).then(table -> new Promise<>((resolve, reject) -> {
-            // Wait until the state is running to copy it
-            originalState.onRunning(newState -> {
-                if (this.status == Status.DONE) {
-                    JsLog.debug("TableViewportSubscription closed before originalState.onRunning completed, ignoring");
-                    table.close();
-                    return;
-                }
-                table.batch(batcher -> {
-                    batcher.customColumns(newState.getCustomColumns());
-                    batcher.filter(newState.getFilters());
-                    batcher.sort(newState.getSorts());
+    }
 
-                    batcher.setFlat(true);
-                });
-                // TODO handle updateInterval core#188
-                Column[] columnsToSub = table.isBlinkTable() ? Js.uncheckedCast(table.getColumns()) : columns;
-                // table.setInternalViewport(firstRow, lastRow, columnsToSub);
+    @Override
+    protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
+        // viewport subscriptions are sometimes required to notify of size change events
+        if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
+            fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
+        }
 
-                // Listen for events and refire them on ourselves, optionally on the original table
-                table.addEventListener(JsTable.EVENT_UPDATED, this::refire);
-                table.addEventListener(JsTable.EVENT_ROWADDED, this::refire);
-                table.addEventListener(JsTable.EVENT_ROWREMOVED, this::refire);
-                table.addEventListener(JsTable.EVENT_ROWUPDATED, this::refire);
-                table.addEventListener(JsTable.EVENT_SIZECHANGED, this::refire);
-                // TODO (core#1181): fix this hack that enables barrage errors to propagate to the UI widget
-                table.addEventListener(JsTable.EVENT_REQUEST_FAILED, this::refire);
+        // TODO fire legacy table row added/updated/modified events
+        // for (Integer index : mergeResults.added) {
+        // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
+        // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
+        // fireEvent(EVENT_ROWADDED, addedEvent);
+        // }
+        // for (Integer index : mergeResults.modified) {
+        // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
+        // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
+        // fireEvent(EVENT_ROWUPDATED, addedEvent);
+        // }
+        // for (Integer index : mergeResults.removed) {
+        // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
+        // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
+        // fireEvent(EVENT_ROWREMOVED, addedEvent);
+        // }
 
-                // Take over for the "parent" table
-                // Cache original table size so we can tell if we need to notify about a change
-                double originalSize = newState.getSize();
-                realized = table;
-                status = Status.ACTIVE;
-                // At this point we're now responsible for notifying of size changes, since we will shortly have a
-                // viewport,
-                // a more precise way to track the table size (at least w.r.t. the range of the viewport), so if there
-                // is any difference in size between "realized" and "original", notify now to finish the transition.
-                if (realized.getSize() != originalSize) {
-                    JsLog.debug(
-                            "firing size changed to transition between table managing its own size changes and viewport sub taking over",
-                            realized.getSize());
-                    CustomEventInit init = CustomEventInit.create();
-                    init.setDetail(realized.getSize());
-                    refire(new CustomEvent(JsTable.EVENT_SIZECHANGED, init));
-                }
+        // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
+        UpdateEventData detail = new UpdateEventData(rowsAdded, rowsRemoved, totalMods, shifted);
+        detail.offset = this.serverViewport.getFirstRow();
+        this.viewportData = detail;
+        CustomEventInit<UpdateEventData> event = CustomEventInit.create();
+        event.setDetail(detail);
+        refire(new CustomEvent<>(EVENT_UPDATED, event));
+    }
 
-                resolve.onInvoke(table);
-            }, table::close);
-        }));
+    @Override
+    public void fireEvent(String type) {
+        refire(new CustomEvent<>(type));
+    }
+
+    @Override
+    public <T> void fireEventWithDetail(String type, T detail) {
+        CustomEventInit<T> init = CustomEventInit.create();
+        init.setDetail(detail);
+        refire(new CustomEvent<T>(type, init));
+    }
+
+    @Override
+    public <T> void fireEvent(String type, CustomEventInit<T> init) {
+        refire(new CustomEvent<T>(type, init));
+    }
+
+    @Override
+    public <T> void fireEvent(String type, CustomEvent<T> e) {
+        if (type.equals(e.type)) {
+            throw new IllegalArgumentException(type + " != " + e.type);
+        }
+        refire(e);
     }
 
     /**
-     * Reflects the state of the original table, before being flattened.
+     * Utility to fire an event on this object and also optionally on the parent if still active. All {@code fireEvent}
+     * overloads dispatch to this.
+     *
+     * @param e the event to fire
+     * @param <T> the type of the custom event data
      */
-    public ClientTableState state() {
-        return originalState;
-    }
-
     private <T> void refire(CustomEvent<T> e) {
-        this.fireEvent(e.type, e);
+        // explicitly calling super.fireEvent to avoid calling ourselves recursively
+        super.fireEvent(e.type, e);
         if (originalActive && state() == original.state()) {
             // When these fail to match, it probably means that the original's state was paused, but we're still
             // holding on to it. Since we haven't been internalClose()d yet, that means we're still waiting for
@@ -203,23 +225,27 @@ public class TableViewportSubscription extends HasEventHandling {
      */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
-            @JsOptional @JsNullable Double updateIntervalMs) {
+            @JsOptional @JsNullable Double updateIntervalMs,
+            @JsOptional @JsNullable Boolean isReverseViewport) {
         retainForExternalUse();
-        setInternalViewport(firstRow, lastRow, columns, updateIntervalMs);
+        setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, isReverseViewport);
     }
 
-    public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs) {
+    public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
+            Boolean isReverseViewport) {
         if (updateIntervalMs != null && refresh != updateIntervalMs) {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
-        copy.then(table -> {
-            if (!table.isBlinkTable()) {
-                // we only set blink table viewports once; and that's in the constructor
-                // table.setInternalViewport(firstRow, lastRow, columns);
-            }
-            return Promise.resolve(table);
-        });
+        if (isReverseViewport == null) {
+            isReverseViewport = false;
+        }
+        if (!state().getTableDef().getAttributes().isBlinkTable()) {
+            // we only set blink table viewports once; and that's in the constructor
+            serverViewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
+            this.sendBarrageSubscriptionRequest(
+                    serverViewport, Js.uncheckedCast(columns), updateIntervalMs, isReverseViewport);
+        }
     }
 
     /**
@@ -231,6 +257,8 @@ public class TableViewportSubscription extends HasEventHandling {
             JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
         }
         retained = false;
+
+        // Instead of calling super.close(), we delegate to internalClose()
         internalClose();
     }
 
@@ -250,13 +278,7 @@ public class TableViewportSubscription extends HasEventHandling {
 
         status = Status.DONE;
 
-        // not retained externally, and the original is inactive, mark as "not realized"
-        realized = null;
-
-        copy.then(table -> {
-            table.close();
-            return Promise.resolve(table);
-        });
+        super.close();
     }
 
     /**
@@ -271,115 +293,114 @@ public class TableViewportSubscription extends HasEventHandling {
     }
 
     public Promise<TableData> getInternalViewportData() {
-        return copy.then(JsTable::getInternalViewportData);
+        if (isSubscriptionReady()) {
+            return Promise.resolve(viewportData);
+        }
+        final LazyPromise<TableData> promise = new LazyPromise<>();
+        addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(viewportData));
+        return promise.asPromise();
     }
 
     public Status getStatus() {
-        if (realized == null) {
-            assert status != Status.ACTIVE
-                    : "when the realized table is null, status should only be DONE or STARTING, instead is " + status;
-        } else {
-            if (realized.isAlive()) {
-                assert status == Status.ACTIVE
-                        : "realized table is alive, expected status ACTIVE, instead is " + status;
-            } else {
-                assert status == Status.DONE : "realized table is closed, expected status DONE, instead is " + status;
-            }
-        }
+        // if (realized == null) {
+        // assert status != Status.ACTIVE
+        // : "when the realized table is null, status should only be DONE or STARTING, instead is " + status;
+        // } else {
+        // if (realized.isAlive()) {
+        // assert status == Status.ACTIVE
+        // : "realized table is alive, expected status ACTIVE, instead is " + status;
+        // } else {
+        // assert status == Status.DONE : "realized table is closed, expected status DONE, instead is " + status;
+        // }
+        // }
 
         return status;
     }
 
     public double size() {
-        assert getStatus() == Status.ACTIVE;
-        return realized.getSize();
-    }
-
-    public double totalSize() {
-        assert getStatus() == Status.ACTIVE;
-        return realized.getTotalSize();
+        // TODO this is wrong
+        assert getStatus() != Status.DONE;
+        return super.size();
     }
 
     @JsMethod
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
         retainForExternalUse();
         // TODO #1039 slice rows and drop columns
-        return copy.then(table -> {
-            final ClientTableState state = table.lastVisibleState();
-            String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
-                    .map(ColumnDefinition::getType)
-                    .toArray(String[]::new);
+        // final ClientTableState state = original.lastVisibleState();
+        String[] columnTypes = Arrays.stream(state().getTableDef().getColumns())
+                .map(ColumnDefinition::getType)
+                .toArray(String[]::new);
 
-            final BitSet columnBitset = table.lastVisibleState().makeBitset(columns);
-            return Callbacks.<TableSnapshot, String>promise(this, callback -> {
-                WorkerConnection connection = table.getConnection();
-                BiDiStream<FlightData, FlightData> stream = connection.<FlightData, FlightData>streamFactory().create(
-                        headers -> connection.flightServiceClient().doExchange(headers),
-                        (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
-                        (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
-                                c::apply),
-                        new FlightData());
+        final BitSet columnBitset = state().makeBitset(columns);
+        return Callbacks.<TableSnapshot, String>promise(this, callback -> {
+            WorkerConnection connection = connection();
+            BiDiStream<FlightData, FlightData> stream = connection.<FlightData, FlightData>streamFactory().create(
+                    headers -> connection.flightServiceClient().doExchange(headers),
+                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
+                            c::apply),
+                    new FlightData());
 
-                FlatBufferBuilder doGetRequest = new FlatBufferBuilder(1024);
-                int columnsOffset = BarrageSnapshotRequest.createColumnsVector(doGetRequest,
-                        columnBitset.toByteArray());
-                int viewportOffset = BarrageSnapshotRequest.createViewportVector(doGetRequest, serializeRanges(
-                        Collections.singleton(rows.getRange())));
-                int serializationOptionsOffset = BarrageSnapshotOptions
-                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
-                int tableTicketOffset =
-                        BarrageSnapshotRequest.createTicketVector(doGetRequest,
-                                TypedArrayHelper.wrap(state.getHandle().getTicket()));
-                BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
-                BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
-                BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
-                BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
-                BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
-                doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
+            FlatBufferBuilder doGetRequest = new FlatBufferBuilder(1024);
+            int columnsOffset = BarrageSnapshotRequest.createColumnsVector(doGetRequest,
+                    columnBitset.toByteArray());
+            int viewportOffset = BarrageSnapshotRequest.createViewportVector(doGetRequest, serializeRanges(
+                    Collections.singleton(rows.getRange())));
+            int serializationOptionsOffset = BarrageSnapshotOptions
+                    .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
+            int tableTicketOffset =
+                    BarrageSnapshotRequest.createTicketVector(doGetRequest,
+                            TypedArrayHelper.wrap(state().getHandle().getTicket()));
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
+            BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
+            BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
+            BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
+            BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
+            doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
 
-                FlightData request = new FlightData();
-                request.setAppMetadata(
-                        WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
-                stream.send(request);
-                stream.end();
-                stream.onData(flightData -> {
+            FlightData request = new FlightData();
+            request.setAppMetadata(
+                    WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
+            stream.send(request);
+            stream.end();
+            stream.onData(flightData -> {
 
-                    Message message = Message.getRootAsMessage(TypedArrayHelper.wrap(flightData.getDataHeader_asU8()));
-                    if (message.headerType() == MessageHeader.Schema) {
-                        // ignore for now, we'll handle this later
-                        return;
-                    }
-                    assert message.headerType() == MessageHeader.RecordBatch;
-                    RecordBatch header = (RecordBatch) message.header(new RecordBatch());
-                    Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
-                    BarrageUpdateMetadata update = null;
-                    if (appMetadataBytes.length != 0) {
-                        BarrageMessageWrapper barrageMessageWrapper =
-                                BarrageMessageWrapper
-                                        .getRootAsBarrageMessageWrapper(TypedArrayHelper.wrap(appMetadataBytes));
+                Message message = Message.getRootAsMessage(TypedArrayHelper.wrap(flightData.getDataHeader_asU8()));
+                if (message.headerType() == MessageHeader.Schema) {
+                    // ignore for now, we'll handle this later
+                    return;
+                }
+                assert message.headerType() == MessageHeader.RecordBatch;
+                RecordBatch header = (RecordBatch) message.header(new RecordBatch());
+                Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
+                BarrageUpdateMetadata update = null;
+                if (appMetadataBytes.length != 0) {
+                    BarrageMessageWrapper barrageMessageWrapper =
+                            BarrageMessageWrapper
+                                    .getRootAsBarrageMessageWrapper(TypedArrayHelper.wrap(appMetadataBytes));
 
-                        update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                                barrageMessageWrapper.msgPayloadAsByteBuffer());
-                    }
-                    TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
-                            WebBarrageUtils.typedArrayToAlignedLittleEndianByteBuffer(flightData.getDataBody_asU8()),
-                            update, true, columnTypes);
-                    callback.onSuccess(snapshot);
-                });
-                stream.onStatus(status -> {
-                    if (!status.isOk()) {
-                        callback.onFailure(status.getDetails());
-                    }
-                });
-            }).then(defer()).then(snapshot -> {
-                SubscriptionTableData pretendSubscription = new SubscriptionTableData(Js.uncheckedCast(columns),
-                        state.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-                                : state.getRowFormatColumn().getIndex(),
-                        null);
-                TableData data = pretendSubscription.handleSnapshot(snapshot);
-                return Promise.resolve(data);
-            }).then(defer());
-        });
+                    update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
+                            barrageMessageWrapper.msgPayloadAsByteBuffer());
+                }
+                TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
+                        WebBarrageUtils.typedArrayToAlignedLittleEndianByteBuffer(flightData.getDataBody_asU8()),
+                        update, true, columnTypes);
+                callback.onSuccess(snapshot);
+            });
+            stream.onStatus(status -> {
+                if (!status.isOk()) {
+                    callback.onFailure(status.getDetails());
+                }
+            });
+        }).then(defer()).then(snapshot -> {
+            SubscriptionTableData pretendSubscription = new SubscriptionTableData(Js.uncheckedCast(columns),
+                    state().getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
+                            : state().getRowFormatColumn().getIndex(),
+                    null);
+            TableData data = pretendSubscription.handleSnapshot(snapshot);
+            return Promise.resolve(data);
+        }).then(defer());
     }
 
     /**

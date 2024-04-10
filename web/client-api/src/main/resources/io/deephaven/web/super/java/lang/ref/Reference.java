@@ -11,15 +11,22 @@ public abstract class Reference<T> {
     }
 
     Reference(T referent, ReferenceQueue<? super T> queue) {
-        jsWeakRef = new JsWeakRef<>(referent);
+        if (referent != null) {
+            jsWeakRef = new JsWeakRef<>(referent);
+        }
     }
 
     public T get() {
-        return this.jsWeakRef.deref();
+        if (jsWeakRef == null) {
+            return null;
+        }
+        return jsWeakRef.deref();
     }
 
     public void clear() {
-        this.jsWeakRef = null;
+        if (jsWeakRef != null) {
+            jsWeakRef = null;
+        }
     }
 
     public boolean isEnqueued() {

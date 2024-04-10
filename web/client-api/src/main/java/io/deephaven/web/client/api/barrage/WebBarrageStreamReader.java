@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.common.io.LittleEndianDataInputStream;
+import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
@@ -136,17 +137,34 @@ public class WebBarrageStreamReader {
                 }
             }
         }
-        ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
-        if (!body.hasRemaining()) {
-            throw new IllegalStateException("Missing body tag");
-        }
+
+        // TODO double check if this is the right place
         if (header == null) {
             throw new IllegalStateException("Missing metadata header; cannot decode body");
         }
-
-        if (header.headerType() != MessageHeader.RecordBatch) {
-            throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
+        byte headerType = header.headerType();
+        if (headerType == MessageHeader.Schema) {
+            // there is no body and our clients do not want to see schema messages
+            return null;
         }
+        if (headerType != MessageHeader.RecordBatch) {
+            throw new IllegalStateException("Only know how to decode Schema/RecordBatch messages");
+        }
+
+        ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
+        // final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
+        // DomGlobal.console.log(headerType, MessageHeader.names[headerType]);
+        // DomGlobal.console.log("body.limit()", body.limit());
+        // DomGlobal.console.log("batch.length()", batch.length());
+        // DomGlobal.console.log("batch.buffersLength()", batch.buffersLength());
+        // for (int i = 0; i < batch.buffersLength(); i++) {
+        // DomGlobal.console.log("batch.buffers("+i+").offset()", batch.buffers(i).offset());
+        // DomGlobal.console.log("batch.buffers("+i+").length()", batch.buffers(i).length());
+        // }
+
+        // if (!body.hasRemaining()) {
+        // throw new IllegalStateException("Missing body tag");
+        // }
 
         // throw an error when no app metadata (snapshots now provide by default)
         if (msg == null) {
@@ -242,12 +260,6 @@ public class WebBarrageStreamReader {
                 chunk.setSize(chunk.size() + numRowsToRead);
             }
             numModRowsRead += batch.length();
-        }
-
-
-        if (header.headerType() == MessageHeader.Schema) {
-            // there is no body and our clients do not want to see schema messages
-            return null;
         }
 
         if (numAddRowsRead == numAddRowsTotal && numModRowsRead == numModRowsTotal) {

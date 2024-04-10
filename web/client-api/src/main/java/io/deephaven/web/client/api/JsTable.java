@@ -479,11 +479,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsProperty
     public double getTotalSize() {
-        TableViewportSubscription subscription = subscriptions.get(getHandle());
-        if (subscription != null && subscription.getStatus() == TableViewportSubscription.Status.ACTIVE) {
-            // only ask the viewport for the size if it is alive and ticking
-            return subscription.totalSize();
-        }
+        // TODO note to me: I don't think this ever made sense, its not like we held open a subscription for the same
+        // table
+        // without the filter...
+        // TableViewportSubscription subscription = subscriptions.get(getHandle());
+        // if (subscription != null && subscription.getStatus() == TableViewportSubscription.Status.ACTIVE) {
+        // // only ask the viewport for the size if it is alive and ticking
+        // return subscription.totalSize();
+        // }
         return getHeadState().getSize();
     }
 
@@ -676,14 +679,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * Overload for Java (since JS just omits the optional params)
      */
     public TableViewportSubscription setViewport(double firstRow, double lastRow) {
-        return setViewport(firstRow, lastRow, null, null);
+        return setViewport(firstRow, lastRow, null, null, null);
     }
 
     /**
      * Overload for Java (since JS just omits the optional param)
      */
     public TableViewportSubscription setViewport(double firstRow, double lastRow, JsArray<Column> columns) {
-        return setViewport(firstRow, lastRow, columns, null);
+        return setViewport(firstRow, lastRow, columns, null, null);
     }
 
     /**
@@ -702,13 +705,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     public TableViewportSubscription setViewport(double firstRow, double lastRow,
             @JsOptional @JsNullable JsArray<Column> columns,
-            @JsOptional @JsNullable Double updateIntervalMs) {
-        Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : null;
+            @JsOptional @JsNullable Double updateIntervalMs,
+            @JsOptional @JsNullable Boolean isReverseViewport) {
+        Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : state().getColumns();
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
         if (activeSubscription != null && activeSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
             // hasn't finished, lets reuse it
-            activeSubscription.setInternalViewport(firstRow, lastRow, columnsCopy, updateIntervalMs);
+            activeSubscription.setInternalViewport(firstRow, lastRow, columnsCopy, updateIntervalMs, isReverseViewport);
             return activeSubscription;
         } else {
             // In the past, we left the old sub going until the new one was ready, then started the new one. But now,
@@ -2012,7 +2016,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     TableViewportSubscription existingSubscription = subscriptions.remove(was.getHandle());
                     if (existingSubscription != null
                             && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
-                        JsLog.debug("closing old viewport", state(), existingSubscription.state());
+                        // JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
                         // something external retained it)
                         existingSubscription.internalClose();
