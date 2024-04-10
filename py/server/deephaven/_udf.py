@@ -75,7 +75,7 @@ class _ParsedParam:
                     if effective_type in {object, str}:
                         self.arg_converter = None
                     elif arg_type_str == 'M':  # datetime types (datetime, pd.Timestamp, np.datetime64)
-                        self._setup_datetime_converter(effective_type)
+                        self._setup_datetime_arg_converter(effective_type)
                     else:
                         self.arg_converter = effective_type
 
@@ -101,7 +101,7 @@ class _ParsedParam:
                         else:
                             break
 
-        # we have found the most suitable converter function, but if is a numpy scalar type, we'll warn the user
+        # we have found the most suitable converter function, but if it is a numpy scalar type, we'll warn the user
         if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(self.arg_converter, np.generic):
             warnings.warn(
                 f"numpy scalar type {self.arg_converter} is used to annotate parameter '{self.name}'. Note that "
@@ -110,7 +110,7 @@ class _ParsedParam:
                 f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
                 f"instead.")
 
-    def _setup_datetime_converter(self, effective_type):
+    def _setup_datetime_arg_converter(self, effective_type):
         if effective_type == datetime:
             self.arg_converter = to_datetime
         elif effective_type == pd.Timestamp:
