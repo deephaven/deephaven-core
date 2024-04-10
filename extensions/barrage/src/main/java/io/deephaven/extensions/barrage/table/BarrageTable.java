@@ -101,7 +101,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * Due to the asynchronous aspect of this protocol, the client may have multiple requests in-flight and the server
      * may choose to honor the most recent request and assumes that the client no longer wants earlier but unacked
      * viewport changes.
-     *
+     * <p>
      * The server notifies the client which viewport it is respecting by including it inside of each snapshot. Note that
      * the server assumes that the client has maintained its state prior to these server-side viewport acks and will not
      * re-send data that the client should already have within the existing viewport.
