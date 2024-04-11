@@ -91,32 +91,27 @@ public class DeephavenCompressorAdapterFactory {
         private final CompressionCodec compressionCodec;
         private final CompressionCodecName compressionCodecName;
 
-        private boolean innerCompressorPooled;
+        private boolean canCreateCompressorObject;
         private Compressor innerCompressor;
 
         CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
                 CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
+            this.canCreateCompressorObject = true;
         }
 
         @Override
-        public OutputStream compress(OutputStream os) throws IOException {
-            if (innerCompressor == null) {
+        public OutputStream compress(final OutputStream os) throws IOException {
+            if (innerCompressor == null && canCreateCompressorObject) {
+                // Following will get a new compressor from the pool, or create a new one, if possible.
                 innerCompressor = CodecPool.getCompressor(compressionCodec);
-                innerCompressorPooled = innerCompressor != null;
-                if (!innerCompressorPooled) {
-                    // Some compressors are allowed to declare they cannot be pooled. If we fail to get one
-                    // then fall back on just creating a new one to hang on to.
-                    innerCompressor = compressionCodec.createCompressor();
-                }
-
-                if (innerCompressor == null) {
-                    return compressionCodec.createOutputStream(os);
-                }
-
-                innerCompressor.reset();
+                canCreateCompressorObject = (innerCompressor != null);
             }
+            if (!canCreateCompressorObject) {
+                return compressionCodec.createOutputStream(os);
+            }
+            innerCompressor.reset();
             return compressionCodec.createOutputStream(os, innerCompressor);
         }
 
@@ -126,9 +121,10 @@ public class DeephavenCompressorAdapterFactory {
         }
 
         @Override
-        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize)
-                throws IOException {
+        public BytesInput decompress(final InputStream inputStream, final int compressedSize,
+                final int uncompressedSize) throws IOException {
             final Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
+            // We cannot cache the decompressor object because this method needs to be thread-safe.
             if (decompressor != null) {
                 // It is permitted for a decompressor to be null, otherwise we want to reset() it to
                 // be ready for a new stream.
@@ -152,15 +148,8 @@ public class DeephavenCompressorAdapterFactory {
         }
 
         @Override
-        public void reset() {
-            if (innerCompressor != null) {
-                innerCompressor.reset();
-            }
-        }
-
-        @Override
         public void close() {
-            if (innerCompressor != null && innerCompressorPooled) {
+            if (innerCompressor != null) {
                 CodecPool.returnCompressor(innerCompressor);
             }
         }

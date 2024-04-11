@@ -35,9 +35,6 @@ public interface CompressorAdapter extends SafeCloseable {
         }
 
         @Override
-        public void reset() {}
-
-        @Override
         public void close() {
 
         }
@@ -45,7 +42,7 @@ public interface CompressorAdapter extends SafeCloseable {
 
     /**
      * Creates a new output stream that will take uncompressed writes, and flush data to the provided stream as
-     * compressed data.
+     * compressed data. Note that this method is not thread safe.
      * 
      * @param os the output stream to write compressed contents to
      * @return an output stream that can accept writes
@@ -57,7 +54,7 @@ public interface CompressorAdapter extends SafeCloseable {
      * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream.
      * Callers should process the results before {@code inputStream} is closed; if the {@link BytesInput} interface
      * needs to persist longer than {@code inputStream}, callers should use {@link BytesInput#copy(BytesInput)} on the
-     * results.
+     * results. Note that this method is thread safe.
      * 
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data
@@ -71,9 +68,4 @@ public interface CompressorAdapter extends SafeCloseable {
      * @return the CompressionCodecName enum value that represents this compressor.
      */
     CompressionCodecName getCodecName();
-
-    /**
-     * Reset the internal state of this {@link CompressorAdapter} so more rows can be read or written.
-     */
-    void reset();
 }

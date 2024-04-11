@@ -52,21 +52,12 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             ret = super.decompress(bufferedInputStream, compressedSize, uncompressedSize);
             mode = DecompressionMode.LZ4;
         } catch (IOException e) {
-            super.reset();
             bufferedInputStream.reset();
             lz4RawAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName("LZ4_RAW");
             ret = lz4RawAdapter.decompress(bufferedInputStream, compressedSize, uncompressedSize);
             mode = DecompressionMode.LZ4_RAW;
         }
         return ret;
-    }
-
-    @Override
-    public void reset() {
-        super.reset();
-        if (lz4RawAdapter != null) {
-            lz4RawAdapter.reset();
-        }
     }
 
     @Override

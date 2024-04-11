@@ -143,7 +143,6 @@ final class ColumnWriterImpl implements ColumnWriter {
         final long currentChunkDictionaryPageOffset = bufferedOutput.position();
         final int uncompressedSize = dictionaryBuffer.remaining();
 
-        compressorAdapter.reset();
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
             channel.write(dictionaryBuffer);
@@ -326,8 +325,6 @@ final class ColumnWriterImpl implements ColumnWriter {
                     "Cannot write page larger than Integer.MAX_VALUE bytes: " +
                             uncompressedSize);
         }
-
-        compressorAdapter.reset();
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final OutputStream cos = compressorAdapter.compress(baos)) {
