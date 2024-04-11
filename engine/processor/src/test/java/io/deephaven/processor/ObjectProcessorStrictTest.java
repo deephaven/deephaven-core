@@ -173,6 +173,11 @@ public class ObjectProcessorStrictTest {
             private final List<Type<?>> outputTypes = new ArrayList<>(List.of(Type.intType()));
 
             @Override
+            public int size() {
+                return 1;
+            }
+
+            @Override
             public List<Type<?>> outputTypes() {
                 try {
                     return List.copyOf(outputTypes);
@@ -218,6 +223,31 @@ public class ObjectProcessorStrictTest {
             } catch (UncheckedDeephavenException e) {
                 assertThat(e).hasMessageContaining("Implementation did not increment chunk size correctly");
             }
+        }
+    }
+
+    @Test
+    public void testBadDelegateSize() {
+        try {
+            ObjectProcessor.strict(new ObjectProcessor<>() {
+                @Override
+                public int size() {
+                    return 2;
+                }
+
+                @Override
+                public List<Type<?>> outputTypes() {
+                    return List.of(Type.intType());
+                }
+
+                @Override
+                public void processAll(ObjectChunk<?, ?> in, List<WritableChunk<?>> out) {
+                    // ignore
+                }
+            });
+            failBecauseExceptionWasNotThrown(IllegalAccessException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Inconsistent size. delegate.size()=2, delegate.outputTypes().size()=1");
         }
     }
 }

@@ -101,6 +101,8 @@ string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_ty
 """String type"""
 Character = DType(j_name="java.lang.Character")
 """Character type"""
+BigInteger = DType(j_name="java.math.BigInteger")
+"""Java BigInteger type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
