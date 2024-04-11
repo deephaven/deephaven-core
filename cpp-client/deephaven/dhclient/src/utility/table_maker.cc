@@ -41,7 +41,7 @@ TableHandle TableMaker::MakeTable(const TableHandleManager &manager) {
 
   auto wrapper = manager.CreateFlightWrapper();
   auto ticket = manager.NewTicket();
-  auto flight_descriptor = ConvertTicketToFlightDescriptor(ticket);
+  auto flight_descriptor = ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
 
   arrow::flight::FlightCallOptions options;
   wrapper.AddHeaders(&options);
@@ -65,15 +65,5 @@ TypeConverter::TypeConverter(std::shared_ptr<arrow::DataType> data_type,
     dataType_(std::move(data_type)), deephavenType_(std::move(deephaven_type)),
     column_(std::move(column)) {}
     TypeConverter::~TypeConverter() = default;
-
-const char * const TypeConverterTraits<char16_t>::kDeephavenTypeName = "char";
-const char * const TypeConverterTraits<bool>::kDeephavenTypeName = "java.lang.Boolean";
-const char * const TypeConverterTraits<int8_t>::kDeephavenTypeName = "byte";
-const char * const TypeConverterTraits<int16_t>::kDeephavenTypeName = "short";
-const char * const TypeConverterTraits<int32_t>::kDeephavenTypeName = "int";
-const char * const TypeConverterTraits<int64_t>::kDeephavenTypeName = "long";
-const char * const TypeConverterTraits<float>::kDeephavenTypeName = "float";
-const char * const TypeConverterTraits<double>::kDeephavenTypeName = "double";
-const char * const TypeConverterTraits<std::string>::kDeephavenTypeName = "java.lang.String";
 }  // namespace internal
 }  // namespace deephaven::client::utility

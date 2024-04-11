@@ -10,7 +10,7 @@
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
-using deephaven::client::utility::ConvertTicketToFlightDescriptor;
+using deephaven::client::utility::ArrowUtil;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::TableMaker;
 using deephaven::client::utility::ValueOrThrow;
@@ -115,7 +115,7 @@ void Doit(const TableHandleManager &manager) {
   wrapper.AddHeaders(&options);
 
   // 11. Make a FlightDescriptor from the ticket
-  auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
+  auto fd = ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
 
   // 12. Perform the doPut
   auto res = wrapper.FlightClient()->DoPut(options, fd, schema);

@@ -514,14 +514,16 @@ class Session:
         return Query(self, table)
 
     def input_table(self, schema: pa.Schema = None, init_table: Table = None,
-                    key_cols: Union[str, List[str]] = None) -> InputTable:
-        """Creates an InputTable from either Arrow schema or initial table. When key columns are
-        provided, the InputTable will be keyed, otherwise it will be append-only.
+                    key_cols: Union[str, List[str]] = None, blink_table: bool = False) -> InputTable:
+        """Creates an InputTable from either Arrow schema or initial table.  When blink_table is True, the InputTable
+        will be a blink table. When blink_table is False (default), the InputTable will be
+        keyed if key columns are provided, otherwise it will be append-only.
 
         Args:
             schema (pa.Schema): the schema for the InputTable
             init_table (Table): the initial table
             key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+            blink_table (bool): whether the InputTable should be a blink table, default is False
 
         Returns:
             an InputTable
@@ -534,7 +536,10 @@ class Session:
         elif schema and init_table:
             raise ValueError("both arrow schema and init table are provided.")
 
-        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=to_list(key_cols))
+        if blink_table and key_cols:
+            raise ValueError("key columns are not supported for blink input tables.")
+
+        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=to_list(key_cols), blink=blink_table)
         input_table = self.table_service.grpc_table_op(None, table_op, table_class=InputTable)
         input_table.key_cols = key_cols
         return input_table
