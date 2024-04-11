@@ -609,7 +609,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
-                                                         List<String> columnNames) {
+                List<String> columnNames) {
             return objectProcessorSpec(NamedObjectProcessor.of(processor, columnNames));
         }
 
