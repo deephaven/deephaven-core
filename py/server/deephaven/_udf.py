@@ -64,7 +64,9 @@ class _ParsedParam:
     def setup_arg_converter(self, arg_type_str: str) -> None:
         """ Set up the converter function for the parameter based on the encoded argument type string. """
         for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
-            if arg_type_str == "X":
+            # unsupported types are treated as object type, no conversion. We'll let the runtime handle them
+            # since we want to trust that the user knows what they are doing.
+            if arg_type_str == "X" or param_type_str == "X":
                 self.arg_converter = None
                 break
 

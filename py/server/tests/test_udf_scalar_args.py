@@ -567,6 +567,13 @@ def test_udf(x: {np_type}) -> bool:
             t = empty_table(3).update(["C = make_c()", "V = use_c(C)"])
             self.assertIsNotNone(t)
 
+            def misuse_c(c: int) -> bool:
+                return isinstance(c, C)
+            t1 = t.update("V = misuse_c(C)")
+            self.assertEqual(t1.columns[1].data_type, dtypes.bool_)
+            self.assertEqual(3, t1.to_string().count("true"))
+
+
         with self.subTest("Unsupported Python built-in type paired with org.jpy.PyObject arg"):
             from typing import Sequence
 
@@ -580,6 +587,10 @@ def test_udf(x: {np_type}) -> bool:
             self.assertIsNotNone(t)
             self.assertEqual(t.columns[1].data_type, dtypes.int_)
 
+            def misuse_c(c: int) -> int:
+                return c
+            with self.assertRaises(DHError) as cm:
+                t.update("V = misuse_c(C)")
 
 if __name__ == "__main__":
     unittest.main()
