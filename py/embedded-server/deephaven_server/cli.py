@@ -21,7 +21,8 @@ def cli():
 @click.option("--host", default=None, help="The host to bind to.")
 @click.option("--port", default=None, type=int, help="The port to bind to.")
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
-def server(host, port, jvm_args):
+@click.option("--extra-classpath", default=None, help="The extra classpath to use.")
+def server(host, port, jvm_args, extra_classpath):
     """
     Start the Deephaven server.
     """
@@ -31,7 +32,11 @@ def server(host, port, jvm_args):
         jvm_args = ""
     jvm_args = jvm_args.split()
 
-    s = Server(host=host, port=port, jvm_args=jvm_args)
+    if extra_classpath is None:
+        extra_classpath = ""
+    extra_classpath = extra_classpath.split()
+
+    s = Server(host=host, port=port, jvm_args=jvm_args, extra_classpath=extra_classpath)
     s.start()
 
     target_url_or_default = s.server_config.target_url_or_default
