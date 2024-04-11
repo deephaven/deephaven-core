@@ -20,39 +20,16 @@ def cli():
 @cli.command()
 @click.option("--host", default=None, help="The host to bind to.")
 @click.option("--port", default=None, type=int, help="The port to bind to.")
-@click.option(
-    "--key",
-    default=None,
-    help="Start the server in pre-shared key mode. If the key is empty, a random key will be used. Cannot be used if anonymous is specified.",
-)
-@click.option(
-    "--anonymous",
-    is_flag=True,
-    help="Start the server in anonymous mode. Cannot be used if key is specified.",
-)
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
-def server(host, port, key, anonymous, jvm_args):
+def server(host, port, jvm_args):
     """
     Start the Deephaven server.
     """
     click.echo("Starting Deephaven server...")
 
-    if anonymous and key is not None:
-        raise click.ClickException("Cannot specify both --anonymous and --key")
-
     if jvm_args is None:
         jvm_args = ""
     jvm_args = jvm_args.split()
-
-    if anonymous:
-        jvm_args += [f"-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"]
-    elif key is not None:
-        jvm_args += [
-            f"-DAuthHandlers=io.deephaven.authentication.psk.PskAuthenticationHandler"
-        ]
-        # We are relying on server to set random key otherwise
-        if key:
-            jvm_args += [f"-Dauthentication.psk={key}"]
 
     s = Server(host=host, port=port, jvm_args=jvm_args)
     s.start()
