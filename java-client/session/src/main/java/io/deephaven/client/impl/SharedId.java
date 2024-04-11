@@ -3,6 +3,7 @@
 //
 package io.deephaven.client.impl;
 
+import com.google.protobuf.ByteString;
 import io.deephaven.proto.util.SharedTicketHelper;
 
 import java.util.Objects;
@@ -12,9 +13,9 @@ import java.util.Objects;
  */
 public class SharedId implements HasTicketId, HasPathId {
 
-    private final String sharedId;
+    private final ByteString sharedId;
 
-    public SharedId(final String sharedId) {
+    public SharedId(final ByteString sharedId) {
         this.sharedId = Objects.requireNonNull(sharedId);
     }
 

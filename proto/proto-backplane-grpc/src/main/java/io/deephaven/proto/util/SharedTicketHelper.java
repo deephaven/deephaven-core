@@ -3,6 +3,9 @@
 //
 package io.deephaven.proto.util;
 
+import com.google.protobuf.ByteString;
+import org.apache.commons.codec.binary.Hex;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -17,8 +20,8 @@ public class SharedTicketHelper {
      * @param variableId the variable identifier
      * @return the path
      */
-    public static List<String> nameToPath(String variableId) {
-        return Arrays.asList(FLIGHT_DESCRIPTOR_ROUTE, variableId);
+    public static List<String> nameToPath(ByteString variableId) {
+        return Arrays.asList(FLIGHT_DESCRIPTOR_ROUTE, Hex.encodeHexString(variableId.toByteArray()));
     }
 
     /**
@@ -27,7 +30,7 @@ public class SharedTicketHelper {
      * @param variableId the variable identifier
      * @return the ticket bytes
      */
-    public static byte[] nameToBytes(String variableId) {
+    public static byte[] nameToBytes(ByteString variableId) {
         return (TICKET_PREFIX + "/" + variableId).getBytes(StandardCharsets.UTF_8);
     }
 }

@@ -4,9 +4,9 @@
 package io.deephaven.server.session;
 
 import com.google.common.collect.MapMaker;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
-import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
@@ -21,8 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CharsetDecoder;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
@@ -32,7 +30,7 @@ import static io.deephaven.proto.util.SharedTicketHelper.TICKET_PREFIX;
 @Singleton
 public class SharedTicketResolver extends TicketResolverBase {
 
-    private final ConcurrentMap<String, SessionState.ExportObject<?>> sharedVariables = new MapMaker()
+    private final ConcurrentMap<ByteString, SessionState.ExportObject<?>> sharedVariables = new MapMaker()
             .weakValues()
             .makeMap();
 
@@ -55,7 +53,7 @@ public class SharedTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': no session to handoff to");
         }
 
-        final String sharedId = idForDescriptor(descriptor, logId);
+        final ByteString sharedId = idForDescriptor(descriptor, logId);
 
         SessionState.ExportObject<?> export = sharedVariables.get(sharedId);
         if (export == null) {
@@ -96,7 +94,7 @@ public class SharedTicketResolver extends TicketResolverBase {
     }
 
     private <T> SessionState.ExportObject<T> resolve(
-            @Nullable final SessionState session, final String sharedId, final String logId) {
+            @Nullable final SessionState session, final ByteString sharedId, final String logId) {
         if (session == null) {
             throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
                     "Could not resolve '" + logId + "': no session to handoff to");
@@ -138,7 +136,7 @@ public class SharedTicketResolver extends TicketResolverBase {
 
     private <T> SessionState.ExportBuilder<T> publish(
             final SessionState session,
-            final String sharedId,
+            final ByteString sharedId,
             final String logId,
             @Nullable final Runnable onPublish) {
         final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
@@ -182,9 +180,9 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param identifier the shared variable identifier to convert
      * @return the flight ticket this descriptor represents
      */
-    public static Flight.Ticket flightTicketForId(final String identifier) {
+    public static Flight.Ticket flightTicketForId(final ByteString identifier) {
         return Flight.Ticket.newBuilder()
-                .setTicket(ByteStringAccess.wrap(SharedTicketHelper.nameToBytes(identifier)))
+                .setTicket(identifier)
                 .build();
     }
 
@@ -194,9 +192,9 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param identifier the shared variable identifier to convert
      * @return the flight ticket this descriptor represents
      */
-    public static io.deephaven.proto.backplane.grpc.Ticket ticketForId(final String identifier) {
+    public static io.deephaven.proto.backplane.grpc.Ticket ticketForId(final ByteString identifier) {
         return io.deephaven.proto.backplane.grpc.Ticket.newBuilder()
-                .setTicket(ByteStringAccess.wrap(SharedTicketHelper.nameToBytes(identifier)))
+                .setTicket(identifier)
                 .build();
     }
 
@@ -206,7 +204,7 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param identifier the shared variable identifier to convert
      * @return the flight descriptor this descriptor represents
      */
-    public static Flight.FlightDescriptor descriptorForId(final String identifier) {
+    public static Flight.FlightDescriptor descriptorForId(final ByteString identifier) {
         return Flight.FlightDescriptor.newBuilder()
                 .setType(Flight.FlightDescriptor.DescriptorType.PATH)
                 .addAllPath(SharedTicketHelper.nameToPath(identifier))
@@ -220,7 +218,7 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @return the query scope name this ticket represents
      */
-    public static String idForTicket(final ByteBuffer ticket, final String logId) {
+    public static ByteString idForTicket(final ByteBuffer ticket, final String logId) {
         if (ticket == null || ticket.remaining() == 0) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no ticket supplied");
@@ -232,13 +230,11 @@ public class SharedTicketResolver extends TicketResolverBase {
         }
 
         final int initialPosition = ticket.position();
-        final CharsetDecoder decoder = EncodingInfo.UTF_8.getDecoder().reset();
         try {
             ticket.position(initialPosition + 2);
-            return decoder.decode(ticket).toString();
-        } catch (CharacterCodingException e) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
+            final byte[] dst = new byte[ticket.remaining()];
+            ticket.get(dst);
+            return ByteStringAccess.wrap(dst);
         } finally {
             ticket.position(initialPosition);
         }
@@ -251,7 +247,7 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @return the query scope name this descriptor represents
      */
-    public static String idForDescriptor(final Flight.FlightDescriptor descriptor, final String logId) {
+    public static ByteString idForDescriptor(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve descriptor '" + logId + "': only paths are supported");
@@ -267,7 +263,7 @@ public class SharedTicketResolver extends TicketResolverBase {
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: " + FLIGHT_DESCRIPTOR_ROUTE
                             + ")");
         }
-        return descriptor.getPath(1);
+        return ByteString.fromHex(descriptor.getPath(1));
     }
 
     /**

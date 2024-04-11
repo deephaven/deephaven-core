@@ -3,6 +3,7 @@
 //
 package io.deephaven.client.examples;
 
+import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.HasPathId;
 import io.deephaven.client.impl.HasTicketId;
 import io.deephaven.client.impl.PathId;
@@ -11,11 +12,12 @@ import io.deephaven.client.impl.TicketId;
 import picocli.CommandLine.Option;
 
 public class SharedField implements HasTicketId, HasPathId {
-    @Option(names = {"--shared-id"}, required = true, description = "The shared variable identifier.")
-    String sharedId;
+    @Option(names = {"--shared-id-hex"}, required = true,
+            description = "The shared variable identifier in hexadecimal format.")
+    String sharedIdHex;
 
     public SharedId sharedId() {
-        return new SharedId(sharedId);
+        return new SharedId(ByteString.fromHex(sharedIdHex));
     }
 
     @Override
