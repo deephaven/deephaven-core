@@ -10,6 +10,7 @@ import io.deephaven.web.client.api.PartitionedTableTestGwt;
 import io.deephaven.web.client.api.subscription.ConcurrentTableTestGwt;
 import io.deephaven.web.client.api.TableManipulationTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
+import io.deephaven.web.client.fu.LazyPromiseTestGwt;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -28,6 +29,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(NullValueTestGwt.class);
         suite.addTestSuite(HierarchicalTableTestGwt.class);
         suite.addTestSuite(PartitionedTableTestGwt.class);
+        suite.addTestSuite(LazyPromiseTestGwt.class);
 
         // Unfinished:
         // suite.addTestSuite(TotalsTableTestGwt.class);

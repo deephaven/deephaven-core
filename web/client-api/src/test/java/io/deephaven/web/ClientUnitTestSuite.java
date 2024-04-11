@@ -18,7 +18,6 @@ public class ClientUnitTestSuite extends GWTTestSuite {
         TestSuite suite = new TestSuite("Deephaven JS API Unit Test Suite");
         suite.addTestSuite(JsDateTimeFormatTestGwt.class);
         suite.addTestSuite(JsNumberFormatTestGwt.class);
-        suite.addTestSuite(LazyPromiseTestGwt.class);
         return suite;
     }
 }

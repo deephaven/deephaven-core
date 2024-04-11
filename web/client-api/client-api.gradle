@@ -68,6 +68,20 @@ artifacts {
     }
 }
 
+def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.systemProperties = [
+            'gwt.args': ['-runStyle HtmlUnit',
+                         '-ea',
+                         '-style PRETTY',
+                         "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
+            ].join(' '),
+            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
+    ]
+    t.include '**/ClientUnitTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
@@ -87,7 +101,7 @@ if (!hasProperty('selenium.port')) {
 }
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
-    t.dependsOn(Docker.registryTask(project, 'selenium'), createDeephavenGrpcApiNetwork)
+    t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
     t.targetImageId('deephaven/selenium:local-build')
     t.containerName.set(seleniumContainerId)
     // Advised by the selenium documentation
@@ -115,34 +129,11 @@ def seleniumHealthy = project.tasks.register('seleniumHealthy', WaitForHealthyCo
     task.containerId.set(seleniumContainerId)
 }
 def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer) { task ->
-    task.finalizedBy removeDeephavenGrpcApiNetwork
     task.dependsOn startSelenium
     task.targetContainerId seleniumContainerId
     task.force.set true
     task.removeVolumes.set true
 }
-
-def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
-    t.dependsOn(seleniumHealthy)
-    t.finalizedBy(stopSelenium)
-    doFirst {
-        def webdriverUrl = "http://localhost:${seleniumPort}/"
-        t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
-                                      '-ea',
-                                      '-style PRETTY',
-                                      "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
-        ].join(' '))
-        t.classpath += tasks.getByName('gwtCompile').src
-    }
-    t.systemProperties = [
-            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
-            'webdriver.test.host':'host.docker.internal',
-    ]
-    t.include '**/ClientUnitTestSuite.class'
-    t.useJUnit()
-    t.scanForTestClasses = false
-}
-
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
@@ -157,8 +148,9 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
         ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
     }
+    t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
-            'gwt.persistentunitcachedir': layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
             'webdriver.test.host':'host.docker.internal',
     ]
     t.include '**/ClientIntegrationTestSuite.class'
