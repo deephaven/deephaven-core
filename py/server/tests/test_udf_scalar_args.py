@@ -8,6 +8,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import jpy
 
 from deephaven import empty_table, DHError, dtypes, new_table
 from deephaven.column import int_col
@@ -436,7 +437,7 @@ def test_udf(x: {np_type}) -> bool:
                 t.update(f"X = test_udf({','.join(cols)})")
             self.assertRegex(str(cm.exception), "test_udf: Expected argument .* got int")
 
-    def test_weird_cases(self):
+    def test_uncommon_cases(self):
         with self.subTest("f"):
             def f(p1: Union[np.ndarray[typing.Any], None]) -> bool:
                 return bool(p1)
@@ -548,6 +549,14 @@ def test_udf(x: {np_type}) -> bool:
 
             t = empty_table(1).update("X = f2(f1(ii))")
             self.assertEqual(t.columns[0].data_type, dtypes.int_)
+
+        with self.subTest("jpy.JType"):
+            def f1(x: jpy.JType) -> bool:
+                return isinstance(x, jpy.JType)
+
+            t = empty_table(1).update("X = f1(now())")
+            self.assertEqual(t.columns[0].data_type, dtypes.bool_)
+            self.assertEqual(1, t.to_string().count("true"))
 
     def test_unsupported_typehints_with_PyObject(self):
         with self.subTest("Unsupported custom class paired with org.jpy.PyObject arg"):

@@ -20,6 +20,7 @@ numba = soft_dependency("numba")
 
 import numpy
 import numpy as np
+import jpy
 
 from deephaven import DHError, dtypes
 from deephaven.dtypes import _NUMPY_INT_TYPE_CODES, _NUMPY_FLOATING_TYPE_CODES, _PRIMITIVE_DTYPE_NULL_MAP, \
@@ -64,9 +65,9 @@ class _ParsedParam:
     def setup_arg_converter(self, arg_type_str: str) -> None:
         """ Set up the converter function for the parameter based on the encoded argument type string. """
         for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
-            # unsupported types are treated as object type, no conversion. We'll let the runtime handle them
+            # unsupported type is treated as object type, no conversion. We'll let the runtime handle them
             # since we want to trust that the user knows what they are doing.
-            if arg_type_str == "X" or param_type_str == "X":
+            if arg_type_str in {"X", "O"}:
                 self.arg_converter = None
                 break
 
@@ -220,7 +221,7 @@ def _encode_param_type(t: type) -> str:
     if t is type(None):
         return "N"
 
-    if t == typing.Any:
+    if t == typing.Any or t == object or t == jpy.JType:
         return "O"
 
     # find the component type if it is numpy ndarray
@@ -481,16 +482,15 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
-        if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+        if sys.version_info >= (3, 10):
             sig = inspect.signature(fn, eval_str=True)  # novermin
         else:
             sig = inspect.signature(fn)
 
         for n, p in sig.parameters.items():
             # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get
-            # the type
-            # when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature, so that
-            # annotation is already a type, and we can skip this step.
+            # the type when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature,
+            # so that annotation is already a type, and we can skip this step.
             t = eval(p.annotation, fn.__globals__) if isinstance(p.annotation, str) else p.annotation
             p_sig.params.append(_parse_param(n, t))
 
