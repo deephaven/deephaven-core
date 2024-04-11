@@ -11,7 +11,8 @@ import com.google.gwt.junit.client.GWTTestCase;
 public class LazyPromiseTestGwt extends GWTTestCase {
     @Override
     public String getModuleName() {
-        // GWT 2.9 doesn't have proper bindings for Promises in HtmlUnit, so we need to use the IntegrationTest suite for these tests.
+        // GWT 2.9 doesn't have proper bindings for Promises in HtmlUnit, so we need to use the IntegrationTest suite
+        // for these tests.
         return "io.deephaven.web.DeephavenIntegrationTest";
     }
 
