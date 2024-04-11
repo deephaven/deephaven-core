@@ -1320,6 +1320,16 @@ public class SessionState {
         void onError(final StatusRuntimeException notification);
     }
 
+    /**
+     * Convert an {@link ExportErrorGrpcHandler} to an {@link ExportErrorHandler}.
+     * <p>
+     * gRPC's error handlers are designed to consume {@link StatusRuntimeException} objects. Exports can fail for a
+     * variety of reasons, and the {@link ExportErrorHandler} is designed to richly communicate export failures. This
+     * method is the glue between the two error handling APIs; enabling export error propagation to gRPC clients.
+     *
+     * @param errorHandler the gRPC specific error handler
+     * @return the generalized error handler
+     */
     public static SessionState.ExportErrorHandler toErrorHandler(final ExportErrorGrpcHandler errorHandler) {
         return (resultState, errorContext, cause, dependentExportId) -> {
             if (cause instanceof StatusRuntimeException) {

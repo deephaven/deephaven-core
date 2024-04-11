@@ -1,22 +1,20 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.console;
+package io.deephaven.server.session;
 
 import com.google.common.collect.MapMaker;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.engine.table.Table;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
 import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.SharedTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.session.TicketResolverBase;
-import io.deephaven.server.session.TicketRouter;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -167,16 +165,14 @@ public class SharedTicketResolver extends TicketResolverBase {
             final SessionState session,
             final ByteBuffer ticket,
             final String logId,
-            @Nullable Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
         final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(idForTicket(ticket, logId), source);
         if (existing != null) {
-            throw Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
-                    "Could not publish '" + logId + "': destination already exists");
-        }
-        if (onPublish != null) {
-            onPublish.run();
+            errorHandler.onError(ExportNotification.State.FAILED, "",
+                    Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
+                            "Could not publish '" + logId + "': destination already exists"),
+                    null);
         }
     }
 
@@ -235,7 +231,6 @@ public class SharedTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
-        final int initialLimit = ticket.limit();
         final int initialPosition = ticket.position();
         final CharsetDecoder decoder = EncodingInfo.UTF_8.getDecoder().reset();
         try {
@@ -246,7 +241,6 @@ public class SharedTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
-            ticket.limit(initialLimit);
         }
     }
 
@@ -267,7 +261,12 @@ public class SharedTicketResolver extends TicketResolverBase {
                     "Could not resolve descriptor '" + logId + "': unexpected path length (found: "
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
         }
-
+        if (!descriptor.getPath(0).equals(FLIGHT_DESCRIPTOR_ROUTE)) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve descriptor '" + logId + "': unexpected path (found: "
+                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: " + FLIGHT_DESCRIPTOR_ROUTE
+                            + ")");
+        }
         return descriptor.getPath(1);
     }
 

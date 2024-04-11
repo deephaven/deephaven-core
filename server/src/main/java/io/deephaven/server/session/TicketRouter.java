@@ -228,7 +228,6 @@ public class TicketRouter {
      * @param session the user session context
      * @param ticket the ticket to publish to
      * @param logId an end-user friendly identification of the ticket should an error occur
-     * @param onPublish an optional callback to invoke when the result is published
      * @param errorHandler an error handler to invoke if the source fails to produce a result
      * @param source the source object to publish
      * @param <T> the type of the result the export will publish
@@ -237,17 +236,12 @@ public class TicketRouter {
             final SessionState session,
             final Ticket ticket,
             final String logId,
-            @Nullable Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
-        final String ticketName = getLogNameFor(ticket, logId);
-        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
-                "publishTicket:" + ticketName)) {
-            final ByteBuffer ticketBuffer = ticket.getTicket().asReadOnlyByteBuffer();
-            final TicketResolver resolver = getResolver(ticketBuffer.get(ticketBuffer.position()), logId);
-            authorization.authorizePublishRequest(resolver, ticketBuffer);
-            resolver.publish(session, ticketBuffer, logId, onPublish, errorHandler, source);
-        }
+        final ByteBuffer ticketBuffer = ticket.getTicket().asReadOnlyByteBuffer();
+        final TicketResolver resolver = getResolver(ticketBuffer.get(ticketBuffer.position()), logId);
+        authorization.authorizePublishRequest(resolver, ticketBuffer);
+        resolver.publish(session, ticketBuffer, logId, errorHandler, source);
     }
 
     /**

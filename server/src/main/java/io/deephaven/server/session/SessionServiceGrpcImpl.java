@@ -217,10 +217,10 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             Ticket resultId = request.getResultId();
 
             ticketRouter.publish(session, resultId, "resultId",
-                    () -> {
-                        // when publish is complete, complete the gRPC request
-                        GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
-                    }, SessionState.toErrorHandler(sre -> GrpcUtil.safelyError(responseObserver, sre)), source);
+                    SessionState.toErrorHandler(sre -> GrpcUtil.safelyError(responseObserver, sre)), source);
+
+            // Now that destination ticket is now resolvable, we can safely complete the response.
+            GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance());
         }
     }
 

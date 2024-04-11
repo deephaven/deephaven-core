@@ -9,7 +9,6 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoSet;
 import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.console.SharedTicketResolver;
 import io.deephaven.server.util.AuthorizationWrappedGrpcBinding;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;

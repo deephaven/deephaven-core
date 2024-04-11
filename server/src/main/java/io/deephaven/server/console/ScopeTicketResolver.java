@@ -207,7 +207,6 @@ public class ScopeTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
-        final int initialLimit = ticket.limit();
         final int initialPosition = ticket.position();
         final CharsetDecoder decoder = EncodingInfo.UTF_8.getDecoder().reset();
         try {
@@ -218,7 +217,6 @@ public class ScopeTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
-            ticket.limit(initialLimit);
         }
     }
 
@@ -238,6 +236,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve descriptor '" + logId + "': unexpected path length (found: "
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
+        }
+        if (!descriptor.getPath(0).equals(FLIGHT_DESCRIPTOR_ROUTE)) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve descriptor '" + logId + "': unexpected path (found: "
+                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: " + FLIGHT_DESCRIPTOR_ROUTE
+                            + ")");
         }
 
         return descriptor.getPath(1);
