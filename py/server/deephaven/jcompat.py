@@ -277,6 +277,9 @@ def dh_nulls_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.nda
     Raises:
         DHError
     """
+    if not isinstance(np_array, np.ndarray):
+        raise DHError(message="np_array is not a numpy array")
+
     dtype = dtypes.from_np_dtype(np_array.dtype)
     if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
         if dtype in (dtypes.float32, dtypes.float64):
