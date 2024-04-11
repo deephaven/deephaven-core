@@ -64,6 +64,10 @@ class _ParsedParam:
     def setup_arg_converter(self, arg_type_str: str) -> None:
         """ Set up the converter function for the parameter based on the encoded argument type string. """
         for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
+            if arg_type_str == "X":
+                self.arg_converter = None
+                break
+
             if _is_lossless_convertible(arg_type_str, param_type_str):
                 if arg_type_str.startswith("["):  # array type (corresponding to numpy ndarray, Sequence, etc.)
                     dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))

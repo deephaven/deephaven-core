@@ -37,7 +37,7 @@ def test_udf(x {th}, y {th}) -> bool:
                         res = tbl.update("Z = test_udf(X, Y)")
                         self.assertEqual(10, res.to_string().count("true"))
 
-            with self.subTest("with null cells"): # no auto DH null to np.nan conversion
+            with self.subTest("with null cells"):  # no auto DH null to np.nan conversion
                 for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
                     y_formula = f"Y = i % 3 == 0? {null_name} : ({j_dtype})i"
                     with self.subTest(j_dtype):
@@ -54,7 +54,7 @@ def test_udf(x {th}, y {th}) -> bool:
                         self.assertEqual(10, res.to_string().count("true"))
                         exec(f"del {null_name}", globals())
 
-            with self.subTest("null arrays"): # arrays are considered nullable
+            with self.subTest("null arrays"):  # arrays are considered nullable
                 for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
                     y_formula = f"Y = i % 3 == 0? {null_name} : ({j_dtype})i"
                     with self.subTest(j_dtype):
@@ -117,12 +117,41 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                         #                                     "array does not support ")
 
     def test_np_object_array(self):
-        """TODO: need to wait for"""
+        with self.subTest("PyObject"):
+            class C:
+                pass
+
+            t = empty_table(10).update(["X = i % 3", "Y = C()"])
+            self.assertEqual(t.columns[1].data_type, dtypes.PyObject)
+            t = t.group_by("X")
+
+            def test_udf(x, y: np.ndarray[C]) -> bool:  # not conversion supported typehint
+                import jpy
+                return isinstance(y, jpy.JType)
+
+            t1 = t.update("Z = test_udf(X, Y)")
+            self.assertEqual(3, t1.to_string().count("true"))
+
+        with self.subTest("JObject"):
+            def fn(col) -> List:
+                return [col]
+
+            t = empty_table(10).update("X = i % 3").update(f"Y= fn(X + 1)")
+            self.assertEqual(t.columns[1].data_type, dtypes.JObject)
+            t = t.group_by("X")
+
+            def test_udf(x, y: np.ndarray[List]) -> bool:  # not conversion supported typehint
+                import jpy
+                return isinstance(y, jpy.JType)
+
+            t1 = t.update("Z = test_udf(X, Y)")
+            self.assertEqual(3, t1.to_string().count("true"))
 
     def test_str_bool_datetime_array(self):
         with self.subTest("str"):
             def test_udf(p1: np.ndarray[str], *, p2=None) -> bool:
                 return bool(len(p1))
+
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"]).group_by("X")
             t1 = t.update(["X1 = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
@@ -132,12 +161,14 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
 
             def test_udf(p1: Union[np.ndarray[str], None], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
+
             t2 = t.update(["X1 = test_udf(null, Y)"])
             self.assertEqual(3, t2.to_string().count("false"))
 
         with self.subTest("datetime"):
             def test_udf(p1: np.ndarray[np.datetime64], p2=None) -> bool:
                 return bool(len(p1))
+
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"]).group_by("X")
             t1 = t.update(["X1 = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
@@ -147,12 +178,14 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
 
             def test_udf(p1: Union[np.ndarray[np.datetime64], None], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
+
             t2 = t.update(["X1 = test_udf(null, Y)"])
             self.assertEqual(3, t2.to_string().count("false"))
 
         with self.subTest("boolean"):
             def test_udf(p1: np.ndarray[np.bool_], p2=None) -> bool:
                 return bool(len(p1))
+
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X")
             t1 = t.update(["X1 = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
@@ -170,6 +203,7 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
 
             def test_udf(p1: Optional[np.ndarray[bool]], p2=None) -> bool:
                 return bool(len(p1)) if p1 is not None else False
+
             t2 = t.update(["X1 = test_udf(null, Y)"])
             self.assertEqual(3, t2.to_string(cols="X1").count("false"))
 
@@ -199,8 +233,10 @@ def test_udf(x, y: Union[{th}, np.ndarray[np.int64]]) -> bool:
                     """
                     exec(func_str, globals())
 
-                    t = empty_table(1).update(["X = i", "Y = ii"]).group_by("X").update(["Z = test_udf(X, Y.toArray())"])
+                    t = empty_table(1).update(["X = i", "Y = ii"]).group_by("X").update(
+                        ["Z = test_udf(X, Y.toArray())"])
                     self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
 
 if __name__ == "__main__":
     unittest.main()

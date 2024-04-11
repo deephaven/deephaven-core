@@ -204,6 +204,7 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
 
             def test_udf(p1: str, p2=None) -> bool:  # str is nullable
                 return p1 is None
+
             t1 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("true"))
@@ -211,6 +212,7 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             def test_udf(p1: Union[str, None],
                          p2=None) -> bool:  # str is nullable regardless of Optional/Union[None, str]
                 return p1 is None
+
             t2 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(5, t2.to_string(cols="Z").count("true"))
 
@@ -230,12 +232,14 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
 
             def test_udf(p1: Optional[np.bool_], p2=None) -> bool:  # Optional enables auto DH null conversion to None
                 return p1 is None
+
             t2 = t.update(["Z = test_udf(null, Y)"])
             self.assertEqual(10, t2.to_string(cols="Z").count("true"))
 
         with self.subTest("datetime.datetime"):
             def test_udf(p1: datetime, p2=None) -> bool:
                 return p1 is None
+
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])  # datetime.datetime is nullable
             t1 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
@@ -253,12 +257,14 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             def test_udf(p1: Union[np.datetime64, None],
                          p2=None) -> bool:  # Optional enables auto DH null conversion to None
                 return p1 is None
+
             t2 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(5, t2.to_string(cols="Z").count("true"))
 
         with self.subTest("pd.Timestamp"):
             def test_udf(p1: pd.Timestamp, p2=None) -> bool:  # pandas supports NaT, NaT for null
                 return pd.isna(p1)
+
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
             t1 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
@@ -267,6 +273,7 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             def test_udf(p1: Optional[pd.Timestamp],
                          p2=None) -> bool:  # Optional enables auto DH null conversion to None
                 return p1 is None
+
             t2 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(5, t2.to_string(cols="Z").count("false"))
 
@@ -277,6 +284,7 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             "char": {"int", "long"},
             "int": {"long"},
         }
+
         narrowing_map = {
             "long": {"int", "short", "char", "byte"},
             "int": {"short", "char", "byte"},
@@ -285,76 +293,108 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             "double": {"float"},
         }
 
-        for p_type, widening_types in widening_map.items():
-            with self.subTest(p_type):
-                for j_type in widening_types:
-                    np_type = _J_TYPE_NP_DTYPE_MAP[j_type]
-                    func_str = f"""
-def test_udf(x: {np_type}) -> bool:  
-    return type(x) == {np_type}
-"""
-                    exec(func_str, globals())
-                    t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
-                    self.assertEqual(1, t.to_string(cols="Y").count("true"))
+        int_to_floating_map = {
+            "byte": {"float", "double"},
+            "short": {"float", "double"},
+            "char": {"float", "double"},
+            "int": {"float", "double"},
+            "long": {"float", "double"},
+        }
 
-        for p_type, narrowing_types in narrowing_map.items():
-            with self.subTest(p_type):
-                for j_type in narrowing_types:
-                    np_type = _J_TYPE_NP_DTYPE_MAP[j_type]
-                    func_str = f"""
+        floating_to_int_map = {
+            "float": {"byte", "short", "char", "int", "long"},
+            "double": {"byte", "short", "char", "int", "long"},
+        }
+
+        with self.subTest("widening"):
+            for p_type, widening_types in widening_map.items():
+                with self.subTest(p_type):
+                    for j_type in widening_types:
+                        np_type = _J_TYPE_NP_DTYPE_MAP[j_type]
+                        func_str = f"""
 def test_udf(x: {np_type}) -> bool:  
     return type(x) == {np_type}
-"""
-                    exec(func_str, globals())
-                    with self.assertRaises(DHError) as cm:
+                        """
+                        exec(func_str, globals())
                         t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
-                    self.assertRegex(str(cm.exception), "f: Expect")
+                        self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
+        with self.subTest("narrowing"):
+            for p_type, narrowing_types in narrowing_map.items():
+                with self.subTest(p_type):
+                    for j_type in narrowing_types:
+                        np_type = _J_TYPE_NP_DTYPE_MAP[j_type]
+                        func_str = f"""
+def test_udf(x: {np_type}) -> bool:  
+    return type(x) == {np_type}
+                        """
+                        exec(func_str, globals())
+                        with self.assertRaises(DHError) as cm:
+                            t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                        self.assertRegex(str(cm.exception), "f: Expect")
 
-        int_to_floating_types = {"np.float32", "np.float64"}
-        for p_type in int_to_floating_types:
-            with self.subTest(p_type):
-                func_str = f"""
-def test_udf(x: {p_type}) -> bool:  # note typing
-    return type(x) == {p_type}
-"""
-                exec(func_str, globals())
-                with self.assertRaises(DHError) as cm:
-                    t = empty_table(1).update(["X = i", f"Y = test_udf(X)"])
-                self.assertRegex(str(cm.exception), "f: Expect")
+        with self.subTest("int to floating types"):
+            for p_type, f_types in int_to_floating_map.items():
+                with self.subTest(p_type):
+                    for j_type in f_types:
+                        np_type = _J_TYPE_NP_DTYPE_MAP[j_type]
+                        func_str = f"""
+def test_udf(x: {np_type}) -> bool:  
+    return type(x) == {np_type}
+                        """
+                        exec(func_str, globals())
+                        with self.assertRaises(DHError) as cm:
+                            t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                        self.assertRegex(str(cm.exception), "f: Expect")
 
-
+            with self.subTest("floating to int types"):
+                for p_type, f_types in floating_to_int_map.items():
+                    with self.subTest(p_type):
+                        for j_type in f_types:
+                            np_type = _J_TYPE_NP_DTYPE_MAP[j_type]
+                            func_str = f"""
+def test_udf(x: {np_type}) -> bool:  
+    return type(x) == {np_type}
+                            """
+                            exec(func_str, globals())
+                            with self.assertRaises(DHError) as cm:
+                                t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                            self.assertRegex(str(cm.exception), "f: Expect")
 
     def test_select_most_performant(self):
         with self.subTest("np.int64 vs. int -> int"):
             def test_udf(x: Union[np.int64, float, int]) -> bool:
                 return type(x) == int
+
             t = empty_table(10).update("X = test_udf(ii)")
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("np.int32 vs. int -> int"):
             def test_udf(x: Union[np.int32, int]) -> bool:
                 return type(x) == int
+
             t = empty_table(10).update("X = test_udf(i)")
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("np.float64 vs. float -> float"):
             def test_udf(x: Union[np.float64, float, int]) -> bool:
                 return type(x) == float
+
             t = empty_table(10).update("X = test_udf((double)i)")
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("np.float32 vs. float -> float"):
             def test_udf(x: Union[np.float32, float, int]) -> bool:
                 return type(x) == float
+
             t = empty_table(10).update("X = test_udf((float)i)")
             self.assertEqual(10, t.to_string().count("true"))
-
 
     def test_positional_keyword_parameters(self):
         with self.subTest("positional only params"):
             def test_udf(p1: int, p2: float, kw1: str, /) -> bool:
                 return p1 == 1 and p2 == 1.0 and kw1 == "1"
+
             t = empty_table(1).update("X = test_udf(1, 1.0, `1`)")
             self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
@@ -377,7 +417,6 @@ def test_udf(x: {p_type}) -> bool:  # note typing
                 t = empty_table(1).update("X = test_udf(1, 1.0, `1`)")
             self.assertRegex(str(cm.exception), "takes 2 positional arguments")
 
-
     def test_varargs(self):
         cols = ["A", "B", "C", "D"]
         t = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
@@ -385,12 +424,14 @@ def test_udf(x: {p_type}) -> bool:  # note typing
         with self.subTest("valid varargs typehint"):
             def test_udf(p1: np.int32, *args: np.int64) -> int:
                 return sum(args)
+
             result = t.update(f"X = test_udf({','.join(cols)})")
             self.assertEqual(result.columns[4].data_type, dtypes.int64)
 
         with self.subTest("invalid varargs typehint"):
             def test_udf(p1: np.int32, *args: np.int16) -> int:
                 return sum(args)
+
             with self.assertRaises(DHError) as cm:
                 t.update(f"X = test_udf({','.join(cols)})")
             self.assertRegex(str(cm.exception), "test_udf: Expected argument .* got int")
@@ -507,6 +548,37 @@ def test_udf(x: {p_type}) -> bool:  # note typing
 
             t = empty_table(1).update("X = f2(f1(ii))")
             self.assertEqual(t.columns[0].data_type, dtypes.int_)
+
+    def test_unsupported_typehints_with_PyObject(self):
+        with self.subTest("Unsupported custom class paired with org.jpy.PyObject arg"):
+            class C:
+                def __init__(self):
+                    pass
+
+                def value(self) -> int:
+                    return 3
+
+            def make_c() -> C:
+                return C()
+
+            def use_c(c: C) -> int:
+                return c.value()
+
+            t = empty_table(3).update(["C = make_c()", "V = use_c(C)"])
+            self.assertIsNotNone(t)
+
+        with self.subTest("Unsupported Python built-in type paired with org.jpy.PyObject arg"):
+            from typing import Sequence
+
+            def make_c():
+                return [1, 2, 3]
+
+            def use_c(c: Sequence) -> int:
+                return c[1]
+
+            t = empty_table(3).update(["C = make_c()", "V = use_c(C)"])
+            self.assertIsNotNone(t)
+            self.assertEqual(t.columns[1].data_type, dtypes.int_)
 
 
 if __name__ == "__main__":

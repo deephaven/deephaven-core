@@ -293,12 +293,6 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             Set<Class<?>> types =
                     parameters.get(Math.min(i, parameters.size() - 1)).getPossibleTypes();
 
-            if (types.size() == 1 && types.contains(UnsupportedPythonTypeHint.class)) {
-                throw new IllegalArgumentException(
-                        callableName + ": " + "Unsupported type hint in signature for argument " + i);
-            }
-            types.remove(UnsupportedPythonTypeHint.class);
-
             // to prevent the unpacking of an array column when calling a Python function, we prefix the column accessor
             // with a cast to generic Object type, until we can find a way to convey that info, we'll just skip the
             // check for Object type but instead if there is only one possible type, we'll use that type.
@@ -313,6 +307,20 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
                 argTypesStr.append("O,");
                 continue;
             }
+
+            // PyObject is a wildcard case that can be used to pass any type of value to the Python function. This is
+            // not ideal, but until we have a way to communicate any type between Java and Python. It's a workaround
+            // that will support some uncommon use cases.
+            if (argType == PyObject.class) {
+                argTypesStr.append("O,");
+                continue;
+            }
+
+            if (types.size() == 1 && types.contains(UnsupportedPythonTypeHint.class)) {
+                throw new IllegalArgumentException(
+                        callableName + ": " + "Unsupported type hint in signature for argument " + i);
+            }
+            types.remove(UnsupportedPythonTypeHint.class);
 
             if (!types.contains(argType) && !types.contains(Object.class) && !hasSafelyCastable(types, argType)) {
                 throw new IllegalArgumentException(
