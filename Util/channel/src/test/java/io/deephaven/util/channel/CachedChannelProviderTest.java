@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.base.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -12,10 +13,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -213,6 +217,16 @@ public class CachedChannelProviderTest {
         @Override
         public SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) {
             return new TestMockChannel(count.getAndIncrement(), path.toString());
+        }
+
+        @Override
+        public final Stream<URI> list(@NotNull final URI directory) {
+            throw new UnsupportedOperationException("list");
+        }
+
+        @Override
+        public final Stream<URI> walk(@NotNull final URI directory) {
+            throw new UnsupportedOperationException("walk");
         }
 
         @Override

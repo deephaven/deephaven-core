@@ -3,6 +3,8 @@
 //
 package io.deephaven.parquet.base;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -26,18 +28,30 @@ public final class ParquetUtils {
     public static final String METADATA_KEY = "deephaven";
 
     /**
-     * Used as a filter to select relevant parquet files while reading all files in a directory.
-     */
-    public static boolean fileNameMatches(final Path path) {
-        final String fileName = path.getFileName().toString();
-        return fileName.endsWith(PARQUET_FILE_EXTENSION) && fileName.charAt(0) != '.';
-    }
-
-    /**
      * @return the key value derived from the file path, used for storing each file's metadata in the combined
      *         {@value #METADATA_FILE_NAME} and {@value #COMMON_METADATA_FILE_NAME} files.
      */
     public static String getPerFileMetadataKey(final String filePath) {
         return "deephaven_per_file_" + filePath.replace(File.separatorChar, '_');
+    }
+
+    /**
+     * Check if the provided path points to a non-hidden parquet file, and that none of its parents (till rootDir) are
+     * hidden.
+     */
+    public static boolean isVisibleParquetFile(@NotNull final Path rootDir, @NotNull final Path filePath) {
+        final String fileName = filePath.getFileName().toString();
+        if (!fileName.endsWith(PARQUET_FILE_EXTENSION) || fileName.charAt(0) == '.') {
+            return false;
+        }
+        Path parent = filePath.getParent();
+        while (parent != null && !parent.equals(rootDir)) {
+            final String parentName = parent.getFileName().toString();
+            if (!parentName.isEmpty() && parentName.charAt(0) == '.') {
+                return false;
+            }
+            parent = parent.getParent();
+        }
+        return true;
     }
 }

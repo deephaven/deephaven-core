@@ -125,6 +125,7 @@ public final class ParquetTableReadWriteTest {
     private static final ParquetInstructions REFRESHING = ParquetInstructions.builder().setIsRefreshing(true).build();
 
     // TODO(deephaven-core#5064): Add support for local S3 testing
+    // The following tests are disabled by default, as they are verifying against a remote system
     private static final boolean ENABLE_S3_TESTING =
             Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
@@ -1295,7 +1296,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readSampleParquetFilesFromS3Test1() {
+    public void readSampleParquetFilesFromDeephavenS3Bucket() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
@@ -1333,7 +1334,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readSampleParquetFilesFromS3Test2() {
+    public void readSampleParquetFilesFromPublicS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
@@ -1343,6 +1344,7 @@ public final class ParquetTableReadWriteTest {
                 .maxCacheSize(32)
                 .connectionTimeout(Duration.ofSeconds(1))
                 .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.anonymous())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -1365,11 +1367,107 @@ public final class ParquetTableReadWriteTest {
 
         ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                readInstructions, tableDefinition).select();
+                readInstructions, tableDefinition).head(10).select();
 
         ParquetTools.readSingleFileTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions, tableDefinition).select();
+                readInstructions, tableDefinition).head(10).select();
+    }
+
+    @Test
+    public void readFlatPartitionedParquetFromS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.defaultCredentials())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        final Table table = ParquetTools.readFlatPartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
+                readInstructions);
+        final Table expected = emptyTable(30).update("A = (int)i % 10");
+        assertTableEquals(expected, table);
+    }
+
+    @Test
+    public void readFlatPartitionedDataAsKeyValuePartitionedParquetFromS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.defaultCredentials())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        final Table table =
+                ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
+                        readInstructions);
+        final Table expected = emptyTable(30).update("A = (int)i % 10");
+        assertTableEquals(expected, table);
+    }
+
+    @Test
+    public void readKeyValuePartitionedParquetFromS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.defaultCredentials())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        final Table table =
+                ParquetTools.readKeyValuePartitionedTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
+                        readInstructions);
+        final List<ColumnDefinition<?>> partitioningColumns = table.getDefinition().getPartitioningColumns();
+        assertEquals(3, partitioningColumns.size());
+        assertEquals("PC1", partitioningColumns.get(0).getName());
+        assertEquals("PC2", partitioningColumns.get(1).getName());
+        assertEquals("PC3", partitioningColumns.get(2).getName());
+        assertEquals(100, table.size());
+        assertEquals(3, table.selectDistinct("PC1").size());
+        assertEquals(2, table.selectDistinct("PC2").size());
+        assertEquals(2, table.selectDistinct("PC3").size());
+        assertEquals(100, table.selectDistinct("I").size());
+        assertEquals(1, table.selectDistinct("J").size());
+    }
+
+    @Test
+    public void readKeyValuePartitionedParquetFromPublicS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readAheadCount(1)
+                .fragmentSize(5 * 1024 * 1024)
+                .maxConcurrentRequests(50)
+                .maxCacheSize(32)
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.anonymous())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        final TableDefinition ookla_table_definition = TableDefinition.of(
+                ColumnDefinition.ofInt("quarter").withPartitioning(),
+                ColumnDefinition.ofString("quadkey"));
+        ParquetTools.readKeyValuePartitionedTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
+                readInstructions, ookla_table_definition).head(10).select();
     }
 
     @Test
@@ -1705,6 +1803,16 @@ public final class ParquetTableReadWriteTest {
         } catch (final RuntimeException e) {
             assertTrue(e instanceof UnsupportedOperationException);
         }
+
+        // Read from absolute path with additional "/" in the path
+        final String additionalSlashPath = rootFile.getAbsolutePath() + "/////" + filename;
+        final Table fromDisk5 = ParquetTools.readTable(additionalSlashPath);
+        assertTableEquals(tableToSave, fromDisk5);
+
+        // Read from URI with additional "/" in the path
+        final String additionalSlashURI = "file:////" + additionalSlashPath;
+        final Table fromDisk6 = ParquetTools.readTable(additionalSlashURI);
+        assertTableEquals(tableToSave, fromDisk6);
     }
 
     /**
@@ -1984,6 +2092,31 @@ public final class ParquetTableReadWriteTest {
         writeTable(anotherTable, pqDotFile);
         fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
+    }
+
+    @Test
+    public void partitionedParquetWithDuplicateDataTest() throws IOException {
+        // Create an empty parent directory
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        assertTrue(parentDir.exists() && parentDir.isDirectory() && parentDir.list().length == 0);
+
+        // Writing the partitioning column "X" in the file itself
+        final Table firstTable = TableTools.emptyTable(5).update("X='A'", "Y=(int)i");
+        final File firstPartition = new File(parentDir, "X=A");
+        final File firstDataFile = new File(firstPartition, "data.parquet");
+
+        final File secondPartition = new File(parentDir, "X=B");
+        final File secondDataFile = new File(secondPartition, "data.parquet");
+        final Table secondTable = TableTools.emptyTable(5).update("X='B'", "Y=(int)i");
+
+        writeTable(firstTable, firstDataFile);
+        writeTable(secondTable, secondDataFile);
+
+        final Table partitionedTable = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+
+        final Table combinedTable = merge(firstTable, secondTable);
+        assertTableEquals(partitionedTable, combinedTable);
     }
 
     /**
