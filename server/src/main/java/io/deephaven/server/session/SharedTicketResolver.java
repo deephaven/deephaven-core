@@ -16,6 +16,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.SharedTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -43,7 +44,11 @@ public class SharedTicketResolver extends TicketResolverBase {
     @Override
     public String getLogNameFor(ByteBuffer ticket, String logId) {
         final ByteString ticketId = idForTicket(ticket, logId);
-        return FLIGHT_DESCRIPTOR_ROUTE + "/" + ByteHelper.byteBufToHex(ticketId.asReadOnlyByteBuffer());
+        return FLIGHT_DESCRIPTOR_ROUTE + "/" + toHexString(ticketId);
+    }
+
+    private static @NotNull String toHexString(ByteString ticketId) {
+        return ByteHelper.byteBufToHex(ticketId.asReadOnlyByteBuffer());
     }
 
     @Override
@@ -59,7 +64,8 @@ public class SharedTicketResolver extends TicketResolverBase {
         SessionState.ExportObject<?> export = sharedVariables.get(sharedId);
         if (export == null) {
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + ": no shared ticket exists with id '" + sharedId + "'");
+                    "Could not resolve '" + logId + ": no shared ticket exists with id '" + toHexString(sharedId)
+                            + "'");
         }
 
         return session.<Flight.FlightInfo>nonExport()
@@ -123,7 +129,10 @@ public class SharedTicketResolver extends TicketResolverBase {
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
-        return publish(session, idForTicket(ticket, logId), logId, onPublish);
+        final String ticketHex = toHexString(idForTicket(ticket, logId));
+        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not publish '" + logId
+                + "' to shared ticket '" + ticketHex + "' (hex): can only publish directly from a session"
+                + " export to a shared ticket");
     }
 
     @Override
@@ -132,31 +141,10 @@ public class SharedTicketResolver extends TicketResolverBase {
             final Flight.FlightDescriptor descriptor,
             final String logId,
             @Nullable final Runnable onPublish) {
-        return publish(session, idForDescriptor(descriptor, logId), logId, onPublish);
-    }
-
-    private <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session,
-            final ByteString sharedId,
-            final String logId,
-            @Nullable final Runnable onPublish) {
-        final SessionState.ExportBuilder<T> resultBuilder = session.nonExport();
-        final SessionState.ExportObject<T> resultExport = resultBuilder.getExport();
-
-        final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(sharedId, resultExport);
-        if (existing != null) {
-            throw Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
-                    "Could not publish '" + logId + "': destination already exists");
-        }
-
-        if (onPublish != null) {
-            session.nonExport()
-                    .requiresSerialQueue()
-                    .require(resultExport)
-                    .submit(onPublish);
-        }
-
-        return resultBuilder;
+        final String ticketHex = toHexString(idForDescriptor(descriptor, logId));
+        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not publish '" + logId
+                + "' to shared ticket '" + ticketHex + "' (hex): can only publish directly from a session"
+                + " export to a shared ticket");
     }
 
     @Override
@@ -167,11 +155,18 @@ public class SharedTicketResolver extends TicketResolverBase {
             @Nullable final Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
-        final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(idForTicket(ticket, logId), source);
+        if (source.isNonExport()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not publish '" + logId
+                    + "' to shared ticket '" + toHexString(idForTicket(ticket, logId)) + "' (hex): source must be a"
+                    + " session owned export");
+        }
+        final ByteString sharedId = idForTicket(ticket, logId);
+        final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(sharedId, source);
         if (existing != null) {
+            final String ticketHex = toHexString(sharedId);
             errorHandler.onError(ExportNotification.State.FAILED, "",
-                    Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
-                            "Could not publish '" + logId + "': destination already exists"),
+                    Exceptions.statusRuntimeException(Code.ALREADY_EXISTS, "Could not publish '" + logId
+                            + "' to shared ticket '" + ticketHex + "' (hex): destination already exists"),
                     null);
         } else if (onPublish != null) {
             onPublish.run();

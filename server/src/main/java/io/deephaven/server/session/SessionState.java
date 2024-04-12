@@ -626,7 +626,10 @@ public class SessionState {
             }
         }
 
-        private boolean isNonExport() {
+        /**
+         * @return if this export is a session-less non-export
+         */
+        public boolean isNonExport() {
             return exportId == NON_EXPORT_ID;
         }
 
