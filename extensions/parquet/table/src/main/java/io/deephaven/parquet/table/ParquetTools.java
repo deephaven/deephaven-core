@@ -108,11 +108,10 @@ public class ParquetTools {
      * key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleFileTable(String, ParquetInstructions)},
-     * {@link #readSingleFileTable(File, ParquetInstructions)},
-     * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
-     * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
-     * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
+     * Delegates to one of {@link #readSingleFileTable(URI, ParquetInstructions)},
+     * {@link #readPartitionedTableWithMetadata(URI, ParquetInstructions)},
+     * {@link #readFlatPartitionedTable(URI, ParquetInstructions)}, or
+     * {@link #readKeyValuePartitionedTable(URI, ParquetInstructions)}.
      *
      * @param source The path or URI of file or directory to examine
      * @return table
@@ -131,16 +130,17 @@ public class ParquetTools {
      * {@link SeekableChannelsProviderPlugin}.
      *
      * <p>
-     * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
-     * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless a
-     * metadata file is supplied or discovered in the directory, the highest (by {@link ParquetTableLocationKey location
-     * key} order) location found will be used to infer schema.
+     * If the {@link ParquetInstructions.ParquetFileLayout ParquetFileLayout} is not provided in the
+     * {@link ParquetInstructions instructions}, this method attempts to "do the right thing." It examines the source to
+     * determine if it's a single parquet file, a metadata file, or a directory. If it's a directory, it additionally
+     * tries to guess the layout to use. Unless a metadata file is supplied or discovered in the directory, the highest
+     * (by {@link ParquetTableLocationKey location key} order) location found will be used to infer schema.
      *
      * <p>
-     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
-     * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
-     * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
-     * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
+     * Delegates to one of {@link #readSingleFileTable(URI, ParquetInstructions)},
+     * {@link #readPartitionedTableWithMetadata(URI, ParquetInstructions)},
+     * {@link #readFlatPartitionedTable(URI, ParquetInstructions)}, or
+     * {@link #readKeyValuePartitionedTable(URI, ParquetInstructions)}.
      *
      * @param source The path or URI of file or directory to examine
      * @param readInstructions Instructions for customizations while reading
@@ -177,7 +177,10 @@ public class ParquetTools {
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
+     *
+     * @deprecated Use {@link #readTable(String)} instead.
      */
+    @Deprecated
     public static Table readTable(@NotNull final File sourceFile) {
         return readTableInternal(sourceFile, ParquetInstructions.EMPTY);
     }
@@ -204,7 +207,10 @@ public class ParquetTools {
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
+     *
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead.
      */
+    @Deprecated
     public static Table readTable(
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
@@ -231,7 +237,10 @@ public class ParquetTools {
      * @param sourceTable source table
      * @param destFile destination file; the file name should end in ".parquet" extension If the path includes
      *        non-existing directories they are created
+     *
+     * @deprecated Use {@link #writeTable(Table, String)} instead.
      */
+    @Deprecated
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File destFile) {
@@ -246,7 +255,10 @@ public class ParquetTools {
      *        created If there is an error any intermediate directories previously created are removed; note this makes
      *        this method unsafe for concurrent use
      * @param definition table definition to use (instead of the one implied by the table itself)
+     * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead with {@link TableDefinition}
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File destFile,
@@ -262,29 +274,63 @@ public class ParquetTools {
      *        created If there is an error any intermediate directories previously created are removed; note this makes
      *        this method unsafe for concurrent use
      * @param writeInstructions instructions for customizations while writing
+     * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead.
      */
+    @Deprecated
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File destFile,
             @NotNull final ParquetInstructions writeInstructions) {
-        writeTable(sourceTable, destFile, sourceTable.getDefinition(), writeInstructions);
+        TableDefinition definition = writeInstructions.getTableDefinition();
+        if (definition == null) {
+            definition = sourceTable.getDefinition();
+        }
+        writeTable(sourceTable, destFile, definition, writeInstructions);
     }
 
     /**
      * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
      *
      * @param sourceTable source table
-     * @param destPath destination path; it must end in ".parquet". Any non existing directories in the path are created
+     * @param destPath destination path; it must end in ".parquet". Any non-existing directories in the path are created
      *        If there is an error any intermediate directories previously created are removed; note this makes this
      *        method unsafe for concurrent use
-     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final String destPath,
+            @NotNull final ParquetInstructions writeInstructions) {
+        TableDefinition definition = writeInstructions.getTableDefinition();
+        if (definition == null) {
+            definition = sourceTable.getDefinition();
+        }
+        writeTable(sourceTable, new File(destPath), definition, writeInstructions);
+    }
+
+    /**
+     * Write a table to a file. Data indexes to write are determined by those present on {@code sourceTable}.
+     *
+     * @param sourceTable source table
+     * @param destPath destination path; it must end in ".parquet". Any non-existing directories in the path are created
+     *        If there is an error any intermediate directories previously created are removed; note this makes this
+     *        method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param writeInstructions instructions for customizations while writing
+     * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead with {@link TableDefinition}
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     */
+    @Deprecated
+    public static void writeTable(
+            @NotNull final Table sourceTable,
+            @NotNull final String destPath,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         writeTable(sourceTable, new File(destPath), definition, writeInstructions);
     }
 
@@ -297,12 +343,20 @@ public class ParquetTools {
      *        this method unsafe for concurrent use
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
+     * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead with {@link TableDefinition}
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File destFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         writeTables(new Table[] {sourceTable}, definition, new File[] {destFile}, writeInstructions);
     }
 
@@ -509,8 +563,12 @@ public class ParquetTools {
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        writeKeyValuePartitionedTable(sourceTable, sourceTable.getDefinition(), destinationDir,
-                writeInstructions, indexedColumnNames(sourceTable));
+        TableDefinition definition = writeInstructions.getTableDefinition();
+        if (definition == null) {
+            definition = sourceTable.getDefinition();
+        }
+        writeKeyValuePartitionedTable(sourceTable, definition, destinationDir, writeInstructions,
+                indexedColumnNames(sourceTable));
     }
 
     /**
@@ -533,8 +591,11 @@ public class ParquetTools {
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions,
             @Nullable final String[][] indexColumnArr) {
-        writeKeyValuePartitionedTable(sourceTable, sourceTable.getDefinition(), destinationDir,
-                writeInstructions, indexColumnArr);
+        TableDefinition definition = writeInstructions.getTableDefinition();
+        if (definition == null) {
+            definition = sourceTable.getDefinition();
+        }
+        writeKeyValuePartitionedTable(sourceTable, definition, destinationDir, writeInstructions, indexColumnArr);
     }
 
     /**
@@ -551,11 +612,19 @@ public class ParquetTools {
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
+     * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)} instead with
+     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
             @NotNull final TableDefinition definition,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         writeKeyValuePartitionedTable(sourceTable, definition, destinationDir, writeInstructions,
                 indexedColumnNames(sourceTable));
 
@@ -577,12 +646,20 @@ public class ParquetTools {
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
+     * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions, String[][])} instead
+     *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
             @NotNull final TableDefinition definition,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions,
             @Nullable final String[][] indexColumnArr) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
             throw new IllegalArgumentException("Table must have partitioning columns to write partitioned data");
@@ -636,6 +713,10 @@ public class ParquetTools {
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions,
             @Nullable final String[][] indexColumnArr) {
+        if (writeInstructions.getTableDefinition() != null) {
+            writeKeyValuePartitionedTable(partitionedTable, writeInstructions.getTableDefinition(), destinationDir,
+                    writeInstructions, indexColumnArr);
+        }
         final TableDefinition keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(),
                 partitionedTable.table().getDefinition());
         final TableDefinition leafDefinition = getNonKeyTableDefinition(partitionedTable.keyColumnNames(),
@@ -657,11 +738,19 @@ public class ParquetTools {
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
+     * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions)} instead
+     *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
             @NotNull final TableDefinition definition,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         writeKeyValuePartitionedTable(partitionedTable, definition, destinationDir, writeInstructions, EMPTY_INDEXES);
     }
 
@@ -680,12 +769,21 @@ public class ParquetTools {
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
+     * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions, String[][])}
+     *             instead with {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
             @NotNull final TableDefinition definition,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final String[][] indexColumnArr) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         final TableDefinition keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
         final TableDefinition leafDefinition = getNonKeyTableDefinition(partitionedTable.keyColumnNames(), definition);
         writeKeyValuePartitionedTableImpl(partitionedTable, keyTableDefinition, leafDefinition, destinationDir,
@@ -878,6 +976,33 @@ public class ParquetTools {
     }
 
     /**
+     * Writes tables to disk in parquet format to a supplied set of destinations. The {@link TableDefinition} to use for
+     * writing must be provided as part of {@link ParquetInstructions}.
+     *
+     * @param sources The tables to write
+     * @param writeInstructions Write instructions for customizations while writing
+     * @param destinations The destination paths. Any non-existing directories in the paths provided are created. If
+     *        there is an error, any intermediate directories previously created are removed; note this makes this
+     *        method unsafe for concurrent use.
+     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
+     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
+     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
+     *        will be computed on demand.
+     */
+    public static void writeParquetTables(
+            @NotNull final Table[] sources,
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final String[] destinations,
+            @Nullable final String[][] indexColumnArr) {
+        final TableDefinition definition = writeInstructions.getTableDefinition();
+        if (definition == null) {
+            throw new IllegalArgumentException("Table definition must be provided in writeInstructions");
+        }
+        final File[] destinationFiles = Arrays.stream(destinations).map(File::new).toArray(File[]::new);
+        writeParquetTables(sources, definition, writeInstructions, destinationFiles, indexColumnArr);
+    }
+
+    /**
      * Writes tables to disk in parquet format to a supplied set of destinations.
      *
      * @param sources The tables to write
@@ -890,13 +1015,21 @@ public class ParquetTools {
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
+     * @deprecated Use {@link #writeParquetTables(Table[], ParquetInstructions, String[], String[][])} instead with
+     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeParquetTables(
             @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
             @Nullable final String[][] indexColumnArr) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         final File metadataRootDir;
         if (writeInstructions.generateMetadataFiles()) {
             // We insist on writing the metadata file in the same directory as the destination files, thus all
@@ -1121,12 +1254,35 @@ public class ParquetTools {
      * @param sources source tables
      * @param definition table definition
      * @param destinations destinations
+     * @deprecated Use {@link #writeTables(Table[], String[], ParquetInstructions)} instead with {@link TableDefinition}
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeTables(
             @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final File[] destinations) {
         writeParquetTables(sources, definition, ParquetInstructions.EMPTY, destinations, indexedColumnNames(sources));
+    }
+
+    /**
+     * Write out tables to disk. Data indexes to write are determined by those already present on the first source. The
+     * {@link TableDefinition} to use for writing must be provided as part of {@link ParquetInstructions}.
+     *
+     * @param sources source tables
+     * @param destinations destinations
+     */
+    public static void writeTables(
+            @NotNull final Table[] sources,
+            @NotNull final String[] destinations,
+            @NotNull final ParquetInstructions writeInstructions) {
+        final TableDefinition definition = writeInstructions.getTableDefinition();
+        if (definition == null) {
+            throw new IllegalArgumentException("Table definition must be set in write instructions");
+        }
+        final File[] destinationFiles = Arrays.stream(destinations).map(File::new).toArray(File[]::new);
+        writeParquetTables(sources, definition, ParquetInstructions.EMPTY, destinationFiles,
+                indexedColumnNames(sources));
     }
 
     /**
@@ -1136,12 +1292,20 @@ public class ParquetTools {
      * @param definition table definition
      * @param destinations destinations
      * @param writeInstructions instructions for customizations while writing
+     * @deprecated Use {@link #writeTables(Table[], String[], ParquetInstructions)} instead with {@link TableDefinition}
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static void writeTables(
             @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final File[] destinations,
             @NotNull final ParquetInstructions writeInstructions) {
+        if (writeInstructions.getTableDefinition() != null
+                && !writeInstructions.getTableDefinition().equals(definition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in write instructions does not match the one provided in the method call");
+        }
         writeParquetTables(sources, definition, writeInstructions, destinations, indexedColumnNames(sources));
     }
 
@@ -1236,6 +1400,18 @@ public class ParquetTools {
             @NotNull final ParquetInstructions instructions) {
         final boolean isDirectory = !source.endsWith(PARQUET_FILE_EXTENSION);
         final URI sourceURI = convertToURI(source, isDirectory);
+        if (instructions.getFileLayout() != null) {
+            switch (instructions.getFileLayout()) {
+                case SINGLE_FILE:
+                    return readSingleFileTable(sourceURI, instructions);
+                case FLAT_PARTITIONED:
+                    return readFlatPartitionedTable(sourceURI, instructions);
+                case KV_PARTITIONED:
+                    return readKeyValuePartitionedTable(sourceURI, instructions);
+                case METADATA_PARTITIONED:
+                    return readPartitionedTableWithMetadata(sourceURI, instructions);
+            }
+        }
         if (FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
             return readTableInternal(new File(sourceURI), instructions);
         }
@@ -1247,8 +1423,7 @@ public class ParquetTools {
                     "from non local storage");
         }
         // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(sourceURI, MAX_PARTITIONING_LEVELS_INFERENCE,
-                instructions), instructions);
+        return readKeyValuePartitionedTable(sourceURI, instructions);
     }
 
     private static boolean ignoreDotFiles(Path path) {
@@ -1268,8 +1443,9 @@ public class ParquetTools {
      * Reads in a table from a single parquet file using the provided table definition.
      *
      * <p>
-     * Callers may prefer the simpler methods {@link #readSingleFileTable(File, ParquetInstructions)} or
-     * {@link #readSingleFileTable(File, ParquetInstructions, TableDefinition)}.
+     * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided as
+     * {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout}
+     * and {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1282,6 +1458,16 @@ public class ParquetTools {
             @NotNull final TableDefinition tableDefinition) {
         if (readInstructions.isRefreshing()) {
             throw new IllegalArgumentException("Unable to have a refreshing single parquet file");
+        }
+        if (readInstructions.getTableDefinition() != null
+                && !readInstructions.getTableDefinition().equals(tableDefinition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in read instructions does not match the one provided in the method call");
+        }
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.SINGLE_FILE) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with single file");
         }
         final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
@@ -1298,6 +1484,10 @@ public class ParquetTools {
      * (by {@link ParquetTableLocationKey location key} order) location found, which must have non-null partition values
      * for all partition keys.
      *
+     * <p>
+     * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided using
+     * {@link ParquetInstructions.Builder#setFileLayout}.
+     *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
      * @return The table
@@ -1305,6 +1495,9 @@ public class ParquetTools {
     public static Table readPartitionedTable(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions) {
+        if (readInstructions.getTableDefinition() != null) {
+            readPartitionedTable(locationKeyFinder, readInstructions, readInstructions.getTableDefinition());
+        }
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(locationKeyFinder);
         final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
         return readPartitionedTable(
@@ -1316,6 +1509,11 @@ public class ParquetTools {
 
     /**
      * Reads in a table from files discovered with {@code locationKeyFinder} using the provided table definition.
+     *
+     * <p>
+     * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided using
+     * {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
+     * {@link ParquetInstructions.Builder#setTableDefinition}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1357,6 +1555,10 @@ public class ParquetTools {
      * Reads in a table from files discovered with {@code locationKeyFinder} using a definition built from the highest
      * (by {@link ParquetTableLocationKey location key} order) location found, which must have non-null partition values
      * for all partition keys.
+     *
+     * <p>
+     * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided using
+     * {@link ParquetInstructions.Builder#setFileLayout}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1417,14 +1619,64 @@ public class ParquetTools {
     /**
      * Reads in a table using metadata files found in the supplied directory.
      *
-     * @param directory The source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the path for the root directory to search for .parquet files
      * @param readInstructions Instructions for customizations while reading
      * @return The table
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#METADATA_PARTITIONED} using
+     *             {@link ParquetInstructions.Builder#setFileLayout}.
      */
+    @Deprecated
     public static Table readPartitionedTableWithMetadata(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with metadata partitioned");
+        }
+        if (readInstructions.getTableDefinition() != null) {
+            throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
+                    "metadata files with custom table definition is currently not supported");
+        }
         final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
+        return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
+    }
+
+    /**
+     * Reads in a table using metadata files found in the supplied directory.
+     *
+     * @param directory the path or URI for the root directory to search for .parquet files
+     * @param readInstructions Instructions for customizations while reading
+     * @return The table
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#METADATA_PARTITIONED} using
+     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     */
+    @Deprecated
+    public static Table readPartitionedTableWithMetadata(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions) {
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with metadata partitioned");
+        }
+        if (readInstructions.getTableDefinition() != null) {
+            throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
+                    "metadata files with custom table definition is currently not supported");
+        }
+        return readPartitionedTableWithMetadata(convertToURI(directory, true), readInstructions);
+    }
+
+    private static Table readPartitionedTableWithMetadata(
+            @NotNull final URI directoryUri,
+            @NotNull final ParquetInstructions readInstructions) {
+        if (!FILE_URI_SCHEME.equals(directoryUri.getScheme())) {
+            throw new UnsupportedOperationException("Reading metadata files from non local storage is not supported");
+        }
+        final ParquetMetadataFileLayout layout =
+                new ParquetMetadataFileLayout(new File(directoryUri), readInstructions);
         return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
     }
 
@@ -1439,36 +1691,57 @@ public class ParquetTools {
      * @param directory the root directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, int, ParquetInstructions)
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#KV_PARTITIONED} using
+     *             {@link ParquetInstructions.Builder#setFileLayout}.
      */
+    @Deprecated
     public static Table readKeyValuePartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directory, MAX_PARTITIONING_LEVELS_INFERENCE,
-                readInstructions), readInstructions);
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.KV_PARTITIONED) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with key-value partitioned");
+        }
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition == null) {
+            return readPartitionedTable(
+                    new ParquetKeyValuePartitionedLayout(directory, MAX_PARTITIONING_LEVELS_INFERENCE,
+                            readInstructions),
+                    readInstructions);
+        }
+        if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
+            throw new IllegalArgumentException("No partitioning columns");
+        }
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directory, tableDefinition, readInstructions),
+                readInstructions, tableDefinition);
     }
 
     /**
      * Creates a partitioned table via the key-value partitioned parquet files from the root {@code directory},
      * inferring the table definition from those files.
-     *
      * <p>
-     * Callers wishing to be more explicit and skip the inference step may prefer to call
-     * {@link #readKeyValuePartitionedTable(String, ParquetInstructions, TableDefinition)}.
+     * Callers wishing to be more explicit and skip the inference step should provide a {@link TableDefinition} as part
+     * of read instructions using {@link ParquetInstructions.Builder#setTableDefinition}.
      *
-     * @param directory the path or URI for the root directory to search for .parquet files
+     * @param directoryUri the URI for the root directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, int, ParquetInstructions)
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
      */
-    @Deprecated
-    public static Table readKeyValuePartitionedTable(
-            @NotNull final String directory,
+    private static Table readKeyValuePartitionedTable(
+            @NotNull final URI directoryUri,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory, true),
-                MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions), readInstructions);
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition == null) {
+            return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directoryUri,
+                    MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions), readInstructions);
+        }
+        if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
+            throw new IllegalArgumentException("No partitioning columns");
+        }
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directoryUri, tableDefinition,
+                readInstructions), readInstructions, tableDefinition);
     }
 
     /**
@@ -1479,14 +1752,26 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, TableDefinition,
-     *      ParquetInstructions)
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#KV_PARTITIONED} using
+     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static Table readKeyValuePartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.KV_PARTITIONED) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with key-value partitioned");
+        }
+        if (readInstructions.getTableDefinition() != null
+                && !readInstructions.getTableDefinition().equals(tableDefinition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in read instructions does not match the one provided in the method call");
+        }
         if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
             throw new IllegalArgumentException("No partitioning columns");
         }
@@ -1494,28 +1779,6 @@ public class ParquetTools {
                 readInstructions, tableDefinition);
     }
 
-    /**
-     * Creates a partitioned table via the key-value partitioned parquet files from the root {@code directory} using the
-     * provided {@code tableDefinition}.
-     *
-     * @param directory the path or URI for the root directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading
-     * @param tableDefinition the table definition
-     * @return the table
-     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, TableDefinition, ParquetInstructions)
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
-     */
-    @Deprecated
-    public static Table readKeyValuePartitionedTable(
-            @NotNull final String directory,
-            @NotNull final ParquetInstructions readInstructions,
-            @NotNull final TableDefinition tableDefinition) {
-        if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
-            throw new IllegalArgumentException("No partitioning columns");
-        }
-        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory, true), tableDefinition,
-                readInstructions), readInstructions, tableDefinition);
-    }
 
     /**
      * Creates a partitioned table via the flat parquet files from the root {@code directory}, inferring the table
@@ -1528,35 +1791,48 @@ public class ParquetTools {
      * @param directory the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#FLAT_PARTITIONED} using
+     *             {@link ParquetInstructions.Builder#setFileLayout}.
      */
+    @Deprecated
     public static Table readFlatPartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(directory, readInstructions), readInstructions);
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with flat partitioned");
+        }
+        final TableLocationKeyFinder<ParquetTableLocationKey> flatLayout =
+                new ParquetFlatPartitionedLayout(directory, readInstructions);
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition == null) {
+            return readPartitionedTable(flatLayout, readInstructions);
+        }
+        return readPartitionedTable(flatLayout, readInstructions, tableDefinition);
     }
 
     /**
      * Creates a partitioned table via the flat parquet files from the root {@code directory}, inferring the table
      * definition from those files.
      *
-     * <p>
-     * Callers wishing to be more explicit and skip the inference step may prefer to call
-     * {@link #readFlatPartitionedTable(String, ParquetInstructions, TableDefinition)}.
-     *
-     * @param directory the path or URI for the directory to search for .parquet files
+     * @param sourceURI the path or URI for the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
      * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
      */
-    @Deprecated
-    public static Table readFlatPartitionedTable(
-            @NotNull final String directory,
+    private static Table readFlatPartitionedTable(
+            @NotNull final URI sourceURI,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory, true), readInstructions),
-                readInstructions);
+        final TableLocationKeyFinder<ParquetTableLocationKey> flatLayout =
+                new ParquetFlatPartitionedLayout(sourceURI, readInstructions);
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition == null) {
+            return readPartitionedTable(flatLayout, readInstructions);
+        }
+        return readPartitionedTable(flatLayout, readInstructions, tableDefinition);
     }
 
     /**
@@ -1567,35 +1843,28 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(File, ParquetInstructions)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#FLAT_PARTITIONED} using
+     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static Table readFlatPartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with flat partitioned");
+        }
+        if (readInstructions.getTableDefinition() != null
+                && !readInstructions.getTableDefinition().equals(tableDefinition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in read instructions does not match the one provided in the method call");
+        }
         return readPartitionedTable(new ParquetFlatPartitionedLayout(directory, readInstructions), readInstructions,
                 tableDefinition);
-    }
-
-    /**
-     * Creates a partitioned table via the flat parquet files from the root {@code directory} using the provided
-     * {@code tableDefinition}.
-     *
-     * @param directory the path or URI for the directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading
-     * @param tableDefinition the table definition
-     * @return the table
-     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
-     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
-     */
-    @Deprecated
-    public static Table readFlatPartitionedTable(
-            @NotNull final String directory,
-            @NotNull final ParquetInstructions readInstructions,
-            @NotNull final TableDefinition tableDefinition) {
-        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory, true), readInstructions),
-                readInstructions, tableDefinition);
     }
 
     /**
@@ -1608,13 +1877,25 @@ public class ParquetTools {
      * @param file the parquet file
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
-     * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
+     *             {@link ParquetInstructions.Builder#setFileLayout}.
      */
+    @Deprecated
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(convertToURI(file, false), readInstructions);
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.SINGLE_FILE) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with single file");
+        }
+        final URI fileURI = convertToURI(file, false);
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition == null) {
+            return readSingleFileTable(fileURI, readInstructions);
+        }
+        return readSingleFileTable(fileURI, readInstructions, tableDefinition);
     }
 
     /**
@@ -1627,18 +1908,34 @@ public class ParquetTools {
      * @param source the path or URI for the parquet file
      * @param readInstructions the instructions for customizations while reading
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
-     * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
+     *             {@link ParquetInstructions.Builder#setFileLayout}.
      */
+    @Deprecated
     public static Table readSingleFileTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readSingleFileTable(convertToURI(source, false), readInstructions);
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.SINGLE_FILE) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with single file");
+        }
+        final URI fileURI = convertToURI(source, false);
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition == null) {
+            return readSingleFileTable(fileURI, readInstructions);
+        }
+        return readSingleFileTable(fileURI, readInstructions, tableDefinition);
     }
 
     private static Table readSingleFileTable(
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) {
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition();
+        if (tableDefinition != null) {
+            return readSingleFileTable(parquetFileURI, readInstructions, tableDefinition);
+        }
         final ParquetSingleFileLayout keyFinder = new ParquetSingleFileLayout(parquetFileURI, readInstructions);
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(keyFinder);
         final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
@@ -1653,13 +1950,26 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
-     * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
+     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.SINGLE_FILE) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with single file");
+        }
+        if (readInstructions.getTableDefinition() != null
+                && !readInstructions.getTableDefinition().equals(tableDefinition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in read instructions does not match the one provided in the method call");
+        }
         return readSingleFileTable(convertToURI(file, false), readInstructions, tableDefinition);
     }
 
@@ -1671,13 +1981,26 @@ public class ParquetTools {
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
-     * @see ParquetTableLocationKey#ParquetTableLocationKey(URI, int, Map, ParquetInstructions)
-     * @see #readSingleFileTable(ParquetTableLocationKey, ParquetInstructions, TableDefinition)
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
+     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition}.
      */
+    @Deprecated
     public static Table readSingleFileTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
+        if (readInstructions.getFileLayout() != null
+                && readInstructions.getFileLayout() != ParquetInstructions.ParquetFileLayout.SINGLE_FILE) {
+            throw new IllegalArgumentException("File layout provided in read instructions (=" +
+                    readInstructions.getFileLayout().toString() + ") does not match with single file");
+        }
+        if (readInstructions.getTableDefinition() != null
+                && !readInstructions.getTableDefinition().equals(tableDefinition)) {
+            throw new IllegalArgumentException(
+                    "Table definition provided in read instructions does not match the one provided in the method call");
+        }
         return readSingleFileTable(convertToURI(source, false), readInstructions, tableDefinition);
     }
 
