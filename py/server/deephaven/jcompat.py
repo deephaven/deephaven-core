@@ -260,16 +260,18 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
     return np_array
 
 def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndarray:
-    """Converts Deephaven primitive null values in the given numpy array to np.nan.
-    No conversion is performed on non-primitive types.
+    """Converts Deephaven primitive null values in the given numpy array to np.nan. No conversion is performed on
+    non-primitive types.
+
+    Note, the input numpy array is modified in place if it is of a float or double type. If that's not a desired behavior,
+    pass a copy of the array instead. For input arrays of other types, a new array is always returned.
 
     Args:
         np_array (np.ndarray): The numpy array to convert
-        type_promotion (bool): When False, integer, boolean, or character arrays containing Deephaven nulls yield
-            an exception. When True, integer, boolean, or character arrays containing Deephaven nulls are converted
-            to np.float64 arrays and Deephaven null values are converted to np.nan. numpy arrays of float or double
-            types are not affected by this flag and Deephaven nulls will always be converted to np.nan. Defaults to
-            True.
+        type_promotion (bool): When False, integer, boolean, or character arrays will cause an exception to be raised.
+            When True, integer, boolean, or character arrays are converted to new np.float64 arrays and Deephaven null
+            values in them are converted to np.nan. Numpy arrays of float or double types are not affected by this flag
+            and Deephaven nulls will always be converted to np.nan in place. Defaults to True.
 
     Returns:
         np.ndarray: The numpy array with Deephaven nulls converted to np.nan.
@@ -278,7 +280,7 @@ def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndar
         DHError
     """
     if not isinstance(np_array, np.ndarray):
-        raise DHError(message="np_array is not a numpy array")
+        raise DHError(message="The given np_array argument is not a numpy array.")
 
     dtype = dtypes.from_np_dtype(np_array.dtype)
     if dh_null := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype):
@@ -286,19 +288,15 @@ def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndar
             np_array = np.copy(np_array)
             np_array[np_array == dh_null] = np.nan
         else:
+            if not type_promotion:
+                raise DHError(message=f"failed to convert DH nulls to np.nan in the numpy array. The array is "
+                                      f"of {np_array.dtype.type} type  but type_promotion is False")
             if dtype is dtypes.bool_:  # needs to change its type to byte for dh null detection
                 np_array = np.frombuffer(np_array, np.byte)
 
-            if any(np_array[np_array == dh_null]):
-                if not type_promotion:
-                    raise DHError(message="failed to converting DH nulls to np.nan in the numpy array. The array is "
-                                          "of integer type and contains Deephaven null values but type_promotion is False")
-                np_array = np_array.astype(np.float64)
-                np_array[np_array == dh_null] = np.nan
-            else:
-                if dtype is dtypes.bool_:  # needs to change its type back to bool
-                    np_array = np.frombuffer(np_array, np.bool_)
-                return np_array
+            np_array = np_array.astype(np.float64)
+            np_array[np_array == dh_null] = np.nan
+
     return np_array
 
 def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.Series:

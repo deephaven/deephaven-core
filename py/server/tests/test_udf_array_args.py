@@ -241,14 +241,33 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                 res = tbl.update("Z = test_udf(X, Y)")
                 self.assertEqual(10, res.to_string().count("true"))
 
+                func_str = f"""
+def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
+    z = dh_null_to_nan(y, type_promotion=False)
+    return True
+                """
+                exec(func_str, globals())
+                if j_dtype not in {"float", "double"}:
+                    with self.assertRaises(DHError) as cm:
+                        res = tbl.update("Z = test_udf(X, Y)")
+                    self.assertRegex(str(cm.exception), "failed to convert DH nulls to np.nan .* type_promotion is False")
+                else:
+                    res = tbl.update("Z = test_udf(X, Y)")
+                    self.assertEqual(10, res.to_string().count("true"))
+
+
         with self.subTest("boolean"):
-            def test_udf(p1: np.ndarray[np.bool_], p2=None) -> bool:
-                z = dh_null_to_nan(p1)
+            def test_udf(p1: np.ndarray[np.bool_], p2=None, tp: bool = True) -> bool:
+                z = dh_null_to_nan(p1, type_promotion=tp)
                 return z.dtype.type == np.float64 and np.any(np.isnan(z))
 
             t = empty_table(100).update(["X = i % 10", "Y = i % 3 == 0? true : null"]).group_by("X")
             rest = t.update(["X1 = test_udf(Y)"])
             self.assertEqual(10, res.to_string().count("true"))
+
+            with self.assertRaises(DHError) as cm:
+                t.update(["X1 = test_udf(Y, null, false)"])
+            self.assertRegex(str(cm.exception), "failed to convert DH nulls to np.nan .* type_promotion is False")
 
 
 if __name__ == "__main__":
