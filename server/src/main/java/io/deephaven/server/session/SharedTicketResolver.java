@@ -164,6 +164,7 @@ public class SharedTicketResolver extends TicketResolverBase {
             final SessionState session,
             final ByteBuffer ticket,
             final String logId,
+            @Nullable final Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
         final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(idForTicket(ticket, logId), source);
@@ -172,6 +173,8 @@ public class SharedTicketResolver extends TicketResolverBase {
                     Exceptions.statusRuntimeException(Code.ALREADY_EXISTS,
                             "Could not publish '" + logId + "': destination already exists"),
                     null);
+        } else if (onPublish != null) {
+            onPublish.run();
         }
     }
 
