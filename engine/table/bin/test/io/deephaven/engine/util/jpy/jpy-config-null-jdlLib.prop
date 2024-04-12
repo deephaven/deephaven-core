@@ -1,0 +1,4 @@
+jpy.pythonHome=/pythonHome
+jpy.programName=/programName
+jpy.pythonLib=/libpython.so
+jpy.jpyLib=/jpy.so

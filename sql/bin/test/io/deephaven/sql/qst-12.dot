@@ -1,0 +1,11 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/books)"]
+"op_1" ["label"="view(__p_2_0=Id,__p_2_1=Title,__p_2_2=AuthorId)"]
+"op_2" ["label"="view(__a_1_0=__p_2_2,__a_1_1=__p_2_0)"]
+"op_3" ["label"="aggBy([],[__p_0_0 = count, __p_0_1 = __a_1_0 aggregated with max, __p_0_2 = __a_1_1 aggregated with min, __p_0_3 = __a_1_1 aggregated with first, __p_0_4 = __a_1_1 aggregated with last, __p_0_5 = __a_1_1 aggregated with average])"]
+"op_4" ["label"="view(my_count=__p_0_0,max_author_id=__p_0_1,min_id=__p_0_2,first_id=__p_0_3,last_id=__p_0_4,avg_id=__p_0_5,avg_id0=__p_0_5)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+"op_4" -> "op_3"
+}

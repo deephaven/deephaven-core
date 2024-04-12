@@ -1,0 +1,7 @@
+# suppress inspection "WrongPropertyKeyValueDelimiter" for whole file
+# This should identify that 'finaltest' is trying to change a final value,
+# aftertest did not previously exist so is created if the file continues processing after the error,
+# and should ignore the value in beforetest because it already exists in the file that's including this one
+beforetest = changed
+finaltest = bar
+final includetest = bar

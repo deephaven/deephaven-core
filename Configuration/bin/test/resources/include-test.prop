@@ -1,0 +1,14 @@
+# suppress inspection "Annotator" for whole file
+# suppress inspection "WrongPropertyKeyValueDelimiter" for whole file
+# suppress inspection "UnusedProperty" for whole file
+includefiles=resources/final-test-include.prop
+
+# Test that including a file honors the 'final' declarations properly, and adds new values
+[testbatch=finalinclude] {
+# 'beforetest' should process and have its value set to empty-string
+    beforetest
+# includetest was declared final in the included file, so this should cause an error.
+    includetest=foo
+# aftertest should not be evaluated, since the error already stopped execution.
+    aftertest = plugh
+}

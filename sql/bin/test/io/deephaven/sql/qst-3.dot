@@ -1,0 +1,7 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/books)"]
+"op_1" ["label"="view(__p_0_0=Id,__p_0_1=Title,__p_0_2=AuthorId)"]
+"op_2" ["label"="view(Id=__p_0_0,Title=__p_0_1,AuthorId=__p_0_2)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+}

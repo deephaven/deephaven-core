@@ -1,0 +1,4 @@
+SELECT
+  Title
+FROM
+  books

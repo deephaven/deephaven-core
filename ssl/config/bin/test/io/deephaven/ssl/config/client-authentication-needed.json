@@ -1,0 +1,9 @@
+{
+  "clientAuthentication": "NEEDED",
+  "trust": {
+    "type": "jdk"
+  },
+  "identity": {
+    "type": "properties"
+  }
+}

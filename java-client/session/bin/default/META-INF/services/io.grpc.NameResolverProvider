@@ -1,0 +1,2 @@
+io.deephaven.client.impl.DeephavenTargetNameResolverProviders$Plaintext
+io.deephaven.client.impl.DeephavenTargetNameResolverProviders$Secure
