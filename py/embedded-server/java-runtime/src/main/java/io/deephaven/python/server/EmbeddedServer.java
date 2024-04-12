@@ -4,6 +4,7 @@
 package io.deephaven.python.server;
 
 import dagger.Component;
+import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
@@ -13,6 +14,7 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
+import io.deephaven.server.config.ServerConfig;
 import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
@@ -38,6 +40,8 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Collection;
+import java.util.Map;
 
 public class EmbeddedServer {
 
@@ -79,7 +83,35 @@ public class EmbeddedServer {
     @Inject
     LogBuffer logBuffer;
 
+    @Inject
+    ServerConfig serverConfig;
+
+    @Inject
+    Map<String, AuthenticationRequestHandler> authenticationHandlers;
+
+    /**
+     * Create an embedded server with the given host and port.
+     * 
+     * @param host the host to bind to
+     * @param port the port to bind to
+     * @param dict Deprecated, no longer used.
+     * @throws IOException if the server cannot be started
+     *
+     * @deprecated use {@link #EmbeddedServer(String, Integer)} instead. dict is not used.
+     */
     public EmbeddedServer(String host, Integer port, PyObject dict) throws IOException {
+        this(host, port);
+    }
+
+
+    /**
+     * Create an embedded server with the given host and port.
+     * 
+     * @param host the host to bind to
+     * @param port the port to bind to
+     * @throws IOException if the server cannot be started
+     */
+    public EmbeddedServer(String host, Integer port) throws IOException {
         // Redirect System.out and err to the python equivelents, in case python has (or will) redirected them.
         PyModule sys = PyModule.importModule("sys");
         System.setOut(new PrintStream(new PyLogOutputStream(() -> sys.getAttribute("stdout"))));
@@ -127,5 +159,23 @@ public class EmbeddedServer {
      */
     public OutputStream getStderr() {
         return new LogBufferOutputStream(logBuffer, LogLevel.STDERR, 256, 1 << 19);
+    }
+
+    /**
+     * Provide access to the server configuration.
+     * 
+     * @return the server configuration
+     */
+    public ServerConfig serverConfig() {
+        return serverConfig;
+    }
+
+    /**
+     * Provide access to the authentication handlers.
+     * 
+     * @return the authentication handlers
+     */
+    public Collection<AuthenticationRequestHandler> authenticationHandlers() {
+        return authenticationHandlers.values();
     }
 }
