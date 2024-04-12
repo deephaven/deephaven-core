@@ -36,25 +36,25 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
 
     @Override
     public BytesInput decompress(final InputStream inputStream, final int compressedSize,
-            final int uncompressedSize) throws IOException {
+            final int uncompressedSize, final DecompressorHolder decompressorHolder) throws IOException {
         if (mode == DecompressionMode.LZ4) {
-            return super.decompress(inputStream, compressedSize, uncompressedSize);
+            return super.decompress(inputStream, compressedSize, uncompressedSize, decompressorHolder);
         }
         if (mode == DecompressionMode.LZ4_RAW) {
             // LZ4_RAW adapter should have been initialized if we hit this case.
-            return lz4RawAdapter.decompress(inputStream, compressedSize, uncompressedSize);
+            return lz4RawAdapter.decompress(inputStream, compressedSize, uncompressedSize, decompressorHolder);
         }
         // Buffer input data in case we need to retry with LZ4_RAW.
         final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, compressedSize);
         bufferedInputStream.mark(compressedSize);
         BytesInput ret;
         try {
-            ret = super.decompress(bufferedInputStream, compressedSize, uncompressedSize);
+            ret = super.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorHolder);
             mode = DecompressionMode.LZ4;
         } catch (IOException e) {
             bufferedInputStream.reset();
             lz4RawAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName("LZ4_RAW");
-            ret = lz4RawAdapter.decompress(bufferedInputStream, compressedSize, uncompressedSize);
+            ret = lz4RawAdapter.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorHolder);
             mode = DecompressionMode.LZ4_RAW;
         }
         return ret;

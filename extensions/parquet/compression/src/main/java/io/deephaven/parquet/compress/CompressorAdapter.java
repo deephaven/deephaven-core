@@ -30,7 +30,14 @@ public interface CompressorAdapter extends SafeCloseable {
         }
 
         @Override
-        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) {
+        public BytesInput decompress(final InputStream inputStream, final int compressedSize,
+                final int uncompressedSize, final DecompressorHolder decompressorHolder) {
+            if (decompressorHolder.getCodecName() == null) {
+                decompressorHolder.setDecompressor(CompressionCodecName.UNCOMPRESSED, null);
+            } else if (decompressorHolder.getCodecName() != CompressionCodecName.UNCOMPRESSED) {
+                throw new IllegalArgumentException("DecompressorHolder codec name (=" +
+                        decompressorHolder.getCodecName() + ") does not match UNCOMPRESSED");
+            }
             return BytesInput.from(inputStream, compressedSize);
         }
 
@@ -42,7 +49,9 @@ public interface CompressorAdapter extends SafeCloseable {
 
     /**
      * Creates a new output stream that will take uncompressed writes, and flush data to the provided stream as
-     * compressed data. Note that this method is not thread safe.
+     * compressed data.
+     * <p>
+     * Note that this method is not thread safe.
      * 
      * @param os the output stream to write compressed contents to
      * @return an output stream that can accept writes
@@ -51,10 +60,14 @@ public interface CompressorAdapter extends SafeCloseable {
     OutputStream compress(OutputStream os) throws IOException;
 
     /**
-     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream.
-     * Callers should process the results before {@code inputStream} is closed; if the {@link BytesInput} interface
-     * needs to persist longer than {@code inputStream}, callers should use {@link BytesInput#copy(BytesInput)} on the
-     * results. Note that this method is thread safe.
+     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream. The
+     * provided {@link DecompressorHolder} is used for decompressing if compatible with the compression codec.
+     * Otherwise, a new decompressor is created and set in the DecompressorHolder. Callers should process the results
+     * before {@code inputStream} is closed; if the {@link BytesInput} interface needs to persist longer than
+     * {@code inputStream}, callers should use {@link BytesInput#copy(BytesInput)} on the results.
+     * <p>
+     * Note that this method is thread safe, assuming the {@link DecompressorHolder} instances are not shared across
+     * threads.
      * 
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data
@@ -62,7 +75,8 @@ public interface CompressorAdapter extends SafeCloseable {
      * @return the decompressed bytes, copied into memory
      * @throws IOException thrown if an error occurs reading data.
      */
-    BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize) throws IOException;
+    BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
+            DecompressorHolder decompressorHolder) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.

@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
+import io.deephaven.parquet.compress.DecompressorHolderImpl;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -23,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -34,7 +34,7 @@ import java.util.function.BiConsumer;
 /**
  * Context object used to store read-ahead buffers for efficiently reading from S3.
  */
-final class S3ChannelContext implements SeekableChannelContext {
+final class S3ChannelContext extends DecompressorHolderImpl implements SeekableChannelContext {
     private static final Logger log = LoggerFactory.getLogger(S3ChannelContext.class);
     private static final long UNINITIALIZED_SIZE = -1;
 
@@ -131,6 +131,7 @@ final class S3ChannelContext implements SeekableChannelContext {
 
     @Override
     public void close() {
+        super.close();
         if (log.isDebugEnabled()) {
             log.debug("closing context: {}", ctxStr());
         }

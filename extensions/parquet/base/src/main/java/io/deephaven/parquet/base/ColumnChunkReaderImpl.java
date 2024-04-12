@@ -181,7 +181,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), getURI());
                 final InputStream in = channelsProvider.getInputStream(ch.position(dictionaryPageOffset))) {
-            return readDictionary(in);
+            return readDictionary(in, holder.get());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -203,7 +203,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @NotNull
-    private Dictionary readDictionary(InputStream in) throws IOException {
+    private Dictionary readDictionary(InputStream in, SeekableChannelContext channelContext) throws IOException {
         // explicitly not closing this, caller is responsible
         final PageHeader pageHeader = Util.readPageHeader(in);
         if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
@@ -217,7 +217,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             // Sometimes the size is explicitly empty, just use an empty payload
             payload = BytesInput.empty();
         } else {
-            payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size());
+            payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
+                    channelContext);
         }
         final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
         final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);

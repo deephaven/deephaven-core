@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.parquet.compress.DecompressorHolder;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.function.Supplier;
@@ -10,7 +11,9 @@ import java.util.function.Supplier;
 /**
  * Context object for reading and writing to channels created by {@link SeekableChannelsProvider}.
  */
-public interface SeekableChannelContext extends SafeCloseable {
+// TODO I need ideas for this part. Because of adding DecompressorHolder to the interface, I had to add api dependency
+// in gradle
+public interface SeekableChannelContext extends DecompressorHolder, SafeCloseable {
 
     SeekableChannelContext NULL = SeekableChannelContextNull.NULL_CONTEXT_INSTANCE;
 
