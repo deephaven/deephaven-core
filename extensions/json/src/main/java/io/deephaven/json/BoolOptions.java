@@ -7,7 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as a {@code boolean}.
@@ -21,18 +21,18 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
     }
 
     /**
-     * The lenient bool options.
+     * The lenient bool options. Allows missing and accepts {@link JsonValueTypes#boolLike()}.
      *
      * @return the lenient bool options
      */
     public static BoolOptions lenient() {
         return builder()
-                .allowedTypes(JsonValueTypes.BOOL_LIKE)
+                .allowedTypes(JsonValueTypes.boolLike())
                 .build();
     }
 
     /**
-     * The standard bool options.
+     * The standard bool options. Allows missing and accepts {@link JsonValueTypes#boolOrNull()}.
      *
      * @return the standard bool options
      */
@@ -41,32 +41,32 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
     }
 
     /**
-     * The strict bool options.
+     * The strict bool options. Disallows missing and accepts {@link JsonValueTypes#bool()}.
      *
      * @return the strict bool options
      */
     public static BoolOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.BOOL)
+                .allowedTypes(JsonValueTypes.bool())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#BOOL_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#boolOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.BOOL_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.boolOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#BOOL_LIKE}.
+     * {@inheritDoc} Is {@link JsonValueTypes#boolLike()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.BOOL_LIKE;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.boolLike();
     }
 
     @Override

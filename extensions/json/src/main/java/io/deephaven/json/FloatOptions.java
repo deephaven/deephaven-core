@@ -7,7 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as a {@code float}.
@@ -21,16 +21,18 @@ public abstract class FloatOptions extends ValueOptionsSingleValueBase<Float> {
     }
 
     /**
-     * The lenient float options.
+     * The lenient float options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
      *
      * @return the lenient float options
      */
     public static FloatOptions lenient() {
-        return builder().allowedTypes(JsonValueTypes.NUMBER_LIKE).build();
+        return builder()
+                .allowedTypes(JsonValueTypes.numberLike())
+                .build();
     }
 
     /**
-     * The standard float options..
+     * The standard float options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
      *
      * @return the standard float options
      */
@@ -39,32 +41,32 @@ public abstract class FloatOptions extends ValueOptionsSingleValueBase<Float> {
     }
 
     /**
-     * The strict float options.
+     * The strict float options. Disallows missing and accepts {@link JsonValueTypes#number()}.
      *
      * @return the strict float options
      */
     public static FloatOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.NUMBER)
+                .allowedTypes(JsonValueTypes.number())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#NUMBER_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#numberOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.NUMBER_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.numberOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#NUMBER_LIKE}.
+     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.NUMBER_LIKE;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.numberLike();
     }
 
     @Override

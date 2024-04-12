@@ -9,6 +9,7 @@ import org.immutables.value.Value.Default;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The base configuration for JSON values.
@@ -18,7 +19,7 @@ public abstract class ValueOptions {
     /**
      * The allowed types.
      */
-    public abstract EnumSet<JsonValueTypes> allowedTypes();
+    public abstract Set<JsonValueTypes> allowedTypes();
 
     /**
      * If the processor should allow a missing JSON value. By default is {@code true}.
@@ -114,12 +115,10 @@ public abstract class ValueOptions {
 
         B allowMissing(boolean allowMissing);
 
-        B allowedTypes(EnumSet<JsonValueTypes> allowedTypes);
+        B allowedTypes(Set<JsonValueTypes> allowedTypes);
 
         default B allowedTypes(JsonValueTypes... allowedTypes) {
-            final EnumSet<JsonValueTypes> set = EnumSet.noneOf(JsonValueTypes.class);
-            set.addAll(Arrays.asList(allowedTypes));
-            return allowedTypes(set);
+            return allowedTypes(EnumSet.copyOf(Arrays.asList(allowedTypes)));
         }
 
         V build();

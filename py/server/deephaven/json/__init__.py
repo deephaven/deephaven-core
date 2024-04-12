@@ -271,7 +271,7 @@ def array_(
     allow_missing: bool = True,
     allow_null: bool = True,
 ) -> JsonOptions:
-    """Creates a array of element options. For example, the JSON array
+    """Creates a "typed array", where all elements of the array have the same element type. For example, the JSON array
 
     .. code-block:: json
         [1, 42, 43, 13]

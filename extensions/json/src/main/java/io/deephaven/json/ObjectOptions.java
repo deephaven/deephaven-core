@@ -9,7 +9,6 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,9 +35,9 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     }
 
     /**
-     * The lenient object options. The object fields are constructed with {@link ObjectFieldOptions#caseSensitive()} as
-     * {@code false} and {@link ObjectFieldOptions#repeatedBehavior()} as
-     * {@link ObjectFieldOptions.RepeatedBehavior#USE_FIRST}.
+     * The lenient object options. Allows missing, accepts {@link JsonValueTypes#objectOrNull()}, and allows unknown
+     * fields. The object fields are constructed with {@link ObjectFieldOptions#caseSensitive()} as {@code false} and
+     * {@link ObjectFieldOptions#repeatedBehavior()} as {@link ObjectFieldOptions.RepeatedBehavior#USE_FIRST}.
      *
      * @param fields the fields
      * @return the lenient object options
@@ -57,7 +56,8 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     }
 
     /**
-     * The standard object options.
+     * The standard object options. Allows missing, accepts {@link JsonValueTypes#objectOrNull()}, and allows unknown
+     * fields. The object fields are constructed with {@link ObjectFieldOptions#of(String, ValueOptions)}.
      *
      * @param fields the fields
      * @return the standard object options
@@ -65,13 +65,14 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     public static ObjectOptions standard(Map<String, ValueOptions> fields) {
         final Builder builder = builder();
         for (Entry<String, ValueOptions> e : fields.entrySet()) {
-            builder.addFields(ObjectFieldOptions.of(e.getKey(), e.getValue()));
+            builder.putFields(e.getKey(), e.getValue());
         }
         return builder.build();
     }
 
     /**
-     * The strict object options.
+     * The strict object options. Disallows missing, accepts {@link JsonValueTypes#object()}, and disallows unknown
+     * fields. The object fields are constructed with {@link ObjectFieldOptions#of(String, ValueOptions)}.
      *
      * @param fields the fields
      * @return the strict object options
@@ -79,9 +80,9 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     public static ObjectOptions strict(Map<String, ValueOptions> fields) {
         final Builder builder = builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.OBJECT);
+                .allowedTypes(JsonValueTypes.object());
         for (Entry<String, ValueOptions> e : fields.entrySet()) {
-            builder.addFields(ObjectFieldOptions.of(e.getKey(), e.getValue()));
+            builder.putFields(e.getKey(), e.getValue());
         }
         return builder.build();
     }
@@ -100,20 +101,20 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#OBJECT_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#objectOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.OBJECT_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.objectOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#OBJECT_OR_NULL}.
+     * {@inheritDoc} Is {@link JsonValueTypes#objectOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.OBJECT_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.objectOrNull();
     }
 
     @Override

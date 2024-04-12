@@ -7,7 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as a {@code char}.
@@ -22,7 +22,7 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
 
 
     /**
-     * The standard char options.
+     * The standard char options. Allows missing and accepts {@link JsonValueTypes#stringOrNull()}.
      *
      * @return the standard char options
      */
@@ -31,32 +31,32 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
     }
 
     /**
-     * The strict char options.
+     * The strict char options. Disallows missing and accepts {@link JsonValueTypes#string()}.
      *
      * @return the strict char options
      */
     public static CharOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.STRING)
+                .allowedTypes(JsonValueTypes.string())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#STRING_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#stringOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.STRING_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.stringOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#STRING_OR_NULL}.
+     * {@inheritDoc}. Is {@link JsonValueTypes#stringOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.STRING_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.stringOrNull();
     }
 
     @Override

@@ -10,7 +10,7 @@ import org.immutables.value.Value.Immutable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON string as an {@link LocalDate}.
@@ -29,25 +29,25 @@ public abstract class LocalDateOptions extends ValueOptionsSingleValueBase<Local
     public static LocalDateOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.STRING)
+                .allowedTypes(JsonValueTypes.string())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#STRING_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#stringOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.STRING_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.stringOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#STRING_OR_NULL}.
+     * {@inheritDoc} Is {@link JsonValueTypes#stringOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.STRING_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.stringOrNull();
     }
 
     /**

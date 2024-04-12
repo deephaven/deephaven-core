@@ -8,12 +8,16 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Processes a JSON array as a tuple.
+ * A "tuple", where an {@link JsonValueTypes#ARRAY} is a known size and each element has a defined type.
+ *
+ * <p>
+ * For example, the JSON value {@code ["foo", 42, 5.72]} might be modelled as
+ * {@code TupleOptions.of(StringOptions.standard(), IntOptions.standard(), DoubleOptions.standard())}.
  */
 @Immutable
 @BuildableStyle
@@ -54,20 +58,20 @@ public abstract class TupleOptions extends ValueOptionsRestrictedUniverseBase {
     public abstract Map<String, ValueOptions> namedValues();
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#ARRAY_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#arrayOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.ARRAY_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.arrayOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#ARRAY_OR_NULL}.
+     * {@inheritDoc} Is {@link JsonValueTypes#arrayOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.ARRAY_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.arrayOrNull();
     }
 
     @Override

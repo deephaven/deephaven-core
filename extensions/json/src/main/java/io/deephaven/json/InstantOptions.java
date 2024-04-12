@@ -10,7 +10,7 @@ import org.immutables.value.Value.Immutable;
 import java.lang.Runtime.Version;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON string as an {@link Instant}.
@@ -25,32 +25,42 @@ public abstract class InstantOptions extends ValueOptionsSingleValueBase<Instant
         return ImmutableInstantOptions.builder();
     }
 
+    /**
+     * The standard {@link Instant} options. Allows missing and accepts {@link JsonValueTypes#stringOrNull()}.
+     *
+     * @return the standard Instant options
+     */
     public static InstantOptions standard() {
         return builder().build();
     }
 
+    /**
+     * The strict {@link Instant} options. Disallows missing and accepts {@link JsonValueTypes#string()}.
+     *
+     * @return the strict Instant options
+     */
     public static InstantOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.STRING)
+                .allowedTypes(JsonValueTypes.string())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#STRING_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#stringOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.STRING_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.stringOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#STRING_OR_NULL}.
+     * {@inheritDoc} Is {@link JsonValueTypes#stringOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.STRING_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.stringOrNull();
     }
 
     /**

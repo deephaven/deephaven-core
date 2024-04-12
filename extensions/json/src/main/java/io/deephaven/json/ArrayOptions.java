@@ -7,8 +7,15 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
+/**
+ * A "typed array", where all the elements in the {@link JsonValueTypes#ARRAY} have the same {@link #element()} type.
+ *
+ * <p>
+ * For example, the JSON value {@code [1, 42, 43, 13]} might be modelled as
+ * {@code ArrayOptions.standard(IntOptions.standard())}.
+ */
 @Immutable
 @BuildableStyle
 public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
@@ -17,35 +24,50 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
         return ImmutableArrayOptions.builder();
     }
 
+    /**
+     * The standard array options. Allows missing and accepts {@link JsonValueTypes#arrayOrNull()}.
+     *
+     * @param element the element type
+     * @return the standard array options
+     */
     public static ArrayOptions standard(ValueOptions element) {
         return builder().element(element).build();
     }
 
+    /**
+     * The strict array options. Disallows missing and accepts {@link JsonValueTypes#array()}.
+     *
+     * @param element the element type
+     * @return the strict array options
+     */
     public static ArrayOptions strict(ValueOptions element) {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.ARRAY)
+                .allowedTypes(JsonValueTypes.array())
                 .element(element)
                 .build();
     }
 
+    /**
+     * The type for the elements of the array.
+     */
     public abstract ValueOptions element();
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#ARRAY_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#arrayOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.ARRAY_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.arrayOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#ARRAY_OR_NULL}.
+     * {@inheritDoc} Is {@link JsonValueTypes#arrayOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.ARRAY_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.arrayOrNull();
     }
 
     @Override

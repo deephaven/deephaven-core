@@ -5,7 +5,9 @@ package io.deephaven.json;
 
 import org.immutables.value.Value.Check;
 
-import java.util.EnumSet;
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A base {@link ValueOptions} where the implementation has a clearly defined {@link #universe()}.
@@ -13,22 +15,25 @@ import java.util.EnumSet;
 public abstract class ValueOptionsRestrictedUniverseBase extends ValueOptions {
 
     /**
-     * The allowed types. Must be a subset of {@link #universe()}.
+     * {@inheritDoc} Must be a subset of {@link #universe()}.
      */
     @Override
-    public abstract EnumSet<JsonValueTypes> allowedTypes();
+    public abstract Set<JsonValueTypes> allowedTypes();
 
     /**
      * The universe of possible allowed types.
      */
-    public abstract EnumSet<JsonValueTypes> universe();
+    public abstract Set<JsonValueTypes> universe();
 
     @Check
     void checkAllowedTypes() {
-        for (JsonValueTypes type : allowedTypes()) {
-            if (!universe().contains(type)) {
-                throw new IllegalArgumentException("Unexpected type " + type);
-            }
+        if (!universe().containsAll(allowedTypes())) {
+            throw new IllegalArgumentException(String.format("Unexpected allowedTypes=%s, universe=%s",
+                    toString(allowedTypes()), toString(universe())));
         }
+    }
+
+    private static String toString(Collection<? extends Enum<?>> s) {
+        return s.stream().map(Enum::name).collect(Collectors.joining(",", "[", "]"));
     }
 }

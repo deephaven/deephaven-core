@@ -7,7 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value by skipping it.
@@ -20,17 +20,22 @@ public abstract class SkipOptions extends ValueOptions {
         return ImmutableSkipOptions.builder();
     }
 
+    /**
+     * The lenient skip options. Allows missing and accepts {@link JsonValueTypes#all()}.
+     *
+     * @return the lenient skip options
+     */
     public static SkipOptions lenient() {
         return builder().build();
     }
 
     /**
-     * The allowed types. By default is {@link JsonValueTypes#ALL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#all()}.
      */
     @Override
     @Default
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.ALL;
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.all();
     }
 
     @Override

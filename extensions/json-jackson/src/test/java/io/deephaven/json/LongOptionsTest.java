@@ -146,14 +146,14 @@ public class LongOptionsTest {
 
     @Test
     void allowDecimalString() throws IOException {
-        parse(LongOptions.builder().allowedTypes(JsonValueTypes.NUMBER_LIKE).build(),
+        parse(LongOptions.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
                 List.of("\"42.42\"", "\"43.999\""), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void decimalStringLimitsNearMinValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(LongOptions.builder().allowedTypes(JsonValueTypes.NUMBER_LIKE).build(),
+            parse(LongOptions.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
                     List.of(String.format("\"%d.0\"", Long.MIN_VALUE + i)),
                     LongChunk.chunkWrap(new long[] {Long.MIN_VALUE + i}));
         }
@@ -162,7 +162,7 @@ public class LongOptionsTest {
     @Test
     void decimalStringLimitsNearMaxValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(LongOptions.builder().allowedTypes(JsonValueTypes.NUMBER_LIKE).build(),
+            parse(LongOptions.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
                     List.of(String.format("\"%d.0\"", Long.MAX_VALUE - i)),
                     LongChunk.chunkWrap(new long[] {Long.MAX_VALUE - i}));
         }

@@ -8,7 +8,7 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.math.BigDecimal;
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as a {@link BigDecimal}.
@@ -21,36 +21,51 @@ public abstract class BigDecimalOptions extends ValueOptionsSingleValueBase<BigD
         return ImmutableBigDecimalOptions.builder();
     }
 
+    /**
+     * The lenient {@link BigDecimal} options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
+     *
+     * @return the lenient BigDecimal options
+     */
     public static BigDecimalOptions lenient() {
-        return builder().allowedTypes(JsonValueTypes.NUMBER_LIKE).build();
+        return builder().allowedTypes(JsonValueTypes.numberLike()).build();
     }
 
+    /**
+     * The standard {@link BigDecimal} options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
+     *
+     * @return the standard BigDecimal options
+     */
     public static BigDecimalOptions standard() {
         return builder().build();
     }
 
+    /**
+     * The strict {@link BigDecimal} options. Disallows missing and accepts {@link JsonValueTypes#number()}.
+     *
+     * @return the strict BigDecimal options
+     */
     public static BigDecimalOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.NUMBER)
+                .allowedTypes(JsonValueTypes.number())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#NUMBER_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#numberOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.NUMBER_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.numberOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#NUMBER_LIKE}.
+     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.NUMBER_LIKE;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.numberLike();
     }
 
     @Override

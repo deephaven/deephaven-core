@@ -3,28 +3,33 @@
 //
 package io.deephaven.json;
 
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as an implementation-specific object.
  */
 @Immutable
-@SimpleStyle
+@SingletonStyle
 public abstract class AnyOptions extends ValueOptions {
 
+    /**
+     * Allows missing and accepts {@link JsonValueTypes#all()}.
+     *
+     * @return the any options
+     */
     public static AnyOptions of() {
         return ImmutableAnyOptions.of();
     }
 
     /**
-     * Always {@link JsonValueTypes#ALL}.
+     * Always {@link JsonValueTypes#all()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.ALL;
+    public final Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.all();
     }
 
     /**

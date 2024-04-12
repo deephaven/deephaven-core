@@ -4,10 +4,11 @@
 package io.deephaven.json;
 
 import io.deephaven.annotations.BuildableStyle;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.math.BigInteger;
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as a {@link BigInteger}.
@@ -19,31 +20,58 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
         return ImmutableBigIntegerOptions.builder();
     }
 
+    /**
+     * The lenient {@link BigInteger} options. Allows missing. If {@code allowDecimal}, accepts
+     * {@link JsonValueTypes#numberLike()}, otherwise accepts {@link JsonValueTypes#intLike()}.
+     *
+     * @return the lenient BigInteger options
+     */
     public static BigIntegerOptions lenient(boolean allowDecimal) {
         return builder()
-                .allowedTypes(allowDecimal ? JsonValueTypes.NUMBER_LIKE : JsonValueTypes.INT_LIKE)
-                .build();
-    }
-
-    public static BigIntegerOptions standard(boolean allowDecimal) {
-        return builder()
-                .allowedTypes(allowDecimal ? JsonValueTypes.NUMBER_OR_NULL : JsonValueTypes.INT_OR_NULL)
-                .build();
-    }
-
-    public static BigIntegerOptions strict(boolean allowDecimal) {
-        return builder()
-                .allowMissing(false)
-                .allowedTypes(allowDecimal ? JsonValueTypes.NUMBER : EnumSet.of(JsonValueTypes.INT))
+                .allowedTypes(allowDecimal ? JsonValueTypes.numberLike() : JsonValueTypes.intLike())
                 .build();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#NUMBER_LIKE}.
+     * The standard {@link BigInteger} options. Allows missing. If {@code allowDecimal}, accepts
+     * {@link JsonValueTypes#numberOrNull()}, otherwise accepts {@link JsonValueTypes#intOrNull()}.
+     *
+     * @return the standard BigInteger options
+     */
+    public static BigIntegerOptions standard(boolean allowDecimal) {
+        return builder()
+                .allowedTypes(allowDecimal ? JsonValueTypes.numberOrNull() : JsonValueTypes.intOrNull())
+                .build();
+    }
+
+    /**
+     * The strict {@link BigInteger} options. Allows missing. If {@code allowDecimal}, accepts
+     * {@link JsonValueTypes#number()}, otherwise accepts {@link JsonValueTypes#int_()}.
+     *
+     * @return the strict BigInteger options
+     */
+    public static BigIntegerOptions strict(boolean allowDecimal) {
+        return builder()
+                .allowMissing(false)
+                .allowedTypes(allowDecimal ? JsonValueTypes.number() : JsonValueTypes.int_())
+                .build();
+    }
+
+    /**
+     * {@inheritDoc} By default is {@link JsonValueTypes#intOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.NUMBER_LIKE;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.intOrNull();
+    }
+
+    /**
+     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
+     */
+    @Override
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.numberLike();
     }
 
     @Override

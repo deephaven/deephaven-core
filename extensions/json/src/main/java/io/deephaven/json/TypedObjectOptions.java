@@ -7,7 +7,6 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -79,7 +78,7 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
         return builder(typeFieldName, objects)
                 .allowUnknownTypes(false)
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.OBJECT)
+                .allowedTypes(JsonValueTypes.object())
                 .build();
     }
 
@@ -99,20 +98,20 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#OBJECT_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#objectOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.OBJECT_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.objectOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#OBJECT_OR_NULL}.
+     * {@inheritDoc} Is {@link JsonValueTypes#objectOrNull()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.OBJECT_OR_NULL;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.objectOrNull();
     }
 
     @Override

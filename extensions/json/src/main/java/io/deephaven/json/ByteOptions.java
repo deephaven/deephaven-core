@@ -7,7 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON value as a {@code byte}.
@@ -21,18 +21,18 @@ public abstract class ByteOptions extends ValueOptionsSingleValueBase<Byte> {
     }
 
     /**
-     * The lenient byte options.
+     * The lenient byte options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
      *
      * @return the lenient byte options
      */
     public static ByteOptions lenient() {
         return builder()
-                .allowedTypes(JsonValueTypes.INT_LIKE)
+                .allowedTypes(JsonValueTypes.intLike())
                 .build();
     }
 
     /**
-     * The standard byte options.
+     * The standard byte options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
      *
      * @return the standard byte options
      */
@@ -41,32 +41,32 @@ public abstract class ByteOptions extends ValueOptionsSingleValueBase<Byte> {
     }
 
     /**
-     * The strict byte options.
+     * The strict byte options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
      *
      * @return the strict byte options
      */
     public static ByteOptions strict() {
         return builder()
                 .allowMissing(false)
-                .allowedTypes(JsonValueTypes.INT)
+                .allowedTypes(JsonValueTypes.int_())
                 .build();
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#INT_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#intOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.INT_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.intOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#NUMBER_LIKE}.
+     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.NUMBER_LIKE;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.numberLike();
     }
 
     @Override

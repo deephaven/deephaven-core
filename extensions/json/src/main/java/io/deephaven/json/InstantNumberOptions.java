@@ -8,7 +8,7 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Instant;
-import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Processes a JSON number as an {@link Instant}.
@@ -18,27 +18,66 @@ import java.util.EnumSet;
 public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<Instant> {
 
     public enum Format {
-        EPOCH_SECONDS, EPOCH_MILLIS, EPOCH_MICROS, EPOCH_NANOS;
+        /**
+         * Seconds from the epoch of 1970-01-01T00:00:00Z.
+         */
+        EPOCH_SECONDS,
 
+        /**
+         * Milliseconds from the epoch of 1970-01-01T00:00:00Z.
+         */
+        EPOCH_MILLIS,
+
+        /**
+         * Microseconds from the epoch of 1970-01-01T00:00:00Z.
+         */
+        EPOCH_MICROS,
+
+        /**
+         * Nanoseconds from the epoch of 1970-01-01T00:00:00Z.
+         */
+        EPOCH_NANOS;
+
+        /**
+         * The lenient {@link Instant} number options. Allows missing. If {@code allowDecimal}, accepts
+         * {@link JsonValueTypes#numberLike()}, otherwise accepts {@link JsonValueTypes#intLike()}.
+         *
+         * @param allowDecimal if decimals should be allowed
+         * @return the lenient Instant number options
+         */
         public InstantNumberOptions lenient(boolean allowDecimal) {
             return builder()
                     .format(this)
-                    .allowedTypes(allowDecimal ? JsonValueTypes.NUMBER_LIKE : JsonValueTypes.INT_LIKE)
+                    .allowedTypes(allowDecimal ? JsonValueTypes.numberLike() : JsonValueTypes.intLike())
                     .build();
         }
 
+        /**
+         * The standard {@link Instant} number options. Allows missing. If {@code allowDecimal}, accepts
+         * {@link JsonValueTypes#numberOrNull()}, otherwise accepts {@link JsonValueTypes#intOrNull()}.
+         *
+         * @param allowDecimal if decimals should be allowed
+         * @return the standard Instant number options
+         */
         public InstantNumberOptions standard(boolean allowDecimal) {
             return builder()
                     .format(this)
-                    .allowedTypes(allowDecimal ? JsonValueTypes.NUMBER_OR_NULL : JsonValueTypes.INT_OR_NULL)
+                    .allowedTypes(allowDecimal ? JsonValueTypes.numberOrNull() : JsonValueTypes.intOrNull())
                     .build();
         }
 
+        /**
+         * The strict {@link Instant} number options. Disallows missing. If {@code allowDecimal}, accepts
+         * {@link JsonValueTypes#number()}, otherwise accepts {@link JsonValueTypes#int_()}.
+         *
+         * @param allowDecimal if decimals should be allowed
+         * @return the lenient Instant number options
+         */
         public InstantNumberOptions strict(boolean allowDecimal) {
             return builder()
                     .format(this)
                     .allowMissing(false)
-                    .allowedTypes(allowDecimal ? JsonValueTypes.NUMBER : EnumSet.of(JsonValueTypes.INT))
+                    .allowedTypes(allowDecimal ? JsonValueTypes.number() : JsonValueTypes.int_())
                     .build();
         }
     }
@@ -53,20 +92,20 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
     public abstract Format format();
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#INT_OR_NULL}.
+     * {@inheritDoc} By default is {@link JsonValueTypes#intOrNull()}.
      */
-    @Default
     @Override
-    public EnumSet<JsonValueTypes> allowedTypes() {
-        return JsonValueTypes.INT_OR_NULL;
+    @Default
+    public Set<JsonValueTypes> allowedTypes() {
+        return JsonValueTypes.intOrNull();
     }
 
     /**
-     * The universe, is {@link JsonValueTypes#NUMBER_LIKE}.
+     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
      */
     @Override
-    public final EnumSet<JsonValueTypes> universe() {
-        return JsonValueTypes.NUMBER_LIKE;
+    public final Set<JsonValueTypes> universe() {
+        return JsonValueTypes.numberLike();
     }
 
     @Override
