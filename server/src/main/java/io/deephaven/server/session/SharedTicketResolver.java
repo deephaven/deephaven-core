@@ -42,7 +42,8 @@ public class SharedTicketResolver extends TicketResolverBase {
 
     @Override
     public String getLogNameFor(ByteBuffer ticket, String logId) {
-        return FLIGHT_DESCRIPTOR_ROUTE + "/" + idForTicket(ticket, logId);
+        final ByteString ticketId = idForTicket(ticket, logId);
+        return FLIGHT_DESCRIPTOR_ROUTE + "/" + ByteHelper.byteBufToHex(ticketId.asReadOnlyByteBuffer());
     }
 
     @Override
@@ -175,44 +176,44 @@ public class SharedTicketResolver extends TicketResolverBase {
     }
 
     /**
-     * Convenience method to convert from a shared variable identifier to Flight.Ticket
+     * Convenience method to convert from a shared identifier to Flight.Ticket
      *
-     * @param identifier the shared variable identifier to convert
+     * @param identifier the shared identifier to convert
      * @return the flight ticket this descriptor represents
      */
-    public static Flight.Ticket flightTicketForId(final ByteString identifier) {
+    public static Flight.Ticket flightTicketForId(final byte[] identifier) {
         return Flight.Ticket.newBuilder()
-                .setTicket(identifier)
+                .setTicket(ByteString.copyFrom(identifier))
                 .build();
     }
 
     /**
-     * Convenience method to convert from a shared variable identifier to Ticket
+     * Convenience method to convert from a shared identifier to Ticket
      *
-     * @param identifier the shared variable identifier to convert
+     * @param identifier the shared identifier to convert
      * @return the flight ticket this descriptor represents
      */
-    public static io.deephaven.proto.backplane.grpc.Ticket ticketForId(final ByteString identifier) {
+    public static io.deephaven.proto.backplane.grpc.Ticket ticketForId(final byte[] identifier) {
         return io.deephaven.proto.backplane.grpc.Ticket.newBuilder()
-                .setTicket(identifier)
+                .setTicket(ByteString.copyFrom(identifier))
                 .build();
     }
 
     /**
-     * Convenience method to convert from a shared variable identifier to Flight.FlightDescriptor
+     * Convenience method to convert from a shared identifier to Flight.FlightDescriptor
      *
-     * @param identifier the shared variable identifier to convert
+     * @param identifier the shared identifier to convert
      * @return the flight descriptor this descriptor represents
      */
-    public static Flight.FlightDescriptor descriptorForId(final ByteString identifier) {
+    public static Flight.FlightDescriptor descriptorForId(final byte[] identifier) {
         return Flight.FlightDescriptor.newBuilder()
                 .setType(Flight.FlightDescriptor.DescriptorType.PATH)
-                .addAllPath(SharedTicketHelper.nameToPath(identifier))
+                .addAllPath(SharedTicketHelper.idToPath(identifier))
                 .build();
     }
 
     /**
-     * Convenience method to convert from a Flight.Ticket (as ByteBuffer) to shared variable identifier
+     * Convenience method to convert from a Flight.Ticket (as ByteBuffer) to shared identifier
      *
      * @param ticket the ticket to convert
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -223,15 +224,14 @@ public class SharedTicketResolver extends TicketResolverBase {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no ticket supplied");
         }
-        if (ticket.remaining() < 3 || ticket.get(ticket.position()) != SharedTicketHelper.TICKET_PREFIX
-                || ticket.get(ticket.position() + 1) != '/') {
+        if (ticket.remaining() < 2 || ticket.get(ticket.position()) != SharedTicketHelper.TICKET_PREFIX) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
         final int initialPosition = ticket.position();
         try {
-            ticket.position(initialPosition + 2);
+            ticket.position(initialPosition + 1);
             final byte[] dst = new byte[ticket.remaining()];
             ticket.get(dst);
             return ByteStringAccess.wrap(dst);
@@ -241,7 +241,7 @@ public class SharedTicketResolver extends TicketResolverBase {
     }
 
     /**
-     * Convenience method to convert from a Flight.FlightDescriptor to shared variable identifier
+     * Convenience method to convert from a Flight.FlightDescriptor to shared identifier
      *
      * @param descriptor the descriptor to convert
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -274,7 +274,7 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @return a flight descriptor that represents the ticket
      */
     public static Flight.FlightDescriptor ticketToDescriptor(final Flight.Ticket ticket, final String logId) {
-        return descriptorForId(idForTicket(ticket.getTicket().asReadOnlyByteBuffer(), logId));
+        return descriptorForId(idForTicket(ticket.getTicket().asReadOnlyByteBuffer(), logId).toByteArray());
     }
 
     /**
@@ -285,6 +285,6 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @return a flight ticket that represents the descriptor
      */
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor, final String logId) {
-        return flightTicketForId(idForDescriptor(descriptor, logId));
+        return flightTicketForId(idForDescriptor(descriptor, logId).toByteArray());
     }
 }

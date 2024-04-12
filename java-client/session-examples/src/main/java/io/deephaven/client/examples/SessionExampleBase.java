@@ -47,7 +47,7 @@ abstract class SessionExampleBase implements Callable<Void> {
         return null;
     }
 
-    private static void onShutdown(ScheduledExecutorService scheduler,
+    protected void onShutdown(ScheduledExecutorService scheduler,
             ManagedChannel managedChannel) {
         scheduler.shutdownNow();
         managedChannel.shutdownNow();

@@ -13,11 +13,14 @@ import picocli.CommandLine.Option;
 
 public class SharedField implements HasTicketId, HasPathId {
     @Option(names = {"--shared-id-hex"}, required = true,
-            description = "The shared variable identifier in hexadecimal format.")
+            description = "The shared identifier in hexadecimal format. ('0x' prefix is optional)")
     String sharedIdHex;
 
     public SharedId sharedId() {
-        return new SharedId(ByteString.fromHex(sharedIdHex));
+        if (sharedIdHex.startsWith("0x")) {
+            sharedIdHex = sharedIdHex.substring(2);
+        }
+        return new SharedId(ByteString.fromHex(sharedIdHex).toByteArray());
     }
 
     @Override
