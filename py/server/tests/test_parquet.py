@@ -547,14 +547,22 @@ class ParquetTestCase(BaseTestCase):
             )
             self.assert_table_equals(actual, table)
 
-    def test_read_with_table_definition_no_layout(self):
-        table = empty_table(3).update(
-            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
-        )
-        single_parquet = os.path.join(self.temp_dir.name, "single.parquet")
-        write(table, single_parquet)
-        from_disk = read(single_parquet, table_definition={"x": dtypes.int32, "y": dtypes.double})
-        self.assert_table_equals(from_disk, table.select(["x", "y"]))
+    def test_read_with_table_definition_no_type(self):
+        # no need to write actual file, shouldn't be reading it
+        fake_parquet = os.path.join(self.temp_dir.name, "fake.parquet")
+        with self.subTest(msg="read definition no type"):
+            with self.assertRaises(DHError) as cm:
+                read(
+                    fake_parquet,
+                    table_definition={
+                        "x": dtypes.int32,
+                        "y": dtypes.double,
+                        "z": dtypes.double,
+                    },
+                )
+            self.assertIn(
+                "Must provide file_layout when table_definition is set", str(cm.exception)
+            )
 
     def test_read_parquet_from_s3(self):
         """ Test that we can read parquet files from s3 """
