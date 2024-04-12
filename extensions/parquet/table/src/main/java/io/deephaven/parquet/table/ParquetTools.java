@@ -1463,6 +1463,7 @@ public class ParquetTools {
      * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, int, ParquetInstructions)
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
      */
+    @Deprecated
     public static Table readKeyValuePartitionedTable(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions) {
@@ -1504,6 +1505,7 @@ public class ParquetTools {
      * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, TableDefinition, ParquetInstructions)
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
      */
+    @Deprecated
     public static Table readKeyValuePartitionedTable(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions,
@@ -1549,6 +1551,7 @@ public class ParquetTools {
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
      * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
      */
+    @Deprecated
     public static Table readFlatPartitionedTable(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions) {
@@ -1586,6 +1589,7 @@ public class ParquetTools {
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
      * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
      */
+    @Deprecated
     public static Table readFlatPartitionedTable(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions,
