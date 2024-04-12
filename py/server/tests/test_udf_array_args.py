@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 
 from deephaven import empty_table, DHError, dtypes
+from deephaven.jcompat import dh_null_to_nan
 from tests.testbase import BaseTestCase
 from .test_udf_scalar_args import _J_TYPE_NP_DTYPE_MAP, _J_TYPE_NULL_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
 
@@ -100,21 +101,8 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
                             """
                     exec(func_str, globals())
 
-                    # for floating point types, DH nulls are auto converted to np.nan
-                    # for integer types, DH nulls in the array raise exceptions
-                    if j_dtype in ("float", "double"):
-                        res = tbl.update("Z = test_udf(X, Y)")
-                        self.assertEqual(10, res.to_string().count("true"))
-                    else:
-                        res = tbl.update("Z = test_udf(X, Y)")
-                        self.assertEqual(10, res.to_string().count("true"))
-
-                        # TODO need to wait for https://github.com/deephaven/deephaven-core/issues/5213 to be resolved
-                        # with self.assertRaises(DHError) as cm:
-                        #     tbl.update("Z = test_udf(X, Y)")
-                        # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values,
-                        # but numpy .* "
-                        #                                     "array does not support ")
+                    res = tbl.update("Z = test_udf(X, Y)")
+                    self.assertEqual(10, res.to_string().count("true"))
 
     def test_np_object_array(self):
         with self.subTest("PyObject"):
@@ -189,11 +177,6 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X")
             t1 = t.update(["X1 = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
-            # TODO need to wait for https://github.com/deephaven/deephaven-core/issues/5213 to be resolved
-            # with self.assertRaises(DHError) as cm:
-            #     t1 = t.update(["X1 = test_udf(Y)"])
-            # self.assertRegex(str(cm.exception), "Java .* array contains Deephaven null values, but numpy .* "
-            #                                     "array does not support ")
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"]).group_by("X")
             t1 = t.update(["X1 = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
@@ -236,6 +219,36 @@ def test_udf(x, y: Union[{th}, np.ndarray[np.int64]]) -> bool:
                     t = empty_table(1).update(["X = i", "Y = ii"]).group_by("X").update(
                         ["Z = test_udf(X, Y.toArray())"])
                     self.assertEqual(t.columns[2].data_type, dtypes.bool_)
+
+    def test_dh_null_conversion(self):
+        x_formula = "X = i % 10"
+        for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
+            y_formula = f"Y = i % 3 == 0? {null_name} : ({j_dtype})i"
+            with self.subTest(j_dtype):
+                tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
+
+                func_str = f"""
+def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
+    z = dh_null_to_nan(y)
+    check_y = (isinstance(x, int) and isinstance(y, np.ndarray) and y.dtype.type == 
+{_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(y) == np.mean( y))
+    check_z = np.any(np.isnan(z)) and (z.dtype.type == np.float64 if y.dtype.type not in {{np.float32, np.float64}} 
+    else z.dtype == y.dtype)
+    return check_y and check_z 
+                """
+                exec(func_str, globals())
+
+                res = tbl.update("Z = test_udf(X, Y)")
+                self.assertEqual(10, res.to_string().count("true"))
+
+        with self.subTest("boolean"):
+            def test_udf(p1: np.ndarray[np.bool_], p2=None) -> bool:
+                z = dh_null_to_nan(p1)
+                return z.dtype.type == np.float64 and np.any(np.isnan(z))
+
+            t = empty_table(100).update(["X = i % 10", "Y = i % 3 == 0? true : null"]).group_by("X")
+            rest = t.update(["X1 = test_udf(Y)"])
+            self.assertEqual(10, res.to_string().count("true"))
 
 
 if __name__ == "__main__":

@@ -255,11 +255,11 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
         np_array = np.array(j_array, np.object_)
 
     if conv_null:
-        return dh_nulls_to_nan(np_array, type_promotion)
+        return dh_null_to_nan(np_array, type_promotion)
 
     return np_array
 
-def dh_nulls_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndarray:
+def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndarray:
     """Converts Deephaven primitive null values in the given numpy array to np.nan.
     No conversion is performed on non-primitive types.
 
