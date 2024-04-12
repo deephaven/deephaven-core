@@ -256,7 +256,7 @@ public class ParquetTools {
      *        this method unsafe for concurrent use
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead with {@link TableDefinition}
-     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeTable(
@@ -318,7 +318,7 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead with {@link TableDefinition}
-     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeTable(
@@ -344,7 +344,7 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      * @deprecated Use {@link #writeTable(Table, String, ParquetInstructions)} instead with {@link TableDefinition}
-     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeTable(
@@ -613,7 +613,8 @@ public class ParquetTools {
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)} instead with
-     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition).
      */
     @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
@@ -647,7 +648,8 @@ public class ParquetTools {
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
      * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions, String[][])} instead
-     *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             with {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition).
      */
     @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
@@ -739,7 +741,8 @@ public class ParquetTools {
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions)} instead
-     *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             with {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
@@ -771,7 +774,7 @@ public class ParquetTools {
      *        will be computed on demand.
      * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions, String[][])}
      *             instead with {@link TableDefinition} provided through
-     *             {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
@@ -1016,7 +1019,8 @@ public class ParquetTools {
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
      * @deprecated Use {@link #writeParquetTables(Table[], ParquetInstructions, String[], String[][])} instead with
-     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeParquetTables(
@@ -1255,7 +1259,7 @@ public class ParquetTools {
      * @param definition table definition
      * @param destinations destinations
      * @deprecated Use {@link #writeTables(Table[], String[], ParquetInstructions)} instead with {@link TableDefinition}
-     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeTables(
@@ -1293,7 +1297,7 @@ public class ParquetTools {
      * @param destinations destinations
      * @param writeInstructions instructions for customizations while writing
      * @deprecated Use {@link #writeTables(Table[], String[], ParquetInstructions)} instead with {@link TableDefinition}
-     *             provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static void writeTables(
@@ -1444,8 +1448,9 @@ public class ParquetTools {
      *
      * <p>
      * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided as
-     * {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout}
-     * and {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     * {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
+     * {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)} and
+     * {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1486,7 +1491,7 @@ public class ParquetTools {
      *
      * <p>
      * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided using
-     * {@link ParquetInstructions.Builder#setFileLayout}.
+     * {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1512,8 +1517,8 @@ public class ParquetTools {
      *
      * <p>
      * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided using
-     * {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
-     * {@link ParquetInstructions.Builder#setTableDefinition}.
+     * {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)} and
+     * {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1558,7 +1563,7 @@ public class ParquetTools {
      *
      * <p>
      * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided using
-     * {@link ParquetInstructions.Builder#setFileLayout}.
+     * {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
@@ -1624,7 +1629,7 @@ public class ParquetTools {
      * @return The table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#METADATA_PARTITIONED} using
-     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      */
     @Deprecated
     public static Table readPartitionedTableWithMetadata(
@@ -1651,7 +1656,7 @@ public class ParquetTools {
      * @return The table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#METADATA_PARTITIONED} using
-     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      */
     @Deprecated
     public static Table readPartitionedTableWithMetadata(
@@ -1693,7 +1698,7 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#KV_PARTITIONED} using
-     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      */
     @Deprecated
     public static Table readKeyValuePartitionedTable(
@@ -1754,8 +1759,9 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#KV_PARTITIONED} using
-     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
-     *             {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)} and
+     *             {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static Table readKeyValuePartitionedTable(
@@ -1792,7 +1798,7 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#FLAT_PARTITIONED} using
-     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      */
     @Deprecated
     public static Table readFlatPartitionedTable(
@@ -1835,8 +1841,9 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#FLAT_PARTITIONED} using
-     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
-     *             {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)} and
+     *             {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static Table readFlatPartitionedTable(
@@ -1869,7 +1876,7 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
-     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      */
     @Deprecated
     public static Table readSingleFileTable(
@@ -1900,7 +1907,7 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
-     *             {@link ParquetInstructions.Builder#setFileLayout}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)}.
      */
     @Deprecated
     public static Table readSingleFileTable(
@@ -1942,8 +1949,9 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
-     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
-     *             {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)} and
+     *             {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static Table readSingleFileTable(
@@ -1973,8 +1981,9 @@ public class ParquetTools {
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetInstructions.ParquetFileLayout#SINGLE_FILE} using
-     *             {@link ParquetInstructions.Builder#setFileLayout} and {@link TableDefinition} provided through
-     *             {@link ParquetInstructions.Builder#setTableDefinition}.
+     *             {@link ParquetInstructions.Builder#setFileLayout(ParquetInstructions.ParquetFileLayout)} and
+     *             {@link TableDefinition} provided through
+     *             {@link ParquetInstructions.Builder#setTableDefinition(TableDefinition)}.
      */
     @Deprecated
     public static Table readSingleFileTable(
