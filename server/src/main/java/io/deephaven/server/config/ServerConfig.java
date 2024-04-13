@@ -95,8 +95,7 @@ public interface ServerConfig {
         int schedulerPoolSize = config.getIntegerWithDefault(SCHEDULER_POOL_SIZE, -1);
         int maxInboundMessageSize = config.getIntegerWithDefault(GRPC_MAX_INBOUND_MESSAGE_SIZE, -1);
         String proxyHint = config.getStringWithDefault(PROXY_HINT, null);
-        int shutdownTimeoutMillis =
-                config.getIntegerWithDefault(SHUTDOWN_TIMEOUT_MILLIS, DEFAULT_SHUTDOWN_TIMEOUT_MILLIS);
+        int shutdownTimeoutMillis = config.getIntegerWithDefault(SHUTDOWN_TIMEOUT_MILLIS, -1);
         if (httpSessionExpireMs > -1) {
             builder.tokenExpire(Duration.ofMillis(httpSessionExpireMs));
         }
@@ -118,7 +117,9 @@ public interface ServerConfig {
         if (proxyHint != null) {
             builder.proxyHint(Boolean.parseBoolean(proxyHint));
         }
-        builder.shutdownTimeoutMillis(shutdownTimeoutMillis);
+        if (shutdownTimeoutMillis != -1) {
+            builder.shutdownTimeout(Duration.ofMillis(shutdownTimeoutMillis));
+        }
         MainHelper.parseSSLConfig(config).ifPresent(builder::ssl);
         MainHelper.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
         return builder;
@@ -175,8 +176,8 @@ public interface ServerConfig {
      * How many milliseconds do we wait to shutdown the server. Defaults to {@value DEFAULT_SHUTDOWN_TIMEOUT_MILLIS}.
      */
     @Default
-    default int shutdownTimeoutMillis() {
-        return DEFAULT_SHUTDOWN_TIMEOUT_MILLIS;
+    default Duration shutdownTimeout() {
+        return Duration.ofMillis(DEFAULT_SHUTDOWN_TIMEOUT_MILLIS);
     }
 
     /**
@@ -233,7 +234,7 @@ public interface ServerConfig {
 
         B proxyHint(Boolean proxyHint);
 
-        B shutdownTimeoutMillis(int shutdownTimeoutMillis);
+        B shutdownTimeout(Duration shutdownTimeoutMillis);
 
         T build();
     }
