@@ -37,6 +37,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -129,7 +130,8 @@ public class DeephavenApiServer {
         // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
-                server.stopWithTimeout(serverConfig.shutdownTimeout(), TimeUnit.MILLISECONDS);
+                final Duration duration = serverConfig.shutdownTimeout();
+                server.stopWithTimeout(duration.toNanos(), TimeUnit.NANOSECONDS);
                 server.join();
             } catch (final InterruptedException ignored) {
             }
