@@ -21,6 +21,8 @@ public interface ServerConfig {
 
     int DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB = 100;
 
+    int DEFAULT_SHUTDOWN_TIMEOUT_MILLIS = 10_000;
+
     String HTTP_SESSION_DURATION_MS = "http.session.durationMs";
 
     String HTTP_HOST = "http.host";
@@ -34,6 +36,7 @@ public interface ServerConfig {
     String GRPC_MAX_INBOUND_MESSAGE_SIZE = "grpc.maxInboundMessageSize";
 
     String PROXY_HINT = "proxy.hint";
+    String SHUTDOWN_TIMEOUT_MILLIS = "shutdown.timeoutMs";
 
     /**
      * Parses the configuration values into the appropriate builder methods.
@@ -92,6 +95,8 @@ public interface ServerConfig {
         int schedulerPoolSize = config.getIntegerWithDefault(SCHEDULER_POOL_SIZE, -1);
         int maxInboundMessageSize = config.getIntegerWithDefault(GRPC_MAX_INBOUND_MESSAGE_SIZE, -1);
         String proxyHint = config.getStringWithDefault(PROXY_HINT, null);
+        int shutdownTimeoutMillis =
+                config.getIntegerWithDefault(SHUTDOWN_TIMEOUT_MILLIS, DEFAULT_SHUTDOWN_TIMEOUT_MILLIS);
         if (httpSessionExpireMs > -1) {
             builder.tokenExpire(Duration.ofMillis(httpSessionExpireMs));
         }
@@ -113,6 +118,7 @@ public interface ServerConfig {
         if (proxyHint != null) {
             builder.proxyHint(Boolean.parseBoolean(proxyHint));
         }
+        builder.shutdownTimeoutMillis(shutdownTimeoutMillis);
         MainHelper.parseSSLConfig(config).ifPresent(builder::ssl);
         MainHelper.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
         return builder;
@@ -163,6 +169,14 @@ public interface ServerConfig {
     @Default
     default int maxInboundMessageSize() {
         return DEFAULT_MAX_INBOUND_MESSAGE_SIZE_MiB * 1024 * 1024;
+    }
+
+    /**
+     * How many milliseconds do we wait to shutdown the server. Defaults to {@value DEFAULT_SHUTDOWN_TIMEOUT_MILLIS}.
+     */
+    @Default
+    default int shutdownTimeoutMillis() {
+        return DEFAULT_SHUTDOWN_TIMEOUT_MILLIS;
     }
 
     /**
@@ -218,6 +232,8 @@ public interface ServerConfig {
         B maxInboundMessageSize(int maxInboundMessageSize);
 
         B proxyHint(Boolean proxyHint);
+
+        B shutdownTimeoutMillis(int shutdownTimeoutMillis);
 
         T build();
     }

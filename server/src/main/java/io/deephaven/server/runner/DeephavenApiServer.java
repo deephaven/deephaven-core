@@ -129,7 +129,7 @@ public class DeephavenApiServer {
         // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
-                server.stopWithTimeout(10, TimeUnit.SECONDS);
+                server.stopWithTimeout(serverConfig.shutdownTimeoutMillis(), TimeUnit.MILLISECONDS);
                 server.join();
             } catch (final InterruptedException ignored) {
             }
