@@ -173,7 +173,7 @@ public interface ServerConfig {
     }
 
     /**
-     * How many milliseconds do we wait to shutdown the server. Defaults to {@value DEFAULT_SHUTDOWN_TIMEOUT_MILLIS}.
+     * How many do we wait to shut down the server. Defaults to {@value DEFAULT_SHUTDOWN_TIMEOUT_MILLIS}.
      */
     @Default
     default Duration shutdownTimeout() {
@@ -234,7 +234,7 @@ public interface ServerConfig {
 
         B proxyHint(Boolean proxyHint);
 
-        B shutdownTimeout(Duration shutdownTimeoutMillis);
+        B shutdownTimeout(Duration shutdownTimeout);
 
         T build();
     }
