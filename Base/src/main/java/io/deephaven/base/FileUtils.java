@@ -258,7 +258,7 @@ public class FileUtils {
 
     /**
      * Take the file source path or URI string and convert it to a URI object. Any unnecessary path separators will be
-     * removed.
+     * removed. The URI object will always be {@link URI#isAbsolute() absolute}, i.e., will always have a scheme.
      *
      * @param source The file source path or URI
      * @param isDirectory Whether the source is a directory
