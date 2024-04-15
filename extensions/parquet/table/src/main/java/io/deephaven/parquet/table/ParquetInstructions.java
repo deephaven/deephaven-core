@@ -153,6 +153,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     static final String FILE_INDEX_TOKEN = "{i}";
     private static final String DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA = UUID_TOKEN;
 
+    private static final Optional<ParquetFileLayout> DEFAULT_FILE_LAYOUT = Optional.empty();
+    private static final Optional<TableDefinition> DEFAULT_TABLE_DEFINITION = Optional.empty();
+
     public ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
@@ -339,12 +342,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public Optional<ParquetFileLayout> getFileLayout() {
-            return Optional.empty();
+            return DEFAULT_FILE_LAYOUT;
         }
 
         @Override
         public Optional<TableDefinition> getTableDefinition() {
-            return Optional.empty();
+            return DEFAULT_TABLE_DEFINITION;
         }
     };
 
@@ -623,8 +626,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private Object specialInstructions;
         private boolean generateMetadataFiles = DEFAULT_GENERATE_METADATA_FILES;
         private String baseNameForPartitionedParquetData = DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA;
-        private Optional<ParquetFileLayout> fileLayout;
-        private Optional<TableDefinition> tableDefinition;
+        private Optional<ParquetFileLayout> fileLayout = DEFAULT_FILE_LAYOUT;
+        private Optional<TableDefinition> tableDefinition = DEFAULT_TABLE_DEFINITION;
 
         public Builder() {}
 
