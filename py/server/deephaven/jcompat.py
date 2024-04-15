@@ -216,14 +216,8 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
         dtype (DType): The dtype of the Java array
         j_array (jpy.JType): The Java array to convert
         conv_null (bool): If True, convert nulls to the null value for the dtype
-        type_promotion (bool): Ignored when conv_null is False.  When type_promotion is False, (1) input Java integer,
-            boolean, or character arrays containing Deephaven nulls yield an exception, (2) input Java float or double
-            arrays containing Deephaven nulls have null values converted to np.nan, and (3) input Java arrays without
-            Deephaven nulls are converted to the target type.  When type_promotion is True, (1) input Java integer,
-            boolean, or character arrays containing Deephaven nulls are converted to np.float64 arrays and Deephaven
-            null values are converted to np.nan, (2) input Java float or double arrays containing Deephaven nulls have
-            null values converted to np.nan, and (3) input Java arrays without Deephaven nulls are converted to the
-            target type.  Defaults to False.
+        type_promotion (bool): Ignored when conv_null is False. When conv_null is True, see the description for the same
+            named parameter in dh_nulls_to_nan().
 
     Returns:
         np.ndarray: The numpy array or None if the Java array is None
@@ -259,7 +253,7 @@ def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, t
 
     return np_array
 
-def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndarray:
+def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = False) -> np.ndarray:
     """Converts Deephaven primitive null values in the given numpy array to np.nan. No conversion is performed on
     non-primitive types.
 
@@ -271,7 +265,7 @@ def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = True) -> np.ndar
         type_promotion (bool): When False, integer, boolean, or character arrays will cause an exception to be raised.
             When True, integer, boolean, or character arrays are converted to new np.float64 arrays and Deephaven null
             values in them are converted to np.nan. Numpy arrays of float or double types are not affected by this flag
-            and Deephaven nulls will always be converted to np.nan in place. Defaults to True.
+            and Deephaven nulls will always be converted to np.nan in place. Defaults to False.
 
     Returns:
         np.ndarray: The numpy array with Deephaven nulls converted to np.nan.

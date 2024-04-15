@@ -229,7 +229,7 @@ def test_udf(x, y: Union[{th}, np.ndarray[np.int64]]) -> bool:
 
                 func_str = f"""
 def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
-    z = dh_null_to_nan(y)
+    z = dh_null_to_nan(y, type_promotion=True)
     check_y = (isinstance(x, int) and isinstance(y, np.ndarray) and y.dtype.type == 
 {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(y) == np.mean( y))
     check_z = np.any(np.isnan(z)) and (z.dtype.type == np.float64 if y.dtype.type not in {{np.float32, np.float64}} 
