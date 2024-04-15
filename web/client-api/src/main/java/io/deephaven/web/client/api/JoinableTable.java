@@ -31,16 +31,17 @@ public interface JoinableTable {
     /**
      * Joins this table to the provided table, using one of the specified join types:
      * <ul>
-     * <li>{@code AJ}, {@code ReverseAJ} (or {@code RAJ}) - inexact timeseries joins, based on the provided matching
-     * rule.</li>
-     * <li>{@code CROSS_JOIN} (or {@code Join} - cross join of all rows that have matching values in both tables.</li>
-     * <li>{@code EXACT_JOIN} (or {@code ExactJoin} - matches values in exactly one row in the right table, with errors
-     * if there is not exactly one.</li>
-     * <li>{@code NATURAL_JOIN} (or {@code Natural} - matches values in at most one row in the right table, with nulls
-     * if there is no match or errors if there are multiple matches.</li>
+     * <li><code>AJ</code>, <code>ReverseAJ</code> (or <code>RAJ</code>) - inexact timeseries joins, based on the
+     * provided matching rule.</li>
+     * <li><code>CROSS_JOIN</code> (or <code>Join</code>) - cross join of all rows that have matching values in both
+     * tables.</li>
+     * <li><code>EXACT_JOIN</code> (or <code>ExactJoin</code> - matches values in exactly one row in the right table,
+     * with errors if there is not exactly one.</li>
+     * <li><code>NATURAL_JOIN</code> (or <code>Natural</code> - matches values in at most one row in the right table,
+     * with nulls if there is no match or errors if there are multiple matches.</li>
      * </ul>
      *
-     * Note that {@code Left} join is not supported here, unlike DHE.
+     * Note that <code>Left</code> join is not supported here, unlike DHE.
      *
      * @deprecated Instead, call the specific method for the join type.
      * @param joinType The type of join to perform, see the list above.
