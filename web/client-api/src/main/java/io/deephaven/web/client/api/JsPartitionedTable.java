@@ -56,7 +56,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private final JsWidget widget;
     private List<String> keyColumnTypes;
     private PartitionedTableDescriptor descriptor;
-    private JsTable rawKeyTable;
     private JsTable keys;
     private TableSubscription subscription;
 
@@ -81,12 +80,13 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> connection.newState((c, state, metadata) -> {
-            rawKeyTable = (JsTable) result;
+            final JsTable rawKeyTable = (JsTable) result;
             DropColumnsRequest drop = new DropColumnsRequest();
             drop.setColumnNamesList(new String[] {descriptor.getConstituentColumnName()});
             drop.setSourceId(rawKeyTable.state().getHandle().makeTableReference());
             drop.setResultId(state.getHandle().makeTicket());
             connection.tableServiceClient().dropColumns(drop, metadata, c::apply);
+            rawKeyTable.close();
         }, "drop constituent column")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
@@ -287,9 +287,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
     /** Close any subscriptions to underlying tables or key tables */
     private void closeSubscriptions() {
-        if (rawKeyTable != null) {
-            rawKeyTable.close();
-        }
         if (keys != null) {
             keys.close();
         }
