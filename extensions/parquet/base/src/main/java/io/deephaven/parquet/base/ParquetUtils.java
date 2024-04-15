@@ -9,11 +9,17 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
+import static io.deephaven.base.FileUtils.URI_SEPARATOR;
+
 public final class ParquetUtils {
 
     public static final String METADATA_FILE_NAME = "_metadata";
     public static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
+    public static final String METADATA_FILE_URI_SUFFIX = URI_SEPARATOR + METADATA_FILE_NAME;
+    public static final String COMMON_METADATA_FILE_URI_SUFFIX = URI_SEPARATOR + COMMON_METADATA_FILE_NAME;
+    public static final String METADATA_FILE_SUFFIX = File.separator + METADATA_FILE_NAME;
+    public static final String COMMON_METADATA_FILE_SUFFIX = File.separator + COMMON_METADATA_FILE_NAME;
     private static final String MAGIC_STR = "PAR1";
     public static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
 

@@ -215,17 +215,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract ParquetFileLayout getFileLayout();
 
-    /**
-     * Creates a new {@link ParquetInstructions} object with the same properties as the current object and file layout
-     * set as the provided {@link ParquetFileLayout}.
-     */
-    ParquetInstructions withFileLayout(final ParquetFileLayout fileLayout) {
-        return new ReadOnly(getColumnNameToInstructionsMap(), getParquetColumnNameToInstructionsMap(),
-                getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(), isLegacyParquet(),
-                getTargetPageSize(), isRefreshing(), getSpecialInstructions(), generateMetadataFiles(),
-                baseNameForPartitionedParquetData(), fileLayout, getTableDefinition());
-    }
-
     public abstract TableDefinition getTableDefinition();
 
     /**

@@ -257,7 +257,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             getParquetKey().getURI(), Arrays.toString(columns)));
         }
         // Create a new index from the parquet table
-        final Table table = readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, readInstructions);
+        final Table table = readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, ParquetInstructions.EMPTY);
         if (table == null) {
             return null;
         }

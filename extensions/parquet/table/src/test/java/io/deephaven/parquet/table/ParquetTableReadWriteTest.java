@@ -549,13 +549,26 @@ public final class ParquetTableReadWriteTest {
 
         final File metadataFile = new File(rootFile, "_metadata");
         assertTrue(metadataFile.exists());
-        assertTrue(new File(rootFile, "_common_metadata").exists());
+        final File commonMetadataFile = new File(rootFile, "_common_metadata");
+        assertTrue(commonMetadataFile.exists());
 
         final Table fromDisk = readTable(destFile);
         assertTableEquals(table, fromDisk);
 
-        final Table fromDiskWithMetadata = readTable(metadataFile);
+        Table fromDiskWithMetadata = readTable(metadataFile);
         assertTableEquals(table, fromDiskWithMetadata);
+        Table fromDiskWithCommonMetadata = readTable(commonMetadataFile);
+        assertTableEquals(table, fromDiskWithCommonMetadata);
+
+        final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                .build();
+        fromDiskWithMetadata = readTable(metadataFile, readInstructions);
+        assertTableEquals(table, fromDiskWithMetadata);
+        fromDiskWithCommonMetadata = readTable(commonMetadataFile, readInstructions);
+        assertTableEquals(table, fromDiskWithCommonMetadata);
+
+
     }
 
     @Test

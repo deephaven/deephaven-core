@@ -256,6 +256,8 @@ public class FileUtils {
         }
     }
 
+    public static final String URI_SEPARATOR = "/";
+
     /**
      * Take the file source path or URI string and convert it to a URI object. Any unnecessary path separators will be
      * removed. The URI object will always be {@link URI#isAbsolute() absolute}, i.e., will always have a scheme.
