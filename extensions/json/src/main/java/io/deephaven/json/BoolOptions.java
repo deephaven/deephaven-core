@@ -53,7 +53,8 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#boolOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#boolLike()}. By default is
+     * {@link JsonValueTypes#boolOrNull()}.
      */
     @Override
     @Default
@@ -61,11 +62,8 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
         return JsonValueTypes.boolOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#boolLike()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.boolLike();
     }
 

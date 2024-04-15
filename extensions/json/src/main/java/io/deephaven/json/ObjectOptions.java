@@ -101,7 +101,8 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#objectOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#objectOrNull()}. By default is
+     * {@link JsonValueTypes#objectOrNull()}.
      */
     @Override
     @Default
@@ -109,11 +110,8 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
         return JsonValueTypes.objectOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#objectOrNull()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.objectOrNull();
     }
 

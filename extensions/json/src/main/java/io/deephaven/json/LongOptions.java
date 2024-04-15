@@ -53,7 +53,8 @@ public abstract class LongOptions extends ValueOptionsSingleValueBase<Long> {
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#intOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#numberLike()}. By default is
+     * {@link JsonValueTypes#intOrNull()}.
      */
     @Override
     @Default
@@ -61,11 +62,8 @@ public abstract class LongOptions extends ValueOptionsSingleValueBase<Long> {
         return JsonValueTypes.intOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.numberLike();
     }
 

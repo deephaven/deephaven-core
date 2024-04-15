@@ -34,7 +34,8 @@ public abstract class LocalDateOptions extends ValueOptionsSingleValueBase<Local
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#stringOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#stringOrNull()}. By default is
+     * {@link JsonValueTypes#stringOrNull()}.
      */
     @Override
     @Default
@@ -42,11 +43,8 @@ public abstract class LocalDateOptions extends ValueOptionsSingleValueBase<Local
         return JsonValueTypes.stringOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#stringOrNull()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.stringOrNull();
     }
 

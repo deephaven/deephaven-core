@@ -54,7 +54,8 @@ public abstract class DoubleOptions extends ValueOptionsSingleValueBase<Double> 
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#numberOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#numberLike()}. By default is
+     * {@link JsonValueTypes#numberOrNull()}.
      */
     @Override
     @Default
@@ -62,11 +63,8 @@ public abstract class DoubleOptions extends ValueOptionsSingleValueBase<Double> 
         return JsonValueTypes.numberOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.numberLike();
     }
 

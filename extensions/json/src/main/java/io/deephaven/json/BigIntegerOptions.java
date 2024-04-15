@@ -58,7 +58,8 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#intOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#numberLike()}. By default is
+     * {@link JsonValueTypes#intOrNull()}.
      */
     @Override
     @Default
@@ -66,11 +67,8 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
         return JsonValueTypes.intOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.numberLike();
     }
 

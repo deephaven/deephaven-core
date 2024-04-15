@@ -53,7 +53,8 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
     }
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#stringOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#stringLike()}. By default is
+     * {@link JsonValueTypes#stringOrNull()}.
      */
     @Override
     @Default
@@ -61,11 +62,8 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
         return JsonValueTypes.stringOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#stringLike()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.stringLike();
     }
 

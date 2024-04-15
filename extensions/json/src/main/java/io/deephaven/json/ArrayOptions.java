@@ -54,7 +54,8 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
     public abstract ValueOptions element();
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#arrayOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#arrayOrNull()}. By default is
+     * {@link JsonValueTypes#arrayOrNull()}.
      */
     @Override
     @Default
@@ -62,11 +63,8 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
         return JsonValueTypes.arrayOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#arrayOrNull()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.arrayOrNull();
     }
 

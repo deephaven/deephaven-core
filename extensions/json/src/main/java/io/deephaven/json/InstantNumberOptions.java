@@ -92,7 +92,8 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
     public abstract Format format();
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#intOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#numberLike()}. By default is
+     * {@link JsonValueTypes#intOrNull()}.
      */
     @Override
     @Default
@@ -100,11 +101,8 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
         return JsonValueTypes.intOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#numberLike()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.numberLike();
     }
 

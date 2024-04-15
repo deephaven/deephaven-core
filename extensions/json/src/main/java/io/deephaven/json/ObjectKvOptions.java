@@ -59,7 +59,8 @@ public abstract class ObjectKvOptions extends ValueOptionsRestrictedUniverseBase
     public abstract ValueOptions value();
 
     /**
-     * {@inheritDoc} By default is {@link JsonValueTypes#objectOrNull()}.
+     * {@inheritDoc} Must be a subset of {@link JsonValueTypes#objectOrNull()}. By default is
+     * {@link JsonValueTypes#objectOrNull()}.
      */
     @Override
     @Default
@@ -67,11 +68,8 @@ public abstract class ObjectKvOptions extends ValueOptionsRestrictedUniverseBase
         return JsonValueTypes.objectOrNull();
     }
 
-    /**
-     * {@inheritDoc} Is {@link JsonValueTypes#objectOrNull()}.
-     */
     @Override
-    public final Set<JsonValueTypes> universe() {
+    final Set<JsonValueTypes> universe() {
         return JsonValueTypes.objectOrNull();
     }
 
