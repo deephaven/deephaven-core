@@ -189,15 +189,18 @@ public enum JsonValueTypes {
 
     private static final Set<JsonValueTypes> NUMBER = Collections.unmodifiableSet(EnumSet.of(INT, DECIMAL));
 
-    private static final Set<JsonValueTypes> NUMBER_OR_NULL = Collections.unmodifiableSet(EnumSet.of(INT, DECIMAL, NULL));
+    private static final Set<JsonValueTypes> NUMBER_OR_NULL =
+            Collections.unmodifiableSet(EnumSet.of(INT, DECIMAL, NULL));
 
-    private static final Set<JsonValueTypes> NUMBER_LIKE = Collections.unmodifiableSet(EnumSet.of(INT, DECIMAL, STRING, NULL));
+    private static final Set<JsonValueTypes> NUMBER_LIKE =
+            Collections.unmodifiableSet(EnumSet.of(INT, DECIMAL, STRING, NULL));
 
     private static final Set<JsonValueTypes> STRING_SET = Collections.unmodifiableSet(EnumSet.of(STRING));
 
     private static final Set<JsonValueTypes> STRING_OR_NULL = Collections.unmodifiableSet(EnumSet.of(STRING, NULL));
 
-    private static final Set<JsonValueTypes> STRING_LIKE = Collections.unmodifiableSet(EnumSet.of(STRING, INT, DECIMAL, BOOL, NULL));
+    private static final Set<JsonValueTypes> STRING_LIKE =
+            Collections.unmodifiableSet(EnumSet.of(STRING, INT, DECIMAL, BOOL, NULL));
 
     private static final Set<JsonValueTypes> BOOL_SET = Collections.unmodifiableSet(EnumSet.of(BOOL));
 
