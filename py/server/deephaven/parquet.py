@@ -47,7 +47,12 @@ class ParquetFileLayout(Enum):
     """ A key-value directory partitioning of parquet files. """
 
     METADATA_PARTITIONED = 4
-    """ A directory containing a _metadata parquet file and an optional _common_metadata parquet file. """
+    """
+    Layout can be used to describe:
+        - A directory containing a METADATA_FILE_NAME parquet file and an optional COMMON_METADATA_FILE_NAME parquet file
+        - A single parquet METADATA_FILE_NAME file
+        - A single parquet COMMON_METADATA_FILE_NAME file
+    """
 
 
 def _build_parquet_instructions(
