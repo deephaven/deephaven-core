@@ -81,11 +81,11 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
         Builder onMissing(boolean onMissing);
 
         default Builder onNull(Boolean onNull) {
-            return onNull((boolean) onNull);
+            return onNull == null ? this : onNull((boolean) onNull);
         }
 
         default Builder onMissing(Boolean onMissing) {
-            return onMissing((boolean) onMissing);
+            return onMissing == null ? this : onMissing((boolean) onMissing);
         }
     }
 }

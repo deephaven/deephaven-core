@@ -81,11 +81,11 @@ public abstract class ByteOptions extends ValueOptionsSingleValueBase<Byte> {
         Builder onMissing(byte onMissing);
 
         default Builder onNull(Byte onNull) {
-            return onNull((byte) onNull);
+            return onNull == null ? this : onNull((byte) onNull);
         }
 
         default Builder onMissing(Byte onMissing) {
-            return onMissing((byte) onMissing);
+            return onMissing == null ? this : onMissing((byte) onMissing);
         }
     }
 }

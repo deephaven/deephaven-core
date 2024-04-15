@@ -81,11 +81,11 @@ public abstract class LongOptions extends ValueOptionsSingleValueBase<Long> {
         Builder onMissing(long onMissing);
 
         default Builder onNull(Long onNull) {
-            return onNull((long) onNull);
+            return onNull == null ? this : onNull((long) onNull);
         }
 
         default Builder onMissing(Long onMissing) {
-            return onMissing((long) onMissing);
+            return onMissing == null ? this : onMissing((long) onMissing);
         }
     }
 }

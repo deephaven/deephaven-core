@@ -81,11 +81,11 @@ public abstract class IntOptions extends ValueOptionsSingleValueBase<Integer> {
         Builder onMissing(int onMissing);
 
         default Builder onNull(Integer onNull) {
-            return onNull((int) onNull);
+            return onNull == null ? this : onNull((int) onNull);
         }
 
         default Builder onMissing(Integer onMissing) {
-            return onMissing((int) onMissing);
+            return onMissing == null ? this : onMissing((int) onMissing);
         }
     }
 }

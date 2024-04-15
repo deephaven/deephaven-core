@@ -71,11 +71,11 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
         Builder onMissing(char onMissing);
 
         default Builder onNull(Character onNull) {
-            return onNull((char) onNull);
+            return onNull == null ? this : onNull((char) onNull);
         }
 
         default Builder onMissing(Character onMissing) {
-            return onMissing((char) onMissing);
+            return onMissing == null ? this : onMissing((char) onMissing);
         }
     }
 }

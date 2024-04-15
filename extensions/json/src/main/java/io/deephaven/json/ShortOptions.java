@@ -81,11 +81,11 @@ public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
         Builder onMissing(short onMissing);
 
         default Builder onNull(Short onNull) {
-            return onNull((short) onNull);
+            return onNull == null ? this : onNull((short) onNull);
         }
 
         default Builder onMissing(Short onMissing) {
-            return onMissing((short) onMissing);
+            return onMissing == null ? this : onMissing((short) onMissing);
         }
     }
 }

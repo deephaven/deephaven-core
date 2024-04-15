@@ -80,11 +80,11 @@ public abstract class FloatOptions extends ValueOptionsSingleValueBase<Float> {
         Builder onMissing(float onMissing);
 
         default Builder onNull(Float onNull) {
-            return onNull((float) onNull);
+            return onNull == null ? this : onNull((float) onNull);
         }
 
         default Builder onMissing(Float onMissing) {
-            return onMissing((float) onMissing);
+            return onMissing == null ? this : onMissing((float) onMissing);
         }
     }
 }

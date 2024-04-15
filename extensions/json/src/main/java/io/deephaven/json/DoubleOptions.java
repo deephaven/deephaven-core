@@ -82,11 +82,11 @@ public abstract class DoubleOptions extends ValueOptionsSingleValueBase<Double> 
         Builder onMissing(double onMissing);
 
         default Builder onNull(Double onNull) {
-            return onNull((double) onNull);
+            return onNull == null ? this : onNull((double) onNull);
         }
 
         default Builder onMissing(Double onMissing) {
-            return onMissing((double) onMissing);
+            return onMissing == null ? this : onMissing((double) onMissing);
         }
     }
 }
