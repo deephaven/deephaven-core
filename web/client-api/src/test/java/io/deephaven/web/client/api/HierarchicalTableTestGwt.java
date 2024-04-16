@@ -69,7 +69,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     // Wait for the table to tick such that the first row has children
                     return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                            (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 1
+                            (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 1
                                     && d.detail.getRows().getAt(0).hasChildren(),
                             10001).then(data -> {
                                 treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);

@@ -6,9 +6,9 @@ package io.deephaven.web.client.api.subscription;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
-import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
@@ -25,6 +25,7 @@ import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
@@ -32,11 +33,10 @@ import io.deephaven.web.shared.data.ShiftedRange;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.BitSet;
-
-import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 public abstract class AbstractTableSubscription extends HasEventHandling {
     /**
@@ -54,7 +54,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     private BarrageSubscriptionOptions options;
 
     private final BiDiStream<FlightData, FlightData> doExchange;
-    private final WebBarrageSubscription barrageSubscription;
+    protected final WebBarrageSubscription barrageSubscription;
 
     private boolean subscriptionReady;
 
@@ -62,7 +62,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         state.retain(this);
         this.state = state;
         this.connection = connection;
-        rowStyleColumn = state.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
+        rowStyleColumn = state.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
                 : state.getRowFormatColumn().getIndex();
 
         doExchange =
@@ -75,6 +75,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         doExchange.onData(this::onFlightData);
         // TODO handle stream ending, error
+        doExchange.onEnd(this::onStreamEnd);
 
         // TODO going to need "started change" so we don't let data escape when still updating
         barrageSubscription = WebBarrageSubscription.subscribe(state, this::onViewportChange, this::onDataChanged);
@@ -83,7 +84,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected void sendBarrageSubscriptionRequest(RangeSet viewport, JsArray<Column> columns, Double updateIntervalMs,
             boolean isReverseViewport) {
         this.columns = columns;
-        this.columnBitSet = state.makeBitset(Js.uncheckedCast(columns));
+        this.columnBitSet = makeColumnBitset(columns);
         // TODO validate that we can change updateinterval
         this.options = BarrageSubscriptionOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
@@ -102,6 +103,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         subscriptionRequest
                 .setAppMetadata(WebBarrageUtils.wrapMessage(request, BarrageMessageType.BarrageSubscriptionRequest));
         doExchange.send(subscriptionRequest);
+    }
+
+    protected BitSet makeColumnBitset(JsArray<Column> columns) {
+        return state.makeBitset(Js.uncheckedCast(columns));
     }
 
     protected ClientTableState state() {
@@ -146,7 +151,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     @TsInterface
     @TsName(namespace = "dh")
     public class SubscriptionRow implements TableData.Row {
-        private final long index;
+        protected final long index;
         public LongWrapper indexCached;
 
         public SubscriptionRow(long index) {
@@ -224,20 +229,23 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          * @return {@link SubscriptionRow} array.
          */
         @Override
-        public JsArray<SubscriptionRow> getRows() {
+        public JsArray<@TsTypeRef(SubscriptionRow.class) ? extends SubscriptionRow> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
                 RangeSet rowSet = barrageSubscription.getCurrentRowSet();
                 RangeSet positions = transformRowsetForConsumer(rowSet);
-                DomGlobal.console.log(rowSet, positions);
                 positions.indexIterator().forEachRemaining((long index) -> {
-                    allRows.push(new SubscriptionRow(index));
+                    allRows.push(makeRow(index));
                 });
                 if (JsSettings.isDevMode()) {
                     assert allRows.length == positions.size();
                 }
             }
             return allRows;
+        }
+
+        protected SubscriptionRow makeRow(long index) {
+            return new SubscriptionRow(index);
         }
 
         @Override
@@ -253,7 +261,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          */
         @Override
         public SubscriptionRow get(long index) {
-            return new SubscriptionRow(index);
+            return makeRow(index);
         }
 
         @Override
@@ -383,6 +391,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             barrageSubscription.applyUpdates(message);
         }
     }
+
+    protected void onStreamEnd(ResponseStreamWrapper.Status status) {
+        // TODO handle stream end/error
+    }
+
 
     /**
      * The columns that were subscribed to when this subscription was created
