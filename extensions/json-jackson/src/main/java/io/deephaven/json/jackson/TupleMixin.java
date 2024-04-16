@@ -6,9 +6,9 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.TupleValue;
 import io.deephaven.json.Value;
+import io.deephaven.json.jackson.RepeaterProcessor.Context;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -50,51 +50,45 @@ final class TupleMixin extends Mixin<TupleValue> {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        if (out.size() != numColumns()) {
-            throw new IllegalArgumentException();
-        }
+    public ValueProcessor processor(String context) {
         final List<ValueProcessor> processors = new ArrayList<>(options.namedValues().size());
         int ix = 0;
         for (Entry<String, Value> e : options.namedValues().entrySet()) {
             final Mixin<?> mixin = mixin(e.getValue());
             final int numTypes = mixin.numColumns();
-            final ValueProcessor processor =
-                    mixin.processor(context + "[" + e.getKey() + "]", out.subList(ix, ix + numTypes));
+            final ValueProcessor processor = mixin.processor(context + "[" + e.getKey() + "]");
             processors.add(processor);
             ix += numTypes;
         }
-        if (ix != out.size()) {
+        if (ix != numColumns()) {
             throw new IllegalStateException();
         }
         return new TupleProcessor(processors);
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        if (out.size() != numColumns()) {
-            throw new IllegalArgumentException();
-        }
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
         final List<RepeaterProcessor> processors = new ArrayList<>(options.namedValues().size());
         int ix = 0;
         for (Entry<String, Value> e : options.namedValues().entrySet()) {
             final Mixin<?> mixin = mixin(e.getValue());
             final int numTypes = mixin.numColumns();
             final RepeaterProcessor processor =
-                    mixin.repeaterProcessor(allowMissing, allowNull, out.subList(ix, ix + numTypes));
+                    mixin.repeaterProcessor(allowMissing, allowNull);
             processors.add(processor);
             ix += numTypes;
         }
-        if (ix != out.size()) {
+        if (ix != numColumns()) {
             throw new IllegalStateException();
         }
         return new TupleArrayProcessor(processors);
     }
 
-    private class TupleProcessor implements ValueProcessor {
+    private class TupleProcessor extends ContextAwareDelegateBase implements ValueProcessor {
         private final List<ValueProcessor> values;
 
         public TupleProcessor(List<ValueProcessor> values) {
+            super(values);
             this.values = Objects.requireNonNull(values);
         }
 
@@ -150,20 +144,22 @@ final class TupleMixin extends Mixin<TupleValue> {
         }
     }
 
-    final class TupleArrayProcessor implements RepeaterProcessor {
+    final class TupleArrayProcessor extends ContextAwareDelegateBase implements RepeaterProcessor, Context {
         private final List<RepeaterProcessor> values;
+        private final List<Context> contexts;
 
         public TupleArrayProcessor(List<RepeaterProcessor> values) {
+            super(values);
             this.values = Objects.requireNonNull(values);
+            this.contexts = new ArrayList<>(values.size());
+            for (RepeaterProcessor value : values) {
+                contexts.add(value.context());
+            }
         }
 
         @Override
-        public TupleArrayContext start(JsonParser parser) throws IOException {
-            final List<Context> contexts = new ArrayList<>(values.size());
-            for (RepeaterProcessor value : values) {
-                contexts.add(value.start(parser));
-            }
-            return new TupleArrayContext(contexts);
+        public Context context() {
+            return this;
         }
 
         @Override
@@ -186,59 +182,58 @@ final class TupleMixin extends Mixin<TupleValue> {
             }
         }
 
-        final class TupleArrayContext implements Context {
-            private final List<Context> contexts;
-
-            public TupleArrayContext(List<Context> contexts) {
-                this.contexts = Objects.requireNonNull(contexts);
+        @Override
+        public void init(JsonParser parser) throws IOException {
+            for (Context context : contexts) {
+                context.init(parser);
             }
+        }
 
-            @Override
-            public void processElement(JsonParser parser, int index) throws IOException {
-                switch (parser.currentToken()) {
-                    case START_ARRAY:
-                        processTuple(parser, index);
-                        return;
-                    case VALUE_NULL:
-                        processNullTuple(parser, index);
-                        return;
-                    default:
-                        throw Parsing.mismatch(parser, Object.class);
-                }
+        @Override
+        public void processElement(JsonParser parser, int index) throws IOException {
+            switch (parser.currentToken()) {
+                case START_ARRAY:
+                    processTuple(parser, index);
+                    return;
+                case VALUE_NULL:
+                    processNullTuple(parser, index);
+                    return;
+                default:
+                    throw Parsing.mismatch(parser, Object.class);
             }
+        }
 
-            private void processTuple(JsonParser parser, int index) throws IOException {
-                for (Context context : contexts) {
-                    parser.nextToken();
-                    context.processElement(parser, index);
-                }
+        private void processTuple(JsonParser parser, int index) throws IOException {
+            for (Context context : contexts) {
                 parser.nextToken();
-                assertCurrentToken(parser, JsonToken.END_ARRAY);
+                context.processElement(parser, index);
             }
+            parser.nextToken();
+            assertCurrentToken(parser, JsonToken.END_ARRAY);
+        }
 
-            private void processNullTuple(JsonParser parser, int index) throws IOException {
-                // Note: we are treating a null tuple the same as a tuple of null objects
-                // null ~= [null, ..., null]
-                for (Context context : contexts) {
-                    context.processElement(parser, index);
-                }
+        private void processNullTuple(JsonParser parser, int index) throws IOException {
+            // Note: we are treating a null tuple the same as a tuple of null objects
+            // null ~= [null, ..., null]
+            for (Context context : contexts) {
+                context.processElement(parser, index);
             }
+        }
 
-            @Override
-            public void processElementMissing(JsonParser parser, int index) throws IOException {
-                // Note: we are treating a missing tuple the same as a tuple of missing objects (which, is technically
-                // impossible w/ native json, but it's the semantics we are exposing).
-                // <missing> ~= [<missing>, ..., <missing>]
-                for (Context context : contexts) {
-                    context.processElementMissing(parser, index);
-                }
+        @Override
+        public void processElementMissing(JsonParser parser, int index) throws IOException {
+            // Note: we are treating a missing tuple the same as a tuple of missing objects (which, is technically
+            // impossible w/ native json, but it's the semantics we are exposing).
+            // <missing> ~= [<missing>, ..., <missing>]
+            for (Context context : contexts) {
+                context.processElementMissing(parser, index);
             }
+        }
 
-            @Override
-            public void done(JsonParser parser, int length) throws IOException {
-                for (Context context : contexts) {
-                    context.done(parser, length);
-                }
+        @Override
+        public void done(JsonParser parser, int length) throws IOException {
+            for (Context context : contexts) {
+                context.done(parser, length);
             }
         }
     }

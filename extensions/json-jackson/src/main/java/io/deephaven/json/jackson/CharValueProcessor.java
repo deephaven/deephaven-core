@@ -5,18 +5,34 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class CharValueProcessor implements ValueProcessor {
 
-    private final WritableCharChunk<?> out;
+    private WritableCharChunk<?> out;
     private final ToChar toChar;
 
-    CharValueProcessor(WritableCharChunk<?> out, ToChar toChar) {
-        this.out = Objects.requireNonNull(out);
+    CharValueProcessor(ToChar toChar) {
         this.toChar = Objects.requireNonNull(toChar);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableCharChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
     }
 
     @Override

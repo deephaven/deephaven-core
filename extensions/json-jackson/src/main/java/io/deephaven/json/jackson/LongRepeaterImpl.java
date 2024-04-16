@@ -4,59 +4,44 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.ArrayUtil;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.json.jackson.LongValueProcessor.ToLong;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Consumer;
-
-import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
 final class LongRepeaterImpl extends RepeaterProcessorBase<long[]> {
 
+    private final SizedLongChunk<?> chunk = new SizedLongChunk<>(0);
+
     private final ToLong toLong;
 
-    public LongRepeaterImpl(ToLong toLong, boolean allowMissing, boolean allowNull,
-            Consumer<? super long[]> consumer) {
-        super(consumer, allowMissing, allowNull, null, null);
+    public LongRepeaterImpl(ToLong toLong, boolean allowMissing, boolean allowNull) {
+        super(allowMissing, allowNull, null, null);
         this.toLong = Objects.requireNonNull(toLong);
     }
 
     @Override
-    public LongArrayContext newContext() {
-        return new LongArrayContext();
+    public void processElement(JsonParser parser, int index) throws IOException {
+        final int newSize = index + 1;
+        final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+        chunk.set(index, toLong.parseValue(parser));
+        chunk.setSize(newSize);
     }
 
-    final class LongArrayContext extends RepeaterContextBase {
-        private long[] arr = EMPTY_LONG_ARRAY;
-        private int len = 0;
+    @Override
+    public void processElementMissing(JsonParser parser, int index) throws IOException {
+        final int newSize = index + 1;
+        final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+        chunk.set(index, toLong.parseMissing(parser));
+        chunk.setSize(newSize);
+    }
 
-        @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
-            if (index != len) {
-                throw new IllegalStateException();
-            }
-            arr = ArrayUtil.put(arr, len, toLong.parseValue(parser));
-            ++len;
-        }
-
-        @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
-            if (index != len) {
-                throw new IllegalStateException();
-            }
-            arr = ArrayUtil.put(arr, len, toLong.parseMissing(parser));
-            ++len;
-        }
-
-        @Override
-        public long[] onDone(int length) {
-            if (length != len) {
-                throw new IllegalStateException();
-            }
-            return arr.length == len ? arr : Arrays.copyOf(arr, len);
-        }
+    @Override
+    public long[] doneImpl(JsonParser parser, int length) {
+        final WritableLongChunk<?> chunk = this.chunk.get();
+        return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
     }
 }

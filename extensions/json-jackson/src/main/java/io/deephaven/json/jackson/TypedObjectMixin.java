@@ -68,30 +68,20 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        final WritableObjectChunk<String, ?> typeOut = out.get(0).asWritableObjectChunk();
-        final List<WritableChunk<?>> sharedFields = out.subList(1, 1 + options.sharedFields().size());
+    public ValueProcessor processor(String context) {
         final Map<String, Processor> processors = new LinkedHashMap<>(options.objects().size());
-        int outIx = 1 + sharedFields.size();
         for (Entry<String, ObjectValue> e : options.objects().entrySet()) {
             final String type = e.getKey();
             final ObjectValue specificOpts = e.getValue();
-            final int numSpecificFields = mixin(specificOpts).numColumns();
-            final List<WritableChunk<?>> specificChunks = out.subList(outIx, outIx + numSpecificFields);
-            final List<WritableChunk<?>> allChunks = concat(sharedFields, specificChunks);
             final ObjectValue combinedObject = combinedObject(specificOpts);
-            final ValueProcessor processor = mixin(combinedObject).processor(context + "[" + type + "]", allChunks);
-            processors.put(type, new Processor(processor, specificChunks));
-            outIx += numSpecificFields;
+            final ValueProcessor processor = mixin(combinedObject).processor(context + "[" + type + "]");
+            processors.put(type, new Processor(processor));
         }
-        if (outIx != out.size()) {
-            throw new IllegalStateException();
-        }
-        return new DiscriminatedProcessor(typeOut, processors);
+        return new DiscriminatedProcessor(processors);
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
         throw new UnsupportedOperationException();
     }
 
@@ -143,11 +133,20 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
 
     private static class Processor {
         private final ValueProcessor valueProcessor;
-        private final List<WritableChunk<?>> specificChunks;
+        private List<WritableChunk<?>> specificOut;
 
-        public Processor(ValueProcessor valueProcessor, List<WritableChunk<?>> specificChunks) {
+        public Processor(ValueProcessor valueProcessor) {
             this.valueProcessor = Objects.requireNonNull(valueProcessor);
-            this.specificChunks = Objects.requireNonNull(specificChunks);
+        }
+
+        void setContext(List<WritableChunk<?>> sharedOut, List<WritableChunk<?>> specifiedOut) {
+            this.specificOut = Objects.requireNonNull(specifiedOut);
+            valueProcessor.setContext(concat(sharedOut, specifiedOut));
+        }
+
+        void clearContext() {
+            valueProcessor.clearContext();
+            specificOut = null;
         }
 
         ValueProcessor processor() {
@@ -155,7 +154,8 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
 
         void notApplicable() {
-            for (WritableChunk<?> wc : specificChunks) {
+            // only skip specific fields
+            for (WritableChunk<?> wc : specificOut) {
                 final int size = wc.size();
                 wc.fillWithNullValue(size, 1);
                 wc.setSize(size + 1);
@@ -165,12 +165,42 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
 
     private class DiscriminatedProcessor implements ValueProcessor {
 
-        private final WritableObjectChunk<String, ?> typeOut;
+        private WritableObjectChunk<String, ?> typeOut;
+        private List<WritableChunk<?>> sharedFields;
         private final Map<String, Processor> processors;
+        private final int numColumns;
 
-        public DiscriminatedProcessor(WritableObjectChunk<String, ?> typeOut, Map<String, Processor> processors) {
-            this.typeOut = Objects.requireNonNull(typeOut);
+        public DiscriminatedProcessor(Map<String, Processor> processors) {
             this.processors = Objects.requireNonNull(processors);
+            this.numColumns = TypedObjectMixin.this.numColumns();
+        }
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            typeOut = out.get(0).asWritableObjectChunk();
+            sharedFields = out.subList(1, 1 + options.sharedFields().size());
+            int outIx = 1 + sharedFields.size();
+            for (Processor value : processors.values()) {
+                final int numColumns = value.processor().numColumns();
+                final int numSpecificFields = numColumns - options.sharedFields().size();
+                final List<WritableChunk<?>> specificChunks = out.subList(outIx, outIx + numSpecificFields);
+                value.setContext(sharedFields, specificChunks);
+                outIx += numSpecificFields;
+            }
+        }
+
+        @Override
+        public void clearContext() {
+            typeOut = null;
+            sharedFields = null;
+            for (Processor value : processors.values()) {
+                value.clearContext();
+            }
+        }
+
+        @Override
+        public int numColumns() {
+            return numColumns;
         }
 
         @Override

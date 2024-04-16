@@ -4,34 +4,44 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
-import java.util.function.LongConsumer;
 
 final class LongValueProcessor implements ValueProcessor {
-
-    public static LongValueProcessor of(WritableLongChunk<?> out, ToLong toLong) {
-        return new LongValueProcessor(out::add, toLong);
-    }
-
-    private final LongConsumer out;
+    private WritableLongChunk<?> out;
     private final ToLong toLong;
 
-    LongValueProcessor(LongConsumer out, ToLong toLong) {
-        this.out = Objects.requireNonNull(out);
+    LongValueProcessor(ToLong toLong) {
         this.toLong = Objects.requireNonNull(toLong);
     }
 
     @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableLongChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
+    }
+
+    @Override
     public void processCurrentValue(JsonParser parser) throws IOException {
-        out.accept(toLong.parseValue(parser));
+        out.add(toLong.parseValue(parser));
     }
 
     @Override
     public void processMissing(JsonParser parser) throws IOException {
-        out.accept(toLong.parseMissing(parser));
+        out.add(toLong.parseMissing(parser));
     }
 
     interface ToLong {

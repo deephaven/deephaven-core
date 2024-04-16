@@ -14,7 +14,6 @@ import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -58,45 +57,43 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
     }
 
     @Override
-    public ValueProcessorKvImpl processor(String context, List<WritableChunk<?>> out) {
-        return innerProcessor(out);
+    public ValueProcessorKvImpl processor(String context) {
+        return innerProcessor();
     }
 
     Stream<Type<?>> keyValueOutputTypes() {
         return Stream.concat(keyMixin().outputTypesImpl(), valueMixin().outputTypesImpl());
     }
 
-    private ValueProcessorKvImpl innerProcessor(List<WritableChunk<?>> out) {
+    private ValueProcessorKvImpl innerProcessor() {
         final Mixin<?> key = keyMixin();
         final Mixin<?> value = valueMixin();
-        final List<WritableChunk<?>> keyColumns = out.subList(0, key.numColumns());
-        final List<WritableChunk<?>> valueColumns =
-                out.subList(key.numColumns(), key.numColumns() + value.numColumns());
-        final RepeaterProcessor kp = key.repeaterProcessor(allowMissing(), allowNull(), keyColumns);
-        final RepeaterProcessor vp = value.repeaterProcessor(allowMissing(), allowNull(), valueColumns);
+        final RepeaterProcessor kp = key.repeaterProcessor(allowMissing(), allowNull());
+        final RepeaterProcessor vp = value.repeaterProcessor(allowMissing(), allowNull());
         return new ValueProcessorKvImpl(kp, vp);
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new RepeaterImpl(out, allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new RepeaterImpl(allowMissing, allowNull);
     }
 
     final class RepeaterImpl implements RepeaterProcessor {
-        private final List<WritableChunk<?>> out;
         private final List<NativeArrayType<?, ?>> outerTypes;
         private final boolean allowMissing;
         private final boolean allowNull;
 
-        public RepeaterImpl(List<WritableChunk<?>> out, boolean allowMissing, boolean allowNull) {
-            this.out = Objects.requireNonNull(out);
+        private List<WritableChunk<?>> out;
+
+
+        public RepeaterImpl(boolean allowMissing, boolean allowNull) {
             this.outerTypes = outputTypesImpl().map(NativeArrayType::arrayType).collect(Collectors.toList());
             this.allowMissing = allowMissing;
             this.allowNull = allowNull;
         }
 
         @Override
-        public Context start(JsonParser parser) throws IOException {
+        public Context context() {
             return new ContextImpl();
         }
 
@@ -168,7 +165,7 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
                     innerChunk.close();
                     innerChunks.set(i, resized);
                 }
-                innerProcessor = innerProcessor(Collections.unmodifiableList(innerChunks));
+                innerProcessor = innerProcessor();
             }
         }
     }

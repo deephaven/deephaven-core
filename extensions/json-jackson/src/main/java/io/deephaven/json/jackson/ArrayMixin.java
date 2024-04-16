@@ -14,7 +14,6 @@ import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -46,46 +45,61 @@ final class ArrayMixin extends Mixin<ArrayValue> {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return innerProcessor(out);
+    public ValueProcessor processor(String context) {
+        return innerProcessor();
     }
 
     Stream<? extends Type<?>> elementOutputTypes() {
         return element().outputTypesImpl();
     }
 
-    RepeaterProcessor elementRepeater(List<WritableChunk<?>> out) {
-        return element().repeaterProcessor(allowMissing(), allowNull(), out);
+    RepeaterProcessor elementRepeater() {
+        return element().repeaterProcessor(allowMissing(), allowNull());
     }
 
-    private ValueProcessorArrayImpl innerProcessor(List<WritableChunk<?>> out) {
-        return new ValueProcessorArrayImpl(elementRepeater(out));
+    private ValueProcessorArrayImpl innerProcessor() {
+        return new ValueProcessorArrayImpl(elementRepeater());
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
         // For example:
         // double (element())
         // double[] (processor())
         // double[][] (arrayProcessor())
-        return new ArrayOfArrayProcessor(out, allowMissing, allowNull);
+        return new ArrayOfArrayProcessor(allowMissing, allowNull);
     }
 
     final class ArrayOfArrayProcessor implements RepeaterProcessor {
-        private final List<WritableChunk<?>> out;
         private final List<NativeArrayType<?, ?>> outerTypes;
         private final boolean allowMissing;
         private final boolean allowNull;
 
-        public ArrayOfArrayProcessor(List<WritableChunk<?>> out, boolean allowMissing, boolean allowNull) {
-            this.out = Objects.requireNonNull(out);
+        private List<WritableChunk<?>> out;
+
+        public ArrayOfArrayProcessor(boolean allowMissing, boolean allowNull) {
             this.outerTypes = outputTypesImpl().map(NativeArrayType::arrayType).collect(Collectors.toList());
             this.allowMissing = allowMissing;
             this.allowNull = allowNull;
         }
 
         @Override
-        public Context start(JsonParser parser) throws IOException {
+        public void setContext(List<WritableChunk<?>> out) {
+            this.out = out;
+        }
+
+        @Override
+        public void clearContext() {
+            out = null;
+        }
+
+        @Override
+        public int numColumns() {
+            return 0;
+        }
+
+        @Override
+        public Context context() {
             return new ArrayOfArrayProcessorContext();
         }
 
@@ -157,7 +171,7 @@ final class ArrayMixin extends Mixin<ArrayValue> {
                     innerChunk.close();
                     innerChunks.set(i, resized);
                 }
-                innerProcessor = innerProcessor(Collections.unmodifiableList(innerChunks));
+                innerProcessor = innerProcessor();
             }
         }
     }

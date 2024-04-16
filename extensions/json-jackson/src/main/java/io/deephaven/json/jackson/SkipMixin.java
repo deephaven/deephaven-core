@@ -7,13 +7,14 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.SkipValue;
+import io.deephaven.json.jackson.RepeaterProcessor.Context;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor, RepeaterProcessor.Context {
+final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
 
     public SkipMixin(SkipValue options, JsonFactory factory) {
         super(factory, options);
@@ -35,12 +36,22 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor, Repeat
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
+    public ValueProcessor processor(String context) {
         return this;
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
+    public void setContext(List<WritableChunk<?>> out) {
+
+    }
+
+    @Override
+    public void clearContext() {
+
+    }
+
+    @Override
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
         return new SkipArray(allowMissing, allowNull);
     }
 
@@ -98,7 +109,7 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor, Repeat
         }
     }
 
-    private final class SkipArray implements RepeaterProcessor {
+    private final class SkipArray implements RepeaterProcessor, Context {
         private final boolean allowMissing;
         private final boolean allowNull;
 
@@ -108,8 +119,8 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor, Repeat
         }
 
         @Override
-        public Context start(JsonParser parser) throws IOException {
-            return SkipMixin.this;
+        public Context context() {
+            return this;
         }
 
         @Override
@@ -125,20 +136,41 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor, Repeat
                 throw Parsing.mismatch(parser, void.class);
             }
         }
-    }
 
-    @Override
-    public void processElement(JsonParser parser, int index) throws IOException {
-        processCurrentValue(parser);
-    }
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
 
-    @Override
-    public void processElementMissing(JsonParser parser, int index) throws IOException {
-        processMissing(parser);
-    }
+        }
 
-    @Override
-    public void done(JsonParser parser, int length) throws IOException {
-        // no-op
+        @Override
+        public void clearContext() {
+
+        }
+
+        @Override
+        public int numColumns() {
+            return 0;
+        }
+
+        @Override
+        public void init(JsonParser parser) throws IOException {
+
+        }
+
+        @Override
+        public void processElement(JsonParser parser, int index) throws IOException {
+            processCurrentValue(parser);
+
+        }
+
+        @Override
+        public void processElementMissing(JsonParser parser, int index) throws IOException {
+            processMissing(parser);
+        }
+
+        @Override
+        public void done(JsonParser parser, int length) throws IOException {
+
+        }
     }
 }

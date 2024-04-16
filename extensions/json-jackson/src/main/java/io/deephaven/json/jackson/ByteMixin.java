@@ -5,8 +5,8 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.ArrayUtil;
-import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.json.ByteValue;
 import io.deephaven.json.jackson.ByteValueProcessor.ToByte;
 import io.deephaven.qst.type.Type;
@@ -15,10 +15,7 @@ import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_BYTE_ARRAY;
 
 final class ByteMixin extends Mixin<ByteValue> implements ToByte {
     public ByteMixin(ByteValue options, JsonFactory factory) {
@@ -41,8 +38,8 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return new ByteValueProcessor(out.get(0).asWritableByteChunk(), this);
+    public ValueProcessor processor(String context) {
+        return new ByteValueProcessor(this);
     }
 
     @Override
@@ -67,50 +64,37 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new ByteRepeaterProcessorImpl(out.get(0).asWritableObjectChunk()::add, allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new ByteRepeaterImpl(allowMissing, allowNull);
     }
 
-    final class ByteRepeaterProcessorImpl extends RepeaterProcessorBase<byte[]> {
+    final class ByteRepeaterImpl extends RepeaterProcessorBase<byte[]> {
+        private final SizedByteChunk<?> chunk = new SizedByteChunk<>(0);
 
-        public ByteRepeaterProcessorImpl(Consumer<? super byte[]> consumer, boolean allowMissing, boolean allowNull) {
-            super(consumer, allowMissing, allowNull, null, null);
+        public ByteRepeaterImpl(boolean allowMissing, boolean allowNull) {
+            super(allowMissing, allowNull, null, null);
         }
 
         @Override
-        public ByteArrayContext newContext() {
-            return new ByteArrayContext();
+        public void processElement(JsonParser parser, int index) throws IOException {
+            final int newSize = index + 1;
+            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+            chunk.set(index, ByteMixin.this.parseValue(parser));
+            chunk.setSize(newSize);
         }
 
-        final class ByteArrayContext extends RepeaterContextBase {
-            private byte[] arr = EMPTY_BYTE_ARRAY;
-            private int len = 0;
+        @Override
+        public void processElementMissing(JsonParser parser, int index) throws IOException {
+            final int newSize = index + 1;
+            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+            chunk.set(index, ByteMixin.this.parseMissing(parser));
+            chunk.setSize(newSize);
+        }
 
-            @Override
-            public void processElement(JsonParser parser, int index) throws IOException {
-                if (index != len) {
-                    throw new IllegalStateException();
-                }
-                arr = ArrayUtil.put(arr, len, ByteMixin.this.parseValue(parser));
-                ++len;
-            }
-
-            @Override
-            public void processElementMissing(JsonParser parser, int index) throws IOException {
-                if (index != len) {
-                    throw new IllegalStateException();
-                }
-                arr = ArrayUtil.put(arr, len, ByteMixin.this.parseMissing(parser));
-                ++len;
-            }
-
-            @Override
-            public byte[] onDone(int length) {
-                if (length != len) {
-                    throw new IllegalStateException();
-                }
-                return arr.length == len ? arr : Arrays.copyOf(arr, len);
-            }
+        @Override
+        public byte[] doneImpl(JsonParser parser, int length) {
+            final WritableByteChunk<?> chunk = this.chunk.get();
+            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
         }
     }
 

@@ -11,7 +11,7 @@ import java.io.IOException;
 import static io.deephaven.json.jackson.Parsing.assertNextToken;
 import static io.deephaven.json.jackson.Parsing.assertNoCurrentToken;
 
-interface ValueProcessor {
+interface ValueProcessor extends ContextAware {
 
     static void processFullJson(JsonParser parser, ValueProcessor processor) throws IOException {
         assertNoCurrentToken(parser);
@@ -32,6 +32,7 @@ interface ValueProcessor {
     // com.fasterxml.jackson.databind.JsonDeserializer.deserialize(com.fasterxml.jackson.core.JsonParser,
     // com.fasterxml.jackson.databind.DeserializationContext),
     // but not functional (want to destructure efficiently)
+
 
     /**
      * Called when the JSON value is present; the current token should be one of {@link JsonToken#START_OBJECT},

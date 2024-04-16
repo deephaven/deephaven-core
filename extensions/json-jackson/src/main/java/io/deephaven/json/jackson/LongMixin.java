@@ -5,7 +5,6 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.LongValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -36,8 +35,8 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return LongValueProcessor.of(out.get(0).asWritableLongChunk(), this);
+    public ValueProcessor processor(String context) {
+        return new LongValueProcessor(this);
     }
 
     @Override
@@ -62,8 +61,8 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new LongRepeaterImpl(this, allowMissing, allowNull, out.get(0).asWritableObjectChunk()::add);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new LongRepeaterImpl(this, allowMissing, allowNull);
     }
 
     private long parseFromInt(JsonParser parser) throws IOException {

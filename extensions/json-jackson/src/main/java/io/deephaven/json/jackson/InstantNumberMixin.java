@@ -5,7 +5,6 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.InstantNumberValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
@@ -42,13 +41,13 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return LongValueProcessor.of(out.get(0).asWritableLongChunk(), function());
+    public ValueProcessor processor(String context) {
+        return new LongValueProcessor(function());
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new LongRepeaterImpl(function(), allowMissing, allowNull, out.get(0).asWritableObjectChunk()::add);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new LongRepeaterImpl(function(), allowMissing, allowNull);
     }
 
     private LongValueProcessor.ToLong function() {

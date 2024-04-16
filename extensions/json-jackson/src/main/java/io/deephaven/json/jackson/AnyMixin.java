@@ -6,7 +6,6 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.AnyValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
@@ -36,14 +35,13 @@ final class AnyMixin extends Mixin<AnyValue> {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return ObjectValueProcessor.of(out.get(0).asWritableObjectChunk(), ToTreeNode.INSTANCE);
+    public ValueProcessor processor(String context) {
+        return new ObjectValueProcessor<>(ToTreeNode.INSTANCE);
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new RepeaterGenericImpl<>(out.get(0).asWritableObjectChunk()::add, allowMissing, allowNull, null,
-                null, ToTreeNode.INSTANCE, TreeNode.class, TreeNode[].class);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new RepeaterGenericImpl<>(ToTreeNode.INSTANCE, allowMissing, allowNull, null, null);
     }
 
     private enum ToTreeNode implements ToObject<TreeNode> {

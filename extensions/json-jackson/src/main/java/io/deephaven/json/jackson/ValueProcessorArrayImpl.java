@@ -5,9 +5,11 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class ValueProcessorArrayImpl implements ValueProcessor {
@@ -17,7 +19,8 @@ final class ValueProcessorArrayImpl implements ValueProcessor {
             RepeaterProcessor elementProcessor,
             Runnable processElementCallback) throws IOException {
         Parsing.assertCurrentToken(parser, JsonToken.START_ARRAY);
-        final Context context = elementProcessor.start(parser);
+        final Context context = elementProcessor.context();
+        context.init(parser);
         parser.nextToken();
         int ix;
         for (ix = 0; !parser.hasToken(JsonToken.END_ARRAY); ++ix) {
@@ -34,6 +37,21 @@ final class ValueProcessorArrayImpl implements ValueProcessor {
 
     ValueProcessorArrayImpl(RepeaterProcessor elementProcessor) {
         this.elementProcessor = Objects.requireNonNull(elementProcessor);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        elementProcessor.setContext(out);
+    }
+
+    @Override
+    public void clearContext() {
+        elementProcessor.clearContext();
+    }
+
+    @Override
+    public int numColumns() {
+        return elementProcessor.numColumns();
     }
 
     @Override

@@ -4,19 +4,35 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableShortChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class ShortValueProcessor implements ValueProcessor {
 
-    private final WritableShortChunk<?> out;
+    private WritableShortChunk<?> out;
     private final ToShort toShort;
 
-    ShortValueProcessor(WritableShortChunk<?> out, ToShort toShort) {
-        this.out = Objects.requireNonNull(out);
+    ShortValueProcessor(ToShort toShort) {
         this.toShort = Objects.requireNonNull(toShort);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableShortChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
     }
 
     @Override

@@ -5,7 +5,6 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.BoolValue;
 import io.deephaven.json.jackson.ByteValueProcessor.ToByte;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
@@ -37,8 +36,8 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return new ByteValueProcessor(out.get(0).asWritableByteChunk(), this);
+    public ValueProcessor processor(String context) {
+        return new ByteValueProcessor(this);
     }
 
     @Override
@@ -63,9 +62,8 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new RepeaterGenericImpl<>(out.get(0).asWritableObjectChunk()::add, allowMissing, allowNull, null,
-                null, new ToBoolean(), Boolean.class, Boolean[].class);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new RepeaterGenericImpl<>(new ToBoolean(), allowMissing, allowNull, null, null);
     }
 
     final class ToBoolean implements ToObject<Boolean> {

@@ -5,7 +5,6 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.BigDecimalValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
@@ -37,8 +36,8 @@ final class BigDecimalMixin extends Mixin<BigDecimalValue> implements ToObject<B
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return ObjectValueProcessor.of(out.get(0).asWritableObjectChunk(), this);
+    public ValueProcessor processor(String context) {
+        return new ObjectValueProcessor<>(this);
     }
 
     @Override
@@ -62,9 +61,8 @@ final class BigDecimalMixin extends Mixin<BigDecimalValue> implements ToObject<B
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new RepeaterGenericImpl<>(out.get(0).asWritableObjectChunk()::add, allowMissing, allowNull, null,
-                null, this, BigDecimal.class, BigDecimal[].class);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null);
     }
 
     private BigDecimal parseFromNumber(JsonParser parser) throws IOException {

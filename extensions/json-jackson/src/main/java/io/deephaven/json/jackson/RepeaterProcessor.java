@@ -8,15 +8,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import java.io.IOException;
 
 // generalized for array vs object-kv
-interface RepeaterProcessor {
-
-    Context start(JsonParser parser) throws IOException;
+interface RepeaterProcessor extends ContextAware {
 
     void processNullRepeater(JsonParser parser) throws IOException;
 
     void processMissingRepeater(JsonParser parser) throws IOException;
 
+    Context context();
+
     interface Context {
+
+        void init(JsonParser parser) throws IOException;
 
         void processElement(JsonParser parser, int index) throws IOException;
 

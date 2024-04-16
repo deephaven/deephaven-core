@@ -4,19 +4,35 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class DoubleValueProcessor implements ValueProcessor {
 
-    private final WritableDoubleChunk<?> out;
+    private WritableDoubleChunk<?> out;
     private final ToDouble toDouble;
 
-    DoubleValueProcessor(WritableDoubleChunk<?> out, ToDouble toDouble) {
-        this.out = Objects.requireNonNull(out);
+    DoubleValueProcessor(ToDouble toDouble) {
         this.toDouble = Objects.requireNonNull(toDouble);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableDoubleChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
     }
 
     @Override

@@ -5,9 +5,11 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class ValueProcessorKvImpl implements ValueProcessor {
@@ -18,8 +20,10 @@ final class ValueProcessorKvImpl implements ValueProcessor {
             RepeaterProcessor valueProcessor,
             Runnable processElementCallback) throws IOException {
         Parsing.assertCurrentToken(parser, JsonToken.START_OBJECT);
-        final Context keyContext = keyProcessor.start(parser);
-        final Context valueContext = valueProcessor.start(parser);
+        final Context keyContext = keyProcessor.context();
+        final Context valueContext = valueProcessor.context();
+        keyContext.init(parser);
+        valueContext.init(parser);
         parser.nextToken();
         int ix;
         for (ix = 0; !parser.hasToken(JsonToken.END_OBJECT); ++ix) {
@@ -42,6 +46,24 @@ final class ValueProcessorKvImpl implements ValueProcessor {
     public ValueProcessorKvImpl(RepeaterProcessor keyProcessor, RepeaterProcessor valueProcessor) {
         this.keyProcessor = Objects.requireNonNull(keyProcessor);
         this.valueProcessor = Objects.requireNonNull(valueProcessor);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        final int keySize = keyProcessor.numColumns();
+        keyProcessor.setContext(out.subList(0, keySize));
+        valueProcessor.setContext(out.subList(keySize, keySize + valueProcessor.numColumns()));
+    }
+
+    @Override
+    public void clearContext() {
+        keyProcessor.clearContext();
+        valueProcessor.clearContext();
+    }
+
+    @Override
+    public int numColumns() {
+        return keyProcessor.numColumns() + valueProcessor.numColumns();
     }
 
     @Override

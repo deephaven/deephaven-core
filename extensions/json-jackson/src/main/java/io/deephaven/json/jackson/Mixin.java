@@ -157,9 +157,9 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         return of(options, factory);
     }
 
-    abstract ValueProcessor processor(String context, List<WritableChunk<?>> out);
+    abstract ValueProcessor processor(String context);
 
-    abstract RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out);
+    abstract RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull);
 
     abstract int numColumns();
 
@@ -266,6 +266,13 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
         protected abstract JsonParser createParser(X in) throws IOException;
 
+        // TODO: need to document that this object processor is stateful; need shutdown?
+        private final ValueProcessor processor;
+        
+        public ObjectProcessorJsonValue() {
+            processor = processor("<root>");
+        }
+
         @Override
         public final int size() {
             return Mixin.this.size();
@@ -278,15 +285,18 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
         @Override
         public final void processAll(ObjectChunk<? extends X, ?> in, List<WritableChunk<?>> out) {
+            processor.setContext(out);
             try {
                 processAllImpl(in, out);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            } finally {
+                processor.clearContext();
             }
         }
 
         void processAllImpl(ObjectChunk<? extends X, ?> in, List<WritableChunk<?>> out) throws IOException {
-            final ValueProcessor valueProcessor = processor("<root>", out);
+            final ValueProcessor valueProcessor = processor("<root>");
             for (int i = 0; i < in.size(); ++i) {
                 try (final JsonParser parser = createParser(in.get(i))) {
                     ValueProcessor.processFullJson(parser, valueProcessor);

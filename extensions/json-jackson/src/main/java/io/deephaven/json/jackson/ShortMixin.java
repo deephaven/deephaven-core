@@ -5,8 +5,8 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.ArrayUtil;
-import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.sized.SizedShortChunk;
 import io.deephaven.json.ShortValue;
 import io.deephaven.json.jackson.ShortValueProcessor.ToShort;
 import io.deephaven.qst.type.Type;
@@ -15,10 +15,7 @@ import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_SHORT_ARRAY;
 
 final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     public ShortMixin(ShortValue options, JsonFactory factory) {
@@ -41,8 +38,8 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     }
 
     @Override
-    public ValueProcessor processor(String context, List<WritableChunk<?>> out) {
-        return new ShortValueProcessor(out.get(0).asWritableShortChunk(), this);
+    public ValueProcessor processor(String context) {
+        return new ShortValueProcessor(this);
     }
 
     @Override
@@ -67,50 +64,37 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull, List<WritableChunk<?>> out) {
-        return new ShortRepeaterImpl(out.get(0).asWritableObjectChunk()::add, allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+        return new ShortRepeaterImpl(allowMissing, allowNull);
     }
 
     final class ShortRepeaterImpl extends RepeaterProcessorBase<short[]> {
+        private final SizedShortChunk<?> chunk = new SizedShortChunk<>(0);
 
-        public ShortRepeaterImpl(Consumer<? super short[]> consumer, boolean allowMissing, boolean allowNull) {
-            super(consumer, allowMissing, allowNull, null, null);
+        public ShortRepeaterImpl(boolean allowMissing, boolean allowNull) {
+            super(allowMissing, allowNull, null, null);
         }
 
         @Override
-        public ShortArrayContext newContext() {
-            return new ShortArrayContext();
+        public void processElement(JsonParser parser, int index) throws IOException {
+            final int newSize = index + 1;
+            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+            chunk.set(index, ShortMixin.this.parseValue(parser));
+            chunk.setSize(newSize);
         }
 
-        final class ShortArrayContext extends RepeaterContextBase {
-            private short[] arr = EMPTY_SHORT_ARRAY;
-            private int len = 0;
+        @Override
+        public void processElementMissing(JsonParser parser, int index) throws IOException {
+            final int newSize = index + 1;
+            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+            chunk.set(index, ShortMixin.this.parseMissing(parser));
+            chunk.setSize(newSize);
+        }
 
-            @Override
-            public void processElement(JsonParser parser, int index) throws IOException {
-                if (index != len) {
-                    throw new IllegalStateException();
-                }
-                arr = ArrayUtil.put(arr, len, ShortMixin.this.parseValue(parser));
-                ++len;
-            }
-
-            @Override
-            public void processElementMissing(JsonParser parser, int index) throws IOException {
-                if (index != len) {
-                    throw new IllegalStateException();
-                }
-                arr = ArrayUtil.put(arr, len, ShortMixin.this.parseMissing(parser));
-                ++len;
-            }
-
-            @Override
-            public short[] onDone(int length) {
-                if (length != len) {
-                    throw new IllegalStateException();
-                }
-                return arr.length == len ? arr : Arrays.copyOf(arr, len);
-            }
+        @Override
+        public short[] doneImpl(JsonParser parser, int length) {
+            final WritableShortChunk<?> chunk = this.chunk.get();
+            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
         }
     }
 

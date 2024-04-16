@@ -4,34 +4,45 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 final class ObjectValueProcessor<T> implements ValueProcessor {
 
-    public static <T> ObjectValueProcessor<T> of(WritableObjectChunk<T, ?> chunk, ToObject<? extends T> toObj) {
-        return new ObjectValueProcessor<>(chunk::add, toObj);
-    }
-
-    private final Consumer<? super T> out;
+    private WritableObjectChunk<T, ?> out;
     private final ToObject<? extends T> toObj;
 
-    ObjectValueProcessor(Consumer<? super T> out, ToObject<? extends T> toObj) {
-        this.out = Objects.requireNonNull(out);
+    ObjectValueProcessor(ToObject<? extends T> toObj) {
         this.toObj = Objects.requireNonNull(toObj);
     }
 
     @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableObjectChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
+    }
+
+    @Override
     public void processCurrentValue(JsonParser parser) throws IOException {
-        out.accept(toObj.parseValue(parser));
+        out.add(toObj.parseValue(parser));
     }
 
     @Override
     public void processMissing(JsonParser parser) throws IOException {
-        out.accept(toObj.parseMissing(parser));
+        out.add(toObj.parseMissing(parser));
     }
 
     interface ToObject<T> {

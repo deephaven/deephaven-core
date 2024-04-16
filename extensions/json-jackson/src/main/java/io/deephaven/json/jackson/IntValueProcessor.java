@@ -4,19 +4,35 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class IntValueProcessor implements ValueProcessor {
 
-    private final WritableIntChunk<?> out;
+    private WritableIntChunk<?> out;
     private final ToInt toInt;
 
-    IntValueProcessor(WritableIntChunk<?> out, ToInt toInt) {
-        this.out = Objects.requireNonNull(out);
+    IntValueProcessor(ToInt toInt) {
         this.toInt = Objects.requireNonNull(toInt);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableIntChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
     }
 
     @Override

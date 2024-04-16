@@ -4,19 +4,35 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 final class FloatValueProcessor implements ValueProcessor {
 
-    private final WritableFloatChunk<?> out;
+    private WritableFloatChunk<?> out;
     private final ToFloat toFloat;
 
-    FloatValueProcessor(WritableFloatChunk<?> out, ToFloat toFloat) {
-        this.out = Objects.requireNonNull(out);
+    FloatValueProcessor(ToFloat toFloat) {
         this.toFloat = Objects.requireNonNull(toFloat);
+    }
+
+    @Override
+    public void setContext(List<WritableChunk<?>> out) {
+        this.out = out.get(0).asWritableFloatChunk();
+    }
+
+    @Override
+    public void clearContext() {
+        out = null;
+    }
+
+    @Override
+    public int numColumns() {
+        return 1;
     }
 
     @Override
