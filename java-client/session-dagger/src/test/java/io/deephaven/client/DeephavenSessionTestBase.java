@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DeephavenSessionTestBase extends DeephavenApiServerTestBase {
 
-    private ScheduledExecutorService sessionScheduler;
+    protected ScheduledExecutorService sessionScheduler;
     protected Session session;
     protected SessionState serverSessionState;
 

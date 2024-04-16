@@ -172,6 +172,52 @@ public class SessionStateTest {
     }
 
     @Test
+    public void testReleasePropagatesToOtherSessionChildren() {
+        final MutableBoolean error = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> exportObj;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            exportObj = session.newExport(nextExportId++)
+                    .onSuccess(success::setTrue)
+                    .onError((result, errorContext, cause, dependentId) -> error.setTrue())
+                    .submit(() -> export);
+        }
+
+        // no ref counts yet
+        Assert.eq(export.refCount, "export.refCount", 0);
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
+
+        final MutableBoolean otherSuccess = new MutableBoolean();
+        final MutableBoolean otherError = new MutableBoolean();
+        final SessionState other = new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
+                TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
+        other.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
+                DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), other));
+        final SessionState.ExportObject<Object> otherExportObj;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            otherExportObj = other.newExport(nextExportId++)
+                    .require(exportObj)
+                    .onSuccess(otherSuccess::setTrue)
+                    .onError((result, errorContext, cause, dependentId) -> otherError.setTrue())
+                    .submit(exportObj::get);
+        }
+
+        // release
+        session.onExpired();
+
+        // export the object; should not inc ref count or alter state
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(export.refCount, "export.refCount", 0);
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
+        Assert.eqTrue(error.booleanValue(), "error.booleanValue()");
+        Assert.eqFalse(otherSuccess.booleanValue(), "otherSuccess.booleanValue()");
+        Assert.eqTrue(otherError.booleanValue(), "otherError.booleanValue()");
+
+        Assert.eq(otherExportObj.getState(), "otherExportObj.getState()", DEPENDENCY_FAILED);
+    }
+
+    @Test
     public void testServerExportDestroyOnSessionRelease() {
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
