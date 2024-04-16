@@ -1240,9 +1240,9 @@ public class Numeric {
      * @param values values.
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
-    public static double percentile(double percentile, ${pt.primitive}... values) {
+    public static ${pt.primitive} percentile(double percentile, ${pt.primitive}... values) {
         if (values == null || values.length == 0) {
-            return NULL_DOUBLE;
+            return ${pt.null};
         }
 
         return percentile(percentile, new ${pt.vectorDirect}(values));
@@ -1255,9 +1255,9 @@ public class Numeric {
      * @param values values.
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
-    public static double percentile(double percentile, ${pt.vector} values) {
+    public static ${pt.primitive} percentile(double percentile, ${pt.vector} values) {
         if (values == null || values.isEmpty()) {
-            return NULL_DOUBLE;
+            return ${pt.null};
         }
 
         if (percentile < 0 || percentile > 1) {
@@ -1483,7 +1483,7 @@ public class Numeric {
             return ${pt.null};
         }
 
-        double sum = 0;
+        ${pt.primitive} sum = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
@@ -1499,7 +1499,7 @@ public class Numeric {
             }
         }
 
-        return (${pt.primitive}) (sum);
+        return sum;
     }
 
     /**

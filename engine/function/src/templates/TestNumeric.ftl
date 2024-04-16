@@ -975,15 +975,15 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Percentile() {
-        assertEquals(2.0, percentile(0.00, new ${pt.primitive}[]{4,2,3}));
-        assertEquals(3.0, percentile(0.50, new ${pt.primitive}[]{4,2,3}));
-        assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.primitive}[])null));
-        assertEquals(NULL_DOUBLE, percentile(0.25, new ${pt.primitive}[]{}));
+        assertEquals((${pt.primitive})2, percentile(0.00, new ${pt.primitive}[]{4,2,3}));
+        assertEquals((${pt.primitive})3, percentile(0.50, new ${pt.primitive}[]{4,2,3}));
+        assertEquals(${pt.null}, percentile(0.25, (${pt.primitive}[])null));
+        assertEquals(${pt.null}, percentile(0.25, new ${pt.primitive}[]{}));
 
-        assertEquals(2.0, percentile(0.00, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
-        assertEquals(3.0, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
-        assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.vector}) null));
-        assertEquals(NULL_DOUBLE, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals((${pt.primitive})2, percentile(0.00, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
+        assertEquals((${pt.primitive})3, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{4,2,3})));
+        assertEquals(${pt.null}, percentile(0.25, (${pt.vector}) null));
+        assertEquals(${pt.null}, percentile(0.50, new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
 
         try {
             percentile(-1, new ${pt.primitive}[]{4,2,3});
