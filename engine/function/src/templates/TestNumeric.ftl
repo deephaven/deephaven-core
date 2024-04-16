@@ -749,23 +749,43 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{5, 5, 5, 5, 5}, cummax((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
     }
 
+<#if pt.valueType.isFloat >
     public void test${pt.boxed}CumSumArray() {
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[0], cumsum(new ${pt.primitive}[0]));
-        assertEquals(new ${pt.primitive}[0], cumsum(new ${pt.boxed}[0]));
+        assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new double[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[0], cumsum(new ${pt.primitive}[0]));
+        assertEquals(new double[0], cumsum(new ${pt.boxed}[0]));
         assertEquals(null, cumsum((${pt.primitive}[]) null));
 
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[0], cumsum(new ${pt.vectorDirect}()));
+        assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new double[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[0], cumsum(new ${pt.vectorDirect}()));
         assertEquals(null, cumsum((${pt.vector}) null));
 
         // check that functions can be resolved with varargs
-        assertEquals(new ${pt.primitive}[]{1, 3, 6, 10, 15}, cumsum((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
     }
+<#else>
+    public void test${pt.boxed}CumSumArray() {
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[0], cumsum(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumsum(new ${pt.boxed}[0]));
+        assertEquals(null, cumsum((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[0], cumsum(new ${pt.vectorDirect}()));
+        assertEquals(null, cumsum((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+    }
+</#if>
 
     public void test${pt.boxed}CumProdArray() {
         assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));

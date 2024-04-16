@@ -1786,9 +1786,15 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.boxed}[] values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumsum(${pt.boxed}[] values) {
         return cumsum(unbox(values));
     }
+   <#else>
+    public static long[] cumsum(${pt.boxed}[] values) {
+        return cumsum(unbox(values));
+    }
+   </#if>
 
     /**
      * Returns the cumulative sum.  Null values are excluded.
@@ -1796,13 +1802,23 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumsum(${pt.primitive}... values) {
         if (values == null) {
             return null;
         }
 
         return cumsum(new ${pt.vectorDirect}(values));
     }
+   <#else>
+    public static long[] cumsum(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumsum(new ${pt.vectorDirect}(values));
+    }
+   </#if>
 
     /**
      * Returns the cumulative sum.  Null values are excluded.
@@ -1810,20 +1826,22 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumsum(${pt.vector} values) {
         if (values == null) {
             return null;
         }
 
         if (values.isEmpty()) {
-            return new ${pt.primitive}[0];
+            return new double[0];
         }
 
         final int n = values.intSize("cumsum");
-        ${pt.primitive}[] result = new ${pt.primitive}[n];
+        final double[] result = new double[n];
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
-            result[0] = vi.${pt.iteratorNext}();
+            final ${pt.primitive} v0 = vi.${pt.iteratorNext}();
+            result[0] = isNull(v0) ? NULL_DOUBLE : v0;
             int i = 1;
     
             while (vi.hasNext()) {
@@ -1834,7 +1852,7 @@ public class Numeric {
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
                 } else {
-                    result[i] = (${pt.primitive}) (result[i - 1] + v);
+                    result[i] = (double) (result[i - 1] + v);
                 }
     
                 i++;
@@ -1843,6 +1861,42 @@ public class Numeric {
 
         return result;
     }
+    <#else>
+    public static long[] cumsum(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumsum");
+        final long[] result = new long[n];
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            final ${pt.primitive} v0 = vi.${pt.iteratorNext}();
+            result[0] = isNull(v0) ? NULL_LONG : v0;
+            int i = 1;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (isNull(result[i - 1])) {
+                    result[i] = v;
+                } else if (isNull(v)) {
+                    result[i] = result[i - 1];
+                } else {
+                    result[i] = (long) (result[i - 1] + v);
+                }
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+    </#if>
 
     /**
      * Returns the cumulative product.  Null values are excluded.
