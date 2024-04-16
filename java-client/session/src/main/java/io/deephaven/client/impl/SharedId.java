@@ -17,7 +17,7 @@ import java.util.UUID;
 public class SharedId implements HasTicketId, HasPathId {
 
     /**
-     * @return a new secure random {@link SharedId} based on {@link UUID#randomUUID()}.
+     * @return a new random {@link SharedId}
      */
     public static SharedId newRandom() {
         final ByteBuffer sharedId = ByteBuffer.allocate(16);

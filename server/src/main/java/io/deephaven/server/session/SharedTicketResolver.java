@@ -44,7 +44,7 @@ public class SharedTicketResolver extends TicketResolverBase {
     @Override
     public String getLogNameFor(ByteBuffer ticket, String logId) {
         final ByteString ticketId = idForTicket(ticket, logId);
-        return FLIGHT_DESCRIPTOR_ROUTE + "/" + toHexString(ticketId);
+        return String.format("%s/%s", FLIGHT_DESCRIPTOR_ROUTE, toHexString(ticketId));
     }
 
     private static @NotNull String toHexString(ByteString ticketId) {
@@ -55,17 +55,16 @@ public class SharedTicketResolver extends TicketResolverBase {
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         if (session == null) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
-                    "Could not resolve '" + logId + "': no session to handoff to");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, String.format(
+                    "Could not resolve '%s': no session to handoff to", logId));
         }
 
         final ByteString sharedId = idForDescriptor(descriptor, logId);
 
         SessionState.ExportObject<?> export = sharedVariables.get(sharedId);
         if (export == null) {
-            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + ": no shared ticket exists with id '" + toHexString(sharedId)
-                            + "'");
+            throw Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
+                    "Could not resolve '%s': no shared ticket exists with id 0x%s", logId, toHexString(sharedId)));
         }
 
         return session.<Flight.FlightInfo>nonExport()
@@ -78,8 +77,8 @@ public class SharedTicketResolver extends TicketResolverBase {
                                 FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
-                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor + "' is not a table");
+                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
+                            "Could not resolve '%s': flight '%s' is not a table", logId, descriptor));
                 });
     }
 
@@ -103,15 +102,15 @@ public class SharedTicketResolver extends TicketResolverBase {
     private <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final ByteString sharedId, final String logId) {
         if (session == null) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
-                    "Could not resolve '" + logId + "': no session to handoff to");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, String.format(
+                    "Could not resolve '%s': no session to handoff to", logId));
         }
 
         // noinspection unchecked
         final SessionState.ExportObject<T> sharedVar = (SessionState.ExportObject<T>) sharedVariables.get(sharedId);
         if (sharedVar == null) {
-            return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + "': no shared ticket exists with id '" + sharedId + "'"));
+            return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
+                    "Could not resolve '%s': no shared ticket exists with id '%s'", logId, sharedId)));
         }
 
         // we need to wrap this in a new export object to hand off to the new session and defer checking permissions
@@ -129,10 +128,7 @@ public class SharedTicketResolver extends TicketResolverBase {
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
-        final String ticketHex = toHexString(idForTicket(ticket, logId));
-        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not publish '" + logId
-                + "' to shared ticket '" + ticketHex + "' (hex): can only publish directly from a session"
-                + " export to a shared ticket");
+        return failDueToBadSource(logId, toHexString(idForTicket(ticket, logId)));
     }
 
     @Override
@@ -141,10 +137,7 @@ public class SharedTicketResolver extends TicketResolverBase {
             final Flight.FlightDescriptor descriptor,
             final String logId,
             @Nullable final Runnable onPublish) {
-        final String ticketHex = toHexString(idForDescriptor(descriptor, logId));
-        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not publish '" + logId
-                + "' to shared ticket '" + ticketHex + "' (hex): can only publish directly from a session"
-                + " export to a shared ticket");
+        return failDueToBadSource(logId, toHexString(idForDescriptor(descriptor, logId)));
     }
 
     @Override
@@ -156,21 +149,28 @@ public class SharedTicketResolver extends TicketResolverBase {
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
         if (source.isNonExport()) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not publish '" + logId
-                    + "' to shared ticket '" + toHexString(idForTicket(ticket, logId)) + "' (hex): source must be a"
-                    + " session owned export");
+            failDueToBadSource(logId, toHexString(idForTicket(ticket, logId)));
+            return;
         }
         final ByteString sharedId = idForTicket(ticket, logId);
         final SessionState.ExportObject<?> existing = sharedVariables.putIfAbsent(sharedId, source);
         if (existing != null) {
             final String ticketHex = toHexString(sharedId);
             errorHandler.onError(ExportNotification.State.FAILED, "",
-                    Exceptions.statusRuntimeException(Code.ALREADY_EXISTS, "Could not publish '" + logId
-                            + "' to shared ticket '" + ticketHex + "' (hex): destination already exists"),
+                    Exceptions.statusRuntimeException(Code.ALREADY_EXISTS, String.format(
+                            "Could not publish '%s' to shared ticket '%s' (hex): destination already exists",
+                            logId, ticketHex)),
                     null);
         } else if (onPublish != null) {
             onPublish.run();
         }
+    }
+
+    private static <T> T failDueToBadSource(String logId, String ticketHex) {
+        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
+                "Could not publish '%s' to shared ticket '%s' (hex): can only publish directly from a session"
+                        + " export to a shared ticket",
+                logId, ticketHex));
     }
 
     /**
@@ -217,14 +217,14 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @return the query scope name this ticket represents
      */
-    public static ByteString idForTicket(final ByteBuffer ticket, final String logId) {
+    private static ByteString idForTicket(final ByteBuffer ticket, final String logId) {
         if (ticket == null || ticket.remaining() == 0) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no ticket supplied");
+                    String.format("Could not resolve '%s': no ticket supplied", logId));
         }
         if (ticket.remaining() < 2 || ticket.get(ticket.position()) != SharedTicketHelper.TICKET_PREFIX) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
+                    String.format("Could not resolve '%s': found 0x%s (hex)", logId, ByteHelper.byteBufToHex(ticket)));
         }
 
         final int initialPosition = ticket.position();
@@ -245,21 +245,20 @@ public class SharedTicketResolver extends TicketResolverBase {
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @return the query scope name this descriptor represents
      */
-    public static ByteString idForDescriptor(final Flight.FlightDescriptor descriptor, final String logId) {
+    private static ByteString idForDescriptor(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve descriptor '" + logId + "': only paths are supported");
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
+                    "Could not resolve descriptor '%s': only paths are supported", logId));
         }
         if (descriptor.getPathCount() != 2) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve descriptor '" + logId + "': unexpected path length (found: "
-                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
+                    "Could not resolve descriptor '%s': unexpected path length (found: %s, expected: 2)",
+                    logId, TicketRouterHelper.getLogNameFor(descriptor)));
         }
         if (!descriptor.getPath(0).equals(FLIGHT_DESCRIPTOR_ROUTE)) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve descriptor '" + logId + "': unexpected path (found: "
-                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: " + FLIGHT_DESCRIPTOR_ROUTE
-                            + ")");
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
+                    "Could not resolve descriptor '%s': unexpected path (found: %s, expected: %s)",
+                    logId, TicketRouterHelper.getLogNameFor(descriptor), FLIGHT_DESCRIPTOR_ROUTE));
         }
         return ByteString.fromHex(descriptor.getPath(1));
     }
