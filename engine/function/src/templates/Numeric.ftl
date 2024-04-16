@@ -1562,8 +1562,8 @@ public class Numeric {
 
         double prod = 1;
         int count = 0;
-        long zeroCount = 0;
-        long infCount = 0;
+        boolean hasZero = false;
+        boolean hasInf = false;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
@@ -1572,15 +1572,15 @@ public class Numeric {
                 if (isNaN(c)) {
                     return Double.NaN;
                 } else if (Double.isInfinite(c)) {
-                    if (zeroCount > 0) {
+                    if (hasZero) {
                         return Double.NaN;
                     }
-                    infCount++;
+                    hasInf = true;
                 } else if (c == 0) {
-                    if (infCount > 0) {
+                    if (hasInf) {
                         return Double.NaN;
                     }
-                    zeroCount++;
+                    hasZero = true;
                 }
 
                 if (!isNull(c)) {
@@ -1594,7 +1594,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return zeroCount > 0 ? 0 : prod;
+        return hasZero ? 0 : prod;
     }
     <#else>
     public static long product(${pt.vector} values) {
@@ -1846,8 +1846,11 @@ public class Numeric {
     
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
-    
-                if (isNull(result[i - 1])) {
+
+                if (isNaN(v)) {
+                    Arrays.fill(result, i, n, Double.NaN);
+                    return result;
+                } else if (isNull(result[i - 1])) {
                     result[i] = v;
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
@@ -1964,8 +1967,11 @@ public class Numeric {
     
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
-    
-                if (isNull(result[i - 1])) {
+
+                if (isNaN(v)) {
+                    Arrays.fill(result, i, n, Double.NaN);
+                    return result;
+                } else if (isNull(result[i - 1])) {
                     result[i] = v;
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
@@ -2519,7 +2525,7 @@ public class Numeric {
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
 
                 if (!isNull(c) && !isNull(w)) {
-                    vsum += c * w;
+                    vsum += c * (long) w;
                 }
             }
         }
@@ -2547,15 +2553,25 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+
+               <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
+               </#if>
+
+               <#if pt2.valueType.isFloat >
                 if (isNaN(w)) {
                     return Double.NaN;
                 }
+               </#if>
 
                 if (!isNull(c) && !isNull(w)) {
-                    vsum += c * w;
+                   <#if pt.valueType.isFloat >
+                    vsum += (double) c * w;
+                   <#else>
+                    vsum += c * (double) w;
+                   </#if>>
                 }
             }
         }

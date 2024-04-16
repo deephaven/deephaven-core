@@ -619,8 +619,10 @@ public class TestNumeric extends BaseArrayTestCase {
     public void test${pt.boxed}Product() {
         <#if pt.valueType.isFloat >
         final double nullResult = NULL_DOUBLE;
+        final double zeroValue = 0.0;
         <#else>
         final long nullResult = NULL_LONG;
+        final long zeroValue = 0;
         </#if>
 
         assertTrue(Math.abs(120 - product(new ${pt.primitive}[]{4, 5, 6})) == 0.0);
@@ -628,12 +630,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(nullResult, product(new ${pt.primitive}[]{${pt.null}}));
         assertTrue(Math.abs(75 - product(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
         assertEquals(nullResult, product((${pt.primitive}[]) null));
+        assertEquals(zeroValue, product(new ${pt.primitive}[]{4, 0, 5, 6}));
 
         assertTrue(Math.abs(120 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
         assertEquals(nullResult, product(new ${pt.vectorDirect}()));
         assertEquals(nullResult, product(new ${pt.vectorDirect}(${pt.null})));
         assertTrue(Math.abs(75 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
         assertEquals(nullResult, product((${pt.vector}) null));
+        assertEquals(zeroValue, product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 0, 5, 6})));
     }
 
 <#if pt.valueType.isFloat >
@@ -795,12 +799,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new double[0], cumprod(new ${pt.primitive}[0]));
         assertEquals(new double[0], cumprod(new ${pt.boxed}[0]));
         assertEquals(null, cumprod((${pt.primitive}[]) null));
+        assertEquals(new double[]{1, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, cumprod(new ${pt.primitive}[]{1, Float.NaN, 3, 4, 5}));
 
         assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
         assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
         assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
         assertEquals(new double[0], cumprod(new ${pt.vectorDirect}()));
         assertEquals(null, cumprod((${pt.vector}) null));
+        assertEquals(new double[]{1, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, Float.NaN, 3, 4, 5})));
 
         // check that functions can be resolved with varargs
         assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
@@ -1103,6 +1109,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wsum((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
+
+        <#if pt.valueType.isFloat >
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NaN}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
+        </#if>
+
+        <#if pt2.valueType.isFloat >
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NaN,${pt2.null}})));
+        </#if>
 
         try {
             wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
