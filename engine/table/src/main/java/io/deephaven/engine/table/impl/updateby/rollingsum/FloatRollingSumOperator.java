@@ -3,31 +3,32 @@
 //
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
-import io.deephaven.base.ringbuffer.AggregatingFloatRingBuffer;
+import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
+public class FloatRollingSumOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
 
-    protected class Context extends BaseFloatUpdateByOperator.Context {
+    protected class Context extends BaseDoubleUpdateByOperator.Context {
         protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
-        protected AggregatingFloatRingBuffer aggSum;
+        protected AggregatingDoubleRingBuffer aggSum;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE,
+            aggSum = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE,
                     0,
-                    Float::sum, // tree function
+                    Double::sum, // tree function
                     (a, b) -> { // value function
                         if (a == NULL_FLOAT && b == NULL_FLOAT) {
                             return 0; // identity val
@@ -70,9 +71,9 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
             Assert.geq(aggSum.size(), "aggSum.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                float val = aggSum.removeUnsafe();
+                double val = aggSum.removeUnsafe();
 
-                if (val == NULL_FLOAT) {
+                if (val == NULL_DOUBLE) {
                     nullCount--;
                 }
             }
