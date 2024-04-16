@@ -1478,21 +1478,22 @@ public class Numeric {
      * @param values values.
      * @return sum of non-null values.
      */
-    public static ${pt.primitive} sum(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double sum(${pt.vector} values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
-        ${pt.primitive} sum = 0;
+        double sum = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
+
                 if (isNaN(c)) {
                     return ${pt.boxed}.NaN;
                 }
-    </#if>
+
                 if (!isNull(c)) {
                     sum += c;
                 }
@@ -1501,6 +1502,27 @@ public class Numeric {
 
         return sum;
     }
+    <#else>
+    public static long sum(${pt.vector} values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        long sum = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+
+                if (!isNull(c)) {
+                    sum += c;
+                }
+            }
+        }
+
+        return sum;
+    }
+    </#if>
 
     /**
      * Returns the sum.  Null values are excluded.
@@ -1508,13 +1530,23 @@ public class Numeric {
      * @param values values.
      * @return sum of non-null values.
      */
-    public static ${pt.primitive} sum(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double sum(${pt.primitive}... values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
         return sum(new ${pt.vectorDirect}(values));
     }
+    <#else>
+    public static long sum(${pt.primitive}... values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return sum(new ${pt.vectorDirect}(values));
+    }
+    </#if>
 
     /**
      * Returns the product.  Null values are excluded.

@@ -570,7 +570,12 @@ public class TestNumeric extends BaseArrayTestCase {
         assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}())) == 0.0);
         assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}(${pt.null}))) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
-        assertEquals(${pt.null}, sum((${pt.vector}) null));
+    <#if pt.valueType.isFloat >
+        assertEquals(NULL_DOUBLE, sum((${pt.vector}) null));
+    <#else>
+        assertEquals(NULL_LONG, sum((${pt.vector}) null));
+    </#if>
+
     }
 
     public void test${pt.boxed}Sum2() {
@@ -578,7 +583,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{})) == 0.0);
         assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{${pt.null}})) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
-        assertEquals(${pt.null}, sum((${pt.primitive}[]) null));
+    <#if pt.valueType.isFloat >
+        assertEquals(NULL_DOUBLE, sum((${pt.primitive}[]) null));
+    <#else>
+        assertEquals(NULL_LONG, sum((${pt.primitive}[]) null));
+    </#if>
     }
 
 //    public void test${pt.boxed}SumObjectVector() {
