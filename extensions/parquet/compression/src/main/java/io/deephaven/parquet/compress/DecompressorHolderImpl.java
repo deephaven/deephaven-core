@@ -15,8 +15,10 @@ public class DecompressorHolderImpl implements DecompressorHolder, AutoCloseable
     private Decompressor decompressor;
 
     @Override
-    public void setDecompressor(@NotNull final CompressionCodecName codecName,
-            @NotNull final Decompressor decompressor) {
+    public void setDecompressor(final CompressionCodecName codecName, final Decompressor decompressor) {
+        if (decompressor == null || codecName == null) {
+            throw new IllegalArgumentException("Setting a null decompressor is not allowed.");
+        }
         if (codecName.equals(this.codecName)) {
             throw new IllegalArgumentException("Already holding a decompressor of type " + codecName);
         }
@@ -28,9 +30,8 @@ public class DecompressorHolderImpl implements DecompressorHolder, AutoCloseable
     }
 
     @Override
-    @Nullable
-    public CompressionCodecName getCodecName() {
-        return codecName;
+    public boolean holdsDecompressor(@NotNull final CompressionCodecName codecName) {
+        return decompressor != null && codecName.equals(this.codecName);
     }
 
     @Override

@@ -92,13 +92,15 @@ public class DeephavenCompressorAdapterFactory {
         private final CompressionCodecName compressionCodecName;
 
         private boolean canCreateCompressorObject;
+        private volatile boolean canCreateDecompressorObject;
         private Compressor innerCompressor;
 
         CodecWrappingCompressorAdapter(final CompressionCodec compressionCodec,
                 final CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
-            this.canCreateCompressorObject = true;
+            canCreateCompressorObject = true;
+            canCreateDecompressorObject = true;
         }
 
         @Override
@@ -124,20 +126,23 @@ public class DeephavenCompressorAdapterFactory {
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
                 final int uncompressedSize, final DecompressorHolder decompressorHolder) throws IOException {
             final Decompressor decompressor;
-            if (decompressorHolder.getDecompressor() != null &&
-                    compressionCodecName.equals(decompressorHolder.getCodecName())) {
-                decompressor = decompressorHolder.getDecompressor();
+            if (canCreateDecompressorObject) {
+                if (decompressorHolder.holdsDecompressor(compressionCodecName)) {
+                    decompressor = decompressorHolder.getDecompressor();
+                    decompressor.reset();
+                } else {
+                    decompressor = CodecPool.getDecompressor(compressionCodec);
+                    if (decompressor != null) {
+                        decompressor.reset();
+                        decompressorHolder.setDecompressor(compressionCodecName, decompressor);
+                    } else {
+                        canCreateDecompressorObject = false;
+                    }
+                }
             } else {
-                decompressor = CodecPool.getDecompressor(compressionCodec);
-                decompressorHolder.setDecompressor(compressionCodecName, decompressor);
+                decompressor = null;
             }
-            if (decompressor != null) {
-                // It is permitted for a decompressor to be null, otherwise we want to reset() it to
-                // be ready for a new stream.
-                // Note that this strictly shouldn't be necessary, since returnDecompressor will reset
-                // it as well, but this is the pattern copied from CodecFactory.decompress.
-                decompressor.reset();
-            }
+
             // Note that we don't close this, we assume the caller will close their input stream when ready,
             // and this won't need to be closed.
             final InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);

@@ -32,12 +32,7 @@ public interface CompressorAdapter extends SafeCloseable {
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
                 final int uncompressedSize, final DecompressorHolder decompressorHolder) {
-            if (decompressorHolder.getCodecName() == null) {
-                decompressorHolder.setDecompressor(CompressionCodecName.UNCOMPRESSED, null);
-            } else if (decompressorHolder.getCodecName() != CompressionCodecName.UNCOMPRESSED) {
-                throw new IllegalArgumentException("DecompressorHolder codec name (=" +
-                        decompressorHolder.getCodecName() + ") does not match UNCOMPRESSED");
-            }
+            // We don't need to decompress
             return BytesInput.from(inputStream, compressedSize);
         }
 

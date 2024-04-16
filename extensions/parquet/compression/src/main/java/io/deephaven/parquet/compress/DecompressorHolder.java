@@ -20,12 +20,11 @@ public interface DecompressorHolder {
     }
 
     /**
-     * @return the codec name, or null if none is set
+     * Check if the holder holds a decompressor for the given codec name.
      */
-    @Nullable
-    default CompressionCodecName getCodecName() {
-        throw new UnsupportedOperationException("getCodecName not implemented");
-    };
+    default boolean holdsDecompressor(CompressionCodecName codecName) {
+        throw new UnsupportedOperationException("holdsDecompressor not implemented");
+    }
 
     /**
      * @return the decompressor, or null if none is set
@@ -33,6 +32,5 @@ public interface DecompressorHolder {
     @Nullable
     default Decompressor getDecompressor() {
         throw new UnsupportedOperationException("getDecompressor not implemented");
-    };
-
+    }
 }
