@@ -318,7 +318,7 @@ public class TestCumProd extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(Numeric.cumprod((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumprod((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Numeric.cumprod((float[]) expected), (double[]) actual, .001f);
         } else if (expected instanceof double[]) {
             assertArrayEquals(Numeric.cumprod((double[]) expected), (double[]) actual, .001d);
         } else {

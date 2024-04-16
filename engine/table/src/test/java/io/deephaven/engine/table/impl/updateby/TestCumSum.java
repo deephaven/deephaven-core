@@ -358,7 +358,7 @@ public class TestCumSum extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(Numeric.cumsum((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumsum((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Numeric.cumsum((float[]) expected), (double[]) actual, .001f);
         } else if (expected instanceof double[]) {
             assertArrayEquals(Numeric.cumsum((double[]) expected), (double[]) actual, .001d);
         } else if (expected instanceof Boolean[]) {
