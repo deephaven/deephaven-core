@@ -1569,7 +1569,7 @@ public class Numeric {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
 
-                if (isNaN(c) || isNaN(prod)) {
+                if (isNaN(c)) {
                     return Double.NaN;
                 } else if (Double.isInfinite(c)) {
                     if (hasZero) {
@@ -1624,7 +1624,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return (${pt.primitive}) (prod);
+        return prod;
     }
     </#if>
 
