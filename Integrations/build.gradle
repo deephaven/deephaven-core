@@ -1,3 +1,6 @@
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -103,8 +106,17 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
     }
 }
 
-// Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
+// Using Integrations/docker-compose.yml, this will start all the containers and wait until the exposed ports are ready
 dockerCompose {
+    // To workaround errors encountered when dockerCompose auto-inherits the projectName (it uses "-" and "_" next to
+    // each other, which violates docker naming conventions), we can explicitly set a projectName.
+    // https://github.com/avast/gradle-docker-compose-plugin/issues/393
+    // https://github.com/avast/gradle-docker-compose-plugin/issues/372#issuecomment-1403264410
+    // Additionally, this preserves the prefix logic that dockerCompose chooses to use based on the absolutePath of the
+    // project. This may be beneficial in workflows where the user has checked out multiple repositories and wants to
+    // ensure docker names do not collide.
+    def projectSafePrefix = MessageDigest.getInstance("MD5").digest(project.projectDir.absolutePath.toString().getBytes(StandardCharsets.UTF_8)).encodeHex().toString()
+    projectName = "${projectSafePrefix}_${project.name.replace('.', '_')}"
     waitForTcpPortsTimeout = Duration.ofMinutes(2)
 }
 

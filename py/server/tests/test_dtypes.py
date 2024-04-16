@@ -6,6 +6,7 @@ import functools
 import math
 import time
 import unittest
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,7 @@ import pandas as pd
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import Instant, LocalDate, LocalTime, Duration, Period, TimeZone, ZonedDateTime
-from deephaven.time import dh_now
+from deephaven.time import dh_now, to_j_instant
 from tests.testbase import BaseTestCase
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
@@ -201,7 +202,49 @@ class DTypesTestCase(BaseTestCase):
         self.assertIn("[C", str(type(j_array)))
         self.assertEqual(expected, py_array)
 
-    def test_instant(self):
+    def test_instant_array(self):
+        # Test to_j_instant conversion
+        s = "2023-02-13T12:14:15.123456 ET"
+        i = _JDateTimeUtils.parseInstant(s)
+        n = _JDateTimeUtils.epochNanos(i)
+        dt = datetime.datetime.fromtimestamp(n / 1e9)
+        npdt = np.datetime64(dt)
+        pddt = pd.Timestamp(dt)
+        values = [None, s, i, dt, npdt, pddt]
+        j_array = dtypes.array(Instant, values)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, values)))
+
+        # Test numpy datetime array conversion
+        np_array = np.array([npdt, npdt, npdt], dtype=np.datetime64)
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test numpy int array conversion
+        np_array = np.array([n, n, n], dtype=np.int64)
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(int(y)) for x, y in zip(j_array, np_array)))
+
+        # Test numpy str array conversion
+        np_array = np.array([s, s, s], dtype=np.str_)
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test list str array conversion
+        np_array = [s, s, s]
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test list int array conversion
+        np_array = [n, n, n]
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test an empty list
+        data = []
+        j_array = dtypes.array(Instant, data)
+        self.assertEqual(0, len(j_array))
+
+        # OLD TESTS
         dt1 = Instant.j_type.ofEpochSecond(0, round(time.time()))
         dt2 = dh_now()
         values = [dt1, dt2, None]

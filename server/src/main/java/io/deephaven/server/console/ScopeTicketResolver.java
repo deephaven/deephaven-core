@@ -79,17 +79,16 @@ public class ScopeTicketResolver extends TicketResolverBase {
     @Override
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
-        return resolve(session, nameForTicket(ticket, logId), logId);
+        return resolve(nameForTicket(ticket, logId), logId);
     }
 
     @Override
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        return resolve(session, nameForDescriptor(descriptor, logId), logId);
+        return resolve(nameForDescriptor(descriptor, logId), logId);
     }
 
-    private <T> SessionState.ExportObject<T> resolve(
-            @Nullable final SessionState session, final String scopeName, final String logId) {
+    private <T> SessionState.ExportObject<T> resolve(final String scopeName, final String logId) {
         // fetch the variable from the scope right now
         T export = null;
         try {
@@ -208,7 +207,6 @@ public class ScopeTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
-        final int initialLimit = ticket.limit();
         final int initialPosition = ticket.position();
         final CharsetDecoder decoder = EncodingInfo.UTF_8.getDecoder().reset();
         try {
@@ -219,7 +217,6 @@ public class ScopeTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
-            ticket.limit(initialLimit);
         }
     }
 
@@ -239,6 +236,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve descriptor '" + logId + "': unexpected path length (found: "
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
+        }
+        if (!descriptor.getPath(0).equals(FLIGHT_DESCRIPTOR_ROUTE)) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve descriptor '" + logId + "': unexpected path (found: "
+                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: " + FLIGHT_DESCRIPTOR_ROUTE
+                            + ")");
         }
 
         return descriptor.getPath(1);

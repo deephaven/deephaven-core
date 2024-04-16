@@ -106,7 +106,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     }
 
     @Override
-    public Iterator getRowSequenceIterator() {
+    public RowSequence.Iterator getRowSequenceIterator() {
         return new Iterator();
     }
 
@@ -179,7 +179,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public void close() {
-        closeRowSequenceAsChunkImpl();
+        super.close();
         clear();
     }
 

@@ -82,6 +82,11 @@ public class BooleanBooleanBooleanColumnTupleSource extends AbstractTupleSource<
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 3;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final ByteByteByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -115,6 +120,20 @@ public class BooleanBooleanBooleanColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ByteByteByteTuple tuple) {
+        dest[0] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[1] = BooleanUtils.byteAsBoolean(tuple.getSecondElement());
+        dest[2] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ByteByteByteTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[map[1]] = BooleanUtils.byteAsBoolean(tuple.getSecondElement());
+        dest[map[2]] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final ByteByteByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
@@ -127,6 +146,20 @@ public class BooleanBooleanBooleanColumnTupleSource extends AbstractTupleSource<
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ByteByteByteTuple tuple) {
+        dest[0] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[1] = BooleanUtils.byteAsBoolean(tuple.getSecondElement());
+        dest[2] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ByteByteByteTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[map[1]] = BooleanUtils.byteAsBoolean(tuple.getSecondElement());
+        dest[map[2]] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
 
     @Override
     protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {

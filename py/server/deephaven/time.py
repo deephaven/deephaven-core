@@ -24,6 +24,7 @@ _JInstant = jpy.get_type("java.time.Instant")
 _JZonedDateTime = jpy.get_type("java.time.ZonedDateTime")
 _JDuration = jpy.get_type("java.time.Duration")
 _JPeriod = jpy.get_type("java.time.Period")
+_JSimpleDateFormat = jpy.get_type("java.text.SimpleDateFormat")
 
 _NANOS_PER_SECOND = 1000000000
 _NANOS_PER_MICRO = 1000
@@ -873,6 +874,33 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
         raise e
     except TypeError as e:
         raise e
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
+
+# region Utility
+
+def simple_date_format(pattern: str) -> jpy.JType:
+    """ Creates a Java SimpleDateFormat from a date-time format pattern.
+
+    This method is intended for use in Python code when a SimpleDateFormat is needed.
+    It should not be used directly in query strings.
+    The most common use case will use this function to construct a SimpleDateFormat
+    in Python and then use the result in query strings.
+
+    Args:
+        pattern (str): A date-time format pattern string.
+
+    Returns:
+        JObject
+
+    Raises:
+        DHError
+    """
+    try:
+        # Returning a Java object directly to avoid Python/Java boundary crossings in query strings
+        return _JSimpleDateFormat(pattern)
     except Exception as e:
         raise DHError(e) from e
 
