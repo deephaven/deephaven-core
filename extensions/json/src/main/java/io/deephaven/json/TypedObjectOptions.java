@@ -13,7 +13,30 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- * A type-discriminated object.
+ * A type-discriminated object is a JSON object whose fields depend on a specific type field.
+ *
+ * <p>
+ * For example, the following might be modelled as a type-discriminated object with "type" as the type field, "symbol"
+ * as a shared field, with a "trade" object containing a "bid" and an "ask" field, and with a "quote" object containing
+ * a "price" and a "size" field:
+ *
+ * <pre>
+ * {
+ *   "type": "trade",
+ *   "symbol": "FOO",
+ *   "price": 70.03,
+ *   "size": 42
+ * }
+ * </pre>
+ * 
+ * <pre>
+ * {
+ *   "type": "quote",
+ *   "symbol": "BAR",
+ *   "bid": 10.01,
+ *   "ask": 10.05
+ * }
+ * </pre>
  */
 @Immutable
 @BuildableStyle

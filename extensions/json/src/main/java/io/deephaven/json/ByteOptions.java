@@ -72,18 +72,10 @@ public abstract class ByteOptions extends ValueOptionsSingleValueBase<Byte> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Byte, ByteOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Byte, ByteOptions, Builder> {
 
         Builder onNull(byte onNull);
 
         Builder onMissing(byte onMissing);
-
-        default Builder onNull(Byte onNull) {
-            return onNull == null ? this : onNull((byte) onNull);
-        }
-
-        default Builder onMissing(Byte onMissing) {
-            return onMissing == null ? this : onMissing((byte) onMissing);
-        }
     }
 }

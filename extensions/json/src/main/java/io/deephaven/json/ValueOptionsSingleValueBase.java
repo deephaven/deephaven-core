@@ -29,7 +29,22 @@ public abstract class ValueOptionsSingleValueBase<T> extends ValueOptionsRestric
             extends ValueOptions.Builder<V, B> {
         B onNull(T onNull);
 
+        B onNull(Optional<? extends T> onNull);
+
         B onMissing(T onMissing);
+
+        B onMissing(Optional<? extends T> onMissing);
+    }
+
+    public interface BuilderSpecial<T, V extends ValueOptionsSingleValueBase<T>, B extends BuilderSpecial<T, V, B>>
+            extends ValueOptions.Builder<V, B> {
+
+        // Immutables has special handling for primitive types and some "special" types like String.
+        // This differs from the above Builder where the Optional generic is "? extends T".
+
+        B onNull(Optional<T> onNull);
+
+        B onMissing(Optional<T> onMissing);
     }
 
     @Check

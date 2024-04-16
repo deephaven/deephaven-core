@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.json.IntOptions;
 import io.deephaven.json.jackson.IntValueProcessor.ToInt;
 import io.deephaven.qst.type.Type;
@@ -84,6 +85,9 @@ final class IntMixin extends Mixin<IntOptions> implements ToInt {
         }
 
         final class IntArrayContext extends RepeaterContextBase {
+
+            private final SizedIntChunk<?> chunk = new SizedIntChunk<>();
+
             private int[] arr = EMPTY_INT_ARRAY;
             private int len = 0;
 

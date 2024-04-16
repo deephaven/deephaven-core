@@ -16,7 +16,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Processes a JSON object as set of named fields. For example:
+ * Processes a JSON object as set of named fields.
+ *
+ * <p>
+ * For example, the following might be modelled as an object with a String "name" field, an int "age" field, and a
+ * double "height" field:
  *
  * <pre>
  * {

@@ -62,18 +62,10 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Character, CharOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Character, CharOptions, Builder> {
 
         Builder onNull(char onNull);
 
         Builder onMissing(char onMissing);
-
-        default Builder onNull(Character onNull) {
-            return onNull == null ? this : onNull((char) onNull);
-        }
-
-        default Builder onMissing(Character onMissing) {
-            return onMissing == null ? this : onMissing((char) onMissing);
-        }
     }
 }

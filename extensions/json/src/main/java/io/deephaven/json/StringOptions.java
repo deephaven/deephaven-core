@@ -72,7 +72,10 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<String, StringOptions, Builder> {
+    public interface Builder extends BuilderSpecial<String, StringOptions, Builder> {
 
+        Builder onNull(String onNull);
+
+        Builder onMissing(String onMissing);
     }
 }

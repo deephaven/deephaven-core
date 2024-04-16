@@ -73,18 +73,10 @@ public abstract class DoubleOptions extends ValueOptionsSingleValueBase<Double> 
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Double, DoubleOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Double, DoubleOptions, Builder> {
 
         Builder onNull(double onNull);
 
         Builder onMissing(double onMissing);
-
-        default Builder onNull(Double onNull) {
-            return onNull == null ? this : onNull((double) onNull);
-        }
-
-        default Builder onMissing(Double onMissing) {
-            return onMissing == null ? this : onMissing((double) onMissing);
-        }
     }
 }

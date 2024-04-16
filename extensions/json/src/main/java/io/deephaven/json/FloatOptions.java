@@ -72,17 +72,9 @@ public abstract class FloatOptions extends ValueOptionsSingleValueBase<Float> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<FloatOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Float, FloatOptions, Builder> {
         Builder onNull(float onNull);
 
         Builder onMissing(float onMissing);
-
-        default Builder onNull(Float onNull) {
-            return onNull == null ? this : onNull((float) onNull);
-        }
-
-        default Builder onMissing(Float onMissing) {
-            return onMissing == null ? this : onMissing((float) onMissing);
-        }
     }
 }

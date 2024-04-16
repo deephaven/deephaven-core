@@ -72,18 +72,10 @@ public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Short, ShortOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Short, ShortOptions, Builder> {
 
         Builder onNull(short onNull);
 
         Builder onMissing(short onMissing);
-
-        default Builder onNull(Short onNull) {
-            return onNull == null ? this : onNull((short) onNull);
-        }
-
-        default Builder onMissing(Short onMissing) {
-            return onMissing == null ? this : onMissing((short) onMissing);
-        }
     }
 }

@@ -72,18 +72,10 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Boolean, BoolOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Boolean, BoolOptions, Builder> {
 
         Builder onNull(boolean onNull);
 
         Builder onMissing(boolean onMissing);
-
-        default Builder onNull(Boolean onNull) {
-            return onNull == null ? this : onNull((boolean) onNull);
-        }
-
-        default Builder onMissing(Boolean onMissing) {
-            return onMissing == null ? this : onMissing((boolean) onMissing);
-        }
     }
 }

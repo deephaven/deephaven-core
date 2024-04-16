@@ -72,18 +72,10 @@ public abstract class LongOptions extends ValueOptionsSingleValueBase<Long> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<LongOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Long, LongOptions, Builder> {
 
         Builder onNull(long onNull);
 
         Builder onMissing(long onMissing);
-
-        default Builder onNull(Long onNull) {
-            return onNull == null ? this : onNull((long) onNull);
-        }
-
-        default Builder onMissing(Long onMissing) {
-            return onMissing == null ? this : onMissing((long) onMissing);
-        }
     }
 }

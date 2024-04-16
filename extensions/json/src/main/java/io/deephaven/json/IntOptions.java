@@ -72,18 +72,10 @@ public abstract class IntOptions extends ValueOptionsSingleValueBase<Integer> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Integer, IntOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Integer, IntOptions, Builder> {
 
         Builder onNull(int onNull);
 
         Builder onMissing(int onMissing);
-
-        default Builder onNull(Integer onNull) {
-            return onNull == null ? this : onNull((int) onNull);
-        }
-
-        default Builder onMissing(Integer onMissing) {
-            return onMissing == null ? this : onMissing((int) onMissing);
-        }
     }
 }

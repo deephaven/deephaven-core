@@ -395,6 +395,10 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
                 }
 
                 void processMissing(JsonParser parser) throws IOException {
+                    if (visited.size() == fields.size()) {
+                        // All fields visited, none missing
+                        return;
+                    }
                     for (Entry<ObjectFieldOptions, Context> e : contexts.entrySet()) {
                         if (!visited.contains(e.getKey())) {
                             e.getValue().processElementMissing(parser, ix);

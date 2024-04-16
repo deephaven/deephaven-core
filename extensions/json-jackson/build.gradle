@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    api project(':engine-processor')
+
     Classpaths.inheritJacksonPlatform(project, 'api')
     Classpaths.inheritJacksonPlatform(project, 'testImplementation')
 
