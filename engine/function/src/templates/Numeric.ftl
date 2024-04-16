@@ -2571,7 +2571,7 @@ public class Numeric {
                     vsum += (double) c * w;
                    <#else>
                     vsum += c * (double) w;
-                   </#if>>
+                   </#if>
                 }
             }
         }
