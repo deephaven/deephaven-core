@@ -30,7 +30,6 @@ public class CharOptionsTest {
         parse(CharValue.standard(), "null", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
     }
 
-
     @Test
     void customMissing() throws IOException {
         parse(CharValue.builder().onMissing('m').build(), "", CharChunk.chunkWrap(new char[] {'m'}));

@@ -266,7 +266,6 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
         protected abstract JsonParser createParser(X in) throws IOException;
 
-        // TODO: need to document that this object processor is stateful; need shutdown?
         private final ValueProcessor processor;
         
         public ObjectProcessorJsonValue() {
@@ -287,7 +286,7 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         public final void processAll(ObjectChunk<? extends X, ?> in, List<WritableChunk<?>> out) {
             processor.setContext(out);
             try {
-                processAllImpl(in, out);
+                processAllImpl(in);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             } finally {
@@ -295,11 +294,10 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
             }
         }
 
-        void processAllImpl(ObjectChunk<? extends X, ?> in, List<WritableChunk<?>> out) throws IOException {
-            final ValueProcessor valueProcessor = processor("<root>");
+        void processAllImpl(ObjectChunk<? extends X, ?> in) throws IOException {
             for (int i = 0; i < in.size(); ++i) {
                 try (final JsonParser parser = createParser(in.get(i))) {
-                    ValueProcessor.processFullJson(parser, valueProcessor);
+                    ValueProcessor.processFullJson(parser, processor);
                 }
             }
         }

@@ -95,7 +95,7 @@ final class ArrayMixin extends Mixin<ArrayValue> {
 
         @Override
         public int numColumns() {
-            return 0;
+            return ArrayMixin.this.numColumns();
         }
 
         @Override
@@ -134,6 +134,11 @@ final class ArrayMixin extends Mixin<ArrayValue> {
                         .map(ObjectProcessor::chunkType)
                         .map(chunkType -> chunkType.makeWritableChunk(0))
                         .collect(Collectors.toList());
+            }
+
+            @Override
+            public void init(JsonParser parser) throws IOException {
+
             }
 
             @Override
