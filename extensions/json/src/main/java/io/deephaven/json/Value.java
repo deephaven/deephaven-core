@@ -7,6 +7,7 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -118,7 +119,7 @@ public abstract class Value {
         B allowedTypes(Set<JsonValueTypes> allowedTypes);
 
         default B allowedTypes(JsonValueTypes... allowedTypes) {
-            return allowedTypes(EnumSet.copyOf(Arrays.asList(allowedTypes)));
+            return allowedTypes(Collections.unmodifiableSet(EnumSet.copyOf(Arrays.asList(allowedTypes))));
         }
 
         V build();
