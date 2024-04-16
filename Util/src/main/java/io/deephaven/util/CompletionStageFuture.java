@@ -17,14 +17,14 @@ import java.util.function.Function;
 /**
  * A safe version of CompletableFuture that does not expose the completion API.
  *
- * @param <T> The result type returned by this future's {@code join}
+ * @param <T> The result type returned by this future's {@link #get()}
  */
 public interface CompletionStageFuture<T> extends Future<T>, CompletionStage<T> {
 
     /**
      * Create a new incomplete future.
      *
-     * @param <T> The result type returned by this future's {@code join}
+     * @param <T> The result type returned by this future's {@link #get()}
      * @return a resolver for the future
      */
     static <T> Resolver<T> make() {

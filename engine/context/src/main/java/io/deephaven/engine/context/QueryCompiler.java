@@ -856,7 +856,7 @@ public class QueryCompiler {
 
             int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
             if (parallelismFactor == 1 || requestsPerTask >= requests.size()) {
-                maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
+                doCreateClasses(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
                         0, requests.size());
             } else {
                 int numTasks = (requests.size() + requestsPerTask - 1) / requestsPerTask;
@@ -865,7 +865,7 @@ public class QueryCompiler {
                     final int startInclusive = jobId * requestsPerTask;
                     final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
                     tasks[jobId] = operationInitializer.submit(() -> {
-                        maybeCreateClassHelper(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
+                        doCreateClasses(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
                                 startInclusive, endExclusive);
                     });
                 }
@@ -898,7 +898,7 @@ public class QueryCompiler {
         }
     }
 
-    private void maybeCreateClassHelper(
+    private void doCreateClasses(
             @NotNull final JavaCompiler compiler,
             @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
@@ -910,22 +910,22 @@ public class QueryCompiler {
         // If any of our requests fail to compile then the JavaCompiler will not write any class files at all. The
         // non-failing requests will be retried in a second pass that is expected to succeed. This enables us to
         // fulfill futures independent of each other; otherwise a single failure would taint all requests in a batch.
-        final boolean wantRetry = maybeCreateClassHelper2(compiler,
-                fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive, toRetry);
+        final boolean wantRetry = doCreateClassesSingleRound(compiler, fileManager, requests, rootPathAsString,
+                tempDirAsString, startInclusive, endExclusive, toRetry);
         if (!wantRetry) {
             return;
         }
 
         final List<CompilationRequestAttempt> ignored = new ArrayList<>();
-        if (maybeCreateClassHelper2(compiler,
-                fileManager, toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(), ignored)) {
+        if (doCreateClassesSingleRound(compiler, fileManager, toRetry, rootPathAsString, tempDirAsString, 0,
+                toRetry.size(), ignored)) {
             // We only retried compilation units that did not fail on the first pass, so we should not have any failures
             // on the second pass.
             throw new IllegalStateException("Unexpected failure during second pass of compilation");
         }
     }
 
-    private boolean maybeCreateClassHelper2(
+    private boolean doCreateClassesSingleRound(
             @NotNull final JavaCompiler compiler,
             @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
@@ -984,14 +984,12 @@ public class QueryCompiler {
                 // exceptionally.
                 final boolean hasException = request.resolver.getFuture().isDone();
 
-                if (wantRetry && !Files.exists(srcDir)) {
-                    // The move failed and the source directory does not exist.
-                    if (!hasException) {
-                        // This source actually succeeded in compiling, but was not written because some other source
-                        // failed to compile. Let's schedule this work to try again.
-                        toRetry.add(request);
-                        return;
-                    }
+                if (wantRetry && !Files.exists(srcDir) && !hasException) {
+                    // The move failed, the source directory does not exist, and this compilation unit actually
+                    // succeeded. However, it was not written because some other compilation unit failed. Let's schedule
+                    // this work to try again.
+                    toRetry.add(request);
+                    return;
                 }
 
                 if (!Files.exists(destDir) && !hasException) {
