@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.base.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,8 +13,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.stream.Stream;
 
 public class LocalFSChannelProvider implements SeekableChannelsProvider {
     @Override
@@ -54,6 +57,20 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
             result.position(0);
         }
         return result;
+    }
+
+    @Override
+    public final Stream<URI> list(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.list(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
+    }
+
+    @Override
+    public final Stream<URI> walk(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.walk(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
     }
 
     @Override

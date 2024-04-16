@@ -122,7 +122,7 @@ public class ParquetTools {
      * @see ParquetFlatPartitionedLayout
      */
     public static Table readTable(@NotNull final String source) {
-        return readTableInternal(convertParquetSourceToURI(source), ParquetInstructions.EMPTY);
+        return readTableInternal(source, ParquetInstructions.EMPTY);
     }
 
     /**
@@ -153,7 +153,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableInternal(convertParquetSourceToURI(source), readInstructions);
+        return readTableInternal(source, readInstructions);
     }
 
     /**
@@ -209,19 +209,6 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
         return readTableInternal(sourceFile, readInstructions);
-    }
-
-    /**
-     * Convert a parquet source to a URI.
-     *
-     * @param source The path or URI of parquet file or directory to examine
-     * @return The URI
-     */
-    private static URI convertParquetSourceToURI(@NotNull final String source) {
-        if (source.endsWith(".parquet")) {
-            return convertToURI(source, false);
-        }
-        return convertToURI(source, true);
     }
 
     /**
@@ -1238,19 +1225,30 @@ public class ParquetTools {
     }
 
     /**
-     * Same as {@link #readTableInternal(File, ParquetInstructions)} but with a URI.
+     * Similar to {@link #readTableInternal(File, ParquetInstructions)} but with a string source.
      *
-     * @param source The source URI
+     * @param source The source path or URI
      * @param instructions Instructions for reading
      * @return A {@link Table}
      */
     private static Table readTableInternal(
-            @NotNull final URI source,
+            @NotNull final String source,
             @NotNull final ParquetInstructions instructions) {
-        if (!FILE_URI_SCHEME.equals(source.getScheme())) {
-            return readSingleFileTable(source, instructions);
+        final boolean isDirectory = !source.endsWith(PARQUET_FILE_EXTENSION);
+        final URI sourceURI = convertToURI(source, isDirectory);
+        if (FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
+            return readTableInternal(new File(sourceURI), instructions);
         }
-        return readTableInternal(new File(source), instructions);
+        if (!isDirectory) {
+            return readSingleFileTable(sourceURI, instructions);
+        }
+        if (source.endsWith(METADATA_FILE_NAME) || source.endsWith(COMMON_METADATA_FILE_NAME)) {
+            throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
+                    "from non local storage");
+        }
+        // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(sourceURI, MAX_PARTITIONING_LEVELS_INFERENCE,
+                instructions), instructions);
     }
 
     private static boolean ignoreDotFiles(Path path) {
@@ -1384,9 +1382,10 @@ public class ParquetTools {
                 lastKey.getFileReader().getSchema(),
                 lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructions);
+        final Set<String> partitionKeys = lastKey.getPartitionKeys();
         final List<ColumnDefinition<?>> allColumns =
-                new ArrayList<>(lastKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
-        for (final String partitionKey : lastKey.getPartitionKeys()) {
+                new ArrayList<>(partitionKeys.size() + schemaInfo.getFirst().size());
+        for (final String partitionKey : partitionKeys) {
             final Comparable<?> partitionValue = lastKey.getPartitionValue(partitionKey);
             if (partitionValue == null) {
                 throw new IllegalArgumentException(String.format(
@@ -1400,7 +1399,11 @@ public class ParquetTools {
             allColumns.add(ColumnDefinition.fromGenericType(partitionKey, dataType, null,
                     ColumnDefinition.ColumnType.Partitioning));
         }
-        allColumns.addAll(schemaInfo.getFirst());
+        // Only read non-partitioning columns from the parquet files
+        final List<ColumnDefinition<?>> columnDefinitionsFromParquetFile = schemaInfo.getFirst();
+        columnDefinitionsFromParquetFile.stream()
+                .filter(columnDefinition -> !partitionKeys.contains(columnDefinition.getName()))
+                .forEach(allColumns::add);
         return new Pair<>(TableDefinition.of(allColumns), schemaInfo.getSecond());
     }
 
@@ -1433,7 +1436,7 @@ public class ParquetTools {
      * Callers wishing to be more explicit and skip the inference step may prefer to call
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions, TableDefinition)}.
      *
-     * @param directory the source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the root directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(File, int, ParquetInstructions)
@@ -1442,16 +1445,37 @@ public class ParquetTools {
     public static Table readKeyValuePartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        return readPartitionedTable(
-                new ParquetKeyValuePartitionedLayout(directory, MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions),
-                readInstructions);
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(directory, MAX_PARTITIONING_LEVELS_INFERENCE,
+                readInstructions), readInstructions);
+    }
+
+    /**
+     * Creates a partitioned table via the key-value partitioned parquet files from the root {@code directory},
+     * inferring the table definition from those files.
+     *
+     * <p>
+     * Callers wishing to be more explicit and skip the inference step may prefer to call
+     * {@link #readKeyValuePartitionedTable(String, ParquetInstructions, TableDefinition)}.
+     *
+     * @param directory the path or URI for the root directory to search for .parquet files
+     * @param readInstructions the instructions for customizations while reading
+     * @return the table
+     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, int, ParquetInstructions)
+     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
+     */
+    @Deprecated
+    public static Table readKeyValuePartitionedTable(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory, true),
+                MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions), readInstructions);
     }
 
     /**
      * Creates a partitioned table via the key-value partitioned parquet files from the root {@code directory} using the
      * provided {@code tableDefinition}.
      *
-     * @param directory the source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the root directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
@@ -1471,6 +1495,29 @@ public class ParquetTools {
     }
 
     /**
+     * Creates a partitioned table via the key-value partitioned parquet files from the root {@code directory} using the
+     * provided {@code tableDefinition}.
+     *
+     * @param directory the path or URI for the root directory to search for .parquet files
+     * @param readInstructions the instructions for customizations while reading
+     * @param tableDefinition the table definition
+     * @return the table
+     * @see ParquetKeyValuePartitionedLayout#ParquetKeyValuePartitionedLayout(URI, TableDefinition, ParquetInstructions)
+     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
+     */
+    @Deprecated
+    public static Table readKeyValuePartitionedTable(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
+        if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
+            throw new IllegalArgumentException("No partitioning columns");
+        }
+        return readPartitionedTable(new ParquetKeyValuePartitionedLayout(convertToURI(directory, true), tableDefinition,
+                readInstructions), readInstructions, tableDefinition);
+    }
+
+    /**
      * Creates a partitioned table via the flat parquet files from the root {@code directory}, inferring the table
      * definition from those files.
      *
@@ -1478,7 +1525,7 @@ public class ParquetTools {
      * Callers wishing to be more explicit and skip the inference step may prefer to call
      * {@link #readFlatPartitionedTable(File, ParquetInstructions, TableDefinition)}.
      *
-     * @param directory the source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
@@ -1491,10 +1538,32 @@ public class ParquetTools {
     }
 
     /**
+     * Creates a partitioned table via the flat parquet files from the root {@code directory}, inferring the table
+     * definition from those files.
+     *
+     * <p>
+     * Callers wishing to be more explicit and skip the inference step may prefer to call
+     * {@link #readFlatPartitionedTable(String, ParquetInstructions, TableDefinition)}.
+     *
+     * @param directory the path or URI for the directory to search for .parquet files
+     * @param readInstructions the instructions for customizations while reading
+     * @return the table
+     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
+     */
+    @Deprecated
+    public static Table readFlatPartitionedTable(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory, true), readInstructions),
+                readInstructions);
+    }
+
+    /**
      * Creates a partitioned table via the flat parquet files from the root {@code directory} using the provided
      * {@code tableDefinition}.
      *
-     * @param directory the source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory the directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
@@ -1507,6 +1576,26 @@ public class ParquetTools {
             @NotNull final TableDefinition tableDefinition) {
         return readPartitionedTable(new ParquetFlatPartitionedLayout(directory, readInstructions), readInstructions,
                 tableDefinition);
+    }
+
+    /**
+     * Creates a partitioned table via the flat parquet files from the root {@code directory} using the provided
+     * {@code tableDefinition}.
+     *
+     * @param directory the path or URI for the directory to search for .parquet files
+     * @param readInstructions the instructions for customizations while reading
+     * @param tableDefinition the table definition
+     * @return the table
+     * @see #readPartitionedTable(TableLocationKeyFinder, ParquetInstructions, TableDefinition)
+     * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
+     */
+    @Deprecated
+    public static Table readFlatPartitionedTable(
+            @NotNull final String directory,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
+        return readPartitionedTable(new ParquetFlatPartitionedLayout(convertToURI(directory, true), readInstructions),
+                readInstructions, tableDefinition);
     }
 
     /**
