@@ -1968,7 +1968,7 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
 
-                if (isNaN(v)) {
+                if (isNaN(v) || isNaN(result[i - 1]) {
                     Arrays.fill(result, i, n, Double.NaN);
                     return result;
                 } else if (isNull(result[i - 1])) {
@@ -2553,6 +2553,10 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+
+                if (isNaN(vsum)) {
+                    return Double.NaN;
+                }
 
                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
