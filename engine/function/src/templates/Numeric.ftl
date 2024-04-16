@@ -1490,7 +1490,7 @@ public class Numeric {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
 
-                if (isNaN(c)) {
+                if (isNaN(c) || isNaN(sum)) {
                     return Double.NaN;
                 }
 
@@ -1569,7 +1569,7 @@ public class Numeric {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
 
-                if (isNaN(c)) {
+                if (isNaN(c) || isNaN(prod)) {
                     return Double.NaN;
                 } else if (Double.isInfinite(c)) {
                     if (hasZero) {
@@ -1847,7 +1847,7 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
 
-                if (isNaN(v)) {
+                if (isNaN(v) || isNaN(result[i - 1])) {
                     Arrays.fill(result, i, n, Double.NaN);
                     return result;
                 } else if (isNull(result[i - 1])) {
@@ -1855,7 +1855,7 @@ public class Numeric {
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
                 } else {
-                    result[i] = (double) (result[i - 1] + v);
+                    result[i] = result[i - 1] + v;
                 }
     
                 i++;
@@ -1890,7 +1890,7 @@ public class Numeric {
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
                 } else {
-                    result[i] = (long) (result[i - 1] + v);
+                    result[i] = result[i - 1] + v;
                 }
 
                 i++;
@@ -1976,7 +1976,7 @@ public class Numeric {
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
                 } else {
-                    result[i] = (double) (result[i - 1] * v);
+                    result[i] = result[i - 1] * v;
                 }
     
                 i++;
@@ -2011,7 +2011,7 @@ public class Numeric {
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
                 } else {
-                    result[i] = (long) (result[i - 1] * v);
+                    result[i] = result[i - 1] * v;
                 }
 
                 i++;
