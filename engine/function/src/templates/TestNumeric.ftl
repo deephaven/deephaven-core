@@ -1064,6 +1064,30 @@ public class TestNumeric extends BaseArrayTestCase {
         <#list primitiveTypes as pt2>
         <#if pt2.valueType.isNumber >
 
+        <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
+        assertEquals(NULL_LONG, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
+
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
+        assertEquals(NULL_LONG, wsum((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));
+        assertEquals(NULL_LONG, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.primitive}[])null));
+
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
+        assertEquals(NULL_LONG, wsum((${pt.primitive}[])null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.vector}) null));
+
+        assertEquals(1*4+2*5+3*6, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
+        assertEquals(NULL_LONG, wsum((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
+        assertEquals(NULL_LONG, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
+
+        try {
+            wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
+        <#else>
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
@@ -1086,6 +1110,7 @@ public class TestNumeric extends BaseArrayTestCase {
         } catch(IllegalArgumentException e){
             // pass
         }
+        </#if>
 
         </#if>
         </#list>

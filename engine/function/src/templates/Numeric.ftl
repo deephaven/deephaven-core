@@ -2421,13 +2421,23 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+   public static long wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        return wsum(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
+   }
+   <#else>
+   public static double wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
         return wsum(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
+    </#if>
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2436,6 +2446,15 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    public static long wsum(${pt.primitive}[] values, ${pt2.vector} weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        return wsum(new ${pt.vectorDirect}(values), weights);
+    }
+   <#else>
     public static double wsum(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
@@ -2443,6 +2462,7 @@ public class Numeric {
 
         return wsum(new ${pt.vectorDirect}(values), weights);
     }
+   </#if>
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2451,6 +2471,15 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    public static long wsum(${pt.vector} values, ${pt2.primitive}[] weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        return wsum(values, new ${pt2.vector}Direct(weights));
+    }
+    <#else>
     public static double wsum(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
@@ -2458,6 +2487,7 @@ public class Numeric {
 
         return wsum(values, new ${pt2.vector}Direct(weights));
     }
+    </#if>
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2466,6 +2496,37 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    public static long wsum(${pt.vector} values, ${pt2.vector} weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        final long n = values.size();
+
+        if (n != weights.size()) {
+            throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
+        }
+
+        long vsum = 0;
+
+        try (
+            final ${pt.vectorIterator} vi = values.iterator();
+            final ${pt2.vectorIterator} wi = weights.iterator()
+        ) {
+            while (vi.hasNext()) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+
+                if (!isNull(c) && !isNull(w)) {
+                    vsum += c * w;
+                }
+            }
+        }
+
+        return vsum;
+    }
+    <#else>
     public static double wsum(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
@@ -2501,6 +2562,7 @@ public class Numeric {
 
         return vsum;
     }
+    </#if>
 
     /**
      * Returns the weighted average.  Null values are excluded.
