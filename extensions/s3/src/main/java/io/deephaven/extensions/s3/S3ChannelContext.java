@@ -4,7 +4,6 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.PooledObjectReference;
-
 import io.deephaven.parquet.compress.DecompressorHolderImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
