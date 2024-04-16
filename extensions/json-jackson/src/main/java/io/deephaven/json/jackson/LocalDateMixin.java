@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.LocalDateOptions;
+import io.deephaven.json.LocalDateValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
@@ -16,9 +16,9 @@ import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class LocalDateMixin extends Mixin<LocalDateOptions> implements ToObject<LocalDate> {
+final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<LocalDate> {
 
-    public LocalDateMixin(LocalDateOptions options, JsonFactory factory) {
+    public LocalDateMixin(LocalDateValue options, JsonFactory factory) {
         super(factory, options);
     }
 
@@ -51,7 +51,7 @@ final class LocalDateMixin extends Mixin<LocalDateOptions> implements ToObject<L
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, LocalDateOptions.class);
+        throw Parsing.mismatch(parser, LocalDateValue.class);
     }
 
     @Override

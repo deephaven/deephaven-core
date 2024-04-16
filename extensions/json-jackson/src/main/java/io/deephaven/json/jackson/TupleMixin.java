@@ -7,8 +7,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.TupleOptions;
-import io.deephaven.json.ValueOptions;
+import io.deephaven.json.TupleValue;
+import io.deephaven.json.Value;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -21,9 +21,9 @@ import java.util.stream.Stream;
 
 import static io.deephaven.json.jackson.Parsing.assertCurrentToken;
 
-final class TupleMixin extends Mixin<TupleOptions> {
+final class TupleMixin extends Mixin<TupleValue> {
 
-    public TupleMixin(TupleOptions options, JsonFactory factory) {
+    public TupleMixin(TupleValue options, JsonFactory factory) {
         super(factory, options);
     }
 
@@ -38,7 +38,7 @@ final class TupleMixin extends Mixin<TupleOptions> {
             return mixin(options.namedValues().get(0)).paths();
         }
         final List<Stream<List<String>>> prefixed = new ArrayList<>();
-        for (Entry<String, ValueOptions> e : options.namedValues().entrySet()) {
+        for (Entry<String, Value> e : options.namedValues().entrySet()) {
             prefixed.add(mixin(e.getValue()).paths().map(x -> prefixWith(e.getKey(), x)));
         }
         return prefixed.stream().flatMap(Function.identity());
@@ -56,7 +56,7 @@ final class TupleMixin extends Mixin<TupleOptions> {
         }
         final List<ValueProcessor> processors = new ArrayList<>(options.namedValues().size());
         int ix = 0;
-        for (Entry<String, ValueOptions> e : options.namedValues().entrySet()) {
+        for (Entry<String, Value> e : options.namedValues().entrySet()) {
             final Mixin<?> mixin = mixin(e.getValue());
             final int numTypes = mixin.numColumns();
             final ValueProcessor processor =
@@ -77,7 +77,7 @@ final class TupleMixin extends Mixin<TupleOptions> {
         }
         final List<RepeaterProcessor> processors = new ArrayList<>(options.namedValues().size());
         int ix = 0;
-        for (Entry<String, ValueOptions> e : options.namedValues().entrySet()) {
+        for (Entry<String, Value> e : options.namedValues().entrySet()) {
             final Mixin<?> mixin = mixin(e.getValue());
             final int numTypes = mixin.numColumns();
             final RepeaterProcessor processor =

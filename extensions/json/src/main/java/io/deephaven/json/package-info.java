@@ -18,6 +18,6 @@
  * "builder" option allows the user fine-grained control over the behavior, and otherwise uses the "standard" options
  * when the user does not override.
  *
- * @see io.deephaven.json.ValueOptions
+ * @see io.deephaven.json.Value
  */
 package io.deephaven.json;

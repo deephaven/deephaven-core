@@ -21,10 +21,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class TupleOptions extends ValueOptionsRestrictedUniverseBase {
+public abstract class TupleValue extends ValueRestrictedUniverseBase {
 
     public static Builder builder() {
-        return ImmutableTupleOptions.builder();
+        return ImmutableTupleValue.builder();
     }
 
     /**
@@ -33,7 +33,7 @@ public abstract class TupleOptions extends ValueOptionsRestrictedUniverseBase {
      * @param values the values
      * @return the tuple options
      */
-    public static TupleOptions of(ValueOptions... values) {
+    public static TupleValue of(Value... values) {
         return of(Arrays.asList(values));
     }
 
@@ -43,9 +43,9 @@ public abstract class TupleOptions extends ValueOptionsRestrictedUniverseBase {
      * @param values the values
      * @return the tuple options
      */
-    public static TupleOptions of(Iterable<? extends ValueOptions> values) {
+    public static TupleValue of(Iterable<? extends Value> values) {
         final Builder builder = builder();
-        final Iterator<? extends ValueOptions> it = values.iterator();
+        final Iterator<? extends Value> it = values.iterator();
         for (int i = 0; it.hasNext(); ++i) {
             builder.putNamedValues(Integer.toString(i), it.next());
         }
@@ -55,7 +55,7 @@ public abstract class TupleOptions extends ValueOptionsRestrictedUniverseBase {
     /**
      * The named, ordered values of the tuple.
      */
-    public abstract Map<String, ValueOptions> namedValues();
+    public abstract Map<String, Value> namedValues();
 
     /**
      * {@inheritDoc} Must be a subset of {@link JsonValueTypes#arrayOrNull()}. By default is
@@ -77,14 +77,14 @@ public abstract class TupleOptions extends ValueOptionsRestrictedUniverseBase {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<TupleOptions, Builder> {
+    public interface Builder extends Value.Builder<TupleValue, Builder> {
 
-        Builder putNamedValues(String key, ValueOptions value);
+        Builder putNamedValues(String key, Value value);
 
-        Builder putNamedValues(Map.Entry<String, ? extends ValueOptions> entry);
+        Builder putNamedValues(Map.Entry<String, ? extends Value> entry);
 
-        Builder putAllNamedValues(Map<String, ? extends ValueOptions> entries);
+        Builder putAllNamedValues(Map<String, ? extends Value> entries);
 
-        TupleOptions build();
+        TupleValue build();
     }
 }

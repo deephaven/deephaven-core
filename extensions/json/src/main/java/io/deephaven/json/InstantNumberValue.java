@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<Instant> {
+public abstract class InstantNumberValue extends ValueSingleValueBase<Instant> {
 
     public enum Format {
         /**
@@ -45,7 +45,7 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
          * @param allowDecimal if decimals should be allowed
          * @return the lenient Instant number options
          */
-        public InstantNumberOptions lenient(boolean allowDecimal) {
+        public InstantNumberValue lenient(boolean allowDecimal) {
             return builder()
                     .format(this)
                     .allowedTypes(allowDecimal ? JsonValueTypes.numberLike() : JsonValueTypes.intLike())
@@ -59,7 +59,7 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
          * @param allowDecimal if decimals should be allowed
          * @return the standard Instant number options
          */
-        public InstantNumberOptions standard(boolean allowDecimal) {
+        public InstantNumberValue standard(boolean allowDecimal) {
             return builder()
                     .format(this)
                     .allowedTypes(allowDecimal ? JsonValueTypes.numberOrNull() : JsonValueTypes.intOrNull())
@@ -73,7 +73,7 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
          * @param allowDecimal if decimals should be allowed
          * @return the lenient Instant number options
          */
-        public InstantNumberOptions strict(boolean allowDecimal) {
+        public InstantNumberValue strict(boolean allowDecimal) {
             return builder()
                     .format(this)
                     .allowMissing(false)
@@ -83,7 +83,7 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
     }
 
     public static Builder builder() {
-        return ImmutableInstantNumberOptions.builder();
+        return ImmutableInstantNumberValue.builder();
     }
 
     /**
@@ -111,7 +111,7 @@ public abstract class InstantNumberOptions extends ValueOptionsSingleValueBase<I
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Instant, InstantNumberOptions, Builder> {
+    public interface Builder extends ValueSingleValueBase.Builder<Instant, InstantNumberValue, Builder> {
         Builder format(Format format);
     }
 }

@@ -10,42 +10,43 @@ import org.immutables.value.Value.Immutable;
 import java.util.Set;
 
 /**
- * Processes a JSON value as a {@code float}.
+ * Processes a JSON value as a {@code double}.
  */
 @Immutable
 @BuildableStyle
-public abstract class FloatOptions extends ValueOptionsSingleValueBase<Float> {
+public abstract class DoubleValue extends ValueSingleValueBase<Double> {
+
 
     public static Builder builder() {
-        return ImmutableFloatOptions.builder();
+        return ImmutableDoubleValue.builder();
     }
 
     /**
-     * The lenient float options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
+     * The lenient double options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
      *
-     * @return the lenient float options
+     * @return the lenient double options
      */
-    public static FloatOptions lenient() {
+    public static DoubleValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.numberLike())
                 .build();
     }
 
     /**
-     * The standard float options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
+     * The standard double options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
      *
-     * @return the standard float options
+     * @return the standard double options
      */
-    public static FloatOptions standard() {
+    public static DoubleValue standard() {
         return builder().build();
     }
 
     /**
-     * The strict float options. Disallows missing and accepts {@link JsonValueTypes#number()}.
+     * The strict double options. Disallows missing and accepts {@link JsonValueTypes#number()}.
      *
-     * @return the strict float options
+     * @return the strict double options
      */
-    public static FloatOptions strict() {
+    public static DoubleValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.number())
@@ -72,9 +73,10 @@ public abstract class FloatOptions extends ValueOptionsSingleValueBase<Float> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Float, FloatOptions, Builder> {
-        Builder onNull(float onNull);
+    public interface Builder extends BuilderSpecial<Double, DoubleValue, Builder> {
 
-        Builder onMissing(float onMissing);
+        Builder onNull(double onNull);
+
+        Builder onMissing(double onMissing);
     }
 }

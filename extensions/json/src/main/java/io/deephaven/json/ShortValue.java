@@ -14,10 +14,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
+public abstract class ShortValue extends ValueSingleValueBase<Short> {
 
     public static Builder builder() {
-        return ImmutableShortOptions.builder();
+        return ImmutableShortValue.builder();
     }
 
     /**
@@ -25,7 +25,7 @@ public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
      *
      * @return the lenient short options
      */
-    public static ShortOptions lenient() {
+    public static ShortValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.intLike())
                 .build();
@@ -36,7 +36,7 @@ public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
      *
      * @return the standard short options
      */
-    public static ShortOptions standard() {
+    public static ShortValue standard() {
         return builder().build();
     }
 
@@ -45,7 +45,7 @@ public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
      *
      * @return the strict short options
      */
-    public static ShortOptions strict() {
+    public static ShortValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.int_())
@@ -72,7 +72,7 @@ public abstract class ShortOptions extends ValueOptionsSingleValueBase<Short> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Short, ShortOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Short, ShortValue, Builder> {
 
         Builder onNull(short onNull);
 

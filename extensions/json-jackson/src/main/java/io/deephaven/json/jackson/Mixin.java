@@ -8,30 +8,30 @@ import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.AnyOptions;
-import io.deephaven.json.ArrayOptions;
-import io.deephaven.json.BigDecimalOptions;
-import io.deephaven.json.BigIntegerOptions;
-import io.deephaven.json.BoolOptions;
-import io.deephaven.json.ByteOptions;
-import io.deephaven.json.CharOptions;
-import io.deephaven.json.DoubleOptions;
-import io.deephaven.json.FloatOptions;
-import io.deephaven.json.InstantNumberOptions;
-import io.deephaven.json.InstantOptions;
-import io.deephaven.json.IntOptions;
+import io.deephaven.json.AnyValue;
+import io.deephaven.json.ArrayValue;
+import io.deephaven.json.BigDecimalValue;
+import io.deephaven.json.BigIntegerValue;
+import io.deephaven.json.BoolValue;
+import io.deephaven.json.ByteValue;
+import io.deephaven.json.CharValue;
+import io.deephaven.json.DoubleValue;
+import io.deephaven.json.FloatValue;
+import io.deephaven.json.InstantNumberValue;
+import io.deephaven.json.InstantValue;
+import io.deephaven.json.IntValue;
 import io.deephaven.json.JsonValueTypes;
-import io.deephaven.json.LocalDateOptions;
-import io.deephaven.json.LongOptions;
-import io.deephaven.json.ObjectFieldOptions;
-import io.deephaven.json.ObjectKvOptions;
-import io.deephaven.json.ObjectOptions;
-import io.deephaven.json.ShortOptions;
-import io.deephaven.json.SkipOptions;
-import io.deephaven.json.StringOptions;
-import io.deephaven.json.TupleOptions;
-import io.deephaven.json.TypedObjectOptions;
-import io.deephaven.json.ValueOptions;
+import io.deephaven.json.LocalDateValue;
+import io.deephaven.json.LongValue;
+import io.deephaven.json.ObjectField;
+import io.deephaven.json.ObjectKvValue;
+import io.deephaven.json.ObjectValue;
+import io.deephaven.json.ShortValue;
+import io.deephaven.json.SkipValue;
+import io.deephaven.json.StringValue;
+import io.deephaven.json.TupleValue;
+import io.deephaven.json.TypedObjectValue;
+import io.deephaven.json.Value;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
 
@@ -50,7 +50,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-abstract class Mixin<T extends ValueOptions> implements JacksonProvider {
+abstract class Mixin<T extends Value> implements JacksonProvider {
 
     static final Function<List<String>, String> TO_COLUMN_NAME = Mixin::toColumnName;
 
@@ -58,7 +58,7 @@ abstract class Mixin<T extends ValueOptions> implements JacksonProvider {
         return path.isEmpty() ? "Value" : String.join("_", path);
     }
 
-    static Mixin<?> of(ValueOptions options, JsonFactory factory) {
+    static Mixin<?> of(Value options, JsonFactory factory) {
         return options.walk(new MixinImpl(factory));
     }
 
@@ -153,7 +153,7 @@ abstract class Mixin<T extends ValueOptions> implements JacksonProvider {
         return new ByteBufferIn();
     }
 
-    final Mixin<?> mixin(ValueOptions options) {
+    final Mixin<?> mixin(Value options) {
         return of(options, factory);
     }
 
@@ -203,9 +203,9 @@ abstract class Mixin<T extends ValueOptions> implements JacksonProvider {
         return Stream.concat(Stream.of(prefix), path.stream()).collect(Collectors.toList());
     }
 
-    Stream<List<String>> prefixWithKeys(Collection<ObjectFieldOptions> fields) {
+    Stream<List<String>> prefixWithKeys(Collection<ObjectField> fields) {
         final List<Stream<List<String>>> paths = new ArrayList<>(fields.size());
-        for (ObjectFieldOptions field : fields) {
+        for (ObjectField field : fields) {
             final Stream<List<String>> prefixedPaths =
                     mixin(field.options()).paths().map(x -> prefixWith(field.name(), x));
             paths.add(prefixedPaths);
@@ -295,7 +295,7 @@ abstract class Mixin<T extends ValueOptions> implements JacksonProvider {
         }
     }
 
-    private static class MixinImpl implements ValueOptions.Visitor<Mixin<?>> {
+    private static class MixinImpl implements Value.Visitor<Mixin<?>> {
         private final JsonFactory factory;
 
         public MixinImpl(JsonFactory factory) {
@@ -303,107 +303,107 @@ abstract class Mixin<T extends ValueOptions> implements JacksonProvider {
         }
 
         @Override
-        public StringMixin visit(StringOptions _string) {
+        public StringMixin visit(StringValue _string) {
             return new StringMixin(_string, factory);
         }
 
         @Override
-        public Mixin<?> visit(BoolOptions _bool) {
+        public Mixin<?> visit(BoolValue _bool) {
             return new BoolMixin(_bool, factory);
         }
 
         @Override
-        public Mixin<?> visit(ByteOptions _byte) {
+        public Mixin<?> visit(ByteValue _byte) {
             return new ByteMixin(_byte, factory);
         }
 
         @Override
-        public Mixin<?> visit(CharOptions _char) {
+        public Mixin<?> visit(CharValue _char) {
             return new CharMixin(_char, factory);
         }
 
         @Override
-        public Mixin<?> visit(ShortOptions _short) {
+        public Mixin<?> visit(ShortValue _short) {
             return new ShortMixin(_short, factory);
         }
 
         @Override
-        public IntMixin visit(IntOptions _int) {
+        public IntMixin visit(IntValue _int) {
             return new IntMixin(_int, factory);
         }
 
         @Override
-        public LongMixin visit(LongOptions _long) {
+        public LongMixin visit(LongValue _long) {
             return new LongMixin(_long, factory);
         }
 
         @Override
-        public FloatMixin visit(FloatOptions _float) {
+        public FloatMixin visit(FloatValue _float) {
             return new FloatMixin(_float, factory);
         }
 
         @Override
-        public DoubleMixin visit(DoubleOptions _double) {
+        public DoubleMixin visit(DoubleValue _double) {
             return new DoubleMixin(_double, factory);
         }
 
         @Override
-        public ObjectMixin visit(ObjectOptions object) {
+        public ObjectMixin visit(ObjectValue object) {
             return new ObjectMixin(object, factory);
         }
 
         @Override
-        public Mixin<?> visit(ObjectKvOptions objectKv) {
+        public Mixin<?> visit(ObjectKvValue objectKv) {
             return new ObjectKvMixin(objectKv, factory);
         }
 
         @Override
-        public InstantMixin visit(InstantOptions instant) {
+        public InstantMixin visit(InstantValue instant) {
             return new InstantMixin(instant, factory);
         }
 
         @Override
-        public InstantNumberMixin visit(InstantNumberOptions instantNumber) {
+        public InstantNumberMixin visit(InstantNumberValue instantNumber) {
             return new InstantNumberMixin(instantNumber, factory);
         }
 
         @Override
-        public BigIntegerMixin visit(BigIntegerOptions bigInteger) {
+        public BigIntegerMixin visit(BigIntegerValue bigInteger) {
             return new BigIntegerMixin(bigInteger, factory);
         }
 
         @Override
-        public BigDecimalMixin visit(BigDecimalOptions bigDecimal) {
+        public BigDecimalMixin visit(BigDecimalValue bigDecimal) {
             return new BigDecimalMixin(bigDecimal, factory);
         }
 
         @Override
-        public SkipMixin visit(SkipOptions skip) {
+        public SkipMixin visit(SkipValue skip) {
             return new SkipMixin(skip, factory);
         }
 
         @Override
-        public TupleMixin visit(TupleOptions tuple) {
+        public TupleMixin visit(TupleValue tuple) {
             return new TupleMixin(tuple, factory);
         }
 
         @Override
-        public TypedObjectMixin visit(TypedObjectOptions typedObject) {
+        public TypedObjectMixin visit(TypedObjectValue typedObject) {
             return new TypedObjectMixin(typedObject, factory);
         }
 
         @Override
-        public LocalDateMixin visit(LocalDateOptions localDate) {
+        public LocalDateMixin visit(LocalDateValue localDate) {
             return new LocalDateMixin(localDate, factory);
         }
 
         @Override
-        public ArrayMixin visit(ArrayOptions array) {
+        public ArrayMixin visit(ArrayValue array) {
             return new ArrayMixin(array, factory);
         }
 
         @Override
-        public AnyMixin visit(AnyOptions any) {
+        public AnyMixin visit(AnyValue any) {
             return new AnyMixin(any, factory);
         }
     }

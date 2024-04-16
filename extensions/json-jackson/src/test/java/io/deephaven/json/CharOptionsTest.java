@@ -17,39 +17,39 @@ public class CharOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(CharOptions.standard(), "\"c\"", CharChunk.chunkWrap(new char[] {'c'}));
+        parse(CharValue.standard(), "\"c\"", CharChunk.chunkWrap(new char[] {'c'}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(CharOptions.standard(), "", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
+        parse(CharValue.standard(), "", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(CharOptions.standard(), "null", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
+        parse(CharValue.standard(), "null", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
     }
 
 
     @Test
     void customMissing() throws IOException {
-        parse(CharOptions.builder().onMissing('m').build(), "", CharChunk.chunkWrap(new char[] {'m'}));
+        parse(CharValue.builder().onMissing('m').build(), "", CharChunk.chunkWrap(new char[] {'m'}));
     }
 
     @Test
     void customNull() throws IOException {
-        parse(CharOptions.builder().onNull('n').build(), "null", CharChunk.chunkWrap(new char[] {'n'}));
+        parse(CharValue.builder().onNull('n').build(), "null", CharChunk.chunkWrap(new char[] {'n'}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(CharOptions.strict(), "\"c\"", CharChunk.chunkWrap(new char[] {'c'}));
+        parse(CharValue.strict(), "\"c\"", CharChunk.chunkWrap(new char[] {'c'}));
     }
 
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(CharOptions.strict(), "", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.strict(), "", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -59,7 +59,7 @@ public class CharOptionsTest {
     @Test
     void strictNull() throws IOException {
         try {
-            parse(CharOptions.strict(), "null", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.strict(), "null", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -70,7 +70,7 @@ public class CharOptionsTest {
     @Test
     void standardInt() throws IOException {
         try {
-            parse(CharOptions.standard(), "42", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.standard(), "42", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_INT'");
@@ -80,7 +80,7 @@ public class CharOptionsTest {
     @Test
     void standardFloat() throws IOException {
         try {
-            parse(CharOptions.standard(), "42.42", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.standard(), "42.42", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_FLOAT'");
@@ -91,7 +91,7 @@ public class CharOptionsTest {
     @Test
     void standardTrue() throws IOException {
         try {
-            parse(CharOptions.standard(), "true", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.standard(), "true", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
@@ -101,7 +101,7 @@ public class CharOptionsTest {
     @Test
     void standardFalse() throws IOException {
         try {
-            parse(CharOptions.standard(), "false", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.standard(), "false", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
@@ -111,7 +111,7 @@ public class CharOptionsTest {
     @Test
     void standardObject() throws IOException {
         try {
-            parse(CharOptions.standard(), "{}", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.standard(), "{}", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
@@ -121,7 +121,7 @@ public class CharOptionsTest {
     @Test
     void standardArray() throws IOException {
         try {
-            parse(CharOptions.standard(), "[]", CharChunk.chunkWrap(new char[1]));
+            parse(CharValue.standard(), "[]", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");

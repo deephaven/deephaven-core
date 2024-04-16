@@ -14,11 +14,11 @@ import static io.deephaven.json.TestHelper.parse;
 
 public class TupleOptionsTest {
 
-    private static final TupleOptions STRING_INT_TUPLE =
-            TupleOptions.of(StringOptions.standard(), IntOptions.standard());
+    private static final TupleValue STRING_INT_TUPLE =
+            TupleValue.of(StringValue.standard(), IntValue.standard());
 
-    private static final TupleOptions STRING_SKIPINT_TUPLE =
-            TupleOptions.of(StringOptions.standard(), IntOptions.standard().skip());
+    private static final TupleValue STRING_SKIPINT_TUPLE =
+            TupleValue.of(StringValue.standard(), IntValue.standard().skip());
 
     @Test
     void stringIntTuple() throws IOException {

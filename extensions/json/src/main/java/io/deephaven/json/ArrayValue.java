@@ -18,10 +18,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
+public abstract class ArrayValue extends ValueRestrictedUniverseBase {
 
     public static Builder builder() {
-        return ImmutableArrayOptions.builder();
+        return ImmutableArrayValue.builder();
     }
 
     /**
@@ -30,7 +30,7 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
      * @param element the element type
      * @return the standard array options
      */
-    public static ArrayOptions standard(ValueOptions element) {
+    public static ArrayValue standard(Value element) {
         return builder().element(element).build();
     }
 
@@ -40,7 +40,7 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
      * @param element the element type
      * @return the strict array options
      */
-    public static ArrayOptions strict(ValueOptions element) {
+    public static ArrayValue strict(Value element) {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.array())
@@ -51,7 +51,7 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
     /**
      * The type for the elements of the array.
      */
-    public abstract ValueOptions element();
+    public abstract Value element();
 
     /**
      * {@inheritDoc} Must be a subset of {@link JsonValueTypes#arrayOrNull()}. By default is
@@ -73,8 +73,8 @@ public abstract class ArrayOptions extends ValueOptionsRestrictedUniverseBase {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<ArrayOptions, Builder> {
+    public interface Builder extends Value.Builder<ArrayValue, Builder> {
 
-        Builder element(ValueOptions options);
+        Builder element(Value options);
     }
 }

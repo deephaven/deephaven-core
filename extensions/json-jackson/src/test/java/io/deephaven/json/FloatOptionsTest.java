@@ -18,33 +18,33 @@ public class FloatOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(FloatOptions.standard(), List.of("42", "42.42"), FloatChunk.chunkWrap(new float[] {42, 42.42f}));
+        parse(FloatValue.standard(), List.of("42", "42.42"), FloatChunk.chunkWrap(new float[] {42, 42.42f}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(FloatOptions.standard(), "", FloatChunk.chunkWrap(new float[] {QueryConstants.NULL_FLOAT}));
+        parse(FloatValue.standard(), "", FloatChunk.chunkWrap(new float[] {QueryConstants.NULL_FLOAT}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(FloatOptions.standard(), "null", FloatChunk.chunkWrap(new float[] {QueryConstants.NULL_FLOAT}));
+        parse(FloatValue.standard(), "null", FloatChunk.chunkWrap(new float[] {QueryConstants.NULL_FLOAT}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(FloatOptions.builder().onMissing(-1.0f).build(), "", FloatChunk.chunkWrap(new float[] {-1}));
+        parse(FloatValue.builder().onMissing(-1.0f).build(), "", FloatChunk.chunkWrap(new float[] {-1}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(FloatOptions.strict(), "42", FloatChunk.chunkWrap(new float[] {42}));
+        parse(FloatValue.strict(), "42", FloatChunk.chunkWrap(new float[] {42}));
     }
 
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(FloatOptions.strict(), "", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.strict(), "", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -54,7 +54,7 @@ public class FloatOptionsTest {
     @Test
     void strictNull() throws IOException {
         try {
-            parse(FloatOptions.strict(), "null", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.strict(), "null", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -64,7 +64,7 @@ public class FloatOptionsTest {
     @Test
     void standardString() throws IOException {
         try {
-            parse(FloatOptions.standard(), "\"42\"", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.standard(), "\"42\"", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_STRING'");
@@ -74,7 +74,7 @@ public class FloatOptionsTest {
     @Test
     void standardTrue() throws IOException {
         try {
-            parse(FloatOptions.standard(), "true", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.standard(), "true", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
@@ -84,7 +84,7 @@ public class FloatOptionsTest {
     @Test
     void standardFalse() throws IOException {
         try {
-            parse(FloatOptions.standard(), "false", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.standard(), "false", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
@@ -94,7 +94,7 @@ public class FloatOptionsTest {
     @Test
     void standardObject() throws IOException {
         try {
-            parse(FloatOptions.standard(), "{}", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.standard(), "{}", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
@@ -104,7 +104,7 @@ public class FloatOptionsTest {
     @Test
     void standardArray() throws IOException {
         try {
-            parse(FloatOptions.standard(), "[]", FloatChunk.chunkWrap(new float[1]));
+            parse(FloatValue.standard(), "[]", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
@@ -113,6 +113,6 @@ public class FloatOptionsTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(FloatOptions.lenient(), List.of("\"42\"", "\"42.42\""), FloatChunk.chunkWrap(new float[] {42, 42.42f}));
+        parse(FloatValue.lenient(), List.of("\"42\"", "\"42.42\""), FloatChunk.chunkWrap(new float[] {42, 42.42f}));
     }
 }

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.ByteOptions;
+import io.deephaven.json.ByteValue;
 import io.deephaven.json.jackson.ByteValueProcessor.ToByte;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -20,8 +20,8 @@ import java.util.stream.Stream;
 
 import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_BYTE_ARRAY;
 
-final class ByteMixin extends Mixin<ByteOptions> implements ToByte {
-    public ByteMixin(ByteOptions options, JsonFactory factory) {
+final class ByteMixin extends Mixin<ByteValue> implements ToByte {
+    public ByteMixin(ByteValue options, JsonFactory factory) {
         super(factory, options);
     }
 

@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.BigIntegerOptions;
+import io.deephaven.json.BigIntegerValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
@@ -15,9 +15,9 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class BigIntegerMixin extends Mixin<BigIntegerOptions> implements ToObject<BigInteger> {
+final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<BigInteger> {
 
-    public BigIntegerMixin(BigIntegerOptions options, JsonFactory factory) {
+    public BigIntegerMixin(BigIntegerValue options, JsonFactory factory) {
         super(factory, options);
     }
 

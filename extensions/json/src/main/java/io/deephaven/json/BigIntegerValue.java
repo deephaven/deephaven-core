@@ -15,9 +15,9 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigInteger> {
+public abstract class BigIntegerValue extends ValueSingleValueBase<BigInteger> {
     public static Builder builder() {
-        return ImmutableBigIntegerOptions.builder();
+        return ImmutableBigIntegerValue.builder();
     }
 
     /**
@@ -26,7 +26,7 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
      *
      * @return the lenient BigInteger options
      */
-    public static BigIntegerOptions lenient(boolean allowDecimal) {
+    public static BigIntegerValue lenient(boolean allowDecimal) {
         return builder()
                 .allowedTypes(allowDecimal ? JsonValueTypes.numberLike() : JsonValueTypes.intLike())
                 .build();
@@ -38,7 +38,7 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
      *
      * @return the standard BigInteger options
      */
-    public static BigIntegerOptions standard(boolean allowDecimal) {
+    public static BigIntegerValue standard(boolean allowDecimal) {
         return builder()
                 .allowedTypes(allowDecimal ? JsonValueTypes.numberOrNull() : JsonValueTypes.intOrNull())
                 .build();
@@ -50,7 +50,7 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
      *
      * @return the strict BigInteger options
      */
-    public static BigIntegerOptions strict(boolean allowDecimal) {
+    public static BigIntegerValue strict(boolean allowDecimal) {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(allowDecimal ? JsonValueTypes.number() : JsonValueTypes.int_())
@@ -77,7 +77,7 @@ public abstract class BigIntegerOptions extends ValueOptionsSingleValueBase<BigI
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<BigInteger, BigIntegerOptions, Builder> {
+    public interface Builder extends ValueSingleValueBase.Builder<BigInteger, BigIntegerValue, Builder> {
 
     }
 }

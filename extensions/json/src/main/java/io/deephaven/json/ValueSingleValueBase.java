@@ -8,11 +8,11 @@ import org.immutables.value.Value.Check;
 import java.util.Optional;
 
 /**
- * A base {@link ValueOptions} where the JSON value represents a single value.
+ * A base {@link Value} where the JSON value represents a single value.
  *
  * @param <T> the value type
  */
-public abstract class ValueOptionsSingleValueBase<T> extends ValueOptionsRestrictedUniverseBase {
+public abstract class ValueSingleValueBase<T> extends ValueRestrictedUniverseBase {
 
     /**
      * The value to use when {@link JsonValueTypes#NULL} is encountered. {@link #allowedTypes()} must contain
@@ -25,8 +25,8 @@ public abstract class ValueOptionsSingleValueBase<T> extends ValueOptionsRestric
      */
     public abstract Optional<T> onMissing();
 
-    public interface Builder<T, V extends ValueOptionsSingleValueBase<T>, B extends Builder<T, V, B>>
-            extends ValueOptions.Builder<V, B> {
+    public interface Builder<T, V extends ValueSingleValueBase<T>, B extends Builder<T, V, B>>
+            extends Value.Builder<V, B> {
         B onNull(T onNull);
 
         B onNull(Optional<? extends T> onNull);
@@ -36,8 +36,8 @@ public abstract class ValueOptionsSingleValueBase<T> extends ValueOptionsRestric
         B onMissing(Optional<? extends T> onMissing);
     }
 
-    public interface BuilderSpecial<T, V extends ValueOptionsSingleValueBase<T>, B extends BuilderSpecial<T, V, B>>
-            extends ValueOptions.Builder<V, B> {
+    public interface BuilderSpecial<T, V extends ValueSingleValueBase<T>, B extends BuilderSpecial<T, V, B>>
+            extends Value.Builder<V, B> {
 
         // Immutables has special handling for primitive types and some "special" types like String.
         // This differs from the above Builder where the Optional generic is "? extends T".

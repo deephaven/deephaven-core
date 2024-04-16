@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.BigDecimalOptions;
+import io.deephaven.json.BigDecimalValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
@@ -15,9 +15,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class BigDecimalMixin extends Mixin<BigDecimalOptions> implements ToObject<BigDecimal> {
+final class BigDecimalMixin extends Mixin<BigDecimalValue> implements ToObject<BigDecimal> {
 
-    public BigDecimalMixin(BigDecimalOptions options, JsonFactory factory) {
+    public BigDecimalMixin(BigDecimalValue options, JsonFactory factory) {
         super(factory, options);
     }
 

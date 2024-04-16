@@ -16,7 +16,7 @@ public class RepeatedProcessorTests {
     @Test
     void arrayArrayPrimitive() throws IOException {
         // [[1.1], null, [], [2.2, 3.3]]
-        parse(DoubleOptions.standard().array().array(),
+        parse(DoubleValue.standard().array().array(),
                 "[[1.1], null, [], [2.2, 3.3]]",
                 ObjectChunk.chunkWrap(new Object[] {
                         new double[][] {new double[] {1.1}, null, new double[0], new double[] {2.2, 3.3}}}));
@@ -25,7 +25,7 @@ public class RepeatedProcessorTests {
     @Test
     void arrayKvPrimitive() throws IOException {
         // [{"a": 1.1}, null, {}, {"b": 2.2, "c": 3.3}]
-        parse(ObjectKvOptions.builder().key(SkipOptions.lenient()).value(DoubleOptions.standard()).build().array(),
+        parse(ObjectKvValue.builder().key(SkipValue.lenient()).value(DoubleValue.standard()).build().array(),
                 "[{\"a\": 1.1}, null, {}, {\"b\": 2.2, \"c\": 3.3}]",
                 ObjectChunk.chunkWrap(new Object[] {
                         new double[][] {new double[] {1.1}, null, new double[0], new double[] {2.2, 3.3}}}));
@@ -34,7 +34,7 @@ public class RepeatedProcessorTests {
     @Test
     void kvArrayPrimitive() throws IOException {
         // {"a": [1.1], "b": null, "c": [], "d": [2.2, 3.3]}
-        parse(ObjectKvOptions.standard(DoubleOptions.standard().array()),
+        parse(ObjectKvValue.standard(DoubleValue.standard().array()),
                 "{\"a\": [1.1], \"b\": null, \"c\": [], \"d\": [2.2, 3.3]}",
                 ObjectChunk.chunkWrap(new Object[] {
                         new String[] {"a", "b", "c", "d"}}),
@@ -45,7 +45,7 @@ public class RepeatedProcessorTests {
     @Test
     void tuple() throws IOException {
         // [[[1, 1.1]], null, [], [[2, 2.2], [3, 3.3]]]
-        parse(TupleOptions.of(IntOptions.standard(), DoubleOptions.standard()).array().array(),
+        parse(TupleValue.of(IntValue.standard(), DoubleValue.standard()).array().array(),
                 "[[[1, 1.1]], null, [], [[2, 2.2], [3, 3.3]]]",
                 ObjectChunk.chunkWrap(new Object[] {new int[][] {new int[] {1}, null, new int[0], new int[] {2, 3}}}),
                 ObjectChunk.chunkWrap(new Object[] {
@@ -56,9 +56,9 @@ public class RepeatedProcessorTests {
     void object() throws IOException {
         // [[{"int": 1, "double": 1.1}], null, [], [{"int": 2}, {"double": 3.3}], [{"int": 4, "double": 4.4}, {"int": 5,
         // "double": 5.5}]]
-        parse(ObjectOptions.builder()
-                .putFields("int", IntOptions.standard())
-                .putFields("double", DoubleOptions.standard())
+        parse(ObjectValue.builder()
+                .putFields("int", IntValue.standard())
+                .putFields("double", DoubleValue.standard())
                 .build()
                 .array()
                 .array(),
@@ -74,12 +74,12 @@ public class RepeatedProcessorTests {
     void differentNesting() throws IOException {
         // [ { "foo": [ { "bar": 41 }, {} ], "baz": 1.1 }, null, {}, { "foo": [] }, { "foo": [ { "bar": 43 } ], "baz":
         // 3.3 }]
-        parse(ObjectOptions.builder()
-                .putFields("foo", ObjectOptions.builder()
-                        .putFields("bar", IntOptions.standard())
+        parse(ObjectValue.builder()
+                .putFields("foo", ObjectValue.builder()
+                        .putFields("bar", IntValue.standard())
                         .build()
                         .array())
-                .putFields("baz", DoubleOptions.standard())
+                .putFields("baz", DoubleValue.standard())
                 .build()
                 .array(),
                 "[ { \"foo\": [ { \"bar\": 41 }, {} ], \"baz\": 1.1 }, null, {}, { \"foo\": [] }, { \"foo\": [ { \"bar\": 43 } ], \"baz\": 3.3 }]",

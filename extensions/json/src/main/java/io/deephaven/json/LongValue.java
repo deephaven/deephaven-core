@@ -10,42 +10,42 @@ import org.immutables.value.Value.Immutable;
 import java.util.Set;
 
 /**
- * Processes a JSON value as an {@code int}.
+ * Processes a JSON value as a {@code long}.
  */
 @Immutable
 @BuildableStyle
-public abstract class IntOptions extends ValueOptionsSingleValueBase<Integer> {
+public abstract class LongValue extends ValueSingleValueBase<Long> {
 
     public static Builder builder() {
-        return ImmutableIntOptions.builder();
+        return ImmutableLongValue.builder();
     }
 
     /**
-     * The lenient int options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
+     * The lenient long options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
      *
-     * @return the lenient int options
+     * @return the lenient long options
      */
-    public static IntOptions lenient() {
+    public static LongValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.intLike())
                 .build();
     }
 
     /**
-     * The standard int options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
+     * The standard long options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
      *
-     * @return the standard int options
+     * @return the standard long options
      */
-    public static IntOptions standard() {
+    public static LongValue standard() {
         return builder().build();
     }
 
     /**
-     * The strict int options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
+     * The strict long options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
      *
-     * @return the strict int options
+     * @return the strict long options
      */
-    public static IntOptions strict() {
+    public static LongValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.int_())
@@ -72,10 +72,10 @@ public abstract class IntOptions extends ValueOptionsSingleValueBase<Integer> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Integer, IntOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Long, LongValue, Builder> {
 
-        Builder onNull(int onNull);
+        Builder onNull(long onNull);
 
-        Builder onMissing(int onMissing);
+        Builder onMissing(long onMissing);
     }
 }

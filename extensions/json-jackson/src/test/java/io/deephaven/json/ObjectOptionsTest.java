@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class ObjectOptionsTest {
 
-    public static final ObjectOptions OBJECT_AGE_FIELD = ObjectOptions.builder()
-            .putFields("age", IntOptions.standard())
+    public static final ObjectValue OBJECT_AGE_FIELD = ObjectValue.builder()
+            .putFields("age", IntValue.standard())
             .build();
 
-    private static final ObjectOptions OBJECT_NAME_AGE_FIELD = ObjectOptions.builder()
-            .putFields("name", StringOptions.standard())
-            .putFields("age", IntOptions.standard())
+    private static final ObjectValue OBJECT_NAME_AGE_FIELD = ObjectValue.builder()
+            .putFields("name", StringValue.standard())
+            .putFields("age", IntValue.standard())
             .build();
 
     @Test
@@ -55,10 +55,10 @@ public class ObjectOptionsTest {
 
     @Test
     void caseInsensitive() throws IOException {
-        final ObjectOptions options = ObjectOptions.builder()
-                .addFields(ObjectFieldOptions.builder()
+        final ObjectValue options = ObjectValue.builder()
+                .addFields(ObjectField.builder()
                         .name("Foo")
-                        .options(IntOptions.standard())
+                        .options(IntValue.standard())
                         .caseSensitive(false)
                         .build())
                 .build();
@@ -68,9 +68,9 @@ public class ObjectOptionsTest {
 
     @Test
     void caseSensitive() throws IOException {
-        final ObjectFieldOptions f1 = ObjectFieldOptions.of("Foo", IntOptions.standard());
-        final ObjectFieldOptions f2 = ObjectFieldOptions.of("foo", IntOptions.standard());
-        final ObjectOptions options = ObjectOptions.builder()
+        final ObjectField f1 = ObjectField.of("Foo", IntValue.standard());
+        final ObjectField f2 = ObjectField.of("foo", IntValue.standard());
+        final ObjectValue options = ObjectValue.builder()
                 .addFields(f1)
                 .addFields(f2)
                 .build();
@@ -81,10 +81,10 @@ public class ObjectOptionsTest {
 
     @Test
     void alias() throws IOException {
-        final ObjectOptions options = ObjectOptions.builder()
-                .addFields(ObjectFieldOptions.builder()
+        final ObjectValue options = ObjectValue.builder()
+                .addFields(ObjectField.builder()
                         .name("FooBar")
-                        .options(IntOptions.standard())
+                        .options(IntValue.standard())
                         .addAliases("Foo_Bar")
                         .build())
                 .build();
@@ -94,10 +94,10 @@ public class ObjectOptionsTest {
 
     @Test
     void caseInsensitiveAlias() throws IOException {
-        final ObjectOptions options = ObjectOptions.builder()
-                .addFields(ObjectFieldOptions.builder()
+        final ObjectValue options = ObjectValue.builder()
+                .addFields(ObjectField.builder()
                         .name("FooBar")
-                        .options(IntOptions.standard())
+                        .options(IntValue.standard())
                         .addAliases("Foo_Bar")
                         .caseSensitive(false)
                         .build())
@@ -108,9 +108,9 @@ public class ObjectOptionsTest {
 
     @Test
     void caseSensitiveFields() {
-        final ObjectFieldOptions f1 = ObjectFieldOptions.of("Foo", IntOptions.standard());
-        final ObjectFieldOptions f2 = ObjectFieldOptions.of("foo", IntOptions.standard());
-        final ObjectOptions options = ObjectOptions.builder()
+        final ObjectField f1 = ObjectField.of("Foo", IntValue.standard());
+        final ObjectField f2 = ObjectField.of("foo", IntValue.standard());
+        final ObjectValue options = ObjectValue.builder()
                 .addFields(f1)
                 .addFields(f2)
                 .build();
@@ -119,14 +119,14 @@ public class ObjectOptionsTest {
 
     @Test
     void caseInsensitiveOverlap() {
-        final ObjectFieldOptions f1 = ObjectFieldOptions.of("Foo", IntOptions.standard());
-        final ObjectFieldOptions f2 = ObjectFieldOptions.builder()
+        final ObjectField f1 = ObjectField.of("Foo", IntValue.standard());
+        final ObjectField f2 = ObjectField.builder()
                 .name("foo")
-                .options(IntOptions.standard())
+                .options(IntValue.standard())
                 .caseSensitive(false)
                 .build();
         try {
-            ObjectOptions.builder()
+            ObjectValue.builder()
                     .addFields(f1)
                     .addFields(f2)
                     .build();
@@ -139,9 +139,9 @@ public class ObjectOptionsTest {
     @Test
     void objectFields() throws IOException {
         // { "prices": [1.1, 2.2, 3.3], "other": [2, 4, 8, 16] }
-        parse(ObjectOptions.builder()
-                .putFields("prices", DoubleOptions.standard().array())
-                .putFields("other", LongOptions.standard().array())
+        parse(ObjectValue.builder()
+                .putFields("prices", DoubleValue.standard().array())
+                .putFields("other", LongValue.standard().array())
                 .build(),
                 "{ \"prices\": [1.1, 2.2, 3.3], \"other\": [2, 4, 8, 16] }",
                 ObjectChunk
@@ -154,15 +154,15 @@ public class ObjectOptionsTest {
     void objectFieldsArrayGroup() throws IOException {
         // Note: array groups don't cause any difference wrt ObjectProcessor based destructuring
         // { "prices": [1.1, 2.2, 3.3], "sizes": [2, 4, 8] }
-        parse(ObjectOptions.builder()
-                .addFields(ObjectFieldOptions.builder()
+        parse(ObjectValue.builder()
+                .addFields(ObjectField.builder()
                         .name("prices")
-                        .options(DoubleOptions.standard().array())
+                        .options(DoubleValue.standard().array())
                         .arrayGroup("prices_and_sizes")
                         .build())
-                .addFields(ObjectFieldOptions.builder()
+                .addFields(ObjectField.builder()
                         .name("sizes")
-                        .options(LongOptions.standard().array())
+                        .options(LongValue.standard().array())
                         .arrayGroup("prices_and_sizes")
                         .build())
                 .build(),
@@ -181,22 +181,22 @@ public class ObjectOptionsTest {
 
     @Test
     void columnNamesAlternateName() {
-        final ObjectOptions obj = ObjectOptions.builder()
-                .addFields(ObjectFieldOptions.builder()
+        final ObjectValue obj = ObjectValue.builder()
+                .addFields(ObjectField.builder()
                         .name("MyName")
                         .addAliases("name")
-                        .options(StringOptions.standard())
+                        .options(StringValue.standard())
                         .build())
-                .addFields(ObjectFieldOptions.of("age", IntOptions.standard()))
+                .addFields(ObjectField.of("age", IntValue.standard()))
                 .build();
         assertThat(JacksonProvider.of(obj).named(Type.stringType()).names()).containsExactly("MyName", "age");
     }
 
     @Test
     void columnNamesWithFieldThatIsNotColumnNameCompatible() {
-        final ObjectOptions objPlusOneMinusOneCount = ObjectOptions.builder()
-                .putFields("+1", IntOptions.standard())
-                .putFields("-1", IntOptions.standard())
+        final ObjectValue objPlusOneMinusOneCount = ObjectValue.builder()
+                .putFields("+1", IntValue.standard())
+                .putFields("-1", IntValue.standard())
                 .build();
         assertThat(JacksonProvider.of(objPlusOneMinusOneCount).named(Type.stringType()).names())
                 .containsExactly("column_1", "column_12");

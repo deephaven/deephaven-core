@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.undercouch.bson4jackson.BsonFactory;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.json.IntOptions;
-import io.deephaven.json.ObjectOptions;
-import io.deephaven.json.StringOptions;
+import io.deephaven.json.IntValue;
+import io.deephaven.json.ObjectValue;
+import io.deephaven.json.StringValue;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -20,9 +20,9 @@ import static io.deephaven.bson.jackson.TestHelper.parse;
 
 public class BsonTest {
 
-    private static final ObjectOptions OBJECT_NAME_AGE_FIELD = ObjectOptions.builder()
-            .putFields("name", StringOptions.standard())
-            .putFields("age", IntOptions.standard())
+    private static final ObjectValue OBJECT_NAME_AGE_FIELD = ObjectValue.builder()
+            .putFields("name", StringValue.standard())
+            .putFields("age", IntValue.standard())
             .build();
 
     @Test

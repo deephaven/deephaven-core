@@ -10,9 +10,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A base {@link ValueOptions} where the implementation has a clearly defined universe.
+ * A base {@link Value} where the implementation has a clearly defined universe.
  */
-public abstract class ValueOptionsRestrictedUniverseBase extends ValueOptions {
+public abstract class ValueRestrictedUniverseBase extends Value {
 
     abstract Set<JsonValueTypes> universe();
 

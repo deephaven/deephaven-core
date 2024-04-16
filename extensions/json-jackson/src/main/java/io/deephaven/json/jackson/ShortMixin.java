@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.ShortOptions;
+import io.deephaven.json.ShortValue;
 import io.deephaven.json.jackson.ShortValueProcessor.ToShort;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -20,8 +20,8 @@ import java.util.stream.Stream;
 
 import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_SHORT_ARRAY;
 
-final class ShortMixin extends Mixin<ShortOptions> implements ToShort {
-    public ShortMixin(ShortOptions options, JsonFactory factory) {
+final class ShortMixin extends Mixin<ShortValue> implements ToShort {
+    public ShortMixin(ShortValue options, JsonFactory factory) {
         super(factory, options);
     }
 

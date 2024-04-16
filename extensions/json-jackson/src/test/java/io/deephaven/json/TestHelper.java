@@ -28,11 +28,11 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHelper {
-    public static void parse(ValueOptions options, String json, Chunk<?>... expected) throws IOException {
+    public static void parse(Value options, String json, Chunk<?>... expected) throws IOException {
         parse(options, List.of(json), expected);
     }
 
-    public static void parse(ValueOptions options, List<String> jsonRows, Chunk<?>... expectedCols) throws IOException {
+    public static void parse(Value options, List<String> jsonRows, Chunk<?>... expectedCols) throws IOException {
         parse(JacksonProvider.of(options).stringProcessor(), jsonRows, expectedCols);
     }
 

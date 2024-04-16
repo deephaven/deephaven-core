@@ -15,17 +15,17 @@ public class DoubleArrayOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(DoubleOptions.standard().array(), "[42.1, null, 43.2]",
+        parse(DoubleValue.standard().array(), "[42.1, null, 43.2]",
                 ObjectChunk.chunkWrap(new Object[] {new double[] {42.1, QueryConstants.NULL_DOUBLE, 43.2}}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(DoubleOptions.standard().array(), "", ObjectChunk.chunkWrap(new Object[] {null}));
+        parse(DoubleValue.standard().array(), "", ObjectChunk.chunkWrap(new Object[] {null}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(DoubleOptions.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] {null}));
+        parse(DoubleValue.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] {null}));
     }
 }

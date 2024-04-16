@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.AnyOptions;
+import io.deephaven.json.AnyValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
@@ -15,8 +15,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class AnyMixin extends Mixin<AnyOptions> {
-    public AnyMixin(AnyOptions options, JsonFactory factory) {
+final class AnyMixin extends Mixin<AnyValue> {
+    public AnyMixin(AnyValue options, JsonFactory factory) {
         super(factory, options);
     }
 

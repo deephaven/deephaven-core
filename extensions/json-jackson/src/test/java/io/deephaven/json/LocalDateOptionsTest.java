@@ -19,24 +19,24 @@ public class LocalDateOptionsTest {
 
     @Test
     void iso8601() throws IOException {
-        parse(LocalDateOptions.standard(), "\"" + XYZ_STR + "\"",
+        parse(LocalDateValue.standard(), "\"" + XYZ_STR + "\"",
                 ObjectChunk.chunkWrap(new LocalDate[] {LocalDate.of(2009, 2, 13)}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(LocalDateOptions.standard(), "null", ObjectChunk.chunkWrap(new LocalDate[] {null}));
+        parse(LocalDateValue.standard(), "null", ObjectChunk.chunkWrap(new LocalDate[] {null}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(LocalDateOptions.standard(), "", ObjectChunk.chunkWrap(new LocalDate[] {null}));
+        parse(LocalDateValue.standard(), "", ObjectChunk.chunkWrap(new LocalDate[] {null}));
     }
 
     @Test
     void strictNull() throws IOException {
         try {
-            parse(LocalDateOptions.strict(), "null", ObjectChunk.chunkWrap(new LocalDate[1]));
+            parse(LocalDateValue.strict(), "null", ObjectChunk.chunkWrap(new LocalDate[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -46,7 +46,7 @@ public class LocalDateOptionsTest {
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(LocalDateOptions.strict(), "", ObjectChunk.chunkWrap(new LocalDate[1]));
+            parse(LocalDateValue.strict(), "", ObjectChunk.chunkWrap(new LocalDate[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -55,13 +55,13 @@ public class LocalDateOptionsTest {
 
     @Test
     void customNull() throws IOException {
-        parse(LocalDateOptions.builder().onNull(LocalDate.ofEpochDay(0)).build(), "null",
+        parse(LocalDateValue.builder().onNull(LocalDate.ofEpochDay(0)).build(), "null",
                 ObjectChunk.chunkWrap(new LocalDate[] {LocalDate.ofEpochDay(0)}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(LocalDateOptions.builder().onMissing(LocalDate.ofEpochDay(0)).build(), "",
+        parse(LocalDateValue.builder().onMissing(LocalDate.ofEpochDay(0)).build(), "",
                 ObjectChunk.chunkWrap(new LocalDate[] {LocalDate.ofEpochDay(0)}));
     }
 }

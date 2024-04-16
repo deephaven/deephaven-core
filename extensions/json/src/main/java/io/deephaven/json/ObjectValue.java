@@ -4,7 +4,7 @@
 package io.deephaven.json;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.json.ObjectFieldOptions.RepeatedBehavior;
+import io.deephaven.json.ObjectField.RepeatedBehavior;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -32,24 +32,24 @@ import java.util.TreeSet;
  */
 @Immutable
 @BuildableStyle
-public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
+public abstract class ObjectValue extends ValueRestrictedUniverseBase {
 
     public static Builder builder() {
-        return ImmutableObjectOptions.builder();
+        return ImmutableObjectValue.builder();
     }
 
     /**
      * The lenient object options. Allows missing, accepts {@link JsonValueTypes#objectOrNull()}, and allows unknown
-     * fields. The object fields are constructed with {@link ObjectFieldOptions#caseSensitive()} as {@code false} and
-     * {@link ObjectFieldOptions#repeatedBehavior()} as {@link ObjectFieldOptions.RepeatedBehavior#USE_FIRST}.
+     * fields. The object fields are constructed with {@link ObjectField#caseSensitive()} as {@code false} and
+     * {@link ObjectField#repeatedBehavior()} as {@link ObjectField.RepeatedBehavior#USE_FIRST}.
      *
      * @param fields the fields
      * @return the lenient object options
      */
-    public static ObjectOptions lenient(Map<String, ValueOptions> fields) {
+    public static ObjectValue lenient(Map<String, Value> fields) {
         final Builder builder = builder();
-        for (Entry<String, ValueOptions> e : fields.entrySet()) {
-            builder.addFields(ObjectFieldOptions.builder()
+        for (Entry<String, Value> e : fields.entrySet()) {
+            builder.addFields(ObjectField.builder()
                     .name(e.getKey())
                     .options(e.getValue())
                     .caseSensitive(false)
@@ -61,14 +61,14 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
 
     /**
      * The standard object options. Allows missing, accepts {@link JsonValueTypes#objectOrNull()}, and allows unknown
-     * fields. The object fields are constructed with {@link ObjectFieldOptions#of(String, ValueOptions)}.
+     * fields. The object fields are constructed with {@link ObjectField#of(String, Value)}.
      *
      * @param fields the fields
      * @return the standard object options
      */
-    public static ObjectOptions standard(Map<String, ValueOptions> fields) {
+    public static ObjectValue standard(Map<String, Value> fields) {
         final Builder builder = builder();
-        for (Entry<String, ValueOptions> e : fields.entrySet()) {
+        for (Entry<String, Value> e : fields.entrySet()) {
             builder.putFields(e.getKey(), e.getValue());
         }
         return builder.build();
@@ -76,16 +76,16 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
 
     /**
      * The strict object options. Disallows missing, accepts {@link JsonValueTypes#object()}, and disallows unknown
-     * fields. The object fields are constructed with {@link ObjectFieldOptions#of(String, ValueOptions)}.
+     * fields. The object fields are constructed with {@link ObjectField#of(String, Value)}.
      *
      * @param fields the fields
      * @return the strict object options
      */
-    public static ObjectOptions strict(Map<String, ValueOptions> fields) {
+    public static ObjectValue strict(Map<String, Value> fields) {
         final Builder builder = builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.object());
-        for (Entry<String, ValueOptions> e : fields.entrySet()) {
+        for (Entry<String, Value> e : fields.entrySet()) {
             builder.putFields(e.getKey(), e.getValue());
         }
         return builder.build();
@@ -94,7 +94,7 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     /**
      * The fields.
      */
-    public abstract Set<ObjectFieldOptions> fields();
+    public abstract Set<ObjectField> fields();
 
     /**
      * If unknown fields are allowed. By default is {@code true}.
@@ -125,32 +125,32 @@ public abstract class ObjectOptions extends ValueOptionsRestrictedUniverseBase {
     }
 
     // not extending value options
-    public interface Builder extends ValueOptions.Builder<ObjectOptions, Builder> {
+    public interface Builder extends Value.Builder<ObjectValue, Builder> {
 
         Builder allowUnknownFields(boolean allowUnknownFields);
 
         /**
          * A convenience method, equivalent to {@code addFields(ObjectFieldOptions.of(key, value))}.
          */
-        default Builder putFields(String key, ValueOptions value) {
-            return addFields(ObjectFieldOptions.of(key, value));
+        default Builder putFields(String key, Value value) {
+            return addFields(ObjectField.of(key, value));
         }
 
-        Builder addFields(ObjectFieldOptions element);
+        Builder addFields(ObjectField element);
 
-        Builder addFields(ObjectFieldOptions... elements);
+        Builder addFields(ObjectField... elements);
 
-        Builder addAllFields(Iterable<? extends ObjectFieldOptions> elements);
+        Builder addAllFields(Iterable<? extends ObjectField> elements);
     }
 
     @Check
     final void checkNonOverlapping() {
         // We need to make sure there is no inter-field overlapping. We will be stricter if _any_ field is
         // case-insensitive.
-        final Set<String> keys = fields().stream().allMatch(ObjectFieldOptions::caseSensitive)
+        final Set<String> keys = fields().stream().allMatch(ObjectField::caseSensitive)
                 ? new HashSet<>()
                 : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        for (ObjectFieldOptions field : fields()) {
+        for (ObjectField field : fields()) {
             if (!keys.add(field.name())) {
                 throw new IllegalArgumentException(String.format("Found overlapping field name '%s'", field.name()));
             }

@@ -7,9 +7,9 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.ObjectFieldOptions;
-import io.deephaven.json.ObjectFieldOptions.RepeatedBehavior;
-import io.deephaven.json.ObjectOptions;
+import io.deephaven.json.ObjectField;
+import io.deephaven.json.ObjectField.RepeatedBehavior;
+import io.deephaven.json.ObjectValue;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -25,9 +25,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-final class ObjectMixin extends Mixin<ObjectOptions> {
+final class ObjectMixin extends Mixin<ObjectValue> {
 
-    public ObjectMixin(ObjectOptions options, JsonFactory factory) {
+    public ObjectMixin(ObjectValue options, JsonFactory factory) {
         super(factory, options);
     }
 
@@ -35,7 +35,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
     public Stream<Type<?>> outputTypesImpl() {
         return options.fields()
                 .stream()
-                .map(ObjectFieldOptions::options)
+                .map(ObjectField::options)
                 .map(this::mixin)
                 .flatMap(Mixin::outputTypesImpl);
     }
@@ -44,7 +44,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
     public int numColumns() {
         return options.fields()
                 .stream()
-                .map(ObjectFieldOptions::options)
+                .map(ObjectField::options)
                 .map(this::mixin)
                 .mapToInt(Mixin::numColumns)
                 .sum();
@@ -60,9 +60,9 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
         if (out.size() != numColumns()) {
             throw new IllegalArgumentException();
         }
-        final Map<ObjectFieldOptions, ValueProcessor> processors = new LinkedHashMap<>(options.fields().size());
+        final Map<ObjectField, ValueProcessor> processors = new LinkedHashMap<>(options.fields().size());
         int ix = 0;
-        for (ObjectFieldOptions field : options.fields()) {
+        for (ObjectField field : options.fields()) {
             final Mixin<?> opts = mixin(field.options());
             final int numTypes = opts.numColumns();
             final ValueProcessor fieldProcessor =
@@ -81,11 +81,11 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
         if (out.size() != numColumns()) {
             throw new IllegalArgumentException();
         }
-        final Map<ObjectFieldOptions, RepeaterProcessor> processors =
+        final Map<ObjectField, RepeaterProcessor> processors =
                 new LinkedHashMap<>(options.fields().size());
         int ix = 0;
 
-        for (ObjectFieldOptions field : options.fields()) {
+        for (ObjectField field : options.fields()) {
             final Mixin<?> opts = mixin(field.options());
             final int numTypes = opts.numColumns();
             final RepeaterProcessor fieldProcessor =
@@ -100,24 +100,24 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
     }
 
     private boolean allCaseSensitive() {
-        return options.fields().stream().allMatch(ObjectFieldOptions::caseSensitive);
+        return options.fields().stream().allMatch(ObjectField::caseSensitive);
     }
 
-    ObjectValueFieldProcessor processorImpl(Map<ObjectFieldOptions, ValueProcessor> fields) {
+    ObjectValueFieldProcessor processorImpl(Map<ObjectField, ValueProcessor> fields) {
         return new ObjectValueFieldProcessor(fields);
     }
 
     final class ObjectValueFieldProcessor implements ValueProcessor {
-        private final Map<ObjectFieldOptions, ValueProcessor> fields;
-        private final Map<String, ObjectFieldOptions> map;
+        private final Map<ObjectField, ValueProcessor> fields;
+        private final Map<String, ObjectField> map;
 
-        ObjectValueFieldProcessor(Map<ObjectFieldOptions, ValueProcessor> fields) {
+        ObjectValueFieldProcessor(Map<ObjectField, ValueProcessor> fields) {
             this.fields = fields;
             this.map = allCaseSensitive()
                     ? new HashMap<>()
                     : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            for (Entry<ObjectFieldOptions, ValueProcessor> e : fields.entrySet()) {
-                final ObjectFieldOptions field = e.getKey();
+            for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
+                final ObjectField field = e.getKey();
                 map.put(field.name(), field);
                 for (String alias : field.aliases()) {
                     map.put(alias, field);
@@ -125,8 +125,8 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
             }
         }
 
-        private ObjectFieldOptions lookupField(String fieldName) {
-            final ObjectFieldOptions field = map.get(fieldName);
+        private ObjectField lookupField(String fieldName) {
+            final ObjectField field = map.get(fieldName);
             if (field == null) {
                 return null;
             }
@@ -140,7 +140,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
             return null;
         }
 
-        private ValueProcessor processor(ObjectFieldOptions options) {
+        private ValueProcessor processor(ObjectField options) {
             return Objects.requireNonNull(fields.get(options));
         }
 
@@ -206,11 +206,11 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
             // Note: we could try to build a stricter implementation that doesn't use Set; if all of the fields disallow
             // missing and the user knows that the data doesn't have any repeated fields, we could use a simple
             // counter to ensure all field processors were invoked.
-            private final Set<ObjectFieldOptions> visited = new HashSet<>(fields.size());
+            private final Set<ObjectField> visited = new HashSet<>(fields.size());
 
             @Override
             public void process(String fieldName, JsonParser parser) throws IOException {
-                final ObjectFieldOptions field = lookupField(fieldName);
+                final ObjectField field = lookupField(fieldName);
                 if (field == null) {
                     if (!options.allowUnknownFields()) {
                         throw new IOException(
@@ -234,7 +234,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
                     // All fields visited, none missing
                     return;
                 }
-                for (Entry<ObjectFieldOptions, ValueProcessor> e : fields.entrySet()) {
+                for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
                     if (!visited.contains(e.getKey())) {
                         e.getValue().processMissing(parser);
                     }
@@ -244,9 +244,9 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
     }
 
     final class ObjectValueRepeaterProcessor implements RepeaterProcessor {
-        private final Map<ObjectFieldOptions, RepeaterProcessor> fields;
+        private final Map<ObjectField, RepeaterProcessor> fields;
 
-        public ObjectValueRepeaterProcessor(Map<ObjectFieldOptions, RepeaterProcessor> fields) {
+        public ObjectValueRepeaterProcessor(Map<ObjectField, RepeaterProcessor> fields) {
             this.fields = Objects.requireNonNull(fields);
         }
 
@@ -256,8 +256,8 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
 
         @Override
         public Context start(JsonParser parser) throws IOException {
-            final Map<ObjectFieldOptions, Context> contexts = new LinkedHashMap<>(fields.size());
-            for (Entry<ObjectFieldOptions, RepeaterProcessor> e : fields.entrySet()) {
+            final Map<ObjectField, Context> contexts = new LinkedHashMap<>(fields.size());
+            for (Entry<ObjectField, RepeaterProcessor> e : fields.entrySet()) {
                 contexts.put(e.getKey(), e.getValue().start(parser));
             }
             return new ObjectArrayContext(contexts);
@@ -278,16 +278,16 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
         }
 
         final class ObjectArrayContext implements Context {
-            private final Map<ObjectFieldOptions, Context> contexts;
-            private final Map<String, ObjectFieldOptions> map;
+            private final Map<ObjectField, Context> contexts;
+            private final Map<String, ObjectField> map;
 
-            public ObjectArrayContext(Map<ObjectFieldOptions, Context> contexts) {
+            public ObjectArrayContext(Map<ObjectField, Context> contexts) {
                 this.contexts = Objects.requireNonNull(contexts);
                 this.map = allCaseSensitive()
                         ? new HashMap<>()
                         : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-                for (Entry<ObjectFieldOptions, RepeaterProcessor> e : fields.entrySet()) {
-                    final ObjectFieldOptions field = e.getKey();
+                for (Entry<ObjectField, RepeaterProcessor> e : fields.entrySet()) {
+                    final ObjectField field = e.getKey();
                     map.put(field.name(), field);
                     for (String alias : field.aliases()) {
                         map.put(alias, field);
@@ -295,8 +295,8 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
                 }
             }
 
-            private ObjectFieldOptions lookupField(String fieldName) {
-                final ObjectFieldOptions field = map.get(fieldName);
+            private ObjectField lookupField(String fieldName) {
+                final ObjectField field = map.get(fieldName);
                 if (field == null) {
                     return null;
                 }
@@ -310,7 +310,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
                 return null;
             }
 
-            private Context context(ObjectFieldOptions o) {
+            private Context context(ObjectField o) {
                 return Objects.requireNonNull(contexts.get(o));
             }
 
@@ -366,7 +366,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
                 // Note: we could try to build a stricter implementation that doesn't use Set; if the user can guarantee
                 // that none of the fields will be missing and there won't be any repeated fields, we could use a simple
                 // counter to ensure all field processors were invoked.
-                private final Set<ObjectFieldOptions> visited = new HashSet<>(contexts.size());
+                private final Set<ObjectField> visited = new HashSet<>(contexts.size());
                 private final int ix;
 
                 public State(int ix) {
@@ -375,7 +375,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
 
                 @Override
                 public void process(String fieldName, JsonParser parser) throws IOException {
-                    final ObjectFieldOptions field = lookupField(fieldName);
+                    final ObjectField field = lookupField(fieldName);
                     if (field == null) {
                         if (!options.allowUnknownFields()) {
                             throw new IOException(
@@ -399,7 +399,7 @@ final class ObjectMixin extends Mixin<ObjectOptions> {
                         // All fields visited, none missing
                         return;
                     }
-                    for (Entry<ObjectFieldOptions, Context> e : contexts.entrySet()) {
+                    for (Entry<ObjectField, Context> e : contexts.entrySet()) {
                         if (!visited.contains(e.getKey())) {
                             e.getValue().processElementMissing(parser, ix);
                         }

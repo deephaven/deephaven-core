@@ -18,33 +18,33 @@ public class DoubleOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(DoubleOptions.standard(), List.of("42", "42.42"), DoubleChunk.chunkWrap(new double[] {42, 42.42}));
+        parse(DoubleValue.standard(), List.of("42", "42.42"), DoubleChunk.chunkWrap(new double[] {42, 42.42}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(DoubleOptions.standard(), "", DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE}));
+        parse(DoubleValue.standard(), "", DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(DoubleOptions.standard(), "null", DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE}));
+        parse(DoubleValue.standard(), "null", DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(DoubleOptions.builder().onMissing(-1.0).build(), "", DoubleChunk.chunkWrap(new double[] {-1}));
+        parse(DoubleValue.builder().onMissing(-1.0).build(), "", DoubleChunk.chunkWrap(new double[] {-1}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(DoubleOptions.strict(), "42", DoubleChunk.chunkWrap(new double[] {42}));
+        parse(DoubleValue.strict(), "42", DoubleChunk.chunkWrap(new double[] {42}));
     }
 
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(DoubleOptions.strict(), "", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.strict(), "", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -54,7 +54,7 @@ public class DoubleOptionsTest {
     @Test
     void strictNull() throws IOException {
         try {
-            parse(DoubleOptions.strict(), "null", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.strict(), "null", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -64,7 +64,7 @@ public class DoubleOptionsTest {
     @Test
     void standardString() throws IOException {
         try {
-            parse(DoubleOptions.standard(), "\"42\"", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.standard(), "\"42\"", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_STRING'");
@@ -74,7 +74,7 @@ public class DoubleOptionsTest {
     @Test
     void standardTrue() throws IOException {
         try {
-            parse(DoubleOptions.standard(), "true", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.standard(), "true", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
@@ -84,7 +84,7 @@ public class DoubleOptionsTest {
     @Test
     void standardFalse() throws IOException {
         try {
-            parse(DoubleOptions.standard(), "false", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.standard(), "false", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
@@ -94,7 +94,7 @@ public class DoubleOptionsTest {
     @Test
     void standardObject() throws IOException {
         try {
-            parse(DoubleOptions.standard(), "{}", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.standard(), "{}", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
@@ -104,7 +104,7 @@ public class DoubleOptionsTest {
     @Test
     void standardArray() throws IOException {
         try {
-            parse(DoubleOptions.standard(), "[]", DoubleChunk.chunkWrap(new double[1]));
+            parse(DoubleValue.standard(), "[]", DoubleChunk.chunkWrap(new double[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
@@ -113,6 +113,6 @@ public class DoubleOptionsTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(DoubleOptions.lenient(), List.of("\"42\"", "\"42.42\""), DoubleChunk.chunkWrap(new double[] {42, 42.42}));
+        parse(DoubleValue.lenient(), List.of("\"42\"", "\"42.42\""), DoubleChunk.chunkWrap(new double[] {42, 42.42}));
     }
 }

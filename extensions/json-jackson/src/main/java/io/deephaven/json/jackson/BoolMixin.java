@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.BoolOptions;
+import io.deephaven.json.BoolValue;
 import io.deephaven.json.jackson.ByteValueProcessor.ToByte;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
@@ -16,8 +16,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class BoolMixin extends Mixin<BoolOptions> implements ToByte {
-    public BoolMixin(BoolOptions options, JsonFactory factory) {
+final class BoolMixin extends Mixin<BoolValue> implements ToByte {
+    public BoolMixin(BoolValue options, JsonFactory factory) {
         super(factory, options);
     }
 

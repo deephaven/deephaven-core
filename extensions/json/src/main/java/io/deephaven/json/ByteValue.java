@@ -10,42 +10,42 @@ import org.immutables.value.Value.Immutable;
 import java.util.Set;
 
 /**
- * Processes a JSON value as a {@code long}.
+ * Processes a JSON value as a {@code byte}.
  */
 @Immutable
 @BuildableStyle
-public abstract class LongOptions extends ValueOptionsSingleValueBase<Long> {
+public abstract class ByteValue extends ValueSingleValueBase<Byte> {
 
     public static Builder builder() {
-        return ImmutableLongOptions.builder();
+        return ImmutableByteValue.builder();
     }
 
     /**
-     * The lenient long options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
+     * The lenient byte options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
      *
-     * @return the lenient long options
+     * @return the lenient byte options
      */
-    public static LongOptions lenient() {
+    public static ByteValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.intLike())
                 .build();
     }
 
     /**
-     * The standard long options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
+     * The standard byte options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
      *
-     * @return the standard long options
+     * @return the standard byte options
      */
-    public static LongOptions standard() {
+    public static ByteValue standard() {
         return builder().build();
     }
 
     /**
-     * The strict long options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
+     * The strict byte options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
      *
-     * @return the strict long options
+     * @return the strict byte options
      */
-    public static LongOptions strict() {
+    public static ByteValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.int_())
@@ -72,10 +72,10 @@ public abstract class LongOptions extends ValueOptionsSingleValueBase<Long> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Long, LongOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Byte, ByteValue, Builder> {
 
-        Builder onNull(long onNull);
+        Builder onNull(byte onNull);
 
-        Builder onMissing(long onMissing);
+        Builder onMissing(byte onMissing);
     }
 }

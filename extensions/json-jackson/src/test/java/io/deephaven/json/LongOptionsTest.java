@@ -19,33 +19,33 @@ public class LongOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(LongOptions.standard(), List.of("42", "43"), LongChunk.chunkWrap(new long[] {42, 43}));
+        parse(LongValue.standard(), List.of("42", "43"), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(LongOptions.standard(), "", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
+        parse(LongValue.standard(), "", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(LongOptions.standard(), "null", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
+        parse(LongValue.standard(), "null", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(LongOptions.builder().onMissing(-1L).build(), "", LongChunk.chunkWrap(new long[] {-1}));
+        parse(LongValue.builder().onMissing(-1L).build(), "", LongChunk.chunkWrap(new long[] {-1}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(LongOptions.strict(), "42", LongChunk.chunkWrap(new long[] {42}));
+        parse(LongValue.strict(), "42", LongChunk.chunkWrap(new long[] {42}));
     }
 
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(LongOptions.strict(), "", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.strict(), "", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -55,7 +55,7 @@ public class LongOptionsTest {
     @Test
     void strictNull() throws IOException {
         try {
-            parse(LongOptions.strict(), "null", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.strict(), "null", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -65,7 +65,7 @@ public class LongOptionsTest {
     @Test
     void strictOverflow() throws IOException {
         try {
-            parse(LongOptions.strict(), "9223372036854775808", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.strict(), "9223372036854775808", LongChunk.chunkWrap(new long[1]));
         } catch (InputCoercionException e) {
             assertThat(e).hasMessageContaining(
                     "Numeric value (9223372036854775808) out of range of long (-9223372036854775808 - 9223372036854775807)");
@@ -75,7 +75,7 @@ public class LongOptionsTest {
     @Test
     void standardString() throws IOException {
         try {
-            parse(LongOptions.standard(), "\"42\"", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.standard(), "\"42\"", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_STRING'");
@@ -85,7 +85,7 @@ public class LongOptionsTest {
     @Test
     void standardTrue() throws IOException {
         try {
-            parse(LongOptions.standard(), "true", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.standard(), "true", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
@@ -95,7 +95,7 @@ public class LongOptionsTest {
     @Test
     void standardFalse() throws IOException {
         try {
-            parse(LongOptions.standard(), "false", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.standard(), "false", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
@@ -105,7 +105,7 @@ public class LongOptionsTest {
     @Test
     void standardFloat() throws IOException {
         try {
-            parse(LongOptions.standard(), "42.0", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.standard(), "42.0", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_FLOAT'");
@@ -115,7 +115,7 @@ public class LongOptionsTest {
     @Test
     void standardObject() throws IOException {
         try {
-            parse(LongOptions.standard(), "{}", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.standard(), "{}", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
@@ -125,7 +125,7 @@ public class LongOptionsTest {
     @Test
     void standardArray() throws IOException {
         try {
-            parse(LongOptions.standard(), "[]", LongChunk.chunkWrap(new long[1]));
+            parse(LongValue.standard(), "[]", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
@@ -134,26 +134,26 @@ public class LongOptionsTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(LongOptions.lenient(), List.of("\"42\"", "\"43\""), LongChunk.chunkWrap(new long[] {42, 43}));
+        parse(LongValue.lenient(), List.of("\"42\"", "\"43\""), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void allowDecimal() throws IOException {
-        parse(LongOptions.builder().allowedTypes(JsonValueTypes.INT, JsonValueTypes.DECIMAL).build(),
+        parse(LongValue.builder().allowedTypes(JsonValueTypes.INT, JsonValueTypes.DECIMAL).build(),
                 List.of("42.42", "43.999"),
                 LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void allowDecimalString() throws IOException {
-        parse(LongOptions.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
+        parse(LongValue.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
                 List.of("\"42.42\"", "\"43.999\""), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void decimalStringLimitsNearMinValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(LongOptions.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
+            parse(LongValue.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
                     List.of(String.format("\"%d.0\"", Long.MIN_VALUE + i)),
                     LongChunk.chunkWrap(new long[] {Long.MIN_VALUE + i}));
         }
@@ -162,7 +162,7 @@ public class LongOptionsTest {
     @Test
     void decimalStringLimitsNearMaxValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(LongOptions.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
+            parse(LongValue.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
                     List.of(String.format("\"%d.0\"", Long.MAX_VALUE - i)),
                     LongChunk.chunkWrap(new long[] {Long.MAX_VALUE - i}));
         }

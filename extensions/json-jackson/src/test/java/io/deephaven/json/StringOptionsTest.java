@@ -17,40 +17,40 @@ public class StringOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(StringOptions.standard(), "\"foo\"", ObjectChunk.chunkWrap(new String[] {"foo"}));
+        parse(StringValue.standard(), "\"foo\"", ObjectChunk.chunkWrap(new String[] {"foo"}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(StringOptions.standard(), "", ObjectChunk.chunkWrap(new String[] {null}));
+        parse(StringValue.standard(), "", ObjectChunk.chunkWrap(new String[] {null}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(StringOptions.standard(), "null", ObjectChunk.chunkWrap(new String[] {null}));
+        parse(StringValue.standard(), "null", ObjectChunk.chunkWrap(new String[] {null}));
     }
 
 
     @Test
     void customMissing() throws IOException {
-        parse(StringOptions.builder().onMissing("<missing>").build(), "",
+        parse(StringValue.builder().onMissing("<missing>").build(), "",
                 ObjectChunk.chunkWrap(new String[] {"<missing>"}));
     }
 
     @Test
     void customNull() throws IOException {
-        parse(StringOptions.builder().onNull("<null>").build(), "null", ObjectChunk.chunkWrap(new String[] {"<null>"}));
+        parse(StringValue.builder().onNull("<null>").build(), "null", ObjectChunk.chunkWrap(new String[] {"<null>"}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(StringOptions.strict(), "\"foo\"", ObjectChunk.chunkWrap(new String[] {"foo"}));
+        parse(StringValue.strict(), "\"foo\"", ObjectChunk.chunkWrap(new String[] {"foo"}));
     }
 
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(StringOptions.strict(), "", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.strict(), "", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -60,7 +60,7 @@ public class StringOptionsTest {
     @Test
     void strictNull() throws IOException {
         try {
-            parse(StringOptions.strict(), "null", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.strict(), "null", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -71,7 +71,7 @@ public class StringOptionsTest {
     @Test
     void standardInt() throws IOException {
         try {
-            parse(StringOptions.standard(), "42", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.standard(), "42", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_INT'");
@@ -81,7 +81,7 @@ public class StringOptionsTest {
     @Test
     void standardFloat() throws IOException {
         try {
-            parse(StringOptions.standard(), "42.42", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.standard(), "42.42", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_FLOAT'");
@@ -92,7 +92,7 @@ public class StringOptionsTest {
     @Test
     void standardTrue() throws IOException {
         try {
-            parse(StringOptions.standard(), "true", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.standard(), "true", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
@@ -102,7 +102,7 @@ public class StringOptionsTest {
     @Test
     void standardFalse() throws IOException {
         try {
-            parse(StringOptions.standard(), "false", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.standard(), "false", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
@@ -112,7 +112,7 @@ public class StringOptionsTest {
     @Test
     void standardObject() throws IOException {
         try {
-            parse(StringOptions.standard(), "{}", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.standard(), "{}", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
@@ -122,7 +122,7 @@ public class StringOptionsTest {
     @Test
     void standardArray() throws IOException {
         try {
-            parse(StringOptions.standard(), "[]", ObjectChunk.chunkWrap(new String[1]));
+            parse(StringValue.standard(), "[]", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
@@ -131,7 +131,7 @@ public class StringOptionsTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(StringOptions.lenient(), List.of("42", "42.42", "true", "false"),
+        parse(StringValue.lenient(), List.of("42", "42.42", "true", "false"),
                 ObjectChunk.chunkWrap(new String[] {"42", "42.42", "true", "false"}));
     }
 }

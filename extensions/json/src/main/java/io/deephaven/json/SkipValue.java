@@ -14,10 +14,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class SkipOptions extends ValueOptions {
+public abstract class SkipValue extends Value {
 
     public static Builder builder() {
-        return ImmutableSkipOptions.builder();
+        return ImmutableSkipValue.builder();
     }
 
     /**
@@ -25,7 +25,7 @@ public abstract class SkipOptions extends ValueOptions {
      *
      * @return the lenient skip options
      */
-    public static SkipOptions lenient() {
+    public static SkipValue lenient() {
         return builder().build();
     }
 
@@ -43,7 +43,7 @@ public abstract class SkipOptions extends ValueOptions {
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<SkipOptions, Builder> {
+    public interface Builder extends Value.Builder<SkipValue, Builder> {
 
     }
 }

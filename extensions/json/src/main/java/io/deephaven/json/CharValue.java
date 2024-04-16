@@ -14,10 +14,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class CharOptions extends ValueOptionsSingleValueBase<Character> {
+public abstract class CharValue extends ValueSingleValueBase<Character> {
 
     public static Builder builder() {
-        return ImmutableCharOptions.builder();
+        return ImmutableCharValue.builder();
     }
 
 
@@ -26,7 +26,7 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
      *
      * @return the standard char options
      */
-    public static CharOptions standard() {
+    public static CharValue standard() {
         return builder().build();
     }
 
@@ -35,7 +35,7 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
      *
      * @return the strict char options
      */
-    public static CharOptions strict() {
+    public static CharValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.string())
@@ -62,7 +62,7 @@ public abstract class CharOptions extends ValueOptionsSingleValueBase<Character>
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Character, CharOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Character, CharValue, Builder> {
 
         Builder onNull(char onNull);
 

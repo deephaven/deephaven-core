@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.FloatOptions;
+import io.deephaven.json.FloatValue;
 import io.deephaven.json.jackson.FloatValueProcessor.ToFloat;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -20,9 +20,9 @@ import java.util.stream.Stream;
 
 import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_FLOAT_ARRAY;
 
-final class FloatMixin extends Mixin<FloatOptions> implements ToFloat {
+final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
 
-    public FloatMixin(FloatOptions options, JsonFactory factory) {
+    public FloatMixin(FloatValue options, JsonFactory factory) {
         super(factory, options);
     }
 

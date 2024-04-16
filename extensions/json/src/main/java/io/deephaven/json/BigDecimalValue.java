@@ -7,46 +7,44 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 /**
- * Processes a JSON value as a {@code double}.
+ * Processes a JSON value as a {@link BigDecimal}.
  */
 @Immutable
 @BuildableStyle
-public abstract class DoubleOptions extends ValueOptionsSingleValueBase<Double> {
-
+public abstract class BigDecimalValue extends ValueSingleValueBase<BigDecimal> {
 
     public static Builder builder() {
-        return ImmutableDoubleOptions.builder();
+        return ImmutableBigDecimalValue.builder();
     }
 
     /**
-     * The lenient double options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
+     * The lenient {@link BigDecimal} options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
      *
-     * @return the lenient double options
+     * @return the lenient BigDecimal options
      */
-    public static DoubleOptions lenient() {
-        return builder()
-                .allowedTypes(JsonValueTypes.numberLike())
-                .build();
+    public static BigDecimalValue lenient() {
+        return builder().allowedTypes(JsonValueTypes.numberLike()).build();
     }
 
     /**
-     * The standard double options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
+     * The standard {@link BigDecimal} options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
      *
-     * @return the standard double options
+     * @return the standard BigDecimal options
      */
-    public static DoubleOptions standard() {
+    public static BigDecimalValue standard() {
         return builder().build();
     }
 
     /**
-     * The strict double options. Disallows missing and accepts {@link JsonValueTypes#number()}.
+     * The strict {@link BigDecimal} options. Disallows missing and accepts {@link JsonValueTypes#number()}.
      *
-     * @return the strict double options
+     * @return the strict BigDecimal options
      */
-    public static DoubleOptions strict() {
+    public static BigDecimalValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.number())
@@ -73,10 +71,7 @@ public abstract class DoubleOptions extends ValueOptionsSingleValueBase<Double> 
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Double, DoubleOptions, Builder> {
+    public interface Builder extends ValueSingleValueBase.Builder<BigDecimal, BigDecimalValue, Builder> {
 
-        Builder onNull(double onNull);
-
-        Builder onMissing(double onMissing);
     }
 }

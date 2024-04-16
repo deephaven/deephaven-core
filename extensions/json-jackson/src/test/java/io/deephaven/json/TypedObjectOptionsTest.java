@@ -15,20 +15,20 @@ import java.util.List;
 import static io.deephaven.json.TestHelper.parse;
 
 public class TypedObjectOptionsTest {
-    private static final ObjectOptions QUOTE_OBJECT = ObjectOptions.builder()
-            .putFields("symbol", StringOptions.strict())
-            .putFields("bid", DoubleOptions.standard())
-            .putFields("ask", DoubleOptions.standard())
+    private static final ObjectValue QUOTE_OBJECT = ObjectValue.builder()
+            .putFields("symbol", StringValue.strict())
+            .putFields("bid", DoubleValue.standard())
+            .putFields("ask", DoubleValue.standard())
             .build();
 
-    private static final ObjectOptions TRADE_OBJECT = ObjectOptions.builder()
-            .putFields("symbol", StringOptions.strict())
-            .putFields("price", DoubleOptions.standard())
-            .putFields("size", DoubleOptions.standard())
+    private static final ObjectValue TRADE_OBJECT = ObjectValue.builder()
+            .putFields("symbol", StringValue.strict())
+            .putFields("price", DoubleValue.standard())
+            .putFields("size", DoubleValue.standard())
             .build();
 
-    private static final TypedObjectOptions QUOTE_OR_TRADE_OBJECT =
-            TypedObjectOptions.strict("type", new LinkedHashMap<>() {
+    private static final TypedObjectValue QUOTE_OR_TRADE_OBJECT =
+            TypedObjectValue.strict("type", new LinkedHashMap<>() {
                 {
                     put("quote", QUOTE_OBJECT);
                     put("trade", TRADE_OBJECT);

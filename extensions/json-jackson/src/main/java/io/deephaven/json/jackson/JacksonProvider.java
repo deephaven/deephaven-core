@@ -4,7 +4,7 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import io.deephaven.json.ValueOptions;
+import io.deephaven.json.Value;
 import io.deephaven.processor.NamedObjectProcessor;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
@@ -28,10 +28,10 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
      *
      * @param options the object options
      * @return the jackson provider
-     * @see #of(ValueOptions, JsonFactory)
+     * @see #of(Value, JsonFactory)
      * @see JacksonConfiguration#defaultFactoryBuilder()
      */
-    static JacksonProvider of(ValueOptions options) {
+    static JacksonProvider of(Value options) {
         return of(options, JacksonConfiguration.defaultFactory());
     }
 
@@ -42,7 +42,7 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
      * @param factory the jackson factory
      * @return the jackson provider
      */
-    static JacksonProvider of(ValueOptions options, JsonFactory factory) {
+    static JacksonProvider of(Value options, JsonFactory factory) {
         return Mixin.of(options, factory);
     }
 

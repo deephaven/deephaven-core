@@ -26,17 +26,17 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class ObjectKvOptions extends ValueOptionsRestrictedUniverseBase {
+public abstract class ObjectKvValue extends ValueRestrictedUniverseBase {
 
     public static Builder builder() {
-        return ImmutableObjectKvOptions.builder();
+        return ImmutableObjectKvValue.builder();
     }
 
-    public static ObjectKvOptions standard(ValueOptions value) {
+    public static ObjectKvValue standard(Value value) {
         return builder().value(value).build();
     }
 
-    public static ObjectKvOptions strict(ValueOptions value) {
+    public static ObjectKvValue strict(Value value) {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.object())
@@ -46,17 +46,17 @@ public abstract class ObjectKvOptions extends ValueOptionsRestrictedUniverseBase
 
     /**
      * The key options which must minimally support {@link JsonValueTypes#STRING}. By default is
-     * {@link StringOptions#standard()}.
+     * {@link StringValue#standard()}.
      */
     @Default
-    public ValueOptions key() {
-        return StringOptions.standard();
+    public Value key() {
+        return StringValue.standard();
     }
 
     /**
      * The value options.
      */
-    public abstract ValueOptions value();
+    public abstract Value value();
 
     /**
      * {@inheritDoc} Must be a subset of {@link JsonValueTypes#objectOrNull()}. By default is
@@ -78,11 +78,11 @@ public abstract class ObjectKvOptions extends ValueOptionsRestrictedUniverseBase
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<ObjectKvOptions, Builder> {
+    public interface Builder extends Value.Builder<ObjectKvValue, Builder> {
 
-        Builder key(ValueOptions key);
+        Builder key(Value key);
 
-        Builder value(ValueOptions value);
+        Builder value(Value value);
     }
 
     @Check

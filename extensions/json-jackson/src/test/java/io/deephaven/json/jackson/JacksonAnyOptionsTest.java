@@ -15,12 +15,12 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.json.AnyOptions;
-import io.deephaven.json.DoubleOptions;
-import io.deephaven.json.IntOptions;
-import io.deephaven.json.ObjectOptions;
+import io.deephaven.json.AnyValue;
+import io.deephaven.json.DoubleValue;
+import io.deephaven.json.IntValue;
+import io.deephaven.json.ObjectValue;
 import io.deephaven.json.TestHelper;
-import io.deephaven.json.TupleOptions;
+import io.deephaven.json.TupleValue;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -79,7 +79,7 @@ public class JacksonAnyOptionsTest {
 
     @Test
     void anyInTuple() throws IOException {
-        final TupleOptions options = TupleOptions.of(IntOptions.standard(), AnyOptions.of(), DoubleOptions.standard());
+        final TupleValue options = TupleValue.of(IntValue.standard(), AnyValue.of(), DoubleValue.standard());
         TestHelper.parse(options, List.of("", "[42, {\"zip\": 43}, 44.44]"),
                 IntChunk.chunkWrap(new int[] {QueryConstants.NULL_INT, 42}),
                 ObjectChunk.chunkWrap(new TreeNode[] {MissingNode.getInstance(),
@@ -89,10 +89,10 @@ public class JacksonAnyOptionsTest {
 
     @Test
     void anyInObject() throws IOException {
-        final ObjectOptions options = ObjectOptions.builder()
-                .putFields("foo", IntOptions.standard())
-                .putFields("bar", AnyOptions.of())
-                .putFields("baz", DoubleOptions.standard())
+        final ObjectValue options = ObjectValue.builder()
+                .putFields("foo", IntValue.standard())
+                .putFields("bar", AnyValue.of())
+                .putFields("baz", DoubleValue.standard())
                 .build();
         TestHelper.parse(options, List.of("", "{\"foo\": 42, \"bar\": {\"zip\": 43}, \"baz\": 44.44}"),
                 IntChunk.chunkWrap(new int[] {QueryConstants.NULL_INT, 42}),
@@ -102,6 +102,6 @@ public class JacksonAnyOptionsTest {
     }
 
     private static void checkAny(String json, TreeNode expected) throws IOException {
-        TestHelper.parse(AnyOptions.of(), json, ObjectChunk.chunkWrap(new TreeNode[] {expected}));
+        TestHelper.parse(AnyValue.of(), json, ObjectChunk.chunkWrap(new TreeNode[] {expected}));
     }
 }

@@ -18,7 +18,7 @@ public class ArrayTest {
     @Test
     void primitive() throws IOException {
         // [1.1, null, 3.3]
-        parse(DoubleOptions.standard().array(),
+        parse(DoubleValue.standard().array(),
                 "[1.1, null, 3.3]",
                 ObjectChunk.chunkWrap(new Object[] {new double[] {1.1, QueryConstants.NULL_DOUBLE, 3.3}}));
     }
@@ -26,7 +26,7 @@ public class ArrayTest {
     @Test
     void bool() throws IOException {
         // [true, false, null]
-        parse(BoolOptions.standard().array(),
+        parse(BoolValue.standard().array(),
                 "[true, false, null]",
                 ObjectChunk.chunkWrap(new Object[] {new Boolean[] {true, false, null}}));
     }
@@ -34,7 +34,7 @@ public class ArrayTest {
     @Test
     void tuple() throws IOException {
         // [[1, 1.1], null, [3, 3.3]]
-        parse(TupleOptions.of(IntOptions.standard(), DoubleOptions.standard()).array(),
+        parse(TupleValue.of(IntValue.standard(), DoubleValue.standard()).array(),
                 "[[1, 1.1], null, [3, 3.3]]",
                 ObjectChunk.chunkWrap(new Object[] {new int[] {1, QueryConstants.NULL_INT, 3}}),
                 ObjectChunk.chunkWrap(new Object[] {new double[] {1.1, QueryConstants.NULL_DOUBLE, 3.3}}));
@@ -43,9 +43,9 @@ public class ArrayTest {
     @Test
     void object() throws IOException {
         // [{"int": 1, "double": 1.1}, null, {}, {"int": 4, "double": 4.4}]
-        parse(ObjectOptions.builder()
-                .putFields("int", IntOptions.standard())
-                .putFields("double", DoubleOptions.standard())
+        parse(ObjectValue.builder()
+                .putFields("int", IntValue.standard())
+                .putFields("double", DoubleValue.standard())
                 .build()
                 .array(),
                 "[{\"int\": 1, \"double\": 1.1}, null, {}, {\"int\": 4, \"double\": 4.4}]",
@@ -60,10 +60,10 @@ public class ArrayTest {
     @Test
     void typedObject() throws IOException {
         // [ {"type": "int", "value": 42}, {"type": "string", "value": "foo"} ]
-        parse(TypedObjectOptions.builder()
+        parse(TypedObjectValue.builder()
                 .typeFieldName("type")
-                .putObjects("int", ObjectOptions.standard(Map.of("value", IntOptions.standard())))
-                .putObjects("string", ObjectOptions.standard(Map.of("value", StringOptions.standard())))
+                .putObjects("int", ObjectValue.standard(Map.of("value", IntValue.standard())))
+                .putObjects("string", ObjectValue.standard(Map.of("value", StringValue.standard())))
                 .build()
                 .array(),
                 "[ {\"type\": \"int\", \"value\": 42}, {\"type\": \"string\", \"value\": \"foo\"} ]",
@@ -76,7 +76,7 @@ public class ArrayTest {
     @Test
     void instant() throws IOException {
         // ["2009-02-13T23:31:30.123456789Z", null]
-        parse(InstantOptions.standard().array(),
+        parse(InstantValue.standard().array(),
                 "[\"2009-02-13T23:31:30.123456789Z\", null]",
                 ObjectChunk.chunkWrap(new Object[] {new long[] {1234567890123456789L, QueryConstants.NULL_LONG}}));
     }
@@ -84,7 +84,7 @@ public class ArrayTest {
     @Test
     void tupleSkip() throws IOException {
         // [[1, 1], [2, 2.2], [3, "foo"], [4, true], [5, false], [6, {}], [7, []], [8, null], null]
-        parse(TupleOptions.of(IntOptions.standard(), SkipOptions.lenient()).array(),
+        parse(TupleValue.of(IntValue.standard(), SkipValue.lenient()).array(),
                 "[[1, 1], [2, 2.2], [3, \"foo\"], [4, true], [5, false], [6, {}], [7, []], [8, null], null]",
                 ObjectChunk.chunkWrap(new Object[] {new int[] {1, 2, 3, 4, 5, 6, 7, 8, QueryConstants.NULL_INT}}));
     }

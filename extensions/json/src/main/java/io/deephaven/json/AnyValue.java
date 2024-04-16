@@ -13,15 +13,15 @@ import java.util.Set;
  */
 @Immutable
 @SingletonStyle
-public abstract class AnyOptions extends ValueOptions {
+public abstract class AnyValue extends Value {
 
     /**
      * Allows missing and accepts {@link JsonValueTypes#all()}.
      *
      * @return the any options
      */
-    public static AnyOptions of() {
-        return ImmutableAnyOptions.of();
+    public static AnyValue of() {
+        return ImmutableAnyValue.of();
     }
 
     /**

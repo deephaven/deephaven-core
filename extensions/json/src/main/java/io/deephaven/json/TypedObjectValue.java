@@ -40,28 +40,28 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseBase {
+public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
 
     public static Builder builder() {
-        return ImmutableTypedObjectOptions.builder();
+        return ImmutableTypedObjectValue.builder();
     }
 
     /**
      * Creates a new builder with the {@link #typeFieldName()} set to {@code typeFieldName}, {@link #sharedFields()}
-     * inferred from {@code objects} based on {@link ObjectFieldOptions} equality, and {@link #objects()} set to
+     * inferred from {@code objects} based on {@link ObjectField} equality, and {@link #objects()} set to
      * {@code objects} with the shared fields removed.
      *
      * @param typeFieldName the type field name
      * @param objects the objects
      * @return the builder
      */
-    public static Builder builder(String typeFieldName, Map<String, ObjectOptions> objects) {
+    public static Builder builder(String typeFieldName, Map<String, ObjectValue> objects) {
         final Builder builder = builder().typeFieldName(typeFieldName);
-        final Set<ObjectFieldOptions> sharedFields = new LinkedHashSet<>();
-        final ObjectOptions first = objects.values().iterator().next();
-        for (ObjectFieldOptions field : first.fields()) {
+        final Set<ObjectField> sharedFields = new LinkedHashSet<>();
+        final ObjectValue first = objects.values().iterator().next();
+        for (ObjectField field : first.fields()) {
             boolean isShared = true;
-            for (ObjectOptions obj : objects.values()) {
+            for (ObjectValue obj : objects.values()) {
                 if (!obj.fields().contains(field)) {
                     isShared = false;
                     break;
@@ -71,7 +71,7 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
                 sharedFields.add(field);
             }
         }
-        for (Entry<String, ObjectOptions> e : objects.entrySet()) {
+        for (Entry<String, ObjectValue> e : objects.entrySet()) {
             builder.putObjects(e.getKey(), without(e.getValue(), sharedFields));
         }
         return builder.addAllSharedFields(sharedFields);
@@ -85,7 +85,7 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
      * @param objects the objects
      * @return the typed object
      */
-    public static TypedObjectOptions standard(String typeFieldName, Map<String, ObjectOptions> objects) {
+    public static TypedObjectValue standard(String typeFieldName, Map<String, ObjectValue> objects) {
         return builder(typeFieldName, objects).build();
     }
 
@@ -97,7 +97,7 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
      * @param objects the objects
      * @return the typed object
      */
-    public static TypedObjectOptions strict(String typeFieldName, Map<String, ObjectOptions> objects) {
+    public static TypedObjectValue strict(String typeFieldName, Map<String, ObjectValue> objects) {
         return builder(typeFieldName, objects)
                 .allowUnknownTypes(false)
                 .allowMissing(false)
@@ -107,10 +107,10 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
 
     public abstract String typeFieldName();
 
-    public abstract Set<ObjectFieldOptions> sharedFields();
+    public abstract Set<ObjectField> sharedFields();
 
     // canonical name
-    public abstract Map<String, ObjectOptions> objects();
+    public abstract Map<String, ObjectValue> objects();
 
     /**
      * If unknown fields are allowed. By default is {@code true}.
@@ -140,27 +140,27 @@ public abstract class TypedObjectOptions extends ValueOptionsRestrictedUniverseB
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptions.Builder<TypedObjectOptions, Builder> {
+    public interface Builder extends Value.Builder<TypedObjectValue, Builder> {
 
         Builder typeFieldName(String typeFieldName);
 
-        Builder addSharedFields(ObjectFieldOptions element);
+        Builder addSharedFields(ObjectField element);
 
-        Builder addSharedFields(ObjectFieldOptions... elements);
+        Builder addSharedFields(ObjectField... elements);
 
-        Builder addAllSharedFields(Iterable<? extends ObjectFieldOptions> elements);
+        Builder addAllSharedFields(Iterable<? extends ObjectField> elements);
 
-        Builder putObjects(String key, ObjectOptions value);
+        Builder putObjects(String key, ObjectValue value);
 
         Builder allowUnknownTypes(boolean allowUnknownTypes);
     }
 
-    private static ObjectOptions without(ObjectOptions options, Set<ObjectFieldOptions> excludedFields) {
-        final ObjectOptions.Builder builder = ObjectOptions.builder()
+    private static ObjectValue without(ObjectValue options, Set<ObjectField> excludedFields) {
+        final ObjectValue.Builder builder = ObjectValue.builder()
                 .allowUnknownFields(options.allowUnknownFields())
                 .allowMissing(options.allowMissing())
                 .allowedTypes(options.allowedTypes());
-        for (ObjectFieldOptions field : options.fields()) {
+        for (ObjectField field : options.fields()) {
             if (!excludedFields.contains(field)) {
                 builder.addFields(field);
             }

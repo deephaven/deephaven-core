@@ -4,7 +4,7 @@
 package io.deephaven.bson.jackson;
 
 import de.undercouch.bson4jackson.BsonFactory;
-import io.deephaven.json.ValueOptions;
+import io.deephaven.json.Value;
 import io.deephaven.json.jackson.JacksonProvider;
 
 public final class JacksonBsonProvider {
@@ -14,9 +14,9 @@ public final class JacksonBsonProvider {
      *
      * @param options the object options
      * @return the jackson BSON provider
-     * @see #of(ValueOptions, BsonFactory)
+     * @see #of(Value, BsonFactory)
      */
-    public static JacksonProvider of(ValueOptions options) {
+    public static JacksonProvider of(Value options) {
         return of(options, JacksonBsonConfiguration.defaultFactory());
     }
 
@@ -27,7 +27,7 @@ public final class JacksonBsonProvider {
      * @param factory the jackson BSON factory
      * @return the jackson BSON provider
      */
-    public static JacksonProvider of(ValueOptions options, BsonFactory factory) {
+    public static JacksonProvider of(Value options, BsonFactory factory) {
         return JacksonProvider.of(options, factory);
     }
 }

@@ -14,7 +14,7 @@ public class IntArrayOptionsTest {
 
     @Test
     void standard() throws IOException {
-        parse(IntOptions.standard().array(), "[42, 43]", ObjectChunk.chunkWrap(new Object[] {new int[] {42, 43}}));
+        parse(IntValue.standard().array(), "[42, 43]", ObjectChunk.chunkWrap(new Object[] {new int[] {42, 43}}));
     }
 
     // @Test

@@ -14,10 +14,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class StringOptions extends ValueOptionsSingleValueBase<String> {
+public abstract class StringValue extends ValueSingleValueBase<String> {
 
     public static Builder builder() {
-        return ImmutableStringOptions.builder();
+        return ImmutableStringValue.builder();
     }
 
     /**
@@ -25,7 +25,7 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
      *
      * @return the lenient String options
      */
-    public static StringOptions lenient() {
+    public static StringValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.stringLike())
                 .build();
@@ -36,7 +36,7 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
      *
      * @return the standard String options
      */
-    public static StringOptions standard() {
+    public static StringValue standard() {
         return builder().build();
     }
 
@@ -45,7 +45,7 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
      *
      * @return the strict String options
      */
-    public static StringOptions strict() {
+    public static StringValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.string())
@@ -72,7 +72,7 @@ public abstract class StringOptions extends ValueOptionsSingleValueBase<String> 
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<String, StringOptions, Builder> {
+    public interface Builder extends BuilderSpecial<String, StringValue, Builder> {
 
         Builder onNull(String onNull);
 

@@ -21,28 +21,28 @@ public class InstantOptionsTest {
 
     @Test
     void iso8601() throws IOException {
-        parse(InstantOptions.standard(), "\"" + XYZ_STR + "Z\"", LongChunk.chunkWrap(new long[] {XYZ_NANOS}));
+        parse(InstantValue.standard(), "\"" + XYZ_STR + "Z\"", LongChunk.chunkWrap(new long[] {XYZ_NANOS}));
     }
 
     @Test
     void iso8601WithOffset() throws IOException {
-        parse(InstantOptions.standard(), "\"" + XYZ_STR + "+00:00\"", LongChunk.chunkWrap(new long[] {XYZ_NANOS}));
+        parse(InstantValue.standard(), "\"" + XYZ_STR + "+00:00\"", LongChunk.chunkWrap(new long[] {XYZ_NANOS}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(InstantOptions.standard(), "null", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
+        parse(InstantValue.standard(), "null", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(InstantOptions.standard(), "", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
+        parse(InstantValue.standard(), "", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
     }
 
     @Test
     void strictNull() throws IOException {
         try {
-            parse(InstantOptions.strict(), "null", LongChunk.chunkWrap(new long[1]));
+            parse(InstantValue.strict(), "null", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
@@ -52,7 +52,7 @@ public class InstantOptionsTest {
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(InstantOptions.strict(), "", LongChunk.chunkWrap(new long[1]));
+            parse(InstantValue.strict(), "", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Unexpected missing token");
@@ -61,13 +61,13 @@ public class InstantOptionsTest {
 
     @Test
     void customNull() throws IOException {
-        parse(InstantOptions.builder().onNull(Instant.ofEpochMilli(0)).build(), "null",
+        parse(InstantValue.builder().onNull(Instant.ofEpochMilli(0)).build(), "null",
                 LongChunk.chunkWrap(new long[] {0}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(InstantOptions.builder().onMissing(Instant.ofEpochMilli(0)).build(), "",
+        parse(InstantValue.builder().onMissing(Instant.ofEpochMilli(0)).build(), "",
                 LongChunk.chunkWrap(new long[] {0}));
     }
 }

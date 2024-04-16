@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.InstantNumberOptions;
+import io.deephaven.json.InstantNumberValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
@@ -15,12 +15,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class InstantNumberMixin extends Mixin<InstantNumberOptions> {
+final class InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     private final long onNull;
     private final long onMissing;
 
-    public InstantNumberMixin(InstantNumberOptions options, JsonFactory factory) {
+    public InstantNumberMixin(InstantNumberValue options, JsonFactory factory) {
         super(factory, options);
         onNull = DateTimeUtils.epochNanos(options.onNull().orElse(null));
         onMissing = DateTimeUtils.epochNanos(options.onMissing().orElse(null));

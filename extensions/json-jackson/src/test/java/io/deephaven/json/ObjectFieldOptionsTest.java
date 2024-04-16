@@ -3,7 +3,7 @@
 //
 package io.deephaven.json;
 
-import io.deephaven.json.ObjectFieldOptions.RepeatedBehavior;
+import io.deephaven.json.ObjectField.RepeatedBehavior;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 public class ObjectFieldOptionsTest {
     @Test
     void basic() {
-        final ObjectFieldOptions field = ObjectFieldOptions.of("Foo", IntOptions.standard());
+        final ObjectField field = ObjectField.of("Foo", IntValue.standard());
         assertThat(field.name()).isEqualTo("Foo");
-        assertThat(field.options()).isEqualTo(IntOptions.standard());
+        assertThat(field.options()).isEqualTo(IntValue.standard());
         assertThat(field.aliases()).isEmpty();
         assertThat(field.caseSensitive()).isTrue();
         assertThat(field.repeatedBehavior()).isEqualTo(RepeatedBehavior.ERROR);
@@ -22,13 +22,13 @@ public class ObjectFieldOptionsTest {
 
     @Test
     void caseInsensitiveMatch() {
-        final ObjectFieldOptions field = ObjectFieldOptions.builder()
+        final ObjectField field = ObjectField.builder()
                 .name("Foo")
-                .options(IntOptions.standard())
+                .options(IntValue.standard())
                 .caseSensitive(false)
                 .build();
         assertThat(field.name()).isEqualTo("Foo");
-        assertThat(field.options()).isEqualTo(IntOptions.standard());
+        assertThat(field.options()).isEqualTo(IntValue.standard());
         assertThat(field.aliases()).isEmpty();
         assertThat(field.caseSensitive()).isFalse();
         assertThat(field.repeatedBehavior()).isEqualTo(RepeatedBehavior.ERROR);
@@ -36,13 +36,13 @@ public class ObjectFieldOptionsTest {
 
     @Test
     void repeatedBehavior() {
-        final ObjectFieldOptions field = ObjectFieldOptions.builder()
+        final ObjectField field = ObjectField.builder()
                 .name("Foo")
-                .options(IntOptions.standard())
+                .options(IntValue.standard())
                 .repeatedBehavior(RepeatedBehavior.ERROR)
                 .build();
         assertThat(field.name()).isEqualTo("Foo");
-        assertThat(field.options()).isEqualTo(IntOptions.standard());
+        assertThat(field.options()).isEqualTo(IntValue.standard());
         assertThat(field.aliases()).isEmpty();
         assertThat(field.caseSensitive()).isTrue();
         assertThat(field.repeatedBehavior()).isEqualTo(RepeatedBehavior.ERROR);
@@ -50,13 +50,13 @@ public class ObjectFieldOptionsTest {
 
     @Test
     void alias() {
-        final ObjectFieldOptions field = ObjectFieldOptions.builder()
+        final ObjectField field = ObjectField.builder()
                 .name("SomeName")
-                .options(IntOptions.standard())
+                .options(IntValue.standard())
                 .addAliases("someName")
                 .build();
         assertThat(field.name()).isEqualTo("SomeName");
-        assertThat(field.options()).isEqualTo(IntOptions.standard());
+        assertThat(field.options()).isEqualTo(IntValue.standard());
         assertThat(field.aliases()).containsExactly("someName");
         assertThat(field.caseSensitive()).isTrue();
         assertThat(field.repeatedBehavior()).isEqualTo(RepeatedBehavior.ERROR);
@@ -65,9 +65,9 @@ public class ObjectFieldOptionsTest {
     @Test
     void badAliasRepeated() {
         try {
-            ObjectFieldOptions.builder()
+            ObjectField.builder()
                     .name("SomeName")
-                    .options(IntOptions.standard())
+                    .options(IntValue.standard())
                     .addAliases("SomeName")
                     .build();
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
@@ -80,9 +80,9 @@ public class ObjectFieldOptionsTest {
     void badAliasCaseInsensitive() {
         try {
             // this is similar to the alias() test, but we are explicitly marking it as case-insensitive
-            ObjectFieldOptions.builder()
+            ObjectField.builder()
                     .name("SomeName")
-                    .options(IntOptions.standard())
+                    .options(IntValue.standard())
                     .addAliases("someName")
                     .caseSensitive(false)
                     .build();

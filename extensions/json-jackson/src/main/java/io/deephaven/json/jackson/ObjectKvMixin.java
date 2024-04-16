@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.json.ObjectKvOptions;
+import io.deephaven.json.ObjectKvValue;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
@@ -20,9 +20,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class ObjectKvMixin extends Mixin<ObjectKvOptions> {
+final class ObjectKvMixin extends Mixin<ObjectKvValue> {
 
-    public ObjectKvMixin(ObjectKvOptions options, JsonFactory factory) {
+    public ObjectKvMixin(ObjectKvValue options, JsonFactory factory) {
         super(factory, options);
     }
 

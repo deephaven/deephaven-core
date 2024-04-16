@@ -7,44 +7,45 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
-import java.math.BigDecimal;
 import java.util.Set;
 
 /**
- * Processes a JSON value as a {@link BigDecimal}.
+ * Processes a JSON value as a {@code float}.
  */
 @Immutable
 @BuildableStyle
-public abstract class BigDecimalOptions extends ValueOptionsSingleValueBase<BigDecimal> {
+public abstract class FloatValue extends ValueSingleValueBase<Float> {
 
     public static Builder builder() {
-        return ImmutableBigDecimalOptions.builder();
+        return ImmutableFloatValue.builder();
     }
 
     /**
-     * The lenient {@link BigDecimal} options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
+     * The lenient float options. Allows missing and accepts {@link JsonValueTypes#numberLike()}.
      *
-     * @return the lenient BigDecimal options
+     * @return the lenient float options
      */
-    public static BigDecimalOptions lenient() {
-        return builder().allowedTypes(JsonValueTypes.numberLike()).build();
+    public static FloatValue lenient() {
+        return builder()
+                .allowedTypes(JsonValueTypes.numberLike())
+                .build();
     }
 
     /**
-     * The standard {@link BigDecimal} options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
+     * The standard float options. Allows missing and accepts {@link JsonValueTypes#numberOrNull()}.
      *
-     * @return the standard BigDecimal options
+     * @return the standard float options
      */
-    public static BigDecimalOptions standard() {
+    public static FloatValue standard() {
         return builder().build();
     }
 
     /**
-     * The strict {@link BigDecimal} options. Disallows missing and accepts {@link JsonValueTypes#number()}.
+     * The strict float options. Disallows missing and accepts {@link JsonValueTypes#number()}.
      *
-     * @return the strict BigDecimal options
+     * @return the strict float options
      */
-    public static BigDecimalOptions strict() {
+    public static FloatValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.number())
@@ -71,7 +72,9 @@ public abstract class BigDecimalOptions extends ValueOptionsSingleValueBase<BigD
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<BigDecimal, BigDecimalOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Float, FloatValue, Builder> {
+        Builder onNull(float onNull);
 
+        Builder onMissing(float onMissing);
     }
 }

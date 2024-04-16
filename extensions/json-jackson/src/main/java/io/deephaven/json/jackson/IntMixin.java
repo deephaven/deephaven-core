@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.sized.SizedIntChunk;
-import io.deephaven.json.IntOptions;
+import io.deephaven.json.IntValue;
 import io.deephaven.json.jackson.IntValueProcessor.ToInt;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -21,9 +21,9 @@ import java.util.stream.Stream;
 
 import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_INT_ARRAY;
 
-final class IntMixin extends Mixin<IntOptions> implements ToInt {
+final class IntMixin extends Mixin<IntValue> implements ToInt {
 
-    public IntMixin(IntOptions options, JsonFactory factory) {
+    public IntMixin(IntValue options, JsonFactory factory) {
         super(factory, options);
     }
 

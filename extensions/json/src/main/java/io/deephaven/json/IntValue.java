@@ -10,42 +10,42 @@ import org.immutables.value.Value.Immutable;
 import java.util.Set;
 
 /**
- * Processes a JSON value as a {@code byte}.
+ * Processes a JSON value as an {@code int}.
  */
 @Immutable
 @BuildableStyle
-public abstract class ByteOptions extends ValueOptionsSingleValueBase<Byte> {
+public abstract class IntValue extends ValueSingleValueBase<Integer> {
 
     public static Builder builder() {
-        return ImmutableByteOptions.builder();
+        return ImmutableIntValue.builder();
     }
 
     /**
-     * The lenient byte options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
+     * The lenient int options. Allows missing and accepts {@link JsonValueTypes#intLike()}.
      *
-     * @return the lenient byte options
+     * @return the lenient int options
      */
-    public static ByteOptions lenient() {
+    public static IntValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.intLike())
                 .build();
     }
 
     /**
-     * The standard byte options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
+     * The standard int options. Allows missing and accepts {@link JsonValueTypes#intOrNull()}.
      *
-     * @return the standard byte options
+     * @return the standard int options
      */
-    public static ByteOptions standard() {
+    public static IntValue standard() {
         return builder().build();
     }
 
     /**
-     * The strict byte options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
+     * The strict int options. Disallows missing and accepts {@link JsonValueTypes#int_()}.
      *
-     * @return the strict byte options
+     * @return the strict int options
      */
-    public static ByteOptions strict() {
+    public static IntValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.int_())
@@ -72,10 +72,10 @@ public abstract class ByteOptions extends ValueOptionsSingleValueBase<Byte> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Byte, ByteOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Integer, IntValue, Builder> {
 
-        Builder onNull(byte onNull);
+        Builder onNull(int onNull);
 
-        Builder onMissing(byte onMissing);
+        Builder onMissing(int onMissing);
     }
 }

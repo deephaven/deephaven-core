@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.DoubleOptions;
+import io.deephaven.json.DoubleValue;
 import io.deephaven.json.jackson.DoubleValueProcessor.ToDouble;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -20,9 +20,9 @@ import java.util.stream.Stream;
 
 import static io.deephaven.util.type.ArrayTypeUtils.EMPTY_DOUBLE_ARRAY;
 
-final class DoubleMixin extends Mixin<DoubleOptions> implements ToDouble {
+final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
 
-    public DoubleMixin(DoubleOptions options, JsonFactory factory) {
+    public DoubleMixin(DoubleValue options, JsonFactory factory) {
         super(factory, options);
     }
 

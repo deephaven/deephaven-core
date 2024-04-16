@@ -17,12 +17,12 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class InstantOptions extends ValueOptionsSingleValueBase<Instant> {
+public abstract class InstantValue extends ValueSingleValueBase<Instant> {
 
     private static final Version VERSION_12 = Version.parse("12");
 
     public static Builder builder() {
-        return ImmutableInstantOptions.builder();
+        return ImmutableInstantValue.builder();
     }
 
     /**
@@ -30,7 +30,7 @@ public abstract class InstantOptions extends ValueOptionsSingleValueBase<Instant
      *
      * @return the standard Instant options
      */
-    public static InstantOptions standard() {
+    public static InstantValue standard() {
         return builder().build();
     }
 
@@ -39,7 +39,7 @@ public abstract class InstantOptions extends ValueOptionsSingleValueBase<Instant
      *
      * @return the strict Instant options
      */
-    public static InstantOptions strict() {
+    public static InstantValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.string())
@@ -84,7 +84,7 @@ public abstract class InstantOptions extends ValueOptionsSingleValueBase<Instant
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<Instant, InstantOptions, Builder> {
+    public interface Builder extends ValueSingleValueBase.Builder<Instant, InstantValue, Builder> {
 
         Builder dateTimeFormatter(DateTimeFormatter formatter);
     }

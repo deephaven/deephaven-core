@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.LongOptions;
+import io.deephaven.json.LongValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class LongMixin extends Mixin<LongOptions> implements LongValueProcessor.ToLong {
+final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToLong {
 
-    public LongMixin(LongOptions options, JsonFactory config) {
+    public LongMixin(LongValue options, JsonFactory config) {
         super(config, options);
     }
 

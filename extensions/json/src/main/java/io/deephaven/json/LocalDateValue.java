@@ -17,16 +17,16 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class LocalDateOptions extends ValueOptionsSingleValueBase<LocalDate> {
+public abstract class LocalDateValue extends ValueSingleValueBase<LocalDate> {
     public static Builder builder() {
-        return ImmutableLocalDateOptions.builder();
+        return ImmutableLocalDateValue.builder();
     }
 
-    public static LocalDateOptions standard() {
+    public static LocalDateValue standard() {
         return builder().build();
     }
 
-    public static LocalDateOptions strict() {
+    public static LocalDateValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.string())
@@ -65,7 +65,7 @@ public abstract class LocalDateOptions extends ValueOptionsSingleValueBase<Local
         return visitor.visit(this);
     }
 
-    public interface Builder extends ValueOptionsSingleValueBase.Builder<LocalDate, LocalDateOptions, Builder> {
+    public interface Builder extends ValueSingleValueBase.Builder<LocalDate, LocalDateValue, Builder> {
 
         Builder dateTimeFormatter(DateTimeFormatter formatter);
     }

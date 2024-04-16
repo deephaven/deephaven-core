@@ -14,10 +14,10 @@ import java.util.TreeSet;
 
 @Immutable
 @BuildableStyle
-public abstract class ObjectFieldOptions {
+public abstract class ObjectField {
 
     public static Builder builder() {
-        return ImmutableObjectFieldOptions.builder();
+        return ImmutableObjectField.builder();
     }
 
     /**
@@ -27,7 +27,7 @@ public abstract class ObjectFieldOptions {
      * @param options the options
      * @return the field options
      */
-    public static ObjectFieldOptions of(String name, ValueOptions options) {
+    public static ObjectField of(String name, Value options) {
         return builder().name(name).options(options).build();
     }
 
@@ -39,7 +39,7 @@ public abstract class ObjectFieldOptions {
     /**
      * The value options.
      */
-    public abstract ValueOptions options();
+    public abstract Value options();
 
     /**
      * The field name aliases.
@@ -106,7 +106,7 @@ public abstract class ObjectFieldOptions {
     public interface Builder {
         Builder name(String name);
 
-        Builder options(ValueOptions options);
+        Builder options(Value options);
 
         Builder addAliases(String element);
 
@@ -120,7 +120,7 @@ public abstract class ObjectFieldOptions {
 
         Builder arrayGroup(Object arrayGroup);
 
-        ObjectFieldOptions build();
+        ObjectField build();
     }
 
     @Check
@@ -147,7 +147,7 @@ public abstract class ObjectFieldOptions {
         if (arrayGroup().isEmpty()) {
             return;
         }
-        if (!(options() instanceof ArrayOptions)) {
+        if (!(options() instanceof ArrayValue)) {
             throw new IllegalArgumentException("arrayGroup is only valid with ArrayOptions");
         }
     }

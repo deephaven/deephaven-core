@@ -6,7 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.StringOptions;
+import io.deephaven.json.StringValue;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class StringMixin extends Mixin<StringOptions> implements ToObject<String> {
+final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
 
-    public StringMixin(StringOptions options, JsonFactory factory) {
+    public StringMixin(StringValue options, JsonFactory factory) {
         super(factory, options);
     }
 

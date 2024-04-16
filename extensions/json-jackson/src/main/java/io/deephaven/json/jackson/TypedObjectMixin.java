@@ -8,9 +8,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.json.ObjectFieldOptions;
-import io.deephaven.json.ObjectOptions;
-import io.deephaven.json.TypedObjectOptions;
+import io.deephaven.json.ObjectField;
+import io.deephaven.json.ObjectValue;
+import io.deephaven.json.TypedObjectValue;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class TypedObjectMixin extends Mixin<TypedObjectOptions> {
-    public TypedObjectMixin(TypedObjectOptions options, JsonFactory factory) {
+final class TypedObjectMixin extends Mixin<TypedObjectValue> {
+    public TypedObjectMixin(TypedObjectValue options, JsonFactory factory) {
         super(factory, options);
     }
 
@@ -35,7 +35,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectOptions> {
         return 1
                 + options.sharedFields()
                         .stream()
-                        .map(ObjectFieldOptions::options)
+                        .map(ObjectField::options)
                         .map(this::mixin)
                         .mapToInt(Mixin::numColumns)
                         .sum()
@@ -53,7 +53,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectOptions> {
                 Stream.of(List.of(options.typeFieldName())),
                 Stream.concat(
                         prefixWithKeys(options.sharedFields()),
-                        prefixWithKeys(options.objects().values().stream().map(ObjectOptions::fields)
+                        prefixWithKeys(options.objects().values().stream().map(ObjectValue::fields)
                                 .flatMap(Collection::stream).collect(Collectors.toList()))));
     }
 
@@ -62,7 +62,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectOptions> {
         return Stream.concat(
                 Stream.of(Type.stringType()),
                 Stream.concat(
-                        options.sharedFields().stream().map(ObjectFieldOptions::options).map(this::mixin)
+                        options.sharedFields().stream().map(ObjectField::options).map(this::mixin)
                                 .flatMap(Mixin::outputTypesImpl),
                         options.objects().values().stream().map(this::mixin).flatMap(Mixin::outputTypesImpl)));
     }
@@ -73,13 +73,13 @@ final class TypedObjectMixin extends Mixin<TypedObjectOptions> {
         final List<WritableChunk<?>> sharedFields = out.subList(1, 1 + options.sharedFields().size());
         final Map<String, Processor> processors = new LinkedHashMap<>(options.objects().size());
         int outIx = 1 + sharedFields.size();
-        for (Entry<String, ObjectOptions> e : options.objects().entrySet()) {
+        for (Entry<String, ObjectValue> e : options.objects().entrySet()) {
             final String type = e.getKey();
-            final ObjectOptions specificOpts = e.getValue();
+            final ObjectValue specificOpts = e.getValue();
             final int numSpecificFields = mixin(specificOpts).numColumns();
             final List<WritableChunk<?>> specificChunks = out.subList(outIx, outIx + numSpecificFields);
             final List<WritableChunk<?>> allChunks = concat(sharedFields, specificChunks);
-            final ObjectOptions combinedObject = combinedObject(specificOpts);
+            final ObjectValue combinedObject = combinedObject(specificOpts);
             final ValueProcessor processor = mixin(combinedObject).processor(context + "[" + type + "]", allChunks);
             processors.put(type, new Processor(processor, specificChunks));
             outIx += numSpecificFields;
@@ -108,12 +108,12 @@ final class TypedObjectMixin extends Mixin<TypedObjectOptions> {
         return out;
     }
 
-    private ObjectOptions combinedObject(ObjectOptions objectOpts) {
-        final Set<ObjectFieldOptions> sharedFields = options.sharedFields();
+    private ObjectValue combinedObject(ObjectValue objectOpts) {
+        final Set<ObjectField> sharedFields = options.sharedFields();
         if (sharedFields.isEmpty()) {
             return objectOpts;
         }
-        return ObjectOptions.builder()
+        return ObjectValue.builder()
                 .allowUnknownFields(objectOpts.allowUnknownFields())
                 .allowMissing(objectOpts.allowMissing())
                 .allowedTypes(objectOpts.allowedTypes())

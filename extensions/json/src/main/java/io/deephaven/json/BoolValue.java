@@ -14,10 +14,10 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
+public abstract class BoolValue extends ValueSingleValueBase<Boolean> {
 
     public static Builder builder() {
-        return ImmutableBoolOptions.builder();
+        return ImmutableBoolValue.builder();
     }
 
     /**
@@ -25,7 +25,7 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
      *
      * @return the lenient bool options
      */
-    public static BoolOptions lenient() {
+    public static BoolValue lenient() {
         return builder()
                 .allowedTypes(JsonValueTypes.boolLike())
                 .build();
@@ -36,7 +36,7 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
      *
      * @return the standard bool options
      */
-    public static BoolOptions standard() {
+    public static BoolValue standard() {
         return builder().build();
     }
 
@@ -45,7 +45,7 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
      *
      * @return the strict bool options
      */
-    public static BoolOptions strict() {
+    public static BoolValue strict() {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.bool())
@@ -72,7 +72,7 @@ public abstract class BoolOptions extends ValueOptionsSingleValueBase<Boolean> {
         return visitor.visit(this);
     }
 
-    public interface Builder extends BuilderSpecial<Boolean, BoolOptions, Builder> {
+    public interface Builder extends BuilderSpecial<Boolean, BoolValue, Builder> {
 
         Builder onNull(boolean onNull);
 
