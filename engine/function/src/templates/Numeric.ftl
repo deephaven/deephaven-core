@@ -1491,7 +1491,7 @@ public class Numeric {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
 
                 if (isNaN(c)) {
-                    return ${pt.boxed}.NaN;
+                    return Double.NaN;
                 }
 
                 if (!isNull(c)) {
@@ -1554,40 +1554,35 @@ public class Numeric {
      * @param values values.
      * @return product of non-null values.
      */
-    public static ${pt.primitive} product(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double product(${pt.vector} values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
-        ${pt.primitive} prod = 1;
+        double prod = 1;
         int count = 0;
-    <#if pt.valueType.isFloat >
         long zeroCount = 0;
         long infCount = 0;
-    </#if>
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
+
                 if (isNaN(c)) {
-                    return ${pt.boxed}.NaN;
+                    return Double.NaN;
                 } else if (Double.isInfinite(c)) {
                     if (zeroCount > 0) {
-                        return ${pt.boxed}.NaN;
+                        return Double.NaN;
                     }
                     infCount++;
                 } else if (c == 0) {
                     if (infCount > 0) {
-                        return ${pt.boxed}.NaN;
+                        return Double.NaN;
                     }
                     zeroCount++;
                 }
-    <#else>
-                if (c == 0) {
-                    return 0;
-                }
-    </#if>
+
                 if (!isNull(c)) {
                     count++;
                     prod *= c;
@@ -1596,15 +1591,42 @@ public class Numeric {
         }
 
         if (count == 0) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
-    <#if pt.valueType.isFloat >
-        return zeroCount > 0 ? 0 : (${pt.primitive}) (prod);
-    <#else>
-        return (${pt.primitive}) (prod);
-    </#if>
+        return zeroCount > 0 ? 0 : prod;
     }
+    <#else>
+    public static long product(${pt.vector} values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        long prod = 1;
+        int count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+
+                if (c == 0) {
+                    return 0;
+                }
+
+                if (!isNull(c)) {
+                    count++;
+                    prod *= c;
+                }
+            }
+        }
+
+        if (count == 0) {
+            return NULL_LONG;
+        }
+
+        return (${pt.primitive}) (prod);
+    }
+    </#if>
 
     /**
      * Returns the product.  Null values are excluded.
@@ -1612,13 +1634,23 @@ public class Numeric {
      * @param values values.
      * @return product of non-null values.
      */
-    public static ${pt.primitive} product(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double product(${pt.primitive}... values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
         return product(new ${pt.vectorDirect}(values));
     }
+    <#else>
+    public static long product(${pt.primitive}... values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return product(new ${pt.vectorDirect}(values));
+    }
+    </#if>
 
     /**
      * Returns the cumulative minimum.  Null values are excluded.

@@ -617,48 +617,58 @@ public class TestNumeric extends BaseArrayTestCase {
 //    }
 
     public void test${pt.boxed}Product() {
+        <#if pt.valueType.isFloat >
+        final double nullResult = NULL_DOUBLE;
+        <#else>
+        final long nullResult = NULL_LONG;
+        </#if>
+
         assertTrue(Math.abs(120 - product(new ${pt.primitive}[]{4, 5, 6})) == 0.0);
-        assertEquals(${pt.null}, product(new ${pt.primitive}[]{}));
-        assertEquals(${pt.null}, product(new ${pt.primitive}[]{${pt.null}}));
+        assertEquals(nullResult, product(new ${pt.primitive}[]{}));
+        assertEquals(nullResult, product(new ${pt.primitive}[]{${pt.null}}));
         assertTrue(Math.abs(75 - product(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
-        assertEquals(${pt.null}, product((${pt.primitive}[]) null));
+        assertEquals(nullResult, product((${pt.primitive}[]) null));
 
         assertTrue(Math.abs(120 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
-        assertEquals(${pt.null}, product(new ${pt.vectorDirect}()));
-        assertEquals(${pt.null}, product(new ${pt.vectorDirect}(${pt.null})));
+        assertEquals(nullResult, product(new ${pt.vectorDirect}()));
+        assertEquals(nullResult, product(new ${pt.vectorDirect}(${pt.null})));
         assertTrue(Math.abs(75 - product(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
-        assertEquals(${pt.null}, product((${pt.vector}) null));
+        assertEquals(nullResult, product((${pt.vector}) null));
     }
 
 <#if pt.valueType.isFloat >
     public void test${pt.boxed}ProductOverflowAndNaN() {
+        <#if pt.primitive == "double" >
+
         final ${pt.primitive} LARGE_VALUE = Math.nextDown(${pt.boxed}.MAX_VALUE);
 
         final ${pt.primitive}[] overflow = new ${pt.primitive}[]{1, LARGE_VALUE, LARGE_VALUE};
-        final ${pt.primitive} overflowProduct = product(overflow);
-        assertTrue(${pt.boxed}.isInfinite(overflowProduct) && overflowProduct > 0);
+        final double overflowProduct = product(overflow);
+        assertTrue(Double.isInfinite(overflowProduct) && overflowProduct > 0);
 
         final ${pt.primitive}[] negOverflow = new ${pt.primitive}[]{1, LARGE_VALUE, -LARGE_VALUE};
-        final ${pt.primitive} negOverflowProduct = product(negOverflow);
-        assertTrue(${pt.boxed}.isInfinite(negOverflowProduct) && negOverflowProduct < 0);
+        final double negOverflowProduct = product(negOverflow);
+        assertTrue(Double.isInfinite(negOverflowProduct) && negOverflowProduct < 0);
 
         final ${pt.primitive}[] overflowWithZero = new ${pt.primitive}[]{1, LARGE_VALUE, LARGE_VALUE, 0};
         assertTrue(Math.abs(product(overflowWithZero)) == 0.0);
 
+        </#if>
+
         final ${pt.primitive}[] normalWithNaN = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.NaN, 4, 5};
-        assertTrue(${pt.boxed}.isNaN(product(normalWithNaN)));
+        assertTrue(Double.isNaN(product(normalWithNaN)));
 
         final ${pt.primitive}[] posInfAndZero = new ${pt.primitive}[]{1, ${pt.boxed}.POSITIVE_INFINITY, 0};
-        assertTrue(${pt.boxed}.isNaN(product(posInfAndZero)));
+        assertTrue(Double.isNaN(product(posInfAndZero)));
 
         final ${pt.primitive}[] negInfAndZero = new ${pt.primitive}[]{1, ${pt.boxed}.NEGATIVE_INFINITY, 0};
-        assertTrue(${pt.boxed}.isNaN(product(negInfAndZero)));
+        assertTrue(Double.isNaN(product(negInfAndZero)));
 
         final ${pt.primitive}[] zeroAndPosInf = new ${pt.primitive}[]{1, 0, ${pt.boxed}.POSITIVE_INFINITY};
-        assertTrue(${pt.boxed}.isNaN(product(zeroAndPosInf)));
+        assertTrue(Double.isNaN(product(zeroAndPosInf)));
 
         final ${pt.primitive}[] zeroAndNegInf = new ${pt.primitive}[]{1, 0, ${pt.boxed}.NEGATIVE_INFINITY};
-        assertTrue(${pt.boxed}.isNaN(product(zeroAndNegInf)));
+        assertTrue(Double.isNaN(product(zeroAndNegInf)));
 
     }
 </#if>
