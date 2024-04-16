@@ -787,23 +787,43 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 </#if>
 
+<#if pt.valueType.isFloat >
     public void test${pt.boxed}CumProdArray() {
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
-        assertEquals(new ${pt.primitive}[0], cumprod(new ${pt.primitive}[0]));
-        assertEquals(new ${pt.primitive}[0], cumprod(new ${pt.boxed}[0]));
+        assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[0], cumprod(new ${pt.primitive}[0]));
+        assertEquals(new double[0], cumprod(new ${pt.boxed}[0]));
         assertEquals(null, cumprod((${pt.primitive}[]) null));
 
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
-        assertEquals(new ${pt.primitive}[0], cumprod(new ${pt.vectorDirect}()));
+        assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[0], cumprod(new ${pt.vectorDirect}()));
         assertEquals(null, cumprod((${pt.vector}) null));
 
         // check that functions can be resolved with varargs
-        assertEquals(new ${pt.primitive}[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
     }
+<#else>
+    public void test${pt.boxed}CumProdArray() {
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new long[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new long[]{NULL_LONG, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[0], cumprod(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumprod(new ${pt.boxed}[0]));
+        assertEquals(null, cumprod((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new long[]{NULL_LONG, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[0], cumprod(new ${pt.vectorDirect}()));
+        assertEquals(null, cumprod((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+    }
+</#if>
 
     public void test${pt.boxed}Abs() {
         ${pt.primitive} value = -5;
