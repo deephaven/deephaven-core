@@ -182,12 +182,6 @@ public class ParquetTools {
      * metadata file is supplied or discovered in the directory, the highest (by {@link ParquetTableLocationKey location
      * key} order) location found will be used to infer schema.
      *
-     * <p>
-     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
-     * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
-     * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
-     * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
-     *
      * @param sourceFile The file or directory to examine
      * @return table
      * @see ParquetSingleFileLayout
@@ -402,7 +396,7 @@ public class ParquetTools {
      *         indexing column {@code "IndexingColName"}, the method will return
      *         {@code ".dh_metadata/indexes/IndexingColName/index_IndexingColName_table.parquet"} on unix systems.
      */
-    public static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String[] columnNames) {
+    private static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String[] columnNames) {
         final String columns = String.join(",", columnNames);
         return String.format(".dh_metadata%sindexes%s%s%sindex_%s_%s", File.separator, File.separator, columns,
                 File.separator, columns, tableDest.getName());
@@ -419,6 +413,7 @@ public class ParquetTools {
      *         grouping column {@code "GroupingColName"}, the method will return
      *         {@code "table_GroupingColName_grouping.parquet"}
      */
+    @VisibleForTesting
     public static String legacyGroupingFileName(@NotNull final File tableDest, @NotNull final String columnName) {
         final String prefix = minusParquetSuffix(tableDest.getName());
         return prefix + "_" + columnName + "_grouping.parquet";
@@ -803,8 +798,7 @@ public class ParquetTools {
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
      * @param sourceTable The optional source table, provided when user provides a merged source table to write, like in
-     *        {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)} and
-     *        {@link #writeKeyValuePartitionedTable(Table, TableDefinition, String, ParquetInstructions)}
+     *        {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)}
      */
     private static void writeKeyValuePartitionedTableImpl(@NotNull final PartitionedTable partitionedTable,
             @NotNull final TableDefinition keyTableDefinition,
@@ -1323,12 +1317,6 @@ public class ParquetTools {
      * parquet file, a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to
      * use. Unless a metadata file is supplied or discovered in the directory, the highest (by
      * {@link ParquetTableLocationKey location key} order) location found will be used to infer schema.
-     *
-     * <p>
-     * Delegates to one of {@link #readSingleFileTable(File, ParquetInstructions)},
-     * {@link #readPartitionedTableWithMetadata(File, ParquetInstructions)},
-     * {@link #readFlatPartitionedTable(File, ParquetInstructions)}, or
-     * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
      *
      * @param source The source URI with {@value ParquetFileReader#FILE_URI_SCHEME} scheme
      * @param instructions Instructions for reading
@@ -2147,7 +2135,7 @@ public class ParquetTools {
 
     /**
      * @deprecated Do not use this method, instead pass the above codecs as arguments to
-     *             {@link #writeTable(Table, File, ParquetInstructions)} method
+     *             {@link #writeTable(Table, String, ParquetInstructions)} method
      */
     @Deprecated
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {
