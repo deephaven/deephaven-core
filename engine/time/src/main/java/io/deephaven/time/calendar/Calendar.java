@@ -48,6 +48,17 @@ public class Calendar {
 
     // endregion
 
+    // region Cache
+
+    /**
+     * Clears the cache.  This should not generally be used and is provided for benchmarking.
+     */
+    public void clearCache() {
+        //TODO: cache.clear();
+    }
+
+    // endregion
+
     // region Getters
 
     /**

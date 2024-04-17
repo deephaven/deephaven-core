@@ -10,6 +10,7 @@ import io.deephaven.util.QueryConstants;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -57,35 +58,53 @@ public class BusinessCalendar extends Calendar {
 
     // region Cache
 
-    private final Map<LocalDate, CalendarDay<Instant>> cachedSchedules = new HashMap<>();
-    private final Map<Integer, YearData> cachedYearData = new HashMap<>();
-    private final int yearCacheStart;
-    private final int yearCacheEnd;
-
-    private static class YearData {
+    private static class SummaryData {
         private final Instant start;
         private final Instant end;
         private final long businessTimeNanos;
+        private final long days;
+        private final long businessDays;
+        private final long nonBusinessDays;
+        private final ArrayList<LocalDate> dates; //TODO: needed? -- or add caching to Calendar?
+        private final ArrayList<LocalDate> businessDates;
+        private final ArrayList<LocalDate> nonBusinessDates;
 
-        public YearData(final Instant start, final Instant end, final long businessTimeNanos) {
+        public SummaryData(
+                final Instant start,
+                final Instant end,
+                final long businessTimeNanos,
+                final long days,
+                final long businessDays,
+                final long nonBusinessDays,
+                final ArrayList<LocalDate> dates,
+                final ArrayList<LocalDate> businessDates,
+                final ArrayList<LocalDate> nonBusinessDates) {
             this.start = start;
             this.end = end;
             this.businessTimeNanos = businessTimeNanos;
+            this.days = days;
+            this.businessDays = businessDays;
+            this.nonBusinessDays = nonBusinessDays;
+            this.dates = dates;
+            this.businessDates = businessDates;
+            this.nonBusinessDates = nonBusinessDates;
         }
     }
 
-    private YearData getYearData(final int year) {
+    private final Map<LocalDate, CalendarDay<Instant>> cachedSchedules = new ConcurrentHashMap<>();
+    private final Map<Integer, SummaryData> cachedYearData = new ConcurrentHashMap<>();
+    private final int yearCacheStart;
+    private final int yearCacheEnd;
 
-        if (year < yearCacheStart || year > yearCacheEnd) {
-            throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
-        }
+    @Override
+    public void clearCache() {
+        super.clearCache();
+        cachedSchedules.clear();
+        cachedYearData.clear();
+    }
 
-        final YearData cached = cachedYearData.get(year);
 
-        if (cached != null) {
-            return cached;
-        }
-
+    private SummaryData computeYearSummary(final int year){
         final LocalDate startDate = LocalDate.ofYearDay(year, 1);
         final LocalDate endDate = LocalDate.ofYearDay(year + 1, 1);
         final ZonedDateTime start = startDate.atTime(0, 0).atZone(timeZone());
@@ -93,16 +112,52 @@ public class BusinessCalendar extends Calendar {
 
         LocalDate date = startDate;
         long businessTimeNanos = 0;
+        long days = 0;
+        long businessDays = 0;
+        final ArrayList<LocalDate> dates = new ArrayList<>();
+        final ArrayList<LocalDate> businessDates = new ArrayList<>();
+        final ArrayList<LocalDate> nonBusinessDates = new ArrayList<>();
 
         while (date.isBefore(endDate)) {
-            final CalendarDay<Instant> bs = this.calendarDay(date);
+            final CalendarDay<Instant> bs = calendarDay(date);
+            final boolean ibd = bs.isBusinessDay();
+            days += 1;
+            businessDays += ibd ? 1 : 0;
             businessTimeNanos += bs.businessNanos();
+            dates.add(date);
+
+            if(ibd) {
+                businessDates.add(date);
+            } else {
+                nonBusinessDates.add(date);
+            }
+
             date = date.plusDays(1);
         }
 
-        final YearData yd = new YearData(start.toInstant(), end.toInstant(), businessTimeNanos);
-        cachedYearData.put(year, yd);
-        return yd;
+        return new SummaryData(start.toInstant(), end.toInstant(), businessTimeNanos, days, businessDays, days - businessDays, dates, businessDates, nonBusinessDates);
+    }
+
+    private SummaryData getYearData(final int year) {
+
+        if (year < yearCacheStart || year > yearCacheEnd) {
+            throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
+        }
+
+        return cachedYearData.computeIfAbsent(year, this::computeYearSummary);
+    }
+
+
+    private CalendarDay<Instant> computeCalendarDay(final LocalDate date) {
+        final CalendarDay<Instant> h = holidays.get(date);
+
+        if (h != null) {
+            return h;
+        } else if (weekendDays.contains(date.getDayOfWeek())) {
+            return CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone());
+        } else {
+            return CalendarDay.toInstant(standardBusinessDay, date, timeZone());
+        }
     }
 
     // endregion
@@ -234,25 +289,7 @@ public class BusinessCalendar extends Calendar {
                     + " lastValidDate=" + lastValidDate);
         }
 
-        final CalendarDay<Instant> cached = cachedSchedules.get(date);
-
-        if (cached != null) {
-            return cached;
-        }
-
-        final CalendarDay<Instant> h = holidays.get(date);
-        final CalendarDay<Instant> s;
-
-        if (h != null) {
-            s = h;
-        } else if (weekendDays.contains(date.getDayOfWeek())) {
-            s = CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone());
-        } else {
-            s = CalendarDay.toInstant(standardBusinessDay, date, timeZone());
-        }
-
-        cachedSchedules.put(date, s);
-        return s;
+        return cachedSchedules.computeIfAbsent(date, this::computeCalendarDay);
     }
 
     /**
@@ -1679,8 +1716,8 @@ public class BusinessCalendar extends Calendar {
             return (double) diffBusinessNanos(start, end) / (double) getYearData(yearStart).businessTimeNanos;
         }
 
-        final YearData yearDataStart = getYearData(yearStart);
-        final YearData yearDataEnd = getYearData(yearEnd);
+        final SummaryData yearDataStart = getYearData(yearStart);
+        final SummaryData yearDataEnd = getYearData(yearEnd);
 
         return (double) diffBusinessNanos(start, yearDataStart.end) / (double) yearDataStart.businessTimeNanos +
                 (double) diffBusinessNanos(yearDataEnd.start, end) / (double) yearDataEnd.businessTimeNanos +
