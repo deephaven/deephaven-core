@@ -6,36 +6,16 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.jackson.RepeaterProcessor.Context;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-final class ValueProcessorArrayImpl implements ValueProcessor {
-
-    static void processArray2(
-            JsonParser parser,
-            RepeaterProcessor elementProcessor,
-            Runnable processElementCallback) throws IOException {
-        Parsing.assertCurrentToken(parser, JsonToken.START_ARRAY);
-        final Context context = elementProcessor.context();
-        context.init(parser);
-        parser.nextToken();
-        int ix;
-        for (ix = 0; !parser.hasToken(JsonToken.END_ARRAY); ++ix) {
-            context.processElement(parser, ix);
-            parser.nextToken();
-            if (processElementCallback != null) {
-                processElementCallback.run();
-            }
-        }
-        context.done(parser, ix);
-    }
+final class ArrayValueProcessor implements ValueProcessor {
 
     private final RepeaterProcessor elementProcessor;
 
-    ValueProcessorArrayImpl(RepeaterProcessor elementProcessor) {
+    ArrayValueProcessor(RepeaterProcessor elementProcessor) {
         this.elementProcessor = Objects.requireNonNull(elementProcessor);
     }
 
@@ -60,7 +40,7 @@ final class ValueProcessorArrayImpl implements ValueProcessor {
             elementProcessor.processNullRepeater(parser);
             return;
         }
-        processArray2(parser, elementProcessor, null);
+        RepeaterProcessor.processArray(parser, elementProcessor);
     }
 
     @Override

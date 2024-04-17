@@ -23,7 +23,7 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     }
 
     @Override
-    public void processElement(JsonParser parser, int index) throws IOException {
+    public void processElement(JsonParser parser) throws IOException {
         final int newSize = index + 1;
         final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(newSize);
         chunk.set(index, toObject.parseValue(parser));
@@ -31,7 +31,7 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     }
 
     @Override
-    public void processElementMissing(JsonParser parser, int index) throws IOException {
+    public void processElementMissing(JsonParser parser) throws IOException {
         final int newSize = index + 1;
         final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(newSize);
         chunk.set(index, toObject.parseMissing(parser));

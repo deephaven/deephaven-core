@@ -77,7 +77,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableIntChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, IntMixin.this.parseValue(parser));
@@ -85,7 +85,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableIntChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, IntMixin.this.parseMissing(parser));

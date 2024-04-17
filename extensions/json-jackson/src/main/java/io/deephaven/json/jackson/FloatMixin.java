@@ -76,7 +76,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, FloatMixin.this.parseValue(parser));
@@ -84,7 +84,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, FloatMixin.this.parseMissing(parser));

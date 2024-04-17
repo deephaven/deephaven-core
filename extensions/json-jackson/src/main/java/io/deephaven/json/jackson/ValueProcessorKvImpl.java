@@ -6,39 +6,12 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.jackson.RepeaterProcessor.Context;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
 final class ValueProcessorKvImpl implements ValueProcessor {
-
-    public static void processKeyValues2(
-            JsonParser parser,
-            RepeaterProcessor keyProcessor,
-            RepeaterProcessor valueProcessor,
-            Runnable processElementCallback) throws IOException {
-        Parsing.assertCurrentToken(parser, JsonToken.START_OBJECT);
-        final Context keyContext = keyProcessor.context();
-        final Context valueContext = valueProcessor.context();
-        keyContext.init(parser);
-        valueContext.init(parser);
-        parser.nextToken();
-        int ix;
-        for (ix = 0; !parser.hasToken(JsonToken.END_OBJECT); ++ix) {
-            Parsing.assertCurrentToken(parser, JsonToken.FIELD_NAME);
-            keyContext.processElement(parser, ix);
-            parser.nextToken();
-            valueContext.processElement(parser, ix);
-            parser.nextToken();
-            if (processElementCallback != null) {
-                processElementCallback.run();
-            }
-        }
-        keyContext.done(parser, ix);
-        valueContext.done(parser, ix);
-    }
 
     private final RepeaterProcessor keyProcessor;
     private final RepeaterProcessor valueProcessor;
@@ -73,7 +46,7 @@ final class ValueProcessorKvImpl implements ValueProcessor {
             valueProcessor.processNullRepeater(parser);
             return;
         }
-        processKeyValues2(parser, keyProcessor, valueProcessor, null);
+        RepeaterProcessor.processKeyValues(parser, keyProcessor, valueProcessor);
     }
 
     @Override

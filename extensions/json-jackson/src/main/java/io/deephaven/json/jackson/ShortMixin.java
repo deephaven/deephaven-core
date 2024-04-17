@@ -76,7 +76,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, ShortMixin.this.parseValue(parser));
@@ -84,7 +84,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, ShortMixin.this.parseMissing(parser));

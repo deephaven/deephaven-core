@@ -183,14 +183,14 @@ final class TupleMixin extends Mixin<TupleValue> {
         }
 
         @Override
-        public void init(JsonParser parser) throws IOException {
+        public void start(JsonParser parser) throws IOException {
             for (Context context : contexts) {
-                context.init(parser);
+                context.start(parser);
             }
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case START_ARRAY:
                     processTuple(parser, index);
@@ -206,7 +206,7 @@ final class TupleMixin extends Mixin<TupleValue> {
         private void processTuple(JsonParser parser, int index) throws IOException {
             for (Context context : contexts) {
                 parser.nextToken();
-                context.processElement(parser, index);
+                context.processElement(parser);
             }
             parser.nextToken();
             assertCurrentToken(parser, JsonToken.END_ARRAY);
@@ -216,24 +216,24 @@ final class TupleMixin extends Mixin<TupleValue> {
             // Note: we are treating a null tuple the same as a tuple of null objects
             // null ~= [null, ..., null]
             for (Context context : contexts) {
-                context.processElement(parser, index);
+                context.processElement(parser);
             }
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             // Note: we are treating a missing tuple the same as a tuple of missing objects (which, is technically
             // impossible w/ native json, but it's the semantics we are exposing).
             // <missing> ~= [<missing>, ..., <missing>]
             for (Context context : contexts) {
-                context.processElementMissing(parser, index);
+                context.processElementMissing(parser);
             }
         }
 
         @Override
-        public void done(JsonParser parser, int length) throws IOException {
+        public void done(JsonParser parser) throws IOException {
             for (Context context : contexts) {
-                context.done(parser, length);
+                context.done(parser);
             }
         }
     }

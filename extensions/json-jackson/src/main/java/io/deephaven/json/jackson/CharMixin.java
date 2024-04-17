@@ -72,7 +72,7 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableCharChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, CharMixin.this.parseValue(parser));
@@ -80,7 +80,7 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableCharChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, CharMixin.this.parseMissing(parser));

@@ -76,7 +76,7 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableDoubleChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, DoubleMixin.this.parseValue(parser));
@@ -84,7 +84,7 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             final int newSize = index + 1;
             final WritableDoubleChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
             chunk.set(index, DoubleMixin.this.parseMissing(parser));

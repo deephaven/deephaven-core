@@ -15,7 +15,6 @@ import io.deephaven.qst.type.Type;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,8 +56,8 @@ final class ArrayMixin extends Mixin<ArrayValue> {
         return element().repeaterProcessor(allowMissing(), allowNull());
     }
 
-    private ValueProcessorArrayImpl innerProcessor() {
-        return new ValueProcessorArrayImpl(elementRepeater());
+    private ArrayValueProcessor innerProcessor() {
+        return new ArrayValueProcessor(elementRepeater());
     }
 
     @Override
@@ -127,7 +126,7 @@ final class ArrayMixin extends Mixin<ArrayValue> {
 
             private final List<WritableChunk<?>> innerChunks;
 
-            private ValueProcessorArrayImpl innerProcessor;
+            private ArrayValueProcessor innerProcessor;
 
             public ArrayOfArrayProcessorContext() {
                 innerChunks = outputTypesImpl()
@@ -137,12 +136,12 @@ final class ArrayMixin extends Mixin<ArrayValue> {
             }
 
             @Override
-            public void init(JsonParser parser) throws IOException {
+            public void start(JsonParser parser) throws IOException {
 
             }
 
             @Override
-            public void processElement(JsonParser parser, int index) throws IOException {
+            public void processElement(JsonParser parser) throws IOException {
                 if (isPow2(index)) {
                     resize(index);
                 }
@@ -150,7 +149,7 @@ final class ArrayMixin extends Mixin<ArrayValue> {
             }
 
             @Override
-            public void processElementMissing(JsonParser parser, int index) throws IOException {
+            public void processElementMissing(JsonParser parser) throws IOException {
                 if (isPow2(index)) {
                     resize(index);
                 }
@@ -158,7 +157,7 @@ final class ArrayMixin extends Mixin<ArrayValue> {
             }
 
             @Override
-            public void done(JsonParser parser, int length) throws IOException {
+            public void done(JsonParser parser) throws IOException {
                 final int size = out.size();
                 for (int i = 0; i < size; ++i) {
                     final WritableChunk<?> innerChunk = innerChunks.get(i);

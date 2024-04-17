@@ -153,23 +153,23 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
         }
 
         @Override
-        public void init(JsonParser parser) throws IOException {
+        public void start(JsonParser parser) throws IOException {
 
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             processCurrentValue(parser);
 
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             processMissing(parser);
         }
 
         @Override
-        public void done(JsonParser parser, int length) throws IOException {
+        public void done(JsonParser parser) throws IOException {
 
         }
     }

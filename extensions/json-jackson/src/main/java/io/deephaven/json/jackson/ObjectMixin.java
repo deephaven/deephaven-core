@@ -297,14 +297,14 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         }
 
         @Override
-        public void init(JsonParser parser) throws IOException {
+        public void start(JsonParser parser) throws IOException {
             for (Context value : contexts.values()) {
-                value.init(parser);
+                value.start(parser);
             }
         }
 
         @Override
-        public void processElement(JsonParser parser, int index) throws IOException {
+        public void processElement(JsonParser parser) throws IOException {
             // see
             // com.fasterxml.jackson.databind.JsonDeserializer.deserialize(com.fasterxml.jackson.core.JsonParser,
             // com.fasterxml.jackson.databind.DeserializationContext)
@@ -334,14 +334,14 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             // element is null
             // pass-through JsonToken.VALUE_NULL
             for (Context context : contexts.values()) {
-                context.processElement(parser, ix);
+                context.processElement(parser);
             }
         }
 
         private void processEmptyObject(JsonParser parser, int ix) throws IOException {
             // This logic should be equivalent to processObjectFields, but where we know there are no fields
             for (Context context : contexts.values()) {
-                context.processElementMissing(parser, ix);
+                context.processElementMissing(parser);
             }
         }
 
@@ -374,7 +374,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                     parser.skipChildren();
                 } else if (visited.add(field)) {
                     // First time seeing field
-                    context(field).processElement(parser, ix);
+                    context(field).processElement(parser);
                 } else if (field.repeatedBehavior() == RepeatedBehavior.USE_FIRST) {
                     parser.skipChildren();
                 } else {
@@ -391,23 +391,23 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                 }
                 for (Entry<ObjectField, Context> e : contexts.entrySet()) {
                     if (!visited.contains(e.getKey())) {
-                        e.getValue().processElementMissing(parser, ix);
+                        e.getValue().processElementMissing(parser);
                     }
                 }
             }
         }
 
         @Override
-        public void processElementMissing(JsonParser parser, int index) throws IOException {
+        public void processElementMissing(JsonParser parser) throws IOException {
             for (Context context : contexts.values()) {
-                context.processElementMissing(parser, index);
+                context.processElementMissing(parser);
             }
         }
 
         @Override
-        public void done(JsonParser parser, int length) throws IOException {
+        public void done(JsonParser parser) throws IOException {
             for (Context context : contexts.values()) {
-                context.done(parser, length);
+                context.done(parser);
             }
         }
     }

@@ -66,12 +66,12 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     }
 
     @Override
-    public final void init(JsonParser parser) throws IOException {
+    public final void start(JsonParser parser) throws IOException {
 
     }
 
     @Override
-    public final void done(JsonParser parser, int length) throws IOException {
+    public final void done(JsonParser parser) throws IOException {
         out.add(doneImpl(parser, length));
     }
 }
