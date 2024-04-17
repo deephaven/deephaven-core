@@ -192,13 +192,13 @@ public:
     auto date_time_start = DateTime::Parse("2001-03-01T12:34:56Z");
 
     for (int64_t i = 0; i != target_; ++i) {
-      chars.emplace_back('a' + i);
-      int8s.emplace_back(i);
-      int16s.emplace_back(i);
-      int32s.emplace_back(i);
-      int64s.emplace_back(i);
-      floats.emplace_back(i);
-      doubles.emplace_back(i);
+      chars.emplace_back(static_cast<char>('a' + i));
+      int8s.emplace_back(static_cast<int8_t>(i));
+      int16s.emplace_back(static_cast<int16_t>(i));
+      int32s.emplace_back(static_cast<int32_t>(i));
+      int64s.emplace_back(static_cast<int64_t>(i));
+      floats.emplace_back(static_cast<float>(i));
+      doubles.emplace_back(static_cast<double>(i));
       bools.emplace_back((i % 2) == 0);
       strings.emplace_back(fmt::format("hello {}", i));
       date_times.emplace_back(DateTime::FromNanos(date_time_start.Nanos() + i));
