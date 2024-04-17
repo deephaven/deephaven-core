@@ -52,29 +52,4 @@ class StatsImpl implements StatsIntradayLogger {
             throw new UncheckedIOException(e);
         }
     }
-
-    @Override
-    public void log(String intervalName, long now, long appNow, char typeTag, String compactName, long n, long sum,
-            long last, long min, long max, long avg, long sum2, long stdev, long[] h) {
-
-    }
-
-    private static final char COUNTER_TAG = 'C'; // Counter.TYPE_TAG;
-    private static final char HISTOGRAM_STATE_TAG = 'H'; // HistogramState.TYPE_TAG;
-    private static final char STATE_TAG = 'S'; // State.TYPE_TAG;
-    private static final char HISTOGRAM2_TAG = 'N'; // HistogramPower2.TYPE_TAG;
-
-    private static String type(char typeTag) {
-        switch (typeTag) {
-            case COUNTER_TAG:
-                return "counter";
-            case HISTOGRAM_STATE_TAG:
-                return "histogram";
-            case STATE_TAG:
-                return "state";
-            case HISTOGRAM2_TAG:
-                return "histogram2";
-        }
-        throw new IllegalArgumentException("Unexpected typeTag: " + typeTag);
-    }
 }
