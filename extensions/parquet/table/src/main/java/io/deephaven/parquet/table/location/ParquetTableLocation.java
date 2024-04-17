@@ -257,8 +257,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             getParquetKey().getURI(), Arrays.toString(columns)));
         }
         // Create a new index from the parquet table
-        final Table table = readDataIndexTable(getParquetKey().getURI(), indexFileMetaData,
-                readInstructions.withTableDefinitionAndLayout(null, ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
+        final Table table = readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, readInstructions);
         if (table == null) {
             return null;
         }
@@ -345,7 +344,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final URI parentFileURI,
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
             @NotNull final ParquetInstructions parquetInstructions) {
-        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(), parquetInstructions);
+        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
+                parquetInstructions.withTableDefinitionAndLayout(null,
+                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         if (indexFileMetaData.dataIndexInfo != null) {
             return indexTable;
         }

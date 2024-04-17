@@ -4,8 +4,6 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.util.NameValidator;
-import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
@@ -24,11 +22,8 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.vector.*;
-import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.SimpleSourceTable;
@@ -49,14 +44,9 @@ import io.deephaven.parquet.table.layout.ParquetMetadataFileLayout;
 import io.deephaven.parquet.table.layout.ParquetSingleFileLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
-import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout;
-import io.deephaven.util.SimpleTypeMap;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.channel.CachedChannelProvider;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,7 +125,7 @@ public class ParquetTools {
      * order) location found will be used to infer schema.
      *
      * @param source The path or URI of file or directory to examine
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return table
      * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
@@ -212,7 +202,7 @@ public class ParquetTools {
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions)}.
      *
      * @param sourceFile The file or directory to examine
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return table
      * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
@@ -569,8 +559,7 @@ public class ParquetTools {
      * @param sourceTable The table to partition and write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
             @NotNull final String destinationDir,
@@ -588,8 +577,7 @@ public class ParquetTools {
      * @param sourceTable The table to partition and write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
@@ -628,8 +616,7 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)} instead with
      *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
@@ -653,8 +640,7 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
@@ -683,8 +669,7 @@ public class ParquetTools {
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
@@ -701,8 +686,7 @@ public class ParquetTools {
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
@@ -739,8 +723,7 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions)} instead
      *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      */
@@ -763,8 +746,7 @@ public class ParquetTools {
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
@@ -791,8 +773,7 @@ public class ParquetTools {
      * @param keyTableDefinition The definition for key columns
      * @param leafDefinition The definition for leaf parquet files to be written
      * @param destinationRoot The path to destination root directory to store partitioned data in nested format
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
@@ -973,8 +954,7 @@ public class ParquetTools {
      *
      * @param sources The tables to write
      * @param definition The common definition for all the tables to write
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param destinations The destination paths. Any non-existing directories in the paths provided are created. If
      *        there is an error, any intermediate directories previously created are removed; note this makes this
      *        method unsafe for concurrent use.
@@ -1005,8 +985,7 @@ public class ParquetTools {
      * @param destinations The destination paths or URIs. Any non-existing directories in the paths provided are
      *        created. If there is an error, any intermediate directories previously created are removed; note this
      *        makes this method unsafe for concurrent use.
-     * @param writeInstructions Write instructions for customizations while writing, as well as provide
-     *        {@link TableDefinition}
+     * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
@@ -1398,10 +1377,10 @@ public class ParquetTools {
      * {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
      *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      */
-    public static Table readTable(
+    private static Table readTable(
             @NotNull final ParquetTableLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions) {
         if (readInstructions.isRefreshing()) {
@@ -1424,16 +1403,12 @@ public class ParquetTools {
      * Reads in a table from a single parquet file using the table definition provided through the
      * {@link ParquetInstructions}.
      *
-     * <p>
-     * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided as
-     * {@link ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout} and
-     * {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
-     *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      *
-     * @deprecated Use {@link #readTable(ParquetTableLocationKey, ParquetInstructions)} instead
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout}.
      */
     @Deprecated
     public static Table readSingleFileTable(
@@ -1445,18 +1420,14 @@ public class ParquetTools {
     /**
      * Reads in a table from a single parquet file using the provided table definition.
      *
-     * <p>
-     * Callers may prefer the simpler methods {@link #readTable(String, ParquetInstructions)} with layout provided as
-     * {@link ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout} and
-     * {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
-     *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @param tableDefinition The table's {@link TableDefinition definition}
      * @return The table
      *
-     * @deprecated use {@link #readTable(ParquetTableLocationKey, ParquetInstructions)} instead with the table
-     *             definition provided through {@link ParquetInstructions.Builder#setTableDefinition}.
+     * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
+     *             {@link ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout} and
+     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}
      */
     @Deprecated
     public static Table readSingleFileTable(
@@ -1476,7 +1447,7 @@ public class ParquetTools {
      * {@link ParquetInstructions.Builder#setFileLayout}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      */
     public static Table readTable(
@@ -1535,7 +1506,7 @@ public class ParquetTools {
      * {@link ParquetInstructions.Builder#setFileLayout}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      *
      * @deprecated use {@link #readTable(TableLocationKeyFinder, ParquetInstructions)} instead
@@ -1556,7 +1527,7 @@ public class ParquetTools {
      * {@link ParquetInstructions.Builder#setTableDefinition}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @param tableDefinition The table's {@link TableDefinition definition}
      * @return The table
      *
@@ -1581,7 +1552,7 @@ public class ParquetTools {
      * {@link ParquetInstructions.Builder#setFileLayout}.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      * @deprecated use {@link #readTable(TableLocationKeyFinder, ParquetInstructions)}
      */
@@ -1600,7 +1571,7 @@ public class ParquetTools {
             throw new IllegalArgumentException(
                     "Unable to infer schema for a partitioned parquet table when there are no initial parquet files");
         }
-        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 lastKey.getFileReader().getSchema(),
                 lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructions);
@@ -1640,7 +1611,7 @@ public class ParquetTools {
      * Reads in a table using metadata files found in the supplied directory.
      *
      * @param directory the path for the root directory to search for .parquet files
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetFileLayout#METADATA_PARTITIONED} using
@@ -1657,7 +1628,7 @@ public class ParquetTools {
      * Reads in a table using metadata files found in the supplied directory.
      *
      * @param directory the path or URI for the root directory to search for .parquet files
-     * @param readInstructions Instructions for customizations while reading, as well as provide {@link TableDefinition}
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetFileLayout#METADATA_PARTITIONED} using
@@ -1711,8 +1682,7 @@ public class ParquetTools {
      * {@link #readKeyValuePartitionedTable(File, ParquetInstructions, TableDefinition)}.
      *
      * @param directory the root directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetFileLayout#KV_PARTITIONED} using {@link ParquetInstructions.Builder#setFileLayout}.
@@ -1732,8 +1702,7 @@ public class ParquetTools {
      * of read instructions using {@link ParquetInstructions.Builder#setTableDefinition}.
      *
      * @param directoryUri the URI for the root directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @return the table
      */
     private static Table readKeyValuePartitionedTable(
@@ -1757,8 +1726,7 @@ public class ParquetTools {
      * provided {@code tableDefinition}.
      *
      * @param directory the root directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
@@ -1783,8 +1751,7 @@ public class ParquetTools {
      * {@link #readFlatPartitionedTable(File, ParquetInstructions, TableDefinition)}.
      *
      * @param directory the directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetFileLayout#FLAT_PARTITIONED} using {@link ParquetInstructions.Builder#setFileLayout}.
@@ -1801,8 +1768,7 @@ public class ParquetTools {
      * definition from those files.
      *
      * @param sourceURI the path or URI for the directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @see #readTable(TableLocationKeyFinder, ParquetInstructions)
      * @see ParquetFlatPartitionedLayout#ParquetFlatPartitionedLayout(URI, ParquetInstructions)
@@ -1819,8 +1785,7 @@ public class ParquetTools {
      * {@code tableDefinition}.
      *
      * @param directory the directory to search for .parquet files
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
@@ -1844,8 +1809,7 @@ public class ParquetTools {
      * {@link #readSingleFileTable(File, ParquetInstructions, TableDefinition)}.
      *
      * @param file the parquet file
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout}.
@@ -1865,8 +1829,7 @@ public class ParquetTools {
      * {@link #readSingleFileTable(String, ParquetInstructions, TableDefinition)}.
      *
      * @param source the path or URI for the parquet file
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
      *             {@link ParquetFileLayout#SINGLE_FILE} using {@link ParquetInstructions.Builder#setFileLayout}.
@@ -1901,8 +1864,7 @@ public class ParquetTools {
      * Creates a single table via the parquet {@code file} using the provided {@code tableDefinition}.
      *
      * @param file the parquet file
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
@@ -1923,8 +1885,7 @@ public class ParquetTools {
      * provided can be a local file path or a URI to be resolved via the provided {@link SeekableChannelsProviderPlugin}
      *
      * @param source the path or URI for the parquet file
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
+     * @param readInstructions the instructions for customizations while reading
      * @param tableDefinition the table definition
      * @return the table
      * @deprecated Use {@link #readTable(String, ParquetInstructions)} instead with layout provided as
@@ -1940,132 +1901,6 @@ public class ParquetTools {
                 ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
-    private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
-            null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
-            FloatVector.class, DoubleVector.class, ObjectVector.class);
-
-    private static Class<?> loadClass(final String colName, final String desc, final String className) {
-        try {
-            return ClassUtil.lookupClass(className);
-        } catch (ClassNotFoundException e) {
-            throw new UncheckedDeephavenException(
-                    "Column " + colName + " with " + desc + "=" + className + " that can't be found in classloader");
-        }
-    }
-
-    private static ParquetSchemaReader.ColumnDefinitionConsumer makeSchemaReaderConsumer(
-            final ArrayList<ColumnDefinition<?>> colsOut) {
-        return (final ParquetSchemaReader.ParquetMessageDefinition parquetColDef) -> {
-            Class<?> baseType;
-            if (parquetColDef.baseType == boolean.class) {
-                baseType = Boolean.class;
-            } else {
-                baseType = parquetColDef.baseType;
-            }
-            ColumnDefinition<?> colDef;
-            if (parquetColDef.codecType != null && !parquetColDef.codecType.isEmpty()) {
-                final Class<?> componentType =
-                        (parquetColDef.codecComponentType != null && !parquetColDef.codecComponentType.isEmpty())
-                                ? loadClass(parquetColDef.name, "codecComponentType", parquetColDef.codecComponentType)
-                                : null;
-                final Class<?> dataType = loadClass(parquetColDef.name, "codecType", parquetColDef.codecType);
-                colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
-            } else if (parquetColDef.dhSpecialType != null) {
-                if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
-                    colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
-                } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
-                    final Class<?> vectorType = VECTOR_TYPE_MAP.get(baseType);
-                    if (vectorType != null) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
-                    } else {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVector.class, baseType);
-                    }
-                } else {
-                    throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + parquetColDef.dhSpecialType);
-                }
-            } else {
-                if (parquetColDef.isArray) {
-                    if (baseType == byte.class && parquetColDef.noLogicalType) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
-                    } else {
-                        // TODO: ParquetInstruction.loadAsVector
-                        final Class<?> componentType = baseType;
-                        // On Java 12, replace by: dataType = componentType.arrayType();
-                        final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
-                    }
-                } else {
-                    colDef = ColumnDefinition.fromGenericType(parquetColDef.name, baseType, null);
-                }
-            }
-            colsOut.add(colDef);
-        };
-    }
-
-    /**
-     * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
-     * {@link TableDataException}.
-     *
-     * @param parquetFile The parquet file or the parquet metadata file
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
-     * @return The new {@link ParquetFileReader}
-     */
-    public static ParquetFileReader getParquetFileReader(@NotNull final File parquetFile,
-            @NotNull final ParquetInstructions readInstructions) {
-        try {
-            return getParquetFileReaderChecked(parquetFile, readInstructions);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
-        }
-    }
-
-    /**
-     * Make a {@link ParquetFileReader} for the supplied {@link URI}. Wraps {@link IOException} as
-     * {@link TableDataException}.
-     *
-     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
-     * @param readInstructions the instructions for customizations while reading, as well as provide
-     *        {@link TableDefinition}
-     * @return The new {@link ParquetFileReader}
-     */
-    public static ParquetFileReader getParquetFileReader(@NotNull final URI parquetFileURI,
-            @NotNull final ParquetInstructions readInstructions) {
-        try {
-            return getParquetFileReaderChecked(parquetFileURI, readInstructions);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to create Parquet file reader: " + parquetFileURI, e);
-        }
-    }
-
-    /**
-     * Make a {@link ParquetFileReader} for the supplied {@link File}.
-     *
-     * @param parquetFile The parquet file or the parquet metadata file
-     * @return The new {@link ParquetFileReader}
-     * @throws IOException if an IO exception occurs
-     */
-    public static ParquetFileReader getParquetFileReaderChecked(
-            @NotNull final File parquetFile,
-            @NotNull final ParquetInstructions readInstructions) throws IOException {
-        return getParquetFileReaderChecked(convertToURI(parquetFile, false), readInstructions);
-    }
-
-    /**
-     * Make a {@link ParquetFileReader} for the supplied {@link URI}.
-     *
-     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
-     * @return The new {@link ParquetFileReader}
-     * @throws IOException if an IO exception occurs
-     */
-    public static ParquetFileReader getParquetFileReaderChecked(
-            @NotNull final URI parquetFileURI,
-            @NotNull final ParquetInstructions readInstructions) throws IOException {
-        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                parquetFileURI, readInstructions.getSpecialInstructions());
-        return new ParquetFileReader(parquetFileURI, new CachedChannelProvider(provider, 1 << 7));
-    }
-
     @VisibleForTesting
     public static Table readParquetSchemaAndTable(
             @NotNull final File source,
@@ -2073,7 +1908,7 @@ public class ParquetTools {
             @Nullable final MutableObject<ParquetInstructions> mutableInstructionsOut) {
         final ParquetTableLocationKey tableLocationKey =
                 new ParquetTableLocationKey(source, 0, null, readInstructionsIn);
-        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructionsIn);
@@ -2083,30 +1918,6 @@ public class ParquetTools {
             mutableInstructionsOut.setValue(instructionsOut);
         }
         return readTable(tableLocationKey, instructionsOut);
-    }
-
-    /**
-     * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
-     *
-     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
-     *        {@link ParquetFileReader}!
-     * @param keyValueMetadata Parquet key-value metadata map
-     * @param readInstructionsIn Input conversion {@link ParquetInstructions}
-     * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}
-     */
-    public static Pair<List<ColumnDefinition<?>>, ParquetInstructions> convertSchema(
-            @NotNull final MessageType schema,
-            @NotNull final Map<String, String> keyValueMetadata,
-            @NotNull final ParquetInstructions readInstructionsIn) {
-        final ArrayList<ColumnDefinition<?>> cols = new ArrayList<>();
-        final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
-        return new Pair<>(cols, ParquetSchemaReader.readParquetSchema(
-                schema,
-                keyValueMetadata,
-                readInstructionsIn,
-                colConsumer,
-                (final String colName, final Set<String> takenNames) -> NameValidator.legalizeColumnName(colName,
-                        s -> s.replace(" ", "_"), takenNames)));
     }
 
     public static final ParquetInstructions UNCOMPRESSED =
