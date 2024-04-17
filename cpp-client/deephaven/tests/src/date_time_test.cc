@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
-#include "tests/third_party/catch.hpp"
+#include "deephaven/third_party/catch.hpp"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/core.h"

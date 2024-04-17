@@ -7,7 +7,7 @@
 #include "deephaven/dhcore/column/array_column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/utility/cython_support.h"
-#include "tests/third_party/catch.hpp"
+#include "deephaven/third_party/catch.hpp"
 
 using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::column::StringArrayColumnSource;
