@@ -230,7 +230,8 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         }
     }
 
-    final class ObjectValueRepeaterProcessor extends ContextAwareDelegateBase implements RepeaterProcessor, Context {
+    final class ObjectValueRepeaterProcessor extends ContextAwareDelegateBase
+            implements RepeaterProcessor, Context, FieldProcessor {
         private final Map<ObjectField, RepeaterProcessor> fields;
         private final Map<ObjectField, Context> contexts;
         private final Map<String, ObjectField> map;
@@ -252,6 +253,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                     map.put(alias, field);
                 }
             }
+            this.visited = new HashSet<>(fields.size());
         }
 
         private Collection<RepeaterProcessor> processors() {
@@ -312,25 +314,25 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             switch (parser.currentToken()) {
                 case START_OBJECT:
                     if (parser.nextToken() == JsonToken.END_OBJECT) {
-                        processEmptyObject(parser, index);
-                        return;
+                        processEmptyObject(parser);
+                        break;
                     }
                     if (!parser.hasToken(JsonToken.FIELD_NAME)) {
                         throw new IllegalStateException();
                     }
                     // fall-through
                 case FIELD_NAME:
-                    processObjectFields(parser, index);
-                    return;
+                    processObjectFields(parser);
+                    break;
                 case VALUE_NULL:
-                    processNullObject(parser, index);
-                    return;
+                    processNullObject(parser);
+                    break;
                 default:
                     throw Parsing.mismatch(parser, Object.class);
             }
         }
 
-        private void processNullObject(JsonParser parser, int ix) throws IOException {
+        private void processNullObject(JsonParser parser) throws IOException {
             // element is null
             // pass-through JsonToken.VALUE_NULL
             for (Context context : contexts.values()) {
@@ -338,64 +340,57 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             }
         }
 
-        private void processEmptyObject(JsonParser parser, int ix) throws IOException {
+        private void processEmptyObject(JsonParser parser) throws IOException {
             // This logic should be equivalent to processObjectFields, but where we know there are no fields
             for (Context context : contexts.values()) {
                 context.processElementMissing(parser);
             }
         }
 
-        private void processObjectFields(JsonParser parser, int ix) throws IOException {
-            // todo: keep state
-            final State state = new State(ix);
-            FieldProcessor.processFields(parser, state);
-            state.processMissingFields(parser);
+        private void processObjectFields(JsonParser parser) throws IOException {
+            visited.clear();
+            FieldProcessor.processFields(parser, this);
+            processMissingFields(parser);
         }
 
-        private class State implements FieldProcessor {
-            // Note: we could try to build a stricter implementation that doesn't use Set; if the user can guarantee
-            // that none of the fields will be missing and there won't be any repeated fields, we could use a simple
-            // counter to ensure all field processors were invoked.
-            private final Set<ObjectField> visited = new HashSet<>(contexts.size());
-            private final int ix;
+        // -----------------------------------------------------------------------------------------------------------
 
-            public State(int ix) {
-                this.ix = ix;
-            }
+        private final Set<ObjectField> visited;
 
-            @Override
-            public void process(String fieldName, JsonParser parser) throws IOException {
-                final ObjectField field = lookupField(fieldName);
-                if (field == null) {
-                    if (!options.allowUnknownFields()) {
-                        throw new IOException(
-                                String.format("Unexpected field '%s' and allowUnknownFields == false", fieldName));
-                    }
-                    parser.skipChildren();
-                } else if (visited.add(field)) {
-                    // First time seeing field
-                    context(field).processElement(parser);
-                } else if (field.repeatedBehavior() == RepeatedBehavior.USE_FIRST) {
-                    parser.skipChildren();
-                } else {
+        @Override
+        public void process(String fieldName, JsonParser parser) throws IOException {
+            final ObjectField field = lookupField(fieldName);
+            if (field == null) {
+                if (!options.allowUnknownFields()) {
                     throw new IOException(
-                            String.format("Field '%s' has already been visited and repeatedBehavior == %s",
-                                    fieldName, field.repeatedBehavior()));
+                            String.format("Unexpected field '%s' and allowUnknownFields == false", fieldName));
                 }
+                parser.skipChildren();
+            } else if (visited.add(field)) {
+                // First time seeing field
+                context(field).processElement(parser);
+            } else if (field.repeatedBehavior() == RepeatedBehavior.USE_FIRST) {
+                parser.skipChildren();
+            } else {
+                throw new IOException(
+                        String.format("Field '%s' has already been visited and repeatedBehavior == %s",
+                                fieldName, field.repeatedBehavior()));
             }
+        }
 
-            void processMissingFields(JsonParser parser) throws IOException {
-                if (visited.size() == fields.size()) {
-                    // All fields visited, none missing
-                    return;
-                }
-                for (Entry<ObjectField, Context> e : contexts.entrySet()) {
-                    if (!visited.contains(e.getKey())) {
-                        e.getValue().processElementMissing(parser);
-                    }
+        void processMissingFields(JsonParser parser) throws IOException {
+            if (visited.size() == fields.size()) {
+                // All fields visited, none missing
+                return;
+            }
+            for (Entry<ObjectField, Context> e : contexts.entrySet()) {
+                if (!visited.contains(e.getKey())) {
+                    e.getValue().processElementMissing(parser);
                 }
             }
         }
+
+        // -----------------------------------------------------------------------------------------------------------
 
         @Override
         public void processElementMissing(JsonParser parser) throws IOException {

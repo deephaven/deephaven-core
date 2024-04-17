@@ -23,7 +23,7 @@ interface RepeaterProcessor extends ContextAware {
         context.done(parser);
     }
 
-    static void processKeyValues(
+    static void processObjectKeyValues(
             JsonParser parser,
             RepeaterProcessor keyProcessor,
             RepeaterProcessor valueProcessor) throws IOException {

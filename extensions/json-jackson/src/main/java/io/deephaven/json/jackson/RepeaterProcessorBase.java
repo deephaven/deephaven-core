@@ -19,6 +19,7 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     private final T onNull;
 
     private WritableObjectChunk<? super T, ?> out;
+    private int ix;
 
     public RepeaterProcessorBase(boolean allowMissing, boolean allowNull, T onMissing, T onNull) {
         this.onMissing = onMissing;
@@ -27,7 +28,13 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
         this.allowMissing = allowMissing;
     }
 
-    public abstract T doneImpl(JsonParser parser, int length);
+    public void startImpl(JsonParser parser) throws IOException {}
+
+    public abstract void processElementImpl(JsonParser parser, int index) throws IOException;
+
+    public abstract void processElementMissingImpl(JsonParser parser, int index) throws IOException;
+
+    public abstract T doneImpl(JsonParser parser, int length) throws IOException;
 
     @Override
     public final void setContext(List<WritableChunk<?>> out) {
@@ -67,11 +74,24 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
 
     @Override
     public final void start(JsonParser parser) throws IOException {
+        startImpl(parser);
+        ix = 0;
+    }
 
+    @Override
+    public final void processElement(JsonParser parser) throws IOException {
+        processElementImpl(parser, ix);
+        ++ix;
+    }
+
+    @Override
+    public final void processElementMissing(JsonParser parser) throws IOException {
+        processElementMissingImpl(parser, ix);
+        ++ix;
     }
 
     @Override
     public final void done(JsonParser parser) throws IOException {
-        out.add(doneImpl(parser, length));
+        out.add(doneImpl(parser, ix));
     }
 }

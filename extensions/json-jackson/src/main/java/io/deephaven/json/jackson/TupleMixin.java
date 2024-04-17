@@ -147,6 +147,7 @@ final class TupleMixin extends Mixin<TupleValue> {
     final class TupleArrayProcessor extends ContextAwareDelegateBase implements RepeaterProcessor, Context {
         private final List<RepeaterProcessor> values;
         private final List<Context> contexts;
+        private int index;
 
         public TupleArrayProcessor(List<RepeaterProcessor> values) {
             super(values);
@@ -187,23 +188,25 @@ final class TupleMixin extends Mixin<TupleValue> {
             for (Context context : contexts) {
                 context.start(parser);
             }
+            index = 0;
         }
 
         @Override
         public void processElement(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case START_ARRAY:
-                    processTuple(parser, index);
-                    return;
+                    processTuple(parser);
+                    break;
                 case VALUE_NULL:
-                    processNullTuple(parser, index);
-                    return;
+                    processNullTuple(parser);
+                    break;
                 default:
                     throw Parsing.mismatch(parser, Object.class);
             }
+            ++index;
         }
 
-        private void processTuple(JsonParser parser, int index) throws IOException {
+        private void processTuple(JsonParser parser) throws IOException {
             for (Context context : contexts) {
                 parser.nextToken();
                 context.processElement(parser);
@@ -212,7 +215,7 @@ final class TupleMixin extends Mixin<TupleValue> {
             assertCurrentToken(parser, JsonToken.END_ARRAY);
         }
 
-        private void processNullTuple(JsonParser parser, int index) throws IOException {
+        private void processNullTuple(JsonParser parser) throws IOException {
             // Note: we are treating a null tuple the same as a tuple of null objects
             // null ~= [null, ..., null]
             for (Context context : contexts) {
@@ -228,6 +231,7 @@ final class TupleMixin extends Mixin<TupleValue> {
             for (Context context : contexts) {
                 context.processElementMissing(parser);
             }
+            ++index;
         }
 
         @Override

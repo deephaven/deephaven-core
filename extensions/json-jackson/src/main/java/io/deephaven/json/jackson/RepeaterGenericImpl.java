@@ -16,14 +16,15 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     private final ToObject<T> toObject;
     private final SizedObjectChunk<T, ?> chunk;
 
-    public RepeaterGenericImpl(ToObject<T> toObject, boolean allowMissing, boolean allowNull, T[] onMissing, T[] onNull) {
+    public RepeaterGenericImpl(ToObject<T> toObject, boolean allowMissing, boolean allowNull, T[] onMissing,
+            T[] onNull) {
         super(allowMissing, allowNull, onMissing, onNull);
         this.toObject = Objects.requireNonNull(toObject);
         chunk = new SizedObjectChunk<>(0);
     }
 
     @Override
-    public void processElement(JsonParser parser) throws IOException {
+    public void processElementImpl(JsonParser parser, int index) throws IOException {
         final int newSize = index + 1;
         final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(newSize);
         chunk.set(index, toObject.parseValue(parser));
@@ -31,7 +32,7 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     }
 
     @Override
-    public void processElementMissing(JsonParser parser) throws IOException {
+    public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
         final int newSize = index + 1;
         final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(newSize);
         chunk.set(index, toObject.parseMissing(parser));
@@ -41,6 +42,8 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     @Override
     public T[] doneImpl(JsonParser parser, int length) {
         final WritableObjectChunk<T, ?> chunk = this.chunk.get();
-        return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+        final T[] result = Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+        chunk.fillWithNullValue(0, length);
+        return result;
     }
 }

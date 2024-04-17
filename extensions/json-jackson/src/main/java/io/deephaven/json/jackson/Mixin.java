@@ -267,7 +267,7 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         protected abstract JsonParser createParser(X in) throws IOException;
 
         private final ValueProcessor processor;
-        
+
         public ObjectProcessorJsonValue() {
             processor = processor("<root>");
         }

@@ -46,7 +46,7 @@ final class ValueProcessorKvImpl implements ValueProcessor {
             valueProcessor.processNullRepeater(parser);
             return;
         }
-        RepeaterProcessor.processKeyValues(parser, keyProcessor, valueProcessor);
+        RepeaterProcessor.processObjectKeyValues(parser, keyProcessor, valueProcessor);
     }
 
     @Override
