@@ -8,6 +8,7 @@ import io.airlift.compress.gzip.JdkGzipCodec;
 import io.airlift.compress.lz4.Lz4Codec;
 import io.airlift.compress.lzo.LzoCodec;
 import io.airlift.compress.zstd.ZstdCodec;
+import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CodecPool;
@@ -99,6 +100,8 @@ public class DeephavenCompressorAdapterFactory {
                 final CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
+            // We start with the assumption that we can create compressor/decompressor objects and update these flags
+            // later if we fail to create them.
             canCreateCompressorObject = true;
             canCreateDecompressorObject = true;
         }
@@ -124,17 +127,21 @@ public class DeephavenCompressorAdapterFactory {
 
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
-                final int uncompressedSize, final DecompressorHolder decompressorHolder) throws IOException {
+                final int uncompressedSize, final SeekableChannelContext channelContext) throws IOException {
             final Decompressor decompressor;
             if (canCreateDecompressorObject) {
-                if (decompressorHolder.holdsDecompressor(compressionCodecName)) {
+                final DecompressorHolder decompressorHolder = channelContext.getResource();
+                if (decompressorHolder != null && decompressorHolder.holdsDecompressor(compressionCodecName)) {
                     decompressor = decompressorHolder.getDecompressor();
                     decompressor.reset();
                 } else {
                     decompressor = CodecPool.getDecompressor(compressionCodec);
                     if (decompressor != null) {
-                        decompressor.reset();
-                        decompressorHolder.setDecompressor(compressionCodecName, decompressor);
+                        if (decompressorHolder != null) {
+                            decompressorHolder.setDecompressor(compressionCodecName, decompressor);
+                        } else {
+                            channelContext.setResource(new DecompressorHolder(compressionCodecName, decompressor));
+                        }
                     } else {
                         canCreateDecompressorObject = false;
                     }

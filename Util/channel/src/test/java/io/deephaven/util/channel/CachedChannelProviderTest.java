@@ -180,6 +180,14 @@ public class CachedChannelProviderTest {
         AtomicInteger count = new AtomicInteger(0);
 
         private final class TestChannelContext implements SeekableChannelContext {
+            @Override
+            public void setResource(final Resource resource) {}
+
+            @Override
+            @Nullable
+            public <RESOURCE_TYPE extends Resource> RESOURCE_TYPE getResource() {
+                return null;
+            }
         }
 
         @Override

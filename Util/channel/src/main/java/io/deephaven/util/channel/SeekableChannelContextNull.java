@@ -3,6 +3,17 @@
 //
 package io.deephaven.util.channel;
 
+import org.jetbrains.annotations.Nullable;
+
 enum SeekableChannelContextNull implements SeekableChannelContext {
-    NULL_CONTEXT_INSTANCE
+    NULL_CONTEXT_INSTANCE;
+
+    @Override
+    public void setResource(final Resource resource) {}
+
+    @Override
+    @Nullable
+    public <RESOURCE_TYPE extends Resource> RESOURCE_TYPE getResource() {
+        return null;
+    }
 }

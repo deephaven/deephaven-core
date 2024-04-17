@@ -3,8 +3,23 @@
 //
 package io.deephaven.util.channel;
 
-import io.deephaven.parquet.compress.DecompressorHolderImpl;
+import org.jetbrains.annotations.Nullable;
 
-// TODO Should I keep this class someplace else?
-public class SeekableChannelContextDefaultImpl extends DecompressorHolderImpl implements SeekableChannelContext {
+public class SeekableChannelContextDefaultImpl implements SeekableChannelContext {
+    /**
+     * An opaque resource object hosted by this context.
+     */
+    private Resource resource;
+
+    @Override
+    public void setResource(@Nullable final Resource resource) {
+        this.resource = resource;
+    }
+
+    @Override
+    @Nullable
+    final public <RESOURCE_TYPE extends Resource> RESOURCE_TYPE getResource() {
+        // noinspection unchecked
+        return (RESOURCE_TYPE) resource;
+    }
 }

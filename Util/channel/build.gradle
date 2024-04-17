@@ -9,9 +9,6 @@ dependencies {
     // Needed for SafeCloseable
     implementation project(':Util')
 
-    // TODO Added for DecompressorHolder, what is a better way to do this?
-    api project(':extensions-parquet-compression')
-
     // For CountingInputStream
     Classpaths.inheritGuava(project)
 

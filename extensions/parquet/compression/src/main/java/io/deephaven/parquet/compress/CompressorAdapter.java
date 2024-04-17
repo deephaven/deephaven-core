@@ -4,6 +4,8 @@
 package io.deephaven.parquet.compress;
 
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelContext;
+import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -31,8 +33,7 @@ public interface CompressorAdapter extends SafeCloseable {
 
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
-                final int uncompressedSize, final DecompressorHolder decompressorHolder) {
-            // We don't need to decompress
+                final int uncompressedSize, final SeekableChannelContext channelContext) {
             return BytesInput.from(inputStream, compressedSize);
         }
 
@@ -61,17 +62,19 @@ public interface CompressorAdapter extends SafeCloseable {
      * before {@code inputStream} is closed; if the {@link BytesInput} interface needs to persist longer than
      * {@code inputStream}, callers should use {@link BytesInput#copy(BytesInput)} on the results.
      * <p>
-     * Note that this method is thread safe, assuming the {@link DecompressorHolder} instances are not shared across
+     * Note that this method is thread safe, assuming the {@link SeekableChannelContext} instances are not shared across
      * threads.
      * 
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data
      * @param uncompressedSize the number of bytes that should be present when decompressed
+     * @param channelContext the context which can store any additional resources link a {@link Decompressor} to use for
+     *        reading from the input stream
      * @return the decompressed bytes, copied into memory
      * @throws IOException thrown if an error occurs reading data.
      */
     BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
-            DecompressorHolder decompressorHolder) throws IOException;
+            SeekableChannelContext channelContext) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.

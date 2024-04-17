@@ -3,17 +3,15 @@
 //
 package io.deephaven.util.channel;
 
-import io.deephaven.parquet.compress.DecompressorHolder;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
 
 /**
  * Context object for reading and writing to channels created by {@link SeekableChannelsProvider}.
  */
-// TODO I need ideas for this part. Because of adding DecompressorHolder to the interface, I had to add api dependency
-// in gradle
-public interface SeekableChannelContext extends DecompressorHolder, SafeCloseable {
+public interface SeekableChannelContext extends SafeCloseable {
 
     SeekableChannelContext NULL = SeekableChannelContextNull.NULL_CONTEXT_INSTANCE;
 
@@ -35,6 +33,23 @@ public interface SeekableChannelContext extends DecompressorHolder, SafeCloseabl
         // An impl that does not close the context
         return () -> context;
     }
+
+    /**
+     * Minimal interface for optional, opaque objects hosted by channel context instances.
+     */
+    interface Resource {
+    }
+
+    /**
+     * Set the opaque {@link Resource} object hosted by this instance.
+     */
+    void setResource(Resource resource);
+
+    /**
+     * @return An opaque {@link Resource} object hosted by this instance, or {@code null} if none has been set
+     */
+    @Nullable
+    <RESOURCE_TYPE extends Resource> RESOURCE_TYPE getResource();
 
     /**
      * Release any resources associated with this context. The context should not be used afterward.

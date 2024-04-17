@@ -10,6 +10,7 @@ dependencies {
     Classpaths.inheritParquetHadoopConfiguration(project)
 
     implementation project(':Configuration')
+    implementation project(':util-channel')
 
     implementation depCommonsIo
 
