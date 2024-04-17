@@ -4,6 +4,10 @@
 package io.deephaven.stats;
 
 public interface StatsIntradayLogger {
+    char COUNTER_TAG = 'C'; // Counter.TYPE_TAG;
+    char HISTOGRAM_STATE_TAG = 'H'; // HistogramState.TYPE_TAG;
+    char STATE_TAG = 'S'; // State.TYPE_TAG;
+
     /**
      * Convert a type tag to a friendly representation.
      * 
@@ -11,10 +15,6 @@ public interface StatsIntradayLogger {
      * @return a String representation suitable for log presentation
      */
     static String type(char typeTag) {
-        final char COUNTER_TAG = 'C'; // Counter.TYPE_TAG;
-        final char HISTOGRAM_STATE_TAG = 'H'; // HistogramState.TYPE_TAG;
-        final char STATE_TAG = 'S'; // State.TYPE_TAG;
-
         switch (typeTag) {
             case COUNTER_TAG:
                 return "counter";
