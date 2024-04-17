@@ -7,29 +7,10 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.concurrent.ExecutionException;
 
 public interface QueryCompiler {
-
-    /**
-     * Deephaven REPL Sessions may create new classes on the fly. This method returns the directory where these classes
-     * should be written so that they are visible to the compiler.
-     *
-     * @return The directory where classes should be written
-     */
-    @Nullable
-    File getTemporaryClassDestination();
-
-    /**
-     * Set the parent class loader for the compiler. If the Deephaven REPL Session can create new classes on the fly,
-     * that class loader must provide the on-the-fly class objects used by QueryCompiler compiled classes.
-     *
-     * @param parentClassLoader The parent class loader
-     */
-    void setParentClassLoader(@NotNull ClassLoader parentClassLoader);
 
     /**
      * Compile a class.

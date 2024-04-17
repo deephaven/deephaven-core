@@ -83,9 +83,8 @@ public class QueryCompilerImpl implements QueryCompiler {
     private final String[] dynamicPatterns = new String[] {DYNAMIC_CLASS_PREFIX, FORMULA_CLASS_PREFIX};
 
     private final File classDestination;
-    private final boolean isCacheDirectory;
     private final Set<File> additionalClassLocations;
-    private volatile WritableURLClassLoader ucl;
+    private final WritableURLClassLoader ucl;
 
     private QueryCompilerImpl(File classDestination) {
         this(classDestination, null, false);
@@ -94,12 +93,11 @@ public class QueryCompilerImpl implements QueryCompiler {
     private QueryCompilerImpl(
             final File classDestination,
             final ClassLoader parentClassLoader,
-            final boolean isCacheDirectory) {
+            boolean isCacheDirectory) {
         final ClassLoader parentClassLoaderToUse = parentClassLoader == null
                 ? QueryCompilerImpl.class.getClassLoader()
                 : parentClassLoader;
         this.classDestination = classDestination;
-        this.isCacheDirectory = isCacheDirectory;
         ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
                 classDestination.getAbsolutePath());
         additionalClassLocations = new LinkedHashSet<>();
@@ -186,21 +184,6 @@ public class QueryCompilerImpl implements QueryCompiler {
         final FileOutputStream fileOutStream = new FileOutputStream(destinationFile);
         byteOutStream.writeTo(fileOutStream);
         fileOutStream.close();
-    }
-
-    public File getTemporaryClassDestination() {
-        // Groovy classes need to be written out to a location where they can be found by the compiler
-        // (so that filters and formulae can use them).
-        //
-        // We don't want the regular runtime class loader to find them, because then they get "stuck" in there
-        // even if the class itself changes, and we can't forget it. So instead we use a single-use class loader
-        // for each formula, that will always read the class from disk.
-        return isCacheDirectory ? classDestination : null;
-    }
-
-    public void setParentClassLoader(@NotNull final ClassLoader parentClassLoader) {
-        // noinspection NonAtomicOperationOnVolatileField
-        ucl = new WritableURLClassLoader(ucl.getURLs(), parentClassLoader);
     }
 
     /**
