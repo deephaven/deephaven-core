@@ -6,6 +6,7 @@ package io.deephaven.stats;
 public interface StatsIntradayLogger {
     /**
      * Convert a type tag to a friendly representation.
+     * 
      * @param typeTag the type tag as passed to the log method
      * @return a String representation suitable for log presentation
      */
@@ -26,7 +27,7 @@ public interface StatsIntradayLogger {
     }
 
     void log(String intervalName, long now, long appNow, char typeTag, String compactName, long n, long sum, long last,
-             long min, long max, long avg, long sum2, long stdev);
+            long min, long max, long avg, long sum2, long stdev);
 
     StatsIntradayLogger NULL = new Null();
 

@@ -44,7 +44,7 @@ class StatsImpl implements StatsIntradayLogger {
     @Override
     public void log(String intervalName, long now, long appNow, char typeTag, String compactName, long n, long sum,
             long last, long min, long max, long avg, long sum2, long stdev) {
-        final String type = type(typeTag);
+        final String type = StatsIntradayLogger.type(typeTag);
         publisher.add(id.value(), now, compactName, intervalName, type, n, sum, last, min, max, avg, sum2, stdev);
         try {
             logger.log(now, id.value(), compactName, intervalName, type, n, sum, last, min, max, avg, sum2, stdev);
