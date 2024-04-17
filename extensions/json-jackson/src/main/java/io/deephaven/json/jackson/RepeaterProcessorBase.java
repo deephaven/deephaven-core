@@ -7,9 +7,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
 
@@ -18,14 +22,18 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     private final T onMissing;
     private final T onNull;
 
+    // Does not need to be T; consider Type.instantType().arrayType() produces long[]
+    private final GenericType<?> type;
+
     private WritableObjectChunk<? super T, ?> out;
     private int ix;
 
-    public RepeaterProcessorBase(boolean allowMissing, boolean allowNull, T onMissing, T onNull) {
+    public RepeaterProcessorBase(boolean allowMissing, boolean allowNull, T onMissing, T onNull, GenericType<?> type) {
         this.onMissing = onMissing;
         this.onNull = onNull;
         this.allowNull = allowNull;
         this.allowMissing = allowMissing;
+        this.type = Objects.requireNonNull(type);
     }
 
     public void startImpl(JsonParser parser) throws IOException {}
@@ -49,6 +57,11 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     @Override
     public final int numColumns() {
         return 1;
+    }
+
+    @Override
+    public Stream<Type<?>> columnTypes() {
+        return Stream.of(type);
     }
 
     @Override

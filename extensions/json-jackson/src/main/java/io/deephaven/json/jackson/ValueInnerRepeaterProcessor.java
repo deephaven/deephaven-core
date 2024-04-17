@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
 
@@ -30,11 +31,10 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
 
     private List<WritableObjectChunk<Object[], ?>> out;
 
-    public ValueInnerRepeaterProcessor(boolean allowMissing, boolean allowNull, ValueProcessor innerProcessor,
-            List<Type<?>> innerProcessorTypes) {
+    public ValueInnerRepeaterProcessor(boolean allowMissing, boolean allowNull, ValueProcessor innerProcessor) {
         this.allowMissing = allowMissing;
         this.allowNull = allowNull;
-        final List<WritableChunk<?>> innerChunks = innerProcessorTypes.stream()
+        final List<WritableChunk<?>> innerChunks = innerProcessor.columnTypes()
                 .map(Type::arrayType)
                 .map(ObjectProcessor::chunkType)
                 .map(o -> o.makeWritableChunk(1))
@@ -64,6 +64,11 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
     @Override
     public int numColumns() {
         return sizedObjectChunks.size();
+    }
+
+    @Override
+    public Stream<Type<?>> columnTypes() {
+        return innerProcessor.columnTypes().map(Type::arrayType);
     }
 
     @Override

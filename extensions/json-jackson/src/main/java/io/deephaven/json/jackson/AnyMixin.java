@@ -36,12 +36,13 @@ final class AnyMixin extends Mixin<AnyValue> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ObjectValueProcessor<>(ToTreeNode.INSTANCE);
+        return new ObjectValueProcessor<>(ToTreeNode.INSTANCE, Type.ofCustom(TreeNode.class));
     }
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(ToTreeNode.INSTANCE, allowMissing, allowNull, null, null);
+        return new RepeaterGenericImpl<>(ToTreeNode.INSTANCE, allowMissing, allowNull, null, null,
+                Type.ofCustom(TreeNode.class).arrayType());
     }
 
     private enum ToTreeNode implements ToObject<TreeNode> {

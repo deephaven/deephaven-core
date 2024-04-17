@@ -204,6 +204,11 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
 
         @Override
+        public Stream<Type<?>> columnTypes() {
+            return outputTypesImpl();
+        }
+
+        @Override
         public void processCurrentValue(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case START_OBJECT:

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.json.jackson.LongValueProcessor.ToLong;
+import io.deephaven.qst.type.GenericType;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -18,8 +19,8 @@ final class LongRepeaterImpl extends RepeaterProcessorBase<long[]> {
 
     private final ToLong toLong;
 
-    public LongRepeaterImpl(ToLong toLong, boolean allowMissing, boolean allowNull) {
-        super(allowMissing, allowNull, null, null);
+    public LongRepeaterImpl(ToLong toLong, boolean allowMissing, boolean allowNull, GenericType<?> type) {
+        super(allowMissing, allowNull, null, null, type);
         this.toLong = Objects.requireNonNull(toLong);
     }
 

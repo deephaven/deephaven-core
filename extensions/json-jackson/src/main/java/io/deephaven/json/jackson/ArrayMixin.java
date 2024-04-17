@@ -9,7 +9,6 @@ import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class ArrayMixin extends Mixin<ArrayValue> {
@@ -61,7 +60,6 @@ final class ArrayMixin extends Mixin<ArrayValue> {
         // double[] (processor())
         // double[][] (repeater())
         // return new ArrayOfArrayRepeaterProcessor(allowMissing, allowNull);
-        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, innerProcessor(),
-                elementOutputTypes().collect(Collectors.toList()));
+        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, innerProcessor());
     }
 }

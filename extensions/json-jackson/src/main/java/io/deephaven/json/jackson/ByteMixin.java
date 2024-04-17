@@ -72,7 +72,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
         private final SizedByteChunk<?> chunk = new SizedByteChunk<>(0);
 
         public ByteRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null);
+            super(allowMissing, allowNull, null, null, Type.byteType().arrayType());
         }
 
         @Override

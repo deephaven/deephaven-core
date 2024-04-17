@@ -73,7 +73,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
         private final SizedIntChunk<?> chunk = new SizedIntChunk<>(0);
 
         public IntRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null);
+            super(allowMissing, allowNull, null, null, Type.intType().arrayType());
         }
 
         @Override

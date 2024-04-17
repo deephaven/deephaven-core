@@ -4,10 +4,12 @@
 package io.deephaven.json.jackson;
 
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.qst.type.Type;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 abstract class ContextAwareDelegateBase implements ContextAware {
 
@@ -39,5 +41,10 @@ abstract class ContextAwareDelegateBase implements ContextAware {
     @Override
     public final int numColumns() {
         return numColumns;
+    }
+
+    @Override
+    public final Stream<Type<?>> columnTypes() {
+        return delegates.stream().flatMap(ContextAware::columnTypes);
     }
 }

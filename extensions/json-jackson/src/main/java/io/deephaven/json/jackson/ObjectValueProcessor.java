@@ -6,18 +6,23 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 final class ObjectValueProcessor<T> implements ValueProcessor {
 
     private WritableObjectChunk<T, ?> out;
     private final ToObject<? extends T> toObj;
+    private final GenericType<T> type;
 
-    ObjectValueProcessor(ToObject<? extends T> toObj) {
+    ObjectValueProcessor(ToObject<? extends T> toObj, GenericType<T> type) {
         this.toObj = Objects.requireNonNull(toObj);
+        this.type = Objects.requireNonNull(type);
     }
 
     @Override
@@ -33,6 +38,11 @@ final class ObjectValueProcessor<T> implements ValueProcessor {
     @Override
     public int numColumns() {
         return 1;
+    }
+
+    @Override
+    public Stream<Type<?>> columnTypes() {
+        return Stream.of(type);
     }
 
     @Override

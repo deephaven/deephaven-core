@@ -63,7 +63,8 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(new ToBoolean(), allowMissing, allowNull, null, null);
+        return new RepeaterGenericImpl<>(new ToBoolean(), allowMissing, allowNull, null, null,
+                Type.booleanType().boxedType().arrayType());
     }
 
     final class ToBoolean implements ToObject<Boolean> {

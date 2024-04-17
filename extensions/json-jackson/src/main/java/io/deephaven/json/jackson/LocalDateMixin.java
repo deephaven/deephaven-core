@@ -38,7 +38,7 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ObjectValueProcessor<>(this);
+        return new ObjectValueProcessor<>(this, Type.ofCustom(LocalDate.class));
     }
 
     @Override
@@ -60,7 +60,8 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null);
+        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null,
+                Type.ofCustom(LocalDate.class).arrayType());
     }
 
     private LocalDate parseFromString(JsonParser parser) throws IOException {

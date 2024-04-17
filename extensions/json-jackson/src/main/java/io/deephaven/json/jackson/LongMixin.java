@@ -62,7 +62,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(this, allowMissing, allowNull);
+        return new LongRepeaterImpl(this, allowMissing, allowNull, Type.longType().arrayType());
     }
 
     private long parseFromInt(JsonParser parser) throws IOException {

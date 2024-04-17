@@ -56,6 +56,11 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
     }
 
     @Override
+    public Stream<Type<?>> columnTypes() {
+        return Stream.empty();
+    }
+
+    @Override
     public void processCurrentValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case START_OBJECT:
@@ -150,6 +155,11 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
         @Override
         public int numColumns() {
             return 0;
+        }
+
+        @Override
+        public Stream<Type<?>> columnTypes() {
+            return Stream.empty();
         }
 
         @Override

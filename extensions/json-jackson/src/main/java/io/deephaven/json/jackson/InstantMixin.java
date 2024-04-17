@@ -67,7 +67,7 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(this, allowMissing, allowNull);
+        return new LongRepeaterImpl(this, allowMissing, allowNull, Type.instantType().arrayType());
     }
 
     private long parseFromString(JsonParser parser) throws IOException {

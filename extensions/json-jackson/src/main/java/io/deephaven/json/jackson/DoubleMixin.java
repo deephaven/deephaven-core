@@ -72,7 +72,7 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
         private final SizedDoubleChunk<?> chunk = new SizedDoubleChunk<>(0);
 
         public DoubleRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null);
+            super(allowMissing, allowNull, null, null, Type.doubleType().arrayType());
         }
 
         @Override

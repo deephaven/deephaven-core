@@ -68,7 +68,7 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
         private final SizedCharChunk<?> chunk = new SizedCharChunk<>(0);
 
         public CharRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null);
+            super(allowMissing, allowNull, null, null, Type.charType().arrayType());
         }
 
         @Override

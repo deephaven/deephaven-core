@@ -6,10 +6,12 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 final class CharValueProcessor implements ValueProcessor {
 
@@ -33,6 +35,11 @@ final class CharValueProcessor implements ValueProcessor {
     @Override
     public int numColumns() {
         return 1;
+    }
+
+    @Override
+    public Stream<Type<?>> columnTypes() {
+        return Stream.of(Type.charType());
     }
 
     @Override

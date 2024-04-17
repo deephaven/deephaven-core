@@ -6,8 +6,6 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.api.util.NameValidator;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.AnyValue;
 import io.deephaven.json.ArrayValue;
 import io.deephaven.json.BigDecimalValue;
@@ -37,7 +35,6 @@ import io.deephaven.qst.type.Type;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -213,93 +210,58 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         return paths.stream().flatMap(Function.identity());
     }
 
-    private class StringIn extends ObjectProcessorJsonValue<String> {
+    private abstract class ObjectProcessorMixin<X> extends ObjectProcessorJsonValue<X> {
+        public ObjectProcessorMixin() {
+            super(Mixin.this.processor("<root>"));
+        }
+    }
+
+    private class StringIn extends ObjectProcessorMixin<String> {
         @Override
         protected JsonParser createParser(String in) throws IOException {
             return JacksonSource.of(factory, in);
         }
     }
 
-    private class BytesIn extends ObjectProcessorJsonValue<byte[]> {
+    private class BytesIn extends ObjectProcessorMixin<byte[]> {
         @Override
         protected JsonParser createParser(byte[] in) throws IOException {
             return JacksonSource.of(factory, in, 0, in.length);
         }
     }
 
-    private class ByteBufferIn extends ObjectProcessorJsonValue<ByteBuffer> {
+    private class ByteBufferIn extends ObjectProcessorMixin<ByteBuffer> {
         @Override
         protected JsonParser createParser(ByteBuffer in) throws IOException {
             return JacksonSource.of(factory, in);
         }
     }
 
-    private class CharsIn extends ObjectProcessorJsonValue<char[]> {
+    private class CharsIn extends ObjectProcessorMixin<char[]> {
         @Override
         protected JsonParser createParser(char[] in) throws IOException {
             return JacksonSource.of(factory, in, 0, in.length);
         }
     }
 
-    private class FileIn extends ObjectProcessorJsonValue<File> {
+    private class FileIn extends ObjectProcessorMixin<File> {
         @Override
         protected JsonParser createParser(File in) throws IOException {
             return JacksonSource.of(factory, in);
         }
     }
 
-    private class PathIn extends ObjectProcessorJsonValue<Path> {
+    private class PathIn extends ObjectProcessorMixin<Path> {
         @Override
         protected JsonParser createParser(Path in) throws IOException {
             return JacksonSource.of(factory, in);
         }
     }
 
-    private class URLIn extends ObjectProcessorJsonValue<URL> {
+    private class URLIn extends ObjectProcessorMixin<URL> {
         @Override
         protected JsonParser createParser(URL in) throws IOException {
             return JacksonSource.of(factory, in);
-        }
-    }
-
-    private abstract class ObjectProcessorJsonValue<X> implements ObjectProcessor<X> {
-
-        protected abstract JsonParser createParser(X in) throws IOException;
-
-        private final ValueProcessor processor;
-
-        public ObjectProcessorJsonValue() {
-            processor = processor("<root>");
-        }
-
-        @Override
-        public final int size() {
-            return Mixin.this.size();
-        }
-
-        @Override
-        public final List<Type<?>> outputTypes() {
-            return Mixin.this.outputTypes();
-        }
-
-        @Override
-        public final void processAll(ObjectChunk<? extends X, ?> in, List<WritableChunk<?>> out) {
-            processor.setContext(out);
-            try {
-                processAllImpl(in);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } finally {
-                processor.clearContext();
-            }
-        }
-
-        void processAllImpl(ObjectChunk<? extends X, ?> in) throws IOException {
-            for (int i = 0; i < in.size(); ++i) {
-                try (final JsonParser parser = createParser(in.get(i))) {
-                    ValueProcessor.processFullJson(parser, processor);
-                }
-            }
         }
     }
 

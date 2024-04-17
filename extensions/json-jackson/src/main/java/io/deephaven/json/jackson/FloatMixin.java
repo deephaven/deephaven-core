@@ -72,7 +72,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
         private final SizedFloatChunk<?> chunk = new SizedFloatChunk<>(0);
 
         public FloatRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null);
+            super(allowMissing, allowNull, null, null, Type.floatType().arrayType());
         }
 
         @Override

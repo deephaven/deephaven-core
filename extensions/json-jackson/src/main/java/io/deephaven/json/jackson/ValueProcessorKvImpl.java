@@ -6,10 +6,12 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 final class ValueProcessorKvImpl implements ValueProcessor {
 
@@ -37,6 +39,11 @@ final class ValueProcessorKvImpl implements ValueProcessor {
     @Override
     public int numColumns() {
         return keyProcessor.numColumns() + valueProcessor.numColumns();
+    }
+
+    @Override
+    public Stream<Type<?>> columnTypes() {
+        return Stream.concat(keyProcessor.columnTypes(), valueProcessor.columnTypes());
     }
 
     @Override

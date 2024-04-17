@@ -47,7 +47,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(function(), allowMissing, allowNull);
+        return new LongRepeaterImpl(function(), allowMissing, allowNull, Type.instantType().arrayType());
     }
 
     private LongValueProcessor.ToLong function() {

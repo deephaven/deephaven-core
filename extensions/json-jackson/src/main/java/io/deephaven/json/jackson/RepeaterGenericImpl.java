@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.sized.SizedObjectChunk;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
+import io.deephaven.qst.type.NativeArrayType;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -17,8 +18,8 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     private final SizedObjectChunk<T, ?> chunk;
 
     public RepeaterGenericImpl(ToObject<T> toObject, boolean allowMissing, boolean allowNull, T[] onMissing,
-            T[] onNull) {
-        super(allowMissing, allowNull, onMissing, onNull);
+            T[] onNull, NativeArrayType<T[], T> arrayType) {
+        super(allowMissing, allowNull, onMissing, onNull, arrayType);
         this.toObject = Objects.requireNonNull(toObject);
         chunk = new SizedObjectChunk<>(0);
     }

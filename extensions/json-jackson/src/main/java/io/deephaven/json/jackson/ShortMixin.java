@@ -72,7 +72,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         private final SizedShortChunk<?> chunk = new SizedShortChunk<>(0);
 
         public ShortRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null);
+            super(allowMissing, allowNull, null, null, Type.shortType().arrayType());
         }
 
         @Override

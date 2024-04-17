@@ -36,7 +36,7 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ObjectValueProcessor<>(this);
+        return new ObjectValueProcessor<>(this, Type.stringType());
     }
 
     @Override
@@ -65,7 +65,7 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null);
+        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null, Type.stringType().arrayType());
     }
 
     private String parseFromString(JsonParser parser) throws IOException {

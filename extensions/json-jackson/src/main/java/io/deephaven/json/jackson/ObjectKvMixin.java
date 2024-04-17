@@ -9,7 +9,6 @@ import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class ObjectKvMixin extends Mixin<ObjectKvValue> {
@@ -68,7 +67,6 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, innerProcessor(),
-                keyValueOutputTypes().collect(Collectors.toList()));
+        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, innerProcessor());
     }
 }

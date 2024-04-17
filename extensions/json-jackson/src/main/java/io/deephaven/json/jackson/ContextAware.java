@@ -4,13 +4,19 @@
 package io.deephaven.json.jackson;
 
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.qst.type.Type;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 interface ContextAware {
     void setContext(List<WritableChunk<?>> out);
 
     void clearContext();
 
-    int numColumns();
+    default int numColumns() {
+        return (int) columnTypes().count();
+    }
+
+    Stream<Type<?>> columnTypes();
 }
