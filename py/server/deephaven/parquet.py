@@ -160,13 +160,13 @@ def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], 
 def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JType]:
     if file_layout is None:
         return None
-    elif file_layout == ParquetFileLayout.SINGLE_FILE:
+    if file_layout == ParquetFileLayout.SINGLE_FILE:
         return _JParquetFileLayout.SINGLE_FILE
-    elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
+    if file_layout == ParquetFileLayout.FLAT_PARTITIONED:
         return _JParquetFileLayout.FLAT_PARTITIONED
-    elif file_layout == ParquetFileLayout.KV_PARTITIONED:
+    if file_layout == ParquetFileLayout.KV_PARTITIONED:
         return _JParquetFileLayout.KV_PARTITIONED
-    elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
+    if file_layout == ParquetFileLayout.METADATA_PARTITIONED:
         return _JParquetFileLayout.METADATA_PARTITIONED
     raise DHError(f"Invalid parquet file_layout '{file_layout}'")
 

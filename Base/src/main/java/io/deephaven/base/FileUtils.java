@@ -30,7 +30,13 @@ public class FileUtils {
     };
     private final static String[] EMPTY_STRING_ARRAY = new String[0];
 
-    public static final Pattern DUPLICATE_SLASH_PATTERN = Pattern.compile("//+");
+    public static final char URI_SEPARATOR_CHAR = '/';
+
+    public static final String URI_SEPARATOR = "" + URI_SEPARATOR_CHAR;
+
+    public static final String REPEATED_URI_SEPARATOR = URI_SEPARATOR + URI_SEPARATOR;
+
+    public static final Pattern REPEATED_URI_SEPARATOR_PATTERN = Pattern.compile("//+");
 
     /**
      * Cleans the specified path. All files and subdirectories in the path will be deleted. (ie you'll be left with an
@@ -256,8 +262,6 @@ public class FileUtils {
         }
     }
 
-    public static final String URI_SEPARATOR = "/";
-
     /**
      * Take the file source path or URI string and convert it to a URI object. Any unnecessary path separators will be
      * removed. The URI object will always be {@link URI#isAbsolute() absolute}, i.e., will always have a scheme.
@@ -275,8 +279,8 @@ public class FileUtils {
             uri = new URI(source);
             // Replace two or more consecutive slashes in the path with a single slash
             final String path = uri.getPath();
-            if (path.contains("//")) {
-                final String canonicalizedPath = DUPLICATE_SLASH_PATTERN.matcher(path).replaceAll("/");
+            if (path.contains(REPEATED_URI_SEPARATOR)) {
+                final String canonicalizedPath = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
                 uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), canonicalizedPath,
                         uri.getQuery(), uri.getFragment());
             }
@@ -302,17 +306,17 @@ public class FileUtils {
      */
     public static URI convertToURI(final File file, final boolean isDirectory) {
         String absPath = file.getAbsolutePath();
-        if (File.separatorChar != '/') {
-            absPath = absPath.replace(File.separatorChar, '/');
+        if (File.separatorChar != URI_SEPARATOR_CHAR) {
+            absPath = absPath.replace(File.separatorChar, URI_SEPARATOR_CHAR);
         }
-        if (absPath.charAt(0) != '/') {
-            absPath = "/" + absPath;
+        if (absPath.charAt(0) != URI_SEPARATOR_CHAR) {
+            absPath = URI_SEPARATOR_CHAR + absPath;
         }
-        if (isDirectory && absPath.charAt(absPath.length() - 1) != '/') {
-            absPath = absPath + "/";
+        if (isDirectory && absPath.charAt(absPath.length() - 1) != URI_SEPARATOR_CHAR) {
+            absPath = absPath + URI_SEPARATOR_CHAR;
         }
-        if (absPath.startsWith("//")) {
-            absPath = "//" + absPath;
+        if (absPath.startsWith(REPEATED_URI_SEPARATOR)) {
+            absPath = REPEATED_URI_SEPARATOR + absPath;
         }
         try {
             return new URI("file", null, absPath, null);

@@ -9,17 +9,17 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
-import static io.deephaven.base.FileUtils.URI_SEPARATOR;
+import static io.deephaven.base.FileUtils.URI_SEPARATOR_CHAR;
 
 public final class ParquetUtils {
 
     public static final String METADATA_FILE_NAME = "_metadata";
     public static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
-    public static final String METADATA_FILE_URI_SUFFIX = URI_SEPARATOR + METADATA_FILE_NAME;
-    public static final String COMMON_METADATA_FILE_URI_SUFFIX = URI_SEPARATOR + COMMON_METADATA_FILE_NAME;
-    public static final String METADATA_FILE_SUFFIX = File.separator + METADATA_FILE_NAME;
-    public static final String COMMON_METADATA_FILE_SUFFIX = File.separator + COMMON_METADATA_FILE_NAME;
+    public static final String METADATA_FILE_URI_SUFFIX = URI_SEPARATOR_CHAR + METADATA_FILE_NAME;
+    public static final String COMMON_METADATA_FILE_URI_SUFFIX = URI_SEPARATOR_CHAR + COMMON_METADATA_FILE_NAME;
+    public static final String METADATA_FILE_SUFFIX = File.separatorChar + METADATA_FILE_NAME;
+    public static final String COMMON_METADATA_FILE_SUFFIX = File.separatorChar + COMMON_METADATA_FILE_NAME;
     private static final String MAGIC_STR = "PAR1";
     public static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
 
@@ -39,6 +39,20 @@ public final class ParquetUtils {
      */
     public static String getPerFileMetadataKey(final String filePath) {
         return "deephaven_per_file_" + filePath.replace(File.separatorChar, '_');
+    }
+
+    /**
+     * This method verifies if the source points to a parquet file or a metadata file. Provided source can be a local
+     * file path or a URI. Also, it can point to a parquet file, metadata file or a directory.
+     */
+    public static boolean isParquetFile(@NotNull final String source) {
+        boolean ret = source.endsWith(PARQUET_FILE_EXTENSION)
+                || source.endsWith(METADATA_FILE_URI_SUFFIX)
+                || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX);
+        if (File.separatorChar != URI_SEPARATOR_CHAR) {
+            ret = ret || source.endsWith(METADATA_FILE_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_SUFFIX);
+        }
+        return ret;
     }
 
     /**
