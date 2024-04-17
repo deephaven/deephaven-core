@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
-public class PoisonedQueryCompiler extends QueryCompiler {
+public class PoisonedQueryCompiler implements QueryCompiler {
 
     public static final PoisonedQueryCompiler INSTANCE = new PoisonedQueryCompiler();
 
@@ -20,12 +20,12 @@ public class PoisonedQueryCompiler extends QueryCompiler {
     }
 
     @Override
-    public File getFakeClassDestination() {
+    public File getTemporaryClassDestination() {
         return fail();
     }
 
     @Override
-    public void setParentClassLoader(ClassLoader parentClassLoader) {
+    public void setParentClassLoader(@NotNull final ClassLoader parentClassLoader) {
         fail();
     }
 

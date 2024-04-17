@@ -71,7 +71,8 @@ public class TestQueryCompiler {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(QueryCompiler.create(folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .setQueryCompiler(QueryCompilerImpl.create(
+                        folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
                 .build()
                 .open();
     }

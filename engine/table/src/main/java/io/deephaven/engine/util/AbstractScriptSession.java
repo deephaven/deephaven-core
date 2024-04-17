@@ -58,7 +58,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
-    private final File classCacheDirectory;
+    protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
     protected final ExecutionContext executionContext;
@@ -80,7 +80,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         queryScope = new ScriptSessionQueryScope();
         final QueryCompiler compilerContext =
-                QueryCompiler.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
+                QueryCompilerImpl.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()

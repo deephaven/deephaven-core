@@ -82,7 +82,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
-    private static final String PACKAGE = QueryCompiler.DYNAMIC_GROOVY_CLASS_PREFIX;
+    private static final String PACKAGE = QueryCompilerImpl.DYNAMIC_CLASS_PREFIX;
     private static final String SCRIPT_PREFIX = "io.deephaven.engine.util.Script";
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
@@ -167,13 +167,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         // Specify a classloader to read from the classpath, with script imports
         CompilerConfiguration scriptConfig = new CompilerConfiguration();
         scriptConfig.getCompilationCustomizers().add(loadedGroovyScriptImports);
-        scriptConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
+        scriptConfig.setTargetDirectory(executionContext.getQueryCompiler().getTemporaryClassDestination());
         GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
 
         // Specify a configuration for compiling/running console commands for custom imports
         CompilerConfiguration consoleConfig = new CompilerConfiguration();
         consoleConfig.getCompilationCustomizers().add(consoleImports);
-        consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
+        consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getTemporaryClassDestination());
 
         Binding binding = new Binding(bindingBackingMap);
         groovyShell = new GroovyShell(scriptClassLoader, binding, consoleConfig) {
@@ -618,7 +618,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     public static byte[] getDynamicClass(String name) {
-        return readClass(ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination(), name);
+        return readClass(ExecutionContext.getContext().getQueryCompiler().getTemporaryClassDestination(), name);
     }
 
     private static byte[] readClass(final File rootDirectory, final String className) {
@@ -635,7 +635,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String name = getNextScriptClassName();
 
         CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
-        config.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
+        config.setTargetDirectory(executionContext.getQueryCompiler().getTemporaryClassDestination());
         config.getCompilationCustomizers().add(consoleImports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
@@ -645,7 +645,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } catch (RuntimeException e) {
             throw new GroovyExceptionWrapper(e);
         }
-        final File dynamicClassDestination = ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination();
+        final File dynamicClassDestination =
+                ExecutionContext.getContext().getQueryCompiler().getTemporaryClassDestination();
         if (dynamicClassDestination == null) {
             return;
         }
@@ -672,7 +673,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 }
 
                 try {
-                    QueryCompiler.writeClass(dynamicClassDestination, entry.getKey(), entry.getValue());
+                    QueryCompilerImpl.writeClass(classCacheDirectory, entry.getKey(), entry.getValue());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
