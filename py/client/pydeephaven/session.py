@@ -453,6 +453,11 @@ class Session:
     def publish_table(self, table: Table, shared_ticket: SharedTicket) -> None:
         """Publishes a table with the given shared ticket for sharing with other sessions.
 
+        Note that, the shared ticket can be fetched by other sessions to access the table as long as the table is
+        not released. When the table is released either through an explicit call of the close method on it, or
+        implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will
+        no longer be valid.
+
         Args:
             table (Table): a Table object
             shared_ticket (SharedTicket): a SharedTicket object
