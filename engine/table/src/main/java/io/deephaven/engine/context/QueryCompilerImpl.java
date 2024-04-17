@@ -10,7 +10,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.util.SynchronizedJavaFileManager;
-import io.deephaven.engine.updategraph.OperationInitializer;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
@@ -35,6 +38,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -792,38 +797,26 @@ public class QueryCompilerImpl implements QueryCompiler {
         final JavaFileManager fileManager = new SynchronizedJavaFileManager(
                 compiler.getStandardFileManager(null, null, null));
 
-        boolean exceptionCaught = false;
-        try {
-            final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
-            int parallelismFactor = operationInitializer.parallelismFactor();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final int parallelismFactor = executionContext.getOperationInitializer().parallelismFactor();
 
-            int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
-            if (parallelismFactor == 1 || requestsPerTask >= requests.size()) {
-                doCreateClasses(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
-                        0, requests.size());
-            } else {
-                int numTasks = (requests.size() + requestsPerTask - 1) / requestsPerTask;
-                final Future<?>[] tasks = new Future[numTasks];
-                for (int jobId = 0; jobId < numTasks; ++jobId) {
-                    final int startInclusive = jobId * requestsPerTask;
-                    final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
-                    tasks[jobId] = operationInitializer.submit(() -> {
-                        doCreateClasses(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
-                                startInclusive, endExclusive);
-                    });
-                }
-                for (int jobId = 0; jobId < numTasks; ++jobId) {
-                    try {
-                        tasks[jobId].get();
-                    } catch (Exception err) {
-                        throw new UncheckedDeephavenException("Exception waiting for compilation task", err);
-                    }
-                }
-            }
-        } catch (final Throwable t) {
-            exceptionCaught = true;
-            throw t;
-        } finally {
+        final int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
+
+        final int numTasks;
+        final JobScheduler jobScheduler;
+
+        final boolean canParallelize = executionContext.getOperationInitializer().canParallelize();
+        if (!canParallelize || parallelismFactor == 1 || requestsPerTask >= requests.size()) {
+            numTasks = 1;
+            jobScheduler = new ImmediateJobScheduler();
+        } else {
+            numTasks = (requests.size() + requestsPerTask - 1) / requestsPerTask;
+            jobScheduler = new OperationInitializerJobScheduler();
+        }
+
+        final AtomicReference<RuntimeException> exception = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Runnable cleanup = () -> {
             try {
                 FileUtils.deleteRecursively(new File(tempDirAsString));
             } catch (Exception e) {
@@ -833,11 +826,40 @@ public class QueryCompilerImpl implements QueryCompiler {
             try {
                 fileManager.close();
             } catch (IOException ioe) {
-                if (!exceptionCaught) {
-                    // noinspection ThrowFromFinallyBlock
-                    throw new UncheckedIOException("Could not close JavaFileManager", ioe);
-                }
+                exception.compareAndSet(null,
+                        new UncheckedIOException("Could not close JavaFileManager", ioe));
             }
+
+            latch.countDown();
+        };
+
+        final Consumer<Exception> onError = err -> {
+            if (err instanceof RuntimeException) {
+                exception.set((RuntimeException) err);
+            } else {
+                exception.set(new UncheckedDeephavenException("Error during compilation", err));
+            }
+            cleanup.run();
+        };
+
+        jobScheduler.iterateParallel(executionContext, null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, numTasks, (context, jobId, nestedErrorConsumer) -> {
+                    final int startInclusive = jobId * requestsPerTask;
+                    final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
+                    doCreateClasses(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
+                            startInclusive, endExclusive);
+                }, cleanup, onError);
+
+        try {
+            latch.await();
+            QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(
+                    jobScheduler.getAccumulatedPerformance());
+            final RuntimeException err = exception.get();
+            if (err != null) {
+                throw err;
+            }
+        } catch (final InterruptedException e) {
+            throw new CancellationException("interrupted while compiling");
         }
     }
 
