@@ -10,6 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.util.SynchronizedJavaFileManager;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -758,6 +759,16 @@ public class QueryCompilerImpl implements QueryCompiler {
         }
     }
 
+    private static final JavaCompiler compiler;
+    private static final JavaFileManager fileManager;
+    static {
+        compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
+        }
+        fileManager = new SynchronizedJavaFileManager(compiler.getStandardFileManager(null, null, null));
+    }
+
     private void maybeCreateClasses(
             @NotNull final List<CompilationRequestAttempt> requests) {
         // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
@@ -788,15 +799,6 @@ public class QueryCompilerImpl implements QueryCompiler {
             return;
         }
 
-
-        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) {
-            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
-        }
-
-        final JavaFileManager fileManager = new SynchronizedJavaFileManager(
-                compiler.getStandardFileManager(null, null, null));
-
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final int parallelismFactor = executionContext.getOperationInitializer().parallelismFactor();
 
@@ -823,13 +825,6 @@ public class QueryCompilerImpl implements QueryCompiler {
                 // ignore errors here
             }
 
-            try {
-                fileManager.close();
-            } catch (IOException ioe) {
-                exception.compareAndSet(null,
-                        new UncheckedIOException("Could not close JavaFileManager", ioe));
-            }
-
             latch.countDown();
         };
 
@@ -846,14 +841,15 @@ public class QueryCompilerImpl implements QueryCompiler {
                 0, numTasks, (context, jobId, nestedErrorConsumer) -> {
                     final int startInclusive = jobId * requestsPerTask;
                     final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
-                    doCreateClasses(compiler, fileManager, requests, rootPathAsString, tempDirAsString,
-                            startInclusive, endExclusive);
+                    doCreateClasses(requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive);
                 }, cleanup, onError);
 
         try {
             latch.await();
-            QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(
-                    jobScheduler.getAccumulatedPerformance());
+            final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
+            if (perfEntry != null) {
+                QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);
+            }
             final RuntimeException err = exception.get();
             if (err != null) {
                 throw err;
@@ -864,8 +860,6 @@ public class QueryCompilerImpl implements QueryCompiler {
     }
 
     private void doCreateClasses(
-            @NotNull final JavaCompiler compiler,
-            @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
             @NotNull final String rootPathAsString,
             @NotNull final String tempDirAsString,
@@ -875,15 +869,14 @@ public class QueryCompilerImpl implements QueryCompiler {
         // If any of our requests fail to compile then the JavaCompiler will not write any class files at all. The
         // non-failing requests will be retried in a second pass that is expected to succeed. This enables us to
         // fulfill futures independent of each other; otherwise a single failure would taint all requests in a batch.
-        final boolean wantRetry = doCreateClassesSingleRound(compiler, fileManager, requests, rootPathAsString,
-                tempDirAsString, startInclusive, endExclusive, toRetry);
+        final boolean wantRetry = doCreateClassesSingleRound(requests, rootPathAsString, tempDirAsString,
+                startInclusive, endExclusive, toRetry);
         if (!wantRetry) {
             return;
         }
 
         final List<CompilationRequestAttempt> ignored = new ArrayList<>();
-        if (doCreateClassesSingleRound(compiler, fileManager, toRetry, rootPathAsString, tempDirAsString, 0,
-                toRetry.size(), ignored)) {
+        if (doCreateClassesSingleRound(toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(), ignored)) {
             // We only retried compilation units that did not fail on the first pass, so we should not have any failures
             // on the second pass.
             throw new IllegalStateException("Unexpected failure during second pass of compilation");
@@ -891,8 +884,6 @@ public class QueryCompilerImpl implements QueryCompiler {
     }
 
     private boolean doCreateClassesSingleRound(
-            @NotNull final JavaCompiler compiler,
-            @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
             @NotNull final String rootPathAsString,
             @NotNull final String tempDirAsString,
