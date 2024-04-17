@@ -59,25 +59,8 @@ public class BusinessCalendar extends Calendar {
 
     private final Map<LocalDate, CalendarDay<Instant>> cachedSchedules = new HashMap<>();
     private final Map<Integer, YearData> cachedYearData = new HashMap<>();
-
-    private void populateSchedules() {
-        LocalDate date = firstValidDate;
-
-        while (!date.isAfter(lastValidDate)) {
-
-            final CalendarDay<Instant> s = holidays.get(date);
-
-            if (s != null) {
-                cachedSchedules.put(date, s);
-            } else if (weekendDays.contains(date.getDayOfWeek())) {
-                cachedSchedules.put(date, CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone()));
-            } else {
-                cachedSchedules.put(date, CalendarDay.toInstant(standardBusinessDay, date, timeZone()));
-            }
-
-            date = date.plusDays(1);
-        }
-    }
+    private final int yearCacheStart;
+    private final int yearCacheEnd;
 
     private static class YearData {
         private final Instant start;
@@ -91,41 +74,34 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
-    private void populateCachedYearData() {
-        // Only cache complete years, since incomplete years can not be fully computed.
-
-        final int yearStart =
-                firstValidDate.getDayOfYear() == 1 ? firstValidDate.getYear() : firstValidDate.getYear() + 1;
-        final int yearEnd = ((lastValidDate.isLeapYear() && lastValidDate.getDayOfYear() == 366)
-                || lastValidDate.getDayOfYear() == 365) ? lastValidDate.getYear() : lastValidDate.getYear() - 1;
-
-        for (int year = yearStart; year <= yearEnd; year++) {
-            final LocalDate startDate = LocalDate.ofYearDay(year, 1);
-            final LocalDate endDate = LocalDate.ofYearDay(year + 1, 1);
-            final ZonedDateTime start = startDate.atTime(0, 0).atZone(timeZone());
-            final ZonedDateTime end = endDate.atTime(0, 0).atZone(timeZone());
-
-            LocalDate date = startDate;
-            long businessTimeNanos = 0;
-
-            while (date.isBefore(endDate)) {
-                final CalendarDay<Instant> bs = this.calendarDay(date);
-                businessTimeNanos += bs.businessNanos();
-                date = date.plusDays(1);
-            }
-
-            final YearData yd = new YearData(start.toInstant(), end.toInstant(), businessTimeNanos);
-            cachedYearData.put(year, yd);
-        }
-    }
-
     private YearData getYearData(final int year) {
-        final YearData yd = cachedYearData.get(year);
 
-        if (yd == null) {
+        if (year < yearCacheStart || year > yearCacheEnd) {
             throw new InvalidDateException("Business calendar does not contain a complete year for: year=" + year);
         }
 
+        final YearData cached = cachedYearData.get(year);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        final LocalDate startDate = LocalDate.ofYearDay(year, 1);
+        final LocalDate endDate = LocalDate.ofYearDay(year + 1, 1);
+        final ZonedDateTime start = startDate.atTime(0, 0).atZone(timeZone());
+        final ZonedDateTime end = endDate.atTime(0, 0).atZone(timeZone());
+
+        LocalDate date = startDate;
+        long businessTimeNanos = 0;
+
+        while (date.isBefore(endDate)) {
+            final CalendarDay<Instant> bs = this.calendarDay(date);
+            businessTimeNanos += bs.businessNanos();
+            date = date.plusDays(1);
+        }
+
+        final YearData yd = new YearData(start.toInstant(), end.toInstant(), businessTimeNanos);
+        cachedYearData.put(year, yd);
         return yd;
     }
 
@@ -157,8 +133,12 @@ public class BusinessCalendar extends Calendar {
         this.standardBusinessDay = Require.neqNull(standardBusinessDay, "standardBusinessDay");
         this.weekendDays = Set.copyOf(Require.neqNull(weekendDays, "weekendDays"));
         this.holidays = Map.copyOf(Require.neqNull(holidays, "holidays"));
-        populateSchedules();
-        populateCachedYearData();
+
+        // Only cache complete years, since incomplete years can not be fully computed.
+        yearCacheStart =
+                firstValidDate.getDayOfYear() == 1 ? firstValidDate.getYear() : firstValidDate.getYear() + 1;
+        yearCacheEnd = ((lastValidDate.isLeapYear() && lastValidDate.getDayOfYear() == 366)
+                || lastValidDate.getDayOfYear() == 365) ? lastValidDate.getYear() : lastValidDate.getYear() - 1;
     }
 
     // endregion
@@ -254,7 +234,25 @@ public class BusinessCalendar extends Calendar {
                     + " lastValidDate=" + lastValidDate);
         }
 
-        return cachedSchedules.get(date);
+        final CalendarDay<Instant> cached = cachedSchedules.get(date);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        final CalendarDay<Instant> h = holidays.get(date);
+        final CalendarDay<Instant> s;
+
+        if (h != null) {
+            s = h;
+        } else if (weekendDays.contains(date.getDayOfWeek())) {
+            s = CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone());
+        } else {
+            s = CalendarDay.toInstant(standardBusinessDay, date, timeZone());
+        }
+
+        cachedSchedules.put(date, s);
+        return s;
     }
 
     /**
