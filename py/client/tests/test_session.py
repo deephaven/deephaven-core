@@ -10,6 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import Session
+from pydeephaven.session import SharedTicket
 from tests.testbase import BaseTestCase
 
 
@@ -338,6 +339,30 @@ t1 = empty_table(0) if t.size == 2 else None
                 with self.assertRaises(PermissionError):
                     blink_input_table.delete(dh_table.select(["f1"]))
 
+
+    def test_share_table(self):
+        pub_session = Session()
+        t = pub_session.empty_table(1000).update("X = i")
+        self.assertEqual(t.size, 1000)
+        shared_ticket = SharedTicket.random_ticket()
+        pub_session.publish_table(t, shared_ticket)
+
+        sub_session1 = Session()
+        t1 = sub_session1.fetch_table(shared_ticket)
+        self.assertEqual(t1.size, 1000)
+        pa_table = t1.to_arrow()
+        self.assertEqual(pa_table.num_rows, 1000)
+
+        with self.subTest("the 1st subscriber session is gone, shared ticket is still valid"):
+            sub_session1.close()
+            sub_session2 = Session()
+            t2 = sub_session2.fetch_table(shared_ticket)
+            self.assertEqual(t2.size, 1000)
+
+        with self.subTest("the publisher session is gone, shared ticket becomes invalid"):
+            pub_session.close()
+            with self.assertRaises(DHError):
+                 sub_session2.fetch_table(shared_ticket)
 
 
 if __name__ == '__main__':

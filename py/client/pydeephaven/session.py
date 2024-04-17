@@ -7,7 +7,8 @@ server."""
 import base64
 import os
 import threading
-from typing import Dict, List, Union, Tuple, Any
+from typing import Dict, List, Union, Tuple
+from uuid import uuid4
 
 import grpc
 import pyarrow as pa
@@ -76,6 +77,38 @@ class _DhClientAuthHandler(ClientAuthHandler):
 
     def get_token(self):
         return self._token
+
+
+class SharedTicket:
+    """ A SharedTicket object represents a ticket that can be shared with other sessions. """
+
+    def __init__(self, ticket_bytes: bytes):
+        """Initializes a SharedTicket object
+
+        Args:
+            ticket_bytes (bytes): the raw bytes for the ticket
+        """
+        self._ticket_bytes = ticket_bytes
+
+    @property
+    def api_ticket(self):
+        """ The ticket object for use with Deephaven API calls."""
+        return ticket_pb2.Ticket(ticket=b'h' + self._ticket_bytes)
+
+    @property
+    def bytes(self):
+        """ The raw bytes for the ticket."""
+        return self._ticket_bytes
+
+    @classmethod
+    def random_ticket(cls) -> 'SharedTicket':
+        """Generates a random shared ticket.
+
+        Returns:
+            a SharedTicket object
+        """
+        ticket_bytes = uuid4().int.to_bytes(16, byteorder='little', signed=False)
+        return cls(ticket_bytes=b'h' + ticket_bytes)
 
 
 class Session:
@@ -412,6 +445,41 @@ class Session:
                 if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
                     raise DHError(f"no table by the name {name}") from None
             raise e
+        finally:
+            # Explicitly close the table without releasing it (because it isn't ours)
+            faketable.ticket = None
+            faketable.schema = None
+
+    def publish_table(self, table: Table, shared_ticket: SharedTicket) -> None:
+        """Publishes a table with the given shared ticket for sharing with other sessions.
+
+        Args:
+            table (Table): a Table object
+            shared_ticket (SharedTicket): a SharedTicket object
+
+        Raises:
+            DHError
+        """
+        return self._session_service.publish(table.ticket, shared_ticket.api_ticket)
+
+    def fetch_table(self, ticket: SharedTicket) -> Table:
+        """Fetches a table by ticket.
+
+        Args:
+            ticket (Ticket): a ticket
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        faketable = Table(session=self, ticket=ticket.api_ticket)
+        try:
+            table_op = FetchTableOp()
+            return self.table_service.grpc_table_op(faketable, table_op)
+        except Exception as e:
+            raise DHError("could not fetch table by ticket") from e
         finally:
             # Explicitly close the table without releasing it (because it isn't ours)
             faketable.ticket = None

@@ -1,11 +1,12 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+from uuid import uuid4
 
 import grpc
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import session_pb2_grpc, session_pb2
+from pydeephaven.proto import session_pb2_grpc, session_pb2, ticket_pb2
 
 
 class SessionService:
@@ -42,3 +43,16 @@ class SessionService:
             self._grpc_session_stub.Release(session_pb2.ReleaseRequest(id=ticket), metadata=self.session.grpc_metadata)
         except Exception as e:
             raise DHError("failed to release a ticket.") from e
+
+
+    def publish(self, ticket, shared_ticket) -> None:
+        """Publishes a ticket to the shared ticket that can be fetched by other sessions.
+
+        Args:
+            ticket: The ticket to publish.
+            shared_ticket: The shared ticket to publish to.
+        """
+        try:
+            self._grpc_session_stub.PublishFromTicket(session_pb2.PublishRequest(source_id=ticket, result_id=shared_ticket), metadata=self.session.grpc_metadata)
+        except Exception as e:
+            raise DHError("failed to publish a ticket.") from e
