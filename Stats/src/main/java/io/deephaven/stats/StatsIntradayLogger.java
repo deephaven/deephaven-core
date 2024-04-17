@@ -3,11 +3,11 @@
 //
 package io.deephaven.stats;
 
-public interface StatsIntradayLogger {
-    char COUNTER_TAG = 'C'; // Counter.TYPE_TAG;
-    char HISTOGRAM_STATE_TAG = 'H'; // HistogramState.TYPE_TAG;
-    char STATE_TAG = 'S'; // State.TYPE_TAG;
+import io.deephaven.base.stats.Counter;
+import io.deephaven.base.stats.HistogramState;
+import io.deephaven.base.stats.State;
 
+public interface StatsIntradayLogger {
     /**
      * Convert a type tag to a friendly representation.
      * 
@@ -16,11 +16,11 @@ public interface StatsIntradayLogger {
      */
     static String type(char typeTag) {
         switch (typeTag) {
-            case COUNTER_TAG:
+            case Counter.TYPE_TAG:
                 return "counter";
-            case HISTOGRAM_STATE_TAG:
+            case HistogramState.TYPE_TAG:
                 return "histogram";
-            case STATE_TAG:
+            case State.TYPE_TAG:
                 return "state";
         }
         throw new IllegalArgumentException("Unexpected typeTag: " + typeTag);
