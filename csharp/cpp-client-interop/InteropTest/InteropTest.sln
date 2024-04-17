@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34221.43
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteropTest", "InteropTest.csproj", "{4BB66E43-2D91-48AA-9735-63DE2F8EA846}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CppClientInterop", "..\CppClientInterop\CppClientInterop.csproj", "{494FEDD4-DCB2-46DF-BDA7-E33D91EA3821}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4BB66E43-2D91-48AA-9735-63DE2F8EA846}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BB66E43-2D91-48AA-9735-63DE2F8EA846}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BB66E43-2D91-48AA-9735-63DE2F8EA846}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BB66E43-2D91-48AA-9735-63DE2F8EA846}.Release|Any CPU.Build.0 = Release|Any CPU
+		{494FEDD4-DCB2-46DF-BDA7-E33D91EA3821}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{494FEDD4-DCB2-46DF-BDA7-E33D91EA3821}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{494FEDD4-DCB2-46DF-BDA7-E33D91EA3821}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{494FEDD4-DCB2-46DF-BDA7-E33D91EA3821}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B5AD8F82-64CF-4104-B8C4-796B9869A866}
+	EndGlobalSection
+EndGlobal
