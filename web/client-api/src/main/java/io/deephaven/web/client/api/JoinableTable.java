@@ -42,6 +42,9 @@ public interface JoinableTable {
      * </ul>
      *
      * Note that <code>Left</code> join is not supported here, unlike DHE.
+     * <p>
+     * See the <a href="https://deephaven.io/core/docs/conceptual/choose-joins/">Choose a join method</a> document for
+     * more guidance on picking a join operation.
      *
      * @deprecated Instead, call the specific method for the join type.
      * @param joinType The type of join to perform, see the list above.
@@ -50,7 +53,6 @@ public interface JoinableTable {
      * @param columnsToAdd Columns from the right table to add to the result - empty/null/absent to add all columns
      * @param asOfMatchRule If joinType is AJ/RAJ/ReverseAJ, the match rule to use
      * @return a promise that will resolve to the joined table
-     * @link <a href="https://deephaven.io/core/docs/conceptual/choose-joins/">Choose a join method</a>
      */
     @JsMethod
     @Deprecated
