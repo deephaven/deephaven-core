@@ -1123,6 +1123,21 @@ public class BusinessCalendar extends Calendar {
         return numberBusinessDates(start, end, true, true);
     }
 
+    public int numberNonBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
+                                           final boolean endInclusive) {
+        int days = 0;
+
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if (!skip && !isBusinessDay(day)) {
+                days++;
+            }
+        }
+
+        return days;
+    }
+
     /**
      * Returns the number of non-business dates in a given range.
      *
@@ -1140,8 +1155,32 @@ public class BusinessCalendar extends Calendar {
             return NULL_INT;
         }
 
-        return numberCalendarDates(start, end, startInclusive, endInclusive)
-                - numberBusinessDates(start, end, startInclusive, endInclusive);
+        if (start.isAfter(end)) {
+            return 0;
+        }
+
+        SummaryData summaryFirst = null;
+        SummaryData summary = null;
+        int days = 0;
+
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it.hasNext(); ) {
+            summary = it.next();
+
+            if(summaryFirst == null) {
+                summaryFirst = summary;
+            }
+
+            days += summary.nonBusinessDays;
+        }
+
+        if(summaryFirst == null){
+            return numberNonBusinessDatesInternal(start, end, startInclusive, endInclusive);
+        } else {
+            days += numberNonBusinessDatesInternal(start, summaryFirst.startDate, startInclusive, false);
+            days += numberNonBusinessDatesInternal(summary.endDate, end, false, endInclusive);
+        }
+
+        return days;
     }
 
     /**
