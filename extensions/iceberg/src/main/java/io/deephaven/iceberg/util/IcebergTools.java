@@ -3,86 +3,101 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import org.apache.iceberg.PartitionField;
-import org.apache.iceberg.PartitionSpec;
-import org.apache.iceberg.Schema;
-import org.apache.iceberg.types.Type;
-import org.apache.iceberg.types.Types;
+import io.deephaven.extensions.s3.Credentials;
+import io.deephaven.extensions.s3.S3Instructions;
+import org.apache.iceberg.CatalogProperties;
+import org.apache.iceberg.CatalogUtil;
+import org.apache.iceberg.aws.AwsClientProperties;
+import org.apache.iceberg.aws.s3.S3FileIOProperties;
+import org.apache.iceberg.catalog.Catalog;
+import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.rest.RESTCatalog;
+import org.apache.parquet.Strings;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Tools for managing and manipulating tables on disk in parquet format.
+ * Tools for accessing tables in the Iceberg table format.
  */
 public class IcebergTools {
 
     @SuppressWarnings("unused")
-    public static IcebergCatalog loadCatalog(final String name, final IcebergInstructions instructions) {
-        return new IcebergCatalog(name, instructions);
-    }
-
-    static TableDefinition fromSchema(final Schema schema, PartitionSpec partitionSpec) {
-        final Set<String> partitionNames =
-                partitionSpec.fields().stream().map(PartitionField::name).collect(Collectors.toSet());
-
-        final List<ColumnDefinition<?>> columns = new ArrayList<>();
-
-        for (final Types.NestedField field : schema.columns()) {
-            final String name = field.name();
-            final Type type = field.type();
-            final io.deephaven.qst.type.Type<?> qstType = convertPrimitiveType(type);
-            final ColumnDefinition<?> column;
-            if (partitionNames.contains(name)) {
-                column = ColumnDefinition.of(name, qstType).withPartitioning();
-            } else {
-                column = ColumnDefinition.of(name, qstType);
-            }
-            columns.add(column);
-        }
-
-        return TableDefinition.of(columns);
-    }
-
-    static io.deephaven.qst.type.Type<?> convertPrimitiveType(final Type icebergType) {
-        final Type.TypeID typeId = icebergType.typeId();
-        if (icebergType.isPrimitiveType()) {
-            if (typeId == Type.TypeID.BOOLEAN) {
-                return io.deephaven.qst.type.Type.booleanType();
-            } else if (typeId == Type.TypeID.DOUBLE) {
-                return io.deephaven.qst.type.Type.doubleType();
-            } else if (typeId == Type.TypeID.FLOAT) {
-                return io.deephaven.qst.type.Type.floatType();
-            } else if (typeId == Type.TypeID.INTEGER) {
-                return io.deephaven.qst.type.Type.intType();
-            } else if (typeId == Type.TypeID.LONG) {
-                return io.deephaven.qst.type.Type.longType();
-            } else if (typeId == Type.TypeID.STRING) {
-                return io.deephaven.qst.type.Type.stringType();
-            } else if (typeId == Type.TypeID.TIMESTAMP) {
-                final Types.TimestampType timestampType = (Types.TimestampType) icebergType;
-                return timestampType.shouldAdjustToUTC()
-                        ? io.deephaven.qst.type.Type.find(Instant.class)
-                        : io.deephaven.qst.type.Type.find(LocalDateTime.class);
-            } else if (typeId == Type.TypeID.DATE) {
-                return io.deephaven.qst.type.Type.find(java.time.LocalDate.class);
-            } else if (typeId == Type.TypeID.TIME) {
-                return io.deephaven.qst.type.Type.find(java.time.LocalTime.class);
-            } else if (typeId == Type.TypeID.DECIMAL) {
-                return io.deephaven.qst.type.Type.find(java.math.BigDecimal.class);
-            } else if (typeId == Type.TypeID.FIXED || typeId == Type.TypeID.BINARY) {
-                return io.deephaven.qst.type.Type.find(byte[].class);
-            }
-        }
-        throw new TableDataException(
-                "Unsupported iceberg column type " + typeId.name() +
-                        " with logical type " + typeId.javaClass());
+    public static IcebergCatalogAdapter createAdapter(
+            final Catalog catalog,
+            final FileIO fileIO,
+            final IcebergInstructions instructions) {
+        return new IcebergCatalogAdapter(catalog, fileIO, instructions);
     }
 
     private IcebergTools() {}
+
+
+    public static IcebergCatalogAdapter createS3Rest(
+            @Nullable final String name,
+            @NotNull final String catalogURI,
+            @NotNull final String warehouseLocation,
+            @Nullable final String region,
+            @Nullable final String accessKeyId,
+            @Nullable final String secretAccessKey,
+            @Nullable final String endpointOverride,
+            @Nullable final IcebergInstructions specialInstructions) {
+
+
+        // Set up the properties map for the Iceberg catalog
+        final Map<String, String> properties = new HashMap<>();
+
+        final RESTCatalog catalog = new RESTCatalog();
+
+        properties.put(CatalogProperties.CATALOG_IMPL, "org.apache.iceberg.rest.RESTCatalog");
+        properties.put(CatalogProperties.URI, catalogURI);
+        properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
+
+        properties.put(CatalogProperties.FILE_IO_IMPL, "org.apache.iceberg.aws.s3.S3FileIO");
+
+        // Configure the properties map from the Iceberg instructions.
+        if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
+            properties.put(S3FileIOProperties.ACCESS_KEY_ID, accessKeyId);
+            properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, secretAccessKey);
+        }
+        if (!Strings.isNullOrEmpty(region)) {
+            properties.put(AwsClientProperties.CLIENT_REGION, region);
+        }
+        if (!Strings.isNullOrEmpty(endpointOverride)) {
+            properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
+        }
+
+        // TODO: create a FileIO interface wrapping the Deephaven S3SeekableByteChannel/Provider
+        final FileIO fileIO = CatalogUtil.loadFileIO("org.apache.iceberg.aws.s3.S3FileIO", properties, null);
+
+        final String catalogName = name != null ? name : "IcebergTableDataService-" + catalogURI;
+        catalog.initialize(catalogName, properties);
+
+        // If the user did not supply custom read instructions, let's create some defaults.
+        final IcebergInstructions instructions = specialInstructions != null
+                ? specialInstructions
+                : buildInstructions(properties);
+
+        return new IcebergCatalogAdapter(catalog, fileIO, instructions);
+    }
+
+    private static IcebergInstructions buildInstructions(final Map<String, String> properties) {
+        final S3Instructions.Builder builder = S3Instructions.builder();
+        if (properties.containsKey(S3FileIOProperties.ACCESS_KEY_ID)
+                && properties.containsKey(S3FileIOProperties.SECRET_ACCESS_KEY)) {
+            builder.credentials(Credentials.basic(properties.get(S3FileIOProperties.ACCESS_KEY_ID),
+                    properties.get(S3FileIOProperties.SECRET_ACCESS_KEY)));
+        }
+        if (properties.containsKey(AwsClientProperties.CLIENT_REGION)) {
+            builder.regionName(properties.get(AwsClientProperties.CLIENT_REGION));
+        }
+        if (properties.containsKey(S3FileIOProperties.ENDPOINT)) {
+            builder.endpointOverride(properties.get(S3FileIOProperties.ENDPOINT));
+        }
+        return IcebergInstructions.builder()
+                .s3Instructions(builder.build())
+                .build();
+    }
 }

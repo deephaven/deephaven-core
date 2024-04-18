@@ -11,20 +11,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link TableLocationFactory} for {@link IcebergTableLocation}s.
+ * {@link TableLocationFactory} for Iceberg {@link TableLocation}s.
  */
 public final class IcebergTableLocationFactory implements TableLocationFactory<TableKey, IcebergTableLocationKey> {
-    private final Object readInstructions;
-
-    public IcebergTableLocationFactory(@NotNull final Object readInstructions) {
-        this.readInstructions = readInstructions;
-    }
+    public IcebergTableLocationFactory() {}
 
     @Override
     @NotNull
     public TableLocation makeLocation(@NotNull final TableKey tableKey,
             @NotNull final IcebergTableLocationKey locationKey,
             @Nullable final TableDataRefreshService refreshService) {
-        return new IcebergTableLocation(tableKey, locationKey, readInstructions);
+        if (locationKey instanceof IcebergTableParquetLocationKey) {
+            return new IcebergTableParquetLocation(tableKey, locationKey);
+        }
+        throw new UnsupportedOperationException("Unsupported location key type: " + locationKey.getClass());
     }
 }
