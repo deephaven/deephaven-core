@@ -37,13 +37,13 @@ import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import io.grpc.Drainable;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -383,7 +383,7 @@ public class BarrageStreamGeneratorImpl implements
                         this, 0, 0, actualBatchSize, metadata, generator::appendAddColumns);
                 bytesWritten.add(is.available());
                 visitor.accept(is);
-                generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
+                generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
                 return;
             }
 
@@ -403,7 +403,7 @@ public class BarrageStreamGeneratorImpl implements
                     modViewport.close();
                 }
             }
-            generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
+            generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -530,7 +530,7 @@ public class BarrageStreamGeneratorImpl implements
             }
             addRowOffsets.close();
             addRowKeys.close();
-            generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
+            generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -610,7 +610,7 @@ public class BarrageStreamGeneratorImpl implements
 
     @FunctionalInterface
     private interface ColumnVisitor {
-        long visit(final View view, final long startRange, final int targetBatchSize,
+        int visit(final View view, final long startRange, final int targetBatchSize,
                 final Consumer<InputStream> addStream,
                 final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
                 final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
@@ -650,8 +650,8 @@ public class BarrageStreamGeneratorImpl implements
 
             // These buffers must be aligned to an 8-byte boundary in order for efficient alignment in languages like
             // C++.
-            if (size.intValue() % 8 != 0) {
-                final int paddingBytes = (8 - (size.intValue() % 8));
+            if (size.get() % 8 != 0) {
+                final int paddingBytes = (8 - (size.get() % 8));
                 size.add(paddingBytes);
                 streams.add(new DrainableByteArrayInputStream(PADDING_BUFFER, 0, paddingBytes));
             }
@@ -659,7 +659,7 @@ public class BarrageStreamGeneratorImpl implements
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
 
-        final long numRows;
+        final int numRows;
         final int nodesOffset;
         final int buffersOffset;
         try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
@@ -684,7 +684,7 @@ public class BarrageStreamGeneratorImpl implements
             };
 
             numRows = columnVisitor.visit(view, offset, targetBatchSize, addStream, fieldNodeListener, bufferListener);
-            actualBatchSize.setValue(numRows);
+            actualBatchSize.set(numRows);
 
             final WritableChunk<Values> noChunk = nodeOffsets.get();
             RecordBatch.startNodesVector(header, noChunk.size());
@@ -699,7 +699,7 @@ public class BarrageStreamGeneratorImpl implements
             RecordBatch.startBuffersVector(header, biChunk.size());
             for (int i = biChunk.size() - 1; i >= 0; --i) {
                 totalBufferLength.subtract(biChunk.get(i));
-                Buffer.createBuffer(header, totalBufferLength.longValue(), biChunk.get(i));
+                Buffer.createBuffer(header, totalBufferLength.get(), biChunk.get(i));
             }
             buffersOffset = header.endVector();
         }
@@ -715,7 +715,7 @@ public class BarrageStreamGeneratorImpl implements
         final int headerOffset = RecordBatch.endRecordBatch(header);
 
         header.finish(MessageHelper.wrapInMessage(header, headerOffset,
-                org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
+                org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.get()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
@@ -744,7 +744,7 @@ public class BarrageStreamGeneratorImpl implements
         }
 
         cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-        cos.writeUInt32NoTag(size.intValue());
+        cos.writeUInt32NoTag(size.get());
         cos.flush();
     }
 
@@ -784,7 +784,7 @@ public class BarrageStreamGeneratorImpl implements
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
                 int bytesToWrite = is.available();
 
-                if (actualBatchSize.intValue() == 0) {
+                if (actualBatchSize.get() == 0) {
                     throw new IllegalStateException("No data was written for a batch");
                 }
 
@@ -795,7 +795,7 @@ public class BarrageStreamGeneratorImpl implements
                     visitor.accept(is);
 
                     bytesWritten.add(bytesToWrite);
-                    offset += actualBatchSize.intValue();
+                    offset += actualBatchSize.get();
                     metadata = null;
                 } else {
                     // can't write this, so close the input stream and retry
@@ -804,7 +804,7 @@ public class BarrageStreamGeneratorImpl implements
                 }
 
                 // recompute the batch limit for the next message
-                int bytesPerRow = bytesToWrite / actualBatchSize.intValue();
+                int bytesPerRow = bytesToWrite / actualBatchSize.get();
                 if (bytesPerRow > 0) {
                     int rowLimit = maxMessageSize / bytesPerRow;
 
@@ -856,11 +856,11 @@ public class BarrageStreamGeneratorImpl implements
         return low;
     }
 
-    private long appendAddColumns(final View view, final long startRange, final int targetBatchSize,
+    private int appendAddColumns(final View view, final long startRange, final int targetBatchSize,
             final Consumer<InputStream> addStream, final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         if (addColumnData.length == 0) {
-            return view.addRowOffsets().size();
+            return view.addRowOffsets().intSize();
         }
 
         // find the generator for the initial position-space key
@@ -918,11 +918,11 @@ public class BarrageStreamGeneratorImpl implements
                     addStream.accept(drainableColumn);
                 }
             }
-            return myAddedOffsets.size();
+            return myAddedOffsets.intSize();
         }
     }
 
-    private long appendModColumns(final View view, final long startRange, final int targetBatchSize,
+    private int appendModColumns(final View view, final long startRange, final int targetBatchSize,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
@@ -1027,7 +1027,7 @@ public class BarrageStreamGeneratorImpl implements
                 myModOffsets.close();
             }
         }
-        return numRows;
+        return Math.toIntExact(numRows);
     }
 
     private ByteBuffer getSubscriptionMetadata(final SubView view) throws IOException {

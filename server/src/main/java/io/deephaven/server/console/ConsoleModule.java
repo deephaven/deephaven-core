@@ -12,6 +12,7 @@ import io.deephaven.lang.completion.CustomCompletion;
 import io.deephaven.server.session.TicketResolver;
 import io.grpc.BindableService;
 
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.Set;
 
@@ -24,6 +25,12 @@ public interface ConsoleModule {
     @Binds
     @IntoSet
     TicketResolver bindConsoleTicketResolver(ScopeTicketResolver resolver);
+
+    @Provides
+    @Singleton
+    static ScriptSessionCacheInit bindScriptSessionCacheInit() {
+        return new ScriptSessionCacheInit();
+    }
 
     @Provides
     @ElementsIntoSet

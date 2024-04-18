@@ -31,8 +31,8 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
+import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
@@ -57,7 +57,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
     private final ParquetInstructions readInstructions;
-    private final List<SortColumn> sortingColumns;
     private final ParquetFileReader parquetFileReader;
     private final int[] rowGroupIndices;
 
@@ -69,6 +68,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final Map<String, GroupingColumnInfo> groupingColumns;
     private final List<DataIndexInfo> dataIndexes;
     private final Map<String, ColumnTypeInfo> columnTypes;
+    private final List<SortColumn> sortingColumns;
 
     private final String version;
 
@@ -82,6 +82,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final ParquetMetadata parquetMetadata;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {
+            // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
+            // calls
             parquetFileReader = tableLocationKey.getFileReader();
             parquetMetadata = tableLocationKey.getMetadata();
             rowGroupIndices = tableLocationKey.getRowGroupIndices();
@@ -116,7 +118,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         groupingColumns = tableInfo.groupingColumnMap();
         dataIndexes = tableInfo.dataIndexes();
         columnTypes = tableInfo.columnTypeMap();
-        sortingColumns = tableInfo.sortingColumns();
+        sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
 
         if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
             // We do not have the last modified time for non-file URIs
@@ -184,7 +186,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final List<String> nameList =
                 columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null);
@@ -243,8 +245,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return !fileURI.getScheme().equals(FILE_URI_SCHEME) || Files.exists(Path.of(fileURI));
     }
 
-    @Nullable
     @Override
+    @Nullable
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         if (tableInfo == null) {
             return null;
@@ -344,8 +346,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final URI parentFileURI,
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
             @NotNull final ParquetInstructions parquetInstructions) {
-        final Table indexTable =
-                ParquetTools.readSingleFileTable(indexFileMetaData.fileURI.toString(), parquetInstructions);
+        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
+                parquetInstructions.withTableDefinitionAndLayout(null,
+                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         if (indexFileMetaData.dataIndexInfo != null) {
             return indexTable;
         }

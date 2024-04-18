@@ -73,12 +73,13 @@ public class ArrowFlightUtil {
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final String description = "FlightService#DoGet(table=" + ticketRouter.getLogNameFor(request, "table") + ")";
+        final String ticketLogName = ticketRouter.getLogNameFor(request, "table");
+        final String description = "FlightService#DoGet(table=" + ticketLogName + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-            final SessionState.ExportObject<BaseTable<?>> tableExport =
+            final SessionState.ExportObject<?> tableExport =
                     ticketRouter.resolve(session, request, "table");
 
             final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -91,7 +92,15 @@ public class ArrowFlightUtil {
                     .onError(observer)
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
-                        final BaseTable<?> table = tableExport.get();
+                        Object export = tableExport.get();
+                        if (export instanceof Table) {
+                            export = ((Table) export).coalesce();
+                        }
+                        if (!(export instanceof BaseTable)) {
+                            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                                    + ticketLogName + ") is not a subscribable table.");
+                        }
+                        final BaseTable<?> table = (BaseTable<?>) export;
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -260,12 +269,13 @@ public class ArrowFlightUtil {
             }
             localResultTable.dropReference();
 
-            // let's finally export the table to our listener
-            localExportBuilder.submit(() -> {
-                GrpcUtil.safelyComplete(observer);
-                session.removeOnCloseCallback(this);
-                return localResultTable;
-            });
+            // let's finally export the table to our destination export
+            localExportBuilder
+                    .onSuccess(() -> GrpcUtil.safelyComplete(observer))
+                    .submit(() -> {
+                        session.removeOnCloseCallback(this);
+                        return localResultTable;
+                    });
         }
 
         @Override
@@ -487,13 +497,14 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final String description = "FlightService#DoExchange(snapshot, table="
-                            + ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table") + ")";
+                    final String ticketLogName =
+                            ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table");
+                    final String description = "FlightService#DoExchange(snapshot, table=" + ticketLogName + ")";
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                             description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<BaseTable<?>> tableExport =
+                        final SessionState.ExportObject<?> tableExport =
                                 ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
 
                         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -506,7 +517,15 @@ public class ArrowFlightUtil {
                                 .onError(listener)
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                    final BaseTable<?> table = tableExport.get();
+                                    Object export = tableExport.get();
+                                    if (export instanceof Table) {
+                                        export = ((Table) export).coalesce();
+                                    }
+                                    if (!(export instanceof BaseTable)) {
+                                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                                                + ticketLogName + ") is not a subscribable table.");
+                                    }
+                                    final BaseTable<?> table = (BaseTable<?>) export;
                                     metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                                     metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -682,9 +701,9 @@ public class ArrowFlightUtil {
                     minUpdateIntervalMs = options.minUpdateIntervalMs();
                 }
 
-                final Object export = parent.get();
-                if (export instanceof QueryTable) {
-                    final QueryTable table = (QueryTable) export;
+                Object export = parent.get();
+                if (export instanceof Table) {
+                    final QueryTable table = (QueryTable) ((Table) export).coalesce();
 
                     if (table.isFailed()) {
                         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,

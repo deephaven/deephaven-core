@@ -7,6 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.TableTools;
@@ -16,7 +17,7 @@ import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,47 +101,51 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                         LinkedHashMap::new));
     }
 
-    private static class PartitionAwareQueryTableReference extends QueryTableReference {
+    private static class PartitionAwareTableReference extends DeferredViewTable.TableReference {
 
-        private PartitionAwareQueryTableReference(PartitionAwareSourceTable table) {
+        private PartitionAwareTableReference(PartitionAwareSourceTable table) {
             super(table);
         }
 
         @Override
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             final List<WhereFilter> partitionFilters = new ArrayList<>();
-            final List<WhereFilter> deferredFilters = new ArrayList<>();
+            final List<WhereFilter> otherFilters = new ArrayList<>();
             for (WhereFilter whereFilter : whereFilters) {
                 if (!(whereFilter instanceof ReindexingFilter)
                         && ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
                                 whereFilter.getColumns(), whereFilter.getColumnArrays())) {
                     partitionFilters.add(whereFilter);
                 } else {
-                    deferredFilters.add(whereFilter);
+                    otherFilters.add(whereFilter);
                 }
             }
 
             final Table result = partitionFilters.isEmpty()
-                    ? table.coalesce()
+                    ? table
                     : table.where(Filter.and(partitionFilters));
 
-            return new TableAndRemainingFilters(result,
-                    deferredFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+            return new TableAndRemainingFilters(result.coalesce(),
+                    otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
         @Override
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
+            try {
+                SelectAndViewAnalyzer.initializeSelectColumns(table.getDefinition().getColumnNameMap(),
+                        selectColumns.toArray(SelectColumn[]::new));
+            } catch (Exception e) {
+                return null;
+            }
+
+            final Set<String> partitioningDerivedColumnNames = new HashSet<>();
             for (final SelectColumn selectColumn : selectColumns) {
-                try {
-                    selectColumn.initDef(getDefinition().getColumnNameMap());
-                } catch (Exception e) {
-                    return null;
-                }
                 if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                        selectColumn.getColumns(), selectColumn.getColumnArrays())) {
+                        selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
                     return null;
                 }
+                partitioningDerivedColumnNames.add(selectColumn.getName());
             }
             return table.selectDistinct(selectColumns);
         }
@@ -183,7 +188,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
         return new DeferredViewTable(newDefinition, description + "-retainColumns",
-                new PartitionAwareQueryTableReference(redefined),
+                new PartitionAwareTableReference(redefined),
                 droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
                 null, null);
     }
@@ -193,8 +198,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             SelectColumn[] viewColumns) {
         BaseTable<?> redefined = redefine(newDefinitionInternal);
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
-                ? new PartitionAwareQueryTableReference((PartitionAwareSourceTable) redefined)
-                : new DeferredViewTable.SimpleTableReference(redefined);
+                ? new PartitionAwareTableReference((PartitionAwareSourceTable) redefined)
+                : new DeferredViewTable.TableReference(redefined);
         return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 reference, null, viewColumns, null);
     }
@@ -253,40 +258,52 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             return prepareReturnThis();
         }
 
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final List<WhereFilter> partitionFilters = new ArrayList<>();
-        final List<WhereFilter> deferredFilters = new ArrayList<>();
+        final List<WhereFilter> otherFilters = new ArrayList<>();
         for (WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(definition);
+            whereFilter.init(definition, compilationProcessor);
             if (!(whereFilter instanceof ReindexingFilter)
                     && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays())) {
                 partitionFilters.add(whereFilter);
             } else {
-                deferredFilters.add(whereFilter);
+                otherFilters.add(whereFilter);
             }
         }
+        compilationProcessor.compile();
 
-        final PartitionAwareSourceTable withPartitionsFiltered = partitionFilters.isEmpty()
-                ? this
-                : QueryPerformanceRecorder.withNugget("getFilteredTable(" + partitionFilters + ")",
-                        () -> getFilteredTable(partitionFilters));
+        // If we have no partition filters, we defer all filters.
+        if (partitionFilters.isEmpty()) {
+            return new DeferredViewTable(definition, getDescription() + "-withDeferredFilters",
+                    new PartitionAwareTableReference(this), null, null,
+                    otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
+        }
 
-        return deferredFilters.isEmpty()
-                ? withPartitionsFiltered
-                : new DeferredViewTable(definition, withPartitionsFiltered.getDescription() + "-withDeferredFilters",
-                        new PartitionAwareQueryTableReference(withPartitionsFiltered), null, null,
-                        deferredFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        // If we have any partition filters, we first create a new instance that filters the location keys accordingly,
+        // then coalesce, and then apply the remaining filters to the coalesced result.
+        final Table withPartitionsFiltered = QueryPerformanceRecorder.withNugget(
+                "getFilteredTable(" + partitionFilters + ")", () -> getFilteredTable(partitionFilters));
+        final Table coalesced = withPartitionsFiltered.coalesce();
+        return otherFilters.isEmpty()
+                ? coalesced
+                : coalesced.where(Filter.and(otherFilters));
     }
 
     @Override
     public final Table selectDistinct(@NotNull final Collection<? extends Selectable> columns) {
         final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
+        SelectAndViewAnalyzer.initializeSelectColumns(
+                definition.getColumnNameMap(), selectColumns.toArray(SelectColumn[]::new));
+
+        final Set<String> partitioningDerivedColumnNames = new HashSet<>();
         for (final SelectColumn selectColumn : selectColumns) {
-            selectColumn.initDef(definition.getColumnNameMap());
-            if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
+            if (!isValidAgainstColumnPartitionTable(
+                    selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
                 return super.selectDistinct(selectColumns);
             }
+            partitioningDerivedColumnNames.add(selectColumn.getName());
         }
 
         // Ensure that the location table is available and populated with non-null, non-empty locations.
@@ -299,9 +316,18 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     private boolean isValidAgainstColumnPartitionTable(
             @NotNull final Collection<String> columnNames,
             @NotNull final Collection<String> columnArrayNames) {
+        return isValidAgainstColumnPartitionTable(columnNames, columnArrayNames, Collections.emptySet());
+    }
+
+    private boolean isValidAgainstColumnPartitionTable(
+            @NotNull final Collection<String> columnNames,
+            @NotNull final Collection<String> columnArrayNames,
+            @NotNull final Collection<String> partitioningDerivedColumnNames) {
         if (!columnArrayNames.isEmpty()) {
             return false;
         }
-        return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
+        return columnNames.stream().allMatch(
+                columnName -> partitioningColumnDefinitions.containsKey(columnName)
+                        || partitioningDerivedColumnNames.contains(columnName));
     }
 }

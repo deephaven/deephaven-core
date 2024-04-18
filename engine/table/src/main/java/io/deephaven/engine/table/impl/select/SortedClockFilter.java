@@ -74,7 +74,7 @@ public class SortedClockFilter extends ClockFilter {
     @Override
     @Nullable
     protected WritableRowSet updateAndGetAddedIndex() {
-        if (range.isEmpty()) {
+        if (range == null || range.isEmpty()) {
             return null;
         }
         final RowSetBuilderRandom addedBuilder =

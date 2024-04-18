@@ -1,0 +1,17 @@
+{
+  "dependencies": [
+    "immer",
+    "grpc",
+    {
+      "name": "arrow",
+      "features": [
+        "flight"
+      ]
+    }
+  ],
+
+  "overrides": [
+    { "name": "arrow", "version": "13.0.0#1" },
+    { "name": "protobuf", "version": "3.21.2" }
+  ]
+}

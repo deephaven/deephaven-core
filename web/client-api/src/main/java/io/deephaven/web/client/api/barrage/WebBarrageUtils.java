@@ -362,6 +362,8 @@ public class WebBarrageUtils {
                 for (int i = 0; i < size; ++i) {
                     if (!hasNulls || valid.get(i)) {
                         boolArray[i] = wireValues.get(i);
+                    } else {
+                        boolArray[i] = null;
                     }
                 }
                 return new BooleanArrayColumnData(boolArray);
@@ -458,6 +460,7 @@ public class WebBarrageUtils {
 
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
+                                    strArrArr[i] = null;
                                     continue;
                                 }
                                 int arrayStart = offsets.get(i);
@@ -469,6 +472,7 @@ public class WebBarrageUtils {
                                     if (innerHasNulls && !innerValid.get(inner)) {
                                         assert innerOffsets.get(inner) == innerOffsets.get(inner + 1)
                                                 : innerOffsets.get(inner) + " == " + innerOffsets.get(inner + 1);
+                                        strArr[j] = null;
                                         continue;
                                     }
                                     // might be cheaper to do views on the underlying bb (which will be copied anyway
@@ -497,6 +501,7 @@ public class WebBarrageUtils {
                             byte[] buf = new byte[32];
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
+                                    stringArray[i] = null;
                                     continue;
                                 }
                                 int ioff = offsets.get(i);
@@ -516,6 +521,7 @@ public class WebBarrageUtils {
                             byte[] buf = null;
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
+                                    bigDecArray[i] = null;
                                     continue;
                                 }
                                 int ioff = offsets.get(i);
@@ -535,6 +541,7 @@ public class WebBarrageUtils {
                             byte[] buf = null;
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
+                                    bigIntArray[i] = null;
                                     continue;
                                 }
                                 int ioff = offsets.get(i);

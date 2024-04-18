@@ -12,6 +12,7 @@ import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
@@ -82,7 +83,7 @@ public interface WhereFilter extends Filter {
         void setIsRefreshing(boolean refreshing);
     }
 
-    WhereFilter[] ZERO_LENGTH_SELECT_FILTER_ARRAY = new WhereFilter[0];
+    WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
     /**
      * Get the columns required by this select filter.
@@ -106,7 +107,22 @@ public interface WhereFilter extends Filter {
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
-    void init(TableDefinition tableDefinition);
+    void init(@NotNull TableDefinition tableDefinition);
+
+    /**
+     * Initialize this select filter given the table definition
+     *
+     * @param tableDefinition the definition of the table that will be filtered
+     * @param compilationProcessor the processor to use for compilation
+     * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
+     *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
+     */
+    @SuppressWarnings("unused")
+    default void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+        init(tableDefinition);
+    }
 
     /**
      * Perform any operation-level initialization necessary using the {@link Table} that will be filtered with this

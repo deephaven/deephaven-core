@@ -29,8 +29,8 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -522,25 +522,25 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 final MutableLong lastLeftIndex = new MutableLong(RowSequence.NULL_ROW_KEY);
 
                 final Runnable flush = () -> {
-                    if (lastLeftIndex.longValue() == RowSequence.NULL_ROW_KEY) {
+                    if (lastLeftIndex.get() == RowSequence.NULL_ROW_KEY) {
                         return;
                     }
 
                     RowSet rightGroup;
                     if (usePrev) {
                         final TrackingRowSet fromTable =
-                                crossJoinManager.getRightRowSetFromPrevLeftRow(lastLeftIndex.getValue());
+                                crossJoinManager.getRightRowSetFromPrevLeftRow(lastLeftIndex.get());
                         rightGroup = rightIsLive ? fromTable.copyPrev() : fromTable;
                     } else {
-                        rightGroup = crossJoinManager.getRightRowSetFromLeftRow(lastLeftIndex.getValue());
+                        rightGroup = crossJoinManager.getRightRowSetFromLeftRow(lastLeftIndex.get());
                     }
 
-                    final int alreadyWritten = postMapOffset.intValue();
-                    final int inRightGroup = preMapOffset.intValue();
+                    final int alreadyWritten = postMapOffset.get();
+                    final int inRightGroup = preMapOffset.get();
                     rightGroup.getKeysForPositions(
                             ChunkStream.of(mappedKeys, alreadyWritten, inRightGroup - alreadyWritten).iterator(),
                             destKey -> {
-                                mappedKeys.set(postMapOffset.intValue(), destKey);
+                                mappedKeys.set(postMapOffset.get(), destKey);
                                 postMapOffset.increment();
                             });
                     if (usePrev && rightIsLive) {
@@ -552,17 +552,17 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 rowSequence.forAllRowKeys(ii -> {
                     final long leftIndex =
                             usePrev ? crossJoinManager.getPrevShifted(ii) : crossJoinManager.getShifted(ii);
-                    if (leftIndex != lastLeftIndex.longValue()) {
+                    if (leftIndex != lastLeftIndex.get()) {
                         flush.run();
-                        lastLeftIndex.setValue(leftIndex);
+                        lastLeftIndex.set(leftIndex);
                         uniqueLeftSideValues.increment();
                     }
-                    mappedKeys.set(preMapOffset.intValue(),
+                    mappedKeys.set(preMapOffset.get(),
                             usePrev ? crossJoinManager.getPrevMasked(ii) : crossJoinManager.getMasked(ii));
                     preMapOffset.increment();
                 });
                 flush.run();
-                uniqueLeftCount = uniqueLeftSideValues.intValue();
+                uniqueLeftCount = uniqueLeftSideValues.get();
 
                 mappedKeysReusable = shared;
             }

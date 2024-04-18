@@ -8,12 +8,13 @@ import tempfile
 import unittest
 import fnmatch
 
+import numpy as np
 import pandas
 import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col
+from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col, char_col, long_col
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
                                write_partitioned)
@@ -547,22 +548,14 @@ class ParquetTestCase(BaseTestCase):
             )
             self.assert_table_equals(actual, table)
 
-    def test_read_with_table_definition_no_type(self):
-        # no need to write actual file, shouldn't be reading it
-        fake_parquet = os.path.join(self.temp_dir.name, "fake.parquet")
-        with self.subTest(msg="read definition no type"):
-            with self.assertRaises(DHError) as cm:
-                read(
-                    fake_parquet,
-                    table_definition={
-                        "x": dtypes.int32,
-                        "y": dtypes.double,
-                        "z": dtypes.double,
-                    },
-                )
-            self.assertIn(
-                "Must provide file_layout when table_definition is set", str(cm.exception)
-            )
+    def test_read_with_table_definition_no_layout(self):
+        table = empty_table(3).update(
+            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
+        )
+        single_parquet = os.path.join(self.temp_dir.name, "single.parquet")
+        write(table, single_parquet)
+        from_disk = read(single_parquet, table_definition={"x": dtypes.int32, "y": dtypes.double})
+        self.assert_table_equals(from_disk, table.select(["x", "y"]))
 
     def test_read_parquet_from_s3(self):
         """ Test that we can read parquet files from s3 """
@@ -585,7 +578,6 @@ class ParquetTestCase(BaseTestCase):
         # Fails because we don't have the right credentials
         with self.assertRaises(Exception):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
-        # TODO(deephaven-core#5064): Add support for local S3 testing
 
     def verify_index_files(self, index_dir_path, expected_num_index_files=1):
         self.assertTrue(os.path.exists(index_dir_path))
@@ -696,6 +688,62 @@ class ParquetTestCase(BaseTestCase):
         self.verify_index_files(".dh_metadata/indexes/x", expected_num_index_files=2)
         self.verify_index_files(".dh_metadata/indexes/y,z", expected_num_index_files=2)
 
+    def test_write_with_definition(self):
+        table = empty_table(3).update(
+            formulas=["a=i", "b=(double)(i/10.0)", "c=(double)(i*i)", "d=ii"]
+        )
+        table_definition = {
+            "a": dtypes.int32,
+            "b": dtypes.double,
+            "c": dtypes.double,
+        }
+        write(table, "data_from_dh.parquet", table_definition=table_definition)
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
+
+        col_definitions = from_disk.columns
+        write(table, "data_from_dh.parquet", col_definitions=col_definitions)
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
+
+        with self.assertRaises(Exception):
+            write(table, "data_from_dh.parquet", table_definition=table_definition, col_definitions=col_definitions)
+
+    def test_unsigned_ints(self):
+        df = pandas.DataFrame.from_records(
+            data=[(-1, -1, -1), (2, 2, 2), (0, 0, 0)],
+            columns=['uint8Col', 'uint16Col',  'uint32Col']
+        )
+        df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+        df['uint16Col'] = df['uint16Col'].astype(np.uint16)
+        df['uint32Col'] = df['uint32Col'].astype(np.uint32)
+
+        pyarrow.parquet.write_table(pyarrow.Table.from_pandas(df), 'data_from_pyarrow.parquet')
+        schema_from_disk = pyarrow.parquet.read_metadata("data_from_pyarrow.parquet").schema.to_arrow_schema()
+        self.assertTrue(schema_from_disk.field('uint8Col').type.equals(pyarrow.uint8()))
+        self.assertTrue(schema_from_disk.field('uint16Col').type.equals(pyarrow.uint16()))
+        self.assertTrue(schema_from_disk.field('uint32Col').type.equals(pyarrow.uint32()))
+
+        table_from_disk = read("data_from_pyarrow.parquet")
+        expected = new_table([
+            char_col("uint8Col", [255, 2, 0]),
+            char_col("uint16Col", [65535, 2, 0]),
+            long_col("uint32Col", [4294967295, 2, 0]),
+        ])
+        self.assert_table_equals(table_from_disk, expected)
+
+    def test_v2_pages(self):
+        def test_v2_pages_helper(dh_table):
+            write(dh_table, "data_from_dh.parquet")
+            pa_table = pyarrow.parquet.read_table("data_from_dh.parquet")
+            pyarrow.parquet.write_table(pa_table, "data_from_pq_v2.parquet", data_page_version='2.0')
+            from_disk = read("data_from_pq_v2.parquet")
+            self.assert_table_equals(dh_table, from_disk)
+
+        dh_table1 = self.get_table_data()
+        test_v2_pages_helper(dh_table1)
+        dh_table2 = self.get_table_with_array_data()
+        test_v2_pages_helper(dh_table2)
 
 if __name__ == '__main__':
     unittest.main()

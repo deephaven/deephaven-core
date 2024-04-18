@@ -308,13 +308,7 @@ public final class ClientTableState extends TableConfig {
 
         final ClientTableState newState = new ClientTableState(
                 connection, newHandle, sorts, conditions, filters, customColumns, dropColumns, viewColumns, this,
-                (c, s, metadata) -> {
-                    // This fetcher will not be used for the initial fetch, only for refetches.
-                    // Importantly, any CTS with a source (what we are creating here; source=this, above)
-                    // is revived, it does not use the refetcher; we directly rebuild batch operations instead.
-                    // It may make sense to actually have batches route through reviver instead.
-                    connection.getReviver().revive(metadata, s);
-                }, config.toSummaryString());
+                null, config.toSummaryString());
         newState.setFlat(config.isFlat());
         if (!isRunning()) {
             onFailed(reason -> newState.setResolution(ResolutionState.FAILED, reason), JsRunnable.doNothing());
@@ -1040,6 +1034,12 @@ public final class ClientTableState extends TableConfig {
     }
 
     public Promise<ClientTableState> refetch(HasEventHandling failHandler, BrowserHeaders metadata) {
+        if (fetch == null) {
+            if (failMsg != null) {
+                return Promise.reject(failMsg);
+            }
+            return Promise.resolve(this);
+        }
         final Promise<ExportedTableCreationResponse> promise =
                 Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this, metadata));
         // noinspection unchecked

@@ -9,17 +9,19 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.PartitionParser;
-import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import io.deephaven.util.type.TypeUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -28,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -39,6 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.COMMON_METADATA_FILE_NAME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_FILE_NAME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
@@ -69,6 +73,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     private final TableDefinition definition;
     private final ParquetInstructions instructions;
     private final List<ParquetTableLocationKey> keys;
+    private final SeekableChannelsProvider channelsProvider;
 
     public ParquetMetadataFileLayout(@NotNull final File directory) {
         this(directory, ParquetInstructions.EMPTY);
@@ -96,26 +101,29 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         }
         this.metadataFile = metadataFile;
         this.commonMetadataFile = commonMetadataFile;
+        channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(metadataFile, false),
+                        inputInstructions.getSpecialInstructions());
         if (!metadataFile.exists()) {
             throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFile));
         }
-        final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile, inputInstructions);
-
+        final ParquetFileReader metadataFileReader = ParquetFileReader.create(metadataFile, channelsProvider);
         final ParquetMetadataConverter converter = new ParquetMetadataConverter();
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
-        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo = ParquetSchemaReader.convertSchema(
                 metadataFileReader.getSchema(),
                 metadataFileMetadata.getFileMetaData().getKeyValueMetaData(),
                 inputInstructions);
 
         if (commonMetadataFile != null && commonMetadataFile.exists()) {
             final ParquetFileReader commonMetadataFileReader =
-                    ParquetTools.getParquetFileReader(commonMetadataFile, inputInstructions);
-            final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
-                    commonMetadataFileReader.getSchema(),
-                    convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
-                            .getKeyValueMetaData(),
-                    leafSchemaInfo.getSecond());
+                    ParquetFileReader.create(commonMetadataFile, channelsProvider);
+            final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo =
+                    ParquetSchemaReader.convertSchema(
+                            commonMetadataFileReader.getSchema(),
+                            convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
+                                    .getKeyValueMetaData(),
+                            leafSchemaInfo.getSecond());
             final List<ColumnDefinition<?>> adjustedColumnDefinitions = new ArrayList<>();
             final Map<String, ColumnDefinition<?>> leafDefinitionsMap =
                     leafSchemaInfo.getFirst().stream().collect(toMap(ColumnDefinition::getName, Function.identity()));
@@ -200,9 +208,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     partitions.put(partitionKey, partitionValue);
                 }
             }
-            final File partitionFile = new File(directory, relativePathString);
-            final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFile,
-                    partitionOrder.getAndIncrement(), partitions, inputInstructions);
+            final URI partitionFileURI = convertToURI(new File(directory, relativePathString), false);
+            final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFileURI,
+                    partitionOrder.getAndIncrement(), partitions, inputInstructions, channelsProvider);
             tlk.setFileReader(metadataFileReader);
             tlk.setMetadata(getParquetMetadataForFile(relativePathString, metadataFileMetadata));
             tlk.setRowGroupIndices(rowGroupIndices);

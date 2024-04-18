@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-session-dagger')
+    implementation project(':java-client-session')
     implementation project(':java-client-example-utilities')
 
     Classpaths.inheritGrpcPlatform(project)
@@ -48,6 +48,7 @@ application.applicationDistribution.into('bin') {
     from(createApplication('publish', 'io.deephaven.client.examples.Publish'))
     from(createApplication('message-stream-send-receive', 'io.deephaven.client.examples.MessageStreamSendReceive'))
     from(createApplication('filter-table', 'io.deephaven.client.examples.FilterTable'))
+    from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
 
     fileMode = 0755
 }

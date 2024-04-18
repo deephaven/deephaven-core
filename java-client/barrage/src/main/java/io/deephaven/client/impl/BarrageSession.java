@@ -7,6 +7,7 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightGrpcUtilsExtension;
@@ -16,15 +17,35 @@ import java.util.Collections;
 
 public class BarrageSession extends FlightSession implements BarrageSubscription.Factory, BarrageSnapshot.Factory {
 
+    /**
+     * Creates a barrage session. Closing the barrage session does <b>not</b> close {@code channel}.
+     *
+     * @param session the session
+     * @param incomingAllocator the incoming allocator
+     * @param channel the managed channel
+     * @return the barrage session
+     */
     public static BarrageSession of(
             SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
         final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
                 incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
-        return new BarrageSession(session, client, channel);
+        return new BarrageSession(session, client);
+    }
+
+    /**
+     * @apiNote This method exists to be called by the Python API. It will be removed in the future if we can make JPY
+     *          capable of selecting the right factory method to use when the same method is present in the class
+     *          hierarchy multiple times.
+     * @see #of(SessionImpl, BufferAllocator, ManagedChannel)
+     */
+    @InternalUseOnly
+    public static BarrageSession create(
+            SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
+        return BarrageSession.of(session, incomingAllocator, channel);
     }
 
     protected BarrageSession(
-            final SessionImpl session, final FlightClient client, final ManagedChannel channel) {
+            final SessionImpl session, final FlightClient client) {
         super(session, client);
     }
 

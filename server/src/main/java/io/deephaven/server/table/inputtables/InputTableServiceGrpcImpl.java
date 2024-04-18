@@ -71,7 +71,6 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                    .requiresSerialQueue()
                     .onError(responseObserver)
                     .require(targetTable, tableToAddExport)
                     .submit(() -> {
@@ -134,7 +133,6 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                    .requiresSerialQueue()
                     .onError(responseObserver)
                     .require(targetTable, tableToRemoveExport)
                     .submit(() -> {

@@ -4,14 +4,17 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.annotations.GwtIncompatible;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.function.ToCharFunction;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.WritableCharChunk;
@@ -24,6 +27,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -32,12 +37,19 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
     public static CharChunkInputStreamGenerator convertBoxed(
             final ObjectChunk<Character, Values> inChunk, final long rowOffset) {
-        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
+        return convertWithTransform(inChunk, rowOffset, TypeUtils::unbox);
+    }
+
+    public static <T> CharChunkInputStreamGenerator convertWithTransform(
+            final ObjectChunk<T, Values> inChunk, final long rowOffset, final ToCharFunction<T> transform) {
+        // This code path is utilized for arrays and vectors of DateTimes, LocalDate, and LocalTime, which cannot be
+        // reinterpreted.
         WritableCharChunk<Values> outChunk = WritableCharChunk.makeWritableChunk(inChunk.size());
         for (int i = 0; i < inChunk.size(); ++i) {
-            final Character value = inChunk.get(i);
-            outChunk.set(i, TypeUtils.unbox(value));
+            T value = inChunk.get(i);
+            outChunk.set(i, transform.applyAsChar(value));
         }
+        // inChunk is a transfer of ownership to us, but we've converted what we need, so we must close it now
         if (inChunk instanceof PoolableChunk) {
             ((PoolableChunk) inChunk).close();
         }
@@ -162,7 +174,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         CharConversion IDENTITY = (char a) -> a;
     }
 
-    static WritableChunk<Values> extractChunkFromInputStream(
+    static WritableCharChunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -176,7 +188,41 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 totalRows);
     }
 
-    static WritableChunk<Values> extractChunkFromInputStreamWithConversion(
+    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTransform(
+            final int elementSize,
+            final StreamReaderOptions options,
+            final Function<Character, T> transform,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
+
+        try (final WritableCharChunk<Values> inner = extractChunkFromInputStream(
+                elementSize, options, fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+
+            final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
+                    outChunk,
+                    Math.max(totalRows, inner.size()),
+                    WritableObjectChunk::makeWritableChunk,
+                    WritableChunk::asWritableObjectChunk);
+
+            if (outChunk == null) {
+                // if we're not given an output chunk then we better be writing at the front of the new one
+                Assert.eqZero(outOffset, "outOffset");
+            }
+
+            for (int ii = 0; ii < inner.size(); ++ii) {
+                char value = inner.get(ii);
+                chunk.set(outOffset + ii, transform.apply(value));
+            }
+
+            return chunk;
+        }
+    }
+
+    static WritableCharChunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final StreamReaderOptions options,
             final CharConversion conversion,
@@ -191,14 +237,11 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
-        final WritableCharChunk<Values> chunk;
-        if (outChunk != null) {
-            chunk = outChunk.asWritableCharChunk();
-        } else {
-            final int numRows = Math.max(totalRows, nodeInfo.numElements);
-            chunk = WritableCharChunk.makeWritableChunk(numRows);
-            chunk.setSize(numRows);
-        }
+        final WritableCharChunk<Values> chunk = castOrCreateChunk(
+                outChunk,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableCharChunk::makeWritableChunk,
+                WritableChunk::asWritableCharChunk);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
@@ -241,6 +284,19 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         }
 
         return chunk;
+    }
+
+    private static <T extends WritableChunk<Values>> T castOrCreateChunk(
+            final WritableChunk<Values> outChunk,
+            final int numRows,
+            final IntFunction<T> chunkFactory,
+            final Function<WritableChunk<Values>, T> castFunction) {
+        if (outChunk != null) {
+            return castFunction.apply(outChunk);
+        }
+        final T newChunk = chunkFactory.apply(numRows);
+        newChunk.setSize(numRows);
+        return newChunk;
     }
 
     private static void useDeephavenNulls(

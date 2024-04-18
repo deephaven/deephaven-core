@@ -17,6 +17,8 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Objects;
 
+import static io.deephaven.extensions.s3.S3ChannelContext.UNINITIALIZED_SIZE;
+
 
 /**
  * {@link SeekableByteChannel} class used to fetch objects from S3 buckets using an async client with the ability to
@@ -24,8 +26,8 @@ import java.util.Objects;
  */
 final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelProvider.ContextHolder {
 
-    private static final long UNINITIALIZED_SIZE = -1;
     private static final long CLOSED_SENTINEL = -1;
+    private static final int INIT_POSITION = 0;
 
     private final S3Uri uri;
 
@@ -38,9 +40,14 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
     private long position;
     private long size;
 
-    S3SeekableByteChannel(S3Uri uri) {
+    S3SeekableByteChannel(final S3Uri uri) {
+        this(uri, UNINITIALIZED_SIZE);
+    }
+
+    S3SeekableByteChannel(final S3Uri uri, final long size) {
         this.uri = Objects.requireNonNull(uri);
-        this.size = UNINITIALIZED_SIZE;
+        this.size = size;
+        this.position = INIT_POSITION;
     }
 
     /**
@@ -56,7 +63,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         }
         this.context = (S3ChannelContext) channelContext;
         if (this.context != null) {
-            this.context.verifyOrSetUri(uri);
+            this.context.setURI(uri);
             if (size != UNINITIALIZED_SIZE) {
                 context.verifyOrSetSize(size);
             }

@@ -12,6 +12,7 @@ import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -245,18 +246,21 @@ public interface TableCreator<TABLE> {
     }
 
     /**
-     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     * Create a ticket table with the UTF-8 bytes from the {@code ticket} string. Equivalent to
+     * {@code of(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))}.
      *
      * @param ticket the ticket string
      * @return the ticket table
-     * @see TicketTable#of(String)
+     * @see TicketTable#of(byte[])
+     * @deprecated prefer {@link #ticket(byte[])} or other explicit methods on {@link TicketTable}
      */
+    @Deprecated
     default TABLE ticket(String ticket) {
-        return of(TicketTable.of(ticket));
+        return of(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
-     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     * Create a ticket table with the {@code ticket} bytes. Equivalent to {@code of(TicketTable.of(ticket))}.
      *
      * @param ticket the ticket
      * @return the ticket table

@@ -22,8 +22,9 @@ dependencies {
     implementation project(':log-factory')
 
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-time')
 
+    // Needed for CalendarInit
+    testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')
@@ -61,6 +62,12 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             from(test.runtimeClasspath) {
                 into 'classpath'
             }
+            from("${sourcePath}/../client") {
+                include 'setup.py'
+                include 'pydeephaven/**'
+                include 'README.md'
+                into 'python/client'
+            }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
             // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
@@ -97,6 +104,8 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
+            runCommand '''pip3 install /python/client'''
+
         }
         entrypoint = command
 

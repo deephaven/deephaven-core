@@ -43,11 +43,11 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.*;
@@ -3890,7 +3890,7 @@ public class QueryTableAggregationTest {
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readPartitionedTableInferSchema(
-                    new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
+                    new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
                     ParquetInstructions.EMPTY);
 
             // verify the sources are identical
@@ -3917,7 +3917,7 @@ public class QueryTableAggregationTest {
             final long[] values = new long[result.intSize()];
             final MutableInt pos = new MutableInt();
             result.longColumnIterator("Value").forEachRemaining((long value) -> {
-                values[pos.getValue()] = value;
+                values[pos.get()] = value;
                 pos.increment();
             });
             assertArrayEquals(new long[] {0, 5, 17, 23}, values);
