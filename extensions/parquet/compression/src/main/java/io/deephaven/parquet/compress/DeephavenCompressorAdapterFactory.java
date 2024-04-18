@@ -8,7 +8,7 @@ import io.airlift.compress.gzip.JdkGzipCodec;
 import io.airlift.compress.lz4.Lz4Codec;
 import io.airlift.compress.lzo.LzoCodec;
 import io.airlift.compress.zstd.ZstdCodec;
-import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CodecPool;
@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 
 /**
@@ -127,34 +129,46 @@ public class DeephavenCompressorAdapterFactory {
 
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
-                final int uncompressedSize, final SeekableChannelContext channelContext) throws IOException {
+                final int uncompressedSize,
+                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier) throws IOException {
             final Decompressor decompressor;
             if (canCreateDecompressorObject) {
-                final DecompressorHolder decompressorHolder = channelContext.getResource();
+                final DecompressorHolder decompressorHolder = (DecompressorHolder) decompressorSupplier.apply(() -> {
+                    final Decompressor newDecompressor = CodecPool.getDecompressor(compressionCodec);
+                    if (newDecompressor != null) {
+                        return new DecompressorHolder(compressionCodecName, newDecompressor);
+                    }
+                    return null;
+                });
                 if (decompressorHolder != null && decompressorHolder.holdsDecompressor(compressionCodecName)) {
                     decompressor = decompressorHolder.getDecompressor();
                     decompressor.reset();
                 } else {
-                    decompressor = CodecPool.getDecompressor(compressionCodec);
-                    if (decompressor != null) {
-                        if (decompressorHolder != null) {
-                            decompressorHolder.setDecompressor(compressionCodecName, decompressor);
-                        } else {
-                            channelContext.setResource(new DecompressorHolder(compressionCodecName, decompressor));
-                        }
-                    } else {
-                        canCreateDecompressorObject = false;
-                    }
+                    decompressor = null;
+                    canCreateDecompressorObject = false;
                 }
             } else {
                 decompressor = null;
             }
 
-            // Note that we don't close this, we assume the caller will close their input stream when ready,
-            // and this won't need to be closed.
-            final InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
-            final CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
-            return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
+            try {
+                // Note that we don't close the decompressed stream because doing so may return the decompressor to the
+                // pool
+                final InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
+                final CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
+                return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
+            } finally {
+                if (decompressor != null) {
+                    decompressor.reset();
+                }
+            }
+        }
+
+        @Override
+        public void reset() {
+            if (innerCompressor != null) {
+                innerCompressor.reset();
+            }
         }
 
         @Override

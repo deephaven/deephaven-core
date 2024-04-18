@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import java.util.function.Function;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,8 +11,11 @@ import java.util.function.Supplier;
 
 /**
  * Context object for reading and writing to channels created by {@link SeekableChannelsProvider}.
+ * <p>
+ * The context object can hold a {@link SafeCloseable} resource, which can be plugged into the context by calling the
+ * {@link #apply(Supplier)} method. The resource will be closed when the context is closed.
  */
-public interface SeekableChannelContext extends SafeCloseable {
+public interface SeekableChannelContext extends Function<Supplier<SafeCloseable>, SafeCloseable>, SafeCloseable {
 
     SeekableChannelContext NULL = SeekableChannelContextNull.NULL_CONTEXT_INSTANCE;
 
@@ -35,21 +39,11 @@ public interface SeekableChannelContext extends SafeCloseable {
     }
 
     /**
-     * Minimal interface for optional, opaque objects hosted by channel context instances.
-     */
-    interface Resource {
-    }
-
-    /**
-     * Set the opaque {@link Resource} object hosted by this instance.
-     */
-    void setResource(Resource resource);
-
-    /**
-     * @return An opaque {@link Resource} object hosted by this instance, or {@code null} if none has been set
+     * If this instance holds a resource, return it. Otherwise, use the resource factory to create a new resource, store
+     * it, and return it. This method can return a {@code null} if the factory returns a {@code null}.
      */
     @Nullable
-    <RESOURCE_TYPE extends Resource> RESOURCE_TYPE getResource();
+    SafeCloseable apply(Supplier<SafeCloseable> resourceFactory);
 
     /**
      * Release any resources associated with this context. The context should not be used afterward.

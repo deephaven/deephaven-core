@@ -11,7 +11,7 @@ import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
-import io.deephaven.util.channel.SeekableChannelContextDefaultImpl;
+import io.deephaven.util.channel.BaseSeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,12 +42,12 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
     @Override
     public SeekableChannelContext makeContext() {
-        return new SeekableChannelContextDefaultImpl();
+        return new BaseSeekableChannelContext();
     }
 
     @Override
     public boolean isCompatibleWith(@Nullable final SeekableChannelContext channelContext) {
-        return channelContext instanceof SeekableChannelContextDefaultImpl;
+        return channelContext instanceof BaseSeekableChannelContext;
     }
 
     @Override

@@ -3,7 +3,7 @@
 //
 package io.deephaven.parquet.compress;
 
-import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.SafeCloseable;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
-public class DecompressorHolder implements SeekableChannelContext.Resource, AutoCloseable {
+class DecompressorHolder implements SafeCloseable {
     private CompressionCodecName codecName;
     private Decompressor decompressor;
 

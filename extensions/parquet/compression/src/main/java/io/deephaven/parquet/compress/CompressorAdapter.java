@@ -4,7 +4,6 @@
 package io.deephaven.parquet.compress;
 
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -12,6 +11,8 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * An Intermediate adapter interface between Deephaven column writing and parquet compression.
@@ -33,14 +34,16 @@ public interface CompressorAdapter extends SafeCloseable {
 
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
-                final int uncompressedSize, final SeekableChannelContext channelContext) {
+                final int uncompressedSize,
+                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier) {
             return BytesInput.from(inputStream, compressedSize);
         }
 
         @Override
-        public void close() {
+        public void reset() {}
 
-        }
+        @Override
+        public void close() {}
     };
 
     /**
@@ -58,26 +61,31 @@ public interface CompressorAdapter extends SafeCloseable {
     /**
      * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream. The
      * provided {@link DecompressorHolder} is used for decompressing if compatible with the compression codec.
-     * Otherwise, a new decompressor is created and set in the DecompressorHolder. Callers should process the results
-     * before {@code inputStream} is closed; if the {@link BytesInput} interface needs to persist longer than
-     * {@code inputStream}, callers should use {@link BytesInput#copy(BytesInput)} on the results.
+     * Otherwise, a new decompressor is created and set in the DecompressorHolder.
      * <p>
-     * Note that this method is thread safe, assuming the {@link SeekableChannelContext} instances are not shared across
-     * threads.
+     * Note that this method is thread safe, assuming the cached decompressor instances are not shared across threads.
      * 
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data
      * @param uncompressedSize the number of bytes that should be present when decompressed
-     * @param channelContext the context which can store any additional resources link a {@link Decompressor} to use for
-     *        reading from the input stream
+     * @param decompressorSupplier Used to cache {@link Decompressor} instances for reuse.
      * @return the decompressed bytes, copied into memory
      * @throws IOException thrown if an error occurs reading data.
      */
     BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
-            SeekableChannelContext channelContext) throws IOException;
+            Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.
      */
     CompressionCodecName getCodecName();
+
+    /**
+     * Reset the internal state of this {@link CompressorAdapter} so more rows can be read or written.
+     * <p>
+     * This method can be called after {@link #compress} to reset the internal state of the compressor, and is not
+     * required before {@link #compress}, or before and after {@link #decompress} because those methods internally
+     * manage their own state.
+     */
+    void reset();
 }
