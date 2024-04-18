@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
-#include "tests/third_party/catch.hpp"
-#include "tests/test_util.h"
+#include "deephaven/third_party/catch.hpp"
+#include "deephaven/tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::utility::TableMaker;

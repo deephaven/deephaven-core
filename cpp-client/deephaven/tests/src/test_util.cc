@@ -1,7 +1,8 @@
 /*
  * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
-#include "test_util.h"
+#include "deephaven/tests/test_util.h"
+
 #include <cstdlib>
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/dhcore/utility/utility.h"

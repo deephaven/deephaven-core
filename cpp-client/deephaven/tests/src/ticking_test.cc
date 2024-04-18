@@ -4,8 +4,8 @@
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
-#include "tests/third_party/catch.hpp"
-#include "tests/test_util.h"
+#include "deephaven/third_party/catch.hpp"
+#include "deephaven/tests/test_util.h"
 #include "deephaven/client/client.h"
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/utility/utility.h"
