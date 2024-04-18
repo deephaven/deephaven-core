@@ -32,7 +32,7 @@ public class Calendar {
 
     private static class SummaryData {
         final LocalDate startDate;
-        final LocalDate endDate; //todo inclusive?
+        final LocalDate endDate; // exclusive
         final List<LocalDate> dates;
 
         SummaryData(LocalDate startDate, LocalDate endDate, List<LocalDate> dates) {
@@ -54,14 +54,14 @@ public class Calendar {
             date = date.plusDays(1);
         }
 
-        return new SummaryData(startDate, endDate, dates);
+        return new SummaryData(startDate, endDate, dates); // end date is exclusive
     }
 
     private SummaryData computeMonthSummary(final int yearMonth) {
         final int year = yearMonth / 100;
         final int month = yearMonth % 100;
         final LocalDate startDate = LocalDate.of(year, month, 1);
-        final LocalDate endDate = startDate.plusMonths(1);  //todo end date is exclusive --- check code
+        final LocalDate endDate = startDate.plusMonths(1);  // exclusive
         return summarize(startDate, endDate);
     }
 
@@ -540,7 +540,7 @@ public class Calendar {
         if(summaryFirst == null){
             calendarDatesInternal(dateList, start, end, startInclusive, endInclusive);
         } else {
-            calendarDatesInternal(dateList, summary.endDate, end, false, endInclusive);
+            calendarDatesInternal(dateList, summary.endDate, end, true, endInclusive);
         }
 
         return dateList.toArray(new LocalDate[0]);

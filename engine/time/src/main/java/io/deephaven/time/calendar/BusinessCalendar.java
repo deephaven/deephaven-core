@@ -62,7 +62,7 @@ public class BusinessCalendar extends Calendar {
         private final Instant startInstant;
         private final LocalDate startDate;
         private final Instant endInstant;
-        private final LocalDate endDate;
+        private final LocalDate endDate; // exclusive
         private final long businessTimeNanos;
         private final int businessDays;
         private final int nonBusinessDays;
@@ -148,7 +148,7 @@ public class BusinessCalendar extends Calendar {
         final int year = yearMonth / 100;
         final int month = yearMonth % 100;
         final LocalDate startDate = LocalDate.of(year, month, 1);
-        final LocalDate endDate = startDate.plusMonths(1);  //todo end date is exclusive --- check code
+        final LocalDate endDate = startDate.plusMonths(1);  // exclusive
         return summarize(startDate, endDate);
     }
 
@@ -1034,7 +1034,7 @@ public class BusinessCalendar extends Calendar {
             return numberBusinessDatesInternal(start, end, startInclusive, endInclusive);
         } else {
             days += numberBusinessDatesInternal(start, summaryFirst.startDate, startInclusive, false);
-            days += numberBusinessDatesInternal(summary.endDate, end, false, endInclusive);
+            days += numberBusinessDatesInternal(summary.endDate, end, true, endInclusive);
         }
 
         return days;
@@ -1211,7 +1211,7 @@ public class BusinessCalendar extends Calendar {
             return numberNonBusinessDatesInternal(start, end, startInclusive, endInclusive);
         } else {
             days += numberNonBusinessDatesInternal(start, summaryFirst.startDate, startInclusive, false);
-            days += numberNonBusinessDatesInternal(summary.endDate, end, false, endInclusive);
+            days += numberNonBusinessDatesInternal(summary.endDate, end, true, endInclusive);
         }
 
         return days;
@@ -1384,7 +1384,7 @@ public class BusinessCalendar extends Calendar {
         if(summaryFirst == null){
             businessDatesInternal(dateList, start, end, startInclusive, endInclusive);
         } else {
-            businessDatesInternal(dateList, summary.endDate, end, false, endInclusive);
+            businessDatesInternal(dateList, summary.endDate, end, true, endInclusive);
         }
 
         return dateList.toArray(new LocalDate[0]);
@@ -1556,7 +1556,7 @@ public class BusinessCalendar extends Calendar {
         if(summaryFirst == null){
             nonBusinessDatesInternal(dateList, start, end, startInclusive, endInclusive);
         } else {
-            nonBusinessDatesInternal(dateList, summary.endDate, end, false, endInclusive);
+            nonBusinessDatesInternal(dateList, summary.endDate, end, true, endInclusive);
         }
 
         return dateList.toArray(new LocalDate[0]);
