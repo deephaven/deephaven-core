@@ -69,6 +69,8 @@ def _build_parquet_instructions(
     base_name: Optional[str] = None,
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
+    col_definitions: Optional[List[Column]] = None,
+    index_columns: Optional[Sequence[Sequence[str]]] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ):
     if not any(
@@ -85,6 +87,8 @@ def _build_parquet_instructions(
             base_name is not None,
             file_layout is not None,
             table_definition is not None,
+            col_definitions is not None,
+            index_columns is not None,
             special_instructions is not None
         ]
     ):
@@ -133,6 +137,12 @@ def _build_parquet_instructions(
 
     if table_definition is not None:
         builder.setTableDefinition(_j_table_definition(table_definition))
+
+    if col_definitions is not None:
+        builder.setTableDefinition(_JTableDefinition.of([col.j_column_definition for col in col_definitions]))
+
+    if index_columns:
+        builder.setIndexColumns(_j_array_of_array_of_string(index_columns))
 
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
@@ -221,9 +231,8 @@ def read(
         raise DHError(e, "failed to read parquet data.") from e
 
 
-def _j_file_array(str_list: List[str]):
-    return jpy.array("java.io.File", [_JFile(el) for el in str_list])
-
+def _j_string_array(str_list: List[str]):
+    return jpy.array("java.lang.String", str_list)
 
 def _j_array_of_array_of_string(str_seq_seq: Sequence[Sequence[str]]):
     return jpy.array("[Ljava.lang.String;", [jpy.array("java.lang.String", str_seq) for str_seq in str_seq_seq])
@@ -297,19 +306,10 @@ def write(
             target_page_size=target_page_size,
             for_read=False,
             generate_metadata_files=generate_metadata_files,
+            col_definitions=col_definitions,
+            index_columns=index_columns,
         )
-        if col_definitions is not None:
-            table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-        else:
-            table_definition = table._definition
-
-        if index_columns:
-            table_array = jpy.array("io.deephaven.engine.table.Table", [table.j_table])
-            index_columns_array = _j_array_of_array_of_string(index_columns)
-            _JParquetTools.writeParquetTables(table_array, table_definition, write_instructions,
-                                              _j_file_array([path]), index_columns_array)
-        else:
-            _JParquetTools.writeTable(table.j_table, path, table_definition, write_instructions)
+        _JParquetTools.writeTable(table.j_table, path, write_instructions)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
@@ -385,26 +385,10 @@ def write_partitioned(
             for_read=False,
             generate_metadata_files=generate_metadata_files,
             base_name=base_name,
+            col_definitions=col_definitions,
+            index_columns=index_columns,
         )
-
-        table_definition = None
-        if col_definitions is not None:
-            table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-
-        if index_columns:
-            index_columns_array = _j_array_of_array_of_string(index_columns)
-            if table_definition:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
-                                                             write_instructions, index_columns_array)
-            else:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions,
-                                                             index_columns_array)
-        else:
-            if table_definition:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
-                                                             write_instructions)
-            else:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
+        _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
@@ -463,16 +447,9 @@ def batch_write(
             target_page_size=target_page_size,
             for_read=False,
             generate_metadata_files=generate_metadata_files,
+            col_definitions=col_definitions,
+            index_columns=index_columns,
         )
-
-        table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-
-        if index_columns:
-            index_columns_array = _j_array_of_array_of_string(index_columns)
-            _JParquetTools.writeParquetTables([t.j_table for t in tables], table_definition, write_instructions,
-                                              _j_file_array(paths), index_columns_array)
-        else:
-            _JParquetTools.writeTables([t.j_table for t in tables], table_definition,
-                                       _j_file_array(paths))
+        _JParquetTools.writeTables([t.j_table for t in tables], _j_string_array(paths), write_instructions)
     except Exception as e:
         raise DHError(e, "write multiple tables to parquet data failed.") from e

@@ -552,9 +552,9 @@ public class ParquetTools {
      * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
      * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns of provided
      * table. The generated parquet files will have names of the format provided by
-     * {@link ParquetInstructions#baseNameForPartitionedParquetData()}. Any indexing columns present on the source table
-     * will be written as sidecar tables. To write only a subset of the indexes or add additional indexes while writing,
-     * use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions, String[][])}.
+     * {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, any indexing columns present on the
+     * source table will be written as sidecar tables. To write only a subset of the indexes or add additional indexes
+     * while writing, use {@link ParquetInstructions.Builder#setIndexColumns}.
      *
      * @param sourceTable The table to partition and write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
@@ -565,30 +565,12 @@ public class ParquetTools {
             @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        writeKeyValuePartitionedTable(sourceTable, destinationDir, writeInstructions, indexedColumnNames(sourceTable));
-    }
-
-    /**
-     * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
-     * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
-     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns of provided
-     * table. The generated parquet files will have names of the format provided by
-     * {@link ParquetInstructions#baseNameForPartitionedParquetData()}.
-     *
-     * @param sourceTable The table to partition and write
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
-     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-     *        will be computed on demand.
-     */
-    public static void writeKeyValuePartitionedTable(
-            @NotNull final Table sourceTable,
-            @NotNull final String destinationDir,
-            @NotNull final ParquetInstructions writeInstructions,
-            @Nullable final String[][] indexColumnArr) {
+        final String[][] indexColumnArr;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumnArr = writeInstructions.getIndexColumns().get();
+        } else {
+            indexColumnArr = indexedColumnNames(sourceTable);
+        }
         final TableDefinition definition = writeInstructions.getTableDefinition().orElse(sourceTable.getDefinition());
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
         if (partitioningColumns.isEmpty()) {
@@ -609,9 +591,9 @@ public class ParquetTools {
      * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
      * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
      * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
-     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. This method does
-     * not write any indexes as sidecar tables to disk. To write indexes, use
-     * {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions, String[][])}.
+     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, this
+     * method does not write any indexes as sidecar tables to disk. To write such indexes, use
+     * {@link ParquetInstructions.Builder#setIndexColumns}.
      *
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
@@ -622,29 +604,7 @@ public class ParquetTools {
             @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        writeKeyValuePartitionedTable(partitionedTable, destinationDir, writeInstructions, EMPTY_INDEXES);
-    }
-
-    /**
-     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
-     * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
-     * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
-     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}.
-     *
-     * @param partitionedTable The partitioned table to write
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
-     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-     *        will be computed on demand.
-     */
-    public static void writeKeyValuePartitionedTable(
-            @NotNull final PartitionedTable partitionedTable,
-            @NotNull final String destinationDir,
-            @NotNull final ParquetInstructions writeInstructions,
-            @Nullable final String[][] indexColumnArr) {
+        final String[][] indexColumnArr = writeInstructions.getIndexColumns().orElse(EMPTY_INDEXES);
         final TableDefinition keyTableDefinition, leafDefinition;
         if (writeInstructions.getTableDefinition().isEmpty()) {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(),
@@ -849,90 +809,7 @@ public class ParquetTools {
     }
 
     /**
-     * Writes tables to disk in parquet format to a supplied set of destinations.
-     *
-     * @param sources The tables to write
-     * @param definition The common definition for all the tables to write
-     * @param writeInstructions Write instructions for customizations while writing
-     * @param destinations The destination paths. Any non-existing directories in the paths provided are created. If
-     *        there is an error, any intermediate directories previously created are removed; note this makes this
-     *        method unsafe for concurrent use.
-     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
-     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-     *        will be computed on demand.
-     * @deprecated Use {@link #writeTables(Table[], String[], ParquetInstructions, String[][])} instead with
-     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
-     */
-    @Deprecated
-    public static void writeParquetTables(
-            @NotNull final Table[] sources,
-            @NotNull final TableDefinition definition,
-            @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final File[] destinations,
-            @Nullable final String[][] indexColumnArr) {
-        final String[] destinationPaths = Arrays.stream(destinations).map(File::getPath).toArray(String[]::new);
-        writeTables(sources, destinationPaths, ensureTableDefinition(writeInstructions, definition, true),
-                indexColumnArr);
-    }
-
-    /**
-     * Writes tables to disk in parquet format to a supplied set of destinations. The {@link TableDefinition} to use for
-     * writing must be provided as part of {@link ParquetInstructions}.
-     *
-     * @param sources The tables to write
-     * @param destinations The destination paths or URIs. Any non-existing directories in the paths provided are
-     *        created. If there is an error, any intermediate directories previously created are removed; note this
-     *        makes this method unsafe for concurrent use.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
-     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-     *        will be computed on demand.
-     */
-    public static void writeTables(
-            @NotNull final Table[] sources,
-            @NotNull final String[] destinations,
-            @NotNull final ParquetInstructions writeInstructions,
-            @Nullable final String[][] indexColumnArr) {
-        final TableDefinition definition = writeInstructions.getTableDefinition().orElseThrow(
-                () -> new IllegalArgumentException("Table definition must be provided"));
-        final File[] destinationFiles = new File[destinations.length];
-        for (int i = 0; i < destinations.length; i++) {
-            final URI destinationURI = convertToURI(destinations[i], false);
-            if (!FILE_URI_SCHEME.equals(destinationURI.getScheme())) {
-                throw new IllegalArgumentException(
-                        "Only file URI scheme is supported for writing parquet files, found" +
-                                "non-file URI: " + destinations[i]);
-            }
-            destinationFiles[i] = new File(destinationURI);
-        }
-        final File metadataRootDir;
-        if (writeInstructions.generateMetadataFiles()) {
-            // We insist on writing the metadata file in the same directory as the destination files, thus all
-            // destination files should be in the same directory.
-            final String firstDestinationDir = destinationFiles[0].getAbsoluteFile().getParentFile().getAbsolutePath();
-            for (int i = 1; i < destinations.length; i++) {
-                if (!firstDestinationDir.equals(destinationFiles[i].getParentFile().getAbsolutePath())) {
-                    throw new IllegalArgumentException("All destination files must be in the same directory for " +
-                            " generating metadata files");
-                }
-            }
-            metadataRootDir = new File(firstDestinationDir);
-        } else {
-            metadataRootDir = null;
-        }
-
-        final Map<String, Map<ParquetCacheTags, Object>> computedCache =
-                buildComputedCache(() -> PartitionedTableFactory.ofTables(definition, sources).merge(), definition);
-        // We do not have any additional schema for partitioning columns in this case. Schema for all columns will be
-        // generated at the time of writing the parquet files and merged to generate the metadata files.
-        writeTablesImpl(sources, definition, writeInstructions, destinationFiles, indexColumnArr,
-                null, metadataRootDir, computedCache);
-    }
-
-    /**
-     * Refer to {@link #writeTables(Table[], String[], ParquetInstructions, String[][])} for more details.
+     * Refer to {@link #writeTables(Table[], String[], ParquetInstructions)} for more details.
      */
     private static void writeTablesImpl(
             @NotNull final Table[] sources,
@@ -1148,17 +1025,60 @@ public class ParquetTools {
     }
 
     /**
-     * Write out tables to disk. Data indexes to write are determined by those already present on the first source. The
+     * Write out tables to disk. Data indexes to write are determined by those already present on the first source or
+     * those provided through {@link ParquetInstructions.Builder#setIndexColumns(String[][])}. The
      * {@link TableDefinition} to use for writing must be provided as part of {@link ParquetInstructions}.
      *
-     * @param sources source tables
-     * @param destinations destinations
+     * @param sources The tables to write
+     * @param destinations The destination paths or URIs. Any non-existing directories in the paths provided are
+     *        created. If there is an error, any intermediate directories previously created are removed; note this
+     *        makes this method unsafe for concurrent use.
+     * @param writeInstructions Write instructions for customizations while writing
      */
     public static void writeTables(
             @NotNull final Table[] sources,
             @NotNull final String[] destinations,
             @NotNull final ParquetInstructions writeInstructions) {
-        writeTables(sources, destinations, writeInstructions, indexedColumnNames(sources));
+        final String[][] indexColumnArr;
+        if (writeInstructions.getIndexColumns().isPresent()) {
+            indexColumnArr = writeInstructions.getIndexColumns().get();
+        } else {
+            indexColumnArr = indexedColumnNames(sources);
+        }
+        final TableDefinition definition = writeInstructions.getTableDefinition().orElseThrow(
+                () -> new IllegalArgumentException("Table definition must be provided"));
+        final File[] destinationFiles = new File[destinations.length];
+        for (int i = 0; i < destinations.length; i++) {
+            final URI destinationURI = convertToURI(destinations[i], false);
+            if (!FILE_URI_SCHEME.equals(destinationURI.getScheme())) {
+                throw new IllegalArgumentException(
+                        "Only file URI scheme is supported for writing parquet files, found" +
+                                "non-file URI: " + destinations[i]);
+            }
+            destinationFiles[i] = new File(destinationURI);
+        }
+        final File metadataRootDir;
+        if (writeInstructions.generateMetadataFiles()) {
+            // We insist on writing the metadata file in the same directory as the destination files, thus all
+            // destination files should be in the same directory.
+            final String firstDestinationDir = destinationFiles[0].getAbsoluteFile().getParentFile().getAbsolutePath();
+            for (int i = 1; i < destinations.length; i++) {
+                if (!firstDestinationDir.equals(destinationFiles[i].getParentFile().getAbsolutePath())) {
+                    throw new IllegalArgumentException("All destination files must be in the same directory for " +
+                            " generating metadata files");
+                }
+            }
+            metadataRootDir = new File(firstDestinationDir);
+        } else {
+            metadataRootDir = null;
+        }
+
+        final Map<String, Map<ParquetCacheTags, Object>> computedCache =
+                buildComputedCache(() -> PartitionedTableFactory.ofTables(definition, sources).merge(), definition);
+        // We do not have any additional schema for partitioning columns in this case. Schema for all columns will be
+        // generated at the time of writing the parquet files and merged to generate the metadata files.
+        writeTablesImpl(sources, definition, writeInstructions, destinationFiles, indexColumnArr,
+                null, metadataRootDir, computedCache);
     }
 
     /**
