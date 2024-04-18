@@ -295,7 +295,7 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
 
   std::vector<std::shared_ptr<RowSequence>> per_column_modifies;
   per_column_modifies.reserve(mod_column_nodes.size());
-  for (size_t i = 0; i < mod_column_nodes.size(); ++i) {
+  for (flatbuffers::uoffset_t i = 0; i < mod_column_nodes.size(); ++i) {
     const auto &elt = mod_column_nodes.Get(i);
     DataInput di_modified(*elt->modified_rows());
     auto mod_rows = IndexDecoder::ReadExternalCompressedDelta(&di_modified);
