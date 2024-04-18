@@ -7,11 +7,13 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import elemental2.core.JsArray;
 import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
@@ -56,8 +58,39 @@ public abstract class WebBarrageSubscription {
                 case Char:
                     break;
                 case Byte:
+                    dataSinks[i] = new WebDataSink() {
+                        @Override
+                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
+                            ByteChunk<?> byteChunk = data.asByteChunk();
+                            int i = 0;
+                            while (destIterator.hasNext()) {
+                                arr.setAt((int) destIterator.nextLong(), Js.asAny(byteChunk.get(i++)));
+                            }
+                        }
+
+                        @Override
+                        public <T> T get(long position) {
+                            return (T) arr.getAt((int) position);
+                        }
+                    };
                     break;
                 case Short:
+                    dataSinks[i] = new WebDataSink() {
+                        @Override
+                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
+                            ShortChunk<?> shortChunk = data.asShortChunk();
+                            int i = 0;
+                            while (destIterator.hasNext()) {
+                                arr.setAt((int) destIterator.nextLong(), Js.asAny(shortChunk.get(i++)));
+                            }
+                        }
+
+                        @Override
+                        public <T> T get(long position) {
+                            return (T) arr.getAt((int) position);
+                        }
+                    };
+
                     break;
                 case Int:
                     dataSinks[i] = new WebDataSink() {

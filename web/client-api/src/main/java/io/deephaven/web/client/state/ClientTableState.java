@@ -75,8 +75,8 @@ public final class ClientTableState extends TableConfig {
     }
 
     public Class<?>[] columnTypes() {
-        return Arrays.stream(getColumns())
-                .map(Column::getType)
+        return Arrays.stream(tableDef.getColumns())
+                .map(ColumnDefinition::getType)
                 .map(t -> {
                     switch (t) {
                         case "boolean":
@@ -109,7 +109,7 @@ public final class ClientTableState extends TableConfig {
 
     public Class<?>[] componentTypes() {
         // The only componentType that matters is byte.class
-        return Arrays.stream(getColumns()).map(Column::getType).map(t -> {
+        return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
             if (!t.endsWith("[]")) {
                 return null;
             }

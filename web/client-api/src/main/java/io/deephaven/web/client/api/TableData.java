@@ -17,12 +17,12 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 /**
- * Common interface for various ways of accessing table data and formatting for viewport or non-viewport subscriptions on tables,
- * data in trees, and snapshots.
+ * Common interface for various ways of accessing table data and formatting for viewport or non-viewport subscriptions
+ * on tables, data in trees, and snapshots.
  * <p>
- * Generally speaking, it is more efficient to access data in column-major order, rather than iterating through
- * each Row and accessing all columns that it holds. The {@link #getRows()} accessor can be useful to read row data,
- * but may incur other costs - it is likely faster to access data by columns using {@link #getData(RowPositionUnion, Column)}.
+ * Generally speaking, it is more efficient to access data in column-major order, rather than iterating through each Row
+ * and accessing all columns that it holds. The {@link #getRows()} accessor can be useful to read row data, but may
+ * incur other costs - it is likely faster to access data by columns using {@link #getData(RowPositionUnion, Column)}.
  */
 /*
  * Java note: this interface contains some extra overloads that aren't available in JS. Implementations are expected to
@@ -73,8 +73,8 @@ public interface TableData {
     @JsProperty
     JsRangeSet getModified();
 
-//    @JsProperty
-//    JsShiftData getShifts();
+    // @JsProperty
+    // JsShiftData getShifts();
 
     @JsProperty
     JsArray<Column> getColumns();

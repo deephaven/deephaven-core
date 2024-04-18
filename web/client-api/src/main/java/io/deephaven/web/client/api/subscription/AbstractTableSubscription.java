@@ -33,7 +33,6 @@ import io.deephaven.web.shared.data.ShiftedRange;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -141,8 +140,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 transformRowsetForConsumer(rowsAdded),
                 transformRowsetForConsumer(rowsRemoved),
                 transformRowsetForConsumer(totalMods),
-                barrageSubscription.getServerViewport() != null ? null : shifted
-        );
+                barrageSubscription.getServerViewport() != null ? null : shifted);
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
         fireEvent(TableSubscription.EVENT_UPDATED, event);
@@ -356,14 +354,14 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     /**
-     * If a viewport is in use, transforms the given rowset to position space based on
-     * that viewport.
+     * If a viewport is in use, transforms the given rowset to position space based on that viewport.
+     * 
      * @param rowSet the rowset to possibly transform
      * @return a transformed rowset
      */
     private RangeSet transformRowsetForConsumer(RangeSet rowSet) {
         if (barrageSubscription.getServerViewport() != null) {
-            return rowSet.subsetForPositions(barrageSubscription.getServerViewport(), false);//TODO reverse
+            return rowSet.subsetForPositions(barrageSubscription.getServerViewport(), false);// TODO reverse
         }
         return rowSet;
     }
@@ -373,7 +371,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         // throw new IllegalStateException("Not a viewport subscription");
         // }
         subscriptionReady = (serverColumns == null && columnBitSet == null)
-                || (serverColumns == null && columnBitSet.cardinality() == state.getColumns().length)
+                || (serverColumns == null && columnBitSet.cardinality() == state.getTableDef().getColumns().length)
                 || (serverColumns != null && serverColumns.equals(this.columnBitSet));
     }
 

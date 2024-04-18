@@ -1930,61 +1930,61 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return workerConnection;
     }
 
-//    public void refreshViewport(ClientTableState state, Viewport vp) {
-//        assert state() == state : "Called refreshViewport with wrong state (" + state + " instead of " + state() + ")";
-//        assert state.getResolution() == ClientTableState.ResolutionState.RUNNING
-//                : "Do not call refreshViewport for a state that is not running! (" + state + ")";
-//
-//        currentViewportData = null; // ignore any deltas for past viewports
-//        workerConnection.scheduleCheck(state);
-//        // now that we've made sure the server knows, if we already know that the viewport is beyond what exists, we
-//        // can go ahead and fire an update event. We're in the onResolved call, so we know the handle has resolved
-//        // and if size is not -1, then we've already at least gotten the initial snapshot (otherwise, that snapshot
-//        // will be here soon, and will fire its own event)
-//        if (state.getSize() != ClientTableState.SIZE_UNINITIALIZED && state.getSize() <= vp.getRows().getFirstRow()) {
-//            JsLog.debug("Preparing to send a 'fake' update event since " + state.getSize() + "<="
-//                    + vp.getRows().getFirstRow(), state);
-//            LazyPromise.runLater(() -> {
-//                if (state != state()) {
-//                    return;
-//                }
-//
-//                // get the column expected to be in the snapshot
-//                JsArray<Column> columns = null;// Js.uncheckedCast(getBinding().getColumns());
-//                Column[] allColumns = state.getColumns();
-//                if (columns == null) {
-//                    columns = Js.uncheckedCast(allColumns);
-//                }
-//                // build an array of empty column data for this snapshot
-//                Object[] dataColumns = new Object[allColumns.length];
-//
-//                for (int i = 0; i < columns.length; i++) {
-//                    Column c = columns.getAt(i);
-//                    dataColumns[c.getIndex()] = JsData.newArray(c.getType());
-//                    if (c.getFormatStringColumnIndex() != null) {
-//                        dataColumns[c.getFormatStringColumnIndex()] = JsData.newArray("java.lang.String");
-//                    }
-//                    if (c.getStyleColumnIndex() != null) {
-//                        dataColumns[c.getStyleColumnIndex()] = JsData.newArray("long");
-//                    }
-//                }
-//                if (currentState.getRowFormatColumn() != null) {
-//                    dataColumns[currentState.getRowFormatColumn().getIndex()] = JsData.newArray("long");
-//                }
-//
-//                ViewportData data = new ViewportData(RangeSet.empty(), dataColumns, columns,
-//                        currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-//                                : currentState.getRowFormatColumn().getIndex(),
-//                        0);
-//                this.currentViewportData = data;
-//                CustomEventInit updatedEvent = CustomEventInit.create();
-//                updatedEvent.setDetail(data);
-//                JsLog.debug("Sending 'fake' update event since " + state.getSize() + "<=" + vp.getRows().getFirstRow(),
-//                        vp, state);
-//                fireEvent(EVENT_UPDATED, updatedEvent);
-//            });
-//        }
-//    }
+    // public void refreshViewport(ClientTableState state, Viewport vp) {
+    // assert state() == state : "Called refreshViewport with wrong state (" + state + " instead of " + state() + ")";
+    // assert state.getResolution() == ClientTableState.ResolutionState.RUNNING
+    // : "Do not call refreshViewport for a state that is not running! (" + state + ")";
+    //
+    // currentViewportData = null; // ignore any deltas for past viewports
+    // workerConnection.scheduleCheck(state);
+    // // now that we've made sure the server knows, if we already know that the viewport is beyond what exists, we
+    // // can go ahead and fire an update event. We're in the onResolved call, so we know the handle has resolved
+    // // and if size is not -1, then we've already at least gotten the initial snapshot (otherwise, that snapshot
+    // // will be here soon, and will fire its own event)
+    // if (state.getSize() != ClientTableState.SIZE_UNINITIALIZED && state.getSize() <= vp.getRows().getFirstRow()) {
+    // JsLog.debug("Preparing to send a 'fake' update event since " + state.getSize() + "<="
+    // + vp.getRows().getFirstRow(), state);
+    // LazyPromise.runLater(() -> {
+    // if (state != state()) {
+    // return;
+    // }
+    //
+    // // get the column expected to be in the snapshot
+    // JsArray<Column> columns = null;// Js.uncheckedCast(getBinding().getColumns());
+    // Column[] allColumns = state.getColumns();
+    // if (columns == null) {
+    // columns = Js.uncheckedCast(allColumns);
+    // }
+    // // build an array of empty column data for this snapshot
+    // Object[] dataColumns = new Object[allColumns.length];
+    //
+    // for (int i = 0; i < columns.length; i++) {
+    // Column c = columns.getAt(i);
+    // dataColumns[c.getIndex()] = JsData.newArray(c.getType());
+    // if (c.getFormatStringColumnIndex() != null) {
+    // dataColumns[c.getFormatStringColumnIndex()] = JsData.newArray("java.lang.String");
+    // }
+    // if (c.getStyleColumnIndex() != null) {
+    // dataColumns[c.getStyleColumnIndex()] = JsData.newArray("long");
+    // }
+    // }
+    // if (currentState.getRowFormatColumn() != null) {
+    // dataColumns[currentState.getRowFormatColumn().getIndex()] = JsData.newArray("long");
+    // }
+    //
+    // ViewportData data = new ViewportData(RangeSet.empty(), dataColumns, columns,
+    // currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
+    // : currentState.getRowFormatColumn().getIndex(),
+    // 0);
+    // this.currentViewportData = data;
+    // CustomEventInit updatedEvent = CustomEventInit.create();
+    // updatedEvent.setDetail(data);
+    // JsLog.debug("Sending 'fake' update event since " + state.getSize() + "<=" + vp.getRows().getFirstRow(),
+    // vp, state);
+    // fireEvent(EVENT_UPDATED, updatedEvent);
+    // });
+    // }
+    // }
 
     public boolean isActive(ClientTableState state) {
         return currentState == state;

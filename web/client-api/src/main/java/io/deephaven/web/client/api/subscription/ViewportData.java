@@ -24,10 +24,10 @@ import java.util.Set;
 
 /**
  * Extends {@link TableData}, but only contains data in the current viewport. The only API change from TableData is that
- * ViewportData also contains the offset to this data, so that the actual row number may be
- * determined.
- * <p>Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided
- * for easier scrolling without going to the server.
+ * ViewportData also contains the offset to this data, so that the actual row number may be determined.
+ * <p>
+ * Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided for easier
+ * scrolling without going to the server.
  */
 @TsInterface
 @TsName(namespace = "dh")
