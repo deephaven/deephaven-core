@@ -6,11 +6,20 @@ package io.deephaven.client.impl;
 import dagger.Module;
 import dagger.Provides;
 
+/**
+ * Module that provides {@link BarrageSessionFactoryBuilder}.
+ */
 @Module
 public interface BarrageFactoryBuilderModule {
 
+    /**
+     * Equivalent to {@code DeephavenBarrageRoot.of().factoryBuilder()}.
+     *
+     * @return the barrage session factory builder
+     * @see DeephavenBarrageRoot
+     */
     @Provides
     static BarrageSessionFactoryBuilder providesFactoryBuilder() {
-        return DaggerDeephavenBarrageRoot.create().factoryBuilder();
+        return DeephavenBarrageRoot.of().factoryBuilder();
     }
 }

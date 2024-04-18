@@ -3,7 +3,7 @@
 //
 package io.deephaven.client;
 
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
+import io.deephaven.client.impl.DeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.grpc.ManagedChannel;
@@ -30,8 +30,13 @@ public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerT
         register(channel);
         sessionScheduler = Executors.newScheduledThreadPool(2);
         bufferAllocator = new RootAllocator();
-        flightSession = DaggerDeephavenFlightRoot.create().factoryBuilder().allocator(bufferAllocator)
-                .managedChannel(channel).scheduler(sessionScheduler).build().newFlightSession();
+        flightSession = DeephavenFlightRoot.of()
+                .factoryBuilder()
+                .allocator(bufferAllocator)
+                .managedChannel(channel)
+                .scheduler(sessionScheduler)
+                .build()
+                .newFlightSession();
     }
 
     @Override

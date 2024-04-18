@@ -272,12 +272,12 @@ public abstract class FlightMessageRoundTripTest {
                 .build();
 
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
-        FlightSessionFactory flightSessionFactory =
-                DaggerDeephavenFlightRoot.create().factoryBuilder()
-                        .managedChannel(clientChannel)
-                        .scheduler(clientScheduler)
-                        .allocator(new RootAllocator())
-                        .build();
+        FlightSessionFactory flightSessionFactory = DeephavenFlightRoot.of()
+                .factoryBuilder()
+                .managedChannel(clientChannel)
+                .scheduler(clientScheduler)
+                .allocator(new RootAllocator())
+                .build();
 
         clientSession = flightSessionFactory.newFlightSession();
     }

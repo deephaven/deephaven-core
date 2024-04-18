@@ -8,9 +8,15 @@ import dagger.Provides;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
+/**
+ * Provides {@link FlightSession}.
+ */
 @Module
 public class FlightSessionModule {
 
+    /**
+     * Delegates to {@link FlightSession#of(SessionImpl, BufferAllocator, ManagedChannel)}.
+     */
     @Provides
     public static FlightSession newFlightSession(SessionImpl session, BufferAllocator allocator,
             ManagedChannel managedChannel) {

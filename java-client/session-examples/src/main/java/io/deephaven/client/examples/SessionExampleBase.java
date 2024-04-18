@@ -3,7 +3,7 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.DaggerDeephavenSessionRoot;
+import io.deephaven.client.DeephavenSessionRoot;
 import io.deephaven.client.SessionSubcomponent.Builder;
 import io.deephaven.client.impl.SessionFactory;
 import io.grpc.ManagedChannel;
@@ -33,7 +33,8 @@ abstract class SessionExampleBase implements Callable<Void> {
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        final Builder builder = DaggerDeephavenSessionRoot.create().factoryBuilder()
+        final Builder builder = DeephavenSessionRoot.of()
+                .factoryBuilder()
                 .managedChannel(managedChannel)
                 .scheduler(scheduler);
         if (authenticationOptions != null) {

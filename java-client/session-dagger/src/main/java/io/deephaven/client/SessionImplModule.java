@@ -8,7 +8,6 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.SessionImplConfig;
-import io.deephaven.client.impl.SessionImplConfig.Builder;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.DeephavenChannelImpl;
 import io.grpc.Channel;
@@ -18,6 +17,9 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * Provides {@link Channel}, {@link DeephavenChannel}, {@link SessionImplConfig}, and {@link SessionImpl}.
+ */
 @Module
 public interface SessionImplModule {
 
@@ -27,19 +29,29 @@ public interface SessionImplModule {
     @Binds
     DeephavenChannel bindsDeephavenChannelImpl(DeephavenChannelImpl deephavenChannelImpl);
 
+    /**
+     * Delegates to {@link SessionImplConfig#of(DeephavenChannel, ScheduledExecutorService, String)}.
+     */
     @Provides
-    static SessionImpl session(DeephavenChannel channel, ScheduledExecutorService scheduler,
+    static SessionImplConfig providesSessionImplConfig(
+            DeephavenChannel channel,
+            ScheduledExecutorService scheduler,
             @Nullable @Named("authenticationTypeAndValue") String authenticationTypeAndValue) {
-        final Builder builder = SessionImplConfig.builder()
-                .executor(scheduler)
-                .channel(channel);
-        if (authenticationTypeAndValue != null) {
-            builder.authenticationTypeAndValue(authenticationTypeAndValue);
-        }
-        final SessionImplConfig config = builder.build();
+        return SessionImplConfig.of(channel, scheduler, authenticationTypeAndValue);
+    }
+
+    /**
+     * Creates a session. Equivalent to {@link SessionImplConfig#createSession()}.
+     *
+     * @param config the config
+     * @return the session
+     */
+    @Provides
+    static SessionImpl session(SessionImplConfig config) {
         try {
             return config.createSession();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }

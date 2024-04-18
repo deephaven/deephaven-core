@@ -8,6 +8,8 @@ import io.deephaven.proto.DeephavenChannel;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import javax.annotation.Nullable;
+import javax.inject.Named;
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -24,6 +26,19 @@ public abstract class SessionImplConfig {
 
     public static Builder builder() {
         return ImmutableSessionImplConfig.builder();
+    }
+
+    public static SessionImplConfig of(
+            DeephavenChannel channel,
+            ScheduledExecutorService scheduler,
+            @Nullable @Named("authenticationTypeAndValue") String authenticationTypeAndValue) {
+        final Builder builder = SessionImplConfig.builder()
+                .executor(scheduler)
+                .channel(channel);
+        if (authenticationTypeAndValue != null) {
+            builder.authenticationTypeAndValue(authenticationTypeAndValue);
+        }
+        return builder.build();
     }
 
     public abstract ScheduledExecutorService executor();
@@ -81,6 +96,13 @@ public abstract class SessionImplConfig {
         return Duration.parse(System.getProperty(DEEPHAVEN_SESSION_CLOSE_TIMEOUT, "PT5s"));
     }
 
+    /**
+     * Equivalent to {@code SessionImpl.create(this)}.
+     *
+     * @return the session
+     * @throws InterruptedException if the thread is interrupted
+     * @see SessionImpl#create(SessionImplConfig)
+     */
     public final SessionImpl createSession() throws InterruptedException {
         return SessionImpl.create(this);
     }

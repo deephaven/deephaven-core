@@ -16,15 +16,23 @@ import java.util.Collections;
 
 public class BarrageSession extends FlightSession implements BarrageSubscription.Factory, BarrageSnapshot.Factory {
 
+    /**
+     * Creates a barrage session. Closing the barrage session does <b>not</b> close {@code channel}.
+     *
+     * @param session the session
+     * @param incomingAllocator the incoming allocator
+     * @param channel the managed channel
+     * @return the barrage session
+     */
     public static BarrageSession of(
             SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
         final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
                 incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
-        return new BarrageSession(session, client, channel);
+        return new BarrageSession(session, client);
     }
 
     protected BarrageSession(
-            final SessionImpl session, final FlightClient client, final ManagedChannel channel) {
+            final SessionImpl session, final FlightClient client) {
         super(session, client);
     }
 

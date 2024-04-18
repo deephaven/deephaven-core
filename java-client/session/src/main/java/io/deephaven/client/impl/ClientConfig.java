@@ -58,6 +58,27 @@ public abstract class ClientConfig {
         return DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
     }
 
+    /**
+     * Returns {@code this} if {@code sslConfig} equals {@link #ssl()}, otherwise creates a new client config with
+     * {@link #ssl()} as {@code sslConfig}.
+     *
+     * @param sslConfig the new SSL config
+     * @return the client config
+     */
+    public ClientConfig withSsl(SSLConfig sslConfig) {
+        if (sslConfig.equals(ssl().orElse(null))) {
+            return this;
+        }
+        final Builder builder = builder()
+                .target(target())
+                .ssl(sslConfig)
+                .putAllExtraHeaders(extraHeaders())
+                .maxInboundMessageSize(maxInboundMessageSize());
+        userAgent().ifPresent(builder::userAgent);
+        overrideAuthority().ifPresent(builder::overrideAuthority);
+        return builder.build();
+    }
+
     public interface Builder {
 
         Builder target(DeephavenTarget target);

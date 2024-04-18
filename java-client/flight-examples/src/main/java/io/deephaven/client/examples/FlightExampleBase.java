@@ -3,7 +3,7 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
+import io.deephaven.client.impl.DeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.FlightSessionFactory;
 import io.deephaven.client.impl.FlightSubcomponent.Builder;
@@ -36,7 +36,8 @@ abstract class FlightExampleBase implements Callable<Void> {
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        final Builder builder = DaggerDeephavenFlightRoot.create().factoryBuilder()
+        final Builder builder = DeephavenFlightRoot.of()
+                .factoryBuilder()
                 .managedChannel(managedChannel)
                 .scheduler(scheduler)
                 .allocator(bufferAllocator);

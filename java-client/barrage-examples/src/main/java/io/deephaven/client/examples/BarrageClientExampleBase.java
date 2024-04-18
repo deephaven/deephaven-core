@@ -6,7 +6,7 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSessionFactory;
 import io.deephaven.client.impl.BarrageSubcomponent.Builder;
-import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
+import io.deephaven.client.impl.DeephavenBarrageRoot;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -55,7 +55,8 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
                 .setUpdateGraph(updateGraph)
                 .build();
 
-        final Builder builder = DaggerDeephavenBarrageRoot.create().factoryBuilder()
+        final Builder builder = DeephavenBarrageRoot.of()
+                .factoryBuilder()
                 .managedChannel(managedChannel)
                 .scheduler(scheduler)
                 .allocator(bufferAllocator);

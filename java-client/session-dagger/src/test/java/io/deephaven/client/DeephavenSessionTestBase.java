@@ -29,9 +29,12 @@ public abstract class DeephavenSessionTestBase extends DeephavenApiServerTestBas
         ManagedChannel channel = channelBuilder().build();
         register(channel);
         sessionScheduler = Executors.newScheduledThreadPool(2);
-        final SessionImpl clientSessionImpl =
-                DaggerDeephavenSessionRoot.create().factoryBuilder().managedChannel(channel)
-                        .scheduler(sessionScheduler).build().newSession();
+        final SessionImpl clientSessionImpl = DeephavenSessionRoot.of()
+                .factoryBuilder()
+                .managedChannel(channel)
+                .scheduler(sessionScheduler)
+                .build()
+                .newSession();
         session = clientSessionImpl;
         serverSessionState = Require.neqNull(server().sessionService().getSessionForToken(
                 clientSessionImpl._hackBearerHandler().getCurrentToken()), "SessionState");

@@ -8,8 +8,15 @@ import dagger.Provides;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
+/**
+ * Provides {@link BarrageSession}.
+ */
 @Module
 public class BarrageSessionModule {
+
+    /**
+     * Delegates to {@link BarrageSession#of(SessionImpl, BufferAllocator, ManagedChannel)}.
+     */
     @Provides
     public static BarrageSession newDeephavenClientSession(
             SessionImpl session, BufferAllocator allocator, ManagedChannel managedChannel) {
