@@ -1200,6 +1200,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    // inheritDoc lets us implement the inherited method, but still keep docs for TS
+    /**
+     * @inheritDoc
+     * @deprecated
+     */
     @Override
     @JsMethod
     public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
