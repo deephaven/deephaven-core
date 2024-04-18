@@ -561,7 +561,8 @@ public class ParquetTools {
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      */
-    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
+    public static void writeKeyValuePartitionedTable(
+            @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
         writeKeyValuePartitionedTable(sourceTable, destinationDir, writeInstructions, indexedColumnNames(sourceTable));
@@ -583,7 +584,8 @@ public class ParquetTools {
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
      */
-    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
+    public static void writeKeyValuePartitionedTable(
+            @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions,
             @Nullable final String[][] indexColumnArr) {
@@ -604,61 +606,6 @@ public class ParquetTools {
     }
 
     /**
-     * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
-     * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
-     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns in the provided
-     * table definition. The generated parquet files will have names of the format provided by
-     * {@link ParquetInstructions#baseNameForPartitionedParquetData()}. Any indexing columns present on the source table
-     * will be written as sidecar tables. To write only a subset of the indexes or add additional indexes while writing,
-     * use {@link #writeKeyValuePartitionedTable(Table, TableDefinition, String, ParquetInstructions, String[][])}.
-     *
-     * @param sourceTable The table to partition and write
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)} instead with
-     *             {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
-     */
-    @Deprecated
-    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
-            @NotNull final TableDefinition definition,
-            @NotNull final String destinationDir,
-            @NotNull final ParquetInstructions writeInstructions) {
-        writeKeyValuePartitionedTable(sourceTable, destinationDir,
-                ensureTableDefinition(writeInstructions, definition, true));
-    }
-
-    /**
-     * Write table to disk in parquet format with {@link TableDefinition#getPartitioningColumns() partitioning columns}
-     * written as "key=value" format in a nested directory structure. To generate these individual partitions, this
-     * method will call {@link Table#partitionBy(String...) partitionBy} on all the partitioning columns in the provided
-     * table definition. The generated parquet files will have names of the format provided by
-     * {@link ParquetInstructions#baseNameForPartitionedParquetData()}.
-     *
-     * @param sourceTable The table to partition and write
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
-     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-     *        will be computed on demand.
-     * @deprecated Use {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions, String[][])} instead
-     *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
-     */
-    @Deprecated
-    public static void writeKeyValuePartitionedTable(@NotNull final Table sourceTable,
-            @NotNull final TableDefinition definition,
-            @NotNull final String destinationDir,
-            @NotNull final ParquetInstructions writeInstructions,
-            @Nullable final String[][] indexColumnArr) {
-        writeKeyValuePartitionedTable(sourceTable, destinationDir,
-                ensureTableDefinition(writeInstructions, definition, true), indexColumnArr);
-    }
-
-    /**
      * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
      * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
      * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
@@ -671,7 +618,8 @@ public class ParquetTools {
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      */
-    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
+    public static void writeKeyValuePartitionedTable(
+            @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
         writeKeyValuePartitionedTable(partitionedTable, destinationDir, writeInstructions, EMPTY_INDEXES);
@@ -692,7 +640,8 @@ public class ParquetTools {
      *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
      *        will be computed on demand.
      */
-    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
+    public static void writeKeyValuePartitionedTable(
+            @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions,
             @Nullable final String[][] indexColumnArr) {
@@ -712,60 +661,6 @@ public class ParquetTools {
     }
 
     /**
-     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
-     * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
-     * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
-     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. This method does
-     * not write any indexes as sidecar tables to disk. To write indexes, use
-     * {@link #writeKeyValuePartitionedTable(PartitionedTable, TableDefinition, String, ParquetInstructions, String[][])}.
-     *
-     * @param partitionedTable The partitioned table to write
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions)} instead
-     *             with {@link TableDefinition} provided through {@link ParquetInstructions.Builder#setTableDefinition}.
-     */
-    @Deprecated
-    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
-            @NotNull final TableDefinition definition,
-            @NotNull final String destinationDir,
-            @NotNull final ParquetInstructions writeInstructions) {
-        writeKeyValuePartitionedTable(partitionedTable, destinationDir,
-                ensureTableDefinition(writeInstructions, definition, true));
-    }
-
-    /**
-     * Write a partitioned table to disk in parquet format with all the {@link PartitionedTable#keyColumnNames() key
-     * columns} as "key=value" format in a nested directory structure. To generate the partitioned table, users can call
-     * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
-     * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}.
-     *
-     * @param partitionedTable The partitioned table to write
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
-     *        Non-existing directories are created.
-     * @param writeInstructions Write instructions for customizations while writing
-     * @param indexColumnArr Arrays containing the column names for indexes to persist. The write operation will store
-     *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
-     *        explicit about the expected set of indexes present on all sources. Indexes that are specified but missing
-     *        will be computed on demand.
-     * @deprecated Use {@link #writeKeyValuePartitionedTable(PartitionedTable, String, ParquetInstructions, String[][])}
-     *             instead with {@link TableDefinition} provided through
-     *             {@link ParquetInstructions.Builder#setTableDefinition}.
-     */
-    @Deprecated
-    public static void writeKeyValuePartitionedTable(@NotNull final PartitionedTable partitionedTable,
-            @NotNull final TableDefinition definition,
-            @NotNull final String destinationDir,
-            @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final String[][] indexColumnArr) {
-        writeKeyValuePartitionedTable(partitionedTable, destinationDir,
-                ensureTableDefinition(writeInstructions, definition, true), indexColumnArr);
-    }
-
-    /**
      * Write a partitioned table to disk in a key=value partitioning format with the already computed definition for the
      * key table and leaf table.
      *
@@ -781,7 +676,8 @@ public class ParquetTools {
      * @param sourceTable The optional source table, provided when user provides a merged source table to write, like in
      *        {@link #writeKeyValuePartitionedTable(Table, String, ParquetInstructions)}
      */
-    private static void writeKeyValuePartitionedTableImpl(@NotNull final PartitionedTable partitionedTable,
+    private static void writeKeyValuePartitionedTableImpl(
+            @NotNull final PartitionedTable partitionedTable,
             @NotNull final TableDefinition keyTableDefinition,
             @NotNull final TableDefinition leafDefinition,
             @NotNull final String destinationRoot,
@@ -882,7 +778,8 @@ public class ParquetTools {
      * Add data indexes to provided tables, if not present, and return a list of hard references to the indexes.
      */
     @Nullable
-    private static List<DataIndex> addIndexesToTables(@NotNull final Table[] tables,
+    private static List<DataIndex> addIndexesToTables(
+            @NotNull final Table[] tables,
             @Nullable final String[][] indexColumnArr) {
         if (indexColumnArr == null || indexColumnArr.length == 0) {
             return null;
@@ -900,7 +797,8 @@ public class ParquetTools {
      * Using the provided definition and key column names, create a sub table definition for the key columns that are
      * present in the definition.
      */
-    private static TableDefinition getKeyTableDefinition(@NotNull final Collection<String> keyColumnNames,
+    private static TableDefinition getKeyTableDefinition(
+            @NotNull final Collection<String> keyColumnNames,
             @NotNull final TableDefinition definition) {
         final Collection<ColumnDefinition<?>> keyColumnDefinitions = new ArrayList<>(keyColumnNames.size());
         for (final String keyColumnName : keyColumnNames) {
@@ -915,7 +813,8 @@ public class ParquetTools {
     /**
      * Using the provided definition and key column names, create a sub table definition for the non-key columns.
      */
-    private static TableDefinition getNonKeyTableDefinition(@NotNull final Collection<String> keyColumnNames,
+    private static TableDefinition getNonKeyTableDefinition(
+            @NotNull final Collection<String> keyColumnNames,
             @NotNull final TableDefinition definition) {
         final Collection<ColumnDefinition<?>> nonKeyColumnDefinition = definition.getColumns().stream()
                 .filter(columnDefinition -> !keyColumnNames.contains(columnDefinition.getName()))
@@ -1035,7 +934,8 @@ public class ParquetTools {
     /**
      * Refer to {@link #writeTables(Table[], String[], ParquetInstructions, String[][])} for more details.
      */
-    private static void writeTablesImpl(@NotNull final Table[] sources,
+    private static void writeTablesImpl(
+            @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
@@ -1564,7 +1464,8 @@ public class ParquetTools {
     }
 
     private static Pair<TableDefinition, ParquetInstructions> infer(
-            KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys, ParquetInstructions readInstructions) {
+            KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
+            ParquetInstructions readInstructions) {
         // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
         final ParquetTableLocationKey lastKey = inferenceKeys.getLastKey().orElse(null);
         if (lastKey == null) {
@@ -1665,7 +1566,8 @@ public class ParquetTools {
                 ensureTableDefinition(layout.getInstructions(), layout.getTableDefinition(), true));
     }
 
-    private static void verifyFileLayout(@NotNull final ParquetInstructions readInstructions,
+    private static void verifyFileLayout(
+            @NotNull final ParquetInstructions readInstructions,
             @NotNull final ParquetFileLayout expectedLayout) {
         if (readInstructions.getFileLayout().isPresent() && readInstructions.getFileLayout().get() != expectedLayout) {
             throw new IllegalArgumentException("File layout provided in read instructions (=" +
