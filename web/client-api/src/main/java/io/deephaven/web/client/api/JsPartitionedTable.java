@@ -33,7 +33,6 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Represents a set of Tables each corresponding to some key. The keys are available locally, but a call must be made to
@@ -77,19 +76,20 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     public Promise<JsPartitionedTable> refetch() {
         closeSubscriptions();
 
-        final AtomicReference<JsTable> rawKeyTable = new AtomicReference<>();
         return widget.refetch().then(w -> {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> connection.newState((c, state, metadata) -> {
             JsTable keyTable = (JsTable) result;
-            rawKeyTable.set(keyTable);
             DropColumnsRequest drop = new DropColumnsRequest();
             drop.setColumnNamesList(new String[] {descriptor.getConstituentColumnName()});
             drop.setSourceId(keyTable.state().getHandle().makeTableReference());
             drop.setResultId(state.getHandle().makeTicket());
-            connection.tableServiceClient().dropColumns(drop, metadata, c::apply);
+            connection.tableServiceClient().dropColumns(drop, metadata, (fail, success) -> {
+                keyTable.close();
+                c.apply(fail, success);
+            });
         }, "drop constituent column")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
@@ -134,10 +134,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                         });
                     });
                     return subscribeToKeys();
-                }).finally_(() -> {
-                    if (rawKeyTable.get() != null) {
-                        rawKeyTable.get().close();
-                    }
                 });
     }
 
