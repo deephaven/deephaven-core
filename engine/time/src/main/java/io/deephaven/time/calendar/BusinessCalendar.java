@@ -980,7 +980,7 @@ public class BusinessCalendar extends Calendar {
 
     // region Ranges
 
-    public int numberBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
+    private int numberBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
                                    final boolean endInclusive) {
         int days = 0;
 
@@ -1157,7 +1157,7 @@ public class BusinessCalendar extends Calendar {
         return numberBusinessDates(start, end, true, true);
     }
 
-    public int numberNonBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
+    private int numberNonBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
                                            final boolean endInclusive) {
         int days = 0;
 
@@ -1682,7 +1682,7 @@ public class BusinessCalendar extends Calendar {
 
     // region Differences
 
-    public long diffBusinessNanosInternal(final Instant start, final LocalDate startDate, final Instant end, final LocalDate endDate) {
+    private long diffBusinessNanosInternal(final Instant start, final LocalDate startDate, final Instant end, final LocalDate endDate) {
 
         if (startDate.equals(endDate)) {
             final CalendarDay<Instant> schedule = this.calendarDay(startDate);
