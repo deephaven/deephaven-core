@@ -75,7 +75,6 @@ public class BusinessCalendar extends Calendar {
                 final Instant endInstant,
                 final LocalDate endDate,
                 final long businessTimeNanos,
-                final int days,
                 final int businessDays,
                 final int nonBusinessDays,
                 final ArrayList<LocalDate> businessDates,
@@ -139,7 +138,6 @@ public class BusinessCalendar extends Calendar {
                 end.toInstant(),
                 end.toLocalDate(),
                 businessTimeNanos,
-                days,
                 businessDays,
                 nonBusinessDays,
                 businessDates,
@@ -155,9 +153,45 @@ public class BusinessCalendar extends Calendar {
     }
 
     private SummaryData computeYearSummary(final int year){
-        final LocalDate startDate = LocalDate.ofYearDay(year, 1);
-        final LocalDate endDate = LocalDate.ofYearDay(year + 1, 1);
-        return summarize(startDate, endDate);
+        Instant startInstant = null;
+        LocalDate startDate = null;
+        Instant endInstant = null;
+        LocalDate endDate = null;
+        long businessTimeNanos = 0;
+        int businessDays = 0;
+        int nonBusinessDays = 0;
+        ArrayList<LocalDate> businessDates = new ArrayList<>();
+        ArrayList<LocalDate> nonBusinessDates = new ArrayList<>();
+
+        for(int month=1; month<=12; month++){
+            SummaryData ms = summaryCache.getMonthSummary(year, month);
+            if(month == 1){
+                startInstant = ms.startInstant;
+                startDate = ms.startDate;
+            }
+
+            if (month == 12) {
+                endInstant = ms.endInstant;
+                endDate = ms.endDate;
+            }
+
+            businessTimeNanos += ms.businessTimeNanos;
+            businessDays += ms.businessDays;
+            nonBusinessDays += ms.nonBusinessDays;
+            businessDates.addAll(ms.businessDates);
+            nonBusinessDates.addAll(ms.nonBusinessDates);
+        }
+
+        return new SummaryData(
+                startInstant,
+                startDate,
+                endInstant,
+                endDate,
+                businessTimeNanos,
+                businessDays,
+                nonBusinessDays,
+                businessDates,
+                nonBusinessDates);
     }
 
     private SummaryData getYearSummary(final int year) {
