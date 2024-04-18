@@ -31,6 +31,13 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
         return new BarrageSession(session, client);
     }
 
+    public static BarrageSession create(
+            SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
+        final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
+                incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
+        return new BarrageSession(session, client, channel);
+    }
+
     protected BarrageSession(
             final SessionImpl session, final FlightClient client) {
         super(session, client);
