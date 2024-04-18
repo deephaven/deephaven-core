@@ -407,7 +407,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on a business day?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule. To determine if a time is within the business day schedule, use
      * {@link #isBusinessTime(ZonedDateTime)}.
@@ -426,7 +426,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on a business day?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule. To determine if a time is within the business day schedule, use
      * {@link #isBusinessTime(Instant)}.
@@ -487,7 +487,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the month?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
@@ -507,7 +507,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the month?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
@@ -570,7 +570,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the week?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
@@ -589,7 +589,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the week?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
@@ -652,7 +652,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the year?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
@@ -671,7 +671,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the time on the last business day of the year?
-     *
+     * <p>
      * As long as the time occurs on a business day, it is considered a business day. The time does not have to be
      * within the business day schedule.
      *
@@ -708,7 +708,7 @@ public class BusinessCalendar extends Calendar {
 
     /**
      * Is the current date the last business day of the year?
-     *
+     * <p>
      * As long as the current time occurs on a business day, it is considered a business day. The time does not have to
      * be within the business day schedule.
      *
@@ -1932,7 +1932,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Adds a specified number of business days to an input time. Adding negative days is equivalent to subtracting
      * days.
-     *
+     * <p>
      * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
@@ -1956,12 +1956,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Adds a specified number of business days to an input time. Adding negative days is equivalent to subtracting
      * days.
-     *
+     * <p>
      * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *
@@ -2024,7 +2024,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Subtracts a specified number of business days from an input time. Subtracting negative days is equivalent to
      * adding days.
-     *
+     * <p>
      * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
@@ -2047,12 +2047,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Subtracts a specified number of business days from an input time. Subtracting negative days is equivalent to
      * adding days.
-     *
+     * <p>
      * Day subtraction are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *
@@ -2124,12 +2124,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Adds a specified number of non-business days to an input time. Adding negative days is equivalent to subtracting
      * days.
-     *
+     * <p>
      * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *
@@ -2151,12 +2151,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Adds a specified number of non-business days to an input time. Adding negative days is equivalent to subtracting
      * days.
-     *
+     * <p>
      * Day additions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *
@@ -2219,7 +2219,7 @@ public class BusinessCalendar extends Calendar {
     /**
      * Subtracts a specified number of non-business days to an input time. Subtracting negative days is equivalent to
      * adding days.
-     *
+     * <p>
      * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
@@ -2242,12 +2242,12 @@ public class BusinessCalendar extends Calendar {
     /**
      * Subtracts a specified number of non-business days to an input time. Subtracting negative days is equivalent to
      * adding days.
-     *
+     * <p>
      * Day subtractions are not always 24 hours. The resultant time will have the same local time as the input time, as
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *
