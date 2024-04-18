@@ -1203,10 +1203,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     // inheritDoc lets us implement the inherited method, but still keep docs for TS
     /**
      * @inheritDoc
-     * @deprecated
      */
     @Override
     @JsMethod
+    @Deprecated
     public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ") || joinType.equals("ReverseAJ")) {
