@@ -51,34 +51,34 @@ __all__ = [
 
 # https://deephaven.atlassian.net/browse/DH-15061
 # It is important that ValueOptions gets imported before the others.
-_JValueOptions = jpy.get_type("io.deephaven.json.ValueOptions")
-_JObjectOptions = jpy.get_type("io.deephaven.json.ObjectOptions")
-_JArrayOptions = jpy.get_type("io.deephaven.json.ArrayOptions")
-_JObjectKvOptions = jpy.get_type("io.deephaven.json.ObjectKvOptions")
-_JTupleOptions = jpy.get_type("io.deephaven.json.TupleOptions")
-_JObjectFieldOptions = jpy.get_type("io.deephaven.json.ObjectFieldOptions")
+_JValueOptions = jpy.get_type("io.deephaven.json.Value")
+_JObjectOptions = jpy.get_type("io.deephaven.json.ObjectValue")
+_JArrayOptions = jpy.get_type("io.deephaven.json.ArrayValue")
+_JObjectKvOptions = jpy.get_type("io.deephaven.json.ObjectKvValue")
+_JTupleOptions = jpy.get_type("io.deephaven.json.TupleValue")
+_JObjectFieldOptions = jpy.get_type("io.deephaven.json.ObjectField")
 _JRepeatedFieldBehavior = jpy.get_type(
-    "io.deephaven.json.ObjectFieldOptions$RepeatedBehavior"
+    "io.deephaven.json.ObjectField$RepeatedBehavior"
 )
 _JJsonValueTypes = jpy.get_type("io.deephaven.json.JsonValueTypes")
-_JBoolOptions = jpy.get_type("io.deephaven.json.BoolOptions")
-_JCharOptions = jpy.get_type("io.deephaven.json.CharOptions")
-_JByteOptions = jpy.get_type("io.deephaven.json.ByteOptions")
-_JShortOptions = jpy.get_type("io.deephaven.json.ShortOptions")
-_JIntOptions = jpy.get_type("io.deephaven.json.IntOptions")
-_JLongOptions = jpy.get_type("io.deephaven.json.LongOptions")
-_JFloatOptions = jpy.get_type("io.deephaven.json.FloatOptions")
-_JDoubleOptions = jpy.get_type("io.deephaven.json.DoubleOptions")
-_JStringOptions = jpy.get_type("io.deephaven.json.StringOptions")
-_JSkipOptions = jpy.get_type("io.deephaven.json.SkipOptions")
-_JInstantOptions = jpy.get_type("io.deephaven.json.InstantOptions")
-_JInstantNumberOptions = jpy.get_type("io.deephaven.json.InstantNumberOptions")
+_JBoolOptions = jpy.get_type("io.deephaven.json.BoolValue")
+_JCharOptions = jpy.get_type("io.deephaven.json.CharValue")
+_JByteOptions = jpy.get_type("io.deephaven.json.ByteValue")
+_JShortOptions = jpy.get_type("io.deephaven.json.ShortValue")
+_JIntOptions = jpy.get_type("io.deephaven.json.IntValue")
+_JLongOptions = jpy.get_type("io.deephaven.json.LongValue")
+_JFloatOptions = jpy.get_type("io.deephaven.json.FloatValue")
+_JDoubleOptions = jpy.get_type("io.deephaven.json.DoubleValue")
+_JStringOptions = jpy.get_type("io.deephaven.json.StringValue")
+_JSkipOptions = jpy.get_type("io.deephaven.json.SkipValue")
+_JInstantOptions = jpy.get_type("io.deephaven.json.InstantValue")
+_JInstantNumberOptions = jpy.get_type("io.deephaven.json.InstantNumberValue")
 _JInstantNumberOptionsFormat = jpy.get_type(
-    "io.deephaven.json.InstantNumberOptions$Format"
+    "io.deephaven.json.InstantNumberValue$Format"
 )
-_JBigIntegerOptions = jpy.get_type("io.deephaven.json.BigIntegerOptions")
-_JBigDecimalOptions = jpy.get_type("io.deephaven.json.BigDecimalOptions")
-_JAnyOptions = jpy.get_type("io.deephaven.json.AnyOptions")
+_JBigIntegerOptions = jpy.get_type("io.deephaven.json.BigIntegerValue")
+_JBigDecimalOptions = jpy.get_type("io.deephaven.json.BigDecimalValue")
+_JAnyOptions = jpy.get_type("io.deephaven.json.AnyValue")
 
 
 _VALUE_STRING = _JJsonValueTypes.STRING
