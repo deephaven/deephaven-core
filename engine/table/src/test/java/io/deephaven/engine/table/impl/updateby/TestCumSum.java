@@ -9,8 +9,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -23,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -51,9 +50,10 @@ public class TestCumSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.CumSum());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumSum(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType());
+            assertWithCumSum(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType());
         }
     }
 
@@ -66,9 +66,10 @@ public class TestCumSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.CumSum());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumSum(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType());
+            assertWithCumSum(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType());
         }
     }
 
@@ -77,7 +78,7 @@ public class TestCumSum extends BaseUpdateByTest {
     // region Bucketed Tests
 
     @Test
-    public void testNullOnBucketChange() throws IOException {
+    public void testNullOnBucketChange() {
         final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
@@ -124,9 +125,10 @@ public class TestCumSum extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumSum(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getType());
+                assertWithCumSum(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
+                        actual.getDefinition().getColumn(col).getDataType());
             });
             return source;
         });

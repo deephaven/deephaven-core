@@ -7,8 +7,8 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.category.CategoryDataSeries;
 import io.deephaven.plot.datasets.data.*;
@@ -16,7 +16,6 @@ import io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
@@ -30,6 +29,7 @@ import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.ColorPalette;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.table.filters.Condition;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -805,8 +805,8 @@ public class PlotUtils {
     }
 
     public static <T> IndexableData createIndexableData(final Table t, final String column, final PlotInfo plotInfo) {
-        final DataColumn<T> dataColumn = DataAccessHelpers.getColumn(t, column);
-        final Object o = dataColumn.getDirect();
+        final Vector<?> vector = ColumnVectors.of(t, column);
+        final Object o = vector.copyToArray();
 
         return new IndexableDataArray((T[]) o, plotInfo);
     }

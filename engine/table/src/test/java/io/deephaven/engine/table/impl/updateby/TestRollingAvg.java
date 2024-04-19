@@ -10,8 +10,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -154,25 +154,25 @@ public class TestRollingAvg extends BaseUpdateByTest {
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
+        BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigDecimal expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -189,25 +189,25 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
                         .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
+        BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigDecimal expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -224,25 +224,25 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
                         .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
+        BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigDecimal expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -260,25 +260,25 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
+        BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigDecimal expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }

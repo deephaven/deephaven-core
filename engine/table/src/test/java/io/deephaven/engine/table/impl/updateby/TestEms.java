@@ -17,11 +17,11 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
@@ -101,31 +101,31 @@ public class TestEms extends BaseUpdateByTest {
         final Table actualReset = t.updateBy(UpdateByOperation.Ems(resetControl, 100, columns));
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmsTicks(skipControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkip, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmsTicks(skipControl, 100, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkip, col).toArray(),
                     colType);
-            assertWithEmsTicks(resetControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualReset, col).getDirect(),
+            assertWithEmsTicks(resetControl, 100, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualReset, col).toArray(),
                     colType);
         }
 
         final Table actualSkipTime = t.updateBy(UpdateByOperation.Ems(skipControl, "ts", 10 * MINUTE, columns));
         final Table actualResetTime = t.updateBy(UpdateByOperation.Ems(resetControl, "ts", 10 * MINUTE, columns));
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmsTime(skipControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkipTime, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmsTime(skipControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkipTime, col).toArray(),
                     colType);
-            assertWithEmsTime(resetControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualResetTime, col).getDirect(),
+            assertWithEmsTime(resetControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualResetTime, col).toArray(),
                     colType);
         }
     }
@@ -167,9 +167,9 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmsTicks(skipControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmsTicks(skipControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -177,9 +177,9 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmsTicks(resetControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmsTicks(resetControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -194,16 +194,16 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmsTime(skipControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -211,16 +211,16 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmsTime(resetControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -716,7 +716,7 @@ public class TestEms extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
@@ -996,7 +996,7 @@ public class TestEms extends BaseUpdateByTest {
             final long ticks,
             @NotNull final Object expected,
             @NotNull final Object actual,
-            final Class type) {
+            final Class<?> type) {
         if (expected instanceof double[]) {
             assertArrayEquals(compute_ems_ticks(control, ticks, (double[]) expected), (double[]) actual, .001d);
         }
@@ -1037,7 +1037,7 @@ public class TestEms extends BaseUpdateByTest {
             @NotNull final long[] timestamps,
             @NotNull final Object expected,
             @NotNull final Object actual,
-            final Class type) {
+            final Class<?> type) {
         if (expected instanceof double[]) {
             assertArrayEquals(compute_ems_time(control, nanos, timestamps, (double[]) expected), (double[]) actual,
                     .001d);

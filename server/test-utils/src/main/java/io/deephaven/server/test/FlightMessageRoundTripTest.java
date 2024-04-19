@@ -29,9 +29,9 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -66,6 +66,8 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.IntVector;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -810,16 +812,18 @@ public abstract class FlightMessageRoundTripTest {
                 totalRowCount += rowCount;
 
                 // check the values against the source table
-                org.apache.arrow.vector.IntVector iv =
-                        (org.apache.arrow.vector.IntVector) root.getVector(0);
+                final org.apache.arrow.vector.IntVector iv = (org.apache.arrow.vector.IntVector) root.getVector(0);
+                final IntVector sourceInts =
+                        ColumnVectors.ofInt(table, table.getDefinition().getColumns().get(0).getName());
                 for (int i = 0; i < rowCount; ++i) {
-                    assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
+                    assertEquals("int match:", sourceInts.get(offset + i), iv.get(i));
                 }
-                org.apache.arrow.vector.Float8Vector dv =
+                final org.apache.arrow.vector.Float8Vector dv =
                         (org.apache.arrow.vector.Float8Vector) root.getVector(1);
+                final DoubleVector sourceDoubles =
+                        ColumnVectors.ofDouble(table, table.getDefinition().getColumns().get(1).getName());
                 for (int i = 0; i < rowCount; ++i) {
-                    assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
-                            dv.get(i));
+                    assertEquals("double match: ", sourceDoubles.get(offset + i), dv.get(i), 0.000001);
                 }
             }
             assertEquals(table.size(), totalRowCount);

@@ -26,6 +26,7 @@ import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
@@ -57,12 +58,10 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.*;
 
 public abstract class QueryTableWhereTest {
-    private Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
+    private final Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -341,9 +340,9 @@ public abstract class QueryTableWhereTest {
                 () -> filteredTable.whereNotIn(setTable, "X"));
         show(result);
         assertEquals(3, result.size());
-        assertEquals(asList("A", "B", "C"), asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+        assertArrayEquals(new String[] {"A", "B", "C"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
         assertEquals(2, resultInverse.size());
-        assertEquals(asList("D", "E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        assertArrayEquals(new String[] {"D", "E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(filteredTable, i(6), col("X", "A"));
@@ -351,10 +350,10 @@ public abstract class QueryTableWhereTest {
         });
         show(result);
         assertEquals(4, result.size());
-        assertEquals(asList("A", "B", "C", "A"),
-                asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+        assertArrayEquals(new String[] {"A", "B", "C", "A"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
         assertEquals(2, resultInverse.size());
-        assertEquals(asList("D", "E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        assertArrayEquals(new String[] {"D", "E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(7), col("X", "D"));
@@ -362,10 +361,10 @@ public abstract class QueryTableWhereTest {
         });
         showWithRowSet(result);
         assertEquals(5, result.size());
-        assertEquals(asList("A", "B", "C", "D", "A"),
-                asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+        assertArrayEquals(new String[] {"A", "B", "C", "D", "A"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
         assertEquals(1, resultInverse.size());
-        assertEquals(asList("E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        assertArrayEquals(new String[] {"E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
 
         // Real modification to set table, followed by spurious modification to set table
         IntStream.range(0, 2).forEach(ri -> {
@@ -375,11 +374,11 @@ public abstract class QueryTableWhereTest {
             });
             showWithRowSet(result);
             assertEquals(4, result.size());
-            assertEquals(asList("A", "B", "C", "A"),
-                    asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+            assertArrayEquals(new String[] {"A", "B", "C", "A"},
+                    ColumnVectors.ofObject(result, "X", String.class).toArray());
             assertEquals(2, resultInverse.size());
-            assertEquals(asList("D", "E"),
-                    asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+            assertArrayEquals(new String[] {"D", "E"},
+                    ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
         });
     }
 
@@ -1273,8 +1272,8 @@ public abstract class QueryTableWhereTest {
         }
 
         assertEquals(1_000_000, result.size());
-        assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
-        assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+        assertEquals(6_000_000L, result.getColumnSource("A").getLong(result.getRowSet().firstRowKey()));
+        assertEquals(6_999_999L, result.getColumnSource("A").getLong(result.getRowSet().get(result.size() - 1)));
     }
 
     @Test
@@ -1285,8 +1284,8 @@ public abstract class QueryTableWhereTest {
         final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
 
         assertEquals(1_000_000, result.size());
-        assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
-        assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+        assertEquals(6_000_000L, result.getColumnSource("A").getLong(result.getRowSet().firstRowKey()));
+        assertEquals(6_999_999L, result.getColumnSource("A").getLong(result.getRowSet().get(result.size() - 1)));
     }
 
     @Test
@@ -1304,8 +1303,9 @@ public abstract class QueryTableWhereTest {
         Table sorted = result.sort("A");
         show(sorted);
 
-        Assert.geq(DataAccessHelpers.getColumn(sorted, "A").getLong(0), "lowest value", 600, "600");
-        Assert.leq(DataAccessHelpers.getColumn(sorted, "A").getLong(result.size() - 1), "highest value", 699, "699");
+        Assert.geq(sorted.getColumnSource("A").getLong(sorted.getRowSet().firstRowKey()), "lowest value", 600, "600");
+        Assert.leq(sorted.getColumnSource("A").getLong(sorted.getRowSet().get(result.size() - 1)), "highest value", 699,
+                "699");
     }
 
     @Test

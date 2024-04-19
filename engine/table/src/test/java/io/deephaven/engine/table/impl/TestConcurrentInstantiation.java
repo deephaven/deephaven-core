@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.BooleanGenerator;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
@@ -103,8 +104,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
-        assertArrayEquals(new int[] {1, 3, 4, 6, 9},
-                (int[]) DataAccessHelpers.getColumn(rawSorted, "Sentinel").getDirect());
+        assertArrayEquals(new int[] {1, 3, 4, 6, 9}, ColumnVectors.ofInt(rawSorted, "Sentinel").toArray());
 
         TstUtils.addToTable(source,
                 i(10),
@@ -142,7 +142,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         assertArrayEquals(
                 new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
-                (int[]) DataAccessHelpers.getColumn(rawSorted, "Sentinel").getDirect());
+                ColumnVectors.ofInt(rawSorted, "Sentinel").toArray());
         assertTableEquals(rawSorted, table2);
         assertTableEquals(table2, table3);
         assertTableEquals(table3, table4);
