@@ -13,6 +13,7 @@ import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.server.barrage.BarrageSessionFactoryClient;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
@@ -51,17 +52,29 @@ public class ApplicationExampleTest extends DeephavenApiServerSingleAuthenticate
         assertThat(listener.error).isExactlyInstanceOf(StatusRuntimeException.class);
         assertThat(((StatusRuntimeException) listener.error).getStatus().getCode()).isEqualTo(Code.CANCELLED);
         assertThat(listener.value).isNotNull();
-        final Ticket ticket = Ticket.newBuilder()
-                .setTicket(ByteString.copyFromUtf8(
-                        "a/io.deephaven.server.appmode.ApplicationExampleTest$ExampleApplication/f/example_field"))
-                .build();
         final FieldInfo fieldInfo = FieldInfo.newBuilder()
-                .setTypedTicket(TypedTicket.newBuilder().setType("Table").setTicket(ticket).build())
+                .setTypedTicket(TypedTicket.newBuilder().setType("Table").setTicket(Ticket.newBuilder()
+                        .setTicket(ByteString.copyFromUtf8(
+                                "a/io.deephaven.server.appmode.ApplicationExampleTest$ExampleApplication/f/example_field"))
+                        .build()).build())
                 .setApplicationId(ExampleApplication.class.getName())
                 .setApplicationName("Example Application")
                 .setFieldName("example_field")
                 .build();
-        final FieldsChangeUpdate expected = FieldsChangeUpdate.newBuilder().addCreated(fieldInfo).build();
+        final FieldInfo barrageSessionFactoryClientField = FieldInfo.newBuilder()
+                .setTypedTicket(TypedTicket.newBuilder().setTicket(Ticket.newBuilder()
+                        .setTicket(ByteString
+                                .copyFromUtf8(String.format("a/%s/f/%s", BarrageSessionFactoryClient.class.getName(),
+                                        BarrageSessionFactoryClient.Application.INSTANCE)))
+                        .build()).build())
+                .setApplicationId(BarrageSessionFactoryClient.class.getName())
+                .setApplicationName(BarrageSessionFactoryClient.Application.class.getSimpleName())
+                .setFieldName(BarrageSessionFactoryClient.Application.INSTANCE)
+                .build();
+        final FieldsChangeUpdate expected = FieldsChangeUpdate.newBuilder()
+                .addCreated(fieldInfo)
+                .addCreated(barrageSessionFactoryClientField)
+                .build();
         assertThat(listener.value).isEqualTo(expected);
     }
 
