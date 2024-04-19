@@ -1,6 +1,9 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+""" This module defines the BarrageSession wrapper class and provides a factory function to create an instance of it
+ for accessing resources on remote Deephaven servers."""
+
 from __future__ import annotations
 import threading
 from typing import Dict
@@ -14,11 +17,17 @@ from deephaven.table import Table
 _JURI = jpy.get_type("java.net.URI")
 _JClientConfig = jpy.get_type("io.deephaven.client.impl.ClientConfig")
 _JSSLConfig = jpy.get_type("io.deephaven.ssl.config.SSLConfig")
+_JSessionImplConfig = jpy.get_type("io.deephaven.client.impl.SessionImplConfig")
 _JTrustCustom = jpy.get_type("io.deephaven.ssl.config.TrustCustom")
 _JDeephavenTarget = jpy.get_type("io.deephaven.uri.DeephavenTarget")
 _JBarrageSession = jpy.get_type("io.deephaven.client.impl.BarrageSession")
 _JSharedId = jpy.get_type("io.deephaven.client.impl.SharedId")
 _JBarrageTableResolver = jpy.get_type("io.deephaven.server.uri.BarrageTableResolver")
+_JChannelHelper = jpy.get_type("io.deephaven.client.impl.ChannelHelper")
+_JDeephavenChannelImpl = jpy.get_type("io.deephaven.proto.DeephavenChannelImpl")
+_JSessionImpl = jpy.get_type("io.deephaven.client.impl.SessionImpl")
+_JExecutors = jpy.get_type("java.util.concurrent.Executors")
+_JRootAllocator = jpy.get_type("org.apache.arrow.memory.RootAllocator")
 
 _session_cache: Dict[str, BarrageSession] = {}  # use WeakValueDictionary to avoid memory leak?
 _remote_session_lock = threading.Lock()
@@ -57,8 +66,6 @@ def barrage_session(host: str,
         DHError
     """
     try:
-        j_barrage_session_factory_client = uri.resolve(
-            "dh:///app/io.deephaven.server.barrage.BarrageSessionFactoryClient/field/instance")
         if tls_root_certs and not use_tls:
             raise DHError(message="tls_root_certs is provided but use_tls is False")
 
@@ -68,21 +75,49 @@ def barrage_session(host: str,
         else:
             target_uri = f"dh+plain://{target_uri}"
 
-        _j_client_config_builder = _JClientConfig.builder()
-        _j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))
-        if tls_root_certs:
-            _j_ssl_config =_JSSLConfig.builder().trust(_JTrustCustom.ofX509(tls_root_certs, 0, len(tls_root_certs))).build()
-            _j_client_config_builder.ssl(_j_ssl_config)
-        _j_client_config = _j_client_config_builder.build()
+        j_client_config = _build_client_config(target_uri, tls_root_certs)
         auth = f"{auth_type} {auth_token}"
 
-        _j_barrage_session_factory = j_barrage_session_factory_client.factory(_j_client_config, auth)
-        return BarrageSession(_j_barrage_session_factory.newBarrageSession())
+        try:
+            return _get_barrage_session_uri(j_client_config, auth)
+        except:
+            return _get_barrage_session_direct(j_client_config, auth)
     except Exception as e:
-        raise DHError(e,"failed to get a barrage session to the target remote Deephaven server.") from e
+        raise DHError(e, "failed to get a barrage session to the target remote Deephaven server.") from e
 
 
-class BarrageSession (JObjectWrapper):
+def _get_barrage_session_uri(client_config, auth) -> BarrageSession:
+    j_barrage_session_factory_client = uri.resolve(
+        "dh:///app/io.deephaven.server.barrage.BarrageSessionFactoryClient/field/instance")
+    j_barrage_session_factory = j_barrage_session_factory_client.factory(client_config, auth)
+    return BarrageSession(j_barrage_session_factory.newBarrageSession())
+
+
+def _get_barrage_session_direct(client_config, auth) -> BarrageSession:
+    j_channel = _JChannelHelper.channel(client_config)
+    j_dh_channel = _JDeephavenChannelImpl(j_channel)
+
+    j_session_config = (_JSessionImplConfig.builder()
+                        .executor(_JExecutors.newScheduledThreadPool(4))
+                        .authenticationTypeAndValue(auth)
+                        .channel(j_dh_channel)
+                        .build())
+    j_session = _JSessionImpl.create(j_session_config)
+    return BarrageSession(_JBarrageSession.create(j_session, _JRootAllocator(), j_channel))
+
+
+def _build_client_config(target_uri, tls_root_certs) -> jpy.JType:
+    j_client_config_builder = _JClientConfig.builder()
+    j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))
+    if tls_root_certs:
+        j_ssl_config = _JSSLConfig.builder().trust(
+            _JTrustCustom.ofX509(tls_root_certs, 0, len(tls_root_certs))).build()
+        j_client_config_builder.ssl(j_ssl_config)
+    j_client_config = j_client_config_builder.build()
+    return j_client_config
+
+
+class BarrageSession(JObjectWrapper):
     """ A Deephaven Barrage session to a remote server."""
 
     j_object_type = _JBarrageSession
@@ -96,7 +131,7 @@ class BarrageSession (JObjectWrapper):
         self.j_session = j_barrage_session.session()
 
     def subscribe(self, ticket: bytes) -> Table:
-        """ TODO
+        """ Subscribes to a published remote table with given shared ticket.
 
         Args:
             ticket (bytes): the bytes of the shared ticket
@@ -110,19 +145,20 @@ class BarrageSession (JObjectWrapper):
         try:
             j_table_handle = self.j_session.of(_JSharedId(ticket).ticketId().table())
             j_barrage_subscription = self.j_barrage_session.subscribe(j_table_handle,
-                                                                       _JBarrageTableResolver.SUB_OPTIONS)
+                                                                      _JBarrageTableResolver.SUB_OPTIONS)
             return Table(j_barrage_subscription.entireTable().get())
         except Exception as e:
-            raise DHError(e, "failed to subscribe to the ticket.") from e
+            raise DHError(e, "failed to subscribe to the remote table with the provided ticket.") from e
 
     def snapshot(self, ticket: bytes) -> Table:
-        """ TODO
+        """ Returns a snapshot of a published remote table with the given shared ticket.
 
         Args:
             ticket (bytes): the bytes of the shared ticket
 
         Returns:
             a Table
+
         Raises:
             DHError
         """
@@ -131,5 +167,4 @@ class BarrageSession (JObjectWrapper):
             j_barrage_snapshot = self.j_barrage_session.snapshot(j_table_handle, _JBarrageTableResolver.SNAP_OPTIONS)
             return Table(j_barrage_snapshot.entireTable().get())
         except Exception as e:
-            raise DHError(e, "failed to get a snapshot from the ticket.") from e
-
+            raise DHError(e, "failed to take a snapshot of the remote table with the provided ticket.") from e
