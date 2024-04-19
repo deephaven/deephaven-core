@@ -7,6 +7,7 @@ import io.deephaven.base.reference.PooledObjectReference;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.BaseSeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -35,7 +36,7 @@ import java.util.function.BiConsumer;
  * Context object used to store read-ahead buffers for efficiently reading from S3. A single context object can only be
  * associated with a single URI at a time.
  */
-final class S3ChannelContext implements SeekableChannelContext {
+final class S3ChannelContext extends BaseSeekableChannelContext implements SeekableChannelContext {
     private static final Logger log = LoggerFactory.getLogger(S3ChannelContext.class);
     static final long UNINITIALIZED_SIZE = -1;
     private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
@@ -149,6 +150,7 @@ final class S3ChannelContext implements SeekableChannelContext {
      */
     @Override
     public void close() {
+        super.close();
         if (log.isDebugEnabled()) {
             log.debug().append("Closing context: ").append(ctxStr()).endl();
         }
