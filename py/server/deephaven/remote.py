@@ -13,14 +13,10 @@ from deephaven.table import Table
 
 _JURI = jpy.get_type("java.net.URI")
 _JClientConfig = jpy.get_type("io.deephaven.client.impl.ClientConfig")
-_JSessionImplConfig = jpy.get_type("io.deephaven.client.impl.SessionImplConfig")
+_JSSLConfig = jpy.get_type("io.deephaven.ssl.config.SSLConfig")
+_JTrustCustom = jpy.get_type("io.deephaven.ssl.config.TrustCustom")
 _JDeephavenTarget = jpy.get_type("io.deephaven.uri.DeephavenTarget")
-_JChannelHelper = jpy.get_type("io.deephaven.client.impl.ChannelHelper")
-_JDeephavenChannelImpl = jpy.get_type("io.deephaven.proto.DeephavenChannelImpl")
-_JSessionImpl = jpy.get_type("io.deephaven.client.impl.SessionImpl")
-_JExecutors = jpy.get_type("java.util.concurrent.Executors")
 _JBarrageSession = jpy.get_type("io.deephaven.client.impl.BarrageSession")
-_JRootAllocator = jpy.get_type("org.apache.arrow.memory.RootAllocator")
 _JSharedId = jpy.get_type("io.deephaven.client.impl.SharedId")
 _JBarrageTableResolver = jpy.get_type("io.deephaven.server.uri.BarrageTableResolver")
 
@@ -34,11 +30,11 @@ def barrage_session(host: str,
                     auth_token: str = "",
                     use_tls: bool = False,
                     tls_root_certs: bytes = None,
-                    client_cert_chain: bytes = None,
-                    client_private_key: bytes = None,
                     ) -> BarrageSession:
     """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
     session.
+
+    Note: client authentication is not supported yet.
 
     Args:
         host (str): the host name or IP address of the Deephaven server.
@@ -53,13 +49,9 @@ def barrage_session(host: str,
         tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
-        client_cert_chain (bytes): PEM encoded client certificate if using mutual TLS.  Defaults to None,
-             which implies not using mutual TLS.
-        client_private_key (bytes): PEM encoded client private key for client_cert_chain if using mutual TLS.
-             Defaults to None, which implies not using mutual TLS.
 
     Returns:
-        a Deephaven gRPC session
+        a Deephaven Barrage session
 
     Raises:
         DHError
@@ -67,6 +59,8 @@ def barrage_session(host: str,
     try:
         j_barrage_session_factory_client = uri.resolve(
             "dh:///app/io.deephaven.server.barrage.BarrageSessionFactoryClient/field/instance")
+        if tls_root_certs and not use_tls:
+            raise DHError(message="tls_root_certs is provided but use_tls is False")
 
         target_uri = f"{host}:{port}"
         if use_tls:
@@ -74,18 +68,23 @@ def barrage_session(host: str,
         else:
             target_uri = f"dh+plain://{target_uri}"
 
-        _j_client_config = (_JClientConfig.builder()
-                          .target(_JDeephavenTarget.of(_JURI(target_uri)))
-                          .build())
+        _j_client_config_builder = _JClientConfig.builder()
+        _j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))
+        if tls_root_certs:
+            _j_ssl_config =_JSSLConfig.builder().trust(_JTrustCustom.ofX509(tls_root_certs, 0, len(tls_root_certs))).build()
+            _j_client_config_builder.ssl(_j_ssl_config)
+        _j_client_config = _j_client_config_builder.build()
         auth = f"{auth_type} {auth_token}"
+
         _j_barrage_session_factory = j_barrage_session_factory_client.factory(_j_client_config, auth)
         return BarrageSession(_j_barrage_session_factory.newBarrageSession())
     except Exception as e:
-        raise DHError("failed to get a barrage session to the target remote Deephaven server.") from e
+        raise DHError(e,"failed to get a barrage session to the target remote Deephaven server.") from e
 
 
 class BarrageSession (JObjectWrapper):
-    """ A Deephaven gRPC session to a remote server."""
+    """ A Deephaven Barrage session to a remote server."""
+
     j_object_type = _JBarrageSession
 
     @property
@@ -100,27 +99,37 @@ class BarrageSession (JObjectWrapper):
         """ TODO
 
         Args:
-            ticket:
+            ticket (bytes): the bytes of the shared ticket
 
         Returns:
+            a Table
 
+        Raises:
+            DHError
         """
-        j_table_handle = self.j_session.of(_JSharedId(ticket).ticketId().table())
-        j_barrage_subscription = self.j_barrage_session.subscribe(j_table_handle,
-                                                                   _JBarrageTableResolver.SUB_OPTIONS)
-        return Table(j_barrage_subscription.entireTable().get())
+        try:
+            j_table_handle = self.j_session.of(_JSharedId(ticket).ticketId().table())
+            j_barrage_subscription = self.j_barrage_session.subscribe(j_table_handle,
+                                                                       _JBarrageTableResolver.SUB_OPTIONS)
+            return Table(j_barrage_subscription.entireTable().get())
+        except Exception as e:
+            raise DHError(e, "failed to subscribe to the ticket.") from e
 
     def snapshot(self, ticket: bytes) -> Table:
         """ TODO
 
         Args:
-            ticket:
+            ticket (bytes): the bytes of the shared ticket
 
         Returns:
-
+            a Table
+        Raises:
+            DHError
         """
-        j_table_handle = self.j_session.of(_JSharedId(ticket).ticketId().table())
-        j_barrage_snapshot = self.j_barrage_session.snapshot(j_table_handle, _JBarrageTableResolver.SNAP_OPTIONS)
-        return Table(j_barrage_snapshot.entireTable().get())
-
+        try:
+            j_table_handle = self.j_session.of(_JSharedId(ticket).ticketId().table())
+            j_barrage_snapshot = self.j_barrage_session.snapshot(j_table_handle, _JBarrageTableResolver.SNAP_OPTIONS)
+            return Table(j_barrage_snapshot.entireTable().get())
+        except Exception as e:
+            raise DHError(e, "failed to get a snapshot from the ticket.") from e
 
