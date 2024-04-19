@@ -92,7 +92,8 @@ public class BusinessCalendar extends Calendar {
     }
 
     private final Map<LocalDate, CalendarDay<Instant>> cachedSchedules = new ConcurrentHashMap<>();
-    private final YearMonthSummaryCache<SummaryData> summaryCache = new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
+    private final YearMonthSummaryCache<SummaryData> summaryCache =
+            new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
     private final int yearCacheStart;
     private final int yearCacheEnd;
 
@@ -123,7 +124,7 @@ public class BusinessCalendar extends Calendar {
             nonBusinessDays += ibd ? 0 : 1;
             businessTimeNanos += bs.businessNanos();
 
-            if(ibd) {
+            if (ibd) {
                 businessDates.add(date);
             } else {
                 nonBusinessDates.add(date);
@@ -148,11 +149,11 @@ public class BusinessCalendar extends Calendar {
         final int year = yearMonth / 100;
         final int month = yearMonth % 100;
         final LocalDate startDate = LocalDate.of(year, month, 1);
-        final LocalDate endDate = startDate.plusMonths(1);  // exclusive
+        final LocalDate endDate = startDate.plusMonths(1); // exclusive
         return summarize(startDate, endDate);
     }
 
-    private SummaryData computeYearSummary(final int year){
+    private SummaryData computeYearSummary(final int year) {
         Instant startInstant = null;
         LocalDate startDate = null;
         Instant endInstant = null;
@@ -163,9 +164,9 @@ public class BusinessCalendar extends Calendar {
         ArrayList<LocalDate> businessDates = new ArrayList<>();
         ArrayList<LocalDate> nonBusinessDates = new ArrayList<>();
 
-        for(int month=1; month<=12; month++){
+        for (int month = 1; month <= 12; month++) {
             SummaryData ms = summaryCache.getMonthSummary(year, month);
-            if(month == 1){
+            if (month == 1) {
                 startInstant = ms.startInstant;
                 startDate = ms.startDate;
             }
@@ -981,7 +982,7 @@ public class BusinessCalendar extends Calendar {
     // region Ranges
 
     private int numberBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                   final boolean endInclusive) {
+            final boolean endInclusive) {
         int days = 0;
 
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
@@ -995,17 +996,17 @@ public class BusinessCalendar extends Calendar {
         return days;
     }
 
-        /**
-         * Returns the number of business dates in a given range.
-         *
-         * @param start start of a time range
-         * @param end end of a time range
-         * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-         * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
-         * @return number of business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if any
-         *         input is {@code null}.
-         * @throws InvalidDateException if the dates are not in the valid range
-         */
+    /**
+     * Returns the number of business dates in a given range.
+     *
+     * @param start start of a time range
+     * @param end end of a time range
+     * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
+     * @return number of business dates between {@code start} and {@code end}. {@link QueryConstants#NULL_INT} if any
+     *         input is {@code null}.
+     * @throws InvalidDateException if the dates are not in the valid range
+     */
     public int numberBusinessDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
             final boolean endInclusive) {
         if (start == null || end == null) {
@@ -1020,17 +1021,18 @@ public class BusinessCalendar extends Calendar {
         SummaryData summary = null;
         int days = 0;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it.hasNext(); ) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
+             it.hasNext();) {
             summary = it.next();
 
-            if(summaryFirst == null) {
+            if (summaryFirst == null) {
                 summaryFirst = summary;
             }
 
             days += summary.businessDays;
         }
 
-        if(summaryFirst == null){
+        if (summaryFirst == null) {
             return numberBusinessDatesInternal(start, end, startInclusive, endInclusive);
         } else {
             days += numberBusinessDatesInternal(start, summaryFirst.startDate, startInclusive, false);
@@ -1158,7 +1160,7 @@ public class BusinessCalendar extends Calendar {
     }
 
     private int numberNonBusinessDatesInternal(final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                           final boolean endInclusive) {
+            final boolean endInclusive) {
         int days = 0;
 
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
@@ -1197,17 +1199,18 @@ public class BusinessCalendar extends Calendar {
         SummaryData summary = null;
         int days = 0;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it.hasNext(); ) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
+             it.hasNext();) {
             summary = it.next();
 
-            if(summaryFirst == null) {
+            if (summaryFirst == null) {
                 summaryFirst = summary;
             }
 
             days += summary.nonBusinessDays;
         }
 
-        if(summaryFirst == null){
+        if (summaryFirst == null) {
             return numberNonBusinessDatesInternal(start, end, startInclusive, endInclusive);
         } else {
             days += numberNonBusinessDatesInternal(start, summaryFirst.startDate, startInclusive, false);
@@ -1334,9 +1337,10 @@ public class BusinessCalendar extends Calendar {
         return numberNonBusinessDates(start, end, true, true);
     }
 
-    private void businessDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                     final boolean endInclusive) {
-       for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+    private void businessDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end,
+            final boolean startInclusive,
+            final boolean endInclusive) {
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
             if (!skip && isBusinessDay(day)) {
@@ -1370,10 +1374,11 @@ public class BusinessCalendar extends Calendar {
         SummaryData summaryFirst = null;
         SummaryData summary = null;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it.hasNext(); ) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
+             it.hasNext();) {
             summary = it.next();
 
-            if(summaryFirst == null) {
+            if (summaryFirst == null) {
                 summaryFirst = summary;
                 businessDatesInternal(dateList, start, summaryFirst.startDate, startInclusive, false);
             }
@@ -1381,7 +1386,7 @@ public class BusinessCalendar extends Calendar {
             dateList.addAll(summary.businessDates);
         }
 
-        if(summaryFirst == null){
+        if (summaryFirst == null) {
             businessDatesInternal(dateList, start, end, startInclusive, endInclusive);
         } else {
             businessDatesInternal(dateList, summary.endDate, end, true, endInclusive);
@@ -1506,8 +1511,9 @@ public class BusinessCalendar extends Calendar {
         return businessDates(start, end, true, true);
     }
 
-    private void nonBusinessDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                        final boolean endInclusive) {
+    private void nonBusinessDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end,
+            final boolean startInclusive,
+            final boolean endInclusive) {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
@@ -1542,10 +1548,11 @@ public class BusinessCalendar extends Calendar {
         SummaryData summaryFirst = null;
         SummaryData summary = null;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it.hasNext(); ) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
+             it.hasNext();) {
             summary = it.next();
 
-            if(summaryFirst == null) {
+            if (summaryFirst == null) {
                 summaryFirst = summary;
                 nonBusinessDatesInternal(dateList, start, summaryFirst.startDate, startInclusive, false);
             }
@@ -1553,7 +1560,7 @@ public class BusinessCalendar extends Calendar {
             dateList.addAll(summary.nonBusinessDates);
         }
 
-        if(summaryFirst == null){
+        if (summaryFirst == null) {
             nonBusinessDatesInternal(dateList, start, end, startInclusive, endInclusive);
         } else {
             nonBusinessDatesInternal(dateList, summary.endDate, end, true, endInclusive);
@@ -1682,7 +1689,8 @@ public class BusinessCalendar extends Calendar {
 
     // region Differences
 
-    private long diffBusinessNanosInternal(final Instant start, final LocalDate startDate, final Instant end, final LocalDate endDate) {
+    private long diffBusinessNanosInternal(final Instant start, final LocalDate startDate, final Instant end,
+            final LocalDate endDate) {
 
         if (startDate.equals(endDate)) {
             final CalendarDay<Instant> schedule = this.calendarDay(startDate);
@@ -1728,17 +1736,17 @@ public class BusinessCalendar extends Calendar {
         SummaryData summary = null;
         long nanos = 0;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(startDate, endDate, false, false); it.hasNext(); ) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(startDate, endDate, false, false); it.hasNext();) {
             summary = it.next();
 
-            if(summaryFirst == null) {
+            if (summaryFirst == null) {
                 summaryFirst = summary;
             }
 
             nanos += summary.businessTimeNanos;
         }
 
-        if(summaryFirst == null){
+        if (summaryFirst == null) {
             return diffBusinessNanosInternal(start, startDate, end, endDate);
         } else {
             nanos += diffBusinessNanosInternal(start, startDate, summaryFirst.startInstant, summaryFirst.startDate);

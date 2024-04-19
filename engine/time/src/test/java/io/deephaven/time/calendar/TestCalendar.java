@@ -232,7 +232,7 @@ public class TestCalendar extends BaseArrayTestCase {
         final ArrayList<LocalDate> targetLong = new ArrayList<>();
 
         for (LocalDate d = startLong; !d.isAfter(endLong); d = d.plusDays(1)) {
-                targetLong.add(d);
+            targetLong.add(d);
         }
 
         assertEquals(targetLong.toArray(LocalDate[]::new), calendar.calendarDates(startLong, endLong));

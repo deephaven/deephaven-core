@@ -43,7 +43,8 @@ public class Calendar {
 
     }
 
-    private final YearMonthSummaryCache<SummaryData> summaryCache = new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
+    private final YearMonthSummaryCache<SummaryData> summaryCache =
+            new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
 
     private SummaryData summarize(final LocalDate startDate, final LocalDate endDate) {
         LocalDate date = startDate;
@@ -61,18 +62,18 @@ public class Calendar {
         final int year = yearMonth / 100;
         final int month = yearMonth % 100;
         final LocalDate startDate = LocalDate.of(year, month, 1);
-        final LocalDate endDate = startDate.plusMonths(1);  // exclusive
+        final LocalDate endDate = startDate.plusMonths(1); // exclusive
         return summarize(startDate, endDate);
     }
 
-    private SummaryData computeYearSummary(final int year){
+    private SummaryData computeYearSummary(final int year) {
         LocalDate startDate = null;
         LocalDate endDate = null;
         ArrayList<LocalDate> dates = new ArrayList<>();
 
-        for(int month=1; month<=12; month++){
+        for (int month = 1; month <= 12; month++) {
             SummaryData ms = summaryCache.getMonthSummary(year, month);
-            if(month == 1){
+            if (month == 1) {
                 startDate = ms.startDate;
             }
 
@@ -109,7 +110,7 @@ public class Calendar {
     // region Cache
 
     /**
-     * Clears the cache.  This should not generally be used and is provided for benchmarking.
+     * Clears the cache. This should not generally be used and is provided for benchmarking.
      */
     public void clearCache() {
         summaryCache.clear();
@@ -491,8 +492,9 @@ public class Calendar {
 
     // region Ranges
 
-    private void calendarDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                     final boolean endInclusive) {
+    private void calendarDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end,
+            final boolean startInclusive,
+            final boolean endInclusive) {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
@@ -526,10 +528,11 @@ public class Calendar {
         SummaryData summaryFirst = null;
         SummaryData summary = null;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it.hasNext(); ) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
+             it.hasNext();) {
             summary = it.next();
 
-            if(summaryFirst == null) {
+            if (summaryFirst == null) {
                 summaryFirst = summary;
                 calendarDatesInternal(dateList, start, summaryFirst.startDate, startInclusive, false);
             }
@@ -537,7 +540,7 @@ public class Calendar {
             dateList.addAll(summary.dates);
         }
 
-        if(summaryFirst == null){
+        if (summaryFirst == null) {
             calendarDatesInternal(dateList, start, end, startInclusive, endInclusive);
         } else {
             calendarDatesInternal(dateList, summary.endDate, end, true, endInclusive);

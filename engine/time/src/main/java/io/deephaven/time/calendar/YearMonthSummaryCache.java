@@ -23,7 +23,7 @@ class YearMonthSummaryCache<T> {
      * Creates a new cache.
      *
      * @param computeMonthSummary the function to compute a month summary
-     * @param computeYearSummary  the function to compute a year summary
+     * @param computeYearSummary the function to compute a year summary
      */
     YearMonthSummaryCache(Function<Integer, T> computeMonthSummary, Function<Integer, T> computeYearSummary) {
         this.computeMonthSummary = computeMonthSummary;
@@ -51,7 +51,7 @@ class YearMonthSummaryCache<T> {
     /**
      * Gets the month summary for the specified year and month.
      *
-     * @param year  the year
+     * @param year the year
      * @param month the month
      * @return the month summary
      */
@@ -87,7 +87,7 @@ class YearMonthSummaryCache<T> {
             currentMonth = startMonth;
             currentYear = startYear;
 
-            if(start.getDayOfMonth() != 1) {
+            if (start.getDayOfMonth() != 1) {
                 incrementCurrentByMonth();
             }
 
@@ -99,8 +99,8 @@ class YearMonthSummaryCache<T> {
             finalMonth = endMonth;
             finalYear = endYear;
 
-            if(endPlus1Month == endMonth) {
-                if(finalMonth == 1) {
+            if (endPlus1Month == endMonth) {
+                if (finalMonth == 1) {
                     finalMonth = 12;
                     finalYear = finalYear - 1;
                 } else {
@@ -112,7 +112,7 @@ class YearMonthSummaryCache<T> {
         }
 
         private void incrementCurrentByMonth() {
-            if(currentMonth == 12) {
+            if (currentMonth == 12) {
                 currentMonth = 1;
                 currentYear += 1;
             } else {
@@ -136,7 +136,7 @@ class YearMonthSummaryCache<T> {
         public T next() {
             final T val;
 
-            if(currentMonth == 1 && (currentYear != finalYear || finalMonth == 12)) {
+            if (currentMonth == 1 && (currentYear != finalYear || finalMonth == 12)) {
                 val = getYearSummary(currentYear);
                 incrementCurrentByYear();
             } else {
@@ -149,22 +149,22 @@ class YearMonthSummaryCache<T> {
     }
 
     /**
-     * Gets an iterator over the summaries for the specified range.  The returned iterator will include the start
-     * date if {@code startInclusive} is true, and the end date if {@code endInclusive} is true.
-     * If the start date is after the end date, the iterator will be empty.
+     * Gets an iterator over the summaries for the specified range. The returned iterator will include the start date if
+     * {@code startInclusive} is true, and the end date if {@code endInclusive} is true. If the start date is after the
+     * end date, the iterator will be empty.
      * <p>
-     * The iterator will return summaries in chronological order,
-     * and these summaries can be a mix of month and year summaries.
-     * Dates not represented by complete summaries will be skipped (e.g. partial months).
+     * The iterator will return summaries in chronological order, and these summaries can be a mix of month and year
+     * summaries. Dates not represented by complete summaries will be skipped (e.g. partial months).
      *
-     * @param start          the start date
-     * @param end            the end date
+     * @param start the start date
+     * @param end the end date
      * @param startInclusive whether the start date is inclusive
-     * @param endInclusive   whether the end date is inclusive
+     * @param endInclusive whether the end date is inclusive
      * @return the iterator
      */
     Iterator<T> iterator(final LocalDate start, final LocalDate end,
-                         final boolean startInclusive, final boolean endInclusive) {
-        return new YearMonthSummaryIterator(startInclusive ? start : start.plusDays(1), endInclusive ? end : end.minusDays(1));
+            final boolean startInclusive, final boolean endInclusive) {
+        return new YearMonthSummaryIterator(startInclusive ? start : start.plusDays(1),
+                endInclusive ? end : end.minusDays(1));
     }
 }
