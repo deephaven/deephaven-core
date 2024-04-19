@@ -1021,8 +1021,8 @@ public class BusinessCalendar extends Calendar {
         SummaryData summary = null;
         int days = 0;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
-             it.hasNext();) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
+                .hasNext();) {
             summary = it.next();
 
             if (summaryFirst == null) {
@@ -1199,8 +1199,8 @@ public class BusinessCalendar extends Calendar {
         SummaryData summary = null;
         int days = 0;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
-             it.hasNext();) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
+                .hasNext();) {
             summary = it.next();
 
             if (summaryFirst == null) {
@@ -1374,8 +1374,8 @@ public class BusinessCalendar extends Calendar {
         SummaryData summaryFirst = null;
         SummaryData summary = null;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
-             it.hasNext();) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
+                .hasNext();) {
             summary = it.next();
 
             if (summaryFirst == null) {
@@ -1548,8 +1548,8 @@ public class BusinessCalendar extends Calendar {
         SummaryData summaryFirst = null;
         SummaryData summary = null;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
-             it.hasNext();) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
+                .hasNext();) {
             summary = it.next();
 
             if (summaryFirst == null) {

@@ -528,8 +528,8 @@ public class Calendar {
         SummaryData summaryFirst = null;
         SummaryData summary = null;
 
-        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive);
-             it.hasNext();) {
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
+                .hasNext();) {
             summary = it.next();
 
             if (summaryFirst == null) {
