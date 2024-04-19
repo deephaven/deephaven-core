@@ -688,6 +688,17 @@ class ParquetTestCase(BaseTestCase):
         self.verify_index_files(".dh_metadata/indexes/x", expected_num_index_files=2)
         self.verify_index_files(".dh_metadata/indexes/y,z", expected_num_index_files=2)
 
+    def test_write_with_definition(self):
+        table = empty_table(3).update(
+            formulas=["a=i", "b=(double)(i/10.0)", "c=(double)(i*i)", "d=ii"]
+        )
+        write(table, "data_from_dh.parquet", table_definition={
+            "a": dtypes.int32,
+            "b": dtypes.double,
+            "c": dtypes.double
+        })
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
 
 if __name__ == '__main__':
     unittest.main()

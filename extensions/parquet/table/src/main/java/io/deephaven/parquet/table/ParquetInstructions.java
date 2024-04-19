@@ -15,6 +15,8 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
@@ -212,7 +214,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract Optional<TableDefinition> getTableDefinition();
 
-    public abstract Optional<String[][]> getIndexColumns();
+    public abstract Optional<Collection<String[]>> getIndexColumns();
 
     /**
      * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
@@ -232,7 +234,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * set as the provided values.
      */
     @VisibleForTesting
-    abstract ParquetInstructions withIndexColumns(final String[][] indexColumns);
+    abstract ParquetInstructions withIndexColumns(final Collection<String[]> indexColumns);
 
     /**
      * @return the base name for partitioned parquet data. Check
@@ -341,7 +343,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public Optional<String[][]> getIndexColumns() {
+        public Optional<Collection<String[]>> getIndexColumns() {
             return Optional.empty();
         }
 
@@ -361,7 +363,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        ParquetInstructions withIndexColumns(final String[][] indexColumns) {
+        ParquetInstructions withIndexColumns(final Collection<String[]> indexColumns) {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
@@ -439,7 +441,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final String baseNameForPartitionedParquetData;
         private final Optional<ParquetFileLayout> fileLayout;
         private final Optional<TableDefinition> tableDefinition;
-        private final Optional<String[][]> indexColumns;
+        private final Optional<Collection<String[]>> indexColumns;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -455,7 +457,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final String baseNameForPartitionedParquetData,
                 final Optional<ParquetFileLayout> fileLayout,
                 final Optional<TableDefinition> tableDefinition,
-                final Optional<String[][]> indexColumns) {
+                final Optional<Collection<String[]>> indexColumns) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -585,7 +587,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public Optional<String[][]> getIndexColumns() {
+        public Optional<Collection<String[]>> getIndexColumns() {
             return indexColumns;
         }
 
@@ -606,7 +608,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        ParquetInstructions withIndexColumns(final String[][] indexColumns) {
+        ParquetInstructions withIndexColumns(final Collection<String[]> indexColumns) {
             return new ReadOnly(columnNameToInstructions, parquetColumnNameToInstructions,
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
@@ -669,7 +671,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private String baseNameForPartitionedParquetData = DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA;
         private Optional<ParquetFileLayout> fileLayout = Optional.empty();
         private Optional<TableDefinition> tableDefinition = Optional.empty();
-        private Optional<String[][]> indexColumns = Optional.empty();
+        private Optional<Collection<String[]>> indexColumns = Optional.empty();
 
         public Builder() {}
 
@@ -917,14 +919,34 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        private void initIndexColumns() {
+            if (indexColumns.isEmpty()) {
+                indexColumns = Optional.of(new ArrayList<>());
+            }
+        }
+
         /**
-         * Arrays containing the column names for indexes to persist. The write operation will store the index info as
+         * Add a list of columns to persist together as indexes. The write operation will store the index info as
          * sidecar tables. This argument is used to narrow the set of indexes to write, or to be explicit about the
          * expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
          * demand.
          */
-        public Builder setIndexColumns(final String[][] indexColumns) {
-            this.indexColumns = Optional.ofNullable(indexColumns);
+        public Builder addIndexColumns(final String... indexColumns) {
+            initIndexColumns();
+            this.indexColumns.get().add(indexColumns);
+            return this;
+        }
+
+        /**
+         * Add a collection of index columns to persist. The write operation will store the index info as sidecar
+         * tables. This argument is used to narrow the set of indexes to write, or to be explicit about the expected set
+         * of indexes present on all sources. Indexes that are specified but missing will be computed on demand. To
+         * prevent the generation of index files, use an empty collection.
+         */
+        public Builder setIndexColumns(final Iterable<String[]> indexColumns) {
+            initIndexColumns();
+            final Collection<String[]> indexColumnsCollection = this.indexColumns.get();
+            indexColumns.forEach(indexColumnsCollection::add);
             return this;
         }
 

@@ -78,6 +78,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
@@ -1107,7 +1108,7 @@ public final class ParquetTableReadWriteTest {
 
         // Next test passing additional indexing columns
         final String indexColumn = "NPC5";
-        final String[][] indexColumns = new String[][] {{indexColumn}};
+        final Collection<String[]> indexColumns = Collections.singleton(new String[] {indexColumn});
         final ParquetInstructions withIndexColumns = writeInstructions.withIndexColumns(indexColumns);
         {
             writeKeyValuePartitionedTable(inputData, parentDir.getPath(), withIndexColumns);

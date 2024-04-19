@@ -4,6 +4,7 @@
 
 """ This module supports reading an external Parquet files into Deephaven tables and writing Deephaven tables out as
 Parquet files. """
+from warnings import warn
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Union, Dict, Sequence
@@ -22,6 +23,7 @@ _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.Compre
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JParquetFileLayout = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions$ParquetFileLayout")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
+_JArrayList = jpy.get_type('java.util.ArrayList')
 
 
 @dataclass
@@ -135,6 +137,9 @@ def _build_parquet_instructions(
     if file_layout is not None:
         builder.setFileLayout(_j_file_layout(file_layout))
 
+    if table_definition is not None and col_definitions is not None:
+        raise ValueError("Both table_definition and col_definitions cannot both be specified.")
+
     if table_definition is not None:
         builder.setTableDefinition(_j_table_definition(table_definition))
 
@@ -142,7 +147,7 @@ def _build_parquet_instructions(
         builder.setTableDefinition(_JTableDefinition.of([col.j_column_definition for col in col_definitions]))
 
     if index_columns:
-        builder.setIndexColumns(_j_array_of_array_of_string(index_columns))
+        builder.setIndexColumns(_j_list_of_array_of_string(index_columns))
 
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
@@ -203,8 +208,7 @@ def read(
         table_definition (Union[Dict[str, DType], List[Column], None]): the table definition, by default None. When None,
             the definition is inferred from the parquet file(s). Setting a definition guarantees the returned table will
             have that definition. This is useful for bootstrapping purposes when the initially partitioned directory is
-            empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
-            file_layout must also be set.
+            empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition.
         special_instructions (Optional[s3.S3Instructions]): Special instructions for reading parquet files, useful when
             reading files from a non-local file system, like S3. By default, None.
 
@@ -230,13 +234,14 @@ def read(
     except Exception as e:
         raise DHError(e, "failed to read parquet data.") from e
 
-
 def _j_string_array(str_list: List[str]):
     return jpy.array("java.lang.String", str_list)
 
-def _j_array_of_array_of_string(str_seq_seq: Sequence[Sequence[str]]):
-    return jpy.array("[Ljava.lang.String;", [jpy.array("java.lang.String", str_seq) for str_seq in str_seq_seq])
-
+def _j_list_of_array_of_string(str_seq_seq: Sequence[Sequence[str]]):
+    ret_list = _JArrayList(len(str_seq_seq))
+    for str_seq in str_seq_seq:
+        ret_list.add(jpy.array("java.lang.String", str_seq))
+    return ret_list
 
 def delete(path: str) -> None:
     """ Deletes a Parquet table on disk.
@@ -256,6 +261,7 @@ def delete(path: str) -> None:
 def write(
     table: Table,
     path: str,
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
     col_definitions: Optional[List[Column]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
@@ -272,8 +278,13 @@ def write(
         path (str): the destination file path; the file name should end in a ".parquet" extension. If the path
             includes any non-existing directories, they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
-        col_definitions (Optional[List[Column]]): the column definitions to use for writing, instead of the definitions
-            implied by the table. Default is None, which means use the column definitions implied by the table
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+            instead of the definitions implied by the table. Default is None, which means use the column definitions
+            implied by the table. This definition can be used to skip some columns or add additional columns with
+            null values. Both table_definition and col_definitions cannot be specified at the same time.
+        col_definitions (Optional[List[Column]]): the column definitions to use for writing, instead of the
+            definitions implied by the table. Default is None, which means use the column definitions implied by the
+            table. This argument is deprecated and will be removed in a future release. Use table_definition instead.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
@@ -297,6 +308,9 @@ def write(
     Raises:
         DHError
     """
+    if col_definitions is not None:
+        warn("col_definitions is deprecated and will be removed in a future release. Use table_definition "
+             "instead.", DeprecationWarning, stacklevel=2)
     try:
         write_instructions = _build_parquet_instructions(
             col_instructions=col_instructions,
@@ -306,6 +320,7 @@ def write(
             target_page_size=target_page_size,
             for_read=False,
             generate_metadata_files=generate_metadata_files,
+            table_definition=table_definition,
             col_definitions=col_definitions,
             index_columns=index_columns,
         )
@@ -317,6 +332,7 @@ def write(
 def write_partitioned(
         table: Union[Table, PartitionedTable],
         destination_dir: str,
+        table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
         col_definitions: Optional[List[Column]] = None,
         col_instructions: Optional[List[ColumnInstruction]] = None,
         compression_codec_name: Optional[str] = None,
@@ -337,8 +353,13 @@ def write_partitioned(
         table (Table): the source table or partitioned table
         destination_dir (str): The path to destination root directory in which the partitioned parquet data will be stored
             in a nested directory structure format. Non-existing directories in the provided path will be created.
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+            instead of the definitions implied by the table. Default is None, which means use the column definitions
+            implied by the table. This definition can be used to skip some columns or add additional columns with
+            null values. Both table_definition and col_definitions cannot be specified at the same time.
         col_definitions (Optional[List[Column]]): the column definitions to use for writing, instead of the definitions
-            implied by the table. Default is None, which means use the column definitions implied by the table
+            implied by the table. Default is None, which means use the column definitions implied by the table. This
+            argument is deprecated and will be removed in a future release. Use table_definition instead.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
@@ -375,6 +396,9 @@ def write_partitioned(
     Raises:
         DHError
     """
+    if col_definitions is not None:
+        warn("col_definitions is deprecated and will be removed in a future release. Use table_definition "
+             "instead.", DeprecationWarning, stacklevel=2)
     try:
         write_instructions = _build_parquet_instructions(
             col_instructions=col_instructions,
@@ -385,6 +409,7 @@ def write_partitioned(
             for_read=False,
             generate_metadata_files=generate_metadata_files,
             base_name=base_name,
+            table_definition=table_definition,
             col_definitions=col_definitions,
             index_columns=index_columns,
         )
@@ -396,7 +421,8 @@ def write_partitioned(
 def batch_write(
     tables: List[Table],
     paths: List[str],
-    col_definitions: List[Column],
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
+    col_definitions: Optional[List[Column]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
@@ -414,7 +440,12 @@ def batch_write(
         paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        col_definitions (List[Column]): the column definitions to use for writing.
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+            instead of the definitions implied by the table. Default is None, which means use the column definitions
+            implied by the table. This definition can be used to skip some columns or add additional columns with
+            null values. Both table_definition and col_definitions cannot be specified at the same time.
+        col_definitions (List[Column]): the column definitions to use for writing. This argument is deprecated and will
+            be removed in a future release. Use table_definition instead.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -438,6 +469,11 @@ def batch_write(
     Raises:
         DHError
     """
+    if col_definitions is not None:
+        warn("col_definitions is deprecated and will be removed in a future release. Use table_definition "
+             "instead.", DeprecationWarning, stacklevel=2)
+    elif table_definition is None:
+        raise ValueError("Either table_definition or col_definitions must be specified.")
     try:
         write_instructions = _build_parquet_instructions(
             col_instructions=col_instructions,
@@ -447,6 +483,7 @@ def batch_write(
             target_page_size=target_page_size,
             for_read=False,
             generate_metadata_files=generate_metadata_files,
+            table_definition=table_definition,
             col_definitions=col_definitions,
             index_columns=index_columns,
         )
