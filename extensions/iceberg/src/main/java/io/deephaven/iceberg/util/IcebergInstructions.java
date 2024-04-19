@@ -10,6 +10,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -39,6 +40,10 @@ public abstract class IcebergInstructions {
      */
     public abstract Optional<ParquetInstructions> parquetInstructions();
 
+    /**
+     * The {@link Map} to use for reading the Iceberg data files.
+     */
+    public abstract Map<String, String> columnRenameMap();
 
     public interface Builder {
         @SuppressWarnings("unused")
@@ -47,7 +52,14 @@ public abstract class IcebergInstructions {
         @SuppressWarnings("unused")
         Builder s3Instructions(S3Instructions s3Instructions);
 
+        @SuppressWarnings("unused")
         Builder parquetInstructions(ParquetInstructions parquetInstructions);
+
+        @SuppressWarnings("unused")
+        Builder putColumnRenameMap(String key, String value);
+
+        @SuppressWarnings("unused")
+        Builder putAllColumnRenameMap(Map<String, ? extends String> entries);
 
         IcebergInstructions build();
     }

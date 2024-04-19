@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -80,7 +81,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     /**
      * @return The default for {@link #getMaximumDictionarySize()}
      */
-    public static int getDefaltMaximumDictionarySize() {
+    public static int getDefaultMaximumDictionarySize() {
         return defaultMaximumDictionarySize;
     }
 
@@ -163,6 +164,47 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @return if the data source is refreshing
      */
     public abstract boolean isRefreshing();
+
+    public ParquetInstructions withColumnRenameMap(final Map<String, String> columnRenameMap) {
+        // TODO: This conversion is fragile and must be updated with any change to the ParquetInstructions class. It
+        // would be preferred to have a more robust Immutable implementation with better copy support.
+
+        final ParquetInstructions.Builder builder = new Builder();
+        // Add all the existing column mappings.
+        columnRenameMap.forEach(builder::addColumnNameMapping);
+
+        // Add all the other parameters.
+        builder.setCompressionCodecName(getCompressionCodecName());
+        builder.setMaximumDictionaryKeys(getMaximumDictionaryKeys());
+        builder.setMaximumDictionarySize(getMaximumDictionarySize());
+        builder.setIsLegacyParquet(isLegacyParquet());
+        builder.setTargetPageSize(getTargetPageSize());
+        builder.setIsRefreshing(isRefreshing());
+        builder.setSpecialInstructions(getSpecialInstructions());
+
+        return builder.build();
+    }
+
+    public ParquetInstructions withSpecialInstructions(final Object specialInstructions) {
+        // TODO: This conversion is fragile and must be updated with any change to the ParquetInstructions class. It
+        // would be preferred to have a more robust Immutable implementation with better copy support.
+
+        // This version of the builder brings in all the existing column mappings from `this`.
+        final ParquetInstructions.Builder builder = new Builder(this);
+
+        // Add the special instructions.
+        builder.setSpecialInstructions(specialInstructions);
+
+        // Add all the other parameters.
+        builder.setCompressionCodecName(getCompressionCodecName());
+        builder.setMaximumDictionaryKeys(getMaximumDictionaryKeys());
+        builder.setMaximumDictionarySize(getMaximumDictionarySize());
+        builder.setIsLegacyParquet(isLegacyParquet());
+        builder.setTargetPageSize(getTargetPageSize());
+        builder.setIsRefreshing(isRefreshing());
+
+        return builder.build();
+    }
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {

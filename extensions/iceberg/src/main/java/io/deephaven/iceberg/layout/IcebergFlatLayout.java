@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
+import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
@@ -41,21 +42,40 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
     private final Map<URI, IcebergTableLocationKey> cache;
 
     /**
-     * The instructions for customizations while reading. Could be a {@link ParquetInstructions} or similar.
+     * The instructions for customizations while reading.
      */
-    private final Object readInstructions;
+    private final IcebergInstructions instructions;
+
+    /**
+     * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table.
+     */
+    private ParquetInstructions parquetInstructions;
 
     /**
      * The current {@link Snapshot} to discover locations for.
      */
     private Snapshot currentSnapshot;
 
-    private static IcebergTableLocationKey locationKey(
+    private IcebergTableLocationKey locationKey(
             final FileFormat format,
-            final URI fileUri,
-            @NotNull final Object readInstructions) {
-        if (format == FileFormat.PARQUET) {
-            return new IcebergTableParquetLocationKey(fileUri, 0, null, (ParquetInstructions) readInstructions);
+            final URI fileUri) {
+        if (format == org.apache.iceberg.FileFormat.PARQUET) {
+            if (parquetInstructions == null) {
+                // Start with user-supplied instructions (if provided).
+                parquetInstructions = instructions.parquetInstructions().isPresent()
+                        ? instructions.parquetInstructions().get()
+                        : ParquetInstructions.builder().build();
+
+                // Use the ParquetInstructions overrides to propagate the Iceberg instructions.
+                if (instructions.columnRenameMap() != null) {
+                    parquetInstructions = parquetInstructions.withColumnRenameMap(instructions.columnRenameMap());
+                }
+                if (instructions.s3Instructions().isPresent()) {
+                    parquetInstructions =
+                            parquetInstructions.withSpecialInstructions(instructions.s3Instructions().get());
+                }
+            }
+            return new IcebergTableParquetLocationKey(fileUri, 0, null, parquetInstructions);
         }
         throw new UnsupportedOperationException("Unsupported file format: " + format);
     }
@@ -64,17 +84,17 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
      * @param table The {@link Table} to discover locations for.
      * @param tableSnapshot The {@link Snapshot} from which to discover data files.
      * @param fileIO The file IO to use for reading manifest data files.
-     * @param readInstructions The instructions for customizations while reading.
+     * @param instructions The instructions for customizations while reading.
      */
     public IcebergFlatLayout(
             @NotNull final Table table,
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final Object readInstructions) {
+            @NotNull final IcebergInstructions instructions) {
         this.table = table;
         this.currentSnapshot = tableSnapshot;
         this.fileIO = fileIO;
-        this.readInstructions = readInstructions;
+        this.instructions = instructions;
 
         this.cache = new HashMap<>();
     }
@@ -96,7 +116,7 @@ public final class IcebergFlatLayout implements TableLocationKeyFinder<IcebergTa
                 for (DataFile df : reader) {
                     final URI fileUri = FileUtils.convertToURI(df.path().toString(), false);
                     final IcebergTableLocationKey locationKey = cache.computeIfAbsent(fileUri, uri -> {
-                        final IcebergTableLocationKey key = locationKey(df.format(), fileUri, readInstructions);
+                        final IcebergTableLocationKey key = locationKey(df.format(), fileUri);
                         // Verify before caching.
                         return key.verifyFileReader() ? key : null;
                     });
