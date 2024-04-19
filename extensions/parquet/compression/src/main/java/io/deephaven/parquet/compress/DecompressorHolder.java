@@ -15,9 +15,7 @@ class DecompressorHolder implements SafeCloseable {
     private CompressionCodecName codecName;
     private Decompressor decompressor;
 
-    DecompressorHolder(final CompressionCodecName codecName, final Decompressor decompressor) {
-        setDecompressor(codecName, decompressor);
-    }
+    DecompressorHolder() {}
 
     /**
      * Set the codec name and the corresponding decompressor.

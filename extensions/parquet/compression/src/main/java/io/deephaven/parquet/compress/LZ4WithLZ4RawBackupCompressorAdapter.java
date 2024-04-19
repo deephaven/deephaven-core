@@ -39,26 +39,26 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
 
     @Override
     public BytesInput decompress(final InputStream inputStream, final int compressedSize,
-            final int uncompressedSize, final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier)
+            final int uncompressedSize, final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache)
             throws IOException {
         if (mode == DecompressionMode.LZ4) {
-            return super.decompress(inputStream, compressedSize, uncompressedSize, decompressorSupplier);
+            return super.decompress(inputStream, compressedSize, uncompressedSize, decompressorCache);
         }
         if (mode == DecompressionMode.LZ4_RAW) {
             // LZ4_RAW adapter should have been initialized if we hit this case.
-            return lz4RawAdapter.decompress(inputStream, compressedSize, uncompressedSize, decompressorSupplier);
+            return lz4RawAdapter.decompress(inputStream, compressedSize, uncompressedSize, decompressorCache);
         }
         // Buffer input data in case we need to retry with LZ4_RAW.
         final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, compressedSize);
         bufferedInputStream.mark(compressedSize);
         BytesInput ret;
         try {
-            ret = super.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorSupplier);
+            ret = super.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorCache);
             mode = DecompressionMode.LZ4;
         } catch (IOException e) {
             bufferedInputStream.reset();
             lz4RawAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName("LZ4_RAW");
-            ret = lz4RawAdapter.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorSupplier);
+            ret = lz4RawAdapter.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorCache);
             mode = DecompressionMode.LZ4_RAW;
         }
         return ret;

@@ -35,7 +35,7 @@ public interface CompressorAdapter extends SafeCloseable {
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
                 final int uncompressedSize,
-                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier) {
+                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) {
             return BytesInput.from(inputStream, compressedSize);
         }
 
@@ -68,12 +68,12 @@ public interface CompressorAdapter extends SafeCloseable {
      * @param inputStream an input stream containing compressed data
      * @param compressedSize the number of bytes in the compressed data
      * @param uncompressedSize the number of bytes that should be present when decompressed
-     * @param decompressorSupplier Used to cache {@link Decompressor} instances for reuse.
+     * @param decompressorCache Used to cache {@link Decompressor} instances for reuse
      * @return the decompressed bytes, copied into memory
      * @throws IOException thrown if an error occurs reading data.
      */
     BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
-            Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier) throws IOException;
+            Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.

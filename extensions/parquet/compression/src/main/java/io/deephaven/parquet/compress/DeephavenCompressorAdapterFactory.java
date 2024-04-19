@@ -130,27 +130,27 @@ public class DeephavenCompressorAdapterFactory {
         @Override
         public BytesInput decompress(final InputStream inputStream, final int compressedSize,
                 final int uncompressedSize,
-                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorSupplier) throws IOException {
+                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException {
             final Decompressor decompressor;
             if (canCreateDecompressorObject) {
-                final DecompressorHolder decompressorHolder = (DecompressorHolder) decompressorSupplier.apply(() -> {
-                    final Decompressor newDecompressor = CodecPool.getDecompressor(compressionCodec);
-                    if (newDecompressor != null) {
-                        return new DecompressorHolder(compressionCodecName, newDecompressor);
-                    }
-                    return null;
-                });
-                if (decompressorHolder != null && decompressorHolder.holdsDecompressor(compressionCodecName)) {
+                // Currently, we only cache a single decompressor object inside the holder. If needed in the future, we
+                // can cache multiple decompressor objects based on the codec name.
+                final DecompressorHolder decompressorHolder =
+                        (DecompressorHolder) decompressorCache.apply(DecompressorHolder::new);
+                if (decompressorHolder.holdsDecompressor(compressionCodecName)) {
                     decompressor = decompressorHolder.getDecompressor();
                     decompressor.reset();
                 } else {
-                    decompressor = null;
-                    canCreateDecompressorObject = false;
+                    decompressor = CodecPool.getDecompressor(compressionCodec);
+                    if (decompressor == null) {
+                        canCreateCompressorObject = false;
+                    } else {
+                        decompressorHolder.setDecompressor(compressionCodecName, decompressor);
+                    }
                 }
             } else {
                 decompressor = null;
             }
-
             try {
                 // Note that we don't close the decompressed stream because doing so may return the decompressor to the
                 // pool

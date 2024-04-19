@@ -7,6 +7,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.function.Supplier;
 
 public class BaseSeekableChannelContext implements SeekableChannelContext {
@@ -25,6 +26,7 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
     }
 
     @Override
+    @OverridingMethodsMustInvokeSuper
     public void close() {
         if (resource != null) {
             resource.close();
