@@ -99,7 +99,8 @@ class SharedTicket:
 
     @classmethod
     def random_ticket(cls) -> SharedTicket:
-        """Generates a random shared ticket.
+        """Generates a random shared ticket. To minimize the probability of collision, the ticket is made using a
+        generated UUID.
 
         Returns:
             a SharedTicket object
