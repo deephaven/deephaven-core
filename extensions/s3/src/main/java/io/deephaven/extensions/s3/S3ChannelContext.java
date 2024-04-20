@@ -158,9 +158,10 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     private void cancelOutstanding() {
-        for (final Request request : requests) {
-            if (request != null) {
-                request.release();
+        for (int i = 0; i < requests.length; i++) {
+            if (requests[i] != null) {
+                requests[i].release();
+                requests[i] = null;
             }
         }
     }
