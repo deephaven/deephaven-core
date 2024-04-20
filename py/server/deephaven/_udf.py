@@ -153,18 +153,18 @@ class _ParsedReturnAnnotation:
                 null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
                 self.ret_converter = partial(lambda nv, x: nv if x is None else int(x), null_value)
             else:
-                self.ret_converter = int
+                self.ret_converter = int if self.orig_type != int else None
         elif t in _NUMPY_FLOATING_TYPE_CODES:
             if self.none_allowed:
                 null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
                 self.ret_converter = partial(lambda nv, x: nv if x is None else float(x), null_value)
             else:
-                self.ret_converter = float
+                self.ret_converter = float if self.orig_type != float else None
         elif t == '?':
             if self.none_allowed:
                 self.ret_converter = lambda x: bool(x) if x is not None else None
             else:
-                self.ret_converter = bool
+                self.ret_converter = bool if self.orig_type != bool else None
         elif t == 'M':
             from deephaven.time import to_j_instant
             self.ret_converter = to_j_instant
