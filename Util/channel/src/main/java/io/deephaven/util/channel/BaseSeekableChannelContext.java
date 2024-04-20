@@ -30,6 +30,7 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
     public void close() {
         if (resource != null) {
             resource.close();
+            resource = null;
         }
     }
 }
