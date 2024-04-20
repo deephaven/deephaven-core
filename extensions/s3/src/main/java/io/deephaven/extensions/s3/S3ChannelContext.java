@@ -138,7 +138,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
     private void reset() {
         // Cancel all outstanding requests
-        close();
+        cancelOutstanding();
         // Reset the internal state
         uri = null;
         size = UNINITIALIZED_SIZE;
@@ -154,10 +154,13 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (log.isDebugEnabled()) {
             log.debug().append("Closing context: ").append(ctxStr()).endl();
         }
-        for (int i = 0; i < requests.length; i++) {
-            if (requests[i] != null) {
-                requests[i].release();
-                requests[i] = null;
+        cancelOutstanding();
+    }
+
+    private void cancelOutstanding() {
+        for (final Request request : requests) {
+            if (request != null) {
+                request.release();
             }
         }
     }
