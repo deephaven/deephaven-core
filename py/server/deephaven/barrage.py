@@ -81,7 +81,7 @@ def barrage_session(host: str,
         try:
             return _get_barrage_session_uri(j_client_config, auth)
         except:
-            return _get_barrage_session_direct(j_client_config, auth)
+            return _get_barrage_session_direct(j_client_config, auth) # fallback to the direct way, used for testing
     except Exception as e:
         raise DHError(e, "failed to get a barrage session to the target remote Deephaven server.") from e
 
@@ -131,7 +131,7 @@ class BarrageSession(JObjectWrapper):
         self.j_session = j_barrage_session.session()
 
     def subscribe(self, ticket: bytes) -> Table:
-        """ Subscribes to a published remote table with given shared ticket.
+        """ Subscribes to a published remote table with the given shared ticket.
 
         Args:
             ticket (bytes): the bytes of the shared ticket

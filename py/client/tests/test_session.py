@@ -340,8 +340,8 @@ t1 = empty_table(0) if t.size == 2 else None
                     blink_input_table.delete(dh_table.select(["f1"]))
 
 
-    def test_share_table(self):
-        pub_session = Session("localhost", 10008)
+    def test_publish_table(self):
+        pub_session = Session()
         t = pub_session.empty_table(1000).update(["X = i", "Y = 2*i"])
         self.assertEqual(t.size, 1000)
         shared_ticket = SharedTicket.random_ticket()

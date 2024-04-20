@@ -3,6 +3,7 @@
 #
 """This module implements the Session class which provides methods to connect to and interact with the Deephaven
 server."""
+from __future__ import annotations
 
 import base64
 import os
@@ -89,11 +90,7 @@ class SharedTicket:
             ticket_bytes (bytes): the raw bytes for the ticket
         """
         self._ticket_bytes = ticket_bytes
-
-    @property
-    def api_ticket(self):
-        """ The ticket object for use with Deephaven API calls."""
-        return ticket_pb2.Ticket(ticket=b'h' + self._ticket_bytes)
+        self.api_ticket = ticket_pb2.Ticket(ticket=b'h' + self._ticket_bytes)
 
     @property
     def bytes(self):
@@ -101,14 +98,14 @@ class SharedTicket:
         return self._ticket_bytes
 
     @classmethod
-    def random_ticket(cls) -> 'SharedTicket':
+    def random_ticket(cls) -> SharedTicket:
         """Generates a random shared ticket.
 
         Returns:
             a SharedTicket object
         """
         ticket_bytes = uuid4().int.to_bytes(16, byteorder='little', signed=False)
-        return cls(ticket_bytes=b'h' + ticket_bytes)
+        return cls(ticket_bytes=ticket_bytes)
 
 
 class Session:

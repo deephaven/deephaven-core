@@ -61,6 +61,9 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             from(test.runtimeClasspath) {
                 into 'classpath'
             }
+            from("${sourcePath}/../client") {
+                into 'python/client'
+            }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
             // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
@@ -97,6 +100,9 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
+            runCommand '''set -eux; \\
+                      pip3 install /python/client;'''
+
         }
         entrypoint = command
 
