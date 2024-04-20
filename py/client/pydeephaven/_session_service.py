@@ -44,14 +44,14 @@ class SessionService:
             raise DHError("failed to release a ticket.") from e
 
 
-    def publish(self, ticket, shared_ticket) -> None:
-        """Publishes a ticket to the shared ticket that can be fetched by other sessions.
+    def publish(self, source_ticket, result_ticket) -> None:
+        """Makes a copy from the source ticket and publishes it to the result ticket.
 
         Args:
-            ticket: The ticket to publish.
-            shared_ticket: The shared ticket to publish to.
+            source_ticket: The source ticket to publish from.
+            result_ticket: The result ticket to publish to.
         """
         try:
-            self._grpc_session_stub.PublishFromTicket(session_pb2.PublishRequest(source_id=ticket, result_id=shared_ticket), metadata=self.session.grpc_metadata)
+            self._grpc_session_stub.PublishFromTicket(session_pb2.PublishRequest(source_id=source_ticket, result_id=result_ticket), metadata=self.session.grpc_metadata)
         except Exception as e:
             raise DHError("failed to publish a ticket.") from e

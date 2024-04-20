@@ -81,7 +81,8 @@ def barrage_session(host: str,
         try:
             return _get_barrage_session_uri(j_client_config, auth)
         except:
-            return _get_barrage_session_direct(j_client_config, auth) # fallback to the direct way, used for testing
+            # fall back to the direct way when we don't have a fully initialized server, used for testing
+            return _get_barrage_session_direct(j_client_config, auth)
     except Exception as e:
         raise DHError(e, "failed to get a barrage session to the target remote Deephaven server.") from e
 
@@ -94,6 +95,11 @@ def _get_barrage_session_uri(client_config, auth) -> BarrageSession:
 
 
 def _get_barrage_session_direct(client_config, auth) -> BarrageSession:
+    """Note, this is used for testing only. This way of constructing a Barrage session is less efficient because it does
+    not share any of the state or configuration that the server provides; namely, when you are doing it with the server
+    context it provides a singleton executor, allocator, outbound SSL configuration, and the ability for the server to
+    hook in additional channel building options.
+    """
     j_channel = _JChannelHelper.channel(client_config)
     j_dh_channel = _JDeephavenChannelImpl(j_channel)
 
